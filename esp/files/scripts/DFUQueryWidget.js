@@ -25,8 +25,6 @@ define([
     "dojo/date",
     "dojo/on",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
     "dijit/Dialog",
     "dijit/Menu",
@@ -52,6 +50,7 @@ define([
     "hpcc/SFDetailsWidget",
     "hpcc/DFUWUDetailsWidget",
     "hpcc/TargetSelectWidget",
+    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/DFUQueryWidget.html",
 
@@ -69,22 +68,28 @@ define([
     "dojox/layout/TableContainer"
 
 ], function (declare, lang, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea,
+                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, WsDfu, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget,
+                _TabContainerWidget, WsDfu, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
                 template) {
-    return declare("DFUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ESPUtil.FormHelper], {
+    return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "DFUQueryWidget",
+
+        addToSuperFileForm: null,
+        desprayDialog: null,
 
         workunitsTab: null,
         workunitsGrid: null,
 
-        validateDialog: null,
+        filter: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.addToSuperFileForm = registry.byId(this.id + "AddToSuperfileForm");
+            this.desprayDialog = registry.byId(this.id + "DesprayDialog");
             this.workunitsTab = registry.byId(this.id + "_Workunits");
+            this.filter = registry.byId(this.id + "Filter");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
         },
@@ -130,21 +135,17 @@ define([
         },
 
         _onAddToSuperfileOk: function (event) {
-            var context = this;
-            var formData = domForm.toObject(this.id + "AddToSuperfileForm");
-            WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
-                load: function (response) {
-                    context.workunitsGrid.rowSelectCell.toggleAllSelection(false);
-                    context.refreshGrid(response);
-                }
-            });
-            var d = registry.byId(this.id + "AddtoDropDown");
-            registry.byId(this.id + "AddtoDropDown").closeDropDown();
-        },
-
-        _onAddToSuperfileCancel: function (event) {
-            var d = registry.byId(this.id + "AddtoDropDown");
-            registry.byId(this.id + "AddtoDropDown").closeDropDown();
+            if (this.addToSuperFileForm.validate()) {
+                var context = this;
+                var formData = domForm.toObject(this.id + "AddToSuperfileForm");
+                WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
+                    load: function (response) {
+                        context.refreshGrid(response);
+                    }
+                });
+                var d = registry.byId(this.id + "AddtoDropDown");
+                registry.byId(this.id + "AddtoDropDown").closeDropDown();
+            }
         },
 
         _handleResponse: function (wuidQualifier, response) {
@@ -161,37 +162,21 @@ define([
         },
 
         _onDesprayOk: function (event) {
-            var context = this;
-            arrayUtil.forEach(this.workunitsGrid.getSelected(), function (item, idx) {
-                item.refresh().then(function (response) {
-                    var request = domForm.toObject(context.id + "DesprayDialog");
-                    request.destPath += item.Filename;
-                    item.despray({
-                        request: request
-                    }).then(function (response) {
-                        context._handleResponse("DesprayResponse.wuid", response);
+            if (this.desprayDialog.validate()) {
+                var context = this;
+                arrayUtil.forEach(this.workunitsGrid.getSelected(), function (item, idx) {
+                    item.refresh().then(function (response) {
+                        var request = domForm.toObject(context.id + "DesprayDialog");
+                        request.destPath += item.Filename;
+                        item.despray({
+                            request: request
+                        }).then(function (response) {
+                            context._handleResponse("DesprayResponse.wuid", response);
+                        });
                     });
                 });
-            });
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
-        },
-
-        _onDesprayCancel: function (event) {
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
-        },
-
-        _onFilterApply: function (event) {
-            registry.byId(this.id + "FilterDropDown").closeDropDown();
-            if (this.hasFilter()) {
-                this.applyFilter();
-            } else {
-                this.validateDialog.show();
+                registry.byId(this.id + "DesprayDropDown").closeDropDown();
             }
-        },
-
-        _onFilterClear: function(event) {
-            this.clearFilter();
-            this.applyFilter();
         },
 
         _onRowDblClick: function (item) {
@@ -220,24 +205,8 @@ define([
         },
 
         //  Implementation  ---
-        clearFilter: function () {
-            arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
-                item.set('value', null);
-            });
-        },
-
-        hasFilter: function () {
-            var filter = domForm.toObject(this.id + "FilterForm");
-            for (var key in filter) {
-                if (filter[key] != "") {
-                    return true;
-                }
-            }
-            return false;
-        },
-
         getFilter: function () {
-            var retVal = domForm.toObject(this.id + "FilterForm");
+            var retVal = this.filter.toObject();
             lang.mixin(retVal, {
                 StartDate: this.getISOString("FromDate", "FromTime"),
                 EndDate: this.getISOString("ToDate", "ToTime")
@@ -251,15 +220,11 @@ define([
             return retVal;
         },
 
-        applyFilter: function () {
-            this.refreshGrid();
-        },
-
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
+
             this.clusterTargetSelect.init({
                 Groups: true,
                 includeBlank: true
@@ -321,23 +286,24 @@ define([
                 var pSubMenu = new Menu();
                 this.menuFilterOwner = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
-                        context.clearFilter();
-                        registry.byId(context.id + "Owner").set("value", context.menuFilterOwner.get("hpcc_value"));
-                        context.applyFilter();
+                        context.filter.clear();
+                        context.filter.setValue(context.id + "Owner", context.menuFilterOwner.get("hpcc_value"));
+                        context.refreshGrid();
                     }
                 });
                 this.menuFilterCluster = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
-                        context.clearFilter();
-                        registry.byId(context.id + "ClusterTargetSelect").set("value", context.menuFilterCluster.get("hpcc_value"));
-                        context.applyFilter();
+                        context.filter.clear();
+                        context.filter.setValue(context.id + "ClusterTargetSelect", context.menuFilterOwner.get("hpcc_value"));
+                        context.refreshGrid();
                     }
                 });
                 pSubMenu.addChild(new MenuSeparator());
                 this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
                     label: "Clear",
                     onClick: function () {
-                        context._onFilterClear();
+                        context.filter.clear();
+                        context.refreshGrid();
                     }
                 });
 
@@ -472,13 +438,6 @@ define([
                     }, sourceDiv);
                 });
             }
-
-            this.refreshFilterState();
-        },
-
-        refreshFilterState: function () {
-            var hasFilter = this.hasFilter();
-            dom.byId(this.id + "IconFilter").src = hasFilter ? "img/filter.png" : "img/noFilter.png";
         },
 
         ensureDFUWUPane: function (id, params) {
@@ -515,7 +474,9 @@ define([
                         id: id,
                         title: params.Name,
                         closable: true,
-                        _hpccParams: params
+                        _hpccParams: {
+                            Name: params.Name
+                        }
                     });
                 }
                 this.addChild(retVal, 1);

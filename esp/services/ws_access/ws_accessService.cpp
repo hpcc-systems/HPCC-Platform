@@ -26,6 +26,7 @@
 #include <set>
 
 #define MSG_SEC_MANAGER_IS_NULL "Security manager is not found. Please check if the system authentication is set up correctly"
+#define MSG_SEC_MANAGER_ISNT_LDAP "LDAP Security manager is required for this feature. Please enable LDAP in the system configuration"
 
 #define MAX_USERS_DISPLAY 400
 #define MAX_RESOURCES_DISPLAY 3000
@@ -165,6 +166,14 @@ void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *ser
         m_rawbasedns.append(*onedn.getLink());
     }
 
+}
+
+CLdapSecManager* Cws_accessEx::queryLDAPSecurityManager(IEspContext &context)
+{
+    ISecManager* secMgr = context.querySecManager();
+    if(secMgr && secMgr->querySecMgrType() != SMT_LDAP)
+        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_ISNT_LDAP);
+    return dynamic_cast<CLdapSecManager*>(secMgr);
 }
 
 void Cws_accessEx::setBasedns(IEspContext &context)
@@ -364,7 +373,7 @@ bool Cws_accessEx::onUsers(IEspContext &context, IEspUserRequest &req, IEspUserR
 {
     try
     {
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
 
         double version = context.getClientVersion();
         if (version > 1.03)
@@ -597,7 +606,7 @@ bool Cws_accessEx::onGroups(IEspContext &context, IEspGroupRequest &req, IEspGro
 {
     try
     {
-        CLdapSecManager* secmgr0 = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        CLdapSecManager* secmgr0 = queryLDAPSecurityManager(context);
 
         double version = context.getClientVersion();
         if (version > 1.03)
@@ -836,7 +845,7 @@ bool Cws_accessEx::onGroupAction(IEspContext &context, IEspGroupActionRequest &r
     {
         checkUser(context);
 
-        CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
         if(secmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
@@ -1267,7 +1276,7 @@ bool Cws_accessEx::onPermissions(IEspContext &context, IEspBasednsRequest &req, 
 {
     try
     {
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
 
         double version = context.getClientVersion();
         if (version > 1.03)
@@ -1307,7 +1316,7 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
     {
         checkUser(context);
 
-        CLdapSecManager* secmgr = (CLdapSecManager*)context.querySecManager();
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
         if(secmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
@@ -2416,12 +2425,10 @@ bool Cws_accessEx::onPermissionAction(IEspContext &context, IEspPermissionAction
         resp.setRtype(req.getRtype());
         resp.setRtitle(req.getRtitle());
         resp.setPrefix(req.getPrefix());
-        ISecManager* secmgr = context.querySecManager();
+        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManager(context);
 
-        if(secmgr == NULL)
+        if(ldapsecmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
-
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
 
         CPermissionAction paction;
         paction.m_basedn.append(req.getBasedn());
@@ -2985,9 +2992,9 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
 
         double version = context.getClientVersion();
 
-        ISecManager* secmgr = context.querySecManager();
+        CLdapSecManager* ldapsecmgr = queryLDAPSecurityManager(context);
 
-        if(secmgr == NULL)
+        if(ldapsecmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
         const char* username = req.getAccountName();
@@ -3003,7 +3010,6 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             setBasedns(context);
         }
 
-        CLdapSecManager* ldapsecmgr = (CLdapSecManager*)secmgr;
         StringArray groupnames;
         if (version > 1.02 && !bGroupAccount && bIncludeGroup)
         {
@@ -3100,7 +3106,7 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             }
 
             IArrayOf<ISecResource> resources;
-            if(secmgr->getResources(rtype, aBasedn, resources))
+            if(ldapsecmgr->getResources(rtype, aBasedn, resources))
             {
                 ForEachItemIn(y1, resources)
                 {
@@ -3315,7 +3321,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
 {
     try
     {
-        CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
+        CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
         double version = context.getClientVersion();
         if (version > 1.03)
         {

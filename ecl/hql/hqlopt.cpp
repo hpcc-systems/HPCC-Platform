@@ -1782,9 +1782,15 @@ IHqlExpression * CTreeOptimizer::moveProjectionOverSimple(IHqlExpression * trans
     {
         if (idx != 0)
         {
-            bool ok = false;
+            bool ok = true;
             IHqlExpression * cur = child->queryChild(idx);
-            IHqlExpression * collapsed = mapper->collapseFields(cur, grandchild, newProject, &ok);
+            IHqlExpression * collapsed;
+            //NB: Attributes are generally independent of the input dataset, so they shouldn't be reverse mapped,
+            //otherwise if a input-invariant expression is projected it can cause problems (jholt44.eclxml)
+            if (cur->isAttribute())
+                collapsed = LINK(cur);
+            else
+                collapsed = mapper->collapseFields(cur, grandchild, newProject, &ok);
             if (!ok)
             {
                 ::Release(collapsed);
@@ -2170,6 +2176,17 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             //If left outer join, and transform doesn't reference RIGHT, and only one rhs record  could match each lhs record (e.g., it was rolled
             //up, or a non-many lookup join, then the join could be converted into a project
             //Can occur once fields get implicitly removed from transforms etc. - e.g., bc10.xhql, although that code has since been fixed.
+
+            //There is no point in distributing the rhs of a global lookup join => remove it.
+            if (transformed->hasAttribute(lookupAtom) && !transformed->hasAttribute(localAtom))
+            {
+                IHqlExpression * rhs = transformed->queryChild(1);
+                if (rhs->getOperator() == no_distribute)
+                {
+                    DBGLOG("Optimizer: Remove %s from RHS of global LOOKUP JOIN", queryNode0Text(rhs));
+                    return ::replaceChild(transformed, 1, rhs->queryChild(0));
+                }
+            }
             break;
         }
     case no_dedup:
@@ -2486,7 +2503,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             {
                 ECLlocation dummyLocation(0, 0, 0, NULL);
                 ThrowingErrorReceiver errorReporter;
-                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, transformed);
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, transformed);
                 if (transformed != inlineTable)
                     return inlineTable.getClear();
             }

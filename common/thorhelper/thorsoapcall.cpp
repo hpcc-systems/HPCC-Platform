@@ -1411,7 +1411,7 @@ private:
         size32_t payloadofs = 0;
         size32_t payloadsize = 0;
         StringBuffer dbgheader;
-        bool chunked;
+        bool chunked = false;
         size32_t read = 0;
         do {
             checkTimeLimitExceeded(&remainingMS);
@@ -1738,7 +1738,7 @@ public:
                                 err.append("Failure to establish secure connection to ");
                                 connUrl.getUrlString(err);
                                 err.append(": returned ").append(status);
-                                throw MakeStringException(0, "%s", err.str());
+                                throw MakeStringExceptionDirect(0, err.str());
                             }
                             socket.setown(ssock.getLink());
                         }

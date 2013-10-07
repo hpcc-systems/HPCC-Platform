@@ -150,6 +150,7 @@ public:
             case TAKsoap_rowaction:
             case TAKsoap_datasetdataset:
             case TAKsoap_datasetaction:
+            case TAKhttp_rowdataset:
                 ret = new CMasterActivity(this);
                 break;
             case TAKskipcatch:
@@ -261,6 +262,9 @@ public:
             case TAKalljoin:
             case TAKlookupdenormalize:
             case TAKlookupdenormalizegroup:
+            case TAKsmartjoin:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
             case TAKalldenormalize:
             case TAKalldenormalizegroup:
                 ret = createLookupJoinActivityMaster(this);

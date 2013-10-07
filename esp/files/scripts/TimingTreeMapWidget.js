@@ -17,25 +17,26 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/store/Memory",
+    "dojo/dom",
+    "dojo/dom-class",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
 
     "dojox/treemap/TreeMap",
 
+    "hpcc/_Widget",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
-    function (declare, lang, Memory,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
+    function (declare, lang, arrayUtil, Memory, dom, domClass,
+            registry, 
             TreeMap,
-            ESPWorkunit,
+            _Widget, ESPWorkunit,
             template) {
-        return declare("TimingTreeMapWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("TimingTreeMapWidget", [_Widget], {
             templateString: template,
             baseClass: "TimingTreeMapWidget",
             treeMap: null,
@@ -81,9 +82,12 @@ define([
             },
 
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
+
+                if (params.hideHelp) {
+                    domClass.add(this.id + "Help", "hidden");
+                }
 
                 this.defaultQuery = "*";
                 if (params.query) {
@@ -130,6 +134,20 @@ define([
                         if (item) {
                             selectedItems.push(item);
                         }
+                    }
+                    this.treeMap.set("selectedItems", selectedItems);
+                }
+            },
+
+            setSelectedGraphs: function (selItems) {
+                if (this.store) {
+                    var selectedItems = [];
+                    for (var i = 0; i < selItems.length; ++i) {
+                        arrayUtil.forEach(this.store.data, function (item, idx) {
+                            if (item.GraphName == selItems[i].Name) {
+                                selectedItems.push(item);
+                            }
+                        });
                     }
                     this.treeMap.set("selectedItems", selectedItems);
                 }

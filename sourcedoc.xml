@@ -115,7 +115,7 @@
             <para>
                 The HPCC platform requires a number of third party tools and libraries in order to build.
 
-                On Ubuntu 11, the following commands will install the required libraries
+                On Ubuntu 12.04, the following commands will install the required libraries
                 <programlisting>
                   sudo apt-get install cmake
                   sudo apt-get install bison
@@ -129,8 +129,22 @@
                   sudo apt-get install libssl-dev
                   sudo apt-get install libldap2-dev
                   sudo apt-get install expect
+                  sudo apt-get install libarchive-dev
+                  sudo apt-get install libapr1-dev
+                  sudo apt-get install libaprutil1-dev
                 </programlisting>
+	    </para>
 
+	    <para>
+		For building any documentation, the following are also required
+		<programlisting>
+                  sudo apt-get install docbook
+                  sudo apt-get install xsltproc
+                  sudo apt-get install fop
+		</programlisting>
+	    </para>
+	    <para>
+	<emphasis role="bold">	NOTE:</emphasis> Installing the above via alternative methods (i.e. from source) may place installations outside of searched paths.
             </para>
         </sect1>
    
@@ -250,13 +264,14 @@
                     Text::Wrap            (Optional: if available, makes output of -listreports neater)
                 </para>
                 <para>
-                    Step 1: Configure your regression suites. This only need to be done once.
+                    Step 1: Configure your regression suites. This need only be done once.
                     <programlisting>./runregress -ini=environment.xml</programlisting>
                     The file 'environment.xml' is normally located in your '/etc/HPCCPlatform'
                     directory and contains information on how your cluster is set-up, so the
                     regression engine can reach it. You should see a new file, 'regress.ini'.
                     Edit it to accommodate to your preferred setup.
                 </para>
+		<para>
                     Note: There is a current issue with Roxie tests, so you should comment out
                     the 'roxie' from 'setup_clusters'. That will leave you about 650 tests to run.
                 </para>
@@ -343,11 +358,11 @@
                 </para>
                 <para>
                     Step 3: Step 2 only listed the differences, now you need to see what they are.
-                    For that, re-run the regressing script, with the no-run option (-r). You can omit
-                    the compiler, since the only thing we'll do is to compare verbosely.
+                    For that, re-run the regressing script omitting the compiler, since the only
+                    thing we'll do is to compare verbosely.
 
                     <programlisting>
-                        ./regress.sh -t my_branch -c golden -r
+                        ./regress.sh -t my_branch -c golden
                     </programlisting>
 
                     This will show you all differences, using the same ignore filters as before,

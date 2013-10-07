@@ -2625,7 +2625,8 @@ ecl bundle info mybundle --version=2</programlisting>
                 <row>
                   <entry>&lt;bundleName&gt;</entry>
 
-                  <entry>The name of a bundle file or installed bundle</entry>
+                  <entry>A bundle filename, a bundle folder, or a bundle
+                  name.</entry>
                 </row>
 
                 <row>
@@ -2679,7 +2680,7 @@ ecl bundle install mybundle --keepprior</programlisting>
                 <row>
                   <entry>&lt;bundleName&gt;</entry>
 
-                  <entry>The name of a bundle file</entry>
+                  <entry>A bundle filename or a bundle folder.</entry>
                 </row>
 
                 <row>
@@ -2752,7 +2753,7 @@ ecl bundle install mybundle --keepprior</programlisting>
                 <row>
                   <entry>&lt;bundleName&gt;</entry>
 
-                  <entry>The name of a bundle file</entry>
+                  <entry>The name of an installed bundle</entry>
                 </row>
 
                 <row>

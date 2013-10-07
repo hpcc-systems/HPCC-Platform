@@ -47,6 +47,7 @@
 //#define REMOVE_NAMED_SCALARS
 //#define OPTIMIZE_IMPLICIT_CAST
 
+#define PERSIST_VERSION                     1           // Increment when implementation is incompatible.
 #define REMOVE_GLOBAL_ANNOTATION                    // This should improve cse.  It currently does for some, but not others...
 
 #define DEFAULT_FOLD_OPTIONS    HFOfoldfilterproject
@@ -131,15 +132,23 @@ struct GlobalAttributeInfo
 {
 public:
     GlobalAttributeInfo(const char * _filePrefix, const char * _storedPrefix, IHqlExpression * _value) : value(_value)
-    { setOp = no_none; persistOp = no_none; few = false; filePrefix = _filePrefix; storedPrefix = _storedPrefix; }
+    {
+        setOp = no_none;
+        persistOp = no_none;
+        few = false;
+        filePrefix = _filePrefix;
+        storedPrefix = _storedPrefix;
+        numPersistInstances = 0;
+    }
 
     void extractGlobal(IHqlExpression * global, ClusterType platform);
-    void extractStoredInfo(IHqlExpression * expr, IHqlExpression * originalValue, bool isRoxie);
+    void extractStoredInfo(IHqlExpression * expr, IHqlExpression * codehash, bool isRoxie, bool multiplePersistInstances);
     void checkFew(HqlCppTranslator & translator);
     void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * getStoredKey();
     void preventDiskSpill() { few = true; }
     IHqlExpression * queryCluster() const { return cluster; }
+    int queryMaxPersistCopies() const { return numPersistInstances; }
 
 protected:
     void doSplitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
@@ -153,6 +162,7 @@ protected:
 public:
     LinkedHqlExpr value;
     OwnedHqlExpr storedName;
+    OwnedHqlExpr originalLabel;
     OwnedHqlExpr sequence;
     node_operator setOp;
     node_operator persistOp;
@@ -162,8 +172,10 @@ protected:
     OwnedHqlExpr cluster;
     OwnedHqlExpr extraSetAttr;
     OwnedHqlExpr extraOutputAttr;
+    OwnedHqlExpr codehash;
     const char * filePrefix;
     const char * storedPrefix;
+    int numPersistInstances;
     bool few;
 };
 
@@ -2485,7 +2497,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
     return expr->cloneAllAnnotations(grouped);
 }
 
-static IHqlExpression * getNonThorSortedJoinInput(IHqlExpression * joinExpr, IHqlExpression * dataset, HqlExprArray & sorts, bool implicitSubSort)
+static IHqlExpression * getNonThorSortedJoinInput(IHqlExpression * joinExpr, IHqlExpression * dataset, const HqlExprArray & sorts, bool implicitSubSort)
 {
     if (!sorts.length())
         return LINK(dataset);
@@ -2521,7 +2533,7 @@ static bool sameOrGrouped(IHqlExpression * newLeft, IHqlExpression * oldLeft)
     return (newLeft->queryBody() == oldLeft->queryBody());
 }
 
-bool canReorderMatchExistingLocalSort(HqlExprArray & newElements1, HqlExprArray & newElements2, IHqlExpression * ds1, Shared<IHqlExpression> & ds2, const HqlExprArray & elements1, HqlExprArray & elements2, bool canSubSort, bool isLocal, bool alwaysLocal)
+static bool canReorderMatchExistingLocalSort(HqlExprArray & newElements1, HqlExprArray & newElements2, IHqlExpression * ds1, Shared<IHqlExpression> & ds2, const HqlExprArray & elements1, const HqlExprArray & elements2, bool canSubSort, bool isLocal, bool alwaysLocal)
 {
     newElements1.kill();
     newElements2.kill();
@@ -2616,7 +2628,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
     //Check to see if this join should be done as a keyed join...
-    if (!expr->hasAttribute(lookupAtom) && !expr->hasAttribute(allAtom))
+    if (!expr->hasAttribute(lookupAtom) && !expr->hasAttribute(smartAtom) && !expr->hasAttribute(allAtom))
     {
         if (rightDs->getOperator() == no_filter)
         {
@@ -2674,15 +2686,14 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
 
-    HqlExprArray leftSorts, rightSorts, slidingMatches;
-    bool isLimitedSubstringJoin;
-    OwnedHqlExpr fuzzyMatch = findJoinSortOrders(expr, leftSorts, rightSorts, isLimitedSubstringJoin, canBeSlidingJoin(expr) ? &slidingMatches : NULL);
+    JoinSortInfo joinInfo;
+    joinInfo.findJoinSortOrders(expr, canBeSlidingJoin(expr));
 
     //If the data is already distributed so the data is on the correct machines then perform the join locally.
     //Should be equally applicable to lookup, hash, all and normal joins.
-    if (!isLocal && !isLimitedSubstringJoin && leftSorts.ordinality())
+    if (!isLocal && !joinInfo.hasOptionalEqualities() && joinInfo.queryLeftReq().ordinality())
     {
-        if (isDistributedCoLocally(leftDs, rightDs, leftSorts, rightSorts))
+        if (isDistributedCoLocally(leftDs, rightDs, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
             return appendOwnedOperand(expr, createLocalAttribute());
 
         if (options.matchExistingDistributionForJoin)
@@ -2698,10 +2709,10 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             if (matchesAnyDistribution(leftDistribution))
                 return appendOwnedOperand(expr, createLocalAttribute());
 
-            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, leftSorts, true))
+            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, joinInfo.queryLeftReq(), true))
             {
                 //MORE: May need a flag to stop this - to prevent issues with skew.
-                OwnedHqlExpr newHash = createMatchingDistribution(leftDistribution, leftSorts, rightSorts);
+                OwnedHqlExpr newHash = createMatchingDistribution(leftDistribution, joinInfo.queryLeftReq(), joinInfo.queryRightReq());
                 if (newHash)
                 {
                     OwnedHqlExpr dist = replaceSelector(newHash, queryActiveTableSelector(), rightDs);
@@ -2714,9 +2725,16 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         else
         {
             IHqlExpression * leftDistribution = queryDistribution(leftDs);
-            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, leftSorts, true))
+            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, joinInfo.queryLeftReq(), true))
                 DBGLOG("MORE: Potential for distributed join optimization");
         }
+    }
+
+    if (joinInfo.hasOptionalEqualities() && !isLocal && !expr->hasAttribute(hashAtom) && !expr->hasAttribute(allAtom))
+    {
+        if (joinInfo.hasRequiredEqualities())
+            return appendAttribute(expr, hashAtom);
+        throwError(HQLERR_PrefixJoinRequiresEquality);
     }
 
     if (expr->hasAttribute(allAtom))
@@ -2728,10 +2746,10 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Try and convert local joins to a lightweight join that doesn't require any sorting of the inputs.
     //Improves resourcing for thor, and prevents lookup conversion for hthor/roxie
     //Worthwhile even for lookup joins
-    if (isLightweightJoinCandidate(expr, isLocal, isLimitedSubstringJoin))
+    if (isLightweightJoinCandidate(expr, isLocal, joinInfo.hasOptionalEqualities()))
     {
-        if (isAlreadySorted(leftDs, leftSorts, true, true) &&
-            isAlreadySorted(rightDs, rightSorts, true, true))
+        if (isAlreadySorted(leftDs, joinInfo.queryLeftSort(), true, true) &&
+            isAlreadySorted(rightDs, joinInfo.queryRightSort(), true, true))
         {
             //If this is a lookup join without a many then we need to make sure only the first match is retained.
             return appendOwnedOperand(expr, createAttribute(_lightweight_Atom));
@@ -2740,18 +2758,18 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         //Check for a local join where we can reorder the condition so both sides match the existing sort orders.
         //could special case self-join to do less work, but probably not worth the effort.
         HqlExprArray sortedLeft, sortedRight;
-        if (!isLimitedSubstringJoin)
+        if (!joinInfo.hasOptionalEqualities())
         {
             //Since the distribution and order of global joins is not defined this could probably be used for non-local as well.
             LinkedHqlExpr newLeftDs = leftDs;
             LinkedHqlExpr newRightDs = rightDs;
             bool canSubSort = options.subsortLocalJoinConditions;
             bool reordered = canReorderMatchExistingLocalSort(sortedLeft, sortedRight, newLeftDs, newRightDs,
-                                                              leftSorts, rightSorts, canSubSort, isLocal, alwaysLocal);
+                                                              joinInfo.queryLeftSort(), joinInfo.queryRightSort(), canSubSort, isLocal, alwaysLocal);
             //If allowed to subsort then try the otherway around
             if (!reordered && canSubSort)
                 reordered = canReorderMatchExistingLocalSort(sortedRight, sortedLeft, newRightDs, newLeftDs,
-                                                             rightSorts, leftSorts, canSubSort, isLocal, alwaysLocal);
+                                                             joinInfo.queryRightSort(), joinInfo.queryLeftSort(), canSubSort, isLocal, alwaysLocal);
 
             if (reordered)
             {
@@ -2765,7 +2783,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                     OwnedHqlExpr rc = replaceSelector(&sortedRight.item(i), queryActiveTableSelector(), rightSelector);
                     extendConditionOwn(newcond, no_and, createValue(no_eq, makeBoolType(), lc.getClear(), rc.getClear()));
                 }
-                extendConditionOwn(newcond, no_and, fuzzyMatch.getClear());
+                extendConditionOwn(newcond, no_and, LINK(joinInfo.extraMatch));
                 HqlExprArray args;
                 args.append(*newLeftDs.getClear());
                 args.append(*newRightDs.getClear());
@@ -2778,7 +2796,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
     //Sort,Sort->join is O(NlnN) lookup join using a hash table is O(N) =>convert for hthor/roxie
-    if (!isThorCluster(targetClusterType) && !expr->hasAttribute(_normalized_Atom))
+    if (!isThorCluster(targetClusterType) && !expr->hasAttribute(_normalized_Atom) && !expr->hasAttribute(smartAtom))
     {
         bool createLookup = false;
         if ((op == no_join) && options.convertJoinToLookup)
@@ -2788,12 +2806,12 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                     createLookup = !expr->hasAttribute(_lightweight_Atom);
         }
 
-        if (isLimitedSubstringJoin)
+        if (joinInfo.hasOptionalEqualities())
             createLookup = false;           //doesn't support it yet
-        else if (createLookup && leftSorts.ordinality() && rightSorts.ordinality())
+        else if (createLookup && joinInfo.queryLeftSort().ordinality())
         {
             //Check this isn't going to generate a between join - if it is that takes precedence.
-            if ((slidingMatches.ordinality() != 0) && (leftSorts.ordinality() == slidingMatches.ordinality()))
+            if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftSort().ordinality() == joinInfo.slidingMatches.ordinality()))
                 createLookup = false;
         }
 
@@ -2814,8 +2832,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             return expr->clone(args);
         }
 
-        OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, leftSorts, options.implicitSubSort);
-        OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, rightSorts, options.implicitSubSort);
+        OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, joinInfo.queryLeftSort(), options.implicitSubSort);
+        OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, joinInfo.queryRightSort(), options.implicitSubSort);
         try
         {
             if ((leftDs != newLeft) || (rightDs != newRight))
@@ -2840,15 +2858,9 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     if ((op == no_selfjoin) && expr->hasAttribute(hashAtom))
     {
         assertex(!isLocal);
-        if (isLimitedSubstringJoin)
+        if (joinInfo.hasRequiredEqualities())
         {
-            leftSorts.pop();
-            rightSorts.pop();
-        }
-
-        if (leftSorts.ordinality())
-        {
-            OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), leftSorts);
+            OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftReq());
             OwnedHqlExpr distribute;
             //Only likely to catch this partition test if isLimitedSubstringJoin true, otherwise caught above
             if (!isPartitionedForGroup(leftDs, sortlist, true))
@@ -2868,26 +2880,26 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         }
     }
 
-    if (options.expandHashJoin && isThorCluster(targetClusterType) && expr->hasAttribute(hashAtom) && !isLimitedSubstringJoin)
+    if (options.expandHashJoin && isThorCluster(targetClusterType) && expr->hasAttribute(hashAtom) && !joinInfo.hasOptionalEqualities())
     {
         HqlExprArray args;
-        args.append(*createDistributedInput(leftDs, leftSorts, false));
-        args.append(*createDistributedInput(rightDs, rightSorts, false));
+        args.append(*createDistributedInput(leftDs, joinInfo.queryLeftReq(), false));
+        args.append(*createDistributedInput(rightDs, joinInfo.queryRightReq(), false));
         unwindChildren(args, expr, 2);
         removeProperty(args, hashAtom);
         args.append(*createLocalAttribute());
         return expr->clone(args);
     }
 
-    if (isThorCluster(targetClusterType) && isLocal && options.implicitJoinSubSort)
+    if (isThorCluster(targetClusterType) && isLocal && options.implicitJoinSubSort && !expr->hasAttribute(smartAtom))
     {
         IHqlExpression * noSortAttr = expr->queryAttribute(noSortAtom);
         OwnedHqlExpr newLeft;
         OwnedHqlExpr newRight;
         if (!userPreventsSort(noSortAttr, no_left))
-            newLeft.setown(getSubSort(leftDs, leftSorts, isLocal, true, alwaysLocal));
+            newLeft.setown(getSubSort(leftDs, joinInfo.queryLeftSort(), isLocal, true, alwaysLocal));
         if (!userPreventsSort(noSortAttr, no_right))
-            newRight.setown(getSubSort(rightDs, rightSorts, isLocal, true, alwaysLocal));
+            newRight.setown(getSubSort(rightDs, joinInfo.queryRightSort(), isLocal, true, alwaysLocal));
         if (newLeft || newRight)
         {
             HqlExprArray args;
@@ -3478,7 +3490,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
                     newsort.set(group);
 
                 LinkedHqlExpr ds = dataset;
-                if (ds->queryType()->queryGroupInfo())
+                if (isGrouped(ds))
                 {
                     ds.setown(createDataset(no_group, ds.getClear(), NULL));
                     ds.setown(cloneInheritedAnnotations(expr, ds));
@@ -3545,6 +3557,7 @@ void CompoundSourceInfo::reset()
     isFiltered = false;
     isPostFiltered = false;
     isCreateRowLimited = false;
+    hasOnFail = false;
 }
 
 
@@ -3623,6 +3636,7 @@ bool CompoundSourceInfo::inherit(const CompoundSourceInfo & other, node_operator
     isPostFiltered = other.isPostFiltered;
     isPreloaded = other.isPreloaded;
     isCreateRowLimited = other.isCreateRowLimited;
+    hasOnFail = other.hasOnFail;
     mode = other.mode;
     uid.set(other.uid);
 
@@ -3818,6 +3832,8 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             {
                 extra->inherit(*parentExtra);
                 extra->ensureCompound();
+                if (expr->hasAttribute(onFailAtom))
+                    extra->hasOnFail = true;
             }
             break;
         }
@@ -3963,6 +3979,10 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                 if (!parentExtra->isBinary())
                     break;
 
+                //ONFAIL isn't supported for compound aggregates at the moment - although it could be....
+                if (parentExtra->hasOnFail)
+                    break;
+
                 IHqlExpression * root = queryRoot(dataset);
                 if (!root || isGrouped(root) || expr->hasAttribute(localAtom))
                     break;
@@ -3972,6 +3992,20 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                     break;
                 if (parentExtra->hasAnyLimit() && !isSimpleCountExists)
                     break;
+
+                //We either have a limit or choosen as the input
+                if (parentExtra->isCloned)
+                {
+                    assertex(isSimpleCountExists);
+                    //Too complicated if the limit is local
+                    if ((targetClusterType == ThorLCRCluster) && dataset->hasAttribute(localAtom))
+                        break;
+
+                    //CHOOSEN(ds, x, <n>)
+                    if ((dataset->getOperator() == no_choosen) && queryRealChild(dataset, 2))
+                        break;
+                }
+
 
                 node_operator newOp = no_none;
                 node_operator parentOp = parentExtra->sourceOp;
@@ -4801,7 +4835,7 @@ IHqlExpression * GlobalAttributeInfo::createSetValue(IHqlExpression * value, IHq
 
 IHqlExpression * GlobalAttributeInfo::getStoredKey()
 {
-    return createAttribute(nameAtom, LINK(sequence), lowerCaseHqlExpr(storedName));
+    return createAttribute(nameAtom, LINK(sequence), lowerCaseHqlExpr(originalLabel));
 }
 
 void GlobalAttributeInfo::setCluster(IHqlExpression * expr)
@@ -4825,7 +4859,7 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType pla
     persistOp = no_global;
 }
 
-void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpression * originalValue, bool isRoxie)
+void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpression * _codehash, bool isRoxie, bool multiplePersistInstances)
 {
     node_operator op = expr->getOperator();
     few = expr->hasAttribute(fewAtom) || (isRoxie) || (value->isDictionary() && !expr->hasAttribute(manyAtom));
@@ -4834,23 +4868,42 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
     case no_stored:
         setOp = no_ensureresult;
         storedName.set(expr->queryChild(0));
+        originalLabel.set(storedName);
         sequence.setown(getStoredSequenceNumber());
         few = true;
         break;
     case no_checkpoint:
         setOp = no_ensureresult;
         storedName.set(expr->queryChild(0));
+        originalLabel.set(storedName);
         sequence.setown(getLocalSequenceNumber());
         extraSetAttr.setown(createAttribute(checkpointAtom));
         break;
     case no_persist:
+        assertex(_codehash);
+        codehash.set(_codehash);
         setOp = no_ensureresult;
         storedName.set(expr->queryChild(0));
+        originalLabel.set(storedName);
         sequence.setown(getGlobalSequenceNumber());
-        extraSetAttr.setown(createAttribute(_workflowPersist_Atom, LINK(originalValue)));
+        extraSetAttr.setown(createAttribute(_workflowPersist_Atom, LINK(codehash)));
         setCluster(queryRealChild(expr, 1));
         few = expr->hasAttribute(fewAtom);       // PERSISTs need a consistent format.
         extraOutputAttr.setown(createComma(LINK(expr->queryAttribute(expireAtom)), LINK(expr->queryAttribute(clusterAtom))));
+        numPersistInstances = multiplePersistInstances ? -1 : 0;
+        if (expr->hasAttribute(multipleAtom))
+            numPersistInstances = getIntValue(queryAttributeChild(expr, multipleAtom, 0), -1);
+        else if (expr->hasAttribute(singleAtom))
+            numPersistInstances = 0;
+
+        if (numPersistInstances != 0)
+        {
+            StringBuffer s;
+            getStringValue(s, storedName);
+            s.append("__");
+            getStringValue(s, codehash);
+            storedName.setown(createConstant(s.str()));
+        }
         break;
     case no_global:
         throwUnexpected();
@@ -4901,7 +4954,6 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
     ITypeInfo * valueType = value->queryType();
     if (value->isDataset() || value->isDictionary())
     {
-        IHqlExpression * groupOrder = (IHqlExpression *)valueType->queryGroupInfo();
         if (few)
         {
             splitSmallDataset(value, setOutput, getOutput);
@@ -4920,7 +4972,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
         if (valueType->getTypeCode() == type_groupedtable)
             args.append(*createAttribute(groupedAtom));
         else
-            assertex(groupOrder == NULL);
+            assertex(!isGrouped(valueType));
 
         bool compressFile = true;
         switch (persistOp)
@@ -4930,7 +4982,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
                 args.append(*createAttribute(_workflowPersist_Atom));
                 args.append(*createAttribute(sequenceAtom, getGlobalSequenceNumber()));
                 //add a flag to help get the resourcing right - may need to hash distribute on different size thor
-                IHqlExpression * distribution = queryDistribution(valueType);
+                IHqlExpression * distribution = queryDistribution(value);
                 if (distribution && !distribution->isAttribute())
                     args.append(*createAttribute(distributedAtom));
                 break;
@@ -4985,7 +5037,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
 
             if (persistOp == no_persist)
                 args.append(*createAttribute(_workflowPersist_Atom));
-            if (groupOrder)
+            if (isGrouped(value))
                 args.append(*createAttribute(groupedAtom));
             if (compressFile)
                 args.append(*createAttribute(__compressed__Atom));
@@ -5256,6 +5308,8 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
     onceWfid = 0;
     combineAllStored = translator.queryOptions().combineAllStored;
     combineTrivialStored = translator.queryOptions().combineTrivialStored;
+    expandPersistInputDependencies = translator.queryOptions().expandPersistInputDependencies;
+    multiplePersistInstances = translator.queryOptions().multiplePersistInstances;
     isRootAction = true;
     isRoxie = (translator.getTargetClusterType() == RoxieCluster);
     workflowOut = NULL;
@@ -5302,9 +5356,9 @@ void WorkflowTransformer::setWorkflowSchedule(IWorkflowItem * wf, const Schedule
     wf->setSchedulePriority(priority);
 }
 
-void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid)
+void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int numPersistInstances)
 {
-    wf->setPersistInfo(persistName, persistWfid);
+    wf->setPersistInfo(persistName, persistWfid, numPersistInstances);
 }
 
 WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp)
@@ -5418,6 +5472,9 @@ void WorkflowTransformer::extractDependentInputs(UnsignedArray & visited, Depend
         switch (match->workflowOp)
         {
         case no_persist:
+            if (expandPersistInputDependencies)
+                break;
+            continue;
         case no_stored:
             continue;
         }
@@ -5438,8 +5495,13 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
     HqlExprArray actions;
     unwindChildren(actions, expr, 1);
 
-    IHqlExpression * original = queryAttribute(_original_Atom, actions);
-    if (original) original = original->queryChild(0);
+    IHqlExpression * originalAttr = queryAttribute(_original_Atom, actions);
+    OwnedHqlExpr codehash;
+    if (originalAttr)
+    {
+        unsigned crc = getExpressionCRC(originalAttr->queryChild(0)) + PERSIST_VERSION;
+        codehash.setown(getSizetConstant(crc));
+    }
 
     //First check for duplicate expressions, and cope with the weird case where they are identical except for the annotations.
     //Do it before wfid is allocated to make life simpler
@@ -5452,7 +5514,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_persist:
         case no_checkpoint:
         case no_stored:
-            info.extractStoredInfo(&cur, original, isRoxie);
+            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
 
             OwnedHqlExpr id = info.getStoredKey();
             unsigned match = alreadyProcessed.find(*id);
@@ -5464,7 +5526,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             if(prevValue->queryBody() != value->queryBody())
             {
                 StringBuffer s;
-                getStoredDescription(s, info.sequence, info.storedName, true);
+                getStoredDescription(s, info.sequence, info.originalLabel, true);
                 if(prevValue->queryType() != value->queryBody()->queryType())
                 {
 #ifdef _DEBUG
@@ -5518,7 +5580,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         case no_checkpoint:
         case no_stored:
             {
-                info.extractStoredInfo(&cur, original, isRoxie);
+                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
 
                 OwnedHqlExpr id = info.getStoredKey();
                 alreadyProcessed.append(*id.getClear());
@@ -5528,14 +5590,14 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             break;
         case no_independent:
         case no_once:
-            info.extractStoredInfo(&cur, original, isRoxie);
+            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
             break;
         case no_success:
             {
                 OwnedHqlExpr successExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.success = splitValue(successExpr);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.success, WFTypeSuccess, WFModeNormal, queryDirectDependencies(successExpr), NULL, wfid);
-                info.extractStoredInfo(&cur, original, isRoxie);
+                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
                 break;
             }
         case no_failure:
@@ -5543,7 +5605,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 OwnedHqlExpr failureExpr = transformSequentialEtc(cur.queryChild(0));
                 conts.failure = splitValue(failureExpr);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.failure, WFTypeFailure, WFModeNormal, queryDirectDependencies(failureExpr), NULL, wfid);
-                info.extractStoredInfo(&cur, original, isRoxie);
+                info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
                 break;
             }
         case no_recovery:
@@ -5551,7 +5613,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             conts.recovery = splitValue(cur.queryChild(0));
             conts.retries = (unsigned)getIntValue(cur.queryChild(1), 0);
                 Owned<IWorkflowItem> wf = addWorkflowContingencyToWorkunit(conts.recovery, WFTypeRecovery, WFModeNormal, queryDirectDependencies(cur.queryChild(0)), NULL, wfid);
-            info.extractStoredInfo(&cur, original, isRoxie);
+            info.extractStoredInfo(&cur, codehash, isRoxie, multiplePersistInstances);
             break;
             }
         case no_attr:
@@ -5682,7 +5744,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             info.storedName->queryValue()->getStringValue(persistName);
             unsigned persistWfid = ++wfidCount;
             Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModePersist, queryDirectDependencies(setValue), conts, info.queryCluster());
-            setWorkflowPersist(wf, persistName.str(), persistWfid);
+            setWorkflowPersist(wf, persistName.str(), persistWfid, info.queryMaxPersistCopies());
 
             Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(persistWfid, WFTypeNormal, WFModeNormal, NULL);
             DependenciesUsed dependencies(false);
@@ -5695,7 +5757,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             checkArgs.append(*createExprAttribute(_files_Atom, dependencies.tablesRead));
             if (dependencies.resultsRead.ordinality())
                 checkArgs.append(*createExprAttribute(_results_Atom, dependencies.resultsRead));
-            checkArgs.append(*createAttribute(_original_Atom, LINK(original)));
+            checkArgs.append(*createAttribute(_codehash_Atom, LINK(codehash)));
             checkArgs.append(*createAttribute(namedAtom, LINK(info.storedName)));
             if (expr->isDataset())
                 checkArgs.append(*createAttribute(fileAtom));
@@ -6959,7 +7021,7 @@ void ScalarGlobalTransformer::analyseExpr(IHqlExpression * expr)
             if (extra->createGlobal)
                 return;
             //Allow a global to be created inside a global marked from somewhere else.
-            if (containsAnyDataset(expr) || expr->isConstant() || isContextDependent(expr))
+            if (containsAnyDataset(expr) || expr->isConstant() || isContextDependent(expr) || !expr->isIndependentOfScope())
                 return;
         }
     }
@@ -7012,7 +7074,7 @@ void ScalarGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
 #ifndef NEW_SCALAR_CODE
 //  Commented line has problems with SELF used in HOLE definition, and explosion in thumphrey7 etc.
 //  if (okToHoist && isIndependentOfScope(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure())
-    if (okToHoist && !containsAnyDataset(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure())
+    if (okToHoist && !containsAnyDataset(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure() && expr->isIndependentOfScope())
     {
         ITypeInfo * type = expr->queryType();
         if (isTypeToHoist(type))
@@ -8702,6 +8764,9 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             }
         }
         break;
+    case no_embedbody:
+        //Don't change the type of an embed body - otherwise result it will become link counted when not expected.
+        return LINK(expr);
     }
     return QuickHqlTransformer::createTransformedBody(expr);
 }
@@ -10821,7 +10886,7 @@ IHqlExpression * HqlTreeNormalizer::transformTempTable(IHqlExpression * expr)
 {
     ECLlocation dummyLocation(0, 0, 0, NULL);
     AbortingErrorReceiver errorReporter(errors);
-    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, expr);
+    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
     if (expr != inlineTable)
         return transform(inlineTable);
 

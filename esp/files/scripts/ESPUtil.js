@@ -17,9 +17,10 @@ define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/Stateful",
+    "dojo/json",
 
     "dijit/registry"
-], function (declare, arrayUtil, Stateful,
+], function (declare, arrayUtil, Stateful, json,
     registry) {
 
     var SingletonData = declare([Stateful], {
@@ -53,9 +54,9 @@ define([
         updateData: function (response) {
             var changed = false;
             for (var key in response) {
-                var json = dojo.toJson(response[key]);
-                if (this._changedCache[key] !== json) {
-                    this._changedCache[key] = json;
+                var jsonStr = json.stringify(response[key]);
+                if (this._changedCache[key] !== jsonStr) {
+                    this._changedCache[key] = jsonStr;
                     this.set(key, response[key]);
                     changed = true;
                 }
@@ -136,7 +137,7 @@ define([
         }),
 
         GridHelper: declare(null, {
-            workunitsGridObserver: [],
+            pagedGridObserver: [],
 
             onSelectionChanged: function (callback) {
                 this.on("dgrid-select", function (event) {
@@ -151,10 +152,10 @@ define([
                 var context = this;
                 this.on("dgrid-page-complete", function (event) {
                     callback();
-                    if (context.workunitsGridObserver[event.page]) {
-                        context.workunitsGridObserver[event.page].cancel();
+                    if (context.pagedGridObserver[event.page]) {
+                        context.pagedGridObserver[event.page].cancel();
                     }
-                    context.workunitsGridObserver[event.page] = event.results.observe(function (object, removedFrom, insertedInto) {
+                    context.pagedGridObserver[event.page] = event.results.observe(function (object, removedFrom, insertedInto) {
                         callback(object, removedFrom, insertedInto);
                     }, true);
                 });

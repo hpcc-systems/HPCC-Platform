@@ -65,7 +65,6 @@
 #include "eclhelper_base.hpp"
 
 #define MAX_ROWS_OUTPUT_TO_SDS              1000
-#define PERSIST_VERSION                     1           // Increment when implementation is incompatible.
 #define MAX_SAFE_RECORD_SIZE                10000000
 #define DEFAULT_EXPIRY_PERIOD               7
 #define MAX_GRAPH_ECL_LENGTH                1000
@@ -222,7 +221,7 @@ bool canIterateTableInline(IHqlExpression * expr)
     case no_newaggregate:
         {
             IHqlExpression * child = expr->queryChild(0);
-            if (!child->queryType()->queryGroupInfo())
+            if (!isGrouped(child))
                 return canIterateTableInline(child);
             return false;
         }
@@ -245,78 +244,6 @@ static IHqlExpression * createResultName(IHqlExpression * name)
         break;
     }
     return NULL;
-}
-
-//---------------------------------------------------------------------------
-
-void extractAtmostArgs(IHqlExpression * atmost, SharedHqlExpr & atmostCond, SharedHqlExpr & atmostLimit)
-{
-    atmostLimit.set(queryZero());
-    if (atmost)
-    {
-        IHqlExpression * arg0 = atmost->queryChild(0);
-        if (arg0->isBoolean())
-        {
-            atmostCond.set(arg0);
-            atmostLimit.set(atmost->queryChild(1));
-        }
-        else
-            atmostLimit.set(arg0);
-    }
-}
-
-static bool matchesAtmostCondition(IHqlExpression * cond, HqlExprArray & atConds, unsigned & numMatched)
-{
-    if (atConds.find(*cond) != NotFound)
-    {
-        numMatched++;
-        return true;
-    }
-    if (cond->getOperator() != no_assertkeyed)
-        return false;
-    unsigned savedMatched = numMatched;
-    HqlExprArray conds;
-    cond->queryChild(0)->unwindList(conds, no_and);
-    ForEachItemIn(i, conds)
-    {
-        if (!matchesAtmostCondition(&conds.item(i), atConds, numMatched))
-        {
-            numMatched = savedMatched;
-            return false;
-        }
-    }
-    return true;
-}
-
-void HqlCppTranslator::splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard)
-{
-    if (atmostCond)
-    {
-        //If join condition has evaluated to a constant then allow any atmost condition.
-        if (!condition->isConstant())
-        {
-            HqlExprArray conds, atConds;
-            condition->unwindList(conds, no_and);
-            atmostCond->unwindList(atConds, no_and);
-            unsigned numAtmostMatched = 0;
-            ForEachItemIn(i, conds)
-            {
-                IHqlExpression & cur = conds.item(i);
-                if (matchesAtmostCondition(&cur, atConds, numAtmostMatched))
-                    extendConditionOwn(hard, no_and, LINK(&cur));
-                else
-                    extendConditionOwn(fuzzy, no_and, LINK(&cur));
-            }
-            if (atConds.ordinality() != numAtmostMatched)
-            {
-                StringBuffer s;
-                getExprECL(atmostCond, s);
-                throwError1(HQLERR_AtmostFailMatchCondition, s.str());
-            }
-        }
-    }
-    else
-        hard.set(condition);
 }
 
 //---------------------------------------------------------------------------
@@ -1802,6 +1729,7 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
 
     includedInHeader = false;
     isCoLocal = false;
+    isNoAccess = false;
     executedRemotely = translator.targetThor();// && !translator.isNeverDistributed(dataset);
     containerActivity = NULL;
     subgraph = queryActiveSubGraph(ctx);
@@ -1815,17 +1743,28 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     parentEvalContext.set(translator.queryEvalContext(ctx));
     parentExtract.set(static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract)));
 
+    bool optimizeParentAccess = translator.queryOptions().optimizeParentAccess;
     if (parentExtract)
     {
         GraphLocalisation localisation = parentExtract->queryLocalisation();
-        activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset);
+        activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset, optimizeParentAccess);
+        if (activityLocalisation == GraphNoAccess)
+            isNoAccess = true;
+        else if (activityLocalisation == GraphNeverAccess)
+            activityLocalisation = GraphNoAccess;
 
         if (translator.targetThor() && !translator.insideChildQuery(ctx))
             executedRemotely = true;
         else
             executedRemotely = ((activityLocalisation == GraphNonLocal) || (localisation == GraphRemote));
 
-        isCoLocal = containerActivity && !executedRemotely && (localisation != GraphNonLocal) && (activityLocalisation != GraphNoAccess);    // if we supported GraphNonCoLocal the last test would not be needed
+        isCoLocal = false;
+        if (containerActivity && !executedRemotely && (localisation != GraphNonLocal))
+        {
+            // if we supported GraphNonCoLocal this test would not be needed
+            if (activityLocalisation != GraphNoAccess)
+                isCoLocal = true;
+        }
 
         //if top level activity within a query library then need to force access to the parent extract
         if (!containerActivity && translator.insideLibrary())
@@ -1844,14 +1783,14 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     {
         if (executedRemotely)
         {
-            GraphLocalisation localisation = queryActivityLocalisation(dataset);
-            if ((kind == TAKsimpleaction) || (localisation == GraphNoAccess))
+            GraphLocalisation localisation = queryActivityLocalisation(dataset, optimizeParentAccess);
+            if ((kind == TAKsimpleaction) || (localisation == GraphNeverAccess) || (localisation == GraphNoAccess))
                 executedRemotely = false;
         }
     }
 
     if (!parentExtract && (translator.getTargetClusterType() == RoxieCluster))
-        executedRemotely = isNonLocal(dataset);
+        executedRemotely = isNonLocal(dataset, false);
 
 
     unsigned containerId = 0;
@@ -2134,7 +2073,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     addAttributeBool("local", isLocal);
 
 #ifdef _DEBUG
-    assertex(dataset->isAction() == isActivitySink(kind));
+//    assertex(dataset->isAction() == isActivitySink(kind));
 #endif
     if (dataset->isAction())
     {
@@ -2148,6 +2087,8 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         addAttributeInt("_parentActivity", containerActivity->activityId);
     if (parentExtract && isCoLocal)
         addAttributeBool("coLocal", true);
+    if (isNoAccess)
+        addAttributeBool("noAccess", true);
 
     if (graphEclText.length() == 0)
         toECL(dataset->queryBody(), graphEclText, false, true);
@@ -2167,30 +2108,29 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (translator.queryOptions().showMetaInGraph)
     {
         StringBuffer s;
-        ITypeInfo * type = dataset->queryType();
         if (translator.targetThor())
         {
-            IHqlExpression * distribution = queryDistribution(type);
+            IHqlExpression * distribution = queryDistribution(dataset);
             if (distribution && distribution->queryName() != localAtom)
                 addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
         }
 
-        IHqlExpression * grouping = (IHqlExpression *)type->queryGroupInfo();
+        IHqlExpression * grouping = queryGrouping(dataset);
         if (grouping)
             addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
 
         if (translator.targetThor())
         {
-            IHqlExpression * globalSortOrder = (IHqlExpression *)type->queryGlobalSortInfo();
+            IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
             if (globalSortOrder)
                 addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
         }
 
-        IHqlExpression * localSortOrder = (IHqlExpression *)type->queryLocalUngroupedSortInfo();
+        IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
         if (localSortOrder)
             addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
 
-        IHqlExpression * groupSortOrder = (IHqlExpression *)type->queryGroupSortInfo();
+        IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
         if (groupSortOrder)
             addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
     }
@@ -4896,7 +4836,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
     case type_row:      UNIMPLEMENTED; break; //should be translated to rawData.
     default:
         PrintLog("%d", ttc);
-        assertex(!"No getResult defined for this type");
+        throwUnexpectedX("No getResult defined for this type");
         break;
     }
 
@@ -5019,7 +4959,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
     ITypeInfo * resultType = type ? type->queryPromotedType() : value->queryType()->queryPromotedType();
     Linked<ITypeInfo> schemaType = resultType;
     type_t retType = schemaType->getTypeCode();
-    IIdAtom * func;
+    IIdAtom * func = NULL;
     CHqlBoundExpr valueToSave;
     LinkedHqlExpr castValue = value;
     switch(retType)
@@ -5125,6 +5065,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         }
     }
 
+    assertex(func);
     OwnedHqlExpr nameText = createResultName(name, isPersist);
     if (retType == type_decimal)
     {
@@ -5360,7 +5301,8 @@ void HqlCppTranslator::buildHashClass(BuildCtx & ctx, const char * name, IHqlExp
     funcctx.addQuoted(s);
 
     bindTableCursor(funcctx, dataset.queryDataset(), "self", dataset.querySide(), dataset.querySelSeq());
-    buildReturn(funcctx, orderExpr);
+    OwnedITypeInfo returnType = makeIntType(4, false);
+    buildReturn(funcctx, orderExpr, returnType);
 
     endNestedClass();
 }
@@ -8954,6 +8896,15 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
 
     OwnedHqlExpr idExpr = createConstant((__int64)thisId);
     ctx.associateExpr(expr, idExpr);
+    if (thisId == options.subgraphToRegeneate)
+    {
+        StringBuffer ecl;
+        regenerateECL(expr, ecl);
+        ecl.replaceString("\r","");
+        fputs(ecl.str(), stdout);
+
+        fflush(stdout);
+    }
 
     BuildCtx subctx(ctx);
     ForEachChild(idx, expr)
@@ -11155,7 +11106,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
 //-- no_join [JOIN] --
 
 /* in parms: NOT linked */
-void HqlCppTranslator::doCompareLeftRight(BuildCtx & ctx, const char * funcname, const DatasetReference & datasetLeft, const DatasetReference & datasetRight, HqlExprArray & left, HqlExprArray & right)
+void HqlCppTranslator::doCompareLeftRight(BuildCtx & ctx, const char * funcname, const DatasetReference & datasetLeft, const DatasetReference & datasetRight, const HqlExprArray & left, const HqlExprArray & right)
 {
     OwnedHqlExpr selSeq = createDummySelectorSequence();
     OwnedHqlExpr leftList = createValueSafe(no_sortlist, makeSortListType(NULL), left);
@@ -11169,7 +11120,7 @@ void HqlCppTranslator::doCompareLeftRight(BuildCtx & ctx, const char * funcname,
     buildCompareMemberLR(ctx, funcname, order, datasetLeft.queryDataset(), datasetRight.queryDataset(), selSeq);
 }
 
-void HqlCppTranslator::buildSlidingMatchFunction(BuildCtx & ctx, HqlExprArray & leftEq, HqlExprArray & rightEq, HqlExprArray & slidingMatches, const char * funcname, unsigned childIndex, const DatasetReference & datasetL, const DatasetReference & datasetR)
+void HqlCppTranslator::buildSlidingMatchFunction(BuildCtx & ctx, const HqlExprArray & leftEq, const HqlExprArray & rightEq, const HqlExprArray & slidingMatches, const char * funcname, unsigned childIndex, const DatasetReference & datasetL, const DatasetReference & datasetR)
 {
     HqlExprArray left, right;
     unsigned numSimple = leftEq.ordinality() - slidingMatches.ordinality();
@@ -11188,7 +11139,7 @@ void HqlCppTranslator::buildSlidingMatchFunction(BuildCtx & ctx, HqlExprArray & 
     doCompareLeftRight(ctx, funcname, datasetL, datasetR, left, right);
 }
 
-void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator side, const DatasetReference & dataset, HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal)
+void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal)
 {
     StringBuffer s, compareName;
 
@@ -11319,7 +11270,7 @@ void HqlCppTranslator::generateSerializeFunction(BuildCtx & ctx, const char * fu
     buildReturnRecordSize(r2kctx, serialize ? tgtCursor : srcCursor);
 }
 
-void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator side, const DatasetReference & dataset, HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft)
+void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft)
 {
     //check if there are any ifblocks, and if so don't allow it.  Even more accurate would be no join fields used in ifblocks
     IHqlExpression * record = dataset.queryDataset()->queryRecord();
@@ -11475,6 +11426,37 @@ void HqlCppTranslator::doBuildJoinRowLimitHelper(ActivityInstance & instance, IH
 }
 
 
+static size32_t getMaxSubstringLength(IHqlExpression * expr)
+{
+    IHqlExpression * rawSelect = expr->queryChild(0);
+    IHqlExpression * range = expr->queryChild(1);
+    IHqlExpression * rangeLow = range->queryChild(0);
+    unsigned rawLength = rawSelect->queryType()->getStringLen();
+    if (matchesConstantValue(rangeLow, 1))
+        return rawLength;
+
+    __int64 lowValue = getIntValue(rangeLow, UNKNOWN_LENGTH);
+    size32_t resultLength = UNKNOWN_LENGTH;
+    if ((rawLength != UNKNOWN_LENGTH) && (lowValue >= 1) && (lowValue <= rawLength))
+        resultLength = rawLength - (size32_t)(lowValue - 1);
+    return resultLength;
+}
+
+static IHqlExpression * getSimplifiedCommonSubstringRange(IHqlExpression * expr)
+{
+    IHqlExpression * rawSelect = expr->queryChild(0);
+    IHqlExpression * range = expr->queryChild(1);
+    IHqlExpression * rangeLow = range->queryChild(0);
+    if (matchesConstantValue(rangeLow, 1))
+        return LINK(rawSelect);
+
+    HqlExprArray args;
+    args.append(*LINK(rawSelect));
+    args.append(*createValue(no_rangefrom, makeNullType(), LINK(rangeLow)));
+    return expr->clone(args);
+}
+
+
 ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & ctx, IHqlExpression * expr)
 {
     node_operator op = expr->getOperator();
@@ -11523,11 +11505,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         isAllJoin = true;
 
     bool isLookupJoin = expr->hasAttribute(lookupAtom);
+    bool isSmartJoin = expr->hasAttribute(smartAtom);
     bool isHashJoin = targetThor() && expr->hasAttribute(hashAtom);
     bool isLocalJoin = !isHashJoin && expr->hasAttribute(localAtom);
     bool joinToSelf = (op == no_selfjoin);
     bool allowAllToLookupConvert = !options.noAllToLookupConversion;
-    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
+    IHqlExpression * atmostAttr = expr->queryAttribute(atmostAtom);
     //Delay removing ungroups until this point because they can be useful for reducing the size of spill files.
     if (isUngroup(dataset1) && !isLookupJoin)
         dataset1.set(dataset1->queryChild(0));
@@ -11552,34 +11535,25 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     }
 
 
-    OwnedHqlExpr atmostCond, atmostLimit;
-    extractAtmostArgs(atmost, atmostCond, atmostLimit);
-
-    HqlExprArray leftSorts, rightSorts, slidingMatches;
     bool slidingAllowed = options.slidingJoins && canBeSlidingJoin(expr);
-    OwnedHqlExpr match;
+    JoinSortInfo joinInfo;
+    joinInfo.findJoinSortOrders(expr, slidingAllowed);
 
-    OwnedHqlExpr fuzzy, hard;
-    bool isLimitedSubstringJoin;
-    splitFuzzyCondition(condition, atmostCond, fuzzy, hard);
-    match.setown(findJoinSortOrders(hard, dataset1, dataset2, selSeq, leftSorts, rightSorts, isLimitedSubstringJoin, slidingAllowed ? &slidingMatches : NULL));
-
-    if (atmost && match)
+    if (atmostAttr && !joinInfo.conditionAllEqualities)
     {
         if (isAllJoin)
             allowAllToLookupConvert = false;
         else
         {
             StringBuffer s;
-            throwError1(HQLERR_BadJoinConditionAtMost,getExprECL(match, s.append(" (")).append(")").str());
+            throwError1(HQLERR_BadJoinConditionAtMost,getExprECL(joinInfo.extraMatch, s.append(" (")).append(")").str());
         }
     }
-    extendConditionOwn(match, no_and, fuzzy.getClear());
 
     LinkedHqlExpr rhs = dataset2;
     if (isAllJoin)
     {
-        if (leftSorts.ordinality() && allowAllToLookupConvert)
+        if (joinInfo.hasRequiredEqualities() && allowAllToLookupConvert)
         {
             //Convert an all join to a many lookup if it can be done that way - more efficient, and same resourcing/semantics ...
             isManyLookup = true;
@@ -11587,7 +11561,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             isLookupJoin = true;
         }
     }
-    else if (leftSorts.ordinality() == 0)
+    else if (!joinInfo.hasRequiredEqualities() && !joinInfo.hasOptionalEqualities())
     {
         if (expr->hasAttribute(_conditionFolded_Atom))
         {
@@ -11659,6 +11633,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             kind = TAKlookupjoin;
             argName = "HashJoin";
         }
+        else if (isSmartJoin)
+        {
+            kind = TAKsmartjoin;
+            argName = "HashJoin";
+        }
         else if (isHashJoin)
         {
             kind = TAKhashjoin;
@@ -11682,6 +11661,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             kind = TAKlookupdenormalize;
             argName = "HashDenormalize";
         }
+        else if (isSmartJoin)
+        {
+            kind = TAKsmartdenormalize;
+            argName = "HashDenormalize";
+        }
         else if (isHashJoin)
         {
             kind = TAKhashdenormalize;
@@ -11703,6 +11687,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         else if (isLookupJoin)
         {
             kind = TAKlookupdenormalizegroup;
+            argName = "HashDenormalizeGroup";
+        }
+        else if (isSmartJoin)
+        {
+            kind = TAKsmartdenormalizegroup;
             argName = "HashDenormalizeGroup";
         }
         else if (isHashJoin)
@@ -11743,19 +11732,19 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         //more could use the compareLeftRight function instead of generating the same code 
         //several time....
     }
-    bool canReuseLeft = recordTypesMatch(dataset1, dataset2) && arraysMatch(leftSorts, rightSorts);
+    bool canReuseLeftCompare = recordTypesMatch(dataset1, dataset2) && arraysMatch(joinInfo.queryLeftSort(), joinInfo.queryRightSort());
     if (!isAllJoin)
     {
         bool isLocalSort = isLocalJoin || !targetThor();
         //Lookup join doesn't need the left sort (unless it is reused elsewhere), or the right sort unless it is deduping.
-        if (canReuseLeft || !isLookupJoin)
-            generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, leftSorts, true, noSortAttr, false, isLightweight, isLocalSort);
+        if (canReuseLeftCompare || !isLookupJoin)
+            generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), true, noSortAttr, false, isLightweight, isLocalSort);
         if (!(isLookupJoin && isManyLookup && !couldBeKeepOne && !targetThor()))            // many lookup doesn't need to dedup the rhs
-            generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, rightSorts, isLocalSort, noSortAttr, canReuseLeft, isLightweight, isLocalSort);
+            generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, joinInfo.queryRightSort(), isLocalSort, noSortAttr, canReuseLeftCompare, isLightweight, isLocalSort);
 
         bool isGlobal = !isLocalJoin && !instance->isChildActivity();
-        generateSerializeKey(instance->nestedctx, no_left, lhsDsRef, leftSorts, isGlobal, false, false);
-        generateSerializeKey(instance->nestedctx, no_right, rhsDsRef, rightSorts, isGlobal, false, canReuseLeft);
+        generateSerializeKey(instance->nestedctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), isGlobal, false, false);
+        generateSerializeKey(instance->nestedctx, no_right, rhsDsRef, joinInfo.queryRightSort(), isGlobal, false, canReuseLeftCompare);
     }
 
     StringBuffer flags;
@@ -11774,8 +11763,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         flags.append("|JFmatchAbortLimitSkips");
     if (rowlimit && rowlimit->hasAttribute(countAtom))
         flags.append("|JFcountmatchabortlimit");
-    if (slidingMatches.ordinality()) flags.append("|JFslidingmatch");
-    if (match) flags.append("|JFmatchrequired");
+    if (joinInfo.slidingMatches.ordinality()) flags.append("|JFslidingmatch");
+    if (joinInfo.extraMatch) flags.append("|JFmatchrequired");
     if (isLookupJoin && isManyLookup) flags.append("|JFmanylookup");
     if (expr->hasAttribute(onFailAtom))
         flags.append("|JFonfail");
@@ -11783,13 +11772,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         flags.append("|JFreorderable");
     if (transformReturnsSide(expr, no_left, 0))
         flags.append("|JFtransformmatchesleft");
-    if (isLimitedSubstringJoin)
+    if (joinInfo.hasOptionalEqualities())
         flags.append("|JFlimitedprefixjoin");
 
-    if (isAlreadySorted(dataset1, leftSorts, true, true) || userPreventsSort(noSortAttr, no_left))
+    if (isAlreadySorted(dataset1, joinInfo.queryLeftSort(), true, true) || userPreventsSort(noSortAttr, no_left))
         flags.append("|JFleftSortedLocally");
-    if (isAlreadySorted(dataset2, rightSorts, true, true) || userPreventsSort(noSortAttr, no_right))
+    if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true) || userPreventsSort(noSortAttr, no_right))
         flags.append("|JFrightSortedLocally");
+    if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getJoinFlags", flags.str()+1);
@@ -11798,8 +11788,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     {
         buildSkewThresholdMembers(instance->classctx, expr);
 
-        if (!isZero(atmostLimit))
-            doBuildUnsignedFunction(instance->startctx, "getJoinLimit", atmostLimit);
+        if (!isZero(joinInfo.atmost.limit))
+            doBuildUnsignedFunction(instance->startctx, "getJoinLimit", joinInfo.atmost.limit);
     }
 
     if (keepLimit)
@@ -11855,21 +11845,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (!isAllJoin)
     {
         //if left and right match, then leftright compare function is also the same
-        if (isLimitedSubstringJoin)
-        {
-            HqlExprArray compareLeftSorts, compareRightSorts;
-            unsigned max = leftSorts.ordinality()-1;
-            for (unsigned i=0; i < max; i++)
-            {
-                compareLeftSorts.append(OLINK(leftSorts.item(i)));
-                compareRightSorts.append(OLINK(rightSorts.item(i)));
-            }
-            doCompareLeftRight(instance->nestedctx, "CompareLeftRight", lhsDsRef, rhsDsRef, compareLeftSorts, compareRightSorts);
-        }
-        else if (canReuseLeft)
+        if (canReuseLeftCompare && !joinInfo.hasOptionalEqualities())
             instance->nestedctx.addQuoted("virtual ICompare * queryCompareLeftRight() { return &compareLeft; }");
         else
-            doCompareLeftRight(instance->nestedctx, "CompareLeftRight", lhsDsRef, rhsDsRef, leftSorts, rightSorts);
+            doCompareLeftRight(instance->nestedctx, "CompareLeftRight", lhsDsRef, rhsDsRef, joinInfo.queryLeftReq(), joinInfo.queryRightReq());
     }
 
     doBuildJoinRowLimitHelper(*instance, rowlimit, NULL, false);
@@ -11880,44 +11859,111 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         buildClearRecordMember(instance->createctx, "Left", dataset1);
     if (createDefaultRight)
         buildClearRecordMember(instance->createctx, "Right", dataset2);
-    buildJoinMatchFunction(instance->startctx, "match", dataset1, dataset2, match, selSeq);
+    buildJoinMatchFunction(instance->startctx, "match", dataset1, dataset2, joinInfo.extraMatch, selSeq);
 
-    if (slidingMatches.ordinality())
+    if (joinInfo.slidingMatches.ordinality())
     {
-        buildSlidingMatchFunction(instance->nestedctx, leftSorts, rightSorts, slidingMatches, "CompareLeftRightLower", 1, lhsDsRef, rhsDsRef);
-        buildSlidingMatchFunction(instance->nestedctx, leftSorts, rightSorts, slidingMatches, "CompareLeftRightUpper", 2, lhsDsRef, rhsDsRef);
+        buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightLower", 1, lhsDsRef, rhsDsRef);
+        buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightUpper", 2, lhsDsRef, rhsDsRef);
     }
 
-    if (isHashJoin||isLookupJoin)
+    if (isHashJoin||isLookupJoin|isSmartJoin)
     {
-        OwnedHqlExpr leftList = createValueSafe(no_sortlist, makeSortListType(NULL), leftSorts);
+        OwnedHqlExpr leftList = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftReq());
         buildHashOfExprsClass(instance->nestedctx, "HashLeft", leftList, lhsDsRef, false);
 
-        if (!canReuseLeft)
+        bool canReuseLeftHash = recordTypesMatch(dataset1, dataset2) && arraysMatch(joinInfo.queryLeftReq(), joinInfo.queryRightReq());
+        if (!canReuseLeftHash)
         {
-            OwnedHqlExpr rightList = createValueSafe(no_sortlist, makeSortListType(NULL), rightSorts);
+            OwnedHqlExpr rightList = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryRightReq());
             buildHashOfExprsClass(instance->nestedctx, "HashRight", rightList, rhsDsRef, false);
         }
         else
             instance->nestedctx.addQuoted("virtual IHash * queryHashRight() { return &HashLeft; }");
     }
 
-    if (isLimitedSubstringJoin)
+    if (joinInfo.hasOptionalEqualities())
     {
         OwnedHqlExpr leftSelect = createSelector(no_left, dataset1, selSeq);
         OwnedHqlExpr rightSelect = createSelector(no_right, dataset2, selSeq);
-        HqlExprArray args;
-        args.append(*lhsDsRef.mapCompound(&leftSorts.tos(), leftSelect));
-        args.append(*rhsDsRef.mapCompound(&rightSorts.tos(), rightSelect));
 
-        IIdAtom * func = prefixDiffStrId;
-        ITypeInfo * lhsType = args.item(0).queryType();
-        if (isUnicodeType(lhsType))
+        UnsignedArray origins;
+        unsigned origin = 0;
+        ForEachItemIn(i, joinInfo.queryLeftOpt())
         {
-            func = prefixDiffUnicodeId;
-            args.append(*createConstant(lhsType->queryLocale()->str()));
+            IHqlExpression & left = joinInfo.queryLeftOpt().item(i);
+            IHqlExpression & right = joinInfo.queryRightOpt().item(i);
+            unsigned delta;
+            if (origin == UNKNOWN_LENGTH)
+                throwError(HQLERR_AtmostFollowUnknownSubstr);
+
+            if (isCommonSubstringRange(&left))
+            {
+                size32_t leftLen = getMaxSubstringLength(&left);
+                size32_t rightLen = getMaxSubstringLength(&right);
+                if (leftLen == rightLen)
+                    delta = leftLen;
+                else
+                    delta = UNKNOWN_LENGTH;
+            }
+            else
+                delta = 1;
+            origins.append(origin);
+            if (delta != UNKNOWN_LENGTH)
+                origin += delta;
+            else
+                origin = UNKNOWN_LENGTH;
         }
-        OwnedHqlExpr compare = bindFunctionCall(func, args);
+
+        OwnedHqlExpr compare;
+        OwnedITypeInfo retType = makeIntType(4, true);
+        OwnedHqlExpr zero = createConstant(retType->castFrom(true, 0));
+        ForEachItemInRev(i1, joinInfo.queryLeftOpt())
+        {
+            IHqlExpression & left = joinInfo.queryLeftOpt().item(i1);
+            IHqlExpression & right = joinInfo.queryRightOpt().item(i1);
+
+            unsigned origin = origins.item(i1);
+            if (isCommonSubstringRange(&left))
+            {
+                OwnedHqlExpr simpleLeft = getSimplifiedCommonSubstringRange(&left);
+                OwnedHqlExpr simpleRight = getSimplifiedCommonSubstringRange(&right);
+                HqlExprArray args;
+                args.append(*lhsDsRef.mapCompound(simpleLeft, leftSelect));
+                args.append(*rhsDsRef.mapCompound(simpleRight, rightSelect));
+
+                IIdAtom * func = prefixDiffStrId;
+                ITypeInfo * lhsType = args.item(0).queryType();
+                if (isUnicodeType(lhsType))
+                {
+                    func = prefixDiffUnicodeId;
+                    args.append(*createConstant(lhsType->queryLocale()->str()));
+                }
+                args.append(*getSizetConstant(origin));
+                OwnedHqlExpr diff = bindFunctionCall(func, args);
+                if (compare)
+                {
+                    OwnedHqlExpr alias = createAlias(diff, NULL);
+                    OwnedHqlExpr compareNe = createValue(no_ne, makeBoolType(), LINK(alias), LINK(zero));
+                    compare.setown(createValue(no_if, LINK(retType), compareNe.getClear(), LINK(alias), compare.getClear()));
+                }
+                else
+                    compare.set(diff);
+            }
+            else
+            {
+                OwnedHqlExpr leftExpr = lhsDsRef.mapCompound(&left, leftSelect);
+                OwnedHqlExpr rightExpr = lhsDsRef.mapCompound(&right, rightSelect);
+                OwnedHqlExpr compareGt = createValue(no_gt, makeBoolType(), LINK(leftExpr), LINK(rightExpr));
+                OwnedHqlExpr gtValue = createConstant(retType->castFrom(true, origin+1));
+                OwnedHqlExpr ltValue = createConstant(retType->castFrom(true, -(int)(origin+1)));
+                OwnedHqlExpr mismatch = createValue(no_if, LINK(retType), compareGt.getClear(), gtValue.getClear(), ltValue.getClear());
+                OwnedHqlExpr compareNe = createValue(no_ne, makeBoolType(), LINK(leftExpr), LINK(rightExpr));
+                OwnedHqlExpr eqValue = compare ? LINK(compare) : LINK(zero);
+                compare.setown(createValue(no_if, LINK(retType), compareNe.getClear(), mismatch.getClear(), eqValue.getClear()));
+                origin += 1;
+            }
+        }
 
         buildCompareMemberLR(instance->nestedctx, "PrefixCompare", compare, dataset1, dataset2, selSeq);
     }
@@ -12003,7 +12049,7 @@ BoundRow * HqlCppTranslator::buildTransformCursors(BuildCtx & ctx, IHqlExpressio
     if (transform->getOperator() == no_skip)
         return NULL;
 
-    assertex(recordTypesMatch(self->queryRecord(), transform->queryRecord()));
+    assertRecordTypesMatch(self->queryRecord(), transform->queryRecord());
 
     if (left)
         ctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
@@ -13520,7 +13566,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
 
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * selSeq = querySelSeq(expr);
-    bool isGrouped = (dataset->queryType()->queryGroupInfo() != NULL);
+    bool isGrouped = ::isGrouped(dataset);
     bool isLocal = isLocalActivity(expr);
     bool useHash = expr->hasAttribute(hashAtom);
     if (targetThor() && !isGrouped && !isLocal)
@@ -13556,7 +13602,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
             ForEachItemIn(i1, info.equalities)
                 normalizedEqualities.append(*replaceSelector(info.equalities.item(i1).queryBody(), dataset, queryActiveTableSelector()));
 
-            IHqlExpression * grouping = static_cast<IHqlExpression *>(dataset->queryType()->queryGroupInfo());
+            IHqlExpression * grouping = queryGrouping(dataset);
             ForEachChild(i, grouping)
             {
                 IHqlExpression * curGroup = grouping->queryChild(i);
@@ -14897,12 +14943,12 @@ void HqlCppTranslator::bindRows(BuildCtx & ctx, node_operator side, IHqlExpressi
     OwnedHqlExpr selector = createSelector(side, dataset, selSeq);
     OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(selector), LINK(rowsid));
 
-    ITypeInfo * rowType = makeReferenceModifier(LINK(rowsExpr->queryType()->queryChildType()));
+    Owned<ITypeInfo> rowType = makeReferenceModifier(LINK(rowsExpr->queryType()->queryChildType()));
     if (rowsAreLinkCounted)
-        rowType = makeAttributeModifier(rowType, getLinkCountedAttr());
+        rowType.setown(setLinkCountedAttr(rowType, true));
 
     //Rows may be link counted, but rows() is not a linkable rowset
-    OwnedITypeInfo rowsType = makeReferenceModifier(makeTableType(rowType, NULL, NULL, NULL));
+    OwnedITypeInfo rowsType = makeReferenceModifier(makeTableType(rowType.getClear()));
     rowsType.setown(makeOutOfLineModifier(LINK(rowsType)));
 
     CHqlBoundExpr boundRows;
@@ -15512,7 +15558,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGroup(BuildCtx & ctx, IHqlExpr
         child = child->queryChild(0);
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, child);
-    if (expr->queryType()->queryGroupInfo() == child->queryType()->queryGroupInfo())
+    if (queryGrouping(expr) == queryGrouping(child))
         return boundDataset.getClear();
 
     IHqlExpression * sortlist = queryRealChild(expr, 1);
@@ -16184,6 +16230,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlParse(BuildCtx & ctx, IHqlE
 
     OwnedHqlExpr helperName = createQuoted("parsed", makeBoolType());
     funcctx.associateExpr(xmlColumnProviderMarkerExpr, helperName);
+    bindTableCursor(funcctx, queryXmlParsePseudoTable(), queryXmlParsePseudoTable());
     xmlUsesContents = false;
     doTransform(funcctx, transform, selfCursor);
     buildReturnRecordSize(funcctx, selfCursor);
@@ -17202,7 +17249,6 @@ void HqlCppTranslator::buildWorkflowItem(BuildCtx & ctx, IHqlStmt * switchStmt, 
 
 void HqlCppTranslator::buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression * expr)
 {
-    IHqlExpression * original = queryAttributeChild(expr, _original_Atom, 0);
 
     OwnedHqlExpr resultName = ::createResultName(queryAttributeChild(expr, namedAtom, 0));
     resultName.setown(ensureExprType(resultName, unknownVarStringType));
@@ -17218,8 +17264,7 @@ void HqlCppTranslator::buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression 
     if (resultsRead)
         unwindChildren(dependencies.resultsRead, resultsRead);
 
-    unsigned crc = getExpressionCRC(original) + PERSIST_VERSION;
-    OwnedHqlExpr crcVal = getSizetConstant(crc);
+    IHqlExpression *  crcVal = queryAttributeChild(expr, _codehash_Atom, 0);
     OwnedHqlExpr crcExpr = calculatePersistInputCrc(ctx, dependencies);
     HqlExprArray args;
     args.append(*LINK(resultName));
@@ -17834,6 +17879,9 @@ static void logECL(const LogMsgCategory & category, size32_t len, const char * e
 
 void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr, unsigned level)
 {
+    if (!expr)
+        return;
+
     checkAbort();
 
     LOG(MCdebugInfo(200), unknownJob, "Tracing expressions: %s", title);

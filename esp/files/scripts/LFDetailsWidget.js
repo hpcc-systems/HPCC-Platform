@@ -24,8 +24,6 @@ define([
     "dojo/dom-form",
     "dojo/query",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -53,14 +51,17 @@ define([
 
     "dijit/TooltipDialog"
 ], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query,
-                _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
+                BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit,
                 template) {
-    exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "LFDetailsWidget",
         borderContainer: null,
-        tabContainer: null,
+
+        copyDialog: null,
+        renameDialog: null,
+        desprayDialog: null,
         summaryWidget: null,
         contentWidget: null,
         sourceWidget: null,
@@ -72,10 +73,12 @@ define([
 
         logicalFile: null,
         prevState: "",
-        initalized: false,
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.copyDialog = registry.byId(this.id + "CopyDialog");
+            this.renameDialog = registry.byId(this.id + "RenameDialog");
+            this.desprayDialog = registry.byId(this.id + "DesprayDialog");
             this.summaryWidget = registry.byId(this.id + "_Summary");
             this.contentWidget = registry.byId(this.id + "_Content");
             this.sourceWidget = registry.byId(this.id + "_Source");
@@ -120,53 +123,49 @@ define([
             }
         },
         _onCopyOk: function (event) {
-            var context = this;
-            this.logicalFile.copy({
-                request: domForm.toObject(this.id + "CopyDialog")
-            }).then(function (response) {
-                context._handleResponse("CopyResponse.result", response);
-            });
-            registry.byId(this.id + "CopyDropDown").closeDropDown();
-        },
-        _onCopyCancel: function (event) {
-            registry.byId(this.id + "CopyDropDown").closeDropDown();
+            if (this.copyDialog.validate()) {
+                var context = this;
+                this.logicalFile.copy({
+                    request: domForm.toObject(this.id + "CopyDialog")
+                }).then(function (response) {
+                    context._handleResponse("CopyResponse.result", response);
+                });
+                registry.byId(this.id + "CopyDropDown").closeDropDown();
+            }
         },
         _onRenameOk: function (event) {
-            var context = this;
-            this.logicalFile.rename({
-                request: domForm.toObject(this.id + "RenameDialog")
-            }).then(function (response) {
-                context._handleResponse("RenameResponse.wuid", response);
-            });
-            registry.byId(this.id + "RenameDropDown").closeDropDown();
-        },
-        _onRenameCancel: function (event) {
-            registry.byId(this.id + "RenameDropDown").closeDropDown();
+            if (this.renameDialog.validate()) {
+                var context = this;
+                this.logicalFile.rename({
+                    request: domForm.toObject(this.id + "RenameDialog")
+                }).then(function (response) {
+                    context._handleResponse("RenameResponse.wuid", response);
+                });
+                registry.byId(this.id + "RenameDropDown").closeDropDown();
+            }
         },
         _onDesprayOk: function (event) {
-            var context = this;
-            this.logicalFile.despray({
-                request: domForm.toObject(this.id + "DesprayDialog")
-            }).then(function (response) {
-                context._handleResponse("DesprayResponse.wuid", response);
-            });
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
-        },
-        _onDesprayCancel: function (event) {
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
+            if (this.desprayDialog.validate()) {
+                var context = this;
+                this.logicalFile.despray({
+                    request: domForm.toObject(this.id + "DesprayDialog")
+                }).then(function (response) {
+                    context._handleResponse("DesprayResponse.wuid", response);
+                });
+                registry.byId(this.id + "DesprayDropDown").closeDropDown();
+            }
         },
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             var context = this;
             if (params.Name) {
                 this.logicalFile = ESPLogicalFile.Get(params.Name);
                 var data = this.logicalFile.getData();
-                for (key in data) {
+                for (var key in data) {
                     this.updateInput(key, null, data[key]);
                 }
                 this.logicalFile.watch(function (name, oldValue, newValue) {
@@ -193,7 +192,7 @@ define([
                 if (currSel.id == this.summaryWidget.id) {
                 } else if (currSel.id == this.contentWidget.id) {
                     this.contentWidget.init({
-                        result: this.logicalFile.result
+                        LogicalName: this.logicalFile.Name
                     });
                 } else if (currSel.id == this.sourceWidget.id) {
                     this.sourceWidget.init({

@@ -26,8 +26,6 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -62,12 +60,12 @@ define([
 
     "dijit/TooltipDialog"
 ], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable,
-                _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
+                BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget,
                 ESPUtil, ESPLogicalFile,
                 template) {
-    exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "SFDetailsWidget",
         borderContainer: null,
@@ -77,7 +75,6 @@ define([
 
         logicalFile: null,
         prevState: "",
-        initalized: false,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -135,15 +132,14 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             var context = this;
             if (params.Name) {
                 this.logicalFile = ESPLogicalFile.Get(params.Name);
                 var data = this.logicalFile.getData();
-                for (key in data) {
+                for (var key in data) {
                     this.updateInput(key, null, data[key]);
                 }
                 this.logicalFile.watch(function (name, oldValue, newValue) {

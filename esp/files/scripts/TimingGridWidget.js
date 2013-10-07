@@ -22,9 +22,6 @@ define([
     "dojo/store/Observable",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -33,17 +30,18 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
+    "hpcc/_Widget",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/TimingGridWidget.html"
 ],
     function (declare, lang, arrayUtil, Memory, Observable,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
+            registry,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-            ESPUtil, ESPWorkunit,
+            _Widget, ESPUtil, ESPWorkunit,
             template) {
-        return declare("TimingGridWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("TimingGridWidget", [_Widget], {
             templateString: template,
             baseClass: "TimingGridWidget",
             timingGrid: null,
@@ -72,7 +70,7 @@ define([
                     columns: {
                         id: { label: "##", width: 45 },
                         Name: { label: "Component" },
-                        Seconds: { label: "Time (Seconds)", width: 54 }
+                        Seconds: { label: "Time (Seconds)", width: 124 }
                     },
                     store: this.timingStore
                 }, this.id + "TimingGrid");
@@ -106,9 +104,8 @@ define([
             },
 
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 this.defaultQuery = "*";
                 if (params.query) {

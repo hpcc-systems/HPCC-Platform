@@ -56,11 +56,6 @@ public:
     virtual bool isSigned()                     { return false; }
     virtual bool isSwappedEndian()              { return false; }
     virtual ITypeInfo * queryChildType()        { return NULL; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return this; }    // very common implementation
     virtual ICharsetInfo * queryCharset()       { return NULL; }
     virtual ICollationInfo * queryCollation()   { return NULL; }
@@ -649,21 +644,15 @@ public:
 class CTableTypeInfo : public CBasedTypeInfo
 {
 private:
-    Owned<IInterface> distributeinfo;
-    Owned<IInterface> globalsortinfo;
-    Owned<IInterface> localsortinfo;
 public:
-    CTableTypeInfo(ITypeInfo * _basetype, IInterface * _distributeinfo, IInterface *_globalsortinfo, IInterface *_localsortinfo) 
-        : CBasedTypeInfo(_basetype, UNKNOWN_LENGTH), distributeinfo(_distributeinfo), globalsortinfo(_globalsortinfo), localsortinfo(_localsortinfo) {}
+    CTableTypeInfo(ITypeInfo * _basetype)
+        : CBasedTypeInfo(_basetype, UNKNOWN_LENGTH) {}
 
     virtual type_t getTypeCode() const                          { return type_table; }
     virtual bool isScalar()                                 { return false; }
     virtual const char *queryTypeName()                     { return "table"; }
     virtual StringBuffer &getECLType(StringBuffer & out);
     virtual bool assignableFrom(ITypeInfo *t2);
-    virtual IInterface * queryDistributeInfo();
-    virtual IInterface * queryGlobalSortInfo();
-    virtual IInterface * queryLocalUngroupedSortInfo();
 
     virtual void serialize(MemoryBuffer &tgt);
     //MORE: Delete this when persist attributes change again
@@ -674,31 +663,21 @@ public:
                                                                 return crc;
                                                             }
 
-    virtual unsigned getHash() const;
-    virtual bool equals(const CTypeInfo & other) const;
 };
 
 class CGroupedTableTypeInfo : public CBasedTypeInfo
 {
 private:
-    Owned<IInterface> groupinfo;
-    Owned<IInterface> groupsortinfo;
 public:
-    CGroupedTableTypeInfo(ITypeInfo * _basetype, IInterface *_groupinfo, IInterface *_groupsortinfo) 
-    : CBasedTypeInfo(_basetype, UNKNOWN_LENGTH), groupinfo(_groupinfo), groupsortinfo(_groupsortinfo) {}
+    CGroupedTableTypeInfo(ITypeInfo * _basetype)
+    : CBasedTypeInfo(_basetype, UNKNOWN_LENGTH) {}
 
     virtual type_t getTypeCode() const                          { return type_groupedtable; }
     virtual StringBuffer &getECLType(StringBuffer & out)    { out.append(queryTypeName()).append(" of "); queryChildType()->getECLType(out); return out; };
     virtual const char *queryTypeName()                     { return "groupedtable"; }
     virtual bool isScalar()                                 { return false; }
     virtual bool assignableFrom(ITypeInfo *t2);
-    virtual IInterface * queryDistributeInfo();
-    virtual IInterface * queryGroupInfo();
-    virtual IInterface * queryGlobalSortInfo();
-    virtual IInterface * queryLocalUngroupedSortInfo();
-    virtual IInterface * queryGroupSortInfo();
 
-    virtual void serialize(MemoryBuffer &tgt);
     //MORE: Delete this when persist attributes change again
     virtual unsigned getCrc()                               {
                                                                 unsigned crc = getTypeCode();
@@ -707,8 +686,6 @@ public:
                                                                 return crc;
                                                             }
 
-    virtual unsigned getHash() const;
-    virtual bool equals(const CTypeInfo & other) const;
 };
 
 class CSetTypeInfo : public CBasedTypeInfo
@@ -850,11 +827,6 @@ public:
     virtual ICharsetInfo * queryCharset()                           { return baseType->queryCharset(); }
     virtual ICollationInfo * queryCollation()                       { return baseType->queryCollation(); }
     virtual IAtom * queryLocale()                                     { return baseType->queryLocale(); }
-    virtual IInterface * queryLocalUngroupedSortInfo()                      { return baseType->queryLocalUngroupedSortInfo(); }
-    virtual IInterface * queryGlobalSortInfo()                      { return baseType->queryGlobalSortInfo(); }
-    virtual IInterface * queryGroupInfo()                           { return baseType->queryGroupInfo(); }
-    virtual IInterface * queryGroupSortInfo()                       { return baseType->queryGroupSortInfo(); }
-    virtual IInterface * queryDistributeInfo()                      { return baseType->queryDistributeInfo(); }
     virtual ITypeInfo * queryPromotedType()                         { return baseType->queryPromotedType(); }
     virtual ITypeInfo * queryTypeBase()                             { return baseType; }
     virtual unsigned getCrc()                                       { return baseType->getCrc(); }

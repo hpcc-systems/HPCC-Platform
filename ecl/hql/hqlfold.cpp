@@ -31,6 +31,7 @@
 #include "hqlerrors.hpp"
 #include "hqlutil.hpp"
 #include "hqlpmap.hpp"
+#include "hqlmeta.hpp"
 
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
@@ -778,14 +779,14 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 #endif
     char* strbuf = fstack.getMem();
 
-    int intresult;
+    int intresult = 0;
 #ifdef __64BIT__
-    __int64 int64result;
+    __int64 int64result = 0;
 #else
-    int intresulthigh;
+    int intresulthigh = 0;
 #endif
-    float floatresult;
-    double doubleresult;
+    float floatresult = 0.0;
+    double doubleresult = 0.0;
 
 #ifdef __64BIT__
 //  __asm__ ("\tint $0x3\n"); // for debugging
@@ -3018,6 +3019,9 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IValue * value = child->queryValue();
             if (value)
                 return createConstant(value->castTo(expr->queryType()));
+
+            if (dataset->getOperator() == no_datasetfromrow)
+                return replaceSelector(child, dataset, dataset->queryChild(0));
         }
         break;
     case no_countdict:
@@ -3363,6 +3367,22 @@ IHqlExpression * preserveGrouping(IHqlExpression * child, IHqlExpression * expr)
     return LINK(child);
 }
 
+static bool matchesAtmost1(IHqlExpression * expr)
+{
+    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
+    if (!atmost)
+        return false;
+    if (!matchesConstantValue(atmost->queryChild(0), 1))
+        return false;
+    return true;
+}
+
+static bool hasRowLimit(IHqlExpression * expr)
+{
+    IHqlExpression * limit = expr->queryAttribute(rowLimitAtom);
+    return limit && !matchesConstantValue(limit->queryChild(0), 0);
+}
+
 IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
@@ -3379,7 +3399,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
             if (expr->hasAttribute(skewAtom))
             	break;
             //Careful - distribute also destroys grouping, so don't remove if input is grouped.
-            if ((expr->queryType()->queryDistributeInfo() == child->queryType()->queryDistributeInfo()) && !isGrouped(child))
+            if ((queryDistribution(expr) == queryDistribution(child)) && !isGrouped(child))
                 return removeParentNode(expr);
             break;
         }
@@ -3387,9 +3407,13 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_subsort:
     case no_sorted:
         {
-            //If action does not change the type information, then it can't have done anything...
-            if (expr->queryType() == child->queryType())
-                return removeParentNode(expr);
+            //Subsort is unusual because the order applied to an unsorted dataset will also be unsorted
+            if ((op != no_subsort) || hasKnownSortGroupDistribution(child, expr->hasAttribute(localAtom)))
+            {
+                //If action does not change the type information, then it can't have done anything...
+                if (hasSameSortGroupDistribution(expr, child))
+                    return removeParentNode(expr);
+            }
             if (isNull(child) || hasNoMoreRowsThan(child, 1))
                 return removeParentNode(expr);
             //If all arguments to sort are constant then remove it, otherwise the activities will not like it.
@@ -3425,7 +3449,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 //  case no_preservemeta:
         {
             //If action does not change the type information, then it can't have done anything...
-            if (expr->queryType() == child->queryType())
+            if (hasSameSortGroupDistribution(expr, child))
                 return removeParentNode(expr);
             if (isNull(child))
                 return replaceWithNull(expr);
@@ -3495,8 +3519,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 const char * potentialLeftProjectReason = NULL;
                 if (isSpecificJoin(expr, leftouterAtom))
                 {
-                    if (matchesConstantValue(queryAttributeChild(expr, keepAtom, 0), 1))
+                    if (matchesConstantValue(queryAttributeChild(expr, keepAtom, 0), 1) && !hasRowLimit(expr))
                         potentialLeftProjectReason = "(,LEFT OUTER,KEEP(1))";
+                    else if (matchesAtmost1(expr) && !hasRowLimit(expr))
+                        potentialLeftProjectReason = "(,LEFT OUTER,ATMOST(1))";
                     else if (expr->hasAttribute(lookupAtom) && !expr->hasAttribute(manyAtom))
                         potentialLeftProjectReason = "(,LEFT OUTER,SINGLE LOOKUP)";
                     else if (hasNoMoreRowsThan(expr, 1))
@@ -4810,7 +4836,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             {
                 ECLlocation dummyLocation(0, 0, 0, NULL);
                 ThrowingErrorReceiver errorReporter;
-                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, expr);
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
                 if (expr != inlineTable)
                     return inlineTable.getClear();
             }
@@ -5112,12 +5138,11 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                     IHqlExpression * selSeq = querySelSeq(updated);
                     IHqlExpression * updatedLhs = updated->queryChild(0);
                     IHqlExpression * updatedRhs = (op == no_selfjoin) ? updatedLhs : updated->queryChild(1);
-                    HqlExprArray leftSorts, rightSorts;
-                    bool isLimitedSubstringJoin;
-                    OwnedHqlExpr extra = findJoinSortOrders(updatedCond, updatedLhs, updatedRhs, selSeq, leftSorts, rightSorts, isLimitedSubstringJoin, NULL);
+                    JoinSortInfo joinInfo;
+                    joinInfo.findJoinSortOrders(updatedCond, updatedLhs, updatedRhs, selSeq, false);
 
                     //if will convert to an all join, then restore the old condition,
-                    if (leftSorts.ordinality() == 0)
+                    if (!joinInfo.hasRequiredEqualities())
                         updated.setown(replaceChild(updated, 2, oldCond));
                     else
                         updated.setown(appendOwnedOperand(updated, createAttribute(_conditionFolded_Atom)));

@@ -435,7 +435,7 @@ void WuWebView::getResource(IPropertyTree *res, StringBuffer &content)
 {
     if (!loadDll())
         return;
-    if (res->hasProp("@id"))
+    if (res->hasProp("@id") && (res->hasProp("@header")||res->hasProp("@compressed")))
     {
         int id = res->getPropInt("@id");
         size32_t len = 0;

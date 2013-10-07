@@ -46,17 +46,21 @@
 #endif
 
 /// Thor options, that can be hints, workunit options, or global settings
-#define THOROPT_COMPRESS_SPILLS       "compressInternalSpills"
-#define THOROPT_HDIST_SPILL           "hdistSpill"
-#define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"
-#define THOROPT_SPLITTER_SPILL        "splitterSpill"
-#define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"
-#define THOROPT_SMALLSORT             "smallSortThreshold"
-#define THOROPT_PARALLEL_FUNNEL       "parallelFunnel"
-#define THOROPT_SORT_MAX_DEVIANCE     "sort_max_deviance"
-#define THOROPT_OUTPUT_FLUSH_THRESHOLD "output_flush_threshold"
-#define THOROPT_OUTPUTLIMIT           "outputLimit"
-#define THOROPT_JOINHELPER_THREADS    "joinHelperThreads"
+#define THOROPT_COMPRESS_SPILLS       "compressInternalSpills"  // Compress internal spills, e.g. spills created by lookahead or sort gathering  (default = true)
+#define THOROPT_HDIST_SPILL           "hdistSpill"              // Allow distribute receiver to spill to disk, rather than blocking              (default = true)
+#define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"       // Distribute send thread pool size                                              (default = 16)
+#define THOROPT_SPLITTER_SPILL        "splitterSpill"           // Force splitters to spill or not, default is to adhere to helper setting       (default = -1)
+#define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"            // Max # of iterations that LOOP can cycle through with 0 results before errors  (default = 1000)
+#define THOROPT_SMALLSORT             "smallSortThreshold"      // Use minisort approach, if estimate size of data to sort is below this setting (default = 0)
+#define THOROPT_PARALLEL_FUNNEL       "parallelFunnel"          // Use parallel funnel impl. if !ordered                                         (default = true)
+#define THOROPT_SORT_MAX_DEVIANCE     "sort_max_deviance"       // Max (byte) variance allowed during sort partitioning                          (default = 10Mb)
+#define THOROPT_OUTPUT_FLUSH_THRESHOLD "output_flush_threshold" // When above limit, workunit result is flushed (committed to Dali)              (default = -1 [off])
+#define THOROPT_OUTPUTLIMIT           "outputLimit"             // OUTPUT Mb limit                                                               (default = 10)
+#define THOROPT_PARALLEL_MATCH        "parallel_match"          // Use multi-threaded join helper (retains sort order without unsorted_output)   (default = false)
+#define THOROPT_UNSORTED_OUTPUT       "unsorted_output"         // Allow Join results to be reodered, implies parallel match                     (default = false)
+#define THOROPT_JOINHELPER_THREADS    "joinHelperThreads"       // Number of threads to use in threaded variety of join helper
+#define THOROPT_LKJOIN_LOCALFAILOVER  "lkjoin_localfailover"    // Force SMART to failover to distributed local lookup join (for testing only)   (default = false)
+#define THOROPT_LKJOIN_HASHJOINFAILOVER "lkjoin_hashjoinfailover" // Force SMART to failover to hash join (for testing only)                     (default = false)
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 

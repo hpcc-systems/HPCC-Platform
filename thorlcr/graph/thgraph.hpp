@@ -103,7 +103,7 @@ interface IBarrier : extends IInterface
 {
     virtual const mptag_t queryTag() const = 0;
     virtual bool wait(bool exception, unsigned timeout=INFINITE) = 0;
-    virtual void cancel() = 0;
+    virtual void cancel(IException *e=NULL) = 0;
 };
 
 graph_decl IThorResource &queryThor();

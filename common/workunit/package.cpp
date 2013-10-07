@@ -212,12 +212,28 @@ extern WORKUNIT_API IHpccPackageSet *createPackageSet(const char *process)
 
 extern WORKUNIT_API IPropertyTree * getPackageMapById(const char * id, bool readonly)
 {
+    if (!id || !*id)
+        return NULL;
     StringBuffer xpath;
     xpath.append("/PackageMaps/PackageMap[@id=\"").append(id).append("\"]");
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (!conn)
         return NULL;
     return conn->getRoot();
+}
+
+extern WORKUNIT_API IPropertyTree * getPackageMapById(const char *target, const char * id, bool readonly)
+{
+    if (!id || !*id)
+        return NULL;
+    if (target && *target)
+    {
+        VStringBuffer xpath("/PackageMaps/PackageMap[@id='%s::%s']", target, id);
+        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+        if (conn)
+            return conn->getRoot();
+    }
+    return getPackageMapById(id, readonly);
 }
 
 extern WORKUNIT_API IPropertyTree * getPackageSetById(const char * id, bool readonly)

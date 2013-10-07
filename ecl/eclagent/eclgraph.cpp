@@ -91,6 +91,9 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKlookupjoin:
     case TAKlookupdenormalize:
     case TAKlookupdenormalizegroup:
+    case TAKsmartjoin:
+    case TAKsmartdenormalize:
+    case TAKsmartdenormalizegroup:
         return createLookupJoinActivity(agent, activityId, subgraphId, (IHThorHashJoinArg &)arg, kind);
     case TAKalljoin:
     case TAKalldenormalize:
@@ -1444,6 +1447,8 @@ void EclAgent::executeThorGraph(const char * graphName)
     int priority = wuRead->getPriorityValue();
     unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", config->getPropInt("@thorConnectTimeout", 60));
     Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
+    if (!c)
+        throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
     SCMStringBuffer queueName;
     c->getThorQueue(queueName);
     Owned<IJobQueue> jq = createJobQueue(queueName.str());
@@ -1607,7 +1612,7 @@ void EclAgent::executeThorGraph(const char * graphName)
         if (!conversation->send(msg)) {
             StringBuffer s("Failed to send query to Thor on ");
             thorMaster.getUrlStr(s);
-            throw MakeStringException(-1, "%s", s.str()); // maybe retry?
+            throw MakeStringExceptionDirect(-1, s.str()); // maybe retry?
         }
 
         StringBuffer eps;
@@ -1619,7 +1624,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             {
                 StringBuffer s("Failed to receive reply from thor ");
                 thorMaster.getUrlStr(s);
-                throw MakeStringException(-1, "%s", s.str());
+                throw MakeStringExceptionDirect(-1, s.str());
             }
         }
         catch (IException *e)
@@ -1628,7 +1633,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             thorMaster.getUrlStr(s);
             s.append("; (").append(e->errorCode()).append(", ");
             e->errorMessage(s).append(")");
-            throw MakeStringException(-1, "%s", s.str());
+            throw MakeStringExceptionDirect(-1, s.str());
         }
         ThorReplyCodes replyCode;
         reply.read((unsigned &)replyCode);

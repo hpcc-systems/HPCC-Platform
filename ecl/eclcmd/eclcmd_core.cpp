@@ -27,7 +27,7 @@
 #include "eclcmd_core.hpp"
 
 
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, bool noarchive, bool displayWuid=true)
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true)
 {
     StringBuffer s;
     if (cmd.optVerbose)
@@ -83,7 +83,9 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     if (w && *w)
     {
         if (wuid)
-            wuid->append(w);
+            wuid->clear().append(w);
+        if (wucluster)
+            wucluster->clear().append(resp->getWorkunit().getCluster());
         fprintf(stdout, "\n");
         if (cmd.optVerbose)
             fprintf(stdout, "Deployed\n   wuid: ");
@@ -162,7 +164,7 @@ public:
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
-        return doDeploy(*this, client, optTargetCluster.get(), optName.get(), NULL, optNoArchive) ? 0 : 1;
+        return doDeploy(*this, client, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive) ? 0 : 1;
     }
     virtual void usage()
     {
@@ -214,6 +216,8 @@ public:
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
             if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
@@ -296,7 +300,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, optNoArchive))
+        else if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, NULL, optNoArchive))
             return 1;
 
         StringBuffer descr;
@@ -317,6 +321,7 @@ public:
         if (optTargetCluster.length())
             req->setCluster(optTargetCluster.get());
         req->setRemoteDali(optDaliIP.get());
+        req->setSourceProcess(optSourceProcess);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
         req->setDontCopyFiles(optDontCopyFiles);
@@ -377,6 +382,7 @@ public:
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --no-files             Do not copy files referenced by query\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
+            "   --source-process       Process cluster to copy files from\n"
             "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
             "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
             "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
@@ -391,6 +397,7 @@ public:
 private:
     StringAttr optName;
     StringAttr optDaliIP;
+    StringAttr optSourceProcess;
     StringAttr optMemoryLimit;
     StringAttr optPriority;
     StringAttr optComment;
@@ -464,6 +471,7 @@ public:
         req->setNoRootTag(optNoRoot);
 
         StringBuffer wuid;
+        StringBuffer wuCluster;
         StringBuffer queryset;
         StringBuffer query;
 
@@ -483,14 +491,16 @@ public:
         else
         {
             req->setCloneWorkunit(false);
-            if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, optNoArchive, optVerbose))
+            if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, &wuCluster, optNoArchive, optVerbose))
                 return 1;
             req->setWuid(wuid.str());
             if (optVerbose)
                 fprintf(stdout, "Running deployed workunit %s\n", wuid.str());
         }
 
-        if (optTargetCluster.length())
+        if (wuCluster.length())
+            req->setCluster(wuCluster.str());
+        else if (optTargetCluster.length())
             req->setCluster(optTargetCluster.get());
         req->setWait((int)optWaitTime);
         if (optInput.length())

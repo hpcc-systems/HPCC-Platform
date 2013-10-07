@@ -574,7 +574,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
 
         ERRLOG("%s",s.toCharArray());
         if(throwException)
-            throw MakeStringException(-1, "%s", s.str());
+            throw MakeStringExceptionDirect(-1, s.str());
         return false;
     }
 
@@ -898,7 +898,7 @@ void throwExceptionIfAborting()
 StringBuffer & hexdump2string(byte const * in, size32_t inSize, StringBuffer & out)
 {
     out.append("[");
-    byte last;
+    byte last = 0;
     unsigned seq = 1;
     for(unsigned i=0; i<inSize; ++i)
     {

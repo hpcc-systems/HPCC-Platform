@@ -1641,6 +1641,7 @@ protected:
                 try { stub.notify(abort); }
                 catch (IException *e) { e->Release(); } // subscriber session may abort during stopSession
             }
+            tonotify.kill(); // clear whilst sessmanagersect unblocked, as subs may query session manager.
         }
         const CSessionState *state = sessionstates.query(id);
         if (state) {

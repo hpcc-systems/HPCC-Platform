@@ -1049,6 +1049,7 @@ int Cws_machineEx::runCommand(IEspContext& context, const char* sAddress, const 
         e->errorMessage(buf);
         response.append(buf.str());
         exitCode = e->errorCode();
+        e->Release();
     }
 #ifndef NO_CATCHALL
     catch(...)

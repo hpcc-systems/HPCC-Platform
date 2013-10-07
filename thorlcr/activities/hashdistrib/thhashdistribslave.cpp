@@ -97,7 +97,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     Owned<ISmartRowBuffer> piperd;
 
     /*
-     * CSendBucket - a collection of rows destinate for a particular destination target(slave)
+     * CSendBucket - a collection of rows destined for a particular destination target(slave)
      */
     class CSendBucket : public CSimpleInterface, implements IRowStream
     {
@@ -1091,11 +1091,21 @@ public:
     }
     bool sendRecv(ICommunicator &comm, CMessageBuffer &mb, rank_t r, mptag_t tag)
     {
+        mptag_t replyTag = createReplyTag();
         loop
         {
             if (aborted)
                 return false;
-            if (comm.sendRecv(mb, r, tag, MEDIUMTIMEOUT))
+            mb.setReplyTag(replyTag);
+            if (comm.send(mb, r, tag, MEDIUMTIMEOUT))
+                break;
+            // try again
+        }
+        loop
+        {
+            if (aborted)
+                return false;
+            if (comm.recv(mb, r, replyTag, NULL, MEDIUMTIMEOUT))
                 return true;
             // try again
         }
@@ -2603,6 +2613,8 @@ public:
         iHash = helper->queryHash();
         appendOutputLinked(this);
         iCompare = helper->queryCompare();
+
+        // JCSMORE - really should ask / lookup what flags the allocator created for extractKey has...
         allocFlags = queryJob().queryThorAllocator()->queryFlags();
 
         // JCSMORE - it may not be worth extracting the key,
@@ -3362,8 +3374,8 @@ public:
             {
                 case TAKhashjoin:
                     {
-                        bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
-                        bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
+                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & joinargs->getJoinFlags());
+                        bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                         joinhelper.setown(createJoinHelper(*this, joinargs, this, hintparallelmatch, hintunsortedoutput));
                     }
                     break;

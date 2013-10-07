@@ -83,6 +83,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DELETE_PREVIOUS_INI "deletePrevDefault"
 #define ECLOPT_DELETE_PREVIOUS_ENV "ACTIVATE_DELETE_PREVIOUS"
 #define ECLOPT_CHECK_DFS "--check-dfs"
+#define ECLOPT_GLOBAL_SCOPE "--global-scope"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
@@ -131,11 +132,16 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"
 #define ECLOPT_PROCESS_S "-p"
+#define ECLOPT_SOURCE_PROCESS "--source-process"
+
+
 
 #define ECLOPT_LIB_PATH_S "-L"
 #define ECLOPT_IMP_PATH_S "-I"
 #define ECLOPT_MANIFEST "--manifest"
 #define ECLOPT_MANIFEST_DASH "-manifest"
+#define ECLOPT_LEGACY "--legacy"
+#define ECLOPT_LEGACY_DASH "-legacy"
 
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
@@ -232,7 +238,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optNoArchive(false), optResultLimit((unsigned)-1)
+    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -251,6 +257,7 @@ public:
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
             "   --manifest             Specify path to manifest file\n"
+            "   --legacy               Use legacy import semantics (deprecated)\n"
         );
     }
 public:
@@ -264,6 +271,7 @@ public:
     IArrayOf<IEspNamedValue> debugValues;
     unsigned optResultLimit;
     bool optNoArchive;
+    bool optLegacy;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon

@@ -648,8 +648,8 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
                 }
 
                 // this is where next row gets data from
-                const char *prev, *next;
-                unsigned prevOffset;
+                const char *prev, *next = NULL;
+                unsigned prevOffset = 0;
                 if (handleVariable)
                     prevOffset = target-((char *)keyBufMb.bufferBase());
                 else

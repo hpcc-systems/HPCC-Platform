@@ -22,8 +22,6 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "dgrid/OnDemandGrid",
@@ -56,11 +54,11 @@ define([
     "dijit/TooltipDialog",
     "dijit/TitlePane"
 ], function (declare, dom, domAttr, domClass, query, Memory, Observable,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
                 template) {
-    return declare("WUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "WUDetailsWidget",
         summaryWidget: null,
@@ -80,8 +78,8 @@ define([
         playgroundWidgetLoaded: false,
         xmlWidget: null,
         xmlWidgetLoaded: false,
+        publishForm: null,
 
-        initalized: false,
         wu: null,
         prevState: "",
 
@@ -97,6 +95,7 @@ define([
             this.logsWidget = registry.byId(this.id + "_Logs");
             this.playgroundWidget = registry.byId(this.id + "_Playground");
             this.xmlWidget = registry.byId(this.id + "_XML");
+            this.publishForm = registry.byId(this.id + "PublishForm");
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
         },
@@ -156,15 +155,16 @@ define([
             this.wu.restart();
         },
         _onPublish: function (event) {
-            registry.byId(this.id + "Publish").closeDropDown();
-            this.wu.publish(dom.byId(this.id + "Jobname2").value);
+            if (this.publishForm.validate()) {
+                registry.byId(this.id + "Publish").closeDropDown();
+                this.wu.publish(dom.byId(this.id + "Jobname2").value);
+            }
         },
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             if (params.Wuid) {
                 this.summaryWidget.set("title", params.Wuid);
@@ -172,7 +172,7 @@ define([
                 dom.byId(this.id + "Wuid").innerHTML = params.Wuid;
                 this.wu = ESPWorkunit.Get(params.Wuid);
                 var data = this.wu.getData();
-                for (key in data) {
+                for (var key in data) {
                     this.updateInput(key, null, data[key]);
                 }
                 var context = this;

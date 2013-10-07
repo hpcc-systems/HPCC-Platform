@@ -305,7 +305,7 @@ struct SafeInc
 };
 void HRPCcommon::doproxy(HRPCcallframe &frame,int fn,IHRPCtransport *tr,HRPCbuffer &buff,HRPCbuffer &rbuff,int cb,int locked)
 {
-    unsigned duetime;
+    unsigned duetime = 0;
     if (timelimit)
         duetime = msTick()+timelimit;
     size32_t base=buff.markwrite();

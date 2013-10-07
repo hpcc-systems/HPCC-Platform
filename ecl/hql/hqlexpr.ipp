@@ -47,7 +47,7 @@ class HQL_API CHqlDynamicProperty
 {
     friend class CHqlExpression;
 public:
-    inline CHqlDynamicProperty(ExprPropKind _kind, IHqlExpression *_value)
+    inline CHqlDynamicProperty(ExprPropKind _kind, IInterface *_value)
         : kind(_kind), value(_value)
     {
         next = NULL;
@@ -56,9 +56,10 @@ public:
 
 protected:
     CHqlDynamicProperty * next;
-    LinkedHqlExpr value;
     ExprPropKind kind;
+    Linked<IInterface> value;
 };
+
 
 class CUsedTablesBuilder;
 
@@ -101,6 +102,8 @@ public:
     void removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right);
     void set(CUsedTables & tables) { tables.set(inScopeTables, newScopeTables); }
 
+    inline bool isIndependentOfScope() const { return inScopeTables.ordinality() == 0; }
+
 protected:
     HqlExprCopyArray inScopeTables;     // may need to rename, since use has changed.
     HqlExprCopyArray newScopeTables;
@@ -119,7 +122,7 @@ public:
 
 protected:
     unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad
-                                // Worth storing becuase it significantly speeds up equality checking
+                                // Worth storing because it significantly speeds up equality checking
     IInterface * transformExtra[NUM_PARALLEL_TRANSFORMS];
     unsigned cachedCRC;
     unsigned infoFlags;
@@ -166,7 +169,6 @@ protected:
         operands.append(child);
         onAppendOperand(child, which);
     }
-    IHqlExpression * queryExistingProperty(ExprPropKind kind) const;
 
     void initFlagsBeforeOperands();
     void updateFlagsAfterOperands();
@@ -176,7 +178,8 @@ protected:
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
 
-    void addProperty(ExprPropKind kind, IHqlExpression * value);
+    virtual void addProperty(ExprPropKind kind, IInterface * value);
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
 
 public:
     virtual void Link(void) const;
@@ -285,6 +288,7 @@ public:
     inline CHqlExpressionWithTables(node_operator op) : CHqlExpression(op) {}
 
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -293,9 +297,11 @@ protected:
     void cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to);
     void cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables);
     void cachePotentialTablesUsed(CUsedTablesBuilder & used);
-    void cacheTablesProcessChildScope(CUsedTablesBuilder & used);
+    void cacheTablesProcessChildScope(CUsedTablesBuilder & used, bool ignoreInputs);
     void cacheTablesUsed();
     void cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr);
+
+    void calcTablesUsed(CUsedTablesBuilder & used, bool ignoreInputs);
 
 protected:
     CUsedTables usedTables;
@@ -355,6 +361,7 @@ public:
     virtual ITypeInfo *getType();
 
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -493,6 +500,7 @@ public:
     virtual IHqlExpression *queryChild(unsigned idx) const;
     virtual unsigned numChildren() const;
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -1058,11 +1066,6 @@ public:
     virtual IAtom * queryLocale()                 { return NULL; }
 //  virtual IAtom * queryName() const             { return id; }
     virtual ITypeInfo * queryChildType()        { return NULL; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return this; }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }
@@ -1278,6 +1281,7 @@ public:
     virtual ITypeInfo *getType();
 
     virtual bool isIndependentOfScope() { return true; }
+    virtual bool isIndependentOfScopeIgnoringInputs() { return true; }
     virtual bool usesSelector(IHqlExpression * selector) { return false; }
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) {}
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) {}
@@ -1601,11 +1605,6 @@ public:
     virtual ICollationInfo * queryCollation()   { return NULL; }
     virtual IAtom * queryLocale()                 { return NULL; }
     virtual ITypeInfo * queryChildType()        { return NULL; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return this; }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }
@@ -1653,10 +1652,14 @@ public:
     bool equals(const IHqlExpression & r) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
 
+    virtual void addProperty(ExprPropKind kind, IInterface * value);
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
+
 protected:
     IHqlDataset *rootTable;
     IHqlExpression * container;
     OwnedHqlExpr normalized;
+    Owned<IInterface> metaProperty;
 
     void cacheParent();
 
@@ -1727,11 +1730,6 @@ public:
     virtual IAtom * queryName() const { return id->lower(); }
     virtual IIdAtom * queryId() const { return id; }
     virtual ITypeInfo * queryChildType() { return logical; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return logical->queryPromotedType(); }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }

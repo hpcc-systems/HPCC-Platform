@@ -288,6 +288,7 @@ typedef enum sub_service_
     sub_serv_query,
     sub_serv_instant_query,
     sub_serv_soap_builder,
+    sub_serv_roxie_builder,
     sub_serv_wsdl,
     sub_serv_xsd,
     sub_serv_config,
@@ -359,6 +360,7 @@ public:
     bool readUploadFileName(CMimeMultiPart* mimemultipart, StringBuffer& fileName, MemoryBuffer& contentBuffer, __int64& bytesNotRead);
     IFile* createUploadFile(StringBuffer netAddress, const char* filePath, StringBuffer& fileName);
     virtual int readContentToFiles(StringBuffer netAddress, StringBuffer path, StringArray& fileNames);
+    virtual void readUploadFileContent(StringArray& fileNames, StringArray& files);
 };
 
 class CHttpResponse : public CHttpMessage

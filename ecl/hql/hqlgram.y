@@ -187,6 +187,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   ENTH
   ENUM
   TOK_ERROR
+  ESCAPE
   EVALUATE
   EVENT
   EVENTEXTRA
@@ -297,6 +298,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   MIN
   MODULE
   MOFN
+  MULTIPLE
   NAMED
   NAMEOF
   NAMESPACE
@@ -396,6 +398,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   SIZEOF
   SKEW
   SKIP
+  SMART
   SOAPACTION
   SOAPCALL
   SORT
@@ -415,7 +418,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TAN
   TANH
   TERMINATOR
-  ESCAPE
   THEN
   THISNODE
   THOR
@@ -520,6 +522,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   VALUE_MACRO
   DEFINITIONS_MACRO
 
+  BOOL_CONST
   INTEGER_CONST
   STRING_CONST
   DATA_CONST
@@ -725,8 +728,7 @@ explicitDatasetType
     : explicitDatasetType1
     | GROUPED explicitDatasetType1
                         {
-                            IHqlExpression * grouping = getUnknownSortlist();
-                            $$.setType(makeGroupedTableType($2.getType(), grouping, NULL));
+                            $$.setType(makeGroupedTableType($2.getType()));
                             $$.setPosition($1);
                         }
     ;
@@ -734,7 +736,7 @@ explicitDatasetType
 explicitDatasetType1
     : DATASET
                         {
-                            $$.setType(makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL));
+                            $$.setType(makeTableType(makeRowType(queryNullRecord()->getType())));
                             $$.setPosition($1);
                         }
     | DATASET '(' recordDef childDatasetOptions ')'
@@ -742,7 +744,7 @@ explicitDatasetType1
                             OwnedHqlExpr record = $3.getExpr();
                             OwnedHqlExpr options = $4.getExpr();
                             ITypeInfo * recordType = createRecordType(record);
-                            Owned<ITypeInfo> tableType = makeTableType(makeRowType(recordType), NULL, NULL, NULL);
+                            Owned<ITypeInfo> tableType = makeTableType(makeRowType(recordType));
                             if (options)
                                 tableType.setown(makeAttributeModifier(LINK(tableType), createAttribute(_childAttr_Atom, LINK(options))));
                             $$.setType(tableType.getClear());
@@ -852,7 +854,7 @@ paramType
     | abstractDataset   {
                             OwnedHqlExpr record = $1.getExpr();
                             OwnedHqlExpr abstractRecord = createAbstractRecord(record);
-                            OwnedITypeInfo type = makeTableType(makeRowType(abstractRecord->getType()), NULL, NULL, NULL);
+                            OwnedITypeInfo type = makeTableType(makeRowType(abstractRecord->getType()));
                             $$.setType(type.getClear(), $1);
                             parser->setTemplateAttribute();
                         }
@@ -1663,6 +1665,13 @@ persistOpt
     : fewMany
     | expireAttr
     | clusterAttr
+    | SINGLE            {   $$.setExpr(createAttribute(singleAtom), $1); }
+    | MULTIPLE          {   $$.setExpr(createExprAttribute(multipleAtom), $1); }
+    | MULTIPLE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createExprAttribute(multipleAtom, $3.getExpr()), $1);
+                        }
     ;
 
 globalOpts
@@ -1760,7 +1769,7 @@ transform
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()), $1);
                         }
-    | startInlineTransform transformOptions ',' transformations ')'
+    | startInlineTransform transformOptions semiComma transformations ')'
                         {
                             $$.setExpr(parser->closeTransform($4), $1);
                             parser->leaveCompoundObject();
@@ -1818,7 +1827,7 @@ startTransform
 
 transformOptions
     :
-    | transformOptions ',' transformOption
+    | transformOptions semiComma transformOption
                         {
                             parser->appendTransformOption($3.getExpr());
                             $$.setPosition($1);
@@ -3669,7 +3678,7 @@ paramDefinition
     | ANY DATASET knownOrUnknownId
                         {
                             $$.clear();
-                            parser->addParameter($1, $3.getId(), makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL), NULL);
+                            parser->addParameter($1, $3.getId(), makeTableType(makeRowType(queryNullRecord()->getType())), NULL);
                         }
     | ANY knownOrUnknownId defvalue
                         {
@@ -4254,7 +4263,7 @@ fieldDef
                             }
 
                             IHqlExpression *value = $7.getExpr();
-                            Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL);
+                            Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)));
                             parser->addDatasetField($2, $2.getId(), datasetType, value, attrs.getClear());
                         }
     | setType knownOrUnknownId optFieldAttrs defaultValue
@@ -7205,7 +7214,7 @@ simpleDictionary
                         {
                             HqlExprArray values;  // Empty list
                             OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $6.getExpr());
-                            OwnedHqlExpr ds = convertTempTableToInlineTable(parser->errorHandler, $4.pos, table);
+                            OwnedHqlExpr ds = convertTempTableToInlineTable(*parser->errorHandler, $4.pos, table);
                             $$.setExpr(createDictionary(no_createdictionary, ds.getClear()), $1);
                         }
     | DICTIONARY '(' '[' beginList inlineDatasetValueList ']' ',' recordDef ')'
@@ -7213,7 +7222,7 @@ simpleDictionary
                             HqlExprArray values;
                             parser->endList(values);
                             OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $8.getExpr());
-                            OwnedHqlExpr ds = convertTempTableToInlineTable(parser->errorHandler, $5.pos, table);
+                            OwnedHqlExpr ds = convertTempTableToInlineTable(*parser->errorHandler, $5.pos, table);
                             $$.setExpr(createDictionary(no_createdictionary, ds.getClear()), $1);
                         }
     | '(' dictionary  ')'  {
@@ -7646,13 +7655,12 @@ simpleDataSet
 
                             IHqlExpression * ds = createDataset(no_keyeddistribute, left, createComma(right, cond, LINK(attr), $12.getExpr()));
 
-                            HqlExprArray leftSorts, rightSorts;
-                            bool isLimitedSubstringJoin;
-                            OwnedHqlExpr match = findJoinSortOrders(cond, NULL, NULL, NULL, leftSorts, rightSorts, isLimitedSubstringJoin, NULL);
+                            JoinSortInfo joinInfo;
+                            joinInfo.findJoinSortOrders(cond, NULL, NULL, NULL, false);
                             unsigned numUnsortedFields = numPayloadFields(right);
-                            if (match || (!ds->hasAttribute(firstAtom) && (leftSorts.ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
+                            if (joinInfo.extraMatch || (!ds->hasAttribute(firstAtom) && (joinInfo.queryLeftReq().ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"Condition on DISTRIBUTE must match the key exactly");
-                            if (isLimitedSubstringJoin)
+                            if (joinInfo.hasOptionalEqualities())
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"field[1..*] is not supported for a keyed distribute");
 
                             //Should check that all index fields are accounted for...
@@ -8200,19 +8208,6 @@ simpleDataSet
                             OwnedHqlExpr attrs;
                             IHqlExpression *groupOrder = parser->processSortList($6, no_group, input, sortItems, NULL, &attrs);
                             OwnedHqlExpr args = createComma(groupOrder, LINK(attrs));
-                            
-                            //Non-all Group only make sense if the rows are together.  This can occur if
-                            //the dataset is sorted, or if previous operation was a grouped aggregate
-                            bool isLocal = queryAttributeInList(localAtom, attrs) != NULL;
-                            if (groupOrder && !queryAttributeInList(allAtom, attrs) && !appearsToBeSorted(input->queryType(), isLocal, true))
-                            {
-                                bool ok = (input->getOperator() == no_usertable) &&
-                                          (datasetHasGroupBy(input));// || isGrouped(input->queryChild(0)));
-                                if (!ok && !isLocal && isPartitionedForGroup(input, groupOrder, false) && appearsToBeSorted(input->queryType(), true, true))
-                                    ok = true;
-                                if (!ok && (groupOrder && groupOrder->numChildren()))
-                                    parser->reportWarning(WRN_NOT_SORTED, $2.pos, "GROUP on a table that does not appear to be sorted, was this intended?");
-                            }
                             $$.setExpr(createDataset(no_group, input.getClear(), args.getClear()), $1);
                         }
     | GROUPED '(' startTopFilter startGROUP beginList sortList endGROUP
@@ -8282,7 +8277,7 @@ simpleDataSet
                             if (grouping && !queryAttributeInList(groupedAtom, attrs))
                             {
                                 parser->checkGrouping($7, dataset,record,grouping);
-                                if (dataset->getOperator() == no_group && dataset->queryType()->queryGroupInfo())
+                                if (dataset->getOperator() == no_group && isGrouped(dataset))
                                     parser->reportWarning(WRN_GROUPINGIGNORED, $3.pos, "Grouping of table input will have no effect, was this intended?");
                             }
 
@@ -8500,7 +8495,7 @@ simpleDataSet
                             HqlExprArray values;
                             parser->endList(values);
                             OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $8.getExpr());
-                            $$.setExpr(convertTempTableToInlineTable(parser->errorHandler, $5.pos, table));
+                            $$.setExpr(convertTempTableToInlineTable(*parser->errorHandler, $5.pos, table));
                             $$.setPosition($1);
                         }
     | DATASET '(' '[' beginList transformList ']' ')'
@@ -9408,7 +9403,7 @@ sectionArgument
     ;
 
 enumDef
-    : enumBegin enumValues ')'
+    : enumBegin enumFirst enumValues ')'
                         {
                             $$.setExpr(parser->leaveEnum($1), $1);
                         }
@@ -9418,19 +9413,24 @@ enumBegin
     : ENUM '('
                         {
                             OwnedITypeInfo type = makeIntType(4, false);
-                            parser->enterEnum(type);
-                            $$.clear();
-                        }
-    | ENUM '(' SIMPLE_TYPE ','
-                        {
-                            OwnedITypeInfo type = $3.getType();
-                            parser->enterEnum(type);
+                            parser->enterEnum($1, type);
                             $$.clear();
                         }
     ;
 
-enumValues
+enumFirst
     : enumValue
+    | scalarType
+                        {
+                            OwnedITypeInfo type = $1.getType();
+                            parser->setEnumType($1, type);
+                            $$.clear();
+                        }
+    ;
+
+
+enumValues
+    :
     | enumValues ',' enumValue
     ;
 
@@ -9442,6 +9442,20 @@ enumValue
                         }
     | UNKNOWN_ID EQ expression
                         {
+                            parser->normalizeExpression($3, type_numeric, false);
+                            OwnedHqlExpr nextValue = $3.getExpr();
+                            parser->processEnum($1, nextValue);
+                            $$.clear();
+                        }
+    | SCOPE_ID
+                        {
+                            $1.setId(parser->getNameFromExpr($1));
+                            parser->processEnum($1, NULL);
+                            $$.clear();
+                        }
+    | SCOPE_ID EQ expression
+                        {
+                            $1.setId(parser->getNameFromExpr($1));
                             parser->normalizeExpression($3, type_numeric, false);
                             OwnedHqlExpr nextValue = $3.getExpr();
                             parser->processEnum($1, nextValue);
@@ -10035,6 +10049,7 @@ JoinFlag
     | GROUPED           {   $$.setExpr(createComma(createAttribute(lookupAtom), createAttribute(manyAtom), createAttribute(groupedAtom))); $$.setPosition($1); }
     | MANY              {   $$.setExpr(createAttribute(manyAtom)); $$.setPosition($1); }
     | LOOKUP            {   $$.setExpr(createAttribute(lookupAtom)); $$.setPosition($1); }
+    | SMART             {   $$.setExpr(createAttribute(smartAtom)); $$.setPosition($1); }
     | NOSORT            {   $$.setExpr(createAttribute(noSortAtom)); $$.setPosition($1); }
     | NOSORT '(' LEFT ')'
                         {   $$.setExpr(createAttribute(noSortAtom, createAttribute(leftAtom))); $$.setPosition($1); }
@@ -10044,7 +10059,7 @@ JoinFlag
                         {
                             parser->normalizeExpression($3, type_numeric, false);
                             if ($3.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $4, "ATMOST(0) doesn't make any sense");
+                                parser->reportError(ERR_BAD_JOINFLAG, $3, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
@@ -10053,7 +10068,24 @@ JoinFlag
                             parser->normalizeExpression($3, type_boolean, false);
                             parser->normalizeExpression($5, type_numeric, false);
                             if ($5.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $6, "ATMOST(0) doesn't make any sense");
+                                parser->reportError(ERR_BAD_JOINFLAG, $5, "ATMOST(0) doesn't make any sense");
+                            $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | ATMOST '(' expression ',' sortListExpr ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_boolean, false);
+                            parser->normalizeExpression($7, type_numeric, false);
+                            if ($7.isZero())
+                                parser->reportError(ERR_BAD_JOINFLAG, $7, "ATMOST(0) doesn't make any sense");
+                            $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr(), $7.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | ATMOST '(' sortListExpr ',' expression ')'
+                        {
+                            parser->normalizeExpression($5, type_numeric, false);
+                            if ($5.isZero())
+                                parser->reportError(ERR_BAD_JOINFLAG, $5, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
@@ -11418,6 +11450,7 @@ const
     | TOK_FALSE         {
                             $$.setExpr(createConstant(false), $1);
                         }
+    | BOOL_CONST
     ;
 
 stringConstExpr
@@ -11627,7 +11660,7 @@ pattern0
                         {
                             parser->checkPattern($3, true);
                             if ($3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, $4.getExpr()));
@@ -11637,7 +11670,7 @@ pattern0
                             parser->checkPattern($3, true);
                             parser->normalizeExpression($5, type_int, true);
                             if ($3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, $5.getExpr(), $6.getExpr()));
@@ -11647,7 +11680,7 @@ pattern0
                             parser->checkPattern($3, true);
                             parser->normalizeExpression($5, type_int, true);
                             if ($3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, $5.getExpr(), createValue(no_any, makeNullType()), $8.getExpr()));
@@ -11658,7 +11691,7 @@ pattern0
                             parser->normalizeExpression($5, type_int, true);
                             parser->normalizeExpression($7, type_int, true);
                             if ($3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, $5.getExpr(), $7.getExpr(), $8.getExpr()));
@@ -11667,7 +11700,7 @@ pattern0
                         {
                             parser->checkPattern($3, true);
                             if ($4.queryExpr() && $3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use OPT with count on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use OPT with count on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             IHqlExpression * max = $4.getExpr();
@@ -11678,7 +11711,7 @@ pattern0
     | pattern0 '*'      {
                             parser->checkPattern($1, true);
                             if ($1.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with an associated row");
 
                             IHqlExpression * pattern = $1.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern));
@@ -11686,7 +11719,7 @@ pattern0
     | pattern0 '+'      {
                             parser->checkPattern($1, true);
                             if ($1.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use + on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use + on a rule with an associated row");
 
                             IHqlExpression * pattern = $1.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, createConstantOne(), createValue(no_any, makeNullType())));
@@ -11710,7 +11743,7 @@ pattern0
                             parser->normalizeExpression($3, type_int, true);
                             parser->checkPattern($1, true);
                             if ($1.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with an associated row");
 
                             IHqlExpression * pattern = $1.getExpr();
                             IHqlExpression * count = $3.getExpr();

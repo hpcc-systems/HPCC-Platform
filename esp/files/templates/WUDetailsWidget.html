@@ -18,12 +18,18 @@
                     <div id="${id}Publish" data-dojo-type="dijit.form.DropDownButton">
                         <span>Publish</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <label class="Prompt" for="${id}Jobname2">Job Name:</label>
-                            <input id="${id}Jobname2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox"/>
-                            <button data-dojo-attach-event="onClick:_onPublish" data-dojo-type="dijit.form.Button">Submit</button>
+                            <div id="${id}PublishForm" style="width:460px" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+                                    <input id="${id}Jobname2" title="Job&nbsp;Name:" colspan="2" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onPublish" data-dojo-type="dijit.form.Button">Submit</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
                 </div>
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <h2>

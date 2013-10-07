@@ -100,7 +100,7 @@ void usage(const char *exe)
   printf("  cleanscopes                     -- remove empty scopes\n");
   printf("\n");
   printf("Workunit commands:\n");
-  printf("  listworkunits <workunit-mask> [<prop>=<val> <lower> <upper>]\n");
+  printf("  listworkunits [<prop>=<val> [<lower> [<upper>]]] -- list workunits that match prop=val in workunit name range lower to upper\n");
   printf("  listmatches <connection xpath> [<match xpath>=<val> [<property xpath>]]\n");
   printf("  workunittimings <WUID>\n");
   printf("\n");
@@ -167,7 +167,11 @@ static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &t
 static unsigned __int64 hextoll(const char *str, bool &error)
 {
     unsigned len = strlen(str);
-    if (!len) return 0;
+    if (!len)
+    {
+        error = true;
+        return 0;
+    }
 
     unsigned __int64 factor = 1;
     unsigned __int64 rolling = 0;
@@ -1563,15 +1567,17 @@ static void cleanscopes(IUserDescriptor *user)
 
 //=============================================================================
 
-static void listworkunits(const char *test,const char *min, const char *max)
+static void listworkunits(const char *test, const char *min, const char *max)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), 0, daliConnectTimeoutMs);
     Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("WorkUnits/*");
-    ForEach(*iter) {
+    ForEach(*iter)
+    {
         IPropertyTree &e=iter->query();
         if (test&&*test) {
             const char *tval = strchr(test,'=');
-            if (!tval) {
+            if (!tval)
+            {
                 ERRLOG("missing '=' in %s",test);
                 return;
             }

@@ -794,6 +794,7 @@ MERGEJOIN           { RETURNSYM(MERGEJOIN); }
 MIN                 { RETURNSYM(MIN); }
 MODULE              { RETURNHARD(MODULE); }
 MOFN                { RETURNSYM(MOFN); }
+MULTIPLE            { RETURNSYM(MULTIPLE); }
 NAMED               { RETURNSYM(NAMED); }
 __NAMEOF__          { RETURNSYM(NAMEOF); }
 NAMESPACE           { RETURNSYM(NAMESPACE); }
@@ -897,6 +898,7 @@ SINH                { RETURNSYM(SINH); }
 SIZEOF              { RETURNSYM(SIZEOF); }
 SKEW                { RETURNSYM(SKEW); }
 SKIP                { RETURNSYM(SKIP); }
+SMART               { RETURNSYM(SMART); }
 SOAPACTION          { RETURNSYM(SOAPACTION); }
 SOAPCALL            { RETURNSYM(SOAPCALL); }
 SORT                { RETURNSYM(SORT); }
@@ -981,6 +983,11 @@ __ECL_VERSION_SUBMINOR__ {
                         setupdatepos; 
                         returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_SUB, false));
                         return (INTEGER_CONST);
+                    }
+__ECL_LEGACY_MODE__ {
+                        setupdatepos;
+                        returnToken.setExpr(createConstant(queryLegacyEclSemantics()));
+                        return (BOOL_CONST);
                     }
 __OS__              { 
                         setupdatepos; 
@@ -1333,7 +1340,7 @@ RECORDSET           {
                         if (!lookup)
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
-                        returnToken.setType(makeTableType(NULL, NULL, NULL, NULL));
+                        returnToken.setType(makeTableType(NULL));
                         return(SIMPLE_TYPE);
                     }
 SWAPPED             { 

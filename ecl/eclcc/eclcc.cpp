@@ -64,7 +64,7 @@
 
 //The following flag could be used not free items to speed up closedown
 static bool optDebugMemLeak = false;
-            
+
 #if defined(_WIN32) && defined(_DEBUG)
 static HANDLE leakHandle;
 static void appendLeaks(size32_t len, const void * data)
@@ -92,7 +92,7 @@ void initLeakCheck(const char * title)
 //  set the states we want to monitor
 //
     int LeakTmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
-    LeakTmpFlag    &= ~_CRTDBG_CHECK_CRT_DF; 
+    LeakTmpFlag    &= ~_CRTDBG_CHECK_CRT_DF;
     LeakTmpFlag    |= _CRTDBG_LEAK_CHECK_DF;
     _CrtSetDbgFlag(LeakTmpFlag);
 }
@@ -283,6 +283,7 @@ public:
 
 protected:
     void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
+    void applyApplicationOptions(IWorkUnit * wu);
     void applyDebugOptions(IWorkUnit * wu);
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
     IFileIO * createArchiveOutputFile(EclCompileInstance & instance);
@@ -337,6 +338,7 @@ protected:
 
     IFileArray inputFiles;
     StringArray inputFileNames;
+    StringArray applicationOptions;
     StringArray debugOptions;
     StringArray compileOptions;
     StringArray linkOptions;
@@ -389,7 +391,7 @@ static int doSelfTest(int argc, const char *argv[])
         CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
         runner.addTest( registry.makeTest() );
     }
-    else 
+    else
     {
         // MORE - maybe add a 'list' function here?
         for (int name = 2; name < argc; name++)
@@ -550,12 +552,12 @@ void EclCC::loadOptions()
 #endif
         if (!extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, "lib"))
             libraryPath.append(ENVSEPCHAR).append(syspath).append("plugins");
-        extractOption(cppIncludePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles/cl/include");
+        extractOption(cppIncludePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles" PATHSEPSTR "cl" PATHSEPSTR "include");
         extractOption(pluginsPath, globals, "ECLCC_PLUGIN_PATH", "plugins", syspath, "plugins");
         extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
         extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
-        extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share/ecllibrary/");
-        extractOption(eclBundlePath, globals, "ECLCC_ECLBUNDLE_PATH", "eclBundlesPath", homepath, "/bundles/");
+        extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share" PATHSEPSTR "ecllibrary" PATHSEPSTR);
+        extractOption(eclBundlePath, globals, "ECLCC_ECLBUNDLE_PATH", "eclBundlesPath", homepath, PATHSEPSTR "bundles" PATHSEPSTR);
     }
     extractOption(stdIncludeLibraryPath, globals, "ECLCC_ECLINCLUDE_PATH", "eclIncludePath", ".", NULL);
 
@@ -612,6 +614,25 @@ void EclCC::applyDebugOptions(IWorkUnit * wu)
     }
 }
 
+void EclCC::applyApplicationOptions(IWorkUnit * wu)
+{
+    ForEachItemIn(i, applicationOptions)
+    {
+        const char * option = applicationOptions.item(i);
+        const char * eq = strchr(option, '=');
+        if (eq)
+        {
+            StringAttr name;
+            name.set(option, eq-option);
+            wu->setApplicationValue("eclcc", name, eq+1, true);
+        }
+        else
+        {
+            wu->setApplicationValueInt("eclcc", option, 1, true);
+        }
+    }
+}
+
 //=========================================================================================
 
 ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceDir, const char * targetDir)
@@ -628,7 +649,7 @@ ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceD
 
     ForEachItemIn(iLib, libraryPaths)
         compiler->addLibraryPath(libraryPaths.item(iLib));
-    
+
     return compiler.getClear();
 }
 
@@ -975,6 +996,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     instance.wu->setCloneable(true);
 
     applyDebugOptions(instance.wu);
+    applyApplicationOptions(instance.wu);
 
     if (optTargetCompiler != DEFAULT_COMPILER)
         instance.wu->setDebugValue("targetCompiler", compilerTypeText[optTargetCompiler], true);
@@ -1114,7 +1136,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         const char * queryFullName = NULL;
         instantECL(instance, instance.wu, queryFullName, errs, targetFilename);
     }
-    else 
+    else
     {
         if (stdIoHandle(targetFilename) == -1)
         {
@@ -1141,7 +1163,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
     IPropertyTree * archiveTree = instance.srcArchive;
     Owned<IPropertyTreeIterator> iter = archiveTree->getElements("Option");
-    ForEach(*iter) 
+    ForEach(*iter)
     {
         IPropertyTree &item = iter->query();
         instance.wu->setDebugValue(item.queryProp("@name"), item.queryProp("@value"), true);
@@ -1233,7 +1255,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     const char * queryTxt = queryText->getText();
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
-    
+
     instance.wu.setown(createLocalWorkUnit());
     if (optSaveQueryText)
     {
@@ -1241,7 +1263,13 @@ void EclCC::processFile(EclCompileInstance & instance)
         q->setQueryText(queryTxt);
     }
 
-    if (isArchiveQuery(queryTxt))
+    //On a system with userECL not allowed, all compilations must be from checked-in code that has been
+    //deployed to the eclcc machine via other means (typically via a version-control system)
+    if (!allowAccess("userECL") && (!optQueryRepositoryReference || queryText->length()))
+    {
+        instance.errs->reportError(HQLERR_UserCodeNotAllowed, HQLERR_UserCodeNotAllowed_Text, NULL, 1, 0, 0);
+    }
+    else if (isArchiveQuery(queryTxt))
     {
         instance.fromArchive = true;
         processXmlFile(instance, queryTxt);
@@ -1320,7 +1348,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         processSingleQuery(instance, queryText, attributePath.str());
     }
 
-    if (instance.reportErrorSummary() && !instance.archive)
+    if (instance.reportErrorSummary() && !instance.archive && !(optGenerateMeta && instance.generatedMeta))
         return;
 
     generateOutput(instance);
@@ -1664,7 +1692,11 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     for (; !iter.done(); iter.next())
     {
         const char * arg = iter.query();
-        if (iter.matchOption(tempArg, "--allow"))
+        if (iter.matchFlag(tempArg, "-a"))
+        {
+            applicationOptions.append(tempArg);
+        }
+        else if (iter.matchOption(tempArg, "--allow"))
         {
             allowedPermissions.append(tempArg);
         }
@@ -1697,10 +1729,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optArchive, "-E"))
         {
         }
-        else if (memcmp(arg, "-f", 2)==0)
+        else if (iter.matchFlag(tempArg, "-f"))
         {
-            if (arg[2])
-                debugOptions.append(arg+2);
+            debugOptions.append(tempArg);
         }
         else if (iter.matchFlag(tempBool, "-g"))
         {
@@ -1858,7 +1889,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optWorkUnit, "-wu"))
         {
         }
-        else if (strcmp(arg, "-")==0) 
+        else if (strcmp(arg, "-")==0)
         {
             inputFileNames.append("stdin:");
         }
@@ -1926,6 +1957,7 @@ const char * const helpText[] = {
     "    -E            Output preprocessed ECL in xml archive form",
     "!   -M            Output meta information for the ecl files",
     "!   -Md           Output dependency information",
+    "!   -Me           eclcc should evaluate supplied ecl code rather than generating a workunit",
     "    -q            Save ECL query text as part of workunit",
     "    -wu           Only generate workunit information as xml file",
     "",
@@ -1942,6 +1974,7 @@ const char * const helpText[] = {
     "    -shared       Generate workunit shared object instead of a stand-alone exe",
     "",
     "Other options:",
+    "!   -aoption[=value] Set an application option",
     "!   --allow=str   Allow use of named feature",
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",
@@ -1965,6 +1998,7 @@ const char * const helpText[] = {
     "!   -pch          Generate precompiled header for eclinclude4.hpp",
 #endif
     "!   -P <path>     Specify the path of the output files (only with -b option)",
+    "!   -showpaths    Print information about the searchpaths eclcc is using",
     "    -specs file   Read eclcc configuration from specified file",
     "!   -split m:n    Process a subset m of n input files (only with -b option)",
     "    -v --verbose  Output additional tracing information while compiling",
@@ -2091,7 +2125,7 @@ typedef SafeQueueOf<IFile, true> RegressQueue;
 class BatchThread : public Thread
 {
 public:
-    BatchThread(EclCC & _compiler, RegressQueue & _queue, Semaphore & _fileReady) 
+    BatchThread(EclCC & _compiler, RegressQueue & _queue, Semaphore & _fileReady)
         : compiler(_compiler), queue(_queue), fileReady(_fileReady)
     {
     }

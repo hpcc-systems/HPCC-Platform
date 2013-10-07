@@ -877,16 +877,19 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKjoin:
         case TAKselfjoin:
         case TAKhashjoin:
+        case TAKsmartjoin:
         case TAKkeyeddenormalize:
         case TAKhashdenormalize:
         case TAKdenormalize:
-        case TAKlookupdenormalize:
+        case TAKlookupdenormalize: //GH->JCS why are these here, and join not?
         case TAKalldenormalize:
+        case TAKsmartdenormalize:
         case TAKdenormalizegroup:
         case TAKhashdenormalizegroup:
         case TAKlookupdenormalizegroup:
         case TAKkeyeddenormalizegroup:
         case TAKalldenormalizegroup:
+        case TAKsmartdenormalizegroup:
         case TAKaggregate:
         case TAKexistsaggregate:
         case TAKcountaggregate:
@@ -1286,10 +1289,12 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
     }
     try
     {
+        if (!exception && abortException)
+            exception.setown(abortException.getClear());
         if (exception)
         {
             if (NULL == owner || isGlobal())
-                waitBarrier->cancel();
+                waitBarrier->cancel(exception);
             if (!queryOwner())
             {
                 StringBuffer str;
@@ -1611,7 +1616,7 @@ bool CGraphBase::wait(unsigned timeout)
     {
         if (INFINITE != timeout && tm.timedout(&remaining))
             waitException.throwException();
-        if (!waitBarrier->wait(false, remaining))
+        if (!waitBarrier->wait(true, remaining))
             return false;
     }
     return true;
@@ -1647,11 +1652,11 @@ void CGraphBase::abort(IException *e)
             iter->query().abort(e); // JCSMORE - could do in parallel, they can take some time to timeout
         }
         if (startBarrier)
-            startBarrier->cancel();
+            startBarrier->cancel(e);
         if (waitBarrier)
-            waitBarrier->cancel();
+            waitBarrier->cancel(e);
         if (doneBarrier)
-            doneBarrier->cancel();
+            doneBarrier->cancel(e);
     }
 }
 
@@ -2728,7 +2733,7 @@ void CJobBase::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const by
 
 IEngineRowAllocator *CJobBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
 {
-    return thorAllocator->getRowAllocator(meta, activityId);
+    return thorAllocator->getRowAllocator(meta, activityId, flags);
 }
 
 roxiemem::IRowManager *CJobBase::queryRowManager() const

@@ -57,6 +57,7 @@ void handleSyntax()
     out.append("        decrypt=<password> -- optional, decrypt source\n");
     out.append("        push=0|1 -- optional override pull/push default\n");
     out.append("        jobname=<jobname> -- specify the jobname for spray, despray, copy, rename and replicate.\n");
+    out.append("        failifnosourcefile=0|1 -- optional, don't generate exception when source file set is empty.\n");
     out.append("    spray options:\n");
     out.append("        srcip=<source-machine-ip>\n");
     out.append("        srcfile=<source-file-path>\n");
@@ -73,6 +74,8 @@ void handleSyntax()
     out.append("            separator=<separator> -- optional, default is \\,\n");
     out.append("            terminator=<terminator> -- optional, default is \\r,\\r\\n\n");
     out.append("            quote=<quote> -- optional, default is '\n");
+    out.append("            escape=<escape> -- optional, no default value \n");
+    out.append("            recordstructurepresent=0|1 -- optional, default is 0 (no field names in first row) \n");
     out.append("        options for xml:\n");
     out.append("            rowtag=rowTag -- required\n");
     out.append("            encoding=utf8|utf8n|utf16|utf16le|utf16be|utf32|utf32le|utf32be -- optional, default is utf8\n");

@@ -18,6 +18,7 @@ define([
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/_base/lang",
+    "dojo/NodeList-manipulate",
     "dojo/data/ObjectStore",
     "dojo/store/util/QueryResults",
     "dojo/store/Observable",
@@ -30,7 +31,7 @@ define([
     "hpcc/ESPBase",
     "hpcc/ESPRequest",
     "hpcc/WsWorkunits"
-], function (declare, arrayUtil, Deferred, lang, ObjectStore, QueryResults, Observable, domConstruct,
+], function (declare, arrayUtil, Deferred, lang, NodeListManipulate, ObjectStore, QueryResults, Observable, domConstruct,
             parser, DomParser, entities,
             ESPBase, ESPRequest, WsWorkunits) {
 
@@ -43,7 +44,10 @@ define([
         startProperty: "Start",
         countProperty: "Count",
         preRequest: function (request) {
-            if (this.name) {
+            if (this.name && this.cluster) {
+                request['LogicalName'] = this.name;
+                request['Cluster'] = this.cluster;
+            } else if (this.name) {
                 request['LogicalName'] = this.name;
             } else {
                 request['Wuid'] = this.wuid;
@@ -63,8 +67,8 @@ define([
             } else {
                 this.XmlSchema = [];
             }
-            var rows = this.getValues(domXml, "Row");
-            arrayUtil.forEach(rows, function (item, index) {
+            var rows = this.getValues(domXml, "Row", ["Row"]);
+            arrayUtil.forEach(rows, function(item, index) {
                 item.rowNum = request.Start + index + 1;
             });
             response.Result = rows;
@@ -84,6 +88,13 @@ define([
                     wuid: this.Wuid,
                     sequence: this.Sequence,
                     isComplete: this.isComplete()
+                });
+            } else if (lang.exists("Name", this) && lang.exists("ClusterName", this)) {
+                this.store = new Store({
+                    wuid: this.Wuid,
+                    cluster: this.ClusterName,
+                    name: this.Name,
+                    isComplete: true
                 });
             } else {
                 this.store = new Store({
@@ -137,35 +148,39 @@ define([
         getFirstSequenceNode: function (schemaNode) {
             var row = this.getFirstSchemaNode(schemaNode, "Row");
             if (!row)
-                return null;
+                row = schemaNode;
             var complexType = this.getFirstSchemaNode(row, "complexType");
             if (!complexType)
                 return null;
             return this.getFirstSchemaNode(complexType, "sequence");
         },
 
-        rowToTable: function (cell) {
-            var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" });
-            if (cell && cell.Row) {
-                if (!cell.Row.length) {
-                    cell.Row = [cell.Row];
-                }
-
-                for (var i = 0; i < cell.Row.length; ++i) {
+        rowToTable: function (cell, __row, node) {
+            var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, node);
+            if (Object.prototype.toString.call(cell) === '[object Object]') {
+                cell = [cell];
+            } 
+            if (Object.prototype.toString.call(cell) === '[object Array]') {
+                for (var i = 0; i < cell.length; ++i) {
                     if (i == 0) {
                         var tr = domConstruct.create("tr", null, table);
-                        for (key in cell.Row[i]) {
+                        for (var key in cell[i]) {
                             var th = domConstruct.create("th", { innerHTML: entities.encode(key) }, tr);
                         }
                     }
                     var tr = domConstruct.create("tr", null, table);
-                    for (var key in cell.Row[i]) {
-                        if (cell.Row[i][key]) {
-                            if (cell.Row[i][key].Row) {
+                    for (var key in cell[i]) {
+                        if (cell[i][key]) {
+                            if (Object.prototype.toString.call(cell[i][key]) === '[object Object]' || Object.prototype.toString.call(cell[i][key]) === '[object Array]') {
                                 var td = domConstruct.create("td", null, tr);
-                                td.appendChild(this.rowToTable(cell.Row[i][key]));
+                                this.rowToTable(cell[i][key], cell[i], td);
+                            } else if (key.indexOf("__html", key.length - "__html".length) !== -1) {
+                                var td = domConstruct.create("td", { innerHTML : cell[i][key] }, tr);
+                            } else if (key.indexOf("__javascript", key.length - "__javascript".length) !== -1) {
+                                var td = domConstruct.create("td", null, tr);
+                                this.injectJavascript(cell[i][key], cell[i], td);
                             } else {
-                                var td = domConstruct.create("td", { innerHTML: entities.encode(cell.Row[i][key]) }, tr);
+                                var td = domConstruct.create("td", { innerHTML: entities.encode(cell[i][key]) }, tr);
                             }
                         } else {
                             var td = domConstruct.create("td", { innerHTML: "" }, tr);
@@ -173,9 +188,34 @@ define([
                     }
                 }
             }
-            return table;
         },
-
+        injectJavascript : function(__cellContent, __row, __cell, __width) {
+            //  Add paragraph so cells can valign  ---
+            domConstruct.create("p", {
+                style: {
+                    height : "1px"
+                },
+                innerHTML: "&nbsp;"
+            }, __cell);
+            try {
+                eval(__cellContent);
+            } catch (e) {
+                __cell.innerHTML = "<b>Error:</b>&nbsp;&nbsp;" + entities.encode(e.message) + "<br>" + entities.encode(__cellContent);
+            }
+        },
+        parseName: function (nameObj) {
+            nameObj.width = 500;
+            var titleParts = nameObj.name.split("__");
+            if (titleParts.length >= 3) {
+                var specifiedWidth = parseInt(titleParts[titleParts.length - 2]);
+                if (!isNaN(specifiedWidth)) {
+                    nameObj.width = specifiedWidth;
+                    titleParts = titleParts.slice(0, titleParts.length - 1);
+                }
+            }
+            titleParts = titleParts.slice(0, titleParts.length - 1);
+            nameObj.displayName = titleParts.join("__");
+        },
         getRowStructureFromSchema: function (parentNode, prefix) {
             var sequence = this.getFirstSequenceNode(parentNode, "sequence");
             if (!sequence)
@@ -188,16 +228,50 @@ define([
                     var name = node.getAttribute("name");
                     var type = node.getAttribute("type");
                     var children = this.getRowStructureFromSchema(node, name + "_");
-                    if (name && type) {
-                        retVal.push({
-                            label: name,
-                            field: prefix + name,
-                            width: this.extractWidth(type, name) * 9,
-                            className: "resultGridCell",
-                            sortable: false
-                        });
+                    var context = this;
+                    if (name && name.indexOf("__hidden", name.length - "__hidden".length) !== -1) {
+                    } else if (name && type) {
+                        if (name.indexOf("__html", name.length - "__html".length) !== -1) {
+                            var nameObj = {
+                                name: name
+                            };
+                            this.parseName(nameObj);
+                            retVal.push({
+                                label: nameObj.displayName,
+                                field: prefix + name,
+                                width: nameObj.width,
+                                className: "resultGridCell",
+                                formatter: function (cell, row) {
+                                    return cell;
+                                },
+                                sortable: false
+                            });
+                        } else if (name.indexOf("__javascript", name.length - "__javascript".length) !== -1) {
+                            var nameObj = {
+                                name: name
+                            };
+                            this.parseName(nameObj);
+                            retVal.push({
+                                label: nameObj.displayName,
+                                field: prefix + name,
+                                width: nameObj.width,
+                                className: "resultGridCell",
+                                renderCell: function(row, cell, node, options) {
+                                    context.injectJavascript(cell, row, node, this.width)
+                                },
+                                sortable: false
+                            });
+                        } else {
+                            retVal.push({
+                                label: name,
+                                field: prefix + name,
+                                width: this.extractWidth(type, name) * 9,
+                                className: "resultGridCell",
+                                sortable: false
+                            });
+                        }
                     } else if (children) {
-                        var childWidth = 0;
+                        var childWidth = 10;  //  Allow for html table
                         arrayUtil.forEach(children, function(item, idx) {
                             childWidth += item.width;
                         });
@@ -210,14 +284,11 @@ define([
                             sortable: false
                         });
                         */
-                        var context = this;
                         retVal.push({
                             label: name,
                             field: name,
-                            formatter: function (cell, row, grid) {
-                                var div = document.createElement("div");
-                                div.appendChild(context.rowToTable(cell));
-                                return div.innerHTML;
+                            renderCell: function(row, cell, node, options) {
+                                context.rowToTable(cell, row, node);
                             },
                             width: childWidth,
                             className: "resultGridCell",
@@ -238,9 +309,9 @@ define([
                         label: key,
                         field: key,
                         formatter: function (cell, row, grid) {
-                            if (cell && cell.Row) {
+                            if (Object.prototype.toString.call(cell) === '[object Object]' || Object.prototype.toString.call(cell) === '[object Array]') {
                                 var div = document.createElement("div");
-                                div.appendChild(context.rowToTable(cell));
+                                context.rowToTable(cell, row, div);
                                 return div.innerHTML;
                             }
                             return cell;
@@ -285,6 +356,9 @@ define([
                 if (this.Wuid && lang.exists("Sequence", this)) {
                     request['Wuid'] = this.Wuid;
                     request['Sequence'] = this.Sequence;
+                } else if (this.Name && this.ClusterName) {
+                    request['LogicalName'] = this.Name;
+                    request['Cluster'] = this.ClusterName;
                 } else if (this.Name) {
                     request['LogicalName'] = this.Name;
                 }

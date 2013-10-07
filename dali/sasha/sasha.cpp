@@ -143,7 +143,7 @@ void DumpWorkunitTimings(IPropertyTree *wu)
 {
     Owned<IFile> file;
     Owned<IFileIO> fileio;
-    offset_t filepos;
+    offset_t filepos = 0;
     const char *basename = "DaAudit.";
     StringBuffer curfilename;
     StringBuffer wuid;

@@ -26,8 +26,9 @@ extern HQL_API node_operator queryTransformSingleAggregate(IHqlExpression * tran
 extern HQL_API bool containsOnlyLeft(IHqlExpression * expr,bool ignoreSelfOrFilepos = false);
 extern HQL_API IHqlExpression * queryPhysicalRootTable(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryTableFilename(IHqlExpression * expr);
-extern HQL_API IHqlExpression * findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches);
-extern HQL_API IHqlExpression * findJoinSortOrders(IHqlExpression * expr, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches);
+
+extern HQL_API void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard);
+
 extern HQL_API IHqlExpression * createRawIndex(IHqlExpression * index);
 extern HQL_API IHqlExpression * createImpureOwn(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getNormalizedFilename(IHqlExpression * filename);
@@ -461,7 +462,7 @@ extern HQL_API IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLl
 extern HQL_API IHqlExpression * createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict);
 extern HQL_API IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict);
 extern HQL_API IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
-extern HQL_API IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
+extern HQL_API IHqlExpression * convertTempTableToInlineTable(IErrorReceiver & errors, ECLlocation & location, IHqlExpression * expr);
 extern HQL_API void setPayloadAttribute(HqlExprArray &args);
 
 extern HQL_API bool areTypesComparable(ITypeInfo * leftType, ITypeInfo * rightType);
@@ -585,7 +586,8 @@ extern HQL_API IHqlExpression * getFixedSizeAttr(unsigned size);
 extern HQL_API IHqlExpression * queryAlignedAttr();
 extern HQL_API IHqlExpression * queryLinkCountedAttr();
 extern HQL_API IHqlExpression * queryUnadornedAttr();
-extern HQL_API IHqlExpression * queryMatchxxxPseudoFile();
+extern HQL_API IHqlExpression * queryNlpParsePseudoTable();
+extern HQL_API IHqlExpression * queryXmlParsePseudoTable();
 extern HQL_API IHqlExpression * queryQuotedNullExpr();
 
 extern HQL_API IHqlExpression * getEmbeddedAttr();
@@ -670,5 +672,57 @@ extern HQL_API StringBuffer & appendLocation(StringBuffer & s, IHqlExpression * 
 extern HQL_API bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side);
 extern HQL_API IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField);
 extern HQL_API IHqlExpression * queryTransformAssignValue(IHqlExpression * transform, IHqlExpression * searchField);
+
+extern HQL_API bool isCommonSubstringRange(IHqlExpression * expr);
+
+class HQL_API AtmostLimit
+{
+public:
+    AtmostLimit(IHqlExpression * expr = NULL)
+    {
+        extractAtmostArgs(expr);
+    }
+    void extractAtmostArgs(IHqlExpression * atmost);
+
+public:
+    OwnedHqlExpr required;
+    HqlExprArray optional;
+    OwnedHqlExpr limit;
+};
+
+class HQL_API JoinSortInfo
+{
+    friend class JoinOrderSpotter;
+public:
+    JoinSortInfo();
+
+    void findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, bool allowSlidingMatch);
+    void findJoinSortOrders(IHqlExpression * expr, bool allowSlidingMatch);
+
+    inline bool hasRequiredEqualities() const { return leftReq.ordinality() != 0; }
+    inline bool hasOptionalEqualities() const { return leftOpt.ordinality() != 0; }
+    inline const HqlExprArray & queryLeftReq() { return leftReq; }
+    inline const HqlExprArray & queryRightReq() { return rightReq; }
+    inline const HqlExprArray & queryLeftOpt() { return leftOpt; }
+    inline const HqlExprArray & queryRightOpt() { return rightOpt; }
+    inline const HqlExprArray & queryLeftSort() { initSorts(); return leftSorts; }
+    inline const HqlExprArray & queryRightSort() { initSorts(); return rightSorts; }
+
+protected:
+    void initSorts();
+
+public:
+    AtmostLimit atmost;
+    OwnedHqlExpr extraMatch;
+    HqlExprArray slidingMatches;
+    bool conditionAllEqualities;
+protected:
+    HqlExprArray leftReq;
+    HqlExprArray leftOpt;
+    HqlExprArray leftSorts;
+    HqlExprArray rightReq;
+    HqlExprArray rightOpt;
+    HqlExprArray rightSorts;
+};
 
 #endif

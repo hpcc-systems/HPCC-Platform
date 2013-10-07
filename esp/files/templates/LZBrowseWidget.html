@@ -5,26 +5,25 @@
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}HexPreview" data-dojo-attach-event="onClick:_onHexPreview" data-dojo-type="dijit.form.Button">Hex Preview</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <input id="${id}Upload" label="Upload" type="file" data-dojo-attach-event="onChange:_onUpload" data-dojo-props='multiple: true' data-dojo-type="dojox.form.Uploader"/>
                     <div id="${id}Download" data-dojo-attach-event="onClick:_onDownload" data-dojo-type="dijit.form.Button">Download</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
-                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}HexPreview" data-dojo-attach-event="onClick:_onHexPreview" data-dojo-type="dijit.form.Button">Hex Preview</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <b>Spray:</b>
                     <div id="${id}SprayFixedDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>Fixed</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}SprayFixedDialog" style="width: 530px;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}SprayFixedDialog" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <h2>Source</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <!--<input id="${id}SprayFixedNetworkPath" title="Network&nbsp;Path:" style="width: 95%;" name="sourceN" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />-->
-                                    <input id="${id}SprayFixedRecordLength" title="Record&nbsp;Length:" style="width: 95%;" name="sourceRecordSize" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}SprayFixedRecordLength" title="Record&nbsp;Length:" style="width: 95%;" name="sourceRecordSize" colspan="2" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                 </div>
                                 <h2>Destination</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
                                     <input id="${id}SprayFixedDestination" title="Group:" style="width: 95%;" name="destGroup" colspan="2" data-dojo-type="TargetSelectWidget" />
-                                    <input title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                     <input title="Mask:" style="width: 95%;" colspan="2" data-dojo-props="trim: true, readonly: true"  data-dojo-type="dijit.form.TextBox" />
                                     <input title="Prefix:" style="width: 95%;" name="prefix" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                 </div>
@@ -34,44 +33,40 @@
                                     <input title="No&nbsp;Split:" name="nosplit" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                     <input title="Compress:" name="compress" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                 </div>
-                                <button data-dojo-attach-event="onClick:_onSprayFixed" data-dojo-type="dijit.form.Button">Spray</button>
-                                <button data-dojo-attach-event="onClick:_onSprayFixedCancel" data-dojo-type="dijit.form.Button">Cancel</button>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onSprayFixed" data-dojo-type="dijit.form.Button">Spray</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div id="${id}SprayVariableDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>Delimited</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <div id="${id}SprayVariableDialog" style="width: 530px;" data-dojo-type="dijit.form.Form">
+                            <div id="${id}SprayVariableDialog" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <h2>Source</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <!--<input id="${id}SprayVariableTargetSelect" title="DropZone" style="width: 95%;" name="machine" colspan="2" data-dojo-type="TargetSelectWidget" />
-                                    <input id="${id}SprayVariableIPAddress" title="IP&nbsp;Address:" style="width: 95%;" name="sourceIP" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}SprayVariableTargetPath" title="Local&nbsp;Path:" style="width: 96%;" name="sourcePath" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
-                                    <input id="${id}uploader2" type="file" title="Yes" style="width: 95%;" colspan="2" multiple="true" data-dojo-type="dojox/form/Uploader" data-dojo-props='label:"Choose&nbsp;File"'/>
-                                    <input id="${id}SprayVariableNetworkPath" title="Network&nbsp;Path:" style="width: 95%;" name="sourceN" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />-->
                                     <select id="${id}sourceFormat" title="Format:" name="sourceFormat" data-dojo-type="dijit/form/Select">
-                                        <option value="1">ASCII</option><!--value="ascii"-->
-                                        <option value="2">UTF-8</option><!--value="utf8"-->
-                                        <option value="3">UTF-8N</option><!--value="utf8n"-->
-                                        <option value="4">UTF-16</option><!--value="utf16"-->
-                                        <option value="5">UTF-16LE</option><!--value="utf16le"-->
-                                        <option value="6">UTF-16BE</option><!--value="utf16be"-->
-                                        <option value="7">UTF-32</option><!--value="utf32"-->
-                                        <option value="8">UTF-32LE</option><!--value="utf32le"-->
-                                        <option value="9">UTF-32BE</option><!--value="utf32be"-->
+                                        <option value="1">ASCII</option>
+                                        <option value="2">UTF-8</option>
+                                        <option value="3">UTF-8N</option>
+                                        <option value="4">UTF-16</option>
+                                        <option value="5">UTF-16LE</option>
+                                        <option value="6">UTF-16BE</option>
+                                        <option value="7">UTF-32</option>
+                                        <option value="8">UTF-32LE</option>
+                                        <option value="9">UTF-32BE</option>
                                     </select>
-                                    <input id="${id}SprayVariableMaxRecordLength" title="Max&nbsp;Record&nbsp;Length:" style="width: 95%;" name="sourceMaxRecordSize" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}SprayVariableSeperators" title="Seperators:" style="width: 95%;" name="sourceSeparators" colspan="2" data-dojo-props="trim: true, placeHolder:'\,'" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}SprayVariableMaxRecordLength" title="Max&nbsp;Record&nbsp;Length:" style="width: 95%;" name="sourceMaxRecordSize" value="8192" colspan="2" required="true" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}SprayVariableSeperators" title="Seperators:" style="width: 95%;" name="sourceSeparators" value="," colspan="2" data-dojo-props="trim: true, placeHolder:'\,'" data-dojo-type="dijit.form.ValidationTextBox" />
                                     <input title="No&nbsp;Separator?" name="NoSourceSeparator" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                     <input id="${id}SprayVariableEscape" title="Escape:" style="width: 95%;" name="sourceEscape" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}SprayVariableTerminators" title="Line&nbsp;Terminators:" name="sourceTerminators"  style="width: 95%;"  colspan="2" data-dojo-props="trim: true, placeHolder:'\\n,\\r\\n'" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}SprayVariableQuote" title="Quote:" style="width: 95%;" name="sourceQuote" colspan="2" data-data-dojo-props="trim: true, placeHolder:'\,'" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}SprayVariableTerminators" title="Line&nbsp;Terminators:" name="sourceTerminators"  style="width: 95%;" value="\n,\r\n" colspan="2" required="true" data-dojo-props="trim: true, placeHolder:'\\n,\\r\\n'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}SprayVariableQuote" title="Quote:" style="width: 95%;" name="sourceQuote" value="'" colspan="2" data-data-dojo-props="trim: true, placeHolder:'\''" data-dojo-type="dijit.form.TextBox" />
                                 </div>
                                 <h2>Destination</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
                                     <input id="${id}SprayVariableDestination" title="Group:" style="width: 95%;" name="destGroup" colspan="2" data-dojo-type="TargetSelectWidget" />
-                                    <input title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" data-dojo-props="trim: true" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
                                     <input title="Mask:" style="width: 95%;" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                     <input title="Prefix:" style="width: 95%;" name="prefix" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                 </div>
@@ -81,8 +76,9 @@
                                     <input title="No&nbsp;Split:" name="nosplit" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                     <input title="Compress:" name="compress" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                 </div>
-                                <button data-dojo-attach-event="onClick:_onSprayVariable" data-dojo-type="dijit.form.Button">Spray </button>
-                                <button data-dojo-attach-event="onClick:_onSprayVariableCancel" data-dojo-type="dijit.form.Button">Cancel</button>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onSprayVariable" data-dojo-type="dijit.form.Button">Spray </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -92,29 +88,24 @@
                             <div id="${id}SprayXmlDialog" style="width: 530px;" data-dojo-type="dijit.form.Form">
                                 <h2>Source</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <!--<input id="${id}SprayXmlTargetSelect" title="DropZone" style="width: 95%;" name="machine" colspan="2" data-dojo-type="TargetSelectWidget" />
-                                    <input id="${id}SprayXmlIPAddress" title="IP&nbsp;Address:" style="width: 95%;" name="sourceIP" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}SprayXmlTargetPath" title="Local&nbsp;Path:" style="width: 96%;" name="sourcePath" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
-                                    <input id="${id}uploader3" type="file" title="Yes" style="width: 95%;" colspan="2" multiple="true" data-dojo-type="dojox/form/Uploader" data-dojo-props='label:"Choose&nbsp;File"'/>
-                                    <input id="${id}SprayXmlNetworkPath" title="Network&nbsp;Path:" style="width: 95%;" name="sourceN" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />-->
                                     <select id="${id}xmlsourceFormat" title="Format:" name="sourceFormat" data-dojo-type="dijit/form/Select">
-                                        <option value="1">ASCII</option><!--value="ascii"-->
-                                        <option value="2">UTF-8</option><!--value="utf8"-->
-                                        <option value="3">UTF-8N</option><!--value="utf8n"-->
-                                        <option value="4">UTF-16</option><!--value="utf16"-->
-                                        <option value="5">UTF-16LE</option><!--value="utf16le"-->
-                                        <option value="6">UTF-16BE</option><!--value="utf16be"-->
-                                        <option value="7">UTF-32</option><!--value="utf32"-->
-                                        <option value="8">UTF-32LE</option><!--value="utf32le"-->
-                                        <option value="9">UTF-32BE</option><!--value="utf32be"-->
+                                        <option value="1">ASCII</option>
+                                        <option value="2">UTF-8</option>
+                                        <option value="3">UTF-8N</option>
+                                        <option value="4">UTF-16</option>
+                                        <option value="5">UTF-16LE</option>
+                                        <option value="6">UTF-16BE</option>
+                                        <option value="7">UTF-32</option>
+                                        <option value="8">UTF-32LE</option>
+                                        <option value="9">UTF-32BE</option>
                                     </select>
-                                    <input id="${id}SprayXmlMaxRecordLength" title="Max&nbsp;Record&nbsp;Length:" style="width: 95%;" name="sourceMaxRecordSize" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}SprayXmlRowTag" title="Row&nbsp;Tag:" style="width: 95%;" name="sourceRowTag" colspan="2" data-dojo-props="trim: true, placeHolder:'\,'" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}SprayXmlMaxRecordLength" title="Max&nbsp;Record&nbsp;Length:" value="8192" style="width: 95%;" name="sourceMaxRecordSize" colspan="2" required="true" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}SprayXmlRowTag" title="Row&nbsp;Tag:" style="width: 95%;" name="sourceRowTag" colspan="2" required="true" data-dojo-props="trim: true, placeHolder:'tag'" data-dojo-type="dijit.form.ValidationTextBox" />
                                 </div>
                                 <h2>Destination</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
                                     <input id="${id}SprayXmlDestinationSelect" title="Group:" style="width: 95%;" name="destGroup" colspan="2" data-dojo-type="TargetSelectWidget" />
-                                    <input title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" data-dojo-props="trim: true" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
                                     <input title="Mask:" style="width: 95%;" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                     <input title="Prefix:" style="width: 95%;" name="prefix" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                 </div>
@@ -124,12 +115,14 @@
                                     <input title="No&nbsp;Split:" name="nosplit" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                     <input title="Compress:" name="compress" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                 </div>
-                                <button data-dojo-attach-event="onClick:_onSprayXml" data-dojo-type="dijit.form.Button">Spray</button>
-                                <button data-dojo-attach-event="onClick:_onSprayXmlCancel" data-dojo-type="dijit.form.Button">Cancel</button>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button data-dojo-attach-event="onClick:_onSprayXml" data-dojo-type="dijit.form.Button">Spray</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
                 </div>
                 <div id="${id}LandingZonesGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}LandingZonesGrid">
@@ -138,12 +131,14 @@
             </div>
         </div>
     </div>
-    <div id="${id}FileListDialog" title="Info Dialog" data-dojo-type="dijit.Dialog">
+    <div id="${id}FileListDialog" title="File Uploader" data-dojo-type="dijit.Dialog">
         <div class="dijitDialogPaneContentArea">
             <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                <input id="${id}DropZoneTargetSelect" title="Group:" style="width: 95%;" colspan="2" data-dojo-type="TargetSelectWidget" />
+                <input id="${id}DropZoneTargetSelect" title="Landing Zone:" style="width: 95%;" colspan="2" data-dojo-type="TargetSelectWidget" />
             </div>
-            <div id="${id}UploadFileList" class="dijitDialogPaneContentArea" data-dojo-type="dojox.form.uploader.FileList"></div>
+            <p>
+            <div id="${id}UploadFileList" class="dijitDialogPaneContentArea" data-dojo-props="uploaderId: '${id}Upload'" data-dojo-type="dojox.form.uploader.FileList"></div>
+            </p>
         </div>
         <div class="dijitDialogPaneActionBar">
             <button id="${id}FileListDialogUpload" data-dojo-attach-event="onClick:_onUploadSubmit" data-dojo-type="dijit.form.Button">Start</button>

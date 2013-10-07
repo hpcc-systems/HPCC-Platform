@@ -126,7 +126,7 @@ enum
     HEFfunctionOfGroupAggregate = 0x00000200,
     HEFvolatile                 = 0x00000400,           // value changes each time called - e.g., random()
     HEFaction                   = 0x00000800,           // an action, or something that can have a side-effect
-  HEF____unused4____          = 0x00000100,
+    HEFaccessRuntimeContext     = 0x00000100,
     HEFthrowscalar              = 0x00002000,           // scalar/action that can throw an exception
     HEFthrowds                  = 0x00004000,           // dataset that can throw an exception
     HEFoldthrows                = 0x00008000,           // old throws flag, which I should remove asap
@@ -166,7 +166,7 @@ enum
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
                                    HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontextDependentException|HEFcontainsAlias|HEFcontainsAliasLocally|
-                                   HEFinternalSelect|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally),
+                                   HEFinternalSelect|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally|HEFaccessRuntimeContext),
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
@@ -794,6 +794,7 @@ enum ExprPropKind
     EPaligned,
     EPunadorned,
     EPlocationIndependent,
+    EPmeta,
     EPmax
 };
 
@@ -1119,6 +1120,7 @@ interface IHqlExpression : public IInterface
     virtual unsigned numChildren() const = 0;
     virtual bool isIndependentOfScope() = 0;
     virtual bool usesSelector(IHqlExpression * selector) = 0;
+    virtual bool isIndependentOfScopeIgnoringInputs() = 0;
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) = 0;
     virtual IValue *queryValue() const = 0;
     virtual IInterface *queryUnknownExtra() = 0;
@@ -1469,7 +1471,7 @@ extern HQL_API IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr);
 inline bool hasAnnotation(IHqlExpression * expr, annotate_kind search){ return queryAnnotation(expr, search) != NULL; }
 inline IHqlExpression * queryNamedSymbol(IHqlExpression * expr) { return queryAnnotation(expr, annotate_symbol); }
 inline bool hasNamedSymbol(IHqlExpression * expr) { return hasAnnotation(expr, annotate_symbol); }
-inline bool hasAttribute(IAtom * search, HqlExprArray & exprs) { return queryAttribute(search, exprs) != NULL; }
+inline bool hasAttribute(IAtom * search, const HqlExprArray & exprs) { return queryAttribute(search, exprs) != NULL; }
 
 extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpression * annotation);
 extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression * expr);
@@ -1588,7 +1590,8 @@ extern HQL_API bool hasUninheritedAttribute(IHqlExpression * field);
 extern HQL_API IHqlExpression * extractChildren(IHqlExpression * value);
 extern HQL_API IHqlExpression * queryOnlyField(IHqlExpression * record);
 extern HQL_API bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right);
-extern HQL_API bool assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right);
+extern HQL_API void assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right);
+extern HQL_API void assertRecordTypesMatch(IHqlExpression * left, IHqlExpression * right);
 extern HQL_API bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right);
 extern HQL_API bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right);
 extern HQL_API IHqlExpression * queryOriginalRecord(IHqlExpression * expr);
@@ -1642,17 +1645,13 @@ inline bool isCast(IHqlExpression * expr)
 }
 extern HQL_API bool isKey(IHqlExpression * expr);
 
-inline IHqlExpression * queryGrouping(ITypeInfo * type)     { return static_cast<IHqlExpression *>(type->queryGroupInfo()); }
-inline IHqlExpression * queryDistribution(ITypeInfo * type) { return static_cast<IHqlExpression *>(type->queryDistributeInfo()); }
-inline IHqlExpression * queryGlobalSortOrder(ITypeInfo * type)  { return static_cast<IHqlExpression *>(type->queryGlobalSortInfo()); }
-inline IHqlExpression * queryLocalUngroupedSortOrder(ITypeInfo * type)  { return static_cast<IHqlExpression *>(type->queryLocalUngroupedSortInfo()); }
-inline IHqlExpression * queryGroupSortOrder(ITypeInfo * type)   { return static_cast<IHqlExpression *>(type->queryGroupSortInfo()); }
-inline IHqlExpression * queryGrouping(IHqlExpression * expr)        { return queryGrouping(expr->queryType()); }
-inline IHqlExpression * queryDistribution(IHqlExpression * expr)    { return queryDistribution(expr->queryType()); }
-inline IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr) { return queryGlobalSortOrder(expr->queryType()); }
-inline IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr) { return queryLocalUngroupedSortOrder(expr->queryType()); }
-inline IHqlExpression * queryGroupSortOrder(IHqlExpression * expr)  { return queryGroupSortOrder(expr->queryType()); }
-inline bool isGrouped(ITypeInfo * type)                     { return type && type->queryGroupInfo() != NULL; }
+extern HQL_API IHqlExpression * queryGrouping(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryDistribution(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryGroupSortOrder(IHqlExpression * expr);
+
+inline bool isGrouped(ITypeInfo * type)                     { return type && (type->getTypeCode() == type_groupedtable); }
 inline bool isGrouped(IHqlExpression * expr)                { return isGrouped(expr->queryType()); }
 
 inline IFunctionTypeExtra * queryFunctionTypeExtra(ITypeInfo * type)    { return static_cast<IFunctionTypeExtra *>(queryUnqualifiedType(type)->queryModifierExtra()); }
@@ -1665,7 +1664,7 @@ inline IHqlExpression * querySelSeq(IHqlExpression * expr)
 {
     return expr->queryAttribute(_selectorSequence_Atom);
 }
-extern HQL_API IHqlExpression * createGroupedAttribute(ITypeInfo * type);
+extern HQL_API IHqlExpression * createGroupedAttribute(IHqlExpression * grouping);
 extern HQL_API bool isSameUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API bool isSameFullyUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API IHqlExpression * queryNewSelectAttrExpr();
@@ -1696,6 +1695,7 @@ inline bool containsTranslated(IHqlExpression * expr)   { return (expr->getInfoF
 inline bool containsSideEffects(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFaction|HEFthrowscalar|HEFthrowds)) != 0; }
 inline bool containsInternalSelect(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFinternalSelect)) != 0; }
 inline bool containsThisNode(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFcontainsThisNode)) != 0; }
+inline bool usesRuntimeContext(IHqlExpression * expr)   { return (expr->getInfoFlags() & (HEFaccessRuntimeContext)) != 0; }
 
 inline bool containsWorkflow(IHqlExpression * expr)     { return (expr->getInfoFlags2() & (HEF2workflow)) != 0; }
 inline bool containsMustHoist(IHqlExpression * expr)    { return (expr->getInfoFlags2() & (HEF2mustHoist)) != 0; }
@@ -1733,6 +1733,8 @@ extern HQL_API bool isUpdatedConditionally(IHqlExpression * expr);
 extern HQL_API bool activityMustBeCompound(IHqlExpression * expr);
 extern HQL_API unsigned queryCurrentTransformDepth();                   // debugging - only valid inside a transform
 extern HQL_API bool isExternalFunction(IHqlExpression * funcdef);
+extern HQL_API bool isEmbedFunction(IHqlExpression * expr);
+extern HQL_API bool isEmbedCall(IHqlExpression * expr);
 
 typedef enum { 
     //Flags to indicate which datasets are available in scope

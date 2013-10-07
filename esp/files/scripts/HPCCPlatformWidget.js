@@ -18,14 +18,14 @@ define([
     "dojo/_base/lang",
     "dojo/dom",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
     "dijit/Tooltip",
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
     "hpcc/WsAccount",
+    "hpcc/WsSMC",
+    "hpcc/GraphWidget",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
@@ -49,16 +49,17 @@ define([
     "hpcc/HPCCPlatformOpsWidget"
 
 ], function (declare, lang, dom,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Tooltip,
-                _TabContainerWidget, ESPRequest, WsAccount,
+                registry, Tooltip,
+                _TabContainerWidget, ESPRequest, WsAccount, WsSMC, GraphWidget,
                 template) {
-    return declare("HPCCPlatformWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",
 
         postCreate: function (args) {
             this.inherited(arguments);
             this.searchText = registry.byId(this.id + "FindText");
+            this.aboutDialog = registry.byId(this.id + "AboutDialog");
             this.searchPage = registry.byId(this.id + "_Main" + "_Search");
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
@@ -86,7 +87,25 @@ define([
             win.focus();
         },
 
+        _onAboutLoaded: false,
         _onAbout: function (evt) {
+            if (!this._onAboutLoaded) {
+                this._onAboutLoaded = true;
+                var context = this;
+                WsSMC.Activity({
+                }).then(function (response) {
+                    if (lang.exists("ActivityResponse.Build", response)) {
+                        dom.byId(context.id + "ServerVersion").value = response.ActivityResponse.Build;
+                    }
+                    var gc = registry.byId(context.id + "GraphControl");
+                    dom.byId(context.id + "GraphControlVersion").value = gc.getVersion();
+                });
+            }
+            this.aboutDialog.show();
+        },
+
+        _onAboutClose: function (evt) {
+            this.aboutDialog.hide();
         },
 
         createStackControllerTooltip: function (widgetID, text) {
@@ -100,9 +119,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+             if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             var context = this;
             WsAccount.MyAccount({
@@ -110,8 +128,6 @@ define([
                 if (lang.exists("MyAccountResponse.username", response)) {
                     dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
                 }
-            },
-            function (error) {
             });
 
             this.createStackControllerTooltip(this.id + "_ECL", "ECL");
@@ -125,7 +141,7 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.init) {
-                    currSel.init(currSel.params);
+                    currSel.init({});
                 }
             }
         }

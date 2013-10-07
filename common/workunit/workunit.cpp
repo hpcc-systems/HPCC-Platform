@@ -1855,7 +1855,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.clear(); return s; }
 };
 
-mapEnums sortFields[] = 
+mapEnums workunitSortFields[] =
 {
    { WUSFuser, "@submitID" },
    { WUSFcluster, "@clusterName" },
@@ -1877,6 +1877,24 @@ mapEnums sortFields[] =
    { WUSFbatchoutputfile, "Application/Dispatcher/OutputFileName" },
    { WUSFtotalthortime, "Timings/Timing[@name='Total thor time']/@duration" },
    { WUSFterm, NULL }
+};
+
+mapEnums querySortFields[] =
+{
+   { WUQSFId, "@id" },
+   { WUQSFwuid, "@wuid" },
+   { WUQSFname, "@name" },
+   { WUQSFdll, "@dll" },
+   { WUQSFmemoryLimit, "@memoryLimit" },
+   { WUQSFmemoryLimitHi, "@memoryLimit" },
+   { WUQSFtimeLimit, "@timeLimit" },
+   { WUQSFtimeLimitHi, "@timeLimit" },
+   { WUQSFwarnTimeLimit, "@warnTimeLimit" },
+   { WUQSFwarnTimeLimitHi, "@warnTimeLimit" },
+   { WUQSFpriority, "@priority" },
+   { WUQSFpriorityHi, "@priority" },
+   { WUQSFQuerySet, "../@id" },
+   { WUQSFterm, NULL }
 };
 
 class asyncRemoveDllWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveDll
@@ -1916,6 +1934,47 @@ public:
         Owned<IFile> file = createIFile(name);
         PROGLOG("WU removeDll %s",file->queryFilename());
         file->remove();
+    }
+};
+
+//==========================================================================================
+
+class CConstQuerySetQueryIterator : public CInterface, implements IConstQuerySetQueryIterator
+{
+    IArrayOf<IPropertyTree> trees;
+    unsigned index;
+public:
+    IMPLEMENT_IINTERFACE;
+    CConstQuerySetQueryIterator(IArrayOf<IPropertyTree> &_trees)
+    {
+        ForEachItemIn(t, _trees)
+            trees.append(*LINK(&_trees.item(t)));
+        index = 0;
+    }
+    ~CConstQuerySetQueryIterator()
+    {
+        trees.kill();
+    }
+    bool first()
+    {
+        index = 0;
+        return (trees.ordinality()!=0);
+    }
+
+    bool next()
+    {
+        index++;
+        return (index<trees.ordinality());
+    }
+
+    bool isValid()
+    {
+        return (index<trees.ordinality());
+    }
+
+    IPropertyTree &query()
+    {
+        return trees.item(index);
     }
 };
 
@@ -2211,6 +2270,32 @@ public:
                                                 ISecUser *secuser,
                                                 unsigned *total)
     {
+        class CWorkUnitsPager : public CSimpleInterface, implements IElementsPager
+        {
+            StringAttr xPath;
+            StringAttr sortOrder;
+            StringAttr nameFilterLo;
+            StringAttr nameFilterHi;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi)
+                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
+            {
+            }
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
+            {
+                Owned<IRemoteConnection> conn = querySDS().connect("WorkUnits", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+                if (!conn)
+                    return NULL;
+                Owned<IPropertyTreeIterator> iter = conn->getElements(xPath);
+                if (!iter)
+                    return NULL;
+                sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), elements);
+                return conn.getClear();
+            }
+        };
         class CScopeChecker : public CSimpleInterface, implements ISortedElementsTreeFilter
         {
             UniqueScopes done;
@@ -2261,7 +2346,7 @@ public:
                 else if (subfmt==WUSFwuidhigh) 
                     namefilterhi.set(fv);
                 else {
-                    query.append('[').append(getEnumText(subfmt,sortFields)).append('=');
+                    query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
                     if (fmt&WUSFnocase)
                         query.append('?');
                     if (fmt&WUSFwild)
@@ -2282,12 +2367,12 @@ public:
                     so.append('?');
                 if (fmt&WUSFnumeric) 
                     so.append('#');
-                so.append(getEnumText(fmt&0xff,sortFields));
+                so.append(getEnumText(fmt&0xff,workunitSortFields));
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IRemoteConnection> conn=getElementsPaged("WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
-            secmgr?sc:NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results,total);
+        Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get());
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,queryowner,cachehint,results,total);
         return new CConstWUArrayIterator(conn, results, secmgr, secuser);
     }
 
@@ -2302,6 +2387,142 @@ public:
                                                 unsigned *total)
     {
         return getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, NULL, NULL, total);
+    }
+
+    IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
+                                                WUQuerySortField *filters,   // NULL or list of fields to folteron (terminated by WUSFterm)
+                                                const void *filterbuf,  // (appended) string values for filters
+                                                unsigned startoffset,
+                                                unsigned maxnum,
+                                                __int64 *cachehint,
+                                                unsigned *total)
+    {
+        class CQuerySetQueriesPager : public CSimpleInterface, implements IElementsPager
+        {
+            StringAttr querySet;
+            StringAttr xPath;
+            StringAttr sortOrder;
+
+            void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
+            {
+                Owned<IPropertyTreeIterator> iter = querySetTree->getElements(xPath);
+                ForEach(*iter)
+                {
+                    IPropertyTree &query = iter->query();
+                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", LINK(&query));
+                    queryWithSetId->addProp("@querySetId", querySetId);
+
+                    bool activated = false;
+                    const char* queryId = query.queryProp("@id");
+                    if (queryId && *queryId)
+                    {
+                        VStringBuffer xPath("Alias[@id='%s']", queryId);
+                        IPropertyTree *alias = queryRegistry->queryPropTree(xPath.str());
+                        if (alias)
+                            activated = true;
+                    }
+                    queryWithSetId->addPropBool("@activated", activated);
+                }
+            }
+
+            IPropertyTree* getAllQuerySetQueries(IRemoteConnection* conn, const char *querySet, const char *xPath)
+            {
+                Owned<IPropertyTree> queryTree = createPTree("Queries");
+                IPropertyTree* root = conn->queryRoot();
+                if (querySet && *querySet)
+                {
+                    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
+                    VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
+                    populateQueryTree(queryRegistry, querySet, root, path.str(), queryTree);
+                }
+                else
+                {
+                    Owned<IPropertyTreeIterator> iter = root->getElements("QuerySet");
+                    ForEach(*iter)
+                    {
+                        IPropertyTree &querySetTree = iter->query();
+                        const char* id = querySetTree.queryProp("@id");
+                        if (id && *id)
+                        {
+                            Owned<IPropertyTree> queryRegistry = getQueryRegistry(id, false);
+                            VStringBuffer path("Query%s", xPath);
+                            populateQueryTree(queryRegistry, id, &querySetTree, path.str(), queryTree);
+                        }
+                    }
+                }
+                return queryTree.getClear();
+            }
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder)
+                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder)
+            {
+            }
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
+            {
+                Owned<IRemoteConnection> conn = querySDS().connect("QuerySets", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+                if (!conn)
+                    return NULL;
+                Owned<IPropertyTree> elementTree = getAllQuerySetQueries(conn, querySet.get(), xPath.get());
+                if (!elementTree)
+                    return NULL;
+                Owned<IPropertyTreeIterator> iter = elementTree->getElements("*");
+                if (!iter)
+                    return NULL;
+                sortElements(iter, sortOrder.get(), NULL, NULL, elements);
+                return conn.getClear();
+            }
+        };
+        StringAttr querySet;
+        StringBuffer xPath;
+        StringBuffer so;
+        if (filters)
+        {
+            const char *fv = (const char *)filterbuf;
+            for (unsigned i=0;filters[i]!=WUQSFterm;i++) {
+                int fmt = filters[i];
+                int subfmt = (fmt&0xff);
+                if (subfmt==WUQSFQuerySet)
+                    querySet.set(fv);
+                else if ((subfmt==WUQSFmemoryLimit) || (subfmt==WUQSFtimeLimit) || (subfmt==WUQSFwarnTimeLimit) || (subfmt==WUQSFpriority))
+                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append(">=").append(fv).append("]");
+                else if ((subfmt==WUQSFmemoryLimitHi) || (subfmt==WUQSFtimeLimitHi) || (subfmt==WUQSFwarnTimeLimitHi) || (subfmt==WUQSFpriorityHi))
+                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append("<=").append(fv).append("]");
+                else {
+                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append('=');
+                    if (fmt&WUQSFnocase)
+                        xPath.append('?');
+                    if (fmt&WUQSFnumeric)
+                        xPath.append('#');
+                    if (fmt&WUQSFwild)
+                        xPath.append('~');
+                    xPath.append('"').append(fv).append("\"]");
+                }
+                fv = fv + strlen(fv)+1;
+            }
+        }
+        if (xPath.length() < 1)
+            xPath.set("*");
+        if (sortorder) {
+            for (unsigned i=0;sortorder[i]!=WUQSFterm;i++) {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortorder[i];
+                if (fmt&WUQSFreverse)
+                    so.append('-');
+                if (fmt&WUQSFnocase)
+                    so.append('?');
+                if (fmt&WUQSFnumeric)
+                    so.append('#');
+                so.append(getEnumText(fmt&0xff,querySortFields));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL);
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
+        return new CConstQuerySetQueryIterator(results);
     }
 
     virtual unsigned numWorkUnits()
@@ -2568,6 +2789,17 @@ public:
                                                         unsigned *total)
     {
         return factory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, secMgr.get(), secUser.get(), total);
+    }
+
+    virtual IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder,
+                                                WUQuerySortField *filters,
+                                                const void *filterbuf,
+                                                unsigned startoffset,
+                                                unsigned maxnum,
+                                                __int64 *cachehint,
+                                                unsigned *total)
+    {
+        return factory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total);
     }
 
     virtual unsigned numWorkUnits()
@@ -4246,6 +4478,31 @@ extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, 
     return ret.getClear();
 }
 
+extern WORKUNIT_API bool isProcessCluster(const char *process)
+{
+    if (!process || !*process)
+        return false;
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return false;
+    VStringBuffer xpath("Software/*Cluster[@name=\"%s\"]", process);
+    return conn->queryRoot()->hasProp(xpath.str());
+}
+
+extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *process)
+{
+    if (!remoteDali || !*remoteDali)
+        return isProcessCluster(process);
+    if (!process || !*process)
+        return false;
+    Owned<INode> remote = createINode(remoteDali, 7070);
+    if (!remote)
+        return false;
+    VStringBuffer xpath("Environment/Software/*Cluster[@name=\"%s\"]/@name", process);
+    Owned<IPropertyTreeIterator> clusters = querySDS().getElementsRaw(xpath, remote, 1000*60*1);
+    return clusters->first();
+}
+
 IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyTree *cluster)
 {
     const char *clustname = cluster->queryProp("@name");
@@ -4641,6 +4898,11 @@ static void updateProp(IPropertyTree * to, const IPropertyTree * from, const cha
         to->setProp(xpath, from->queryProp(xpath));
 }
 
+static void setProp(IPropertyTree * to, const IPropertyTree * from, const char * xpath)
+{
+    if (from->hasProp(xpath))
+        to->setProp(xpath, from->queryProp(xpath));
+}
 
 static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char * xpath)
 {
@@ -4702,6 +4964,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     copyTree(p, fromP, "Workflow");
     if (all)
     {
+        // 'all' mode is used when setting up a dali WU from the embedded wu in a workunit dll
+
         // Merge timing info from both branches
         pt = fromP->getBranch("Timings");
         if (pt)
@@ -4719,10 +4983,13 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     updateProp(p, fromP, "SNAPSHOT");
 
     //MORE: This is very adhoc.  All options that should be cloned should really be in a common branch
-    if (all && (fromP->hasProp("PriorityFlag") || fromP->hasProp("@priorityClass")))
+    if (all)
     {
-        updateProp(p, fromP, "PriorityFlag");
-        updateProp(p, fromP, "@priorityClass");
+        setProp(p, fromP, "PriorityFlag");
+        setProp(p, fromP, "@priorityClass");
+        setProp(p, fromP, "@protected");
+        setProp(p, fromP, "@clusterName");
+        updateProp(p, fromP, "@scope");
     }
 
     //Variables may have been set up as parameters to the query - so need to preserve any values that were supplied.

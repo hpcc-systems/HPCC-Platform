@@ -37,16 +37,16 @@
 #include "hqlattr.hpp"
 #include "hqlmeta.hpp"
 
-static CriticalSection * propertyCS;
+static SpinLock * propertyLock;
 
 MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
 {
-    propertyCS = new CriticalSection;
+    propertyLock = new SpinLock;
     return true;
 }
 MODULE_EXIT()
 {
-    delete propertyCS;
+    delete propertyLock;
 }
 
 // This file should contain most of the derived property calculation for nodes in the expression tree,
@@ -831,13 +831,12 @@ static IHqlExpression * evaluateSerializedRecord(IHqlExpression * expr, IAtom * 
 class CHqlExprMeta
 {
 public:
-    static inline IHqlExpression * addProperty(IHqlExpression * expr, ExprPropKind kind, IHqlExpression * value)
+    static inline void addProperty(IHqlExpression * expr, ExprPropKind kind, IInterface * value)
     {
         CHqlExpression * cexpr = static_cast<CHqlExpression *>(expr);
         cexpr->addProperty(kind, value);
-        return value;
     }
-    static inline IHqlExpression * queryExistingProperty(IHqlExpression * expr, ExprPropKind kind)
+    static inline IInterface * queryExistingProperty(IHqlExpression * expr, ExprPropKind kind)
     {
         CHqlExpression * cexpr = static_cast<CHqlExpression *>(expr);
         return cexpr->queryExistingProperty(kind);
@@ -856,7 +855,8 @@ static IHqlExpression * evaluatePropSerializedForm(IHqlExpression * expr, ExprPr
             //Tag serialized form so don't re-evaluated
             meta.addProperty(serialized, kind, serialized);
         }
-        return meta.addProperty(expr, kind, serialized);
+        meta.addProperty(expr, kind, serialized);
+        return serialized;
     }
     return NULL;
 }
@@ -893,7 +893,8 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
                 else
                 {
                     IHqlExpression * ret = expr->queryRecord()->queryProperty(EPsize);
-                    return meta.addProperty(expr, EPsize, ret);
+                    meta.addProperty(expr, EPsize, ret);
+                    return ret;
                 }
                 break;
             }
@@ -1077,13 +1078,15 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
     if ((thisSize == minSize) && (minSize == maxSize))
     {
         OwnedHqlExpr attr = getFixedSizeAttr(thisSize);
-        return meta.addProperty(expr, EPsize, attr);
+        meta.addProperty(expr, EPsize, attr);
+        return attr;
     }
 
     if (!thisMaxSizeExpr)
         thisMaxSizeExpr.setown((maxSize == UNKNOWN_LENGTH) ? createAttribute(unknownSizeFieldAtom) : getSizetConstant(maxSize));
     OwnedHqlExpr attr = createExprAttribute(_propSize_Atom, getSizetConstant(thisSize), getSizetConstant(minSize), thisMaxSizeExpr.getClear());
-    return meta.addProperty(expr, EPsize, attr);
+    meta.addProperty(expr, EPsize, attr);
+    return attr;
 }
 
 //no_ifblock
@@ -1092,7 +1095,8 @@ static IHqlExpression * evaluateIfBlockAttrSize(IHqlExpression * expr)
     IHqlExpression * size = expr->queryChild(1)->queryProperty(EPsize);
     unsigned averageSize = (unsigned)getIntValue(size->queryChild(0), 0)/2;
     OwnedHqlExpr attr = createExprAttribute(_propSize_Atom, getSizetConstant(averageSize), getSizetConstant(0), LINK(size->queryChild(2)));
-    return meta.addProperty(expr, EPsize, attr);
+    meta.addProperty(expr, EPsize, attr);
+    return attr;
 }
 
 //no_record
@@ -1212,7 +1216,8 @@ static IHqlExpression * evaluateRecordAttrSize(IHqlExpression * expr)
         args.append(*LINK(derivedSizeExpr));
 
     OwnedHqlExpr sizeAttr = createExprAttribute(_propSize_Atom, args);
-    return meta.addProperty(expr, EPsize, sizeAttr);
+    meta.addProperty(expr, EPsize, sizeAttr);
+    return sizeAttr;
 }
 
 
@@ -1232,7 +1237,8 @@ static IHqlExpression * evalautePropSize(IHqlExpression * expr)
             //MORE: This could calculate a better estimate for the size of the record by taking into account any constant values or datasets that are assigned.
             IHqlExpression * record = expr->queryRecord();
             IHqlExpression * recordSize = record->queryProperty(EPsize);
-            return meta.addProperty(expr, EPsize, recordSize);
+            meta.addProperty(expr, EPsize, recordSize);
+            return recordSize;
         }
     }
     IHqlExpression * record = expr->queryRecord();
@@ -1281,7 +1287,7 @@ ITypeInfo * getSerializedForm(ITypeInfo * type, IAtom * variation)
             OwnedITypeInfo newChild = getSerializedForm(childType, variation);
             if (variation == internalAtom)
                 return replaceChildType(noLinkCountType, newChild);
-            OwnedITypeInfo datasetType = makeTableType(LINK(newChild), NULL, NULL, NULL);
+            OwnedITypeInfo datasetType = makeTableType(LINK(newChild));
             return cloneModifiers(noLinkCountType, datasetType);
         }
     }
@@ -1311,9 +1317,9 @@ HqlCachedPropertyTransformer::HqlCachedPropertyTransformer(HqlTransformerInfo & 
 
 IHqlExpression * HqlCachedPropertyTransformer::transform(IHqlExpression * expr)
 {
-    IHqlExpression * match = meta.queryExistingProperty(expr, propKind);
+    IInterface * match = meta.queryExistingProperty(expr, propKind);
     if (match)
-        return LINK(match);
+        return static_cast<IHqlExpression *>(LINK(match));
 
     OwnedHqlExpr transformed = QuickHqlTransformer::transform(expr);
 
@@ -1407,7 +1413,7 @@ static IHqlExpression * evalautePropUnadorned(IHqlExpression * expr)
     HqlUnadornedNormalizer normalizer;
     //NB: Also has the side-effect of adding any missing attributes
     OwnedHqlExpr dummy = normalizer.transform(expr);
-    return meta.queryExistingProperty(expr, EPunadorned);
+    return static_cast<IHqlExpression *>(meta.queryExistingProperty(expr, EPunadorned));
 }
 
 //---------------------------------------------------------------------------------
@@ -1577,11 +1583,15 @@ static IHqlExpression * evalautePropAligned(IHqlExpression * expr)
         same = false;
     OwnedHqlExpr newRecord = same ? LINK(expr) : expr->clone(result);
     if (expr == newRecord)
-        return meta.addProperty(expr, EPaligned, queryAlignedAttr());
+    {
+        meta.addProperty(expr, EPaligned, queryAlignedAttr());
+        return queryAlignedAttr();
+    }
     meta.addProperty(newRecord, EPaligned, queryAlignedAttr());
     
     OwnedHqlExpr alignAttr = createExprAttribute(_propAligned_Atom, newRecord.getClear());
-    return meta.addProperty(expr, EPaligned, alignAttr);
+    meta.addProperty(expr, EPaligned, alignAttr);
+    return alignAttr;
 }
 
 //---------------------------------------------------------------------------------
@@ -1705,8 +1715,8 @@ bool isLocalActivity(IHqlExpression * expr)
     default:
         {
             assertex(!localChangesActivity(expr));
-            ITypeInfo * exprType = expr->queryType();
-            if (exprType && (exprType->queryDistributeInfo() != NULL))
+            //MORE: What is this test here for??
+            if (!expr->isAction() && queryDistribution(expr))
                 return !isGroupedActivity(expr);
             return false;
         }
@@ -2053,8 +2063,11 @@ bool isLimitedDataset(IHqlExpression * expr, bool onFailOnly)
         {
         case no_choosen:
         case no_limit:
-//      case no_keyedlimit: // not included because it is done before everything else, so filters can be merged in
             if (!onFailOnly || expr->hasAttribute(onFailAtom))
+                return true;
+            break;
+        case no_keyedlimit:
+            if (onFailOnly && expr->hasAttribute(onFailAtom))
                 return true;
             break;
         case no_table:
@@ -2830,16 +2843,20 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_join:
     case no_selfjoin:
         {
-            bool maxSingleRowOut = false;
+            __uint64 maxMatchesPerLeftRow = (__uint64)-1;
             if (expr->hasAttribute(leftonlyAtom))
-                maxSingleRowOut = true;
+                maxMatchesPerLeftRow = 1;
             else if (isLeftJoin(expr) || isInnerJoin(expr))
             {
+                //MORE: Could process other small scalings e.g., < 10 from keep/atmost attributes
                 IHqlExpression * keep = queryAttributeChild(expr, keepAtom, 0);
                 if (matchesConstantValue(keep, 1))
-                    maxSingleRowOut = true;
+                    maxMatchesPerLeftRow = 1;
+                IHqlExpression * atmost = queryAttributeChild(expr, atmostAtom, 0);
+                if (matchesConstantValue(atmost, 1))
+                    maxMatchesPerLeftRow = 1;
             }
-            if (maxSingleRowOut)
+            if (maxMatchesPerLeftRow == 1)
             {
                 retrieveRowInformation(info, ds);
                 if (!expr->hasAttribute(leftouterAtom) || containsSkip(expr->queryChild(3)))
@@ -2969,7 +2986,8 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
 static IHqlExpression * evalautePropRecordCount(IHqlExpression * expr)
 {
     OwnedHqlExpr info = calcRowInformation(expr);
-    return meta.addProperty(expr, EPrecordCount, info);
+    meta.addProperty(expr, EPrecordCount, info);
+    return info;
 }
 
 
@@ -3184,7 +3202,7 @@ unsigned getMaxRecordSize(IHqlExpression * record, unsigned defaultMaxRecordSize
         OwnedHqlExpr folded = foldHqlExpression(value);
         assertex(folded);
         maxSize = (unsigned)getIntValue(folded);
-        unsigned minSize = getIntValue(minSizeExpr);
+        unsigned minSize = (unsigned)getIntValue(minSizeExpr);
         if (maxSize < minSize)
             maxSize = minSize;
         usedDefault = true;
@@ -3277,8 +3295,9 @@ bool recordRequiresDestructor(IHqlExpression * expr)
     if (!expr)
         return false;
 
+    IHqlExpression * body = expr->queryBody();
     //true if the internal serialized form is different
-    if (querySerializedForm(expr, internalAtom) != expr)
+    if (querySerializedForm(body, internalAtom) != body)
         return true;
 
     return false;
@@ -3424,7 +3443,11 @@ IHqlExpression * HqlLocationIndependentNormalizer::doCreateTransformed(IHqlExpre
         {
             //Original attributes cause chaos => remove all children from attributes
             if (expr->numChildren() != 0)
-                return createAttribute(expr->queryName());
+            {
+                IAtom * name = expr->queryName();
+                if ((name != _countProject_Atom) && (name != _metadata_Atom))
+                    return createAttribute(expr->queryName());
+            }
             return LINK(expr);
         }
     case no_field:
@@ -3471,9 +3494,9 @@ IHqlExpression * HqlLocationIndependentNormalizer::createTransformed(IHqlExpress
     if (isAlwaysLocationIndependent(expr))
         return LINK(expr);
 
-    IHqlExpression * match = meta.queryExistingProperty(expr, EPlocationIndependent);
+    IInterface * match = meta.queryExistingProperty(expr, EPlocationIndependent);
     if (match)
-        return LINK(match);
+        return static_cast<IHqlExpression *>(LINK(match));
 
     OwnedHqlExpr transformed = doCreateTransformed(expr);
 
@@ -3694,43 +3717,73 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-IHqlExpression * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
+IInterface * CHqlExpression::queryExistingProperty(ExprPropKind propKind) const
 {
-    CriticalBlock block(*propertyCS);
+    SpinBlock block(*propertyLock);
     CHqlDynamicProperty * cur = attributes;
     while (cur)
     {
         if (cur->kind == propKind)
         {
-            IHqlExpression * value = cur->value;
+            IInterface * value = cur->value;
             if (value)
                 return value;
-            return const_cast<CHqlExpression *>(this);
+            return static_cast<IHqlExpression *>(const_cast<CHqlExpression *>(this));
         }
         cur = cur->next;
     }
     return NULL;
 }
 
-void CHqlExpression::addProperty(ExprPropKind kind, IHqlExpression * value)
+void CHqlExpression::addProperty(ExprPropKind kind, IInterface * value)
 {
-    if (value == this)
+    if (value == static_cast<IHqlExpression *>(this))
         value = NULL;
+    CHqlDynamicProperty * attr = new CHqlDynamicProperty(kind, value);
 
-    CriticalBlock block(*propertyCS);
+    SpinBlock block(*propertyLock);
     //theoretically we should test if the attribute has already been added by another thread, but in practice there is no
     //problem if the attribute is present twice.
-    CHqlDynamicProperty * attr = new CHqlDynamicProperty(kind, value);
     attr->next = attributes;
     attributes = attr;
 }
 
 
+//A specialised version of addProperty/queryExistingProperty.  Uses sizeof(void*) all the time instead
+//of 3*sizeof(void *)+heap overhead when used.
+//Possibly saves a bit of time, but more useful as a proof of concept in case it was useful elsewhere..
+void CHqlDataset::addProperty(ExprPropKind kind, IInterface * value)
+{
+    if (kind == EPmeta)
+    {
+        SpinBlock block(*propertyLock);
+        //ensure once meta is set it is never modified
+        if (!metaProperty)
+            metaProperty.set(value);
+    }
+    else
+        CHqlExpression::addProperty(kind, value);
+
+}
+
+IInterface * CHqlDataset::queryExistingProperty(ExprPropKind kind) const
+{
+    if (kind == EPmeta)
+    {
+        SpinBlock block(*propertyLock);
+        return metaProperty;
+    }
+
+    return CHqlExpression::queryExistingProperty(kind);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
 IHqlExpression * CHqlExpression::queryProperty(ExprPropKind kind)
 {
-    IHqlExpression * match = queryExistingProperty(kind);
+    IInterface * match = queryExistingProperty(kind);
     if (match)
-        return match;
+        return static_cast<IHqlExpression *>(match);
 
     switch (kind)
     {
@@ -3750,4 +3803,24 @@ IHqlExpression * CHqlExpression::queryProperty(ExprPropKind kind)
         return evalautePropLocationIndependent(this);
     }
     return NULL;
+}
+
+CHqlMetaProperty * queryMetaProperty(IHqlExpression * expr)
+{
+    IHqlExpression * body = expr->queryBody();
+    IInterface * match = CHqlExprMeta::queryExistingProperty(body, EPmeta);
+    if (match)
+        return static_cast<CHqlMetaProperty *>(match);
+
+    CHqlMetaProperty * simple = querySimpleDatasetMeta(body);
+    if (simple)
+    {
+        CHqlExprMeta::addProperty(body, EPmeta, simple);
+        return simple;
+    }
+
+    Owned<CHqlMetaProperty> info = new CHqlMetaProperty;
+    calculateDatasetMeta(info->meta, body);
+    CHqlExprMeta::addProperty(body, EPmeta, info);
+    return info;
 }

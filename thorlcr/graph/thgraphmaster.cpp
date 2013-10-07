@@ -273,6 +273,7 @@ void CSlaveMessageHandler::main()
                     else
                         queryThorFileManager().getPhysicalName(job, logicalName, partNo, phys);
                     msg.append(phys);
+                    job.queryJobComm().reply(msg);
                     break;
                 }
                 case smt_getFileOffset:
@@ -594,6 +595,7 @@ public:
     virtual const mptag_t queryTag() const { return tag; }
     virtual bool wait(bool exception, unsigned timeout)
     {
+        Owned<IException> e;
         CTimeMon tm(timeout);
         unsigned s=comm->queryGroup().ordinality()-1;
         bool aborted = false;
@@ -617,6 +619,10 @@ public:
                     break;
             }
             msg.read(aborted);
+            bool hasExcept;
+            msg.read(hasExcept);
+            if (hasExcept && !e.get())
+                e.setown(deserializeException(msg));
             sender = sender - 1; // 0 = master
             if (raisedSet->testSet(sender, true) && !aborted)
                 WARNLOG("CBarrierMaster, raise barrier message on tag %d, already received from slave %d", tag, sender);
@@ -624,6 +630,13 @@ public:
         }
         msg.clear();
         msg.append(aborted);
+        if (e)
+        {
+            msg.append(true);
+            serializeException(e, msg);
+        }
+        else
+            msg.append(false);
         if (INFINITE != timeout && tm.timedout(&remaining))
         {
             if (exception)
@@ -635,19 +648,28 @@ public:
             throw MakeStringException(0, "CBarrierMaster::wait - Timeout sending to slaves");
         if (aborted)
         {
-            if (exception)
-                throw createBarrierAbortException();
-            else
+            if (!exception)
                 return false;
+            if (e)
+                throw e.getClear();
+            else
+                throw createBarrierAbortException();
         }
         return true;
     }
-    virtual void cancel()
+    virtual void cancel(IException *e)
     {
         if (receiving)
             comm->cancel(RANK_ALL, tag);
         CMessageBuffer msg;
         msg.append(true);
+        if (e)
+        {
+            msg.append(true);
+            serializeException(e, msg);
+        }
+        else
+            msg.append(false);
         if (!comm->send(msg, RANK_ALL_OTHER, tag, LONGTIMEOUT))
             throw MakeStringException(0, "CBarrierMaster::cancel - Timeout sending to slaves");
     }
@@ -1470,6 +1492,7 @@ void CJobMaster::saveSpills()
             fillClusterArray(*this, tmpName, clusters, groups);
             Owned<IFileDescriptor> fileDesc = queryThorFileManager().create(*this, tmpName, clusters, groups, true, TDXtemporary|TDWnoreplicate);
             fileDesc->queryProperties().setPropBool("@pausefile", true); // JCSMORE - mark to keep, may be able to distinguish via other means
+            fileDesc->queryProperties().setProp("@kind", "flat");
 
             IPropertyTree &props = fileDesc->queryProperties();
             props.setPropBool("@owned", true);
@@ -1483,7 +1506,7 @@ void CJobMaster::saveSpills()
 
             StringBuffer newName;
             queryThorFileManager().addScope(*this, tmpName, newName, true, true);
-            verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
+            verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory(grp_unknown)));
 
             file->attach(newName,userDesc);
 
@@ -2024,8 +2047,11 @@ bool CMasterGraph::fireException(IException *e)
             reportExceptionToWorkunit(job.queryWorkUnit(), e);
             break;
         case tea_abort:
+        {
+            EXCLOG(e, NULL);
             abort(e);
             // fall through
+        }
         default:
         {
             LOG(MCerror, thorJob, e);
@@ -2416,7 +2442,7 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
     CGraphBase::preStart(parentExtractSz, parentExtract);
     if (isGlobal())
     {
-        if (!startBarrier->wait(false)) // ensure all graphs are at start point at same time, as some may request data from each other.
+        if (!startBarrier->wait(true)) // ensure all graphs are at start point at same time, as some may request data from each other.
             return false;
     }
     if (!queryOwner())

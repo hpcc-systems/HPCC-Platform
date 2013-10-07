@@ -56,7 +56,8 @@ static IHqlExpression * cacheLinkCountedAttr;
 static IHqlExpression * cacheReferenceAttr;
 static IHqlExpression * cacheStreamedAttr;
 static IHqlExpression * cacheUnadornedAttr;
-static IHqlExpression * matchxxxPseudoFile;
+static IHqlExpression * nlpParsePsuedoTable;
+static IHqlExpression * xmlParsePsuedoTable;
 static IHqlExpression * cachedQuotedNullExpr;
 static IHqlExpression * cachedGlobalSequenceNumber;
 static IHqlExpression * cachedLocalSequenceNumber;
@@ -84,7 +85,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     cacheReferenceAttr = createAttribute(referenceAtom);
     cacheStreamedAttr = createAttribute(streamedAtom);
     cacheUnadornedAttr = createAttribute(_propUnadorned_Atom);
-    matchxxxPseudoFile = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(matchxxxPseudoFileAtom));
+    nlpParsePsuedoTable = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(_nlpParse_Atom));
+    xmlParsePsuedoTable = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(_xmlParse_Atom));
     cachedQuotedNullExpr = createValue(no_nullptr, makeBoolType());
     cachedOmittedValueExpr = createValue(no_omitted, makeAnyType());
 
@@ -110,7 +112,8 @@ MODULE_EXIT()
     cacheReferenceAttr->Release();
     cacheStreamedAttr->Release();
     cacheUnadornedAttr->Release();
-    matchxxxPseudoFile->Release();
+    xmlParsePsuedoTable->Release();
+    nlpParsePsuedoTable->Release();
     cachedQuotedNullExpr->Release();
     cachedGlobalSequenceNumber->Release();
     cachedLocalSequenceNumber->Release();
@@ -230,9 +233,14 @@ extern HQL_API IHqlExpression * getReferenceAttr()
     return LINK(cacheReferenceAttr);
 }
 
-extern HQL_API IHqlExpression * queryMatchxxxPseudoFile()
+extern HQL_API IHqlExpression * queryNlpParsePseudoTable()
 {
-    return matchxxxPseudoFile;
+    return nlpParsePsuedoTable;
+}
+
+extern HQL_API IHqlExpression * queryXmlParsePseudoTable()
+{
+    return xmlParsePsuedoTable;
 }
 
 IHqlExpression * getGlobalSequenceNumber()      { return LINK(cachedGlobalSequenceNumber); }
@@ -552,7 +560,7 @@ void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpress
     }
 }
 
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
 
 static IHqlExpression * queryOnlyTableChild(IHqlExpression * expr)
 {
@@ -599,13 +607,134 @@ static IHqlExpression * findCommonExpression(IHqlExpression * lower, IHqlExpress
 }
 
 
+//---------------------------------------------------------------------------------------------------------------------
+
+bool isCommonSubstringRange(IHqlExpression * expr)
+{
+    if (expr->getOperator() != no_substring)
+        return false;
+    IHqlExpression * range = expr->queryChild(1);
+    return (range->getOperator() == no_rangecommon);
+}
+
+IHqlExpression * removeCommonSubstringRange(IHqlExpression * expr)
+{
+    if (expr->getOperator() != no_substring)
+        return LINK(expr);
+    IHqlExpression * range = expr->queryChild(1);
+    if (range->getOperator() != no_rangecommon)
+        return LINK(expr);
+    IHqlExpression * value = expr->queryChild(0);
+    IHqlExpression * from = range->queryChild(0);
+    if (matchesConstantValue(from, 1))
+        return LINK(value);
+    OwnedHqlExpr newRange = createValue(no_rangefrom, makeNullType(), LINK(from));
+    return replaceChild(expr, 1, newRange.getClear());
+}
+
+void AtmostLimit::extractAtmostArgs(IHqlExpression * atmost)
+{
+    limit.setown(getSizetConstant(0));
+    if (atmost)
+    {
+        unsigned cur = 0;
+        IHqlExpression * arg = atmost->queryChild(0);
+        if (arg && arg->isBoolean())
+        {
+            required.set(arg);
+            arg = atmost->queryChild(++cur);
+        }
+        if (arg && arg->queryType()->getTypeCode() == type_sortlist)
+        {
+            unwindChildren(optional, arg);
+            arg = atmost->queryChild(++cur);
+        }
+        if (arg)
+            limit.set(arg);
+    }
+}
+
+
+static bool matchesAtmostCondition(IHqlExpression * cond, HqlExprArray & atConds, unsigned & numMatched)
+{
+    if (atConds.find(*cond) != NotFound)
+    {
+        numMatched++;
+        return true;
+    }
+    if (cond->getOperator() != no_assertkeyed)
+        return false;
+    unsigned savedMatched = numMatched;
+    HqlExprArray conds;
+    cond->queryChild(0)->unwindList(conds, no_and);
+    ForEachItemIn(i, conds)
+    {
+        if (!matchesAtmostCondition(&conds.item(i), atConds, numMatched))
+        {
+            numMatched = savedMatched;
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool doSplitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard)
+{
+    if (atmostCond)
+    {
+        //If join condition has evaluated to a constant then allow any atmost condition.
+        if (!condition->isConstant())
+        {
+            HqlExprArray conds, atConds;
+            condition->unwindList(conds, no_and);
+            atmostCond->unwindList(atConds, no_and);
+            unsigned numAtmostMatched = 0;
+            ForEachItemIn(i, conds)
+            {
+                IHqlExpression & cur = conds.item(i);
+                if (matchesAtmostCondition(&cur, atConds, numAtmostMatched))
+                    extendConditionOwn(hard, no_and, LINK(&cur));
+                else
+                    extendConditionOwn(fuzzy, no_and, LINK(&cur));
+            }
+            if (atConds.ordinality() != numAtmostMatched)
+            {
+                hard.clear();
+                fuzzy.clear();
+                return false;
+            }
+        }
+    }
+    else
+        hard.set(condition);
+    return true;
+}
+
+void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard)
+{
+    if (!doSplitFuzzyCondition(condition, atmostCond, fuzzy, hard))
+    {
+        //Ugly, but sometimes the condition only matches after it has been constant folded.
+        //And this function can be called from the normalizer before the expression tree is folded.
+        OwnedHqlExpr foldedCond = foldHqlExpression(condition);
+        OwnedHqlExpr foldedAtmost = foldHqlExpression(atmostCond);
+        if (!doSplitFuzzyCondition(foldedCond, foldedAtmost, fuzzy, hard))
+        {
+            StringBuffer s;
+            getExprECL(atmostCond, s);
+            throwError1(HQLERR_AtmostFailMatchCondition, s.str());
+        }
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 
 
 class JoinOrderSpotter
 {
 public:
-    JoinOrderSpotter(IHqlExpression * _leftDs, IHqlExpression * _rightDs, IHqlExpression * seq, HqlExprArray & _leftSorts, HqlExprArray & _rightSorts) : leftSorts(_leftSorts), rightSorts(_rightSorts)
+    JoinOrderSpotter(IHqlExpression * _leftDs, IHqlExpression * _rightDs, IHqlExpression * seq, JoinSortInfo & _joinOrder) : joinOrder(_joinOrder)
     {
         if (_leftDs)
             left.setown(createSelector(no_left, _leftDs, seq));
@@ -613,7 +742,8 @@ public:
             right.setown(createSelector(no_right, _rightDs, seq));
     }
 
-    IHqlExpression * doFindJoinSortOrders(IHqlExpression * condition, HqlExprArray * slidingMatches, HqlExprCopyArray & matched);
+    IHqlExpression * doFindJoinSortOrders(IHqlExpression * condition, bool allowSlidingMatch, HqlExprCopyArray & matched);
+    bool doProcessOptional(IHqlExpression * condition);
     void findImplicitBetween(IHqlExpression * condition, HqlExprArray & slidingMatches, HqlExprCopyArray & matched, HqlExprCopyArray & pending);
 
 protected:
@@ -625,8 +755,7 @@ protected:
 protected:
     OwnedHqlExpr left;
     OwnedHqlExpr right;
-    HqlExprArray & leftSorts;
-    HqlExprArray & rightSorts;
+    JoinSortInfo & joinOrder;
 };
 
 
@@ -729,7 +858,7 @@ void JoinOrderSpotter::unwindSelectorRecord(HqlExprArray & target, IHqlExpressio
     }
 }
 
-IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * condition, HqlExprArray * slidingMatches, HqlExprCopyArray & matched)
+IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * condition, bool allowSlidingMatch, HqlExprCopyArray & matched)
 {
     IHqlExpression *l = condition->queryChild(0);
     IHqlExpression *r = condition->queryChild(1);
@@ -738,8 +867,8 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
     {
     case no_and:
         {
-            IHqlExpression *lmatch = doFindJoinSortOrders(l, slidingMatches, matched);
-            IHqlExpression *rmatch = doFindJoinSortOrders(r, slidingMatches, matched);
+            IHqlExpression *lmatch = doFindJoinSortOrders(l, allowSlidingMatch, matched);
+            IHqlExpression *rmatch = doFindJoinSortOrders(r, allowSlidingMatch, matched);
             if (lmatch)
             {
                 if (rmatch)
@@ -764,26 +893,26 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
 
             if ((leftSelectKind == no_left) && (rightSelectKind == no_right))
             {
-                leftSorts.append(*leftStrip.getClear());
-                rightSorts.append(*rightStrip.getClear());
+                joinOrder.leftReq.append(*leftStrip.getClear());
+                joinOrder.rightReq.append(*rightStrip.getClear());
                 return NULL;
             }
             if ((leftSelectKind == no_right) && (rightSelectKind == no_left))
             {
-                leftSorts.append(*rightStrip.getClear());
-                rightSorts.append(*leftStrip.getClear());
+                joinOrder.leftReq.append(*rightStrip.getClear());
+                joinOrder.rightReq.append(*leftStrip.getClear());
                 return NULL;
             }
             if (((l == left) && (r == right)) || ((l == right) && (r == left)))
             {
-                unwindSelectorRecord(leftSorts, queryActiveTableSelector(), left->queryRecord());
-                unwindSelectorRecord(rightSorts, queryActiveTableSelector(), right->queryRecord());
+                unwindSelectorRecord(joinOrder.leftReq, queryActiveTableSelector(), left->queryRecord());
+                unwindSelectorRecord(joinOrder.rightReq, queryActiveTableSelector(), right->queryRecord());
                 return NULL;
             }
         }
         return LINK(condition);
     case no_between:
-        if (slidingMatches)
+        if (allowSlidingMatch)
         {
             node_operator leftSelectKind = no_none;
             node_operator rightSelectKind = no_none;
@@ -797,7 +926,7 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
                 IHqlExpression * common = findCommonExpression(lowerStrip,upperStrip);
                 if (common)
                 {
-                    slidingMatches->append(*createValue(no_between, makeBoolType(), LINK(leftStrip), LINK(lowerStrip), LINK(upperStrip), createExprAttribute(commonAtom, LINK(common))));
+                    joinOrder.slidingMatches.append(*createValue(no_between, makeBoolType(), LINK(leftStrip), LINK(lowerStrip), LINK(upperStrip), createExprAttribute(commonAtom, LINK(common))));
                     return NULL;
                 }
             }
@@ -812,6 +941,50 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
 
     default:
         return LINK(condition);
+    }
+}
+
+bool JoinOrderSpotter::doProcessOptional(IHqlExpression * condition)
+{
+    switch(condition->getOperator())
+    {
+    //MORE We could support no_and by adding a list to both sides, but I can't see it being worth the effort.
+    case no_constant:
+        //remove silly "and true" conditions
+        if (condition->queryValue()->getBoolValue())
+            return true;
+        return false;
+    case no_eq:
+        {
+            IHqlExpression *l = condition->queryChild(0);
+            IHqlExpression *r = condition->queryChild(1);
+            node_operator leftSelectKind = no_none;
+            node_operator rightSelectKind = no_none;
+            OwnedHqlExpr leftStrip = traverseStripSelect(l, leftSelectKind);
+            OwnedHqlExpr rightStrip = traverseStripSelect(r, rightSelectKind);
+
+            if ((leftSelectKind == no_left) && (rightSelectKind == no_right))
+            {
+                joinOrder.leftOpt.append(*leftStrip.getClear());
+                joinOrder.rightOpt.append(*rightStrip.getClear());
+                return true;
+            }
+            if ((leftSelectKind == no_right) && (rightSelectKind == no_left))
+            {
+                joinOrder.leftOpt.append(*rightStrip.getClear());
+                joinOrder.rightOpt.append(*leftStrip.getClear());
+                return true;
+            }
+            if (((l == left) && (r == right)) || ((l == right) && (r == left)))
+            {
+                unwindSelectorRecord(joinOrder.leftOpt, queryActiveTableSelector(), left->queryRecord());
+                unwindSelectorRecord(joinOrder.rightOpt, queryActiveTableSelector(), right->queryRecord());
+                return true;
+            }
+        }
+        return false;
+    default:
+        return false;
     }
 }
 
@@ -867,57 +1040,42 @@ void JoinOrderSpotter::findImplicitBetween(IHqlExpression * condition, HqlExprAr
     }
 }
 
-static bool isCommonSubstringRange(IHqlExpression * expr)
+JoinSortInfo::JoinSortInfo()
 {
-    if (expr->getOperator() != no_substring)
-        return false;
-    IHqlExpression * range = expr->queryChild(1);
-    return (range->getOperator() == no_rangecommon);
+    conditionAllEqualities = false;
 }
 
-static IHqlExpression * getSimplifiedCommonSubstringRange(IHqlExpression * expr)
+void JoinSortInfo::findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, bool allowSlidingMatch)
 {
-    IHqlExpression * rawSelect = expr->queryChild(0);
-    IHqlExpression * range = expr->queryChild(1);
-    IHqlExpression * rangeLow = range->queryChild(0);
-    if (matchesConstantValue(rangeLow, 1))
-        return LINK(rawSelect);
-    HqlExprArray args;
-    args.append(*LINK(rawSelect));
-    args.append(*createValue(no_rangefrom, makeNullType(), LINK(rangeLow)));
-    return expr->clone(args);
-}
-
-
-IHqlExpression * findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches)
-{
-    JoinOrderSpotter spotter(leftDs, rightDs, seq, leftSorts, rightSorts);
+    JoinOrderSpotter spotter(leftDs, rightDs, seq, *this);
     HqlExprCopyArray matched;
-    if (slidingMatches)
+    if (allowSlidingMatch)
     {
         //First spot any implicit betweens using x >= a and x <= b.  Do it first so that the second pass doesn't
         //reorder the join condition (this still reorders it slightly by moving the implicit betweens before explicit)
         HqlExprCopyArray pending;
-        spotter.findImplicitBetween(condition, *slidingMatches, matched, pending);
+        spotter.findImplicitBetween(condition, slidingMatches, matched, pending);
     }
-    OwnedHqlExpr ret = spotter.doFindJoinSortOrders(condition, slidingMatches, matched);
     
-    //Check for x[n..*] - a no_rangecommon, and ensure they are tagged as the last sorts.
-    unsigned numCommonRange = 0;
-    ForEachItemInRev(i, leftSorts)
+    extraMatch.setown(spotter.doFindJoinSortOrders(condition, allowSlidingMatch, matched));
+    conditionAllEqualities = (extraMatch == NULL);
+
+    //Support for legacy syntax where x[n..*] was present in join and atmost condition
+    //Ensure they are tagged as optional join fields.
+    ForEachItemInRev(i, leftReq)
     {
-        IHqlExpression & left = leftSorts.item(i);
-        IHqlExpression & right = rightSorts.item(i);
+        IHqlExpression & left = leftReq.item(i);
+        IHqlExpression & right = rightReq.item(i);
         if (isCommonSubstringRange(&left))
         {
             if (isCommonSubstringRange(&right))
             {
-                //MORE: May be best to remove the substring syntax as this point - or modify it if start != 1.
-                leftSorts.append(*getSimplifiedCommonSubstringRange(&left));
-                leftSorts.remove(i);
-                rightSorts.append(*getSimplifiedCommonSubstringRange(&right));
-                rightSorts.remove(i);
-                numCommonRange++;
+                if (leftOpt.ordinality())
+                    throwError(HQLERR_AtmostLegacyMismatch);
+                leftOpt.append(OLINK(left));
+                leftReq.remove(i);
+                rightOpt.append(OLINK(right));
+                rightReq.remove(i);
             }
             else
                 throwError(HQLERR_AtmostSubstringNotMatch);
@@ -928,29 +1086,64 @@ IHqlExpression * findJoinSortOrders(IHqlExpression * condition, IHqlExpression *
                 throwError(HQLERR_AtmostSubstringNotMatch);
         }
     }
-    isLimitedSubstringJoin = numCommonRange != 0;
-    if (numCommonRange > 1)
-        throwError(HQLERR_AtmostSubstringSingleInstance);
 
-    if ((numCommonRange == 0) && slidingMatches)
+    if (!hasOptionalEqualities() && allowSlidingMatch)
     {
-        ForEachItemIn(i, *slidingMatches)
+        ForEachItemIn(i, slidingMatches)
         {
-            IHqlExpression & cur = slidingMatches->item(i);
-            leftSorts.append(*LINK(cur.queryChild(0)));
-            rightSorts.append(*LINK(cur.queryChild(3)->queryChild(0)));
+            IHqlExpression & cur = slidingMatches.item(i);
+            leftReq.append(*LINK(cur.queryChild(0)));
+            rightReq.append(*LINK(cur.queryChild(3)->queryChild(0)));
         }
     }
 
-
-    return ret.getClear();
 }
 
-extern HQL_API IHqlExpression * findJoinSortOrders(IHqlExpression * expr, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches)
+void JoinSortInfo::findJoinSortOrders(IHqlExpression * expr, bool allowSlidingMatch)
 {
     IHqlExpression * lhs = expr->queryChild(0);
-    return findJoinSortOrders(expr->queryChild(2), lhs, queryJoinRhs(expr), querySelSeq(expr), leftSorts, rightSorts, isLimitedSubstringJoin, slidingMatches);
+    IHqlExpression * rhs = queryJoinRhs(expr);
+    IHqlExpression * selSeq = querySelSeq(expr);
+
+    atmost.extractAtmostArgs(expr->queryAttribute(atmostAtom));
+    if (atmost.optional.ordinality())
+    {
+        JoinOrderSpotter spotter(lhs, rhs, selSeq, *this);
+        ForEachItemIn(i, atmost.optional)
+        {
+            if (!spotter.doProcessOptional(&atmost.optional.item(i)))
+                throwError(HQLERR_AtmostCannotImplementOpt);
+        }
+    }
+
+    OwnedHqlExpr fuzzy, hard;
+    splitFuzzyCondition(expr->queryChild(2), atmost.required, fuzzy, hard);
+    findJoinSortOrders(hard, lhs, rhs, selSeq, allowSlidingMatch);
+
+    extraMatch.setown(extendConditionOwn(no_and, extraMatch.getClear(), fuzzy.getClear()));
 }
+
+static void appendOptElements(HqlExprArray & target, const HqlExprArray & src)
+{
+    ForEachItemIn(i, src)
+    {
+        IHqlExpression & cur = src.item(i);
+        //Strip the substring syntax when adding the optional compares to the sort list
+        target.append(*removeCommonSubstringRange(&cur));
+    }
+}
+
+void JoinSortInfo::initSorts()
+{
+    if (!leftSorts.ordinality())
+    {
+        appendArray(leftSorts, leftReq);
+        appendOptElements(leftSorts, leftOpt);
+        appendArray(rightSorts, rightReq);
+        appendOptElements(rightSorts, rightOpt);
+    }
+}
+
 
 IHqlExpression * createImpureOwn(IHqlExpression * expr)
 {
@@ -965,7 +1158,7 @@ IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 
 bool canBeSlidingJoin(IHqlExpression * expr)
 {
-    if (expr->hasAttribute(hashAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(allAtom))
+    if (expr->hasAttribute(hashAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom)|| expr->hasAttribute(allAtom))
         return false;
     if (expr->hasAttribute(rightouterAtom) || expr->hasAttribute(fullouterAtom) ||
         expr->hasAttribute(leftonlyAtom) || expr->hasAttribute(rightonlyAtom) || expr->hasAttribute(fullonlyAtom))
@@ -3643,13 +3836,13 @@ IDefRecordElement * RecordMetaCreator::createField(IHqlExpression * cur, IHqlExp
         childDefRecord.setown(createRecord(fieldRecord, self));
         break;
     case type_table:
-        defType.setown(makeTableType(makeRowType(makeRecordType()), NULL, NULL, NULL));
+        defType.setown(makeTableType(makeRowType(makeRecordType())));
         childDefRecord.setown(::createMetaRecord(fieldRecord, callback));
         break;
     case type_groupedtable:
         {
-            ITypeInfo * tableType = makeTableType(makeRowType(makeRecordType()), NULL, NULL, NULL);
-            defType.setown(makeGroupedTableType(tableType, createAttribute(groupedAtom), NULL));
+            ITypeInfo * tableType = makeTableType(makeRowType(makeRecordType()));
+            defType.setown(makeGroupedTableType(tableType));
             childDefRecord.setown(::createMetaRecord(fieldRecord, callback));
             break;
         }
@@ -4011,6 +4204,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
             switch (value->getOperator())
             {
             case no_typedef:
+            case no_enum:
                 op = no_none;
                 break;
             }
@@ -5501,7 +5695,7 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
 {
     IHqlExpression * payload = record->queryAttribute(_payload_Atom);
-    unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
+    unsigned payloadSize = payload ? (unsigned)getIntValue(payload->queryChild(0)) : 0;
     unsigned max = record->numChildren() - payloadSize;
     IHqlExpression *newrec = createRecord();
     for (unsigned idx = 0; idx < max; idx++)
@@ -5588,7 +5782,7 @@ IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation 
     return expr->cloneAllAnnotations(ret);
 }
 
-static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+static IHqlExpression * convertTempTableToInline(IErrorReceiver & errors, ECLlocation & location, IHqlExpression * expr)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
@@ -5601,7 +5795,7 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLloc
     if ((valueOp != no_recordlist) && (valueOp != no_list))
         return LINK(expr);
 
-    TempTableTransformer transformer(errors, location);
+    TempTableTransformer transformer(&errors, location);
     HqlExprArray transforms;
     ForEachChild(idx, values)
     {
@@ -5615,7 +5809,16 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLloc
             {
                 IHqlExpression * field = cur->queryChild(idx);
                 if (field->getOperator() == no_field)
-                    row.append(*LINK(field->queryChild(0)));
+                {
+                    IHqlExpression * value = queryRealChild(field, 0);
+                    if (value)
+                        row.append(*LINK(value));
+                    else
+                    {
+                        VStringBuffer msg(HQLERR_FieldHasNoDefaultValue_Text, field->queryName()->str());
+                        errors.reportError(HQLERR_FieldHasNoDefaultValue, msg.str(), location.sourcePath->str(), location.lineno, location.column, location.position);
+                    }
+                }
             }
             cur.setown(createValue(no_rowvalue, makeNullType(), row));
         }
@@ -5629,7 +5832,7 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLloc
     return expr->cloneAllAnnotations(ret);
 }
 
-IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+IHqlExpression * convertTempTableToInlineTable(IErrorReceiver & errors, ECLlocation & location, IHqlExpression * expr)
 {
     return convertTempTableToInline(errors, location, expr);
 }

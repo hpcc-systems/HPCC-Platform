@@ -546,6 +546,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="ignoreOrphans" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Treat out-of-date local files as if they were not present.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="lazyOpen" use="optional" default="smart">
         <xs:annotation>
           <xs:appinfo>
@@ -1094,13 +1101,6 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Check pending replies when agent gets a retry request</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
-      <xs:attribute name="checkPrimaries" type="xs:boolean" use="optional" default="true">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Verify that topology specifies a different agent first for each channel</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

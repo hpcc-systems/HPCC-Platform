@@ -8,7 +8,6 @@
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
             <label for="${id}MainDepth">Depth:</label>
             <input id="${id}MainDepth" style="width: 60px" value="2" data-dojo-attach-event="onChange:_onMainDepthChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
-            <div id="${id}MainRefresh" data-dojo-attach-event="onClick:_onMainRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
             <div id="${id}AdvancedMenu" data-dojo-type="dijit.form.DropDownButton">
                 <span>Advanced</span>
@@ -23,6 +22,7 @@
                     <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">About Graph Control</div>
                 </div>
             </div>
+            <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
         </div>
         <div id="${id}RightBorderContainer" style="width: 33%; padding: 0px; overflow: hidden" data-dojo-props="region: 'right', splitter:true, minSize: 120" data-dojo-type="dijit.layout.BorderContainer">
             <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
@@ -53,7 +53,8 @@
                     <input id="${id}LocalDepth" style="width: 60px" value="3" data-dojo-attach-event="onChange:_onLocalDepthChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
                     <label for="${id}LocalDistance">Distance:</label>
                     <input id="${id}LocalDistance" style="width: 60px" value="3" data-dojo-attach-event="onChange:_onLocalDistanceChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
-                    <div id="${id}LocalRefresh" data-dojo-attach-event="onClick:_onLocalRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}LocalRefresh" data-dojo-attach-event="onClick:_onLocalRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Sync</div>
                 </div>
                 <div id="${id}Properties" title="Properties" data-dojo-type="dijit.layout.ContentPane">
                 </div>

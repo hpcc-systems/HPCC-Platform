@@ -15,12 +15,15 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/store/Memory",
     "dojo/store/Observable",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+    "dijit/Menu",
+    "dijit/MenuItem",
+    "dijit/MenuSeparator",
+    "dijit/PopupMenuItem",
 
     "hpcc/_TabContainerWidget",
 
@@ -33,11 +36,11 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane"
 
-], function (declare, Memory, Observable,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+], function (declare, lang, Memory, Observable,
+                registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 _TabContainerWidget,
                 template) {
-    return declare("GridDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("GridDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GridDetailsWidget",
 
@@ -46,6 +49,7 @@ define([
 
         store: null,
         grid: null,
+        contextMenu: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -54,31 +58,8 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
-            var context = this;
-            var store = new Memory({
-                idProperty: this.idProperty,
-                data: []
-            });
-            this.store = Observable(store);
-
-            this.grid = this.createGrid(this.id + "Grid");
-            this.grid.on(".dgrid-row:dblclick", function (evt) {
-                if (context._onRowDblClick) {
-                    var row = context.grid.row(evt).data;
-                    context._onRowDblClick(row);
-                }
-            });
-            this.grid.on(".dgrid-row:contextmenu", function (evt) {
-                if (context._onRowContextMenu) {
-                }
-            });
-            this.grid.onSelectionChanged(function (event) {
-                context._refreshActionState();
-            });
-            this.grid.onContentChanged(function (object, removedFrom, insertedInto) {
-                context._refreshActionState();
-            });
-            this.grid.startup();
+            this.initGrid();
+            this.initContextMenu();
         },
 
         //  Hitched actions  ---
@@ -105,13 +86,83 @@ define([
             this.selectChild(tab);
         },
 
+        //  Implementation  ---
+        initGrid: function() {
+            var context = this;
+            var store = new Memory({
+                idProperty: this.idProperty,
+                data: []
+            });
+            this.store = Observable(store);
+
+            this.grid = this.createGrid(this.id + "Grid");
+            this.grid.on(".dgrid-row:dblclick", function (evt) {
+                if (context._onRowDblClick) {
+                    var row = context.grid.row(evt).data;
+                    context._onRowDblClick(row);
+                }
+            });
+            this.grid.on(".dgrid-row:contextmenu", function (evt) {
+                if (context._onRowContextMenu) {
+                }
+            });
+            this.grid.onSelectionChanged(function (event) {
+                context._refreshActionState();
+            });
+            this.grid.onContentChanged(function (object, removedFrom, insertedInto) {
+                context._refreshActionState();
+            });
+            if (!this.grid.get("noDataMessage")) {
+                this.grid.set("noDataMessage", "<span class='dgridInfo'>Zero Rows...</span>");
+            }
+            if (!this.grid.get("loadingMessage")) {
+                this.grid.set("loadingMessage", "<span class='dgridInfo'>Loading...</span>");
+            }
+            this.grid.startup();
+        },
+
+        appendMenuItem: function (menu, label, onClick) {
+            var menuItem = new MenuItem({
+                label: label,
+                onClick: onClick
+            });
+            menu.addChild(menuItem);
+            return menuItem;
+        },
+
+        appendContextMenuItem: function (label, onClick) {
+            return this.appendMenuItem(this.contextMenu, label, onClick);
+        },
+
+        initContextMenu: function () {
+            var context = this;
+            this.contextMenu = new Menu({
+                targetNodeIds: [this.id + "Grid"]
+            });
+            this.appendContextMenuItem("Refresh", function () {
+                context._onRefresh();
+            });
+            this.contextMenu.addChild(new MenuSeparator());
+            this.appendContextMenuItem("Open", function () {
+                context._onOpen();
+            });
+            if (this.appendContextMenu) {
+                this.appendContextMenu();
+            }
+            this.contextMenu.startup();
+        },
+
         initTab: function () {
             var currSel = this.getSelectedChild();
-            if (currSel && !currSel.initalized) {
-                if (currSel.hpcc) {
-                    currSel.init(currSel.hpcc.params);
+            if (currSel) {
+                if (!currSel.initalized) {
+                    if (currSel.hpcc) {
+                        currSel.init(currSel.hpcc.params);
+                    }
+                    currSel.initalized = true;
+                } else if (currSel.refresh) {
+                    currSel.refresh(currSel.hpcc.refreshParams);
                 }
-                currSel.initalized = true;
             }
         },
 
@@ -125,6 +176,10 @@ define([
             if (!retVal) {
                 retVal = this.createDetail(id, row, params);
                 this.addChild(retVal);
+            } else {
+                lang.mixin(retVal.hpcc, {
+                    refreshParams: params
+                });
             }
             return retVal;
         },

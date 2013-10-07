@@ -37,6 +37,8 @@ public:
     virtual void setPartitionRange(offset_t _totalSize, offset_t _thisOffset, offset_t _thisSize, unsigned _thisHeaderSize, unsigned _numParts);
     virtual void setSource(unsigned _whichInput, const RemoteFilename & _fullPath, bool compressedInput, const char *decryptKey);
     virtual void setTarget(IOutputProcessor * _target);
+    virtual void setRecordStructurePresent(bool _recordStructurePresent);
+    virtual void getRecordStructure(StringBuffer & _recordStructure);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor) = 0;
@@ -230,6 +232,9 @@ public:
 
     virtual void setTarget(IOutputProcessor * _target);
 
+    virtual void getRecordStructure(StringBuffer & _recordStructure) { _recordStructure = recordStructure; }
+    virtual void setRecordStructurePresent( bool _isRecordStructurePresent) {isRecordStructurePresent = _isRecordStructurePresent;}
+
 protected:
     virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer, bool ateof);
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
@@ -238,11 +243,19 @@ protected:
         return getSplitRecordSize(record,maxToRead,processFullBuffer,true);
     }
 
+private:
+	void storeFieldName(const char * start, unsigned len);
+	
 protected:
-    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4 };
+    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned        maxElementLength;
     FileFormat      format;
     StringMatcher   matcher;
+
+    bool            isRecordStructurePresent;
+    StringBuffer    recordStructure;
+    unsigned        fieldCount;
+    bool            isFirstRow;
 };
 
 
@@ -252,19 +265,13 @@ public:
     CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation) 
         : CCsvPartitioner(_format) 
     { 
-        noTranslation = _noTranslation; 
-        if (_format.quote.get()) { 
+        noTranslation = _noTranslation;
+        const char * quote = _format.quote.get();  
+        if (quote && (*quote == '\0')) { 
             isquoted = false;
-            StringArray csl;
-            csl.appendList(_format.quote, ","); // OTT but catches previous kludge of ","
-            ForEachItemIn(i,csl) {
-                if (strlen(csl.item(i)))
-                isquoted = true;
-            }
         }       
-        else // default is NULL which is quoted
+        else // default is quoted
             isquoted = true;
-        isquoted = (!_format.quote.get()) || (*_format.quote.get()); // sic - null or not empty
     }
 
 protected:
@@ -410,6 +417,8 @@ public:
     virtual void setPartitionRange(offset_t _totalSize, offset_t _thisOffset, offset_t _thisSize, unsigned _thisHeaderSize, unsigned _numParts);
     virtual void setSource(unsigned _whichInput, const RemoteFilename & _fullPath, bool compressedInput, const char *decryptKey);
     virtual void setTarget(IOutputProcessor * _target) { UNIMPLEMENTED; }
+    virtual void setRecordStructurePresent(bool _recordStructurePresent);
+    virtual void getRecordStructure(StringBuffer & _recordStructure);
 
 protected:
     void callRemote();

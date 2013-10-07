@@ -19,6 +19,60 @@
 
 class TableProjectMapper;
 
+class HQL_API CHqlMetaInfo
+{
+public:
+    inline bool isGrouped() const { return grouping != NULL; }
+
+    bool appearsToBeSorted(bool isLocal, bool ignoreGrouping);
+    void applyDistribute(IHqlExpression * newDistribution, IHqlExpression * optMergeOrder);
+    void applyGroupSort(IHqlExpression * sortOrder);
+    void applyGroupBy(IHqlExpression * groupBy, bool isLocal);
+    void applyLocalSort(IHqlExpression * sortOrder);
+    void applyGlobalSort(IHqlExpression * sortOrder);
+    void applyProject(TableProjectMapper & mapper);
+    void applySubSort(IHqlExpression * groupBy, IHqlExpression * sortOrder, bool isLocal);
+
+    void ensureAppearsSorted(bool isLocal, bool ignoreGrouping);
+    void getIntersection(const CHqlMetaInfo & other);
+    IHqlExpression * getLocalSortOrder() const;
+    bool hasUsefulInformation() const;
+    bool hasKnownSortGroupDistribution(bool isLocal) const;
+    bool matches(const CHqlMetaInfo & other) const;
+
+    void preserveGrouping(IHqlExpression * dataset);
+
+    void removeActiveSort();
+    void removeAllKeepGrouping();
+    void removeAllSortOrders();
+    void removeAllAndUngroup(bool isLocal);
+    void removeDistribution();
+    void removeGroup();
+
+    void set(const CHqlMetaInfo & other);
+    void setMatchesAny();
+    void setUnknownDistribution();
+    void setUnknownGrouping();
+
+protected:
+    void clearGrouping();
+
+public:
+    LinkedHqlExpr distribution;
+    LinkedHqlExpr globalSortOrder;
+    LinkedHqlExpr localUngroupedSortOrder;
+    LinkedHqlExpr grouping;
+    LinkedHqlExpr groupSortOrder;
+};
+
+class CHqlMetaProperty : public CInterfaceOf<IInterface>
+{
+public:
+    CHqlMetaInfo meta;
+};
+
+void extractMeta(CHqlMetaInfo & meta, ITypeInfo * type);
+
 extern HQL_API IHqlExpression * queryUnknownAttribute();
 extern HQL_API IHqlExpression * queryUnknownSortlist();
 extern HQL_API IHqlExpression * queryMatchGroupOrderSortlist();
@@ -29,31 +83,13 @@ extern HQL_API IHqlExpression * queryAnyOrderSortlist();
 extern HQL_API IHqlExpression * queryAnyDistributionAttribute();
 
 extern HQL_API IHqlExpression * getExistingSortOrder(IHqlExpression * dataset, bool isLocal, bool ignoreGrouping);
+extern ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms);
 
 //---------------------------------------------------------------------------------------------
 
 extern HQL_API bool isKnownDistribution(IHqlExpression * distribution);
-inline bool isKnownDistribution(ITypeInfo * type) { return isKnownDistribution(queryDistribution(type)); }
 extern HQL_API bool isPersistDistribution(IHqlExpression * distribution);
 extern HQL_API bool isSortedDistribution(IHqlExpression * distribution);
-
-extern HQL_API ITypeInfo * getTypeUngroup(ITypeInfo * prev);
-extern HQL_API ITypeInfo * getTypeGrouped(ITypeInfo * prev, IHqlExpression * grouping, bool isLocal);
-extern HQL_API ITypeInfo * getTypeGlobalSort(ITypeInfo * prev, IHqlExpression * sortOrder);
-extern HQL_API ITypeInfo * getTypeLocalSort(ITypeInfo * prev, IHqlExpression * sortOrder);
-extern HQL_API ITypeInfo * getTypeGroupSort(ITypeInfo * prev, IHqlExpression * sortOrder);
-extern HQL_API ITypeInfo * getTypeDistribute(ITypeInfo * prev, IHqlExpression * distribution, IHqlExpression * optMergeOrder);
-extern HQL_API ITypeInfo * getTypeFromMeta(IHqlExpression * record, IHqlExpression * meta, unsigned firstChild);
-extern HQL_API ITypeInfo * getTypeIntersection(ITypeInfo * leftType, ITypeInfo * rightType);
-extern HQL_API ITypeInfo * getTypeLoseDistributionKeepOrder(ITypeInfo * prev);
-extern HQL_API ITypeInfo * getTypeProject(ITypeInfo * prev, IHqlExpression * newRecord, TableProjectMapper & mapper);
-extern HQL_API ITypeInfo * getTypeSubSort(ITypeInfo * prev, IHqlExpression * grouping, IHqlExpression * sortOrder, bool isLocal);
-extern HQL_API ITypeInfo * getTypeCannotProject(ITypeInfo * prev, IHqlExpression * newRecord); // preserve grouping, but that's it.
-extern HQL_API ITypeInfo * getTypeUnknownDistribution(ITypeInfo * prev);
-extern HQL_API ITypeInfo * getTypeRemoveDistribution(ITypeInfo * prev);
-extern HQL_API ITypeInfo * getTypeRemoveActiveSort(ITypeInfo * prev);
-extern HQL_API ITypeInfo * getTypeRemoveAllSortOrders(ITypeInfo * prev);
-extern HQL_API bool hasUsefulMetaInformation(ITypeInfo * prev);
 
 //---------------------------------------------------------------------------------------------
 
@@ -71,14 +107,14 @@ extern HQL_API IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHq
 extern HQL_API bool matchDedupDistribution(IHqlExpression * distn, const HqlExprArray & equalities);
 extern HQL_API bool matchesAnyDistribution(IHqlExpression * distn);
 
-extern HQL_API bool appearsToBeSorted(ITypeInfo * type, bool isLocal, bool ignoreGrouping);
-extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
+extern HQL_API bool appearsToBeSorted(IHqlExpression * dataset, bool isLocal, bool ignoreGrouping);
+extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
 extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * newSort, bool isLocal, bool ignoreGrouping);
 extern HQL_API IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowSubSort);
 
 extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping);
-extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
-extern HQL_API IHqlExpression * getSubSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
+extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
+extern HQL_API IHqlExpression * getSubSort(IHqlExpression * dataset, const HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
 extern HQL_API IHqlExpression * getSubSort(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
 extern HQL_API IHqlExpression * convertSubSortToGroupedSort(IHqlExpression * expr);
 
@@ -87,6 +123,11 @@ extern HQL_API bool reorderMatchExistingLocalSort(HqlExprArray & sortedLeft, Hql
 extern HQL_API IHqlExpression * preserveTableInfo(IHqlExpression * newTable, IHqlExpression * original, bool loseDistribution, IHqlExpression * persistName);
 extern HQL_API bool isDistributedCoLocally(IHqlExpression * dataset1, IHqlExpression * dataset2, const HqlExprArray & sort1, const HqlExprArray & sort2);
 extern HQL_API IHqlExpression * createMatchingDistribution(IHqlExpression * expr, const HqlExprArray & oldSort, const HqlExprArray & newSort);
+
+extern HQL_API void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr);
+extern HQL_API CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr);
+extern HQL_API bool hasSameSortGroupDistribution(IHqlExpression * expr, IHqlExpression * other);
+extern HQL_API bool hasKnownSortGroupDistribution(IHqlExpression * expr, bool isLocal);
 
 inline IHqlExpression * queryRemoveOmitted(IHqlExpression * expr)
 {

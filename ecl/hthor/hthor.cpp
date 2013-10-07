@@ -735,6 +735,7 @@ void CHThorDiskWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    desc->queryProperties().setProp("@kind", "flat");
 }
 
 void CHThorDiskWriteActivity::checkSizeLimit()
@@ -743,7 +744,7 @@ void CHThorDiskWriteActivity::checkSizeLimit()
     {
         StringBuffer msg;
         msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing file ").append(mangledHelperFileName.str());
-        throw MakeStringException(0, "%s", msg.str());
+        throw MakeStringExceptionDirect(0, msg.str());
     }
 }
 
@@ -867,6 +868,10 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     desc->queryProperties().setProp("@csvTerminate", rs.setown(csvInfo->getTerminator(0)));
     desc->queryProperties().setProp("@csvEscape", rs.setown(csvInfo->getEscape(0)));
     desc->queryProperties().setProp("@format","utf8n");
+    desc->queryProperties().setProp("@kind", "csv");
+    const char *recordECL = helper.queryRecordECL();
+    if (recordECL && *recordECL)
+        desc->queryProperties().setProp("ECL", recordECL);
 }
 
 //=====================================================================================================
@@ -929,6 +934,7 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
 {
     desc->queryProperties().setProp("@format","utf8n");
     desc->queryProperties().setProp("@rowTag",rowTag.str());
+    desc->queryProperties().setProp("@kind", "xml");
 }
 
 //=====================================================================================================
@@ -952,7 +958,7 @@ void throwPipeProcessError(unsigned err, char const * preposition, char const * 
             e->Release();
         }
     }
-    throw MakeStringException(2, "%s", msg.str());
+    throw MakeStringExceptionDirect(2, msg.str());
 }
 
 //=====================================================================================================
@@ -1083,7 +1089,7 @@ void CHThorIndexWriteActivity::execute()
                 StringBuffer msg;
                 OwnedRoxieString fname(helper.getFileName());
                 msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing index ").append(fname);
-                throw MakeStringException(0, "%s", msg.str());
+                throw MakeStringExceptionDirect(0, msg.str());
             }
             reccount++;
         }
@@ -5237,6 +5243,7 @@ void CHThorLookupJoinActivity::ready()
         atmostLimit = static_cast<unsigned>(-1);
     if(limitLimit==0)
         limitLimit = static_cast<unsigned>(-1);
+    isSmartJoin = (helper.getJoinFlags() & JFsmart) != 0;
     getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
 
     if((leftOuterJoin || limitOnFail) && !defaultRight)
@@ -5358,9 +5365,12 @@ const void * CHThorLookupJoinActivity::nextInGroup()
     switch (kind)
     {
     case TAKlookupjoin:
+    case TAKsmartjoin:
         return nextInGroupJoin();
     case TAKlookupdenormalize:
     case TAKlookupdenormalizegroup:
+    case TAKsmartdenormalize:
+    case TAKsmartdenormalizegroup:
         return nextInGroupDenormalize();
     }
     throwUnexpected();
@@ -5377,14 +5387,20 @@ const void * CHThorLookupJoinActivity::nextInGroupJoin()
             keepCount = keepLimit;
             if(!left)
             {
-                if(matchedGroup || eog)
+                if (isSmartJoin)
+                    left.setown(input->nextInGroup());
+
+                if(!left)
                 {
-                    matchedGroup = false;
+                    if(matchedGroup || eog)
+                    {
+                        matchedGroup = false;
+                        eog = true;
+                        return NULL;
+                    }
                     eog = true;
-                    return NULL;
+                    continue;
                 }
-                eog = true;
-                continue;
             }
             eog = false;
             gotMatch = false;
@@ -5441,7 +5457,7 @@ const void * CHThorLookupJoinActivity::nextInGroupDenormalize()
         left.setown(input->nextInGroup());
         if(!left)
         {
-            if (!matchedGroup)
+            if (!matchedGroup || isSmartJoin)
                 left.setown(input->nextInGroup());
 
             if (!left)
@@ -5456,7 +5472,7 @@ const void * CHThorLookupJoinActivity::nextInGroupDenormalize()
         const void * ret = NULL;
         if (failingLimit)
             ret = joinException(left, failingLimit);
-        else if (kind == TAKlookupdenormalize)
+        else if (kind == TAKlookupdenormalize || kind == TAKsmartdenormalize)
         {
             OwnedConstRoxieRow newLeft(left.getLink());
             unsigned rowSize = 0;
@@ -5957,7 +5973,7 @@ void CHThorWorkUnitWriteActivity::execute()
             else
                 errMsg.append("sequence=").append(helper.getSequence());
             errMsg.append(")");
-            throw MakeStringException(0, "%s", errMsg.str());
+            throw MakeStringExceptionDirect(0, errMsg.str());
          }
         if (rowSerializer)
         {
@@ -6055,7 +6071,7 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
         else
             errMsg.append("sequence=").append(helper.getSequence());
         errMsg.append(")");
-        throw MakeStringException(0, "%s", errMsg.str());
+        throw MakeStringExceptionDirect(0, errMsg.str());
     }
 
     WorkunitUpdate w = agent.updateWorkUnit();

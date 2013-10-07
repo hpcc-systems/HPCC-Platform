@@ -213,6 +213,8 @@ size32_t CMatchedResults::getMatchLength(unsigned idx)
     case NlpUnicode:
         len = size / sizeof(UChar);
         break;
+    default:
+        throwUnexpected();
     }
     return len;
 }

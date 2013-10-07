@@ -116,13 +116,14 @@ return false;
 if(_1d.popup){
 this.set("selected",_1d);
 this.set("activated",true);
-this._openItemPopup(_1d,/^key/.test(evt._origType||evt.type));
+var _1e=/^key/.test(evt._origType||evt.type)||(evt.clientX==0&&evt.clientY==0);
+this._openItemPopup(_1d,_1e);
 }else{
 this.onExecute();
 _1d._onClick?_1d._onClick(evt):_1d.onClick(evt);
 }
-},_openItemPopup:function(_1e,_1f){
-if(_1e==this.currentPopupItem){
+},_openItemPopup:function(_1f,_20){
+if(_1f==this.currentPopupItem){
 return;
 }
 if(this.currentPopupItem){
@@ -130,22 +131,22 @@ this._stopPendingCloseTimer();
 this.currentPopupItem._closePopup();
 }
 this._stopPopupTimer();
-var _20=_1e.popup;
-_20.parentMenu=this;
-this.own(this._mouseoverHandle=on.once(_20.domNode,"mouseover",_6.hitch(this,"_onPopupHover")));
-var _21=this;
-_1e._openPopup({parent:this,orient:this._orient||["after","before"],onCancel:function(){
-if(_1f){
-_21.focusChild(_1e);
+var _21=_1f.popup;
+_21.parentMenu=this;
+this.own(this._mouseoverHandle=on.once(_21.domNode,"mouseover",_6.hitch(this,"_onPopupHover")));
+var _22=this;
+_1f._openPopup({parent:this,orient:this._orient||["after","before"],onCancel:function(){
+if(_20){
+_22.focusChild(_1f);
 }
-_21._cleanUp();
+_22._cleanUp();
 },onExecute:_6.hitch(this,"_cleanUp",true),onClose:function(){
-if(_21._mouseoverHandle){
-_21._mouseoverHandle.remove();
-delete _21._mouseoverHandle;
+if(_22._mouseoverHandle){
+_22._mouseoverHandle.remove();
+delete _22._mouseoverHandle;
 }
-}},_1f);
-this.currentPopupItem=_1e;
+}},_20);
+this.currentPopupItem=_1f;
 },onOpen:function(){
 this.isShowingNow=true;
 this.set("activated",true);
@@ -164,20 +165,20 @@ this.selected.focusNode.focus();
 this.currentPopupItem._closePopup();
 this.currentPopupItem=null;
 }
-},_onItemFocus:function(_22){
-if(this._hoveredChild&&this._hoveredChild!=_22){
+},_onItemFocus:function(_23){
+if(this._hoveredChild&&this._hoveredChild!=_23){
 this.onItemUnhover(this._hoveredChild);
 }
-this.set("selected",_22);
+this.set("selected",_23);
 },_onBlur:function(){
 this._cleanUp(true);
 this.inherited(arguments);
-},_cleanUp:function(_23){
+},_cleanUp:function(_24){
 this._closeChild();
 if(typeof this.isShowingNow=="undefined"){
 this.set("activated",false);
 }
-if(_23){
+if(_24){
 this.set("selected",null);
 }
 }});

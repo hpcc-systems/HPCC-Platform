@@ -17,32 +17,23 @@
                     <div id="${id}Reschedule" data-dojo-attach-event="onClick:_onReschedule" data-dojo-type="dijit.form.Button">Reschedule</div>
                     <div id="${id}Deschedule" data-dojo-attach-event="onClick:_onDeschedule" data-dojo-type="dijit.form.Button">Deschedule</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <img id="${id}IconFilter" src="img/noFilter.png" class="iconNoFilter"/>
-                    <div id="${id}FilterDropDown" data-dojo-type="dijit.form.DropDownButton">
-                        <span>Filter</span>
-                        <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
-                            <div id="${id}FilterForm" style="width:460px" data-dojo-type="dijit.form.Form">
-                                <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <input id="${id}Wuid" title="WUID:" name="Wuid" colspan="2" data-dojo-props="trim: true, placeHolder:'W20130222-171723'" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}Owner" title="Owner:" name="Owner" colspan="2" data-dojo-props="trim: true, placeHolder:'jsmi*'" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}Jobname" title="Job&nbsp;Name:" name="Jobname" colspan="2" data-dojo-props="trim: true, placeHolder:'log_analysis_1*'" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}ClusterTargetSelect" title="Cluster:" name="Cluster" colspan="2" data-dojo-props="trim: true, placeHolder:'r?x*'" data-dojo-type="TargetSelectWidget" />
-                                    <input id="${id}StateSelect" title="State:" name="State" colspan="2" data-dojo-props="trim: true, placeHolder:'Created'" data-dojo-type="TargetSelectWidget" />
-                                    <input id="${id}ECL" title="ECL:" name="ECL" colspan="2" data-dojo-props="trim: true, placeHolder:':=dataset*'" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}LogicalFile" title="Logical&nbsp;File" name="LogicalFile" colspan="2" data-dojo-props="trim: true, placeHolder:'*::somefile'" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}LogicalFileSearchType" title="Logical&nbsp;File&nbsp;Type" name="LogicalFileSearchType" colspan="2" data-dojo-type="TargetSelectWidget" />
-                                    <input id="${id}FromDate" title="From&nbsp;Date:" name="StartDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
-                                    <input id="${id}FromTime" name="FromTime" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox" />
-                                    <input id="${id}ToDate" title="To&nbsp;Date:" name="EndDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
-                                    <input id="${id}ToTime" name="ToTime" data-dojo-props="trim: true, placeHolder:'7:30 PM'" data-dojo-type="dijit.form.TimeTextBox" />
-                                    <input id="${id}LastNDays" title="Last&nbsp;N&nbsp;Days:" name="LastNDays" data-dojo-props="dtrim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox" />
-                                </div>
-                                <button id="${id}FilterApply" data-dojo-attach-event="onClick:_onFilterApply" data-dojo-type="dijit.form.Button">Apply</button>
-                                <button id="${id}FilterClear" data-dojo-attach-event="onClick:_onFilterClear" data-dojo-type="dijit.form.Button">Clear</button>
-                            </div>
-                        </div>
+                    <div id="${id}Filter" data-dojo-type="FilterDropDownWidget">
+                        <input id="${id}Wuid" title="WUID:" name="Wuid" colspan="2" style="width:100%" data-dojo-props="trim: true, placeHolder:'W20130222-171723'" data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}Owner" title="Owner:" name="Owner" colspan="2" data-dojo-props="trim: true, placeHolder:'jsmi*'" data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}Jobname" title="Job&nbsp;Name:" name="Jobname" colspan="2" data-dojo-props="trim: true, placeHolder:'log_analysis_1*'" data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}ClusterTargetSelect" title="Cluster:" name="Cluster" colspan="2" data-dojo-props="trim: true, placeHolder:'r?x*'" data-dojo-type="TargetSelectWidget" />
+                        <input id="${id}StateSelect" title="State:" name="State" colspan="2" data-dojo-props="trim: true, placeHolder:'Created'" data-dojo-type="TargetSelectWidget" />
+                        <input id="${id}ECL" title="ECL:" name="ECL" colspan="2" data-dojo-props="trim: true, placeHolder:':=dataset*'" data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}LogicalFile" title="Logical&nbsp;File" name="LogicalFile" colspan="2" data-dojo-props="trim: true, placeHolder:'*::somefile'" data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}LogicalFileSearchType" title="Logical&nbsp;File&nbsp;Type" name="LogicalFileSearchType" colspan="2" data-dojo-type="TargetSelectWidget" />
+                        <input id="${id}FromDate" title="From&nbsp;Date:" name="StartDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
+                        <input id="${id}FromTime" name="FromTime" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox" />
+                        <input id="${id}ToDate" title="To&nbsp;Date:" name="EndDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
+                        <input id="${id}ToTime" name="ToTime" data-dojo-props="trim: true, placeHolder:'7:30 PM'" data-dojo-type="dijit.form.TimeTextBox" />
+                        <input id="${id}LastNDays" title="Last&nbsp;N&nbsp;Days:" name="LastNDays" data-dojo-props="dtrim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox" />
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
                 </div>
                 <div id="${id}WorkunitsGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}WorkunitsGrid">

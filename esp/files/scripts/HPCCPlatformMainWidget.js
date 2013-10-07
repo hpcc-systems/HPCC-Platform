@@ -16,8 +16,6 @@
 define([
     "dojo/_base/declare",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
@@ -32,10 +30,10 @@ define([
     "hpcc/SearchResultsWidget"
 
 ], function (declare,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                registry,
                 _TabContainerWidget,
                 template) {
-    return declare("HPCCPlatformMainWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("HPCCPlatformMainWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformMainWidget",
 
@@ -55,9 +53,9 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
+
             this.initTab();
         },
 
@@ -65,7 +63,7 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.init) {
-                    currSel.init(currSel.params);
+                    currSel.init({});
                 }
             }
         }

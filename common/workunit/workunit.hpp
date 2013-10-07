@@ -626,6 +626,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual unsigned queryContingencyFor() const = 0;
     virtual IStringVal & getPersistName(IStringVal & val) const = 0;
     virtual unsigned queryPersistWfid() const = 0;
+    virtual int queryPersistCopies() const = 0;  // 0 - unmangled name,  < 0 - use default, > 0 - max number
     virtual unsigned queryScheduleCountRemaining() const = 0;
     virtual WFState queryState() const = 0;
     virtual unsigned queryRetriesRemaining() const = 0;
@@ -657,7 +658,7 @@ interface IWorkflowItem : extends IRuntimeWorkflowItem
     virtual void setSchedulePriority(unsigned priority) = 0;
     virtual void setScheduleCount(unsigned count) = 0;
     virtual void addDependency(unsigned wfid) = 0;
-    virtual void setPersistInfo(const char * name, unsigned wfid) = 0;
+    virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies) = 0;
     virtual void syncRuntimeData(const IConstWorkflowItem & other) = 0;
     virtual void setScheduledWfid(unsigned wfid) = 0;
     virtual void setCluster(const char * cluster) = 0;
@@ -1027,7 +1028,6 @@ interface IConstWorkUnitIterator : extends IScmIterator
     virtual IConstWorkUnit & query() = 0;
 };
 
-
 //! IWUTimers
 
 interface IWUTimers : extends IInterface
@@ -1085,6 +1085,29 @@ enum WUSortField
     WUSFwild = 2048
 };
 
+enum WUQuerySortField
+{
+    WUQSFId = 1,
+    WUQSFname = 2,
+    WUQSFwuid = 3,
+    WUQSFdll = 4,
+    WUQSFmemoryLimit = 5,
+    WUQSFmemoryLimitHi = 6,
+    WUQSFtimeLimit = 7,
+    WUQSFtimeLimitHi = 8,
+    WUQSFwarnTimeLimit = 9,
+    WUQSFwarnTimeLimitHi = 10,
+    WUQSFpriority = 11,
+    WUQSFpriorityHi = 12,
+    WUQSFQuerySet = 13,
+    WUQSFterm = 0,
+    WUQSFreverse = 256,
+    WUQSFnocase = 512,
+    WUQSFnumeric = 1024,
+    WUQSFwild = 2048
+};
+
+typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 
 interface IWorkUnitFactory : extends IInterface
@@ -1105,6 +1128,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf) = 0;
     virtual void descheduleAllWorkUnits() = 0;
     virtual bool deleteWorkUnitEx(const char * wuid) = 0;
+    virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total) = 0;
 };
 
 
@@ -1155,7 +1179,8 @@ typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
 extern WORKUNIT_API unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters);
 extern WORKUNIT_API unsigned getEnvironmentClusterInfo(IPropertyTree* environmentRoot, CConstWUClusterInfoArray &clusters);
 extern WORKUNIT_API void getRoxieProcessServers(const char *process, SocketEndpointArray &servers);
-
+extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *process);
+extern WORKUNIT_API bool isProcessCluster(const char *process);
 
 extern WORKUNIT_API bool getWorkUnitCreateTime(const char *wuid,CDateTime &time); // based on WUID
 extern WORKUNIT_API bool restoreWorkUnit(const char *base,const char *wuid);

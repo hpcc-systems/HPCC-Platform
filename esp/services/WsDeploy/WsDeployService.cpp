@@ -719,13 +719,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             sMsg.append(":\n\n").append(sErrMsg);
 
-          throw MakeStringException(0, "%s", sMsg.str());
+          throw MakeStringExceptionDirect(0, sMsg.str());
         }
         else
         {
           StringBuffer sMsg;
           sMsg.append("Error locking environment. ").append(sErrMsg.str());
-          throw MakeStringException(-1, "%s", sMsg.str());
+          throw MakeStringExceptionDirect(-1, sMsg.str());
         }
       }
     }
@@ -817,13 +817,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             sMsg.append(":\n\n").append(sErrMsg);
 
-          throw MakeStringException(0, "%s", sMsg.str());
+          throw MakeStringExceptionDirect(0, sMsg.str());
         }
         else
         {
           StringBuffer sMsg;
           sMsg.append("Error unlocking environment. ").append(sErrMsg.str());
-          throw MakeStringException(-1, "%s", sMsg.str());
+          throw MakeStringExceptionDirect(-1, sMsg.str());
         }
       }
     }
@@ -1170,6 +1170,9 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
                   pBuildSet->addProp(XML_ATTR_SCHEMA, "directories.xsd");
                   pBuildSet->addProp(XML_ATTR_PROCESS_NAME, "Directories");
                 }
+                else
+                    throwUnexpected();
+
                 const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
                 const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
 
@@ -3257,6 +3260,9 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
                   {
                     xpath.clear().appendf("Hardware/Computer/[@name='%s']", pszComputer);
                     IPropertyTree* pComputer= pEnvRoot->queryPropTree(xpath.str());
+
+                    if (pComputer == NULL)
+                      break;
                     const char* pszNetAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
                     if (pszNetAddr)
                       pSlaveNode->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
@@ -4326,7 +4332,7 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
 
       errMsg.setCharAt(errMsg.length()-2 , ']');
 
-      throw MakeStringException(-1, "%s", errMsg.str());
+      throw MakeStringExceptionDirect(-1, errMsg.str());
     }
   }
   else
@@ -5915,7 +5921,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
       else
         sMsg.append(":\n\n").append(sErrMsg);
 
-      throw MakeStringException(0, "%s", sMsg.str());
+      throw MakeStringExceptionDirect(0, sMsg.str());
     }
   }
 

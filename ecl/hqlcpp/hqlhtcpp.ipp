@@ -196,6 +196,7 @@ public:
     bool         isMember;
     bool         instanceIsLocal;
     bool         isCoLocal;
+    bool         isNoAccess;
     bool         executedRemotely;
     bool         includedInHeader;
     bool         isLocal;
@@ -293,8 +294,6 @@ protected:
     HqlExprAttr     path;
     bool            matchedDataset;
 };
-
-void extractAtmostArgs(IHqlExpression * atmost, SharedHqlExpr & atmostCond, SharedHqlExpr & atmostLimit);
 
 IHqlExpression * extractFilterConditions(HqlExprAttr & invariant, IHqlExpression * expr, IHqlExpression * dataset, bool spotCSE);
 bool isLibraryScope(IHqlExpression * expr);

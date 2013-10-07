@@ -971,7 +971,6 @@ public:
     bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
 
-    static bool cannotRemove(CDfsLogicalFileName &name,IUserDescriptor *user,StringBuffer &reason,bool ignoresub, unsigned timeoutms);
     void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
     unsigned setDefaultTimeout(unsigned timems)
@@ -1213,7 +1212,7 @@ public:
         if (!file->canRemove(reason, false))
             ThrowStringException(-1, "Can't remove %s: %s", lfn.get(), reason.str());
 
-        // This will do the right thing for either super-files and logical-files
+        // This will do the right thing for either super-files and logical-files.
         file->detach();
     }
 };
@@ -3017,7 +3016,13 @@ protected:
                         ThrowStringException(-1, "Cluster %s not present in file %s", clusterName.str(), logicalName.get());
                 }
             }
-
+            if (removeFile)
+            {
+                // check can remove, e.g. cannot if this is a subfile of a super
+                StringBuffer reason;
+                if (!canRemove(reason))
+                    throw MakeStringException(-1,"detach: %s", reason.str());
+            }
             // detach this IDistributeFile
             writeLock.clear();
             root.setown(closeConnection(removeFile));
@@ -3272,8 +3277,7 @@ public:
                                     fdesc->getClusterGroupName(i,cname,NULL).str(),
                                     fdesc->queryClusterGroup(i),
                                     fdesc->queryPartDiskMapping(i),
-                                    &queryNamedGroupStore(),
-                                    fdesc->queryClusterRoxieLabel(i)
+                                    &queryNamedGroupStore()
                                     );
 #ifdef EXTRA_LOGGING
                 PROGLOG("setClusters(%d,%s)",i,cname.str());
@@ -3805,7 +3809,7 @@ public:
         if (newbasedir)
             diroverride = newbasedir;
 
-        const char *myBase = queryBaseDirectory(0, os);
+        const char *myBase = queryBaseDirectory(grp_unknown, 0, os);
         StringBuffer baseDir, newPath;
         makePhysicalPartName(logicalName.get(), 0, 0, newPath, false, os, diroverride);
         if (!getBase(directory, newPath, baseDir))
@@ -5987,7 +5991,7 @@ StringBuffer & CDistributedFilePart::getPartName(StringBuffer &partname)
     if (!mask||!*mask) {
         const char *err ="CDistributedFilePart::getPartName cannot determine part name (no mask)";
         ERRLOG("%s", err);
-        throw MakeStringException(-1, "%s", err);
+        throw MakeStringExceptionDirect(-1, err);
     }
     expandMask(partname,mask,partIndex,parent.numParts());
     return partname;
@@ -6465,8 +6469,10 @@ public:
             Owned<IPropertyTree> pt = getNamedPropTree(conn->queryRoot(),"Group","@name",gname.str(),true);
             if (!pt)
                 return NULL;
-            groupdir.set(pt->queryProp("@dir"));
             type = translateGroupType(pt->queryProp("@kind"));
+            groupdir.set(pt->queryProp("@dir"));
+            if (groupdir.isEmpty())
+                groupdir.set(queryBaseDirectory(type));
             Owned<IPropertyTreeIterator> pe2 = pt->getElements("Node");
             ForEach(*pe2) {
                 SocketEndpoint ep(pe2->query().queryProp("@ip"));
@@ -8316,8 +8322,12 @@ class CInitGroups
 
     bool constructGroup(IPropertyTree &cluster, const char *altName, IPropertyTree *oldEnvCluster, GroupType groupType, bool force, StringBuffer &messages)
     {
+        /* a 'realCluster' is a cluster who's name matches it's nodeGroup
+         * if the nodeGroup differs it implies it's sharing the nodeGroup with other thor instance(s).
+         */
         bool realCluster = true;
-        StringBuffer gname;
+        bool oldRealCluster = true;
+        StringBuffer gname, oldGname;
         const char *defDir = NULL;
         switch (groupType)
         {
@@ -8325,6 +8335,12 @@ class CInitGroups
                 getClusterGroupName(cluster, gname);
                 if (!streq(cluster.queryProp("@name"), gname.str()))
                     realCluster = false;
+                if (oldEnvCluster)
+                {
+                    getClusterGroupName(*oldEnvCluster, oldGname);
+                    if (!streq(oldEnvCluster->queryProp("@name"), oldGname.str()))
+                        oldRealCluster = false;
+                }
                 break;
             case grp_thorspares:
                 getClusterSpareGroupName(cluster, gname);
@@ -8345,17 +8361,26 @@ class CInitGroups
         bool matchOldEnv = false;
         Owned<IPropertyTree> newClusterGroup = createClusterGroupFromEnvCluster(groupType, cluster, defDir, realCluster);
         bool matchExisting = clusterGroupCompare(newClusterGroup, existingClusterGroup);
-        if (oldEnvCluster) {
-            Owned<IPropertyTree> oldClusterGroup = createClusterGroupFromEnvCluster(groupType, *oldEnvCluster, defDir, realCluster);
-            matchOldEnv = clusterGroupCompare(newClusterGroup, oldClusterGroup);
+        if (oldEnvCluster)
+        {
+            // new matches old, only if neither has changed it's name to mismatch it's nodeGroup name
+            if (realCluster == oldRealCluster)
+            {
+                Owned<IPropertyTree> oldClusterGroup = createClusterGroupFromEnvCluster(groupType, *oldEnvCluster, defDir, oldRealCluster);
+                matchOldEnv = clusterGroupCompare(newClusterGroup, oldClusterGroup);
+            }
+            else
+                matchOldEnv = false;
         }
-        if (force && !matchExisting) {
+        if (force && !matchExisting)
+        {
             VStringBuffer msg("Forcing new group layout for %s [ matched active = %s, matched old environment = %s ]", gname.str(), matchExisting?"true":"false", matchOldEnv?"true":"false");
             WARNLOG("%s", msg.str());
             messages.append(msg).newline();
             matchExisting = matchOldEnv = false;
         }
-        if (!matchExisting && !matchOldEnv) {
+        if (!matchExisting && !matchOldEnv)
+        {
             VStringBuffer msg("New cluster layout for cluster %s", gname.str());
             WARNLOG("%s", msg.str());
             messages.append(msg).newline();

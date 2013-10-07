@@ -2497,10 +2497,13 @@ int rtlCompareEStrEStr(unsigned l1, const char * p1, unsigned l2, const char * p
     return diff;
 }
 
+const static UChar nullUStr = 0;
 int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale)
 {
     while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
     while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
+    if (!p1) p1 = &nullUStr;
+    if (!p2) p2 = &nullUStr;
     return ucol_strcoll(queryRTLLocale(locale)->queryCollator(), p1, l1, p2, l2);
 }
 
@@ -2508,6 +2511,8 @@ int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2,
 {
     while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
     while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
+    if (!p1) p1 = &nullUStr;
+    if (!p2) p2 = &nullUStr;
     return ucol_strcoll(queryRTLLocale(locale)->queryCollator(strength), p1, l1, p2, l2);
 }
 
@@ -2539,7 +2544,7 @@ void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned slen, const 
     ucol_getSortKey(coll, src, slen, (unsigned char *)tgt, tlen);
 }
 
-ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const char * p2)
+ECLRTL_API int rtlPrefixDiffStrEx(unsigned l1, const char * p1, unsigned l2, const char * p2, unsigned origin)
 {
     unsigned len = l1 < l2 ? l1 : l2;
     const byte * str1 = (const byte *)p1;
@@ -2551,18 +2556,23 @@ ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const
         if (c1 != c2)
         {
             if (c1 < c2)
-                return -(int)(i+1);
+                return -(int)(i+origin+1);
             else
-                return (int)(i+1);
+                return (int)(i+origin+1);
         }
     }
     if (l1 != l2)
-        return (l1 < l2) ? -(int)(len+1) : (int)(len + 1);
+        return (l1 < l2) ? -(int)(len+origin+1) : (int)(len+origin+1);
     return 0;
 }
 
+ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const char * p2)
+{
+    return rtlPrefixDiffStrEx(l1, p1, l2, p2, 0);
+}
+
 //MORE: I'm not sure this can really be implemented....
-ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, char const * locale)
+ECLRTL_API int rtlPrefixDiffUnicodeEx(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, char const * locale, unsigned origin)
 {
     while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
     while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
@@ -2573,18 +2583,20 @@ ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, 
         {
             int c = ucol_strcoll(queryRTLLocale(locale)->queryCollator(), p1+i, l1-i, p2+i, l2-i);
             if (c < 0)
-                return -(int)(i+1);
+                return -(int)(i+origin+1);
             else if (c > 0)
-                return (int)(i+1);
-            else
-                return 0;       //weird!
+                return (int)(i+origin+1);
         }
     }
     if (l1 != l2)
-        return (l1 < l2) ? -(int)(len+1) : (int)(len + 1);
+        return (l1 < l2) ? -(int)(len+origin+1) : (int)(len+origin+1);
     return 0;
 }
 
+ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, char const * locale)
+{
+    return rtlPrefixDiffUnicodeEx(l1, p1, l2, p2, locale, 0);
+}
 
 //-----------------------------------------------------------------------------
 
@@ -2781,6 +2793,7 @@ int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, 
     int left = 0;
     int right = count;
     
+    if (!search) search = &nullUStr;
     size32_t trimWidth = rtlQuickTrimUnicode(width, search);
 
     do
@@ -3184,16 +3197,6 @@ void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UC
     outlen = outbuff.length();
     out = (char *)rtlMalloc(outlen);
     memcpy(out, outbuff.str(), outlen);
-}
-
-void rtlUnicodeToQuotedUTF8X(unsigned & outlen, char * & out, unsigned inlen, UChar const * in)
-{
-    UnicodeString unicode(in, inlen);
-    unicode.findAndReplace("'", "\\'");
-    //pre-flight length - may be more efficient to guess length and only re-extract if guess no good, but what to guess?
-    outlen = unicode.extract(0, unicode.length(), 0, 0, UTF8_CODEPAGE);
-    out = (char *)rtlMalloc(outlen);
-    unicode.extract(0, unicode.length(), out, outlen, UTF8_CODEPAGE);
 }
 
 bool rtlCodepageToCodepage(unsigned outlen, char * out, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage)
@@ -5284,6 +5287,8 @@ ECLRTL_API void xmlDecodeUStrX(size32_t & outLen, UChar * & out, size32_t inLen,
                         digit = next-'a'+10;
                     else if (next==';')
                         break;
+                    else
+                        digit = base;
                     if (digit >= base)
                     {
                         error = true;

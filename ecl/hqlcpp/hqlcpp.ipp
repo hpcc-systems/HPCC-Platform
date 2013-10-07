@@ -41,11 +41,12 @@
 
 enum { HintSpeed = 1, HintSize = 2 };
 enum GraphLocalisation {
-    GraphNoAccess = 0,
-    GraphCoLocal = 1,
-    GraphNonLocal = 2,
-    GraphCoNonLocal = 3,
-    GraphRemote = 4
+    GraphNeverAccess,  // This variant of an activity never accesses the parent
+    GraphNoAccess,  // This activity would normally access the parent, but doesn't here
+    GraphCoLocal,  // activity runs on the same node as the
+    GraphNonLocal,
+    GraphCoNonLocal,
+    GraphRemote
 };
 
 enum { 
@@ -556,6 +557,7 @@ struct HqlCppOptions
     unsigned            applyInstantEclTransformationsLimit;
     unsigned            complexClassesThreshold;
     unsigned            complexClassesActivityFilter;
+    unsigned            subgraphToRegeneate;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
     bool                peephole;
@@ -718,6 +720,9 @@ struct HqlCppOptions
     bool                expandHashJoin;
     bool                traceIR;
     bool                preserveCaseExternalParameter;
+    bool                multiplePersistInstances;
+    bool                optimizeParentAccess;
+    bool                expandPersistInputDependencies;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -850,7 +855,7 @@ public:
 
 // Helper functions
 
-    void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4)));            // override the global function to try and add more context information
+    void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4), noreturn));            // override the global function to try and add more context information
 
     void buildAddress(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void buildBlockCopy(BuildCtx & ctx, IHqlExpression * tgt, CHqlBoundExpr & src);
@@ -1622,8 +1627,8 @@ public:
     IHqlExpression * createOrderFromSortList(const DatasetReference & dataset, IHqlExpression * sortList, IHqlExpression * leftSelect, IHqlExpression * rightSelect);
 
     void buildSkewThresholdMembers(BuildCtx & ctx, IHqlExpression * expr);
-    void doCompareLeftRight(BuildCtx & ctx, const char * funcname, const DatasetReference & datasetLeft, const DatasetReference & datasetRight, HqlExprArray & left, HqlExprArray & right);
-    void buildSlidingMatchFunction(BuildCtx & ctx, HqlExprArray & leftEq, HqlExprArray & rightEq, HqlExprArray & slidingMatches, const char * funcname, unsigned childIndex, const DatasetReference & datasetL, const DatasetReference & datasetR);
+    void doCompareLeftRight(BuildCtx & ctx, const char * funcname, const DatasetReference & datasetLeft, const DatasetReference & datasetRight, const HqlExprArray & left, const HqlExprArray & right);
+    void buildSlidingMatchFunction(BuildCtx & ctx, const HqlExprArray & leftEq, const HqlExprArray & rightEq, const HqlExprArray & slidingMatches, const char * funcname, unsigned childIndex, const DatasetReference & datasetL, const DatasetReference & datasetR);
     void doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, SharedHqlExpr & rawRecord);
 
     void buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpression * expr, KeyedJoinInfo * joinKey);
@@ -1755,7 +1760,6 @@ protected:
     IHqlExpression * normalizeGlobalIfCondition(BuildCtx & ctx, IHqlExpression * expr);
     void substituteClusterSize(HqlExprArray & exprs);
     void throwCannotCast(ITypeInfo * from, ITypeInfo * to);
-    void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard);
 
     void ensureSerialized(BuildCtx & ctx, const CHqlBoundTarget & variable);
 
@@ -1766,8 +1770,8 @@ protected:
     void doFilterAssignments(BuildCtx & ctx, TransformBuilder * builder, HqlExprArray & assigns, IHqlExpression * expr);
     void generateSerializeAssigns(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * selector, IHqlExpression * selfSelect, IHqlExpression * leftSelect, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, bool needToClear, node_operator serializeOp, IAtom * serialForm);
     void generateSerializeFunction(BuildCtx & ctx, const char * funcName, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, node_operator serializeOp, IAtom * serialForm);
-    void generateSerializeKey(BuildCtx & ctx, node_operator side, const DatasetReference & dataset, HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft);             //NB: sorts are ats.xyz
-    void generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator index, const DatasetReference & dataset, HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal);
+    void generateSerializeKey(BuildCtx & ctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool isGlobal, bool generateCompares, bool canReuseLeft);             //NB: sorts are ats.xyz
+    void generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator index, const DatasetReference & dataset, const HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal);
     void addSchemaField(IHqlExpression *field, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
     void addSchemaResource(int seq, const char * name, IHqlExpression * record);
@@ -2003,7 +2007,7 @@ extern bool canIterateInline(BuildCtx * ctx, IHqlExpression * expr);
 extern bool canAssignInline(BuildCtx * ctx, IHqlExpression * expr);
 extern bool canEvaluateInline(BuildCtx * ctx, IHqlExpression * expr);
 extern bool canAssignNotEvaluateInline(BuildCtx * ctx, IHqlExpression * expr);
-extern bool isNonLocal(IHqlExpression * expr);
+extern bool isNonLocal(IHqlExpression * expr, bool optimizeParentAccess);
 extern bool alwaysEvaluatesToBound(IHqlExpression * expr);
 
 extern void buildClearPointer(BuildCtx & ctx, IHqlExpression * expr);
@@ -2021,7 +2025,8 @@ extern bool filterIsTableInvariant(IHqlExpression * expr);
 // e.g., if same LEFT selector is in current context and parent.
 extern bool mustEvaluateInContext(BuildCtx & ctx, IHqlExpression * expr);
 extern const char * boolToText(bool value);
-extern GraphLocalisation queryActivityLocalisation(IHqlExpression * expr);
+extern bool activityNeedsParent(IHqlExpression * expr);
+extern GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimizeParentAccess);
 extern bool isGraphIndependent(IHqlExpression * expr, IHqlExpression * graph);
 extern IHqlExpression * adjustBoundIntegerValues(IHqlExpression * left, IHqlExpression * right, bool subtract);
 extern bool isNullAssign(const CHqlBoundTarget & target, IHqlExpression * expr);

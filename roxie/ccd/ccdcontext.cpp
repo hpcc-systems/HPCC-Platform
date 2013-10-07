@@ -604,6 +604,7 @@ protected:
     unsigned ctxFetchPreload;
     unsigned ctxPrefetchProjectPreload;
     bool traceActivityTimes;
+    bool checkingHeap;
 
     Owned<IConstWorkUnit> workUnit;
     Owned<IRoxieDaliHelper> daliHelperLink;
@@ -669,7 +670,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive)
+    CSlaveContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive, bool _checkingHeap)
         : factory(_factory), logctx(_logctx)
     {
         if (_packet)
@@ -696,6 +697,7 @@ public:
             debugContext.setown(slaveDebugContext);
             probeManager.setown(createDebugManager(debugContext, "slaveDebugger"));
         }
+        checkingHeap = _checkingHeap;
 
         aborted = false;
 
@@ -836,6 +838,11 @@ public:
     virtual bool queryTimeActivities() const
     {
         return traceActivityTimes;
+    }
+
+    virtual bool queryCheckingHeap() const
+    {
+        return checkingHeap;
     }
 
     virtual void checkAbort()
@@ -1210,7 +1217,7 @@ public:
 
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
-        return allocatorMetaCache->ensure(meta, activityId);
+        return allocatorMetaCache->ensure(meta, activityId, roxiemem::RHFnone);
     }
 
     virtual const char *cloneVString(const char *str) const
@@ -1242,9 +1249,12 @@ public:
     }
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id) const
+    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
-        return createRoxieRowAllocator(*rowManager, meta, activityId, id, roxiemem::RHFnone);
+        if (checkingHeap)
+            return createCrcRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+        else
+            return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
     }
 
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
@@ -1663,7 +1673,7 @@ protected:
 
 IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *packet)
 {
-    return new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryTraceActivityTimes(), _logctx.queryDebuggerActive());
+    return new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryTraceActivityTimes(), _logctx.queryDebuggerActive(), _logctx.queryCheckingHeap());
 }
 
 class CRoxieServerDebugContext : extends CBaseServerDebugContext
@@ -1943,7 +1953,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CRoxieServerContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
     {
         init();
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
@@ -1952,7 +1962,7 @@ public:
     }
 
     CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
     {
         init();
         workUnit.set(_workUnit);
@@ -1963,7 +1973,7 @@ public:
     }
 
     CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
     {
         init();
         context.set(_context);
@@ -2013,6 +2023,7 @@ public:
         ctxPrefetchProjectPreload = context->getPropInt("_PrefetchProjectPreload", defaultPrefetchProjectPreload);
 
         traceActivityTimes = context->getPropBool("_TraceActivityTimes", false) || context->getPropBool("@timing", false);
+        checkingHeap = context->getPropBool("_CheckingHeap", defaultCheckingHeap) || context->getPropBool("@checkingHeap", defaultCheckingHeap);
     }
 
     virtual roxiemem::IRowManager &queryRowManager()
@@ -2860,10 +2871,10 @@ public:
 
     // persist-related code - usage of persist should have been caught and rejected at codegen time
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
-    virtual void startPersist(const char * name) { throwUnexpected(); }
-    virtual void finishPersist() { throwUnexpected(); }
+    virtual IRemoteConnection *startPersist(const char * name) { throwUnexpected(); }
+    virtual void finishPersist(IRemoteConnection *) { throwUnexpected(); }
     virtual void clearPersist(const char * logicalName) { throwUnexpected(); }
-    virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) { throwUnexpected(); }
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) { throwUnexpected(); }
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) { throwUnexpected(); }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { throwUnexpected(); }
@@ -2996,7 +3007,7 @@ public:
         StringBuffer responseHead, responseTail;
         appendfJSONName(responseHead, "%sResponse", queryName.get()).append(" {");
         appendJSONValue(responseHead, "sequence", seqNo);
-        appendJSONName(responseHead, "Results").append(" {\n ");
+        appendJSONName(responseHead, "Results").append(" {");
 
         unsigned len = responseHead.length();
         client->write(responseHead.detach(), len, true);
@@ -3016,7 +3027,7 @@ public:
                         break;
                     if (needDelimiter)
                     {
-                        StringAttr s(",\n "); //write() will take ownership of buffer
+                        StringAttr s(","); //write() will take ownership of buffer
                         size32_t len = s.length();
                         client->write((void *)s.detach(), len, true);
                         needDelimiter=false;

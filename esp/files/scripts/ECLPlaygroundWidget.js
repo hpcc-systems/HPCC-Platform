@@ -20,14 +20,12 @@ define([
     "dojo/dom",
     "dojo/query",
 
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/registry",
 
+    "hpcc/_Widget",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/GraphWidget",
@@ -36,10 +34,10 @@ define([
 
     "dojo/text!../templates/ECLPlaygroundWidget.html"
 ], function (declare, xhr, lang, dom, query,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry,
-                EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit,
+                BorderContainer, TabContainer, ContentPane, registry,
+                _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit,
                 template) {
-    return declare("ECLPlaygroundWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("ECLPlaygroundWidget", [_Widget], {
         templateString: template,
         baseClass: "ECLPlaygroundWidget",
         wu: null,
@@ -89,9 +87,8 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             if (params.Wuid) {
                 this.hideTitle();
@@ -109,7 +106,7 @@ define([
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
                 var data = this.wu.getData();
-                for (key in data) {
+                for (var key in data) {
                     this.updateInput(key, null, data[key]);
                 }
                 this.watchWU();
@@ -155,6 +152,10 @@ define([
                     }
                 }
             };
+        },
+
+        getGraph: function () {
+            return registry.byId(this.id + "GraphControl");
         },
 
         resetPage: function () {

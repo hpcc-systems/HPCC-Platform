@@ -335,6 +335,7 @@ extern bool useRemoteResources;
 extern bool checkFileDate;
 extern bool lazyOpen;
 extern bool localSlave;
+extern bool ignoreOrphans;
 extern bool doIbytiDelay;
 extern unsigned initIbytiDelay;
 extern unsigned minIbytiDelay;
@@ -357,7 +358,6 @@ extern unsigned socketCheckInterval;
 extern memsize_t defaultMemoryLimit;
 extern unsigned defaultTimeLimit[3];
 extern unsigned defaultWarnTimeLimit[3];
-extern bool checkPrimaries;
 extern bool pretendAllOpt;
 extern ClientCertificate clientCert;
 extern bool useHardLink;
@@ -423,6 +423,7 @@ extern unsigned defaultFetchPreload;
 extern unsigned defaultFullKeyedJoinPreload;
 extern unsigned defaultKeyedJoinPreload;
 extern unsigned defaultPrefetchProjectPreload;
+extern bool defaultCheckingHeap;
 
 extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;
@@ -456,6 +457,7 @@ extern void saveTopology();
 #define LOGGING_DEBUGGERACTIVE  0x04
 #define LOGGING_BLIND           0x08
 #define LOGGING_TRACELEVELSET   0x10
+#define LOGGING_CHECKINGHEAP    0x20
 #define LOGGING_FLAGSPRESENT    0x40
 
 class LogItem : public CInterface
@@ -956,6 +958,7 @@ class SlaveContextLogger : public StringContextLogger
     mutable bool anyOutput;
     bool traceActivityTimes;
     bool debuggerActive;
+    bool checkingHeap;
     IpAddress ip;
     StringAttr wuid;
 public:
@@ -965,6 +968,7 @@ public:
     virtual void flush(bool closing, bool aborted) const;
     inline bool queryTraceActivityTimes() const { return traceActivityTimes; }
     inline bool queryDebuggerActive() const { return debuggerActive; }
+    inline bool queryCheckingHeap() const { return checkingHeap; }
     inline void setDebuggerActive(bool _active) { debuggerActive = _active; }
     inline const StatsCollector &queryStats() const 
     {

@@ -19,9 +19,6 @@ define([
     "dojo/dom",
     "dojo/request/iframe",
 
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "dgrid/Grid",
@@ -32,6 +29,7 @@ define([
     "dgrid/extensions/DijitRegistry",
     "dgrid/extensions/Pagination",
 
+    "hpcc/_Widget",
     "hpcc/ESPBase",
     "hpcc/ESPWorkunit",
     "hpcc/ESPLogicalFile",
@@ -44,18 +42,17 @@ define([
     "dijit/form/Button",
     "dijit/ToolbarSeparator"
 ], function (declare, lang, dom, iframe,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                registry,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                ESPBase, ESPWorkunit, ESPLogicalFile,
+                _Widget, ESPBase, ESPWorkunit, ESPLogicalFile,
                 template) {
-    return declare("ResultWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("ResultWidget", [_Widget], {
         templateString: template,
         baseClass: "ResultWidget",
 
         borderContainer: null,
         grid: null,
 
-        initalized: false,
         loaded: false,
 
         buildRendering: function (args) {
@@ -124,10 +121,8 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized) {
+            if (this.inherited(arguments))
                 return;
-            }
-            this.initalized = true;
 
             this.result = params.result;
             //TODO:  Encapsulate this IF into ESPResult.js
@@ -141,6 +136,14 @@ define([
                 });
             } else if (params.LogicalName) {
                 var logicalFile = ESPLogicalFile.Get(params.LogicalName);
+                var context = this;
+                logicalFile.getInfo({
+                    onAfterSend: function (response) {
+                        context.initResult(logicalFile.result);
+                    }
+                });
+            } else if (params.result && params.result.Name) {
+                var logicalFile = ESPLogicalFile.Get(params.result.Name);
                 var context = this;
                 logicalFile.getInfo({
                     onAfterSend: function (response) {

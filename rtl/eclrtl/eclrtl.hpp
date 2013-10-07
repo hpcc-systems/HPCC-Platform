@@ -41,6 +41,11 @@
 #define ECLRTL_API
 #endif
 
+#ifdef _MSC_VER
+#undef __attribute__ // in case platform.h has been included
+#define __attribute__(param) /* do nothing */
+#endif
+
 #ifndef I64C
 #ifdef _WIN32
 #define I64C(n) n##i64
@@ -250,7 +255,9 @@ ECLRTL_API void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned s
 ECLRTL_API bool rtlGetNormalizedUnicodeLocaleName(unsigned len, char const * in, char * out);
 
 ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const char * p2);
+ECLRTL_API int rtlPrefixDiffStrEx(unsigned l1, const char * p1, unsigned l2, const char * p2, unsigned origin);
 ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, const char * locale);
+ECLRTL_API int rtlPrefixDiffUnicodeEx(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, const char * locale, unsigned origin);
 
 ECLRTL_API void rtlTrimRight(unsigned &tlen, char * &tgt, unsigned slen, const char * src); // YMA
 ECLRTL_API void rtlTrimUnicodeRight(unsigned &tlen, UChar * &tgt, unsigned slen, UChar const * src);
@@ -336,7 +343,6 @@ ECLRTL_API void rtlUnicodeToStr(unsigned outlen, char * out, unsigned inlen, UCh
 ECLRTL_API void rtlStrToUnicodeX(unsigned & outlen, UChar * & out, unsigned inlen, char const * in);
 ECLRTL_API void rtlUnicodeToStrX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in);
 ECLRTL_API void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in);
-ECLRTL_API void rtlUnicodeToQuotedUTF8X(unsigned & outlen, char * & out, unsigned inlen, UChar const * in);
 ECLRTL_API bool rtlCodepageToCodepage(unsigned outlen, char * out, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage); //returns success, false probably means illegal input or overflow
 ECLRTL_API int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char const * outcodepage); //returns number of trailbytes on character in UTF8 if valid, -1 error (illegal input or overflow (this routine assumes output is single character, which can break if outcodepage uses multibyte sequences, so don't do that))
 
@@ -378,12 +384,12 @@ ECLRTL_API unsigned rtlCrcVUnicode(UChar const * k, unsigned initval);
 
 ECLRTL_API unsigned rtlRandom();
 ECLRTL_API void rtlSeedRandom(unsigned value);
-ECLRTL_API void rtlFail(int code, const char *msg);
-ECLRTL_API void rtlSysFail(int code, const char *msg);
-ECLRTL_API void rtlFailUnexpected();
-ECLRTL_API void rtlFailOnAssert();
-ECLRTL_API void rtlFailDivideByZero();
-ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg);
+ECLRTL_API void rtlFail(int code, const char *msg) __attribute__((noreturn));
+ECLRTL_API void rtlSysFail(int code, const char *msg) __attribute__((noreturn));
+ECLRTL_API void rtlFailUnexpected() __attribute__((noreturn));
+ECLRTL_API void rtlFailOnAssert() __attribute__((noreturn));
+ECLRTL_API void rtlFailDivideByZero() __attribute__((noreturn));
+ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg) __attribute__((noreturn));
 
 ECLRTL_API void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name);
 ECLRTL_API void rtlReportRowOverflow(unsigned size, unsigned max);

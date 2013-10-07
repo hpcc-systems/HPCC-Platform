@@ -91,7 +91,7 @@ interface IJobQueue: extends IInterface
     virtual unsigned findRank(const char *wuid)=0;
     virtual unsigned copyItems(CJobQueueContents &dest)=0;  // takes a snapshot copy of the entire queue (returns number copied)
     virtual bool getLastDequeuedInfo(StringAttr &wuid, CDateTime &enqueuedt, int &priority)=0;
-    virtual void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state)=0;
+    virtual void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state, StringBuffer& stateDetails)=0;
 
 
 //manipulation
@@ -112,10 +112,15 @@ interface IJobQueue: extends IInterface
 
 // control:
     virtual void pause()=0;     // marks queue as paused - and subsequent dequeues block until resumed
+    virtual void pause(const char *info)=0;     // marks queue as paused - and subsequent dequeues block until resumed
     virtual bool paused()=0;    // true if paused
+    virtual bool paused(StringBuffer& info)=0;    // true if paused
     virtual void stop()=0;      // sets stopped flags - all current and subsequent dequeues return NULL
+    virtual void stop(const char *info)=0;      // sets stopped flags - all current and subsequent dequeues return NULL
     virtual bool stopped()=0;   // true if stopped
+    virtual bool stopped(StringBuffer& info)=0;   // true if stopped
     virtual void resume()=0;    // removes paused or stopped flag
+    virtual void resume(const char *info)=0;    // removes paused or stopped flag
 
 // conversations:
     virtual IConversation *initiateConversation(IJobQueueItem *item)=0; // does enqueue - take ownership of item

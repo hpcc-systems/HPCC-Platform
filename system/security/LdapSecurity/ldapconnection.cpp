@@ -1050,13 +1050,14 @@ public:
                 m_domainPwdsNeverExpire = true;
 
             const char* sysuser = m_ldapconfig->getSysUser();
+            bool sysUser = false;
             if(sysuser && *sysuser && (strcmp(username, sysuser) == 0))
             {
                 if(strcmp(password, m_ldapconfig->getSysUserPassword()) == 0)
                 {
                     user.setFullName(m_ldapconfig->getSysUserCommonName());
                     user.setAuthenticateStatus(AS_AUTHENTICATED);
-                    return true;
+                    sysUser = true;
                 }
                 else
                 {
@@ -1188,6 +1189,9 @@ public:
             StringBuffer userdnbuf;
             userdnbuf.append(userdn);
             ldap_memfree(userdn);
+
+            if (sysUser)
+                return true;//sysuser authenticated above
 
             StringBuffer hostbuf;
             m_ldapconfig->getLdapHost(hostbuf);
@@ -2632,7 +2636,7 @@ public:
             if(rc == LDAP_UNWILLING_TO_PERFORM)
                 errmsg.append(" The ldap server refused to change the password. Usually this is because your new password doesn't satisfy the domain policy.");
 
-            throw MakeStringException(-1, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(-1, errmsg.str());
         }
 
         return true;
@@ -2820,7 +2824,7 @@ public:
                 if(rc == LDAP_UNWILLING_TO_PERFORM)
                     errmsg.append(" The ldap server refused to execute the password change action, one of the reasons might be that the new password you entered doesn't satisfy the policy requirement.");
 
-                throw MakeStringException(-1, "%s", errmsg.str());
+                throw MakeStringExceptionDirect(-1, errmsg.str());
             }
         }
         return true;

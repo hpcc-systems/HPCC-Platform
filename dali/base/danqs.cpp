@@ -793,8 +793,8 @@ public:
         bool usingpriorities = root->getPropInt("@priorities",0)!=0;
         int priority;
         if (usingpriorities) {
-            int topidx;
-            int priority;
+            int topidx = 0;
+            int priority = 0;
             unsigned i = 0;
             Owned<IPropertyTree> topitem;
             {

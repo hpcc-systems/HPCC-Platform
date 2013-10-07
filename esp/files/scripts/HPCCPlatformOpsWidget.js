@@ -16,8 +16,6 @@
 define([
     "dojo/_base/declare",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
@@ -30,10 +28,10 @@ define([
     "dijit/layout/ContentPane"
 
 ], function (declare,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                registry,
                 _TabContainerWidget, ESPRequest,
                 template) {
-    return declare("HPCCPlatformOpsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("HPCCPlatformOpsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformOpsWidget",
 
@@ -53,9 +51,9 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
+
             this.initTab();
         },
 
@@ -98,7 +96,7 @@ define([
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.init) {
-                    currSel.init(currSel.params);
+                    currSel.init({});
                 }
                 currSel.initalized = true;
             }

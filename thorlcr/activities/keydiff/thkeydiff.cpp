@@ -76,6 +76,7 @@ public:
         OwnedRoxieString outputName(helper->getOutputName());
         fillClusterArray(container.queryJob(), outputName, clusters, groups);
         patchDesc.setown(queryThorFileManager().create(container.queryJob(), outputName, clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));
+        patchDesc->queryProperties().setProp("@kind", "keydiff");
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {

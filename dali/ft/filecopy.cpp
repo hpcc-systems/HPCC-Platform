@@ -46,6 +46,7 @@
 #define PARTITION_RECOVERY_LIMIT 1000
 #define EXPECTED_RESPONSE_TIME          (60 * 1000)
 #define RESPONSE_TIME_TIMEOUT           (60 * 60 * 1000)
+#define DEFAULT_MAX_XML_RECORD_SIZE 0x100000
 
 //#define CLEANUP_RECOVERY
 
@@ -1130,6 +1131,11 @@ void FileSprayer::calculateSprayPartition()
         const SocketEndpoint & ep = cur.filename.queryEndpoint();
         IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
 
+
+        // CSV record structure discovery of every source
+        bool isRecordStructurePresent = options->getPropBool("@recordStructurePresent", false);
+        partitioner->setRecordStructurePresent(isRecordStructurePresent);
+
         RemoteFilename name;
         name.set(cur.filename);
         setCanAccessDirectly(name);
@@ -1159,6 +1165,13 @@ void FileSprayer::calculateSprayPartition()
 
     ForEachItemIn(idx2, partitioners)
         partitioners.item(idx2).getResults(partition);
+
+    // Store discovered CSV record structure into target logical file.
+    StringBuffer recStru;
+    partitioners.item(0).getRecordStructure(recStru);
+    IDistributedFile * target = distributedTarget.get();
+    target->setECL(recStru.str());
+
 }
 
 void FileSprayer::calculateOutputOffsets()
@@ -1241,6 +1254,18 @@ void FileSprayer::checkFormats()
             }
             break;
         }
+    }
+    switch (srcType)
+    {
+        case FFTutf: case FFTutf8: case FFTutf8n: case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
+            if (srcFormat.rowTag)
+            {
+                srcFormat.maxRecordSize = srcFormat.maxRecordSize > DEFAULT_MAX_XML_RECORD_SIZE ? srcFormat.maxRecordSize : DEFAULT_MAX_XML_RECORD_SIZE;
+            }
+            break;
+
+        default:
+            break;
     }
 }
 
@@ -2820,6 +2845,10 @@ void FileSprayer::updateTargetProperties()
 
 
                 curProps.setPropInt64(FAsize, partLength);
+
+                if (compressOutput)
+                    curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
+
                 TargetLocation & curTarget = targets.item(cur.whichOutput);
                 if (!curTarget.modifiedTime.isNull())
                 {

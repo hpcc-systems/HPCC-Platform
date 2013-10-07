@@ -227,8 +227,8 @@ const char * cppSystemText[]  = {
     "   integer4 compareVUnicodeVUnicode(const varunicode l, const varunicode r, const varstring loc) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareVUnicodeVUnicode';",
     "   integer4 compareVUnicodeVUnicodeStrength(const varunicode l, const varunicode r, const varstring loc, unsigned4 str) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareVUnicodeVUnicodeStrength';",
 
-    "   integer4 prefixDiffStr(const string l, const string r) : eclrtl,pure,library='eclrtl',entrypoint='rtlPrefixDiffStr';",
-    "   integer4 prefixDiffUnicode(const unicode l, const unicode r, const varstring loc) : eclrtl,pure,library='eclrtl',entrypoint='rtlPrefixDiffUnicode';",
+    "   integer4 prefixDiffStr(const string l, const string r, unsigned4 origin) : eclrtl,pure,library='eclrtl',entrypoint='rtlPrefixDiffStrEx';",
+    "   integer4 prefixDiffUnicode(const unicode l, const unicode r, const varstring loc, unsigned4 origin) : eclrtl,pure,library='eclrtl',entrypoint='rtlPrefixDiffUnicodeEx';",
 
     "   createOrder(data1 tgt, const data1 src, unsigned4 num, unsigned4 width, const data1 compare) : eclrtl,library='eclrtl',entrypoint='rtlCreateOrder';",
     "   unsigned4 rankFromOrder(unsigned4 idx, unsigned4 num, const data1 order) : eclrtl,pure,library='eclrtl',entrypoint='rtlRankFromOrder';",
@@ -613,12 +613,6 @@ const char * cppSystemText[]  = {
 
     "   selectCluster(const varstring src)  : gctxmethod,entrypoint='selectCluster';",
     "   restoreCluster()    : gctxmethod,entrypoint='restoreCluster';",
-    "   startPersist(const varstring src)   : gctxmethod,entrypoint='startPersist';",
-    "   finishPersist() : gctxmethod,entrypoint='finishPersist';",
-
-    "   clearPersist(const varstring name)  : gctxmethod,entrypoint='clearPersist';",
-    "   updatePersist(const varstring name, unsigned4 eclCRC, unsigned8 allCRC) : gctxmethod,entrypoint='updatePersist';",
-    "   checkPersistMatches(const varstring name, unsigned4 eclCRC) : gctxmethod,entrypoint='checkPersistMatches';",
 
     "   integer4 compareUtf8Utf8(const utf8 l, const utf8 r, const varstring codepage) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareUtf8Utf8';",
     "   integer4 compareUtf8Utf8Strength(const utf8 l, const utf8 r, const varstring loc, unsigned4 str) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareUtf8Utf8Strength';",

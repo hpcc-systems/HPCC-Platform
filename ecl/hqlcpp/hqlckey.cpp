@@ -1104,13 +1104,12 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
 
 bool KeyedJoinInfo::processFilter()
 {
-    OwnedHqlExpr atmostCond, atmostLimit;
-    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
-    extractAtmostArgs(atmost, atmostCond, atmostLimit);
+    IHqlExpression * atmostAttr = expr->queryAttribute(atmostAtom);
+    AtmostLimit atmost(atmostAttr);
 
     IHqlExpression * cond = expr->queryChild(2);
     OwnedHqlExpr fuzzy, hard;
-    translator.splitFuzzyCondition(cond, atmostCond, fuzzy, hard);
+    splitFuzzyCondition(cond, atmost.required, fuzzy, hard);
 
     OwnedHqlExpr keyedKeyFilter, fuzzyKeyFilter;
     splitFilter(hard, keyedKeyFilter);
@@ -1128,7 +1127,7 @@ bool KeyedJoinInfo::processFilter()
         else
             leftOnlyMatch.set(cond);
     }
-    if (atmost && fileFilter)
+    if (atmostAttr && fileFilter)
     {
         StringBuffer s;
         translator.throwError1(HQLERR_BadKeyedJoinConditionAtMost,getExprECL(fileFilter, s.append(" (")).append(")").str());
@@ -1154,7 +1153,7 @@ bool KeyedJoinInfo::processFilter()
     if (newFilter)
         monitors->extractFilters(newFilter, extra);
 
-    if (atmost && extra && (atmostCond || !monitors->isCleanlyKeyedExplicitly()))
+    if (atmostAttr && extra && (atmost.required || !monitors->isCleanlyKeyedExplicitly()))
     {
         StringBuffer s;
         //map the key references back so the error message refers to RIGHT instead of a weird key expression.
@@ -1355,6 +1354,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
     case no_denormalizegroup:
         kind = TAKkeyeddenormalizegroup;
         break;
+    default:
+        throwUnexpected();
     }
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, (op == no_join) ? "KeyedJoin" : "KeyedDenormalize");
 
@@ -1380,9 +1381,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
     StringBuffer s;
     buildInstancePrefix(instance);
 
-    OwnedHqlExpr atmostCond, atmostLimit;
-    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
-    extractAtmostArgs(atmost, atmostCond, atmostLimit);
+    IHqlExpression * atmostAttr = expr->queryAttribute(atmostAtom);
+    AtmostLimit atmost(atmostAttr);
 
     //virtual unsigned getJoinFlags()
     StringBuffer flags;
@@ -1435,15 +1435,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         doBuildUnsignedFunction(instance->classctx, "getFetchFlags", flags.str()+1);
 
     //virtual unsigned getJoinLimit()
-    if (!isZero(atmostLimit))
-        doBuildUnsignedFunction(instance->startctx, "getJoinLimit", atmostLimit);
+    if (!isZero(atmost.limit))
+        doBuildUnsignedFunction(instance->startctx, "getJoinLimit", atmost.limit);
 
     //virtual unsigned getKeepLimit()
     LinkedHqlExpr keepLimit = queryAttributeChild(expr, keepAtom, 0);
     if (keepLimit)
         doBuildUnsignedFunction(instance->startctx, "getKeepLimit", keepLimit);
 
-    bool implicitLimit = !rowlimit && !atmost &&
+    bool implicitLimit = !rowlimit && !atmostAttr &&
                         (!keepLimit || info.hasPostFilter()) &&
                         !expr->hasAttribute(leftonlyAtom);
 
@@ -1498,20 +1498,19 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     if (!targetThor() || insideChildQuery(ctx))
         return buildCachedActivity(ctx, expr->queryChild(0));
 
-    HqlExprArray leftSorts, rightSorts;
     IHqlExpression * left = expr->queryChild(0);
     IHqlExpression * right = expr->queryChild(1);
     IHqlExpression * indexRecord = right->queryRecord();
     IHqlExpression * seq = querySelSeq(expr);
-    bool isLimitedSubstringJoin;
-    OwnedHqlExpr match = findJoinSortOrders(expr, leftSorts, rightSorts, isLimitedSubstringJoin, NULL);
-    assertex(leftSorts.ordinality() == rightSorts.ordinality());
-    if (isLimitedSubstringJoin)
+
+    JoinSortInfo joinInfo;
+    joinInfo.findJoinSortOrders(expr, false);
+    if (joinInfo.hasOptionalEqualities())
         throwError(HQLERR_KeyedDistributeNoSubstringJoin);
 
     unsigned numUnsortedFields = numPayloadFields(right);
     unsigned numKeyedFields = getFlatFieldCount(indexRecord)-numUnsortedFields;
-    if (match || (!expr->hasAttribute(firstAtom) && (leftSorts.ordinality() != numKeyedFields)))
+    if (joinInfo.extraMatch || (!expr->hasAttribute(firstAtom) && (joinInfo.queryLeftReq().ordinality() != numKeyedFields)))
         throwError(HQLERR_MustMatchExactly);    //Should already be caught in parser
 
     KeyedJoinInfo info(*this, expr, false);
@@ -1558,15 +1557,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
     TableProjectMapper mapper(expandedIndex);
 
     HqlExprArray normalizedRight;
-    ForEachItemIn(i, rightSorts)
+    ForEachItemIn(i, joinInfo.queryRightReq())
     {
-        IHqlExpression & curRight = rightSorts.item(i);
+        IHqlExpression & curRight = joinInfo.queryRightReq().item(i);
         normalizedRight.append(*mapper.expandFields(&curRight, oldSelector, newSelector));
     }
     DatasetReference    leftDs(left, no_activetable, seq);
     DatasetReference    rightDs(rawIndex, no_activetable, seq);
 
-    doCompareLeftRight(instance->nestedctx, "CompareRowKey", leftDs, rightDs, leftSorts, normalizedRight);
+    doCompareLeftRight(instance->nestedctx, "CompareRowKey", leftDs, rightDs, joinInfo.queryLeftReq(), normalizedRight);
 
     buildFormatCrcFunction(instance->classctx, "getFormatCrc", info.queryRawKey(), info.queryRawKey(), 1);
     buildSerializedLayoutMember(instance->classctx, indexRecord, "getIndexLayout", numKeyedFields);

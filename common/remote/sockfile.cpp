@@ -2732,7 +2732,7 @@ class CAsyncCommandManager
             }
             int run()
             {
-                int ret;
+                int ret = -1;
                 try {
                     ret = parent->run();
                     parent->setDone();
@@ -2910,7 +2910,7 @@ public:
                 cjob->start();
             }
         }
-        AsyncCommandStatus ret;
+        AsyncCommandStatus ret = ACSerror;
         Owned<IException> rete;
         try {
             ret = job->poll(done,total,timeout);

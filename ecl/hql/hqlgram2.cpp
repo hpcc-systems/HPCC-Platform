@@ -1142,10 +1142,28 @@ void HqlGram::processStartTransform(const attribute & errpos)
     openTransform(transformType);
 }
 
-void HqlGram::enterEnum(ITypeInfo * type)
+void HqlGram::enterEnum(const attribute & errpos, ITypeInfo * type)
 {
+    if (!isIntegralType(type))
+    {
+        StringBuffer s;
+        reportError(ERR_TYPEMISMATCH_INT, errpos, "Integer type expected (%s was given)", getFriendlyTypeStr(type, s).str());
+    }
+
     enterScope(true);
     enterCompoundObject();
+    curEnumType.set(type);
+    lastEnumValue.setown(createConstant(curEnumType->castFrom(true, 0)));
+}
+
+void HqlGram::setEnumType(const attribute & errpos, ITypeInfo * type)
+{
+    if (!isIntegralType(type))
+    {
+        StringBuffer s;
+        reportError(ERR_TYPEMISMATCH_INT, errpos, "Integer type expected (%s was given)", getFriendlyTypeStr(type, s).str());
+    }
+
     curEnumType.set(type);
     lastEnumValue.setown(createConstant(curEnumType->castFrom(true, 0)));
 }
@@ -2403,7 +2421,7 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
         if (!dsType || queryRecord(dsType)->numChildren() == 0)
         {
             ITypeInfo * recordType = queryRecordType(valueType);
-            dsType.setown(makeTableType(makeRowType(LINK(recordType)), NULL, NULL, NULL));
+            dsType.setown(makeTableType(makeRowType(LINK(recordType))));
         }
         else if (!dsType->assignableFrom(valueType))
         {
@@ -2476,6 +2494,9 @@ IHqlExpression * HqlGram::endIfBlock()
 void HqlGram::checkFieldnameValid(const attribute &errpos, IIdAtom * name)
 {
     OwnedHqlExpr self = getSelfScope();
+    if (!self)
+        throwUnexpected();
+
     IHqlSimpleScope *recordScope = self->querySimpleScope();
     OwnedHqlExpr t(recordScope->lookupSymbol(name));
     if (t.get())
@@ -5282,7 +5303,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
     {
         OwnedHqlExpr list = createValue(no_null);
         OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
-        return convertTempTableToInlineTable(errorHandler, listAttr.pos, table);
+        return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
         return createDataset(no_null, LINK(record));
     }
 
@@ -5323,7 +5344,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
         reportError(ERR_RECORD_NOT_MATCH_SET, recordAttr, "The field in the record does not match the type of the set elements");
     
     OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
-    return convertTempTableToInlineTable(errorHandler, listAttr.pos, table);
+    return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
 }
 
 
@@ -7562,7 +7583,6 @@ static const char * getName(IHqlExpression * e)
 
 void HqlGram::checkDistribution(attribute &errpos, IHqlExpression *input, bool localSpecified, bool ignoreGrouping)
 {
-    IInterface *distribution = input->queryType()->queryDistributeInfo();
     bool inputIsGrouped = isGrouped(input);
     if (localSpecified)
     {
@@ -7571,7 +7591,7 @@ void HqlGram::checkDistribution(attribute &errpos, IHqlExpression *input, bool l
     }
     else
     {
-        if (distribution && isExplicitlyDistributed(input))
+        if (isExplicitlyDistributed(input))
         {
             if (!inputIsGrouped || ignoreGrouping)
             {
@@ -7634,14 +7654,33 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
     bool ro = join->hasAttribute(rightouterAtom) || ronly;
     bool fo = join->hasAttribute(fullouterAtom) || fonly;
     bool keep = join->hasAttribute(keepAtom);
+    bool isLookup = join->hasAttribute(lookupAtom);
+    bool isSmart = join->hasAttribute(smartAtom);
+    bool isAll = join->hasAttribute(allAtom);
     IHqlExpression * rowLimit = join->queryAttribute(rowLimitAtom);
-
     IHqlExpression * keyed = join->queryAttribute(keyedAtom);
+
     if (keyed)
     {
-        if (join->hasAttribute(allAtom) || join->hasAttribute(lookupAtom))
-            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL not compatible with KEYED");
+        if (isAll || isLookup || isSmart)
+            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL/SMART is not compatible with KEYED");
+    }
+    else if (isLookup)
+    {
+        //The following should be, and will become, an error.  However too many legacy queries have it, so make a warning for now.
+        if (isAll)
+            reportWarning(ERR_KEYEDINDEXINVALID, err.pos, "ALL is not compatible with LOOKUP");
+        if (isSmart)
+            reportError(ERR_KEYEDINDEXINVALID, err.pos, "SMART is not compatible with LOOKUP");
+    }
+    else if (isSmart)
+    {
+        if (isAll)
+            reportError(ERR_KEYEDINDEXINVALID, err, "ALL is not compatible with KEYED");
+    }
 
+    if (keyed)
+    {
         IHqlExpression * index = keyed->queryChild(0);
         if (index)
         {
@@ -7685,21 +7724,22 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
             }
         }
     }
-    if (join->hasAttribute(lookupAtom))
+    if (isLookup || isSmart)
     {
-        bool isMany = join->hasAttribute(manyAtom);
+        bool isMany = join->hasAttribute(manyAtom) || isSmart;
+        const char * joinText = isSmart ? "Smart" : "Lookup";
         if (ro || fo)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "JOIN(LOOKUP) only supports INNER, LEFT OUTER, and LEFT ONLY joins");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins only support INNER, LEFT OUTER, and LEFT ONLY joins", joinText);
         if (join->hasAttribute(partitionRightAtom))
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support PARTITION RIGHT");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support PARTITION RIGHT", joinText);
         if (keep && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support KEEP");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support KEEP", joinText);
         if (join->hasAttribute(atmostAtom) && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support ATMOST");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support ATMOST", joinText);
         if (rowLimit && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support LIMIT (they can only match 1 entry)");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support LIMIT (they can only match 1 entry)", joinText);
         if (isKey(join->queryChild(1)))
-            reportWarning(ERR_BADKIND_LOOKUPJOIN, err.pos, "Lookup specified on an unfiltered keyed join - was this intended?");
+            reportWarning(ERR_BADKIND_LOOKUPJOIN, err.pos, "%s specified on an unfiltered keyed join - was this intended?", joinText);
     }
     else if (isKeyedJoin(join))
     {
@@ -7749,6 +7789,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
         if (isKey(cur))
             reportWarning(ERR_BAD_JOINFLAG, err.pos, "Filtered RIGHT prevents a keyed join being used.  Consider including the filter in the join condition.");
     }
+
 }
 
 
@@ -8432,9 +8473,9 @@ void HqlGram::checkRecordIsValid(const attribute &atr, IHqlExpression *record)
 void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
 {
     IHqlExpression * expr = atr.queryExpr();
-    if (appearsToBeSorted(expr->queryType(), isLocal, true))
+    if (appearsToBeSorted(expr, isLocal, true))
         return;
-    if (!isLocal && appearsToBeSorted(expr->queryType(), true, true))
+    if (!isLocal && appearsToBeSorted(expr, true, true))
     {
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "INPUT to MERGE appears to be sorted locally but not globally");
         return;
@@ -8453,7 +8494,7 @@ void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
         }
     }
     
-    if (isGrouped(expr) && appearsToBeSorted(expr->queryType(), false, false))
+    if (isGrouped(expr) && appearsToBeSorted(expr, false, false))
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE is only sorted with the group");
     else
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE doesn't appear to be sorted");
@@ -8790,7 +8831,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
         }
         else
         {
-            reportError(ERR_RESULT_IGNORED, errpos, "WHEN must be used to associated an action with a definition");
+            reportError(ERR_RESULT_IGNORED, errpos, "WHEN must be used to associate an action with a definition");
         }
         clearSideEffects();
     }
@@ -9105,7 +9146,9 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                     {
                         //allow dataset with no record to match, as long as base type is the same
                         if (queryRecord(type) != queryNullRecord() || (type->getTypeCode() != matchType->getTypeCode()))
+                        {
                             reportError(ERR_SAME_TYPE_REQUIRED, nameattr, "Explicit type for %s doesn't match definition in base module", name->str());
+                        }
                         else
                         {
                             type.set(matchType);
@@ -10247,6 +10290,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case MIN: msg.append("MIN"); break;
     case MODULE: msg.append("MODULE"); break;
     case MOFN: msg.append("MOFN"); break;
+    case MULTIPLE: msg.append("MULTIPLE"); break;
     case NAMED: msg.append("NAMED"); break;
     case NAMEOF: msg.append("__NAMEOF__"); break;
     case NAMESPACE: msg.append("NAMESPACE"); break;
@@ -10345,6 +10389,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case SIZEOF: msg.append("SIZEOF"); break;
     case SKEW: msg.append("SKEW"); break;
     case SKIP: msg.append("SKIP"); break;
+    case SMART: msg.append("SMART"); break;
     case SOAPACTION: msg.append("SOAPACTION"); break;
     case __STAND_ALONE__: msg.append("__STAND_ALONE__"); break;
     case HTTPHEADER: msg.append("HTTPHEADER"); break;
@@ -10471,6 +10516,7 @@ static void getTokenText(StringBuffer & msg, int token)
         msg.append("function-name"); 
         break;
 
+    case BOOL_CONST: msg.append("boolean"); break;
     case REAL_CONST:
     case INTEGER_CONST: msg.append("number"); break;
     case STRING_CONST: msg.append("string"); break;
@@ -10556,7 +10602,7 @@ void HqlGram::simplifyExpected(int *expected)
                        AVE, VARIANCE, COVARIANCE, CORRELATION, WHICH, REJECTED, SIZEOF, RANK, RANKED, COUNTER, '+', '-', '(', '~', TYPE_LPAREN, ROWDIFF, WORKUNIT,
                        FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
                        MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
-                       KEYUNICODE, TOK_TRUE, TOK_FALSE, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
+                       KEYUNICODE, TOK_TRUE, TOK_FALSE, BOOL_CONST, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
                        TOXML, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
@@ -11371,12 +11417,14 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
 
 void testHqlInternals()
 {
-    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u)\n",
+    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u) prop(%u)\n",
             (unsigned)sizeof(CHqlConstant),
             (unsigned)sizeof(CHqlExpressionWithType),
             (unsigned)sizeof(CHqlSelectExpression),
             (unsigned)sizeof(CHqlDataset),
-            (unsigned)sizeof(CHqlAnnotation));
+            (unsigned)sizeof(CHqlAnnotation),
+            (unsigned)sizeof(CHqlDynamicProperty)
+            );
 
     //
     // test getOpString()

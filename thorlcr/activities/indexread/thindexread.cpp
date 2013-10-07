@@ -87,7 +87,7 @@ protected:
         }
         unsigned width = f->numParts()-1;
         assertex(width);
-        unsigned tlkCrc;
+        unsigned tlkCrc = 0;
         bool first = true;
         unsigned superSubIndex=0;
         bool fileCrc = false, rowCrc = false;

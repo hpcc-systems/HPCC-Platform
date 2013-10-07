@@ -455,7 +455,7 @@ startCmd() {
     if [ ! -d $lockPath ]; then
         mkdir -p $lockPath >> $logFile 2>&1
     fi
-    chown -c $user:$user $lockPath >> /dev/null 2>&1
+    chown -c $user:$group $lockPath >> /dev/null 2>&1
     lock ${lock}/${compName}/${compName}.lock
 
     if [ $__lockCreated -eq 0 ]; then
@@ -600,12 +600,12 @@ start_component() {
 
     if [ ! -d $logDir ]; then
         mkdir -p $logDir >> tmp.txt 2>&1
-        chown -c $user:$user $logDir >> /dev/null 2>&1
+        chown -c $user:$group $logDir >> /dev/null 2>&1
     fi
 
     if [ ! -f $logFile ]; then
         touch $logFile >> tmp.txt 2>&1
-        chown -c $user:$user $logFile >> /dev/null 2>&1
+        chown -c $user:$group $logFile >> /dev/null 2>&1
     fi 
 
     # Creating Runtime 
@@ -715,7 +715,7 @@ create_dropzone() {
     # Creating DropZone directory
     if [ ! -d ${D} ]; then
          mkdir -p $D > /dev/null 2>&1
-         chown -c $user:$user $D > /dev/null 2>&1
+         chown -c $user:$group $D > /dev/null 2>&1
          chmod 777 $D > /dev/null 2>&1
     fi
     done

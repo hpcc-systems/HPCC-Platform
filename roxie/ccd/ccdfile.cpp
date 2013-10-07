@@ -485,12 +485,6 @@ static IPartDescriptor *queryMatchingRemotePart(IPartDescriptor *pdesc, IFileDes
     return NULL;
 }
 
-static bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const char *process)
-{
-    StringBuffer s;
-    return strieq(process, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
-}
-
 static bool checkClusterCount(UnsignedArray &counts, unsigned clusterNo, unsigned max)
 {
     while (!counts.isItem(clusterNo))
@@ -502,23 +496,51 @@ static bool checkClusterCount(UnsignedArray &counts, unsigned clusterNo, unsigne
     return true;
 }
 
-static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, bool checkSelf)
+static bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const char *name)
+{
+    StringBuffer s;
+    return strieq(name, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
+}
+
+static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster)
 {
     UnsignedArray clusterCounts;
     unsigned numCopies = pdesc->numCopies();
     for (unsigned copy = 0; copy < numCopies; copy++)
     {
         unsigned clusterNo = pdesc->copyClusterNum(copy);
-        if (!checkClusterCount(clusterCounts, clusterNo, 2))
-            continue;
-        if (checkSelf && isCopyFromCluster(pdesc, clusterNo, roxieName.str())) //don't add ourself
+        if (fromCluster && *fromCluster && !isCopyFromCluster(pdesc, clusterNo, fromCluster))
             continue;
         RemoteFilename r;
         pdesc->getFilename(copy,r);
         StringBuffer path;
-        locations.append(r.getRemotePath(path).str());
+        r.getRemotePath(path);
+        if (localFileName && r.isLocal())
+        {
+            StringBuffer l;
+            r.getLocalPath(l);
+            if (streq(l, localFileName))
+                continue; // don't add ourself
+        }
+        if (!checkClusterCount(clusterCounts, clusterNo, 2))  // Don't add more than 2 from one cluster
+            continue;
+        locations.append(path.str());
     }
 }
+
+static void appendPeerLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName)
+{
+    const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
+    if (peerCluster)
+    {
+        if (*peerCluster=='-') //a remote cluster was specified explicitly
+            return;
+        if (streq(peerCluster, roxieName))
+            peerCluster=NULL;
+    }
+    appendRemoteLocations(pdesc, locations, localFileName, peerCluster);
+}
+
 
 //----------------------------------------------------------------------------------------------
 
@@ -581,15 +603,15 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             ret->addSource(local.getLink());
             ret->setRemote(false);
         }
-        else if (local->exists())  // Implies local dali and local file out of sync
-            throw MakeStringException(ROXIE_FILE_ERROR, "File does not match DFS information");
+        else if (local->exists() && !ignoreOrphans)  // Implies local dali and local file out of sync
+            throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
         else
         {
             bool addedOne = false;
 
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
-            appendRemoteLocations(pdesc, localLocations, true);
+            appendPeerLocations(pdesc, localLocations, localLocation);
             ForEachItemIn(roxie_idx, localLocations)
             {
                 try
@@ -638,7 +660,12 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             }
 
             if (!addedOne)
-                throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
+            {
+                if (local->exists())  // Implies local dali and local file out of sync
+                    throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
+                else
+                    throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
+            }
             ret->setRemote(true);
         }
         ret->setCache(this);
@@ -1290,7 +1317,7 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
 {
     StringArray remoteLocations;
     if (remotePDesc)
-        appendRemoteLocations(remotePDesc, remoteLocations, false);
+        appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL);
 
     return queryFileCache().lookupFile(id, fileType, pdesc, numParts, replicationLevel[channel], remoteLocations, startCopy);
 }
@@ -2367,6 +2394,7 @@ private:
     Owned<ILocalOrDistributedFile> dFile;
     Owned<IFile> localFile;
     Owned<IGroup> localCluster;
+    StringAttr localClusterName;
     IArrayOf<IGroup> remoteNodes;
     StringArray allClusters;
 
@@ -2428,7 +2456,7 @@ private:
             if (localCluster)
             {
                 desc->addCluster(localCluster, partmap);
-                desc->setClusterRoxieLabel(0, roxieName); // MORE not sure what this is for!!
+                desc->setClusterGroupName(0, localClusterName.get());
             }
             ForEachItemIn(idx, remoteNodes)
                 desc->addCluster(&remoteNodes.item(idx), partmap);
@@ -2455,6 +2483,7 @@ private:
                 throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
                         cluster, dFile->queryLogicalName());
             localCluster.setown(group.getClear());
+            localClusterName.set(cluster);
         }
         else
         {

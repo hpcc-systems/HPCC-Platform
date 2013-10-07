@@ -359,6 +359,7 @@ extern jlib_decl StringBuffer & appendDataAsHex(StringBuffer &out, unsigned len,
 extern jlib_decl StringBuffer & appendStringAsSQL(StringBuffer & out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendStringAsECL(StringBuffer & out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendStringAsQuotedECL(StringBuffer &out, unsigned len, const char * src);
+extern jlib_decl StringBuffer & appendUtf8AsECL(StringBuffer &out, unsigned len, const char * src);
 
 extern jlib_decl const char *decodeJSON(const char *x, StringBuffer &ret, unsigned len=(unsigned)-1, const char **errMark=NULL);
 extern jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
@@ -507,7 +508,7 @@ extern jlib_decl bool endsWithIgnoreCase(const char* src, const char* dst);
 
 inline bool strieq(const char* s, const char* t) { return stricmp(s,t)==0; }
 inline bool streq(const char* s, const char* t) { return strcmp(s,t)==0; }
-inline bool strsame(const char* s, const char* t) { return (s == t) || (!s && !t && strcmp(s,t)==0); }  // also allow nulls
+inline bool strsame(const char* s, const char* t) { return (s == t) || (s && t && strcmp(s,t)==0); }  // also allow nulls
 
 extern jlib_decl char *j_strtok_r(char *str, const char *delim, char **saveptr);
 extern jlib_decl int j_memicmp (const void *s1, const void *s2, size32_t len); 

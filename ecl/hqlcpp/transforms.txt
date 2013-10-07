@@ -18,7 +18,7 @@ The following provides some details of the different transformations that are do
 
 * Walk back and add in any dependencies.
 ****Go through and work out which could be combined ***
-*** Which could be short-circuited?  And what flags would be needed to acheive that? ***
+*** Which could be short-circuited?  And what flags would be needed to achieve that? ***
 *** How do I cope with references in selects to parent datasets that cause problems when transformed ***
 
 NOTE: All transforms derived from NestedHqlTransformer don't work inside a library, so it would be sensible to try and remove them.
@@ -42,7 +42,7 @@ ScopeChecker - ScopedTransformer->NewHqlTransformer
 - fairly expensive code to maintain the active scope to ensure that scope checking of an expression is done in all contexts.
 * Probably duplicates the work that the scope normalisation code does - it we could retain enough location information to report errors correctly
 * Would it be better using similar code to the merging transform instead??
-* Could move the scope checking so done on an entire tree in one go - once expresssion tree is parsed - may be significantly more efficient.
+* Could move the scope checking so done on an entire tree in one go - once expression tree is parsed - may be significantly more efficient.
 * Doesn't check the scope of expressions for SUCCESS() etc.
 
 WarningCollector - QuickHqlTransformer
@@ -51,7 +51,7 @@ WarningCollector - QuickHqlTransformer
 
 GatherOptions()
 "Walk graph to find all #constant/#stored"
-* Possily walks too far down the tree, but not if no_setmeta can be attached at any level.
+* Possibly walks too far down the tree, but not if no_setmeta can be attached at any level.
 
 NewThorStoredReplacer : QuickHqlTransformer
 "Replace #stored, #constant in the expression tree"
@@ -84,7 +84,7 @@ HqlScopeTagger : ScopedDependentTransformer->ScopedTransformer->NewHqlTransforme
 "Annotate the graph information about whether datasets are in scope, or being introduced"
 - abc.def  is abc an active dataset (or a scope error)
 - <some-dataset> - is it a global dataset, or a row of an inscope parent dataset
-- Quite painful because it traverses subqueries independently.  If this could be limited so they were not done speparately it may speed things up significantly.
+- Quite painful because it traverses subqueries independently.  If this could be limited so they were not done separately it may speed things up significantly.
 * Could childScope be replaced with a stack of unique ids?  Probably no advantages, and probably loss.
 
 IndexDatasetTransformer : NewHqlTransformer
@@ -94,7 +94,7 @@ IndexDatasetTransformer : NewHqlTransformer
 
 LocalUploadTransfomer : NewHqlTransfomer
 "Extract information about local files that are uploaded before running the query"
-- Faily simple code
+- Fairly simple code
 - Only done if a local uploaded is spotted in the normalizer
 * Could probably be combined with the normalization, but uncommon, so not worth it.
 
@@ -106,7 +106,7 @@ ForceLocalTransformer : NewHqlTransformer  depend[insideForceLocal,insideAllNode
 
 Unused: LeftRightSelectorNormalizer -
 "optimize expression trees if non-ambiguous selectors are being used."
-- Not currenly used because generating unambiguous trees is too costly for the theoretical benefit.  (We haven't hit any queries that really need it.)
+- Not currently used because generating unambiguous trees is too costly for the theoretical benefit.  (We haven't hit any queries that really need it.)
 
 Wip: NestedSelectorNormalizer
 "Convert implicit normalize to normalize.  E.g., count(a.b) becomes (count(normalize(a,left.b))"
@@ -120,7 +120,7 @@ SequenceNumberAlllocator : NewHqlTransformer
 ** I'm not completely convinced the code to ensure workflow actions receive a unique id will always work (e.g., if it was a PARALEL() containing multiple outputs).
 
 subsituteClusterSize() ClusterSubsituteTransfomer : NewHqlTransformer
-"Replace keyword CLUSTERSIZE with actuall size"
+"Replace keyword CLUSTERSIZE with actual size"
 - Copes with persists/globals being sent to different clusters, by calling itself recursively.
 
 CExprFolderTransfomer : MergingHqlTransforer : NewHqlTransfomer
@@ -132,7 +132,7 @@ CExprFolderTransfomer : MergingHqlTransforer : NewHqlTransfomer
 - IF(cond, x, true) -> !cond || x
 - Some complex dms hole optimizations
 
-*** Why is it a merging transform????  Normally needed if inserts an element info the tree
+*** Why is it a merging transform????  Normally needed if inserts an element into the tree
 * claims to be 15/8/05 because otherwise it could cause dataset not found errors.
 * May be worth retesting and wpr
 ***Lookup in svn when it happened
@@ -200,8 +200,8 @@ AutoScopeMigrateTransform : MergingHqlTransformer : NewHqlTransformer
 removeTrivialGraphs() : TrivialGraphRemover : NewHqlTransformer
 "Remove thor graphs where the only contents is setresult(getresult)"
 - Needs to occur after thor graphs have been merged.
-- Traverses a very small proportion of the graph, negligable effect
-* Could also short-circuite no_hole
+- Traverses a very small proportion of the graph, negligible effect
+* Could also short-circuit no_hole
 
 convertLogicalToActivities() : ThorHqlTransformer : MergingHqlTransfomer : NewHqlTransformer
 "Convert logical activities to their actual implementations.  Also optimizes activities based on existing grouping/sort orders"
@@ -264,14 +264,14 @@ replaceExpression() : HqlMapTransformer : NewHqlTransformer
 "Replace a branch of an expression tree - e.g., when replacing a logical dataset with a physical dataset"
 
 optimizeActivityAliasReferences
-"Simplify aliases so that global aliases that are only referenced by other aliases witin this activity are removed"
+"Simplify aliases so that global aliases that are only referenced by other aliases within this activity are removed"
 
 getExprECL()
 "Get ECL for a simple expression"
 - Called a reasonable number of times (once for each activity)"
 
 removeVirtualAttributes()
-"remove virtual attributes from records, prior to outputing meta information to the schema"
+"remove virtual attributes from records, prior to outputting meta information to the schema"
 
 replaceChildDataset() 
 "similar to replaceExpression"
@@ -297,7 +297,7 @@ GraphIndependenceChecker
 * Could convert to a more efficient QuickHqlTransformer? if QuickHqlTransformer had an option for walking including new information
 
 GraphLoopReplacer
-"Used for replacing the inputs to a the GRAPH() expression's iteration graph"
+"Used for replacing the inputs to a GRAPH() expression's iteration graph"
 
 FilterExtractor
 "Extract values required to be supplied to count index"

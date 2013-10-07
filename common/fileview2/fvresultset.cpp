@@ -253,6 +253,8 @@ static __int64 getIntFromSwapInt(ITypeInfo & type, const void * cur, bool isMapp
         case 6: result = rtlRevUInt6(cur); break;
         case 7: result = rtlRevUInt7(cur); break;
         case 8: result = rtlRevUInt8(cur); break;
+        default:
+            throwUnexpected();
         }
         if (isSigned && isMappedIndexField)
             result -= getIntBias(size);

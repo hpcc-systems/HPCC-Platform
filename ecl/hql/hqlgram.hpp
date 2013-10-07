@@ -556,7 +556,8 @@ public:
     IHqlExpression * processUserAggregate(const attribute & mainPos, attribute & dsAttr, attribute & recordAttr, attribute & transformAttr, attribute * mergeAttr,
                                       attribute *itemsAttr, attribute &rowsAttr, attribute &seqAttr);
 
-    void enterEnum(ITypeInfo * type);
+    void enterEnum(const attribute & errpos, ITypeInfo * type);
+    void setEnumType(const attribute & errpos, ITypeInfo * type);
     void enterService(attribute & attrs);
     IHqlExpression * leaveEnum(const attribute & errpos);
     IHqlExpression * leaveService(const attribute & errpos);

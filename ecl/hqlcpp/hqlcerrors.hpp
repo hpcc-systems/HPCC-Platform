@@ -92,7 +92,6 @@
 #define HQLERR_BadJoinConditionAtMost           4067
 #define HQLERR_BadKeyedJoinConditionAtMost      4068
 #define HQLERR_FullJoinNeedDataset              4069
-#define HQLERR_AtmostFailMatchCondition         4070
 #define HQLERR_KeyedLimitNotKeyed               4071
 #define HQLERR_ExtendMismatch                   4072
 #define HQLERR_DuplicateNameOutput              4073
@@ -209,6 +208,7 @@
 #define HQLERR_MaximumSizeLessThanMinimum_XY    4188
 #define HQLERR_UnexpectedOptionValue_XY         4189
 #define HQLERR_VariableRowMustBeLinked          4190
+#define HQLERR_UserCodeNotAllowed               4191
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -376,7 +376,6 @@
 #define HQLERR_BadJoinConditionAtMost_Text      "ATMOST JOIN cannot be evaluated with this join condition%s"
 #define HQLERR_BadKeyedJoinConditionAtMost_Text "ATMOST JOIN cannot be evaluated with this join condition%s"
 #define HQLERR_FullJoinNeedDataset_Text         "RIGHT for a full keyed join must be a disk based DATASET"
-#define HQLERR_AtmostFailMatchCondition_Text    "ATMOST(%s) failed to match part of the join condition"
 #define HQLERR_KeyedLimitNotKeyed_Text          "LIMIT(%s, KEYED) could not be merged into an index read"
 #define HQLERR_ExtendMismatch_Text              "EXTEND is required on all outputs to NAMED(%s)"
 #define HQLERR_DuplicateNameOutput_Text         "Duplicate output to NAMED(%s).  EXTEND/OVERWRITE required"
@@ -493,6 +492,7 @@
 #define HQLERR_MaximumSizeLessThanMinimum_XY_Text "Maximum size (%u) for this record is lower than the minimum (%u)"
 #define HQLERR_UnexpectedOptionValue_XY_Text    "Unexpected value for option %s: %s"
 #define HQLERR_VariableRowMustBeLinked_Text     "External function '%s' cannot return a non-linked variable length row"
+#define HQLERR_UserCodeNotAllowed_Text          "Workunit-supplied code is not permitted on this system"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"

@@ -1337,7 +1337,7 @@ public:
             t->setProp("@csvSeparate",separate);
         if (terminate && *terminate)
             t->setProp("@csvTerminate",terminate);
-        if (quote && *quote)
+        if (quote)  //Enable to pass zero string to override default quote
             t->setProp("@csvQuote",quote);
         if (escape && *escape)
             t->setProp("@csvEscape",escape);
@@ -2028,6 +2028,15 @@ public:
         queryRoot()->setPropBool("@failIfNoSourceFile",val);
     }
 
+    bool getRecordStructurePresent() const
+    {
+        return queryRoot()->getPropBool("@recordStructurePresent");
+    }
+
+    void setRecordStructurePresent(bool val)
+    {
+        queryRoot()->setPropBool("@recordStructurePresent",val);
+    }
 };
 
 class CExceptionIterator: public CInterface, implements IExceptionIterator
@@ -2975,6 +2984,33 @@ public:
                                                     __int64 *cachehint,
                                                     unsigned *total)
     {
+        class CWorkUnitsPager : public CSimpleInterface, implements IElementsPager
+        {
+            StringAttr xPath;
+            StringAttr sortOrder;
+            StringAttr nameFilterLo;
+            StringAttr nameFilterHi;
+
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi)
+                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
+            {
+            }
+            virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
+            {
+                Owned<IRemoteConnection> conn = querySDS().connect("DFU/WorkUnits", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
+                if (!conn)
+                    return NULL;
+                Owned<IPropertyTreeIterator> iter = conn->getElements(xPath);
+                if (!iter)
+                    return NULL;
+                sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), elements);
+                return conn.getClear();
+            }
+        };
+
         StringBuffer query("*");
         StringBuffer so;
         const char *field;
@@ -3010,8 +3046,8 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IRemoteConnection> conn=getElementsPaged( "DFU/WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
-            NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results,total);
+        Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get());
+        Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,queryowner,cachehint,results,total);
         return new CConstDFUWUArrayIterator(this,conn,results);
     }
 

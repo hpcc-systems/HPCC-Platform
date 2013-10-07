@@ -89,6 +89,11 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
                 resources.setManyToMasterSockets(1);
             }
         }
+        else if (expr->hasAttribute(smartAtom))
+        {
+            resources.setHeavyweight();
+            setHashResources(expr, resources, options);
+        }
         else if (expr->hasAttribute(hashAtom))
         {
             resources.setHeavyweight();
@@ -488,7 +493,7 @@ bool lightweightAndReducesDatasetSize(IHqlExpression * expr)
         return true;
     case no_group:
         //removing grouping will reduce size of the spill file.
-        if (expr->queryType()->queryGroupInfo() == NULL)
+        if (!isGrouped(expr))
             return true;
         break;
     }
@@ -1040,8 +1045,7 @@ void ResourcerInfo::clearProjected()
 
 void ResourcerInfo::addSpillFlags(HqlExprArray & args, bool isRead)
 {
-    IHqlExpression * grouping = (IHqlExpression *)original->queryType()->queryGroupInfo();
-    if (grouping)
+    if (isGrouped(original))
         args.append(*createAttribute(groupedAtom));
 
     if (outputToUseForSpill)
@@ -2127,7 +2131,7 @@ protected:
     void findSplitPoints(IHqlExpression * expr)
     {
         //containsNonActiveDataset() would be nice - but that isn't percolated outside assigns etc.
-        if (containsAnyDataset(expr) || containsMustHoist(expr))
+        if (containsAnyDataset(expr) || containsMustHoist(expr) || !expr->isIndependentOfScope())
         {
             if (!gathered)
             {
@@ -3123,7 +3127,7 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
                 if (filename && (filename->getOperator() == no_constant) && !expr->hasAttribute(xmlAtom) && !expr->hasAttribute(csvAtom))
                 {
                     IHqlExpression * dataset = expr->queryChild(0);
-                    if (expr->hasAttribute(groupedAtom) == (dataset->queryType()->queryGroupInfo() != NULL))
+                    if (expr->hasAttribute(groupedAtom) == isGrouped(dataset))
                     {
                         StringBuffer filenameText;
                         filename->queryValue()->getStringValue(filenameText);

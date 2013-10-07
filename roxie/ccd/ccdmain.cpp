@@ -68,7 +68,6 @@ unsigned readTimeout = 300;
 unsigned indexReadChunkSize = 60000;
 unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
-bool checkPrimaries = true;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
 bool traceServerSideCache = false;
@@ -99,6 +98,7 @@ bool useRemoteResources;
 bool checkFileDate;
 bool lazyOpen;
 bool localSlave;
+bool ignoreOrphans;
 bool doIbytiDelay = true; 
 unsigned initIbytiDelay; // In MillSec
 unsigned minIbytiDelay;  // In MillSec
@@ -125,6 +125,7 @@ unsigned defaultFetchPreload = 0;
 unsigned defaultFullKeyedJoinPreload = 0;
 unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
+bool defaultCheckingHeap = false;
 
 unsigned logQueueLen;
 unsigned logQueueDrop;
@@ -650,6 +651,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
         allFilesDynamic = topology->getPropBool("@allFilesDynamic", false);
         crcResources = topology->getPropBool("@crcResources", false);
+        ignoreOrphans = topology->getPropBool("@ignoreOrphans", true);
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
         readTimeout = topology->getPropInt("@readTimeout", 300);
         logFullQueries = topology->getPropBool("@logFullQueries", false);
@@ -711,10 +713,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultFullKeyedJoinPreload = topology->getPropInt("@defaultFullKeyedJoinPreload", 0);
         defaultKeyedJoinPreload = topology->getPropInt("@defaultKeyedJoinPreload", 0);
         defaultPrefetchProjectPreload = topology->getPropInt("@defaultPrefetchProjectPreload", 10);
+        defaultCheckingHeap = topology->getPropInt("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
 
-        checkPrimaries = topology->getPropBool("@checkPrimaries", true);
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);
         roxiemem::setMemoryStatsInterval(memoryStatsInterval);
