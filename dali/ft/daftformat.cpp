@@ -847,6 +847,20 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
             else if (splitOffset - thisOffset < thisSize)
                 throwError2(DFTERR_UnexpectedReadFailure, fullPath.get(), splitOffset-thisOffset+thisHeaderSize);
         }
+        else
+        {
+            // We are in the first part of the file
+            bool eof;
+            if (format.maxRecordSize + maxElementLength > blockSize)
+                eof = !ensureBuffered(blockSize);
+            else
+                eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
+            bool fullBuffer = false;
+
+            // Discover record structure in the first record/row
+            getSplitRecordSize(buffer, numInBuffer, fullBuffer, eof);
+        }
+
         cursor.inputOffset = splitOffset + bufferOffset;
         if (noTranslation)
             cursor.outputOffset = cursor.inputOffset - thisOffset;

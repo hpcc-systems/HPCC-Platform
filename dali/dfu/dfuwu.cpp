@@ -1337,7 +1337,7 @@ public:
             t->setProp("@csvSeparate",separate);
         if (terminate && *terminate)
             t->setProp("@csvTerminate",terminate);
-        if (quote && *quote)
+        if (quote)  //Enable to pass zero string to override default quote
             t->setProp("@csvQuote",quote);
         if (escape && *escape)
             t->setProp("@csvEscape",escape);
