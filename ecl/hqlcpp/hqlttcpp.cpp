@@ -162,6 +162,7 @@ protected:
 public:
     LinkedHqlExpr value;
     OwnedHqlExpr storedName;
+    OwnedHqlExpr originalLabel;
     OwnedHqlExpr sequence;
     node_operator setOp;
     node_operator persistOp;
@@ -4834,7 +4835,7 @@ IHqlExpression * GlobalAttributeInfo::createSetValue(IHqlExpression * value, IHq
 
 IHqlExpression * GlobalAttributeInfo::getStoredKey()
 {
-    return createAttribute(nameAtom, LINK(sequence), lowerCaseHqlExpr(storedName));
+    return createAttribute(nameAtom, LINK(sequence), lowerCaseHqlExpr(originalLabel));
 }
 
 void GlobalAttributeInfo::setCluster(IHqlExpression * expr)
@@ -4867,12 +4868,14 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
     case no_stored:
         setOp = no_ensureresult;
         storedName.set(expr->queryChild(0));
+        originalLabel.set(storedName);
         sequence.setown(getStoredSequenceNumber());
         few = true;
         break;
     case no_checkpoint:
         setOp = no_ensureresult;
         storedName.set(expr->queryChild(0));
+        originalLabel.set(storedName);
         sequence.setown(getLocalSequenceNumber());
         extraSetAttr.setown(createAttribute(checkpointAtom));
         break;
@@ -4881,6 +4884,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         codehash.set(_codehash);
         setOp = no_ensureresult;
         storedName.set(expr->queryChild(0));
+        originalLabel.set(storedName);
         sequence.setown(getGlobalSequenceNumber());
         extraSetAttr.setown(createAttribute(_workflowPersist_Atom, LINK(codehash)));
         setCluster(queryRealChild(expr, 1));
@@ -5522,7 +5526,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             if(prevValue->queryBody() != value->queryBody())
             {
                 StringBuffer s;
-                getStoredDescription(s, info.sequence, info.storedName, true);
+                getStoredDescription(s, info.sequence, info.originalLabel, true);
                 if(prevValue->queryType() != value->queryBody()->queryType())
                 {
 #ifdef _DEBUG
