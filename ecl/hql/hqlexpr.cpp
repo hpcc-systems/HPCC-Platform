@@ -2924,6 +2924,8 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
         {
             if (!expr->queryRecord())
                 return LINK(expr);      // something seriously wrong - will get picked up elsewhere...
+            if(!queryOriginalRecord(type))
+                 throwUnexpectedX("Cast to DATASET with no record TYPE specified");   //  cf. HPCC-9847
             OwnedHqlExpr transform = createRecordMappingTransform(no_newtransform, queryOriginalRecord(type), expr->queryNormalizedSelector());
             if (transform)
                 return createDatasetF(no_newusertable, LINK(expr), LINK(queryOriginalRecord(type)), LINK(transform), NULL);
