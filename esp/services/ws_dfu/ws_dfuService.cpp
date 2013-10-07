@@ -1669,7 +1669,14 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 
     if(df->isCompressed())
     {
-        FileDetails.setZipFile(true);
+        if (version < 1.22)
+            FileDetails.setZipFile(true);
+        else
+        {
+            FileDetails.setIsCompressed(true);
+            if (df->queryAttributes().hasProp("@compressedSize"))
+                FileDetails.setCompressedFileSize(df->queryAttributes().getPropInt64("@compressedSize"));
+        }
     }
 
     comma c2(recordSize);
@@ -1941,9 +1948,9 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 }
 
 
-void CWsDfuEx::getLogicalFileAndDirectory(IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs)
+void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs)
 {
-    DBGLOG("CWsDfuEx::getLogicalFileAndDirectory\n");
+    double version = context.getClientVersion();
 
     StringArray roxieClusterNames;
     IArrayOf<IEspTpCluster> roxieclusters;
@@ -2034,13 +2041,13 @@ void CWsDfuEx::getLogicalFileAndDirectory(IUserDescriptor* udesc, const char *di
 
                     __int64 recordSize=attr.getPropInt64("@recordSize",0), size=attr.getPropInt64("@size",-1);
         
-                    if(!isCompressed(attr))
-                    {
-                        File->setIsZipfile(false);
-                    }
+                    if (version < 1.22)
+                        File->setIsZipfile(isCompressed(attr));
                     else
                     {
-                        File->setIsZipfile(true);
+                        File->setIsCompressed(isCompressed(attr));
+                        if (attr.hasProp("@compressedSize"))
+                            File->setCompressedFileSize(attr.getPropInt64("@compressedSize"));
                     }
 
                     StringBuffer buf;
@@ -2104,7 +2111,7 @@ bool CWsDfuEx::onDFUFileView(IEspContext &context, IEspDFUFileViewRequest &req, 
         int numDirs = 0;
         int numFiles = 0;
         IArrayOf<IEspDFULogicalFile> logicalFiles;
-        getLogicalFileAndDirectory(userdesc.get(), req.getScope(), logicalFiles, numFiles, numDirs);
+        getLogicalFileAndDirectory(context, userdesc.get(), req.getScope(), logicalFiles, numFiles, numDirs);
 
         if (numFiles > 0)
             resp.setNumFiles(numFiles);
@@ -2415,7 +2422,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
     {
         int numDirs = 0;
         int numFiles = 0;
-        getLogicalFileAndDirectory(udesc, req.getLogicalName(), LogicalFiles, numFiles, numDirs);
+        getLogicalFileAndDirectory(context, udesc, req.getLogicalName(), LogicalFiles, numFiles, numDirs);
     }
     else
     {
@@ -2788,14 +2795,15 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
                 }
                 File->setIsSuperfile(bSuperfile);
 
-                if(!isCompressed(attr))
-                {
-                    File->setIsZipfile(false);
-                }
+                if (version < 1.22)
+                    File->setIsZipfile(isCompressed(attr));
                 else
                 {
-                    File->setIsZipfile(true);
+                    File->setIsCompressed(isCompressed(attr));
+                    if (attr.hasProp("@compressedSize"))
+                        File->setCompressedFileSize(attr.getPropInt64("@compressedSize"));
                 }
+
                 //File->setBrowseData(bKeyFile); //Bug: 39750 - All files should be viewable through ViewKeyFile function
                 if (numSubFiles > 1) //Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
                     File->setBrowseData(false); 
