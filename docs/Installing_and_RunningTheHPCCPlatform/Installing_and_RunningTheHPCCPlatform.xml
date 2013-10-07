@@ -3455,9 +3455,9 @@ sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</progr
           <listitem>
             <para>Test the R integration.</para>
 
-            <para>R is not multi-thread aware, so you must wrap all calls to R
-            for critical sections. Scripts are compiled with every call to
-            R.</para>
+            <para>R is not multi-thread aware, so the plug-in has to wrap all
+            calls to R for critical sections. Scripts are compiled with every
+            call to R.</para>
 
             <para>You can now execute some R code either in your ECL IDE or
             the ECL Playground.</para>
