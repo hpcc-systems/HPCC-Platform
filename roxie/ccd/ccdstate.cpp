@@ -453,6 +453,10 @@ public:
     {
         return CPackageNode::queryHash();
     }
+    virtual const char *queryId() const
+    {
+        return CPackageNode::queryId();
+    }
 };
 
 typedef CResolvedPackage<CRoxiePackageNode> CRoxiePackage;

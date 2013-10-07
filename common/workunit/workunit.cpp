@@ -9773,6 +9773,34 @@ const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, 
     return id.str();
 }
 
+extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unresolved, IWorkUnitFactory &workunitFactory, IConstWorkUnit &cw, IPropertyTree *queryset)
+{
+    IConstWULibraryIterator &wulibraries = cw.getLibraries();
+    ForEach(wulibraries)
+    {
+        SCMStringBuffer libname;
+        IConstWULibrary &wulibrary = wulibraries.query();
+        wulibrary.getName(libname);
+        if (names.contains(libname.str()) || unresolved.contains(libname.str()))
+            continue;
+
+        Owned<IPropertyTree> query = resolveQueryAlias(queryset, libname.str());
+        if (query && query->getPropBool("@isLibrary"))
+        {
+            const char *wuid = query->queryProp("@wuid");
+            Owned<IConstWorkUnit> libcw = workunitFactory.openWorkUnit(wuid, false);
+            if (libcw)
+            {
+                names.appendUniq(libname.str());
+                gatherLibraryNames(names, unresolved, workunitFactory, *libcw, queryset);
+                continue;
+            }
+        }
+
+        unresolved.appendUniq(libname.str());
+    }
+}
+
 bool looksLikeAWuid(const char * wuid)
 {
     if (!wuid)
