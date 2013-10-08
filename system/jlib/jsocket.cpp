@@ -4796,8 +4796,12 @@ public:
 ISocketSelectHandler *createSocketSelectHandler(const char *trc)
 {
 #ifdef _HAS_EPOLL_SUPPORT
-    return new CSocketEpollHandler(trc);
-    // return new CSocketSelectHandler(trc);
+# if 0 // enable once we know method to get env file settings ...
+    if (env_file.use_epoll)
+      return new CSocketEpollHandler(trc);
+    else
+# endif
+      return new CSocketSelectHandler(trc);
 #else
     return new CSocketSelectHandler(trc);
 #endif
