@@ -302,6 +302,13 @@
           </row>
 
           <row>
+            <entry><emphasis role="bold">SMART</emphasis></entry>
+
+            <entry>Specifies to use an in-memory lookup only when
+            possible.</entry>
+          </row>
+
+          <row>
             <entry><emphasis role="bold">FEW</emphasis></entry>
 
             <entry>Specifies the LOOKUP <emphasis>rightrecset</emphasis> has
@@ -553,13 +560,6 @@
             <emphasis>rightrecset</emphasis> should be read on separate
             threads to minimize latency.</entry>
           </row>
-
-          <row>
-            <entry><emphasis role="bold">SMART</emphasis></entry>
-
-            <entry>Specifies to use an in-memory lookup only when possible.
-            </entry>
-          </row>
         </tbody>
       </tgroup>
     </informaltable>
@@ -586,7 +586,7 @@
     below).</para>
 
     <para>Use the SMART when the right side dataset is likely to be small
-    enough to fit in memory , but is not guaranteed to fit. </para>
+    enough to fit in memory , but is not guaranteed to fit.</para>
   </sect2>
 
   <sect2 id="Keyed_Joins">
