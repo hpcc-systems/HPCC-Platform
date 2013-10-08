@@ -83,6 +83,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="serverForArchivedECLWU" type="sashaServerType" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Specify Sasha server for archiving ECL workunits</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="enableSystemUseRewrite" type="xs:boolean" use="optional" default="false">
                 <xs:annotation>
                     <xs:appinfo>
