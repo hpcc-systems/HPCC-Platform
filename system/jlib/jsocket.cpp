@@ -75,6 +75,10 @@
 #  include <unistd.h>
 #  include <sys/epoll.h>
 //#  define EPOLLTRACE
+#  ifndef EPOLLRDHUP
+//  Centos 5.x bug - epoll.h does not define but its in the kernel
+#   define EPOLLRDHUP 0x2000
+#  endif
 # endif
 #endif
 
@@ -96,11 +100,7 @@
 
 #ifdef _DEBUG
 //#define SOCKTRACE
-# ifdef _HAS_EPOLL_SUPPORT
-#  if defined(SOCKTRACE) || !defined(EPOLLTRACE)
-#   define EPOLLTRACE
-#  endif
-# endif
+//#define EPOLLTRACE
 #endif
 
 #ifdef _TESTING
@@ -3508,7 +3508,7 @@ inline bool findfds(T_FD_SET &s,T_SOCKET h,bool &c)
 }
 #endif
 
-class CSocketMultiThread: public Thread
+class CSocketBaseThread: public Thread
 {
 protected:
     bool terminating;
@@ -3531,14 +3531,15 @@ protected:
 #endif
     bool dummysockopen;
 
-    CSocketMultiThread(const char *trc) : Thread("CSocketMultiThread")
+    CSocketBaseThread(const char *trc) : Thread("CSocketBaseThread")
     {
     }
 
-    ~CSocketMultiThread()
+    ~CSocketBaseThread()
     {
     }
 
+public:
     void triggerselect()
     {
         if (atomic_read(&tickwait))
@@ -3600,14 +3601,14 @@ protected:
 
     bool sockOk(T_SOCKET sock)
     {
-        PROGLOG("CSocketMultiThread: sockOk testing %d",sock);
+        PROGLOG("CSocketBaseThread: sockOk testing %d",sock);
         int err = 0;
         int t=0;
         socklen_t tl = sizeof(t);
         if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char *)&t, &tl)!=0) {
             StringBuffer sockstr;
             const char *tracename = sockstr.append((unsigned)sock).str();
-            LOGERR2(ERRNO(),1,"CSocketMultiThread select handle");
+            LOGERR2(ERRNO(),1,"CSocketBaseThread select handle");
             return false;
         }
         T_FD_SET fds;
@@ -3622,11 +3623,11 @@ protected:
         if (rc<0) {
             StringBuffer sockstr;
             const char *tracename = sockstr.append((unsigned)sock).str();
-            LOGERR2(ERRNO(),2,"CSocketMultiThread select handle");
+            LOGERR2(ERRNO(),2,"CSocketBaseThread select handle");
             return false;
         }
         else if (rc>0)
-            PROGLOG("CSocketMultiThread: select handle %d selected(2) %d",sock,rc);
+            PROGLOG("CSocketBaseThread: select handle %d selected(2) %d",sock,rc);
         XFD_ZERO(&fds);
         FD_SET((unsigned)sock, &fds);
         tv.tv_sec = 0;
@@ -3635,11 +3636,11 @@ protected:
         if (rc<0) {
             StringBuffer sockstr;
             const char *tracename = sockstr.append((unsigned)sock).str();
-            LOGERR2(ERRNO(),3,"CSocketMultiThread select handle");
+            LOGERR2(ERRNO(),3,"CSocketBaseThread select handle");
             return false;
         }
         else if (rc>0)
-            PROGLOG("CSocketMultiThread: select handle %d selected(2) %d",sock,rc);
+            PROGLOG("CSocketBaseThread: select handle %d selected(2) %d",sock,rc);
         return true;
     }
 
@@ -3660,7 +3661,7 @@ protected:
 
 };
 
-class CSocketSelectThread: public CSocketMultiThread
+class CSocketSelectThread: public CSocketBaseThread
 {
     void opendummy()
     {
@@ -3716,16 +3717,6 @@ class CSocketSelectThread: public CSocketMultiThread
 #endif
             dummysockopen = false;
         }
-    }
-
-    void triggerselect()
-    {
-        CSocketMultiThread::triggerselect();
-    }
-
-    void resettrigger()
-    {
-        CSocketMultiThread::resettrigger();
     }
 
 
@@ -3793,7 +3784,7 @@ class CSocketSelectThread: public CSocketMultiThread
 public:
     IMPLEMENT_IINTERFACE;
     CSocketSelectThread(const char *trc)
-        : CSocketMultiThread("CSocketSelectThread")
+        : CSocketBaseThread("CSocketSelectThread")
     {
         dummysockopen = false;
         opendummy();
@@ -3895,26 +3886,6 @@ public:
         selectvarschange = true;        
         triggerselect();
         return true;
-    }
-
-    bool remove(ISocket *sock)
-    {
-        return CSocketMultiThread::remove(sock);
-    }
-
-    void stop(bool wait)
-    {
-        CSocketMultiThread::stop(wait);
-    }
-
-    bool sockOk(T_SOCKET sock)
-    {
-        return CSocketMultiThread::sockOk(sock);
-    }
-
-    bool checkSocks()
-    {
-        return CSocketMultiThread::checkSocks();
     }
 
     void updateSelectVars(T_FD_SET &rdfds,T_FD_SET &wrfds,T_FD_SET &exfds,bool &isrd,bool &iswr,bool &isex,unsigned &ni,T_SOCKET &max_sockid)
@@ -4233,10 +4204,29 @@ public:
 };
 
 #ifdef _HAS_EPOLL_SUPPORT
-class CSocketEpollThread: public CSocketMultiThread
+class CSocketEpollThread: public CSocketBaseThread
 {
     int epfd;
-    int *epfdtbl;
+    int *epfdtbl; // table of fd<->item index for lookups
+    struct epoll_event *epevents;
+
+    void epoll_op(int efd, int op, int fd, unsigned int event_mask)
+    {
+        int srtn;
+        struct epoll_event event;
+        event.events = event_mask;
+        event.data.fd = fd;
+# ifdef EPOLLTRACE
+        DBGLOG("EPOLL: op(%d) fd %d to epfd %d", op, fd, efd);
+# endif
+        srtn = ::epoll_ctl(efd, op, fd, &event);
+        // if another thread closed fd before here don't fail
+        if ( (srtn < 0) && (op != EPOLL_CTL_DEL) ){
+            int err = ERRNO();
+            LOGERR(err,1,"epoll_ctl");
+            THROWJSOCKEXCEPTION2(err);
+        }
+    }
 
     void opendummy()
     {
@@ -4260,38 +4250,14 @@ class CSocketEpollThread: public CSocketMultiThread
                 }
             }
             CHECKSOCKRANGE(dummysock[0]);
-            int srtn;
-            struct epoll_event event;
-            event.events = EPOLLIN; // TODO - add other bits ? (such as RDHUP)
-            event.data.fd = dummysock[0];
-            srtn = ::epoll_ctl(epfd, EPOLL_CTL_ADD, dummysock[0], &event);
-            if (srtn < 0) {
-                int err = ERRNO();
-                LOGERR(err,1,"epoll_ctl(ADD)");
-                THROWJSOCKEXCEPTION2(err);
-            }
-#  ifdef EPOLLTRACE
-            DBGLOG("EPOLL: added dummy fd %d to epfd %d", dummysock[0], epfd);
-#  endif
+            epoll_op(epfd, EPOLL_CTL_ADD, dummysock[0], EPOLLIN);
 #else
             if (IP6preferred)
                 dummysock = ::socket(AF_INET6, SOCK_STREAM, PF_INET6);
             else
                 dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
             CHECKSOCKRANGE(dummysock);
-            int srtn;
-            struct epoll_event event;
-            event.events = EPOLLIN | EPOLLERR; // TODO - add other bits ? (such as RDHUP)
-            event.data.fd = dummysock;
-            srtn = ::epoll_ctl(epfd, EPOLL_CTL_ADD, dummysock, &event);
-            if (srtn < 0) {
-                int err = ERRNO();
-                LOGERR(err,1,"epoll_ctl(ADD)");
-                THROWJSOCKEXCEPTION2(err);
-            }
-#  ifdef EPOLLTRACE
-            DBGLOG("EPOLL: added dummy fd %d to epfd %d", dummysock, epfd);
-#  endif
+            epoll_op(epfd, EPOLL_CTL_ADD, dummysock, (EPOLLIN | EPOLLERR));
 #endif
             dummysockopen = true;
         }
@@ -4304,42 +4270,25 @@ class CSocketEpollThread: public CSocketMultiThread
         CriticalBlock block(sect);
         if (dummysockopen) {
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-            struct epoll_event event;
-            ::epoll_ctl(epfd, EPOLL_CTL_DEL, dummysock[0], &event);
-#  ifdef EPOLLTRACE
-            DBGLOG("EPOLL: removed dummy fd %d from epfd %d", dummysock[0], epfd);
-#  endif
+            epoll_op(epfd, EPOLL_CTL_DEL, dummysock[0], 0);
 #ifdef SOCKTRACE
             PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%x)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
 #endif
             ::close(dummysock[0]);
             ::close(dummysock[1]);
 #else
-            struct epoll_event event;
-            ::epoll_ctl(epfd, EPOLL_CTL_DEL, dummysock, &event);
-#  ifdef EPOLLTRACE
-            DBGLOG("EPOLL: removed dummy fd %d from epfd %d", dummysock, epfd);
-#  endif
+            epoll_op(epfd, EPOLL_CTL_DEL, dummysock, 0);
             ::close(dummysock);
 #endif
             dummysockopen = false;
         }
     }
 
-    void triggerselect()
-    {
-        CSocketMultiThread::triggerselect();
-    }
-
-    void resettrigger()
-    {
-        CSocketMultiThread::resettrigger();
-    }
 
 public:
     IMPLEMENT_IINTERFACE;
     CSocketEpollThread(const char *trc)
-        : CSocketMultiThread("CSocketEpollThread")
+        : CSocketBaseThread("CSocketEpollThread")
     {
         dummysockopen = false;
         terminating = false;
@@ -4357,7 +4306,7 @@ public:
           THROWJSOCKEXCEPTION2(err);
         }
 # if defined(_DEBUG) || defined(EPOLLTRACE)
-        DBGLOG("EPOLL: creating epfd %d", epfd );
+        DBGLOG("CSocketEpollThread: creating epoll fd %d", epfd );
 # endif
         try {
             epfdtbl = new int[XFD_SETSIZE];
@@ -4369,6 +4318,13 @@ public:
         for (int i=0; i<XFD_SETSIZE; i++) {
             epfdtbl[i] = -1;
         }
+        try {
+            epevents = new struct epoll_event[XFD_SETSIZE];
+        } catch (const std::bad_alloc &e) {
+            int err = ERRNO();
+            LOGERR(err,1,"epevents alloc()");
+            THROWJSOCKEXCEPTION2(err);
+        }
         opendummy();
     }
 
@@ -4378,11 +4334,7 @@ public:
         ForEachItemIn(i,items) {
             try {
                 SelectItem &si = items.item(i);
-                struct epoll_event event;
-                ::epoll_ctl(epfd, EPOLL_CTL_DEL, si.handle, &event);
-# ifdef EPOLLTRACE
-                DBGLOG("EPOLL: removed fd %d from epfd %d", si.handle, epfd);
-# endif
+                epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
                 si.sock->Release();
                 si.nfy->Release();
             }
@@ -4398,6 +4350,7 @@ public:
             ::close(epfd);
             epfd = -1;
             delete [] epfdtbl;
+            delete [] epevents;
         }
     }
 
@@ -4414,11 +4367,7 @@ public:
                 reindex = true;
             }
             if (si.del) {
-                struct epoll_event event;
-                ::epoll_ctl(epfd, EPOLL_CTL_DEL, si.handle, &event);
-# ifdef EPOLLTRACE
-                DBGLOG("EPOLL: removed fd %d from epfd %d", si.handle, epfd);
-# endif
+                epoll_op(epfd, EPOLL_CTL_DEL, si.handle, 0);
                 epfdtbl[si.handle] = -1;
                 reindex = true;
                 si.nfy->Release();
@@ -4465,17 +4414,7 @@ public:
                         }
                         if (ep_mode != 0) {
                             ep_mode |= EPOLLRDHUP;
-                            event.events = ep_mode;
-                            event.data.fd = si.handle;
-                            srtn = ::epoll_ctl(epfd, EPOLL_CTL_ADD, si.handle, &event);
-                            if (srtn < 0) {
-                                int err = ERRNO();
-                                LOGERR(err,1,"epoll_ctl(ADD)");
-                                THROWJSOCKEXCEPTION2(err);
-                            }
-# ifdef EPOLLTRACE
-                            DBGLOG("EPOLL: added fd %d to epfd %d", si.handle, epfd);
-# endif
+                            epoll_op(epfd, EPOLL_CTL_ADD, si.handle, ep_mode);
                         }
                     }
 # ifdef EPOLLTRACE
@@ -4483,8 +4422,7 @@ public:
 # endif
                 }
 # ifdef EPOLLTRACE
-                max_sockid++;
-                for(int ix=0; ix<max_sockid; ix++) {
+                for(int ix=0; ix<=max_sockid; ix++) {
                     DBGLOG("EPOLL: epfdtbl[%d] = %d", ix, epfdtbl[ix]);
                 }
 # endif
@@ -4526,26 +4464,6 @@ public:
         return true;
     }
 
-    bool remove(ISocket *sock)
-    {
-        return CSocketMultiThread::remove(sock);
-    }
-
-    void stop(bool wait)
-    {
-        CSocketMultiThread::stop(wait);
-    }
-
-    bool sockOk(T_SOCKET sock)
-    {
-        return CSocketMultiThread::sockOk(sock);
-    }
-
-    bool checkSocks()
-    {
-        return CSocketMultiThread::checkSocks();
-    }
-
     void updateEpollVars(unsigned &ni)
     {
         CriticalBlock block(sect);
@@ -4581,7 +4499,6 @@ public:
             unsigned lastnumto = 0;
             unsigned totnum = 0;
             unsigned total = 0;
-            struct epoll_event events[XFD_SETSIZE];
             selectvarschange = true;
 
             while (!terminating) {
@@ -4598,7 +4515,7 @@ public:
                     continue;
                 }
 
-                int n = ::epoll_wait(epfd, events, XFD_SETSIZE, 1000);
+                int n = ::epoll_wait(epfd, epevents, XFD_SETSIZE, 1000);
 
 # ifdef EPOLLTRACE
                 if(n > 0)
@@ -4635,30 +4552,30 @@ public:
 
                         for (int j=0;j<n;j++) {
 # ifdef EPOLLTRACE
-                            DBGLOG("EPOLL: events[%d].data.fd = %d, epfdtbl = %d, events mask = %d", j, events[j].data.fd, epfdtbl[events[j].data.fd], events[j].events);
+                            DBGLOG("EPOLL: epevents[%d].data.fd = %d, epfdtbl = %d, emask = %d", j, epevents[j].data.fd, epfdtbl[epevents[j].data.fd], epevents[j].events);
 # endif
 # ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-                            if ((dummysockopen) && (events[j].data.fd == dummysock[0])) {
+                            if ((dummysockopen) && (epevents[j].data.fd == dummysock[0])) {
                                 resettrigger();
                                 continue;
                             }
 # endif
-                            if (events[j].data.fd >= 0) {
-                                assertex(epfdtbl[events[j].data.fd] >= 0);
-                                SelectItem *epsi = items.getArray(epfdtbl[events[j].data.fd]);
+                            if (epevents[j].data.fd >= 0) {
+                                assertex(epfdtbl[epevents[j].data.fd] >= 0);
+                                SelectItem *epsi = items.getArray(epfdtbl[epevents[j].data.fd]);
                                 if (!epsi->del) {
                                     unsigned int ep_mode = 0;
-                                    if (events[j].events & (EPOLLIN | EPOLLPRI)) {
+                                    if (epevents[j].events & (EPOLLIN | EPOLLPRI)) {
                                         ep_mode |= SELECTMODE_READ;
                                     }
-                                    if (events[j].events & (EPOLLERR | EPOLLHUP)) {
+                                    if (epevents[j].events & (EPOLLERR | EPOLLHUP)) {
                                         ep_mode |= SELECTMODE_READ;
                                     }
-                                    if (events[j].events & EPOLLRDHUP) {
+                                    if (epevents[j].events & EPOLLRDHUP) {
                                         // TODO - or should we set EXCEPT ?
                                         ep_mode |= SELECTMODE_READ;
                                     }
-                                    if (events[j].events & EPOLLOUT) {
+                                    if (epevents[j].events & EPOLLOUT) {
                                         ep_mode |= SELECTMODE_WRITE;
                                     }
                                     if (ep_mode != 0) {
@@ -4719,7 +4636,7 @@ public:
 
 class CSocketEpollHandler: public CInterface, implements ISocketSelectHandler
 {
-    CIArrayOf<CSocketEpollThread> threads;
+    CSocketEpollThread *epollthread;
     CriticalSection sect;
     bool started;
     StringAttr epolltrace;
@@ -4728,61 +4645,38 @@ public:
     CSocketEpollHandler(const char *trc)
         : epolltrace(trc)
     {
-        started = false;
+        epollthread = new CSocketEpollThread(epolltrace);
     }
+
+    ~CSocketEpollHandler()
+    {
+        delete epollthread;
+    }
+
     void start()
     {
         CriticalBlock block(sect);
-        if (!started) {
-            started = true;
-            ForEachItemIn(i,threads) {
-                threads.item(i).start();
-            }
-        }
-
+        epollthread->start();
     }
+
     void add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
     {
         CriticalBlock block(sect);
-        loop {
-            bool added=false;
-            ForEachItemIn(i,threads) {
-                if (added)
-                    threads.item(i).remove(sock);
-                else
-                    added = threads.item(i).add(sock,mode,nfy);
-            }
-            if (added)
-                return;
-            CSocketEpollThread *thread = new CSocketEpollThread(epolltrace);
-            threads.append(*thread);
-            if (started)
-                thread->start();
-        }
+        epollthread->add(sock,mode,nfy);
     }
+
     void remove(ISocket *sock)
     {
         CriticalBlock block(sect);
-        ForEachItemIn(i,threads) {
-            if (threads.item(i).remove(sock)&&sock)
-                break;
-        }
+        epollthread->remove(sock);
     }
+
     void stop(bool wait)
     {
         IException *e=NULL;
-        CriticalBlock block(sect);
-        unsigned i = 0;
-        while (i<threads.ordinality()) {
-            CSocketEpollThread &t=threads.item(i);
-            {
-                CriticalUnblock unblock(sect);
-                t.stop(wait);           // not quite as quick as could be if wait true
-            }
-            if (wait && !e && t.termexcept)
-                e = t.termexcept.getClear();
-            i++;
-        }
+        epollthread->stop(wait);           // not quite as quick as could be if wait true
+        if (wait && !e && epollthread->termexcept)
+            e = epollthread->termexcept.getClear();
 #if 0 // don't throw error as too late
         if (e)
             throw e;
@@ -4793,15 +4687,30 @@ public:
 };
 #endif // _HAS_EPOLL_SUPPORT
 
+enum EpollMethod { EPOLL_INIT = 0, EPOLL_DISABLED, EPOLL_ENABLED };
+static EpollMethod epoll_method = EPOLL_INIT;
+static CriticalSection epollsect;
+
 ISocketSelectHandler *createSocketSelectHandler(const char *trc)
 {
 #ifdef _HAS_EPOLL_SUPPORT
-# if 0 // enable once we know method to get env file settings ...
-    if (env_file.use_epoll)
-      return new CSocketEpollHandler(trc);
+    {
+        CriticalBlock block(epollsect);
+        // DBGLOG("createSocketSelectHandler(): epoll_method = %d",epoll_method);
+        if (epoll_method == EPOLL_INIT) {
+            Owned<IProperties> conf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
+            if (conf->getPropBool("use_epoll", true)) {
+                epoll_method = EPOLL_ENABLED;
+            } else {
+                epoll_method = EPOLL_DISABLED;
+            }
+            // DBGLOG("createSocketSelectHandler(): after reading conf file, epoll_method = %d",epoll_method);
+        }
+    }
+    if (epoll_method == EPOLL_ENABLED)
+        return new CSocketEpollHandler(trc);
     else
-# endif
-      return new CSocketSelectHandler(trc);
+        return new CSocketSelectHandler(trc);
 #else
     return new CSocketSelectHandler(trc);
 #endif

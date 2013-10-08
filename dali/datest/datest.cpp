@@ -45,6 +45,7 @@ static unsigned nIter = 1;
 
 //#define TEST_REMOTEFILE
 //#define TEST_REMOTEFILE2
+//#define TEST_REMOTEFILE3
 //#define TEST_DEADLOCK
 //#define TEST_THREADS
 #define MDELAY 100
@@ -704,8 +705,125 @@ struct RecordStruct
 };
 
 #define NRECS ((__int64)1024*1024*1024*20/sizeof(RecordStruct)) // i.e. ~20GB
+// #define NRECS ((__int64)1024*1024*1024*2/sizeof(RecordStruct)) // i.e. ~2GB
+// #define NRECS ((__int64)1024*1024*500/sizeof(RecordStruct)) // i.e. ~500MB
+// #define NRECS ((__int64)1024*500/sizeof(RecordStruct)) // i.e. ~500KB
 
+void TestRemoteFile3(int nfiles, int fsizemb)
+{
+    //SocketEndpoint ep("10.150.10.8:7100");
+    SocketEndpoint ep("127.0.1.1:7100");
+    //ISocket *sock = ISocket::connect(7100,"10.150.10.8");
 
+    // ------------------------------
+
+    printf("TestRemoteFile3: nfiles = %d fsizemb = %d\n", nfiles, fsizemb);
+
+    IFile *fileA[32769];
+    IFileIO *ioA[32769];
+    char filen[256] = { "" };
+
+    size_t nrecs = (fsizemb*1024*1024) / sizeof(RecordStruct);
+
+    unsigned t=msTick();
+
+    if(nfiles > 0){
+
+    for (int oi=0;oi<=nfiles;oi++) {
+        sprintf(filen, "testfile.%d", oi);
+        fileA[oi] = createRemoteFile(ep, filen);
+        ioA[oi] = fileA[oi]->open(IFOcreate);
+    }
+
+    for (int oi=0;oi<=nfiles;oi++) {
+        ioA[oi]->Release();
+        fileA[oi]->Release();
+    }
+
+    unsigned r = msTick()-t;
+    printf("elapsed time createRemoteFile (%d) = %lf (sec)\n", nfiles, (double)r/1000.0);
+
+    }
+
+    // ------------------------------
+
+    if(nrecs > 0){
+
+#if 1
+    for (int oi=0;oi<=0;oi++) {
+
+        IFile *file = createRemoteFile(ep, "testfile20.d00");
+        IFileIO *io = file->open(IFOcreate);
+        byte *buffer = (byte *)malloc(0x8000);
+        unsigned br = 0x8000/sizeof(RecordStruct);
+        size32_t buffsize = br*sizeof(RecordStruct);
+        unsigned curidx = 0;
+        unsigned nr = nrecs;
+        __int64 pos = 0;
+        t=msTick();
+#if 1
+        unsigned j;
+        RecordStruct *rs;
+        while (nr) {
+            if (nr<br)
+                br = nr;
+            rs = (RecordStruct *)buffer;
+            for (j=0;j<br;j++) {
+                rs->idx = curidx++;
+                itoa(rs->idx,rs->fill,16);
+                unsigned k;
+                for (k=strlen(rs->fill);k<sizeof(rs->fill);k++)
+                    rs->fill[k] = ' ';
+                rs->key = getRandom()%1000+1;
+                rs->check = rs->idx*rs->key;
+                rs->sum = 0;
+                rs++;
+            }
+            size32_t wr = io->write(pos, br*sizeof(RecordStruct),buffer);
+            assertex(wr==br*sizeof(RecordStruct));
+            pos += br*sizeof(RecordStruct);
+            nr -= br;
+        }
+        io->Release();
+        unsigned r = msTick()-t;
+        printf("Write (buffsize = %dk): elapsed time write = %lf (sec)\n",(buffsize+1023)/1024,(double)r/1000.0);
+        Sleep(10);
+#endif
+        br = 0x2000/sizeof(RecordStruct);
+        for (unsigned iter=1;iter<10;iter++) {
+            t=msTick();
+            buffsize = br*sizeof(RecordStruct);
+            buffer = (byte *)realloc(buffer,buffsize);
+            curidx = 0;
+            nr = nrecs;
+            pos = 0;
+            unsigned r = msTick();
+            IFileIO *io = file->open(IFOread);
+            while (nr) {
+                if (nr<br)
+                    br = nr;
+                size32_t rd = io->read(pos, br*sizeof(RecordStruct),buffer);
+                // fprintf(stderr, "nr = %u rd = %u br = %u sizeof(RecordStruct) = %lu\n", nr, rd, br, sizeof(RecordStruct));
+                assertex(rd==br*sizeof(RecordStruct));
+                pos += br*sizeof(RecordStruct);
+                nr -= br;
+            }
+            io->Release();
+            r = msTick()-t;
+            printf("Read (buffsize = %dk): elapsed time read = %lf (sec)\n",(buffsize+1023)/1024,(double)r/1000.0);
+            Sleep(10);
+            br += br;
+        }
+
+        file->Release();
+
+    }
+#endif
+
+    }
+
+    return;
+}
 
 void TestRemoteFile2()
 {
@@ -767,7 +885,7 @@ void TestRemoteFile2()
         }
         io->Release();
         r = msTick()-t;
-        printf("Read (buffsize = %dk): elapsed time write = %d\n",(buffsize+1023)/1024,t/1000); 
+        printf("Read (buffsize = %dk): elapsed time write = %d\n",(buffsize+1023)/1024,r/1000);
         Sleep(10);
         br += br;
     }
@@ -2826,6 +2944,16 @@ int main(int argc, char* argv[])
 #endif
 #if defined(TEST_REMOTEFILE2)
         TestRemoteFile2();
+        return 0;
+#endif
+#if defined(TEST_REMOTEFILE3)
+        int nfiles = 1000;
+        int fsizemb = 512;
+        if(argc >= 2)
+            nfiles = atoi(argv[1]);
+        if(argc >= 3)
+            fsizemb = atoi(argv[2]);
+        TestRemoteFile3(nfiles, fsizemb);
         return 0;
 #endif
         if (argc<2) {
