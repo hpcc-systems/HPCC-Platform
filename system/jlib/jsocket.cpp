@@ -75,6 +75,10 @@
 #  include <unistd.h>
 #  include <sys/epoll.h>
 //#  define EPOLLTRACE
+#  ifndef EPOLLRDHUP
+//  Centos 5.x bug - epoll.h does not define but its in the kernel
+#   define EPOLLRDHUP 0x2000
+#  endif
 # endif
 #endif
 
@@ -3655,6 +3659,7 @@ public:
         return ret;
     }
 
+    virtual void closedummy() = 0;
 };
 
 class CSocketSelectThread: public CSocketBaseThread
@@ -4704,9 +4709,9 @@ ISocketSelectHandler *createSocketSelectHandler(const char *trc)
         }
     }
     if (epoll_method == EPOLL_ENABLED)
-      return new CSocketEpollHandler(trc);
+        return new CSocketEpollHandler(trc);
     else
-      return new CSocketSelectHandler(trc);
+        return new CSocketSelectHandler(trc);
 #else
     return new CSocketSelectHandler(trc);
 #endif
