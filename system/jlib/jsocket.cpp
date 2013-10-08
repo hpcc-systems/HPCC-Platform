@@ -65,6 +65,19 @@
 #include "jdebug.hpp"
 #include "build-config.h"
 
+// epoll only with linux
+
+#ifndef __linux__
+# undef _HAS_EPOLL_SUPPORT
+#else
+# define _HAS_EPOLL_SUPPORT
+# ifdef _HAS_EPOLL_SUPPORT
+#  include <unistd.h>
+#  include <sys/epoll.h>
+//#  define EPOLLTRACE
+# endif
+#endif
+
 // various options 
 
 #define CONNECT_TIMEOUT_REFUSED_WAIT    1000        // maximum to sleep on connect_timeout
@@ -83,6 +96,11 @@
 
 #ifdef _DEBUG
 //#define SOCKTRACE
+# ifdef _HAS_EPOLL_SUPPORT
+#  if defined(SOCKTRACE) || !defined(EPOLLTRACE)
+#   define EPOLLTRACE
+#  endif
+# endif
 #endif
 
 #ifdef _TESTING
@@ -3417,6 +3435,7 @@ struct SelectItem
     ISocketSelectNotify *nfy;
     byte mode;
     bool del;
+    bool add_epoll;
 };
 
 inline SelectItem &Array__Member2Param(SelectItem &src)                 { return src; }
@@ -3489,8 +3508,9 @@ inline bool findfds(T_FD_SET &s,T_SOCKET h,bool &c)
 }
 #endif
 
-class CSocketSelectThread: public Thread
+class CSocketMultiThread: public Thread
 {
+protected:
     bool terminating;
     CriticalSection sect;
     Semaphore ticksem;
@@ -3511,7 +3531,137 @@ class CSocketSelectThread: public Thread
 #endif
     bool dummysockopen;
 
+    CSocketMultiThread(const char *trc) : Thread("CSocketMultiThread")
+    {
+    }
 
+    ~CSocketMultiThread()
+    {
+    }
+
+    void triggerselect()
+    {
+        if (atomic_read(&tickwait))
+            ticksem.signal();
+#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+        CriticalBlock block(sect);
+        char c = 0;
+        if(write(dummysock[1], &c, 1) != 1) {
+            int err = ERRNO();
+            LOGERR(err,1,"Socket closed during trigger select");
+        }
+#else
+        closedummy();
+#endif
+    }
+
+    void resettrigger()
+    {
+#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+        CriticalBlock block(sect);
+        char c;
+        while((::read(dummysock[0], &c, sizeof(c))) == sizeof(c));
+#endif
+    }
+
+    bool remove(ISocket *sock)
+    {
+        if (terminating)
+            return false;
+        CriticalBlock block(sect);
+        if (sock==NULL) { // wait until no changes outstanding
+            while (selectvarschange) {
+                waitingchange++;
+                CriticalUnblock unblock(sect);
+                waitingchangesem.wait();
+            }
+            return true;
+        }
+        ForEachItemIn(i,items) {
+            SelectItem &si = items.item(i);
+            if (!si.del&&(si.sock==sock)) {
+                si.del = true;
+                selectvarschange = true;
+                triggerselect();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void stop(bool wait)
+    {
+        terminating = true;
+        triggerselect();
+        if (wait)
+            join();
+    }
+
+
+    bool sockOk(T_SOCKET sock)
+    {
+        PROGLOG("CSocketMultiThread: sockOk testing %d",sock);
+        int err = 0;
+        int t=0;
+        socklen_t tl = sizeof(t);
+        if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char *)&t, &tl)!=0) {
+            StringBuffer sockstr;
+            const char *tracename = sockstr.append((unsigned)sock).str();
+            LOGERR2(ERRNO(),1,"CSocketMultiThread select handle");
+            return false;
+        }
+        T_FD_SET fds;
+        struct timeval tv;
+        XFD_ZERO(&fds);
+        FD_SET((unsigned)sock, &fds);
+        //FD_SET((unsigned)sock, &except);
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        CHECKSOCKRANGE(sock);
+        int rc = ::select( sock + 1, NULL, (fd_set *)&fds, NULL, &tv );
+        if (rc<0) {
+            StringBuffer sockstr;
+            const char *tracename = sockstr.append((unsigned)sock).str();
+            LOGERR2(ERRNO(),2,"CSocketMultiThread select handle");
+            return false;
+        }
+        else if (rc>0)
+            PROGLOG("CSocketMultiThread: select handle %d selected(2) %d",sock,rc);
+        XFD_ZERO(&fds);
+        FD_SET((unsigned)sock, &fds);
+        tv.tv_sec = 0;
+        tv.tv_usec = 0;
+        rc = ::select( sock + 1, (fd_set *)&fds, NULL, NULL, &tv );
+        if (rc<0) {
+            StringBuffer sockstr;
+            const char *tracename = sockstr.append((unsigned)sock).str();
+            LOGERR2(ERRNO(),3,"CSocketMultiThread select handle");
+            return false;
+        }
+        else if (rc>0)
+            PROGLOG("CSocketMultiThread: select handle %d selected(2) %d",sock,rc);
+        return true;
+    }
+
+    bool checkSocks()
+    {
+        bool ret = false;
+        ForEachItemIn(i,items) {
+            SelectItem &si = items.item(i);
+            if (si.del)
+                ret = true; // maybe that bad one
+            else  if (!sockOk(si.handle)) {
+                si.del = true;
+                ret = true;
+            }
+        }
+        return ret;
+    }
+
+};
+
+class CSocketSelectThread: public CSocketMultiThread
+{
     void opendummy()
     {
         CriticalBlock block(sect);
@@ -3570,27 +3720,12 @@ class CSocketSelectThread: public Thread
 
     void triggerselect()
     {
-        if (atomic_read(&tickwait))         
-            ticksem.signal();
-#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-        CriticalBlock block(sect);
-        char c = 0;
-        if(write(dummysock[1], &c, 1) != 1) {
-            int err = ERRNO();
-            LOGERR(err,1,"Socket closed during trigger select");
-        }
-#else
-        closedummy();
-#endif
+        CSocketMultiThread::triggerselect();
     }
 
     void resettrigger()
     {
-#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
-        CriticalBlock block(sect);
-        char c;
-        while((::read(dummysock[0], &c, sizeof(c))) == sizeof(c));
-#endif
+        CSocketMultiThread::resettrigger();
     }
 
 
@@ -3658,7 +3793,7 @@ class CSocketSelectThread: public Thread
 public:
     IMPLEMENT_IINTERFACE;
     CSocketSelectThread(const char *trc)
-        : Thread("CSocketSelectThread")
+        : CSocketMultiThread("CSocketSelectThread")
     {
         dummysockopen = false;
         opendummy();
@@ -3755,6 +3890,7 @@ public:
         sn.handle = (T_SOCKET)sock->OShandle();
         CHECKSOCKRANGE(sn.handle);
         sn.del = false;
+        sn.add_epoll = false;
         items.append(sn);
         selectvarschange = true;        
         triggerselect();
@@ -3763,96 +3899,22 @@ public:
 
     bool remove(ISocket *sock)
     {
-        if (terminating)
-            return false;
-        CriticalBlock block(sect);
-        if (sock==NULL) { // wait until no changes outstanding
-            while (selectvarschange) {
-                waitingchange++;
-                CriticalUnblock unblock(sect);
-                waitingchangesem.wait();
-            }
-            return true;
-        }
-        ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
-            if (!si.del&&(si.sock==sock)) {
-                si.del = true;
-                selectvarschange = true;        
-                triggerselect();
-                return true;
-            }
-        }
-        return false;
+        return CSocketMultiThread::remove(sock);
     }
 
     void stop(bool wait)
     {
-        terminating = true;
-        triggerselect();
-        if (wait)
-            join();
+        CSocketMultiThread::stop(wait);
     }
-
 
     bool sockOk(T_SOCKET sock)
     {
-        PROGLOG("CSocketSelectThread: sockOk testing %d",sock);
-        int err = 0;
-        int t=0;
-        socklen_t tl = sizeof(t);
-        if (getsockopt(sock, SOL_SOCKET, SO_TYPE, (char *)&t, &tl)!=0) {
-            StringBuffer sockstr; 
-            const char *tracename = sockstr.append((unsigned)sock).str();
-            LOGERR2(ERRNO(),1,"CSocketSelectThread select handle"); 
-            return false;
-        }
-        T_FD_SET fds;
-        struct timeval tv;
-        XFD_ZERO(&fds);
-        FD_SET((unsigned)sock, &fds);
-        //FD_SET((unsigned)sock, &except);
-        tv.tv_sec = 0;
-        tv.tv_usec = 0;
-        CHECKSOCKRANGE(sock);
-        int rc = ::select( sock + 1, NULL, (fd_set *)&fds, NULL, &tv );
-        if (rc<0) {
-            StringBuffer sockstr; 
-            const char *tracename = sockstr.append((unsigned)sock).str();
-            LOGERR2(ERRNO(),2,"CSocketSelectThread select handle"); 
-            return false;
-        }
-        else if (rc>0) 
-            PROGLOG("CSocketSelectThread: select handle %d selected(2) %d",sock,rc);
-        XFD_ZERO(&fds);
-        FD_SET((unsigned)sock, &fds);
-        tv.tv_sec = 0;
-        tv.tv_usec = 0;
-        rc = ::select( sock + 1, (fd_set *)&fds, NULL, NULL, &tv );
-        if (rc<0) {
-            StringBuffer sockstr; 
-            const char *tracename = sockstr.append((unsigned)sock).str();
-            LOGERR2(ERRNO(),3,"CSocketSelectThread select handle"); 
-            return false;
-        }
-        else if (rc>0) 
-            PROGLOG("CSocketSelectThread: select handle %d selected(2) %d",sock,rc);
-        return true;
+        return CSocketMultiThread::sockOk(sock);
     }
 
     bool checkSocks()
     {
-        bool ret = false;
-        ForEachItemIn(i,items) {
-            SelectItem &si = items.item(i);
-            if (si.del)
-                ret = true; // maybe that bad one
-            else  if (!sockOk(si.handle)) {
-                si.del = true;
-                ret = true;
-            }
-        }
-        return ret;
+        return CSocketMultiThread::checkSocks();
     }
 
     void updateSelectVars(T_FD_SET &rdfds,T_FD_SET &wrfds,T_FD_SET &exfds,bool &isrd,bool &iswr,bool &isex,unsigned &ni,T_SOCKET &max_sockid)
@@ -4170,11 +4232,585 @@ public:
     }
 };
 
+#ifdef _HAS_EPOLL_SUPPORT
+class CSocketEpollThread: public CSocketMultiThread
+{
+    int epfd;
+    int *epfdtbl;
+
+    void opendummy()
+    {
+        CriticalBlock block(sect);
+        if (!dummysockopen) {
+#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+            if(pipe(dummysock)) {
+                WARNLOG("CSocketEpollThread: create pipe failed %d",ERRNO());
+                return;
+            }
+            for (unsigned i=0;i<2;i++) {
+                int flags = fcntl(dummysock[i], F_GETFL, 0);
+                if (flags!=-1) {
+                    flags |= O_NONBLOCK;
+                    fcntl(dummysock[i], F_SETFL, flags);
+                }
+                flags = fcntl(dummysock[i], F_GETFD, 0);
+                if (flags!=-1) {
+                    flags |=  FD_CLOEXEC;
+                    fcntl(dummysock[i], F_SETFD, flags);
+                }
+            }
+            CHECKSOCKRANGE(dummysock[0]);
+            int srtn;
+            struct epoll_event event;
+            event.events = EPOLLIN; // TODO - add other bits ? (such as RDHUP)
+            event.data.fd = dummysock[0];
+            srtn = ::epoll_ctl(epfd, EPOLL_CTL_ADD, dummysock[0], &event);
+            if (srtn < 0) {
+                int err = ERRNO();
+                LOGERR(err,1,"epoll_ctl(ADD)");
+                THROWJSOCKEXCEPTION2(err);
+            }
+#  ifdef EPOLLTRACE
+            DBGLOG("EPOLL: added dummy fd %d to epfd %d", dummysock[0], epfd);
+#  endif
+#else
+            if (IP6preferred)
+                dummysock = ::socket(AF_INET6, SOCK_STREAM, PF_INET6);
+            else
+                dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
+            CHECKSOCKRANGE(dummysock);
+            int srtn;
+            struct epoll_event event;
+            event.events = EPOLLIN | EPOLLERR; // TODO - add other bits ? (such as RDHUP)
+            event.data.fd = dummysock;
+            srtn = ::epoll_ctl(epfd, EPOLL_CTL_ADD, dummysock, &event);
+            if (srtn < 0) {
+                int err = ERRNO();
+                LOGERR(err,1,"epoll_ctl(ADD)");
+                THROWJSOCKEXCEPTION2(err);
+            }
+#  ifdef EPOLLTRACE
+            DBGLOG("EPOLL: added dummy fd %d to epfd %d", dummysock, epfd);
+#  endif
+#endif
+            dummysockopen = true;
+        }
+
+
+    }
+
+    void closedummy()
+    {
+        CriticalBlock block(sect);
+        if (dummysockopen) {
+#ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+            struct epoll_event event;
+            ::epoll_ctl(epfd, EPOLL_CTL_DEL, dummysock[0], &event);
+#  ifdef EPOLLTRACE
+            DBGLOG("EPOLL: removed dummy fd %d from epfd %d", dummysock[0], epfd);
+#  endif
+#ifdef SOCKTRACE
+            PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%x)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
+#endif
+            ::close(dummysock[0]);
+            ::close(dummysock[1]);
+#else
+            struct epoll_event event;
+            ::epoll_ctl(epfd, EPOLL_CTL_DEL, dummysock, &event);
+#  ifdef EPOLLTRACE
+            DBGLOG("EPOLL: removed dummy fd %d from epfd %d", dummysock, epfd);
+#  endif
+            ::close(dummysock);
+#endif
+            dummysockopen = false;
+        }
+    }
+
+    void triggerselect()
+    {
+        CSocketMultiThread::triggerselect();
+    }
+
+    void resettrigger()
+    {
+        CSocketMultiThread::resettrigger();
+    }
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CSocketEpollThread(const char *trc)
+        : CSocketMultiThread("CSocketEpollThread")
+    {
+        dummysockopen = false;
+        terminating = false;
+        atomic_set(&tickwait,0);
+        waitingchange = 0;
+        selectvarschange = false;
+        validateselecterror = 0;
+        validateerrcount = 0;
+        offset = 0;
+        selecttrace = trc;
+        epfd = ::epoll_create(XFD_SETSIZE);
+        if (epfd < 0) {
+          int err = ERRNO();
+          LOGERR(err,1,"epoll_create()");
+          THROWJSOCKEXCEPTION2(err);
+        }
+# if defined(_DEBUG) || defined(EPOLLTRACE)
+        DBGLOG("EPOLL: creating epfd %d", epfd );
+# endif
+        try {
+            epfdtbl = new int[XFD_SETSIZE];
+        } catch (const std::bad_alloc &e) {
+            int err = ERRNO();
+            LOGERR(err,1,"epfdtbl alloc()");
+            THROWJSOCKEXCEPTION2(err);
+        }
+        for (int i=0; i<XFD_SETSIZE; i++) {
+            epfdtbl[i] = -1;
+        }
+        opendummy();
+    }
+
+    ~CSocketEpollThread()
+    {
+        closedummy();
+        ForEachItemIn(i,items) {
+            try {
+                SelectItem &si = items.item(i);
+                struct epoll_event event;
+                ::epoll_ctl(epfd, EPOLL_CTL_DEL, si.handle, &event);
+# ifdef EPOLLTRACE
+                DBGLOG("EPOLL: removed fd %d from epfd %d", si.handle, epfd);
+# endif
+                si.sock->Release();
+                si.nfy->Release();
+            }
+            catch (IException *e) {
+                EXCLOG(e,"~CSocketEpollThread");
+                e->Release();
+            }
+        }
+        if (epfd >= 0) {
+# ifdef EPOLLTRACE
+            DBGLOG("EPOLL: closing epfd %d", epfd );
+# endif
+            ::close(epfd);
+            epfd = -1;
+            delete [] epfdtbl;
+        }
+    }
+
+    Owned<IException> termexcept;
+
+    void updateItems()
+    {
+        // must be in CriticalBlock block(sect);
+        unsigned n = items.ordinality();
+        bool reindex = false;
+        for (unsigned i=0;i<n;) {
+            SelectItem &si = items.item(i);
+            if (si.add_epoll) {
+                reindex = true;
+            }
+            if (si.del) {
+                struct epoll_event event;
+                ::epoll_ctl(epfd, EPOLL_CTL_DEL, si.handle, &event);
+# ifdef EPOLLTRACE
+                DBGLOG("EPOLL: removed fd %d from epfd %d", si.handle, epfd);
+# endif
+                epfdtbl[si.handle] = -1;
+                reindex = true;
+                si.nfy->Release();
+                try {
+#ifdef SOCKTRACE
+                    PROGLOG("CSocketEpollThread::updateItems release %d",si.handle);
+#endif
+                    si.sock->Release();
+                }
+                catch (IException *e) {
+                    EXCLOG(e,"CSocketEpollThread::updateItems");
+                    e->Release();
+                }
+                n--;
+                if (i<n)
+                    si = items.item(n);
+                items.remove(n);
+            }
+            else
+                i++;
+        }
+        assertex(n<=XFD_SETSIZE-1);
+        if (reindex) {
+# ifdef EPOLLTRACE
+            int max_sockid = 0;
+# endif
+            ForEachItemIn(j,items) {
+                SelectItem &si = items.item(j);
+                epfdtbl[si.handle] = j;
+                if (si.add_epoll) {
+                    si.add_epoll = false;
+                    int srtn, ep_mode;
+                    struct epoll_event event;
+                    if (si.mode != 0) {
+                        ep_mode = 0;
+                        if (si.mode & SELECTMODE_READ) {
+                            ep_mode |= (EPOLLIN | EPOLLPRI);
+                        }
+                        if (si.mode & SELECTMODE_WRITE) {
+                            ep_mode |= EPOLLOUT;
+                        }
+                        if (si.mode & SELECTMODE_EXCEPT) {
+                            ep_mode |= EPOLLERR;
+                        }
+                        if (ep_mode != 0) {
+                            ep_mode |= EPOLLRDHUP;
+                            event.events = ep_mode;
+                            event.data.fd = si.handle;
+                            srtn = ::epoll_ctl(epfd, EPOLL_CTL_ADD, si.handle, &event);
+                            if (srtn < 0) {
+                                int err = ERRNO();
+                                LOGERR(err,1,"epoll_ctl(ADD)");
+                                THROWJSOCKEXCEPTION2(err);
+                            }
+# ifdef EPOLLTRACE
+                            DBGLOG("EPOLL: added fd %d to epfd %d", si.handle, epfd);
+# endif
+                        }
+                    }
+# ifdef EPOLLTRACE
+                    max_sockid=std::max(si.handle, max_sockid);
+# endif
+                }
+# ifdef EPOLLTRACE
+                max_sockid++;
+                for(int ix=0; ix<max_sockid; ix++) {
+                    DBGLOG("EPOLL: epfdtbl[%d] = %d", ix, epfdtbl[ix]);
+                }
+# endif
+            }
+# ifdef EPOLLTRACE
+            DBGLOG("EPOLL: leaving updateItems(), reindex = %d", reindex);
+# endif
+        }
+    }
+
+    bool add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
+    {
+        // maybe check once to prevent 1st delay? TBD
+        CriticalBlock block(sect);
+        unsigned n=0;
+        ForEachItemIn(i,items) {
+            SelectItem &si = items.item(i);
+            if (!si.del) {
+                if (si.sock==sock) {
+                    si.del = true;
+                }
+                else
+                    n++;
+            }
+        }
+        if (n>=XFD_SETSIZE-1)   // leave 1 spare
+            return false;
+        SelectItem sn;
+        sn.nfy = LINK(nfy);
+        sn.sock = LINK(sock);
+        sn.mode = (byte)mode;
+        sn.handle = (T_SOCKET)sock->OShandle();
+        CHECKSOCKRANGE(sn.handle);
+        sn.del = false;
+        sn.add_epoll = true;
+        items.append(sn);
+        selectvarschange = true;
+        triggerselect();
+        return true;
+    }
+
+    bool remove(ISocket *sock)
+    {
+        return CSocketMultiThread::remove(sock);
+    }
+
+    void stop(bool wait)
+    {
+        CSocketMultiThread::stop(wait);
+    }
+
+    bool sockOk(T_SOCKET sock)
+    {
+        return CSocketMultiThread::sockOk(sock);
+    }
+
+    bool checkSocks()
+    {
+        return CSocketMultiThread::checkSocks();
+    }
+
+    void updateEpollVars(unsigned &ni)
+    {
+        CriticalBlock block(sect);
+        selectvarschange = false;
+        if (waitingchange) {
+            waitingchangesem.signal(waitingchange);
+            waitingchange = 0;
+        }
+        if (validateselecterror) { // something went wrong so check sockets
+            validateerrcount++;
+            if (!checkSocks()) {
+                // bad socket not found
+                PROGLOG("CSocketEpollThread::updateEpollVars cannot find socket error");
+                if (validateerrcount>10)
+                    throw MakeStringException(-1,"CSocketEpollThread:Socket epoll error %d",validateselecterror);
+            }
+        }
+        else
+            validateerrcount = 0;
+        updateItems();
+#ifndef _USE_PIPE_FOR_SELECT_TRIGGER
+        opendummy();
+#endif
+        ni = items.ordinality();
+        validateselecterror = 0;
+    }
+
+    int run()
+    {
+        try {
+            unsigned ni = 0;
+            unsigned numto = 0;
+            unsigned lastnumto = 0;
+            unsigned totnum = 0;
+            unsigned total = 0;
+            struct epoll_event events[XFD_SETSIZE];
+            selectvarschange = true;
+
+            while (!terminating) {
+                if (selectvarschange) {
+                        updateEpollVars(ni);
+                }
+                if (ni==0) {
+                    validateerrcount = 0;
+                    atomic_inc(&tickwait);
+                    if(!selectvarschange&&!terminating)
+                        ticksem.wait(SELECT_TIMEOUT_SECS*1000);
+                    atomic_dec(&tickwait);
+
+                    continue;
+                }
+
+                int n = ::epoll_wait(epfd, events, XFD_SETSIZE, 1000);
+
+# ifdef EPOLLTRACE
+                if(n > 0)
+                    DBGLOG("EPOLL: after epoll_wait(), n = %d, ni = %d", n, ni);
+# endif
+
+                if (terminating)
+                    break;
+                if (n < 0) {
+                    CriticalBlock block(sect);
+                    int err = ERRNO();
+                    if (err != EINTRCALL) {
+                        if (dummysockopen) {
+                            LOGERR(err,12,"CSocketEpollThread epoll error"); // should cache error ?
+                            validateselecterror = err;
+#ifndef _USE_PIPE_FOR_SELECT_TRIGGER
+                            closedummy();  // just in case was culprit
+#endif
+                        }
+                        selectvarschange = true;
+                        continue;
+                    }
+                    n = 0;
+                }
+                else if (n>0) {
+                    validateerrcount = 0;
+                    numto = 0;
+                    lastnumto = 0;
+                    total += n;
+                    totnum++;
+                    SelectItemArray tonotify;
+                    {
+                        CriticalBlock block(sect);
+
+                        for (int j=0;j<n;j++) {
+# ifdef EPOLLTRACE
+                            DBGLOG("EPOLL: events[%d].data.fd = %d, epfdtbl = %d, events mask = %d", j, events[j].data.fd, epfdtbl[events[j].data.fd], events[j].events);
+# endif
+# ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+                            if ((dummysockopen) && (events[j].data.fd == dummysock[0])) {
+                                resettrigger();
+                                continue;
+                            }
+# endif
+                            if (events[j].data.fd >= 0) {
+                                assertex(epfdtbl[events[j].data.fd] >= 0);
+                                SelectItem *epsi = items.getArray(epfdtbl[events[j].data.fd]);
+                                if (!epsi->del) {
+                                    unsigned int ep_mode = 0;
+                                    if (events[j].events & (EPOLLIN | EPOLLPRI)) {
+                                        ep_mode |= SELECTMODE_READ;
+                                    }
+                                    if (events[j].events & (EPOLLERR | EPOLLHUP)) {
+                                        ep_mode |= SELECTMODE_READ;
+                                    }
+                                    if (events[j].events & EPOLLRDHUP) {
+                                        // TODO - or should we set EXCEPT ?
+                                        ep_mode |= SELECTMODE_READ;
+                                    }
+                                    if (events[j].events & EPOLLOUT) {
+                                        ep_mode |= SELECTMODE_WRITE;
+                                    }
+                                    if (ep_mode != 0) {
+                                        tonotify.append(*epsi);
+                                        tonotify.item(tonotify.length()-1).mode = ep_mode;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    ForEachItemIn(j,tonotify) {
+                        SelectItem &si = tonotify.item(j);
+                        try {
+                            si.nfy->notifySelected(si.sock,si.mode); // ignore return
+                        }
+                        catch (IException *e) { // should be acted upon by notifySelected
+                            EXCLOG(e,"CSocketEpollThread notifySelected");
+                            throw ;
+                        }
+                    }
+                }
+                else  {
+                    validateerrcount = 0;
+                    if ((++numto>=lastnumto*2)) {
+                        lastnumto = numto;
+                        if (selecttrace&&(numto>4))
+                            PROGLOG("%s: Epoll Idle(%d), %d,%d,%0.2f",selecttrace,numto,totnum,total,totnum?((double)total/(double)totnum):0.0);
+                    }
+/*
+                    if (numto&&(numto%100)) {
+                        CriticalBlock block(sect);
+                        if (!selectvarschange)
+                            selectvarschange = checkSocks();
+                    }
+*/
+                }
+            }
+        }
+        catch (IException *e) {
+            EXCLOG(e,"CSocketEpollThread");
+            termexcept.setown(e);
+        }
+        CriticalBlock block(sect);
+        try {
+            updateItems();
+        }
+        catch (IException *e) {
+            EXCLOG(e,"CSocketEpollThread(2)");
+            if (!termexcept)
+                termexcept.setown(e);
+            else
+                e->Release();
+        }
+        return 0;
+    }
+
+};
+
+class CSocketEpollHandler: public CInterface, implements ISocketSelectHandler
+{
+    CIArrayOf<CSocketEpollThread> threads;
+    CriticalSection sect;
+    bool started;
+    StringAttr epolltrace;
+public:
+    IMPLEMENT_IINTERFACE;
+    CSocketEpollHandler(const char *trc)
+        : epolltrace(trc)
+    {
+        started = false;
+    }
+    void start()
+    {
+        CriticalBlock block(sect);
+        if (!started) {
+            started = true;
+            ForEachItemIn(i,threads) {
+                threads.item(i).start();
+            }
+        }
+
+    }
+    void add(ISocket *sock,unsigned mode,ISocketSelectNotify *nfy)
+    {
+        CriticalBlock block(sect);
+        loop {
+            bool added=false;
+            ForEachItemIn(i,threads) {
+                if (added)
+                    threads.item(i).remove(sock);
+                else
+                    added = threads.item(i).add(sock,mode,nfy);
+            }
+            if (added)
+                return;
+            CSocketEpollThread *thread = new CSocketEpollThread(epolltrace);
+            threads.append(*thread);
+            if (started)
+                thread->start();
+        }
+    }
+    void remove(ISocket *sock)
+    {
+        CriticalBlock block(sect);
+        ForEachItemIn(i,threads) {
+            if (threads.item(i).remove(sock)&&sock)
+                break;
+        }
+    }
+    void stop(bool wait)
+    {
+        IException *e=NULL;
+        CriticalBlock block(sect);
+        unsigned i = 0;
+        while (i<threads.ordinality()) {
+            CSocketEpollThread &t=threads.item(i);
+            {
+                CriticalUnblock unblock(sect);
+                t.stop(wait);           // not quite as quick as could be if wait true
+            }
+            if (wait && !e && t.termexcept)
+                e = t.termexcept.getClear();
+            i++;
+        }
+#if 0 // don't throw error as too late
+        if (e)
+            throw e;
+#else
+        ::Release(e);
+#endif
+    }
+};
+#endif // _HAS_EPOLL_SUPPORT
+
 ISocketSelectHandler *createSocketSelectHandler(const char *trc)
 {
+#ifdef _HAS_EPOLL_SUPPORT
+    return new CSocketEpollHandler(trc);
+    // return new CSocketSelectHandler(trc);
+#else
     return new CSocketSelectHandler(trc);
+#endif
 }
 
+ISocketSelectHandler *createSocketEpollHandler(const char *trc)
+{
+#ifdef _HAS_EPOLL_SUPPORT
+    return new CSocketEpollHandler(trc);
+#else
+    return new CSocketSelectHandler(trc);
+#endif
+}
 
 void readBuffer(ISocket * socket, MemoryBuffer & buffer)
 {
