@@ -16,8 +16,10 @@
     </indexterm> ]</emphasis><emphasis role="bold"> [, LIBRARY<indexterm>
       <primary>LIBRARY</primary>
     </indexterm>(</emphasis><emphasis>interface</emphasis><emphasis
-  role="bold">) ]</emphasis><emphasis role="bold">
-  </emphasis><emphasis></emphasis></para>
+  role="bold">) ]</emphasis><emphasis role="bold"> <emphasis role="bold">[,
+  FORWARD<indexterm>
+      <primary>FORWARD</primary>
+    </indexterm> ]</emphasis></emphasis><emphasis></emphasis></para>
 
   <para><emphasis>members;</emphasis></para>
 
@@ -90,6 +92,13 @@
           MODULE must exactly match the parameters passed to the specified
           <emphasis>interface</emphasis>.</entry>
         </row>
+
+        <row>
+          <entry><emphasis role="bold">FORWARD</emphasis></entry>
+
+          <entry>Optional. Delays processing of definitions until they are
+          used. </entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -99,6 +108,13 @@
   <emphasis>parameters</emphasis> passed to the MODULE are shared by all the
   related <emphasis>members </emphasis>definitions. This is similar to the
   FUNCTION structure except that there is no RETURN.</para>
+
+  <para>Adding <emphasis role="bold">,FORWARD</emphasis> to a MODULE delays
+  processing of definitions within the module until they are used. This has
+  two main effects: It prevents pulling in dependencies for definitions that
+  are never used and it allows earlier definitions to refer to later
+  definitions. <emphasis role="bold">Note: Circular references are still
+  illegal. </emphasis></para>
 
   <sect2 id="Attribute_Visibility_Rules">
     <title>Definition Visibility<indexterm>
