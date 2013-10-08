@@ -283,7 +283,7 @@
           <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
           <entry>Optional. Specifies records are created on the node upon
-          which the activity is performed.</entry>
+          which the activity is performed. </entry>
         </row>
       </tbody>
     </tgroup>
@@ -1439,8 +1439,7 @@ OUTPUT(ds);         </programlisting>
     determines the structure. The integer COUNTER can be used to number each
     iteration of the <emphasis>transform</emphasis> function.</para>
 
-    <para>The LOCAL option specifies that the dataset activity executes
-    independently on each node.</para>
+    <para>LOCAL executes separately and independently on each node. </para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
