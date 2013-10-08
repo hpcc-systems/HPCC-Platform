@@ -1139,6 +1139,11 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         resp.setIsLibrary(query->getPropBool("@isLibrary"));
         SCMStringBuffer s;
         resp.setWUSnapShot(cw->getSnapshot(s).str()); //Label
+        cw->getTimeStamp("Compiled", "EclCCServer", s);
+        if (!s.length())
+            cw->getTimeStamp("Compiled", "EclServer", s);
+        if (s.length())
+            resp.setCompileTime(s.str());
         StringArray libUsed, graphIds;
         Owned<IConstWULibraryIterator> libs = &cw->getLibraries();
         ForEach(*libs)
