@@ -257,6 +257,8 @@
       </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
     ) ] ] [, PARALLEL<indexterm>
         <primary>PARALLEL</primary>
+      </indexterm> ][, SMART<indexterm>
+        <primary>SMART</primary>
       </indexterm> ]</emphasis></para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
@@ -464,7 +466,7 @@
             the the hard match ("equality") portion of the
             <emphasis>joincondition</emphasis> but before the soft match
             ("non-equality") portion of the <emphasis>joincondition</emphasis>
-            is evaluated. </entry>
+            is evaluated.</entry>
           </row>
 
           <row>
@@ -551,6 +553,13 @@
             <emphasis>rightrecset</emphasis> should be read on separate
             threads to minimize latency.</entry>
           </row>
+
+          <row>
+            <entry><emphasis role="bold">SMART</emphasis></entry>
+
+            <entry>Specifies to use an in-memory lookup only when possible.
+            </entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable>
@@ -575,6 +584,9 @@
     of the <emphasis>rightrecset</emphasis> is irrelevant in the case of
     "half-keyed" and "full-keyed" JOINs (see the Keyed Join discussion
     below).</para>
+
+    <para>Use the SMART when the right side dataset is likely to be small
+    enough to fit in memory , but is not guaranteed to fit. </para>
   </sect2>
 
   <sect2 id="Keyed_Joins">
