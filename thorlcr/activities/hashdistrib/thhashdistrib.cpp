@@ -165,11 +165,16 @@ public:
 
         queryThorFileManager().noteFileRead(container.queryJob(), file);
     }
-
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         HashDistributeMasterBase::serializeSlaveData(dst, slave); // have to chain for standard activity data..
         dst.append(tlkMb);
+    }
+    virtual void done()
+    {
+        HashDistributeMasterBase::done();
+        if (file)
+            file->setAccessed();
     }
 };
 
