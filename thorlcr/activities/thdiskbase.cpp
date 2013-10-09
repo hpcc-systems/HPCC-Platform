@@ -181,7 +181,6 @@ CWriteMasterBase::CWriteMasterBase(CMasterGraphElement *info) : CMasterActivity(
     replicateProgress.setown(new ProgressInfo);
     diskHelperBase = (IHThorDiskWriteArg *)queryHelper();
     targetOffset = 0;
-    dlfn.setUserDescriptor(container.queryJob().queryUserDescriptor());
 }
 
 void CWriteMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)

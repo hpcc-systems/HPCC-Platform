@@ -222,7 +222,7 @@ public:
             }
             tmp.append(logicalname).clip();
         }
-        normalizeLFN(tmp.str(), ret, job.queryUserDescriptor());
+        normalizeLFN(tmp.str(), ret);
         return ret;
     }
 
