@@ -115,10 +115,7 @@ void CDiskReadMasterBase::done()
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
     fileDesc.clear();
     if (!abortSoon) // in case query has relinquished control of file usage to another query (e.g. perists) 
-    {
-        if (0 != (helper->getFlags() & TDXupdateaccessed))
-            queryThorFileManager().updateAccessTime(container.queryJob(), fileName);
-    }
+        queryThorFileManager().updateAccessTime(container.queryJob(), fileName);
 }
 
 void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
