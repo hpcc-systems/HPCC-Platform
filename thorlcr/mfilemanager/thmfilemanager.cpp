@@ -548,19 +548,7 @@ public:
             fileMap.replace(*new CIDistributeFileMapping(scopedName.str(), *LINK(file))); // cache takes ownership
             return;
         }
-        if (props.getPropBool("@persistent"))
-        {
-            // JCSMORE - is this right? - looks like it will set to *last* mod time - need to check..
-            //         - shouldn't it just be a call to updateAccessTime(job, *f) ?
-
-            CDateTime modTime;
-            if (file->getModificationTime(modTime))
-            {
-                StringBuffer modTimeStr;
-                modTime.getString(modTimeStr);
-                file->queryAttributes().setProp("@accessed", modTimeStr.str());
-            }
-        }
+        file->setAccessed();
         if (publishedFile)
             publishedFile->set(file);
         __int64 fs = file->getFileSize(false,false);
