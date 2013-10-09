@@ -97,7 +97,13 @@
           <entry><emphasis role="bold">FORWARD</emphasis></entry>
 
           <entry>Optional. Delays processing of definitions until they are
-          used. </entry>
+          used. Adding <emphasis role="bold">,FORWARD</emphasis> to a MODULE
+          delays processing of definitions within the module until they are
+          used. This has two main effects: It prevents pulling in dependencies
+          for definitions that are never used and it allows earlier
+          definitions to refer to later definitions. <emphasis
+          role="bold">Note: Circular references are still
+          illegal.</emphasis></entry>
         </row>
       </tbody>
     </tgroup>
@@ -108,13 +114,6 @@
   <emphasis>parameters</emphasis> passed to the MODULE are shared by all the
   related <emphasis>members </emphasis>definitions. This is similar to the
   FUNCTION structure except that there is no RETURN.</para>
-
-  <para>Adding <emphasis role="bold">,FORWARD</emphasis> to a MODULE delays
-  processing of definitions within the module until they are used. This has
-  two main effects: It prevents pulling in dependencies for definitions that
-  are never used and it allows earlier definitions to refer to later
-  definitions. <emphasis role="bold">Note: Circular references are still
-  illegal. </emphasis></para>
 
   <sect2 id="Attribute_Visibility_Rules">
     <title>Definition Visibility<indexterm>
@@ -330,7 +329,17 @@ Mod3 := MODULE(Mod1) //a fully concete instance
   EXPORT func(INTEGER sc) := val + sc; //overrides inherited func
 END;
 OUTPUT(Mod2.func(5)); //result is 15
-OUTPUT(Mod3.func(5)); //result is 6</programlisting>
+OUTPUT(Mod3.func(5)); //result is 6
+
+//FORWARD example
+EXPORT MyModule := MODULE, FORWARD
+  EXPORT INTEGER foo := bar;
+  EXPORT INTEGER bar := 42;
+END;
+
+MyModule.foo;
+
+</programlisting>
 
     <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
     Structure</link>, <link linkend="Attribute_Visibility">Definition
