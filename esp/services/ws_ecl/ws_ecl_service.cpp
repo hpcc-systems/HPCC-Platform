@@ -756,11 +756,6 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
     }
 }
 
-inline void indenter(StringBuffer &s, int count)
-{
-    s.appendN(count*3, ' ');
-}
-
 IException *MakeJSONValueException(int code, const char *start, const char *pos, const char *tail, const char *intro="Invalid json format: ")
 {
      StringBuffer s(intro);
@@ -831,8 +826,6 @@ StringBuffer &appendJSONNumericString(StringBuffer &s, const char *value, bool a
     return s;
 }
 
-inline const char *jsonNewline(unsigned flags){return ((flags & REQXML_ESCAPEFORMATTERS) ? "\\n" : "\n");}
-
 typedef enum _JSONFieldCategory
 {
     JSONField_String,
@@ -855,9 +848,8 @@ JSONField_Category xsdTypeToJSONFieldCategory(const char *xsdtype)
     return JSONField_String;
 }
 
-static void buildJsonAppendValue(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, const char *value, unsigned flags, int &indent)
+static void buildJsonAppendValue(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, const char *value, unsigned flags)
 {
-    indenter(out, indent);
     if (tag && *tag)
         out.appendf("\"%s\": ", tag);
     StringBuffer sample;
@@ -889,16 +881,12 @@ static void buildJsonAppendValue(StringStack& parent, IXmlType* type, StringBuff
         out.append("null");
 }
 
-static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *parmtree, unsigned flags, int &indent)
+static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *parmtree, unsigned flags)
 {
     assertex(type!=NULL);
 
     if (flags & REQXML_ROOT)
-    {
         out.append("{");
-        out.append(jsonNewline(flags));
-        indent++;
-    }
 
     const char* typeName = type->queryName();
     if (type->isComplexType())
@@ -907,11 +895,9 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
             return; // recursive
 
         int startlen = out.length();
-        indenter(out, indent++);
         if (tag)
-            out.appendf("\"%s\": {", tag).append(jsonNewline(flags));
-        else
-            out.append("{").append(jsonNewline(flags));
+            appendJSONName(out, tag);
+        out.append('{');
         int taglen=out.length()+1;
         if (typeName)
             parent.push_back(typeName);
@@ -920,12 +906,10 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
             if (parmtree)
             {
                 const char *attrval = parmtree->queryProp(NULL);
-                indenter(out, indent);
                 out.appendf("\"%s\" ", (attrval) ? attrval : "");
             }
             else if (flags & REQXML_SAMPLE_DATA)
             {
-                indenter(out, indent);
                 out.append("\"");
                 type->queryFieldType(0)->getSampleValue(out,tag);
                 out.append("\" ");
@@ -940,19 +924,17 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                 if (first)
                     first=false;
                 else
-                    out.append(",").append(jsonNewline(flags));
+                    out.append(',');
                 IPropertyTree *childtree = NULL;
                 const char *childname = type->queryFieldName(idx);
                 if (parmtree)
                     childtree = parmtree->queryPropTree(childname);
-                buildJsonMsg(parent, type->queryFieldType(idx), out, childname, childtree, flags & ~REQXML_ROOT, indent);
+                buildJsonMsg(parent, type->queryFieldType(idx), out, childname, childtree, flags & ~REQXML_ROOT);
             }
-            out.append(jsonNewline(flags));
         }
 
         if (typeName)
             parent.pop_back();
-        indenter(out, indent--);
         out.append("}");
     }
     else if (type->isArray())
@@ -969,14 +951,10 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
             parent.push_back(typeName);
 
         int startlen = out.length();
-        indenter(out, indent++);
         if (tag)
-            out.appendf("\"%s\": {%s", tag, jsonNewline(flags));
-        else
-            out.append("{").append(jsonNewline(flags));
-        indenter(out, indent++);
-        out.appendf("\"%s\": [", itemName).append(jsonNewline(flags));
-        indent++;
+            out.appendf("\"%s\": ", tag);
+        out.append('{');
+        out.appendf("\"%s\": [", itemName);
         int taglen=out.length();
         if (parmtree)
         {
@@ -991,14 +969,13 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                     if (first)
                         first=false;
                     else
-                        out.append(",").append(jsonNewline(flags));
+                        out.append(",");
                     StringBuffer itempath;
                     itempath.append(itemName).append(idx);
                     IPropertyTree *itemtree = parmtree->queryPropTree(itempath.str());
                     if (itemtree)
-                        buildJsonMsg(parent,itemType,out, NULL, itemtree, flags & ~REQXML_ROOT, indent);
+                        buildJsonMsg(parent,itemType,out, NULL, itemtree, flags & ~REQXML_ROOT);
                 }
-                out.append(jsonNewline(flags));
             }
             else if (parmtree->hasProp(itemName))
             {
@@ -1009,10 +986,9 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                     if (first)
                         first=false;
                     else
-                        out.append(",").append(jsonNewline(flags));
-                    buildJsonMsg(parent,itemType,out, NULL, &items->query(), flags & ~REQXML_ROOT, indent);
+                        out.append(",");
+                    buildJsonMsg(parent,itemType,out, NULL, &items->query(), flags & ~REQXML_ROOT);
                 }
-                out.append(jsonNewline(flags));
             }
             else
             {
@@ -1023,33 +999,30 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                     items.appendList(s, "\n");
                     ForEachItemIn(i, items)
                     {
-                        delimitJSON(out, true, 0!=(flags & REQXML_ESCAPEFORMATTERS));
-                        buildJsonAppendValue(parent, type, out, NULL, items.item(i), flags & ~REQXML_ROOT, indent);
+                        delimitJSON(out, false);
+                        buildJsonAppendValue(parent, type, out, NULL, items.item(i), flags & ~REQXML_ROOT);
                     }
-                    out.append(jsonNewline(flags));
                 }
 
             }
         }
         else
-            buildJsonMsg(parent, itemType, out, NULL, NULL, flags & ~REQXML_ROOT, indent);
+            buildJsonMsg(parent, itemType, out, NULL, NULL, flags & ~REQXML_ROOT);
 
-        indenter(out, indent--);
-        out.append("]").append(jsonNewline(flags));
+        out.append(']');
 
         if (typeName)
             parent.pop_back();
-        indenter(out, indent--);
         out.append("}");
     }
     else // simple type
     {
         const char *parmval = (parmtree) ? parmtree->queryProp(NULL) : NULL;
-        buildJsonAppendValue(parent, type, out, tag, parmval, flags, indent);
+        buildJsonAppendValue(parent, type, out, tag, parmval, flags);
     }
 
     if (flags & REQXML_ROOT)
-        out.append(jsonNewline(flags)).append("}");
+        out.append('}');
 
 }
 
@@ -1283,8 +1256,6 @@ StringBuffer &appendEclXsdName(StringBuffer &content, const char *name, bool ist
 
 void appendEclXsdStartTag(StringBuffer &content, IPropertyTree *element, int indent, const char *attrstr=NULL, bool forceclose=false)
 {
-    //while (indent--)
-    //  content.append('\t');
     const char *name = element->queryName();
     appendEclXsdName(content.append('<'), name);
     if (strieq(name, "xs:element"))
@@ -1544,6 +1515,7 @@ int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request,
             content.append("<xsd:complexType>");
             content.append("<xsd:all>");
             content.append("<xsd:element name=\"Exceptions\" type=\"tns:ArrayOfEspException\" minOccurs=\"0\"/>");
+            content.append("<xsd:element name=\"Wuid\" type=\"xsd:string\" minOccurs=\"0\"/>");
 
             Owned<IPropertyTreeIterator> result_xsds =xsdtree->getElements("Result");
             if (!result_xsds->first())
@@ -1887,8 +1859,7 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
             if (type)
             {
                 StringStack parent;
-                int indent=0;
-                buildJsonMsg(parent, type, jsonmsg, wsinfo.queryname.sget(), parmtree, flags|REQXML_ROOT|REQXML_ESCAPEFORMATTERS, indent);
+                buildJsonMsg(parent, type, jsonmsg, wsinfo.queryname.sget(), parmtree, flags|REQXML_ROOT);
             }
         }
     }
@@ -1916,24 +1887,33 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
             node = node->queryPropTree("Body");
         if (node->hasProp(element))
             node = node->queryPropTree(element);
+        const char *wuid = node->queryProp("Wuid");
         if (node->hasProp("Results"))
             node = node->queryPropTree("Results");
         if (node->hasProp("Result"))
             node = node->queryPropTree("Result");
 
-        jsonmsg.appendf("{\n  \"%s\": {\n    \"Results\": {\n", element.str());
-
+        jsonmsg.appendf("{\"%s\": {", element.str());
         Owned<IPropertyTreeIterator> exceptions = node->getElements("Exception");
-        if (exceptions && exceptions->first())
+        Owned<IPropertyTreeIterator> datasets = node->getElements("Dataset");
+        if (wuid && *wuid)
+            appendJSONValue(jsonmsg, "Wuid", wuid);
+        if ((!exceptions || !exceptions->first()) && (!datasets || !datasets->first()))
         {
-            appendJSONName(jsonmsg.pad(3), "Exceptions").append("{\n");
-            appendJSONName(jsonmsg.pad(4), "Exception").append("[\n");
-            ForEach(*exceptions)
-                appendJSONExceptionItem(jsonmsg.pad(2), exceptions->query().getPropInt("Code"), exceptions->query().queryProp("Message"), NULL, NULL);
-            jsonmsg.append("\n   ]\n    }\n");
+            jsonmsg.append("  }\n}");
+            return;
         }
 
-        Owned<IPropertyTreeIterator> datasets = node->getElements("Dataset");
+        appendJSONName(jsonmsg, "Results").append("{\n");
+        if (exceptions && exceptions->first())
+        {
+            appendJSONName(jsonmsg, "Exceptions").append("{");
+            appendJSONName(jsonmsg, "Exception").append("[");
+            ForEach(*exceptions)
+                appendJSONExceptionItem(jsonmsg, exceptions->query().getPropInt("Code"), exceptions->query().queryProp("Message"), NULL, NULL);
+            jsonmsg.append("]}");
+        }
+
         ForEach(*datasets)
         {
             IPropertyTree &ds = datasets->query();
@@ -1951,15 +1931,15 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
                         if (type)
                         {
                             StringStack parent;
-                            int indent=4;
                             StringBuffer outname(dsname);
-                            buildJsonMsg(parent, type, jsonmsg, outname.replace(' ', '_').str(), &ds, 0, indent);
+                            delimitJSON(jsonmsg);
+                            buildJsonMsg(parent, type, jsonmsg, outname.replace(' ', '_').str(), &ds, 0);
                         }
                     }
                 }
             }
         }
-        jsonmsg.append("    }\n  }\n}");
+        jsonmsg.append("}}}");
     }
     catch (IException *e)
     {
@@ -2222,9 +2202,11 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
     runWorkUnit(wuid.str(), wsinfo.qsetname.sget());
 
+    bool async = context.queryRequestParameters()->hasProp("_async");
+
     //don't wait indefinately, in case submitted to an inactive queue wait max + 5 mins
     int wutimeout = 300000;
-    if (waitForWorkUnitToComplete(wuid.str(), wutimeout))
+    if (!async && waitForWorkUnitToComplete(wuid.str(), wutimeout))
     {
         Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
         if (!web)
@@ -2241,10 +2223,13 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     }
     else
     {
-        DBGLOG("WS-ECL request timed out, WorkUnit %s", wuid.str());
+        if (!async)
+            DBGLOG("WS-ECL request timed out, WorkUnit %s", wuid.str());
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
+        web->createWuidResponse(out, flags);
     }
 
-    DBGLOG("WS-ECL Request processed [using Doxie]");
+    DBGLOG("WS-ECL Request processed");
     return true;
 }
 
@@ -2717,6 +2702,11 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
         StringBuffer methodName;
         nextPathNode(thepath, methodName);
+        if (strieq(methodName, "async"))
+        {
+            parms->setProp("_async", 1);
+            methodName.set("submit");
+        }
 
         if (!stricmp(methodName.str(), "tabview"))
         {
@@ -2905,6 +2895,8 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
 
         StringBuffer action;
         nextPathNode(thepath, action);
+        if (strieq(action, "async"))
+            parms->setProp("_async", 1);
 
         StringBuffer lookup;
         nextPathNode(thepath, lookup);
@@ -3020,6 +3012,8 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     StringBuffer action;
     nextPathNode(thepath, action);
+    if (strieq(action, "async"))
+        parms->setProp("_async", 1);
 
     StringBuffer lookup;
     nextPathNode(thepath, lookup);

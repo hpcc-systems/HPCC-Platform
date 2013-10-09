@@ -127,6 +127,7 @@ public:
 class IndexDistributeActivityMaster : public HashDistributeMasterBase
 {
     MemoryBuffer tlkMb;
+    Owned<IDistributedFile> file;
 
 public:
     IndexDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_index, info) { }
@@ -140,14 +141,14 @@ public:
         StringBuffer scoped;
         OwnedRoxieString indexFileName(helper->getIndexFileName());
         queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
-        Owned<IDistributedFile> f = queryThorFileManager().lookup(container.queryJob(), indexFileName);
-        if (!f)
+        file.setown(queryThorFileManager().lookup(container.queryJob(), indexFileName));
+        if (!file)
             throw MakeActivityException(this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
-        if (0 == f->numParts())
+        if (0 == file->numParts())
             throw MakeActivityException(this, 0, "KeyedDistribute: Can't distribute based on an empty key: %s", scoped.str());
 
-        checkFormatCrc(this, f, helper->getFormatCrc(), true);
-        Owned<IFileDescriptor> fileDesc = f->getFileDescriptor();
+        checkFormatCrc(this, file, helper->getFormatCrc(), true);
+        Owned<IFileDescriptor> fileDesc = file->getFileDescriptor();
         Owned<IPartDescriptor> tlkDesc = fileDesc->getPart(fileDesc->numParts()-1);
         if (!tlkDesc->queryProperties().hasProp("@kind") || 0 != stricmp("topLevelKey", tlkDesc->queryProperties().queryProp("@kind")))
             throw MakeActivityException(this, 0, "Cannot distribute using a non-distributed key: '%s'", scoped.str());
@@ -155,14 +156,14 @@ public:
         OwnedIFile iFile;
         StringBuffer filePath;
         if (!getBestFilePart(this, *tlkDesc, iFile, location, filePath))
-            throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", f->queryLogicalName());
+            throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", file->queryLogicalName());
         OwnedIFileIO iFileIO = iFile->open(IFOread);
         assertex(iFileIO);
 
         tlkMb.append(iFileIO->size());
         ::read(iFileIO, 0, (size32_t)iFileIO->size(), tlkMb);
 
-        queryThorFileManager().noteFileRead(container.queryJob(), f);
+        queryThorFileManager().noteFileRead(container.queryJob(), file);
     }
 
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)

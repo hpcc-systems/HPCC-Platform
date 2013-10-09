@@ -17,8 +17,8 @@
 
 #option ('globalFold', false)
 //these should be const-folded, and give 'the cap sap on the map'
-REGEXREPLACE('(.a)t', 'the cat sat on the mat', '$1p');
-REGEXREPLACE(u'(.a)t', u'the cat sat on the mat', u'$1p');
+REGEXREPLACE(NOFOLD('(.a)t'), 'the cat sat on the mat', '$1p');
+REGEXREPLACE(NOFOLD(u'(.a)t'), u'the cat sat on the mat', u'$1p');
 
 inrec := RECORD
     STRING10 str;

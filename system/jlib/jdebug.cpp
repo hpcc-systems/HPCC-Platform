@@ -2496,7 +2496,7 @@ void printProcMap(const char *fn, bool printbody, bool printsummary, StringBuffe
                     else
                         PROGLOG("%08"I64F"x,%08"I64F"x,%"I64F"d,%08"I64F"x,%s,%s",start,end,(offset_t)(end-start),offset,perms,path);
                 }
-                SegTypes t;
+                SegTypes t = segtype_data;
                 if (strcmp(perms,"---p")==0)
                     t = segtype_guard;
                 else if (strcmp(perms,"rwxp")==0) {

@@ -124,9 +124,9 @@ class THORHELPER_API RegexNamed : public CInterface
 {
 public:
     RegexNamed() { name = NULL; id = 0; }
-    RegexNamed(_ATOM _name, regexid_t _id) { name = _name; id = _id; }
+    RegexNamed(IAtom * _name, regexid_t _id) { name = _name; id = _id; }
 
-    inline _ATOM queryName() { return name; }
+    inline IAtom * queryName() { return name; }
     inline regexid_t queryID() { return id; }
     RegexMatchAction match(RegexState & state, RegexPattern * instance);
     RegexMatchAction match(RegexState & state, RegexPattern * instance, MatchState & match);
@@ -148,7 +148,7 @@ public:
 
 protected:
     OwnedRegexPattern first;
-    _ATOM name;
+    IAtom * name;
     regexid_t id;
 };
 

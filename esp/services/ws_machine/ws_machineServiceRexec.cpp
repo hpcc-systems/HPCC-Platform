@@ -220,6 +220,7 @@ public:
          e->errorMessage(buf);
          setResponse(buf.str());
          setResultCode(e->errorCode());
+         e->Release();
       }
 #ifndef NO_CATCHALL
       catch(...)

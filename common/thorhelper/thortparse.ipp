@@ -75,7 +75,7 @@ public:
     virtual bool isPacked() const                           { return false; }
     virtual unsigned numChildren() const                    { return 0; }
     virtual GrammarSymbol * queryChild(unsigned i)          { return NULL; }
-    virtual _ATOM queryName() const                         { return NULL; }
+    virtual IAtom * queryName() const                         { return NULL; }
     virtual GrammarSymbol * queryPacked(unsigned i)         { return NULL; }
     virtual size32_t queryResultSize() const                { return 0; }
     virtual byte * queryResultRow() const                   { return NULL; }
@@ -112,13 +112,13 @@ protected:
 class NonTerminal : public GrammarSymbol
 {
 public:
-    NonTerminal(symbol_id id, _ATOM _name, FeatureValue & _features, unsigned numSymbols, GrammarSymbol * * symbols, const byte * _reducePtr, size32_t _resultSize, byte * _resultRow);
+    NonTerminal(symbol_id id, IAtom * _name, FeatureValue & _features, unsigned numSymbols, GrammarSymbol * * symbols, const byte * _reducePtr, size32_t _resultSize, byte * _resultRow);
     ~NonTerminal();
 
     virtual bool isNull() const                             { return cachedIsNull; }
     virtual const byte * queryStartPtr() const;
     virtual const byte * queryEndPtr() const;
-    virtual _ATOM queryName() const                         { return name; }
+    virtual IAtom * queryName() const                         { return name; }
 
     virtual void resetPosition(const byte * pos);
     virtual unsigned numChildren() const                    { return reduced.ordinality(); }
@@ -129,7 +129,7 @@ public:
 protected:
     const byte * reducePtr;
     byte * resultRow;
-    _ATOM name;
+    IAtom * name;
     size32_t resultSize;                            // This really shouldn't be needed - it is needed to support old style record cloning, and doRowsMatch - which needs to be done with a helper.
     CIArrayOf<GrammarSymbol> reduced;
     bool cachedIsNull;
@@ -150,7 +150,7 @@ public:
     virtual bool isPacked() const                           { return true; }
     virtual unsigned numChildren() const                    { UNIMPLEMENTED; }
     virtual GrammarSymbol * queryChild(unsigned i)          { UNIMPLEMENTED; }
-    virtual _ATOM queryName() const                         { return equivalents.item(0).queryName(); }
+    virtual IAtom * queryName() const                         { return equivalents.item(0).queryName(); }
     virtual GrammarSymbol * queryPacked(unsigned i);
 
 private:
@@ -166,7 +166,7 @@ public:
     TomitaMatchWalker(const PackedSymbolChoice & _choice, GrammarSymbol * _symbol);
     IMPLEMENT_IINTERFACE
 
-    virtual _ATOM queryName();
+    virtual IAtom * queryName();
     virtual unsigned queryID();
     virtual size32_t queryMatchSize();
     virtual const void * queryMatchStart();

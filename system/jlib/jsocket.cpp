@@ -120,6 +120,7 @@ static bool IP6preferred=false;         // e.g. for DNS and socket create
 IpSubNet PreferredSubnet(NULL,NULL);    // set this if you prefer a particular subnet for debugging etc
                                         // e.g. PreferredSubnet("192.168.16.0", "255.255.255.0")
 
+static atomic_t pre_conn_unreach_cnt = ATOMIC_INIT(0);    // global count of pre_connect() ENETUNREACH error
 
 #define IPV6_SERIALIZE_PREFIX (0x00ff00ff)
 
@@ -504,6 +505,7 @@ static win_socket_library ws32_lib;
 #define ENOTCONN WSAENOTCONN
 #define EWOULDBLOCK WSAEWOULDBLOCK
 #define EINPROGRESS WSAEINPROGRESS
+#define ENETUNREACH WSAENETUNREACH
 #define ENOTSOCK WSAENOTSOCK
 
 
@@ -768,6 +770,7 @@ size32_t CSocket::avail_read()
     return 0;
 }
 
+#define PRE_CONN_UNREACH_ELIM  100
 
 int CSocket::pre_connect (bool block)
 {
@@ -791,9 +794,21 @@ int CSocket::pre_connect (bool block)
     int rc = ::connect(sock, &u.sa, ul);
     if (rc==SOCKET_ERROR) {
         err = ERRNO();
-        if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED))    // handled by caller
-            LOGERR2(err,1,"pre_connect");
-    }
+        if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED)) {   // handled by caller
+            if (err != ENETUNREACH) {
+                atomic_set(&pre_conn_unreach_cnt, 0);
+                LOGERR2(err,1,"pre_connect");
+            } else {
+                int ecnt = atomic_read(&pre_conn_unreach_cnt);
+                if (ecnt <= PRE_CONN_UNREACH_ELIM) {
+                    atomic_inc(&pre_conn_unreach_cnt);
+                    LOGERR2(err,1,"pre_connect network unreachable");
+                }
+            }
+        } else
+            atomic_set(&pre_conn_unreach_cnt, 0);
+    } else
+        atomic_set(&pre_conn_unreach_cnt, 0);
 #ifdef SOCKTRACE
     PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%x) err=%d", block?"(block)":"", sock, sock, (int)this, err);
 #endif
@@ -1539,7 +1554,7 @@ void CSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &si
     unsigned startt=usTick();
     size_read = 0;
     unsigned start;
-    unsigned timeleft;
+    unsigned timeleft = 0;
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
@@ -1895,7 +1910,7 @@ EintrRetry:
     i = 0;
     size32_t os = 0;
     size32_t left = total;
-    byte *b;
+    byte *b = NULL;
     size32_t s=0;
     loop {
         while (!s&&(i<num)) {
@@ -1940,8 +1955,8 @@ bool CSocket::send_block(const void *blk,size32_t sz)
 {
     unsigned startt=usTick();
 #ifdef TRACE_SLOW_BLOCK_TRANSFER
-    unsigned startt2;
-    unsigned startt3;
+    unsigned startt2 = startt;
+    unsigned startt3 = startt;
 #endif
     if (blockflags&BF_SYNC_TRANSFER_PULL) {
         size32_t rd;
@@ -3920,11 +3935,11 @@ public:
             T_FD_SET wrfds;
             T_FD_SET exfds;
             timeval selecttimeout;
-            bool isrd;
-            bool iswr;
-            bool isex;
-            T_SOCKET maxsockid;
-            unsigned ni;
+            bool isrd = false;
+            bool iswr = false;
+            bool isex = false;
+            T_SOCKET maxsockid = 0;
+            unsigned ni = 0;
             selectvarschange = true;
             unsigned numto = 0;
             unsigned lastnumto = 0;
@@ -4298,7 +4313,7 @@ public:
         assertex(!sock);
         ISocket *newsock=NULL;
         state = Sconnect;
-        unsigned start;
+        unsigned start = 0;
         if (timeoutms!=(unsigned)INFINITE)
             start = msTick();
         while (state==Sconnect) {

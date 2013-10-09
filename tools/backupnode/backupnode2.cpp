@@ -361,7 +361,7 @@ public:
 
 };
 
-bool outputPartsFiles(const char *daliserver,const char *cluster,const char *outdir, StringBuffer &errstr)
+bool outputPartsFiles(const char *daliserver,const char *cluster,const char *outdir, StringBuffer &errstr, bool verbose)
 {
     errstr.clear();
     bool dalistarted;
@@ -372,8 +372,29 @@ bool outputPartsFiles(const char *daliserver,const char *cluster,const char *out
             initClientProcess(serverGroup, DCR_BackupGen, 0, NULL, NULL, 1000*60*5);
             dalistarted = true;
             CFileListWriter writer;
-            Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
+            writer.verbose = verbose;
+            StringBuffer groupDir;
+            GroupType groupType;
+            Owned<IGroup> group = queryNamedGroupStore().lookup(cluster, groupDir, groupType);
             if (group) {
+                if (groupType != grp_thor)
+                {
+                    errstr.appendf(LOGPFX "expected cluster %s to be a thor cluster",cluster);
+                    closedownClientProcess();
+                    return false;
+                }
+                const char * overrideBaseDirectory = NULL;
+                const char * overrideReplicateDirectory = NULL;
+                StringBuffer datadir;
+                StringBuffer repdir;
+                if (getConfigurationDirectory(NULL,"data","thor",cluster,datadir))
+                    overrideBaseDirectory = datadir.str();
+                if (getConfigurationDirectory(NULL,"mirror","thor",cluster,repdir))
+                    overrideReplicateDirectory = repdir.str();
+                if (overrideBaseDirectory&&*overrideBaseDirectory)
+                    setBaseDirectory(overrideBaseDirectory, false);
+                if (overrideReplicateDirectory&&*overrideBaseDirectory)
+                    setBaseDirectory(overrideReplicateDirectory, true);
                 IArrayOf<IFileIOStream> outStreams;
                 StringBuffer path;
                 ForEachNodeInGroup(i,*group) {

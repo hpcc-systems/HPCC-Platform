@@ -97,7 +97,11 @@
                          {
                             if (button == "Delete")
                             {
-                                if (confirm("Are you sure you want to delete "+ filename+ "?"))
+                                var val = filename;
+                                var pt = val.indexOf("@");
+                                if (pt > 0)
+                                    val = val.substring(0, pt);
+                                if (confirm("Are you sure you want to delete "+ val+ "?"))
                                 {
                                     document.location.href="/WsDFU/DFUArrayAction?Type=Delete&LogicalFiles_i0=" + filename;
                                     return true;

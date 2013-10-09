@@ -46,10 +46,12 @@ public:
     }
     virtual bool wait(bool exception, unsigned timeout)
     {
+        Owned<IException> e;
         CTimeMon tm(timeout);
         unsigned remaining = timeout;
         CMessageBuffer msg;
         msg.append(false);
+        msg.append(false); // no exception
         if (INFINITE != timeout && tm.timedout(&remaining))
         {
             if (exception)
@@ -74,21 +76,34 @@ public:
         }
         bool aborted;
         msg.read(aborted);
+        bool hasExcept;
+        msg.read(hasExcept);
+        if (hasExcept)
+            e.setown(deserializeException(msg));
         if (aborted)
         {
-            if (exception)
-                throw createBarrierAbortException();
-            else
+            if (!exception)
                 return false;
+            if (e)
+                throw e.getClear();
+            else
+                throw createBarrierAbortException();
         }   
         return true;
     }
-    virtual void cancel()
+    virtual void cancel(IException *e)
     {
         if (receiving)
             comm->cancel(comm->queryGroup().rank(), tag);
         CMessageBuffer msg;
         msg.append(true);
+        if (e)
+        {
+            msg.append(true);
+            serializeException(e, msg);
+        }
+        else
+            msg.append(false);
         if (!comm->send(msg, 0, tag, LONGTIMEOUT))
             throw MakeStringException(0, "CBarrierSlave::cancel - Timeout sending to master");
     }
@@ -163,7 +178,7 @@ void CSlaveActivity::startInput(IThorDataLink *itdl, const char *extra)
 #endif
 }
 
-void CSlaveActivity::stopInput(IThorDataLink *itdl, const char *extra)
+void CSlaveActivity::stopInput(IRowStream *itdl, const char *extra)
 {
     StringBuffer s("Stopping input for");
     if (extra)

@@ -363,6 +363,10 @@ public:
     {
         return ctx->queryTimeActivities();
     }
+    virtual bool queryCheckingHeap() const
+    {
+        return ctx->queryCheckingHeap();
+    }
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence)
     {
         ctx->printResults(output, name, sequence);
@@ -3405,6 +3409,8 @@ private:
                     loggingFlags |= LOGGING_TIMEACTIVITIES; 
                 if (activity.queryLogCtx().isBlind())
                     loggingFlags |= LOGGING_BLIND;
+                if (ctx->queryCheckingHeap())
+                    loggingFlags |= LOGGING_CHECKINGHEAP;
                 if (debugContext)
                 {
                     loggingFlags |= LOGGING_DEBUGGERACTIVE;
@@ -3799,8 +3805,8 @@ public:
             ctx->addSlavesReplyLen(mc->queryBytesReceived());
         mc.clear(); // Or we won't free memory for graphs that get recreated
         mu.clear(); //ditto
-        mergeOrder = NULL; // MORE - is that needed?
         deferredStart = false;
+        // NOTE: do NOT clear mergeOrder - this is set at create time not per child query
     }
 
     virtual IOutputMetaData * queryOutputMeta() const
@@ -8285,7 +8291,7 @@ public:
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
         {
             // NOTE: it is tempting to move the init() of all output adaptors here. However that is not a good idea, 
-            // since adaptors that have not yet started or stoppped (but are going to) still need to have been init()'ed 
+            // since adaptors that have not yet started or stopped (but are going to) still need to have been init()'ed
             // for minIndex to give the correct answers
             // therefore, we call init() on all adaptors on receipt of the first start() or stop()
 
@@ -8310,7 +8316,8 @@ public:
         {
             if (traceStartStop)
                 parent->CTXLOG("%p reset Input adaptor %d stopped = %d", this, oid, stopped);
-            parent->reset(oid, processed);
+            parent->reset(oid);
+            parent->noteProcessed(oid, processed, 0, 0);
             processed = 0;
             idx = 0; // value should not be relevant really but this is the safest...
             stopped = false;
@@ -8406,7 +8413,6 @@ public:
                     const void *row = input->nextInGroup();
                     CriticalBlock b3(crit);
                     headIdx++;
-                    if (row) processed++;
                     if (activeOutputs==1)
                     {
 #ifdef TRACE_SPLIT
@@ -8538,7 +8544,7 @@ public:
         CRoxieServerActivity::stop(aborting);
     };
 
-    void reset(unsigned oid, unsigned _processed)
+    void reset(unsigned oid)
     {
         if (traceStartStop)
             CTXLOG("SPLIT %p: reset %d child %d activeOutputs %d numOutputs %d numOriginalOutputs %d state %s", this, activityId, oid, activeOutputs, numOutputs, numOriginalOutputs, queryStateText(state));
@@ -10852,6 +10858,7 @@ public:
         const char *recordECL = helper.queryRecordECL();
         if (recordECL && *recordECL)
             fileProps.setProp("ECL", recordECL);
+        fileProps.setProp("@kind", "flat"); // default, derivitives may override
     }
 
     virtual IUserDescriptor *queryUserDescriptor() const
@@ -10937,6 +10944,7 @@ public:
         props.setProp("@csvQuote", rs.setown(csvParameters->getQuote(0)));
         props.setProp("@csvTerminate", rs.setown(csvParameters->getTerminator(0)));
         props.setProp("@csvEscape", rs.setown(csvParameters->getEscape(0)));
+        props.setProp("@kind", "csv");
     }
 
     virtual bool isOutputTransformed() const { return true; }
@@ -11008,6 +11016,7 @@ public:
         CRoxieServerDiskWriteActivity::setFileProperties(desc);
         desc->queryProperties().setProp("@format","utf8n");
         desc->queryProperties().setProp("@rowTag",rowTag.get());
+        desc->queryProperties().setProp("@kind", "xml");
     }
 
     virtual bool isOutputTransformed() const { return true; }
@@ -17086,6 +17095,7 @@ private:
     bool limitFail;
     bool limitOnFail;
     bool hasGroupLimit;
+    bool isSmartJoin;
     unsigned keepCount;
     bool gotMatch;
     bool cloneLeft;
@@ -17131,7 +17141,8 @@ public:
         atmostsTriggered = 0;
         limitLimit = 0;
         hasGroupLimit = false;
-        getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
+        isSmartJoin = (joinFlags & JFsmart) != 0;
+        getLimitType(joinFlags, limitFail, limitOnFail);
     }
 
     void loadRight()
@@ -17192,7 +17203,17 @@ public:
         if(atmostLimit==0) atmostLimit = static_cast<unsigned>(-1);
         if(limitLimit==0) limitLimit = static_cast<unsigned>(-1);
         getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
-        if (((activityKind==TAKlookupjoin || activityKind==TAKlookupdenormalizegroup) && leftOuterJoin) || limitOnFail)
+        switch (activityKind)
+        {
+        case TAKlookupjoin:
+        case TAKlookupdenormalizegroup:
+        case TAKsmartjoin:
+        case TAKsmartdenormalizegroup:
+            if (leftOuterJoin)
+                createDefaultRight();
+            break;
+        }
+        if (limitOnFail)
             createDefaultRight();
     }
 
@@ -17220,9 +17241,12 @@ public:
         switch (activityKind)
         {
             case TAKlookupjoin:
+            case TAKsmartjoin:
                 return nextInGroupJoin();
             case TAKlookupdenormalize:
             case TAKlookupdenormalizegroup:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
                 return nextInGroupDenormalize();
         }
         throwUnexpected();
@@ -17242,14 +17266,20 @@ private:
                 keepCount = keepLimit;
                 if(!left)
                 {
-                    if(matchedGroup || eog)
+                    if (isSmartJoin)
+                        left = input->nextInGroup();
+
+                    if (!left)
                     {
-                        matchedGroup = false;
+                        if(matchedGroup || eog)
+                        {
+                            matchedGroup = false;
+                            eog = true;
+                            return NULL;
+                        }
                         eog = true;
-                        return NULL;
+                        continue;
                     }
-                    eog = true;
-                    continue;
                 }
                 eog = false;
                 gotMatch = false;
@@ -17306,7 +17336,7 @@ private:
             left = input->nextInGroup();
             if(!left)
             {
-                if (!matchedGroup)
+                if (!matchedGroup || isSmartJoin)
                     left = input->nextInGroup();
 
                 if (!left)
@@ -17321,7 +17351,7 @@ private:
             const void * ret = NULL;
             if (failingLimit)
                 ret = joinException(left, failingLimit);
-            else if (activityKind == TAKlookupdenormalize)
+            else if (activityKind == TAKlookupdenormalize || activityKind == TAKsmartdenormalize)
             {
                 OwnedConstRoxieRow newLeft;
                 newLeft.set(left);
@@ -19301,7 +19331,10 @@ public:
                 response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0);
                 if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
                 {
-                    writer.setown(createIXmlWriter(serverContext->getXmlFlags(), 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
+                    unsigned int writeFlags = serverContext->getXmlFlags();
+                    if (response->mlFmt==MarkupFmt_JSON)
+                        writeFlags |= XWFnoindent;
+                    writer.setown(createIXmlWriter(writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
                     writer->outputBeginArray("Row");
                 }
             }

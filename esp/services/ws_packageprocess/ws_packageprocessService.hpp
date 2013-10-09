@@ -20,6 +20,9 @@
 
 #include "ws_packageprocess_esp.ipp"
 
+#define THORCLUSTER "thor"
+#define HTHORCLUSTER "hthor"
+#define ROXIECLUSTER "roxie"
 
 
 class CWsPackageProcessSoapBindingEx : public CWsPackageProcessSoapBinding
@@ -32,12 +35,19 @@ public:
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
         //Add navigation link here
+        IPropertyTree *folderQueryset = ensureNavFolder(data, "Queries", NULL);
+        CEspBinding::ensureNavLink(*folderQueryset, "Package Maps", "/esp/files/stub.htm?Widget=PackageMapQueryWidget", "Browse Package Maps", NULL, NULL, 2);
     }
+    int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service,
+        const char *method, StringArray& fileNames, StringArray& files, IMultiException *me);
 };
 
 
 class CWsPackageProcessEx : public CWsPackageProcess
 {
+    bool readPackageMapString(const char *packageMapString, StringBuffer &target, StringBuffer &process, StringBuffer &packageMap);
+    void getPkgInfoById(const char *packageMapId, IPropertyTree* tree);
+    void deletePackage(const char *packageMap, const char *target, const char *process, bool globalScope, StringBuffer &returnMsg, int &returnCode);
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsPackageProcessEx(){};
@@ -53,6 +63,9 @@ public:
     virtual bool onGetPackage(IEspContext &context, IEspGetPackageRequest &req, IEspGetPackageResponse &resp);
     virtual bool onValidatePackage(IEspContext &context, IEspValidatePackageRequest &req, IEspValidatePackageResponse &resp);
     virtual bool onGetQueryFileMapping(IEspContext &context, IEspGetQueryFileMappingRequest &req, IEspGetQueryFileMappingResponse &resp);
+    virtual bool onListPackages(IEspContext &context, IEspListPackagesRequest &req, IEspListPackagesResponse &resp);
+    virtual bool onGetPackageMapSelectOptions(IEspContext &context, IEspGetPackageMapSelectOptionsRequest &req, IEspGetPackageMapSelectOptionsResponse &resp);
+    virtual bool onGetPackageMapById(IEspContext &context, IEspGetPackageMapByIdRequest &req, IEspGetPackageMapByIdResponse &resp);
 };
 
 #endif //_ESPWIZ_ws_packageprocess_HPP__

@@ -428,6 +428,13 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="suspendCoalescerDuringXref" type="xs:boolean" use="optional" default="true">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Suspend the coalescer whilst xrefing.</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="DfuExpiry">
         <xs:attribute name="ExpiryInterval" type="xs:nonNegativeInteger" default="24">

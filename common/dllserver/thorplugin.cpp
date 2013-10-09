@@ -178,6 +178,10 @@ const byte * HelperDll::getResource(unsigned id) const
 #endif
 }
 
+const byte resourceHeaderVersion=1;
+const size32_t resourceHeaderLength = sizeof(byte) + sizeof(byte) + sizeof(bool) + sizeof(size32_t);
+
+
 bool HelperDll::getResource(size32_t & len, const void * & data, const char * type, unsigned id) const
 {
 #ifdef _WIN32
@@ -189,15 +193,25 @@ bool HelperDll::getResource(size32_t & len, const void * & data, const char * ty
     data = (const byte *) LoadResource(dllHandle, hrsrc);
     return true;
 #else
-    StringBuffer baseName;
-    baseName.append(type).append("_").append(id);
-    StringBuffer symName, sizeName;
-    symName.append(baseName).append("_txt_start");
-    sizeName.append(baseName).append("_txt_size");
+    StringBuffer symName;
+    symName.append(type).append("_").append(id).append("_txt_start");
     data = (const void *) getEntry(symName.str());
     if (!data)
         return false;
-    len = (unsigned)(memsize_t)getEntry(sizeName.str());
+    byte bom;
+    byte version;
+    bool compressed;
+
+    MemoryBuffer mb;
+    mb.setBuffer(resourceHeaderLength, const_cast<void *>(data));
+    mb.read(bom);
+    if (bom!=0x80)
+        return false;
+    mb.read(version);
+    if (version>resourceHeaderVersion)
+        return false;
+    mb.read(compressed).read(len);
+    len+=resourceHeaderLength;
     return true;
 #endif
 }
@@ -374,11 +388,18 @@ extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, Str
     return true;
 }
 
+extern DLLSERVER_API void appendResource(MemoryBuffer & mb, size32_t len, const void *data, bool compress)
+{
+    mb.append((byte)0x80).append(resourceHeaderVersion);
+    if (compress)
+        compressToBuffer(mb, len, data);
+    else
+        appendToBuffer(mb, len, data);
+}
+
 extern DLLSERVER_API void compressResource(MemoryBuffer & compressed, size32_t len, const void *data)
 {
-    byte version = 1;
-    compressed.append((byte)0x80).append(version);
-    compressToBuffer(compressed, len, data);
+    appendResource(compressed, len, data, true);
 }
 
 extern DLLSERVER_API bool getEmbeddedWorkUnitXML(ILoadedDllEntry *dll, StringBuffer &xml)

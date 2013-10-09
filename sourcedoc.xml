@@ -264,7 +264,7 @@
                     Text::Wrap            (Optional: if available, makes output of -listreports neater)
                 </para>
                 <para>
-                    Step 1: Configure your regression suites. This only need to be done once.
+                    Step 1: Configure your regression suites. This need only be done once.
                     <programlisting>./runregress -ini=environment.xml</programlisting>
                     The file 'environment.xml' is normally located in your '/etc/HPCCPlatform'
                     directory and contains information on how your cluster is set-up, so the
@@ -358,11 +358,11 @@
                 </para>
                 <para>
                     Step 3: Step 2 only listed the differences, now you need to see what they are.
-                    For that, re-run the regressing script, with the no-run option (-r). You can omit
-                    the compiler, since the only thing we'll do is to compare verbosely.
+                    For that, re-run the regressing script omitting the compiler, since the only
+                    thing we'll do is to compare verbosely.
 
                     <programlisting>
-                        ./regress.sh -t my_branch -c golden -r
+                        ./regress.sh -t my_branch -c golden
                     </programlisting>
 
                     This will show you all differences, using the same ignore filters as before,

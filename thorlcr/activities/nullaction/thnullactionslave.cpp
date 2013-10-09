@@ -40,7 +40,7 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        dataLinkStart("NULLACTION", container.queryId());
+        dataLinkStart();
     }
     void stop() { dataLinkStop(); }
 

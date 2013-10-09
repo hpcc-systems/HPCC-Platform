@@ -226,7 +226,7 @@ IHqlExpression * ActiveScopeInfo::createFormals(bool oldSetFormat)
                 Owned<ITypeInfo> newType = makeAttributeModifier(LINK(type), createAttribute(oldSetFormatAtom));
                 HqlExprArray args;
                 unwindChildren(args, &cur);
-                activeParameters.replace(*createParameter(cur.queryName(), (unsigned)cur.querySequenceExtra(), newType.getClear(), args), i);
+                activeParameters.replace(*createParameter(cur.queryId(), (unsigned)cur.querySequenceExtra(), newType.getClear(), args), i);
             }
         }
     }
@@ -240,8 +240,9 @@ void ActiveScopeInfo::newPrivateScope()
         privateScope.setown(createPrivateScope(localScope));
 }
 
-IHqlExpression * ActiveScopeInfo::queryParameter(_ATOM name)
+IHqlExpression * ActiveScopeInfo::queryParameter(IIdAtom * id)
 {
+    IAtom * name = id->lower();
     ForEachItemIn(idx, activeParameters)
     {
         IHqlExpression &parm = activeParameters.item(idx);
@@ -282,7 +283,7 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
 
     errorHandler = lookupCtx.errs;
     sourcePath.set(_text->querySourcePath());
-    moduleName = _containerScope->queryName();
+    moduleName = _containerScope->queryId();
     forceResult = false;
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
@@ -309,7 +310,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
         defaultScopes.append(*LINK(&parent.defaultScopes.item(i)));
     sourcePath.set(parent.sourcePath);
     errorHandler = lookupCtx.errs;
-    moduleName = containerScope->queryName();
+    moduleName = containerScope->queryId();
 
     ForEachItemIn(i3, parent.imports)
         parseScope->defineSymbol(LINK(&parent.imports.item(i3)));
@@ -374,7 +375,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     parseScope.setown(createPrivateScope(_containerScope));
     transformScope = NULL;
     if (globalScope->queryName() && legacyEclSemantics)
-        parseScope->defineSymbol(globalScope->queryName(), NULL, LINK(queryExpression(globalScope)), false, false, ob_import);
+        parseScope->defineSymbol(globalScope->queryId(), NULL, LINK(queryExpression(globalScope)), false, false, ob_import);
 
     boolType = makeBoolType();
     defaultIntegralType = makeIntType(8, true);
@@ -594,7 +595,7 @@ void HqlGram::addActual(const attribute & errpos, IHqlExpression * ownedExpr)
 //  call.actuals.append(*LINK(ownedExpr));
 }
 
-void HqlGram::addNamedActual(const attribute & errpos, _ATOM name, IHqlExpression * ownedExpr)
+void HqlGram::addNamedActual(const attribute & errpos, IIdAtom * name, IHqlExpression * ownedExpr)
 {
     assertex(ownedExpr);
     FunctionCallInfo & call = activeFunctionCalls.tos();
@@ -728,13 +729,13 @@ IHqlExpression * HqlGram::translateFieldsToNewScope(IHqlExpression * expr, IHqlS
     switch (expr->getOperator())
     {
     case no_field:
-        return record->lookupSymbol(expr->queryName());
+        return record->lookupSymbol(expr->queryId());
     case no_select:
         {
             OwnedHqlExpr newDs = translateFieldsToNewScope(expr->queryChild(0), record, err);
             IHqlExpression * lhsRecord = newDs->queryRecord();
             OwnedHqlExpr newField;
-            _ATOM name = expr->queryChild(1)->queryName();
+            IIdAtom * name = expr->queryChild(1)->queryId();
             if (lhsRecord)
                 newField.setown(lhsRecord->querySimpleScope()->lookupSymbol(name));
             if (!newField)
@@ -782,7 +783,7 @@ void HqlGram::beginAlienType(const attribute & errpos)
     enterType(errpos, queryParametered());
 }
 
-void HqlGram::beginDefineId(_ATOM name, ITypeInfo * type)
+void HqlGram::beginDefineId(IIdAtom * name, ITypeInfo * type)
 {
     current_id = name;
     current_type = type;
@@ -838,17 +839,17 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     if (language)
     {
         IHqlScope *pluginScope = language->queryScope();
-        OwnedHqlExpr getEmbedContextFunc = pluginScope->lookupSymbol(getEmbedContextAtom, LSFpublic, lookupCtx);
-        _ATOM moduleName = language->queryName();
-        if (!moduleName)
-            moduleName = unnamedAtom;
+        OwnedHqlExpr getEmbedContextFunc = pluginScope->lookupSymbol(getEmbedContextId, LSFpublic, lookupCtx);
+        IIdAtom * moduleId = language->queryId();
+        if (!moduleId)
+            moduleId = unnamedId;
         if (!getEmbedContextFunc)
-            reportError(ERR_PluginNoScripting, errpos, "Module %s does not export getEmbedContext() function", moduleName->getAtomNamePtr());
-        bool isImport = queryPropertyInList(importAtom, attribs) != NULL;
-        OwnedHqlExpr checkSupport = pluginScope->lookupSymbol(isImport ? supportsImportAtom : supportsScriptAtom, LSFpublic, lookupCtx);
+            reportError(ERR_PluginNoScripting, errpos, "Module %s does not export getEmbedContext() function", moduleId->getAtomNamePtr());
+        bool isImport = queryAttributeInList(importAtom, attribs) != NULL;
+        OwnedHqlExpr checkSupport = pluginScope->lookupSymbol(isImport ? supportsImportId : supportsScriptId, LSFpublic, lookupCtx);
         if (!matchesBoolean(checkSupport, true))
-            reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", moduleName->getAtomNamePtr(), isImport ? "import" : "script");
-        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckAtom, LSFpublic, lookupCtx);
+            reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", moduleId->getAtomNamePtr(), isImport ? "import" : "script");
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckId, LSFpublic, lookupCtx);
         if (syntaxCheckFunc && !isImport)
         {
             // MORE - create an expression that calls it, and const fold it, I guess....
@@ -1001,7 +1002,7 @@ void HqlGram::processEnum(attribute & idAttr, IHqlExpression * value)
         lastEnumValue.setown(nextEnumValue());
 
     DefineIdSt * id = new DefineIdSt;
-    id->id = idAttr.getName();
+    id->id = idAttr.getId();
     id->scope = EXPORT_FLAG;
     doDefineSymbol(id, LINK(lastEnumValue), NULL, idAttr, idAttr.pos.position, idAttr.pos.position, false);
 }
@@ -1058,7 +1059,7 @@ IHqlExpression * HqlGram::processModuleDefinition(const attribute & errpos)
 
     //Implements projects the module down to the implementation type.
     //It should also check the parameters match when a symbol is defined.
-    IHqlExpression * libraryInterface = newScope->queryProperty(libraryAtom);
+    IHqlExpression * libraryInterface = newScope->queryAttribute(libraryAtom);
     if (libraryInterface)
         newScope.setown(implementInterfaceFromModule(errpos, errpos, newScope, libraryInterface->queryChild(0), libraryInterface));
     return newScope.getClear();
@@ -1096,12 +1097,12 @@ IHqlExpression * HqlGram::processRowset(attribute & selectorAttr)
     return createValue(no_rowset, makeSetType(rows->getType()), LINK(rows));
 }
 
-void HqlGram::processServiceFunction(const attribute & idAttr, _ATOM name, IHqlExpression * thisAttrs, ITypeInfo * type)
+void HqlGram::processServiceFunction(const attribute & idAttr, IIdAtom * name, IHqlExpression * thisAttrs, ITypeInfo * type)
 {
     setParametered(true);
     IHqlExpression *attrs = createComma(LINK(thisAttrs), LINK(defaultServiceAttrs));
     attrs = checkServiceDef(serviceScope,name,attrs,idAttr);
-    bool oldSetFormat = queryPropertyInList(oldSetFormatAtom, attrs) != NULL;
+    bool oldSetFormat = queryAttributeInList(oldSetFormatAtom, attrs) != NULL;
     IHqlExpression *call = createExternalReference(name, LINK(type), attrs);
     IHqlExpression * formals = defineScopes.tos().createFormals(oldSetFormat);
     IHqlExpression * defaults = defineScopes.tos().createDefaults();
@@ -1141,10 +1142,28 @@ void HqlGram::processStartTransform(const attribute & errpos)
     openTransform(transformType);
 }
 
-void HqlGram::enterEnum(ITypeInfo * type)
+void HqlGram::enterEnum(const attribute & errpos, ITypeInfo * type)
 {
+    if (!isIntegralType(type))
+    {
+        StringBuffer s;
+        reportError(ERR_TYPEMISMATCH_INT, errpos, "Integer type expected (%s was given)", getFriendlyTypeStr(type, s).str());
+    }
+
     enterScope(true);
     enterCompoundObject();
+    curEnumType.set(type);
+    lastEnumValue.setown(createConstant(curEnumType->castFrom(true, 0)));
+}
+
+void HqlGram::setEnumType(const attribute & errpos, ITypeInfo * type)
+{
+    if (!isIntegralType(type))
+    {
+        StringBuffer s;
+        reportError(ERR_TYPEMISMATCH_INT, errpos, "Integer type expected (%s was given)", getFriendlyTypeStr(type, s).str());
+    }
+
     curEnumType.set(type);
     lastEnumValue.setown(createConstant(curEnumType->castFrom(true, 0)));
 }
@@ -1736,7 +1755,7 @@ void HqlGram::doAddAssignCompound(IHqlExpression * assignall, IHqlExpression * t
             break;
         case no_field:
             {
-                IHqlExpression *match = srcScope->lookupSymbol(subfield->queryName());
+                IHqlExpression *match = srcScope->lookupSymbol(subfield->queryId());
                 if (!match) 
                     continue;
 
@@ -1980,7 +1999,7 @@ void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpr
                         getFldName(selected,fldName);
 
                         //Not very nice - only ok in some situations....
-                        if (cur->hasProperty(virtualAtom))
+                        if (cur->hasAttribute(virtualAtom))
                         {
                             reportWarning(ERR_TRANS_NOVALUE4FIELD, errpos.pos, "Transform does not supply a value for field \"%s\"", fldName.str());
                             OwnedHqlExpr null = createNullExpr(cur);
@@ -2075,7 +2094,7 @@ IHqlExpression *HqlGram::closeTransform(const attribute &errpos)
     return ret;
 }
 
-IHqlExpression * HqlGram::transformRecord(IHqlExpression *record, _ATOM targetCharset, IHqlExpression * scope, bool & changed, const attribute & errpos)
+IHqlExpression * HqlGram::transformRecord(IHqlExpression *record, IAtom * targetCharset, IHqlExpression * scope, bool & changed, const attribute & errpos)
 {
     Owned<ICharsetInfo> charset = getCharset(targetCharset);
     IHqlExpression *newrec = createRecord();
@@ -2120,7 +2139,7 @@ IHqlExpression * HqlGram::transformRecord(IHqlExpression *record, _ATOM targetCh
                     }
                     //MORE, should copy some attributes (cardinality) but not others (virtual)
                 }
-                IHqlExpression *newField = createField(src->queryName(), srcType.getClear(), NULL);
+                IHqlExpression *newField = createField(src->queryId(), srcType.getClear(), NULL);
                 newrec->addOperand(newField);
                 break;
             }
@@ -2132,7 +2151,7 @@ IHqlExpression * HqlGram::transformRecord(IHqlExpression *record, _ATOM targetCh
     return newrec->closeExpr();
 }
 
-IHqlExpression *HqlGram::transformRecord(IHqlExpression *dataset, _ATOM targetCharset, const attribute & errpos)
+IHqlExpression *HqlGram::transformRecord(IHqlExpression *dataset, IAtom * targetCharset, const attribute & errpos)
 {
     bool changed = false;
     IHqlExpression * newRec = transformRecord(dataset->queryRecord(), targetCharset, NULL, changed, errpos);
@@ -2168,12 +2187,19 @@ void HqlGram::addFields(const attribute &errpos, IHqlExpression *e, IHqlExpressi
     ForEachChild(nkid, e)
     {
         IHqlExpression *field = e->queryChild(nkid);
-        _ATOM name = field->queryName();    
-        OwnedHqlExpr match = topScope->lookupSymbol(name);
+        if (field->isAttribute())
+        {
+            if (!clone)
+                addToActiveRecord(LINK(field));
+            continue;
+        }
+
+        IIdAtom * id = field->queryId();
+        OwnedHqlExpr match = topScope->lookupSymbol(id);
         if (match)
         {
             if (!clone)
-                reportWarning(ERR_REC_DUPFIELD, errpos.pos, "A field called %s is already defined in this record",name->str());
+                reportWarning(ERR_REC_DUPFIELD, errpos.pos, "A field called %s is already defined in this record",id->str());
             continue;
         }
 
@@ -2192,13 +2218,13 @@ void HqlGram::addFields(const attribute &errpos, IHqlExpression *e, IHqlExpressi
                 {
                     IHqlExpression * attrs = extractFieldAttrs(field);
                     Owned<ITypeInfo> type = field->getType();
-                    _ATOM name = field->queryName();
+                    IIdAtom * fieldId = field->queryId();
                     if (type->getTypeCode() == type_alien)
                         type.setown(mapAlienType(activeRecords.tos().querySimpleScope(), type, errpos));
                     if (dataset)
                     {
                         OwnedHqlExpr value = createSelectExpr(LINK(dataset), LINK(field));
-                        OwnedHqlExpr match = activeRecords.tos().querySimpleScope()->lookupSymbol(name);
+                        OwnedHqlExpr match = activeRecords.tos().querySimpleScope()->lookupSymbol(fieldId);
                         //Ignore identical fields that are already present, so ds can be used to mean all fields not already added.
                         bool ignore = false;
                         if (match)
@@ -2208,13 +2234,13 @@ void HqlGram::addFields(const attribute &errpos, IHqlExpression *e, IHqlExpressi
                                 ignore = true;
                         }
                         if (!ignore)
-                            addField(errpos, name, type.getClear(), createSelectExpr(LINK(dataset), LINK(field)), attrs);
+                            addField(errpos, fieldId, type.getClear(), createSelectExpr(LINK(dataset), LINK(field)), attrs);
                     }
                     else
                         //We either cope with fields being able to be shared between records in folder etc.,
                         //or we have to create a new field at this point...
                         //addToActiveRecord(LINK(field));
-                        addField(errpos, name, type.getClear(), LINK(queryRealChild(field, 0)), attrs); 
+                        addField(errpos, fieldId, type.getClear(), LINK(queryRealChild(field, 0)), attrs);
                     break;
                 }
             case no_ifblock:
@@ -2254,22 +2280,22 @@ void HqlGram::addToActiveRecord(IHqlExpression * newField)
         currentRecord->insertSymbols(newField);
 }
 
-_ATOM HqlGram::createUnnamedFieldName(const char * prefix)
+IIdAtom * HqlGram::createUnnamedFieldId(const char * prefix)
 {
     StringBuffer s;
     s.append(prefix).append(activeRecords.tos().numChildren()+1);
-    return createIdentifierAtom(s.str());
+    return createIdAtom(s.str());
 }
 
-_ATOM HqlGram::createUnnamedFieldName()
+IIdAtom * HqlGram::createUnnamedFieldId()
 {
-    return createUnnamedFieldName("_unnamed_");
+    return createUnnamedFieldId("_unnamed_");
 }
 
 
 
 /* In parms: type, value: linked */
-void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IHqlExpression *value, IHqlExpression *attrs)
+void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type, IHqlExpression *value, IHqlExpression *attrs)
 {
     Owned<ITypeInfo> fieldType = _type;
     Linked<ITypeInfo> expectedType = fieldType;
@@ -2293,7 +2319,7 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
         }
     }
 
-    IHqlExpression * defaultAttr = queryPropertyInList(defaultAtom, attrs);
+    IHqlExpression * defaultAttr = queryAttributeInList(defaultAtom, attrs);
     if (defaultAttr)
     {
         IHqlExpression * defaultValue = defaultAttr->queryChild(0);
@@ -2340,17 +2366,17 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
         break;
     }
 
-    if (queryPropertyInList(virtualAtom, attrs) && !fieldType->isScalar())
+    if (queryAttributeInList(virtualAtom, attrs) && !fieldType->isScalar())
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
 
     if (!name)
-        name = createUnnamedFieldName();
+        name = createUnnamedFieldId();
 
     checkFieldnameValid(errpos, name);
     if(isUnicodeType(fieldType) && (*fieldType->queryLocale()->str() == 0))
     {
         StringBuffer locale;
-        _ATOM localeAtom = createLowerCaseAtom(queryDefaultLocale()->queryValue()->getStringValue(locale));
+        IAtom * localeAtom = createLowerCaseAtom(queryDefaultLocale()->queryValue()->getStringValue(locale));
         switch (fieldType->getTypeCode())
         {
         case type_varunicode:
@@ -2375,15 +2401,15 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
     addToActiveRecord(LINK(newField));
 }
 
-void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, ITypeInfo * fieldType, IHqlExpression *value, IHqlExpression * attrs)
+void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo * fieldType, IHqlExpression *value, IHqlExpression * attrs)
 {
     if (!name)
-        name = createUnnamedFieldName();
+        name = createUnnamedFieldId();
     checkFieldnameValid(errpos, name);
 
     if (fieldType)
     {
-        IHqlExpression * childAttrs = queryProperty(fieldType, _childAttr_Atom);
+        IHqlExpression * childAttrs = queryAttribute(fieldType, _childAttr_Atom);
         if (childAttrs)
             attrs = createComma(LINK(childAttrs->queryChild(0)), attrs);
     }
@@ -2395,7 +2421,7 @@ void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, ITypeInfo * f
         if (!dsType || queryRecord(dsType)->numChildren() == 0)
         {
             ITypeInfo * recordType = queryRecordType(valueType);
-            dsType.setown(makeTableType(makeRowType(LINK(recordType)), NULL, NULL, NULL));
+            dsType.setown(makeTableType(makeRowType(LINK(recordType))));
         }
         else if (!dsType->assignableFrom(valueType))
         {
@@ -2410,7 +2436,7 @@ void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, ITypeInfo * f
         checkRecordIsValid(errpos, queryRecord(dsType));
     }
 
-    if (queryPropertyInList(virtualAtom, attrs))
+    if (queryAttributeInList(virtualAtom, attrs))
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
@@ -2419,10 +2445,10 @@ void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, ITypeInfo * f
     addToActiveRecord(newField);
 }
 
-void HqlGram::addDictionaryField(const attribute &errpos, _ATOM name, ITypeInfo  * type, IHqlExpression *value, IHqlExpression * attrs)
+void HqlGram::addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeInfo  * type, IHqlExpression *value, IHqlExpression * attrs)
 {
     if (!name)
-        name = createUnnamedFieldName();
+        name = createUnnamedFieldId();
     checkFieldnameValid(errpos, name);
 
     Owned<ITypeInfo> dictType = LINK(type);
@@ -2438,7 +2464,7 @@ void HqlGram::addDictionaryField(const attribute &errpos, _ATOM name, ITypeInfo 
              value = NULL;
          }
     }
-    if (queryPropertyInList(virtualAtom, attrs))
+    if (queryAttributeInList(virtualAtom, attrs))
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
@@ -2465,9 +2491,12 @@ IHqlExpression * HqlGram::endIfBlock()
     return popRecord()->closeExpr();
 }
 
-void HqlGram::checkFieldnameValid(const attribute &errpos, _ATOM name)
+void HqlGram::checkFieldnameValid(const attribute &errpos, IIdAtom * name)
 {
     OwnedHqlExpr self = getSelfScope();
+    if (!self)
+        throwUnexpected();
+
     IHqlSimpleScope *recordScope = self->querySimpleScope();
     OwnedHqlExpr t(recordScope->lookupSymbol(name));
     if (t.get())
@@ -2516,7 +2545,7 @@ void HqlGram::enterCompoundObject()
 
 void HqlGram::leaveCompoundObject()
 {
-    current_id = (_ATOM)savedIds.pop();
+    current_id = (IIdAtom *)savedIds.pop();
     lastpos = savedLastpos.pop();
 }
 
@@ -2567,19 +2596,19 @@ void HqlGram::enterVirtualScope()
     fullName.append(globalScope->queryFullName());
     ForEachItemIn(i, savedIds)
     {
-        _ATOM name = (_ATOM)savedIds.item(i);
-        if (name)
+        IIdAtom * id = (IIdAtom *)savedIds.item(i);
+        if (id)
         {
             if (fullName.length())
                 fullName.append(".");
-            fullName.append(name);  // wrong...case insensitive
+            fullName.append(id->str());
         }
     }
     if (current_id)
     {
         if (fullName.length())
             fullName.append(".");
-        fullName.append(current_id);    // wrong...case insensitive
+        fullName.append(current_id->str());
     }
 
     ActiveScopeInfo & next = * new ActiveScopeInfo;
@@ -2638,7 +2667,7 @@ IHqlExpression * HqlGram::leaveLamdaExpression(attribute & exprattr)
         ActiveScopeInfo & activeScope = defineScopes.tos();
         OwnedHqlExpr formals = activeScope.createFormals(false);
         OwnedHqlExpr defaults = activeScope.createDefaults();
-        expr.setown(createFunctionDefinition(atAtom, expr.getClear(), formals.getClear(), defaults.getClear(), NULL));
+        expr.setown(createFunctionDefinition(atId, expr.getClear(), formals.getClear(), defaults.getClear(), NULL));
     }
 
     leaveScope(exprattr);
@@ -2661,14 +2690,14 @@ public:
     PseudoPatternScope(IHqlExpression * _patternList);
     IMPLEMENT_IINTERFACE_USING(CHqlScope)
 
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
+    virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int bodystart, int lineno, int column) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
+    virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { ::Release(value); PSEUDO_UNIMPLEMENTED; }
     virtual void defineSymbol(IHqlExpression * value) { PSEUDO_UNIMPLEMENTED; ::Release(value); }
-    virtual IHqlExpression *lookupSymbol(_ATOM name, unsigned lookupFlags, HqlLookupContext & ctx);
-    virtual void removeSymbol(_ATOM name) { PSEUDO_UNIMPLEMENTED; }
+    virtual IHqlExpression *lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual void removeSymbol(IIdAtom * name) { PSEUDO_UNIMPLEMENTED; }
 
     virtual void    getSymbols(HqlExprArray& exprs) const { PSEUDO_UNIMPLEMENTED; }
-    virtual _ATOM   queryName() const { PSEUDO_UNIMPLEMENTED; return NULL; }
+    virtual IAtom * queryName() const { PSEUDO_UNIMPLEMENTED; return NULL; }
     virtual const char * queryFullName() const { PSEUDO_UNIMPLEMENTED; return NULL; }
     virtual ISourcePath * querySourcePath() const { PSEUDO_UNIMPLEMENTED; return NULL; }
     virtual bool hasBaseClass(IHqlExpression * searchBase) { return false; }
@@ -2678,8 +2707,8 @@ public:
 
     virtual bool isImplicit() const { return false; }
     virtual bool isPlugin() const { return false; }
-    virtual int getPropInt(_ATOM, int dft) const { PSEUDO_UNIMPLEMENTED; return dft; }
-    virtual bool getProp(_ATOM, StringBuffer &) const { PSEUDO_UNIMPLEMENTED; return false; }
+    virtual int getPropInt(IIdAtom *, int dft) const { PSEUDO_UNIMPLEMENTED; return dft; }
+    virtual bool getProp(IIdAtom *, StringBuffer &) const { PSEUDO_UNIMPLEMENTED; return false; }
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
     virtual IHqlScope * queryConcreteScope() { return this; }
@@ -2728,7 +2757,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         return;
 
     IHqlExpression * scopeExpr = queryExpression(scope);
-    if (scopeExpr->hasProperty(_virtualSeq_Atom))
+    if (scopeExpr->hasAttribute(_virtualSeq_Atom))
     {
         reportError(ERR_NO_FORWARD_VIRTUAL, errpos, "Cannot use FORWARD in combination with a VIRTUAL module ");
         return;
@@ -2744,8 +2773,8 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
 
     unsigned endNesting = 0;
     unsigned braNesting = 0;
-    _ATOM prevId = NULL;
-    _ATOM sharedSymbolName  = NULL;
+    IIdAtom * prevId = NULL;
+    IIdAtom * sharedSymbolName  = NULL;
     int sharedSymbolKind = 0;
     ECLlocation start;
     lexObject->getPosition(start);
@@ -2764,14 +2793,15 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
             break;
         case UNKNOWN_ID:
             {
-                _ATOM id = nextToken.getName();
+                IIdAtom * id = nextToken.getId();
+                IAtom * name = id->lower();
                 if ((braNesting == 0) && (endNesting == 0))             // last identifier seen, but don't include parameters, or record members
                     prevId = id;
-                if (id == ruleAtom)
+                if (name == ruleAtom)
                     next = RULE;
-                else if (id == wholeAtom)
+                else if (name == wholeAtom)
                     next = WHOLE;
-                else if (id == typeAtom)
+                else if (name == typeAtom)
                 {
                     // ":= TYPE" Beginning of a user type definition
                     if (prev == ASSIGN)
@@ -2807,7 +2837,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
                 checkNotAlreadyDefined(sharedSymbolName, newScope, errpos);
 
                 unsigned symbolFlags = 0;
-                _ATOM moduleName = NULL;
+                IIdAtom * moduleName = NULL;
                 Owned<IFileContents> contents = createFileContentsSubset(lexObject->queryFileContents(), start.position, end.position - start.position);
                 addForwardDefinition(newScope, sharedSymbolName, moduleName, contents,
                                      symbolFlags, (sharedSymbolKind == EXPORT), start.lineno, start.column);
@@ -3000,7 +3030,7 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
     {
         flags->unwindList(selectedFields, no_comma);
 
-        IHqlExpression * optionalAttr = queryProperty(optAtom, selectedFields);
+        IHqlExpression * optionalAttr = queryAttribute(optAtom, selectedFields);
         if (optionalAttr)
         {
             optional = true;
@@ -3008,7 +3038,7 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
         }
     }
 
-    IHqlExpression * libraryAttr = queryProperty(libraryAtom, selectedFields);
+    IHqlExpression * libraryAttr = queryAttribute(libraryAtom, selectedFields);
     if (libraryAttr)
         selectedFields.zap(*libraryAttr);
 
@@ -3035,12 +3065,14 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
         {
             ForEachItemIn(i, selectedFields)
             {
-                _ATOM name = selectedFields.item(i).queryName();
-                OwnedHqlExpr match = base->lookupSymbol(name, LSFpublic, lookupCtx);
+                IHqlExpression & cur = selectedFields.item(i);
+                assertex(cur.getOperator() == no_id);
+                IIdAtom * id = cur.queryId();
+                OwnedHqlExpr match = base->lookupSymbol(id, LSFpublic, lookupCtx);
                 if (match)
                     syms.append(*match.getClear());
                 else
-                    reportError(ERR_EXPECTED_ATTRIBUTE, ipos, "Interface does not define %s", name->str());
+                    reportError(ERR_EXPECTED_ATTRIBUTE, ipos, "Interface does not define %s", id->str());
             }
         }
         else
@@ -3049,18 +3081,18 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
         ForEachItemIn(iSym, syms)
         {
             IHqlExpression & baseSym = syms.item(iSym);
-            _ATOM name = baseSym.queryName();
-            OwnedHqlExpr match  = scope->lookupSymbol(name, LSFpublic, lookupCtx);
+            IIdAtom * id = baseSym.queryId();
+            OwnedHqlExpr match  = scope->lookupSymbol(id, LSFpublic, lookupCtx);
             if (match)
             {
                 HqlExprArray parameters;
                 bool isParametered = extractSymbolParameters(parameters, &baseSym);
 
-                checkDerivedCompatible(name, newScopeExpr, match, isParametered, parameters, modpos);
+                checkDerivedCompatible(id, newScopeExpr, match, isParametered, parameters, modpos);
                 newScope->defineSymbol(LINK(match));
             }
             else if (!optional)
-                reportError(ERR_EXPECTED_ATTRIBUTE, modpos, "Module does not define %s", name->str());
+                reportError(ERR_EXPECTED_ATTRIBUTE, modpos, "Module does not define %s", id->str());
         }
     }
 
@@ -3159,7 +3191,7 @@ void HqlGram::onCloseBra()
         validAttributesStack.pop();
 }
 
-IHqlExpression *HqlGram::lookupSymbol(IHqlScope * scope, _ATOM searchName)
+IHqlExpression *HqlGram::lookupSymbol(IHqlScope * scope, IIdAtom * searchName)
 {
     return scope->lookupSymbol(searchName, LSFpublic, lookupCtx);
 }
@@ -3171,7 +3203,7 @@ unsigned HqlGram::getExtraLookupFlags(IHqlScope * scope)
     return 0;
 }
 
-IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
+IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& errpos)
 {
 #if 0
     if (stricmp(searchName->getAtomNamePtr(), "gh2")==0)
@@ -3325,7 +3357,7 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
             return recordLookupInTemplateContext(searchName, ret, templateScope);
 
         // finally comes the local scope
-        if (legacyEclSemantics && searchName==globalScope->queryName())
+        if (legacyEclSemantics && searchName->lower()==globalScope->queryName())
             return LINK(recordLookupInTemplateContext(searchName, queryExpression(globalScope), templateScope));
 
         ForEachItemIn(idx2, defaultScopes)
@@ -3352,7 +3384,7 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
 }
 
 
-IHqlExpression * HqlGram::recordLookupInTemplateContext(_ATOM name, IHqlExpression * expr, IHqlScope * templateScope)
+IHqlExpression * HqlGram::recordLookupInTemplateContext(IIdAtom * name, IHqlExpression * expr, IHqlScope * templateScope)
 {
     if (expr && templateScope)
         templateScope->defineSymbol(name,NULL,expr,true,false,0);
@@ -3439,7 +3471,7 @@ void cleanupService(IHqlScope*& serviceScope)
     serviceScope = NULL;
 }
 
-IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,_ATOM name, IHqlExpression* attrs, const attribute& errpos)
+IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name, IHqlExpression* attrs, const attribute& errpos)
 {
     // already defined?
     OwnedHqlExpr def = serviceScope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
@@ -3461,7 +3493,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,_ATOM name, IHq
         for (unsigned i=0; i<count; i++)
         {
             IHqlExpression* attr = &attrArray.item(i);
-            _ATOM name = attr->queryName();
+            IAtom * name = attr->queryName();
 
             // check duplication
             unsigned j;
@@ -3565,7 +3597,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,_ATOM name, IHq
             {
                 checkSvcAttrNoValue(attr, errpos);
             }
-            else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom))
+            else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom))
             {
             }
             else if (name == holeAtom)
@@ -3605,7 +3637,7 @@ bool HqlGram::checkAlienTypeDef(IHqlScope* scope, const attribute& errpos)
         return false;
 
     // load
-    OwnedHqlExpr load = scope->lookupSymbol(loadAtom, LSFpublic, lookupCtx);
+    OwnedHqlExpr load = scope->lookupSymbol(loadId, LSFpublic, lookupCtx);
     if (!load) 
     {
         reportError(ERR_USRTYPE_NOLOAD,errpos,"Load function is not defined for user type");
@@ -3626,7 +3658,7 @@ bool HqlGram::checkAlienTypeDef(IHqlScope* scope, const attribute& errpos)
     }
 
     // store
-    OwnedHqlExpr store = scope->lookupSymbol(storeAtom, LSFpublic, lookupCtx);
+    OwnedHqlExpr store = scope->lookupSymbol(storeId, LSFpublic, lookupCtx);
     if (!store) 
     {
         reportError(ERR_USRTYPE_NOSTORE,errpos,"Store function is not defined for alien type");
@@ -3666,7 +3698,7 @@ bool HqlGram::checkAlienTypeDef(IHqlScope* scope, const attribute& errpos)
         {
             // check whether we need a physicalLength()
             bool phylenNeeded = physical->getSize()==UNKNOWN_LENGTH;
-            OwnedHqlExpr phyLen = scope->lookupSymbol(physicalLengthAtom, LSFpublic, lookupCtx);
+            OwnedHqlExpr phyLen = scope->lookupSymbol(physicalLengthId, LSFpublic, lookupCtx);
 
             // physicalLength
             if (phylenNeeded)
@@ -3815,7 +3847,7 @@ void HqlGram::checkAggregateRecords(IHqlExpression * expr, IHqlExpression * reco
     if (containsIfBlock(record))
         reportError(ERR_NO_IFBLOCKS, errpos, "IFBLOCKS not supported in the aggregate target record");
 
-    IHqlExpression * mergeTransform = queryPropertyChild(expr, mergeTransformAtom, 0);
+    IHqlExpression * mergeTransform = queryAttributeChild(expr, mergeTransformAtom, 0);
     if (mergeTransform)
     {
         if (!recordTypesMatch(mergeTransform, expr))
@@ -3825,7 +3857,7 @@ void HqlGram::checkAggregateRecords(IHqlExpression * expr, IHqlExpression * reco
 
 void HqlGram::checkOnFailRecord(IHqlExpression * expr, attribute & errpos)
 {
-    IHqlExpression * onFail = expr->queryProperty(onFailAtom);
+    IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
     if (onFail)
     {
         IHqlExpression * transform = onFail->queryChild(0);
@@ -4047,10 +4079,10 @@ IHqlExpression * HqlGram::createIndirectSelect(IHqlExpression * lhs, IHqlExpress
         return createNullExpr(rhs);
     }
 
-    if (record->hasProperty(abstractAtom) || (field->getOperator() != no_field))
+    if (record->hasAttribute(abstractAtom) || (field->getOperator() != no_field))
         return ::createSelectExpr(lhs, createValue(no_indirect, field->getType(), LINK(field)));
 
-    OwnedHqlExpr match = record->querySimpleScope()->lookupSymbol(field->queryName());
+    OwnedHqlExpr match = record->querySimpleScope()->lookupSymbol(field->queryId());
     if (match)
     {
         if (match == field)
@@ -4088,7 +4120,7 @@ IHqlExpression * HqlGram::createSelect(IHqlExpression * lhs, IHqlExpression * rh
     if (rhs->getOperator() != no_field)
     {
         rhs->Release();
-        rhs = ::createField(unnamedAtom, LINK(defaultIntegralType), NULL);
+        rhs = ::createField(unnamedId, LINK(defaultIntegralType), NULL);
     }
     return ::createSelectExpr(lhs, rhs);
 }
@@ -4117,7 +4149,7 @@ IHqlExpression * HqlGram::createSortExpr(node_operator op, attribute & dsAttr, c
         return input;
     }
 
-    bool isLocal = (queryPropertyInList(localAtom, attrs)!=NULL);
+    bool isLocal = (queryAttributeInList(localAtom, attrs)!=NULL);
     checkDistribution(dsAttr, input, isLocal, false);
 
     if (joinedClause)
@@ -4243,7 +4275,7 @@ void HqlGram::ensureData(attribute &a)
     }
 }
 
-_ATOM HqlGram::ensureCommonLocale(attribute &a, attribute &b)
+IAtom * HqlGram::ensureCommonLocale(attribute &a, attribute &b)
 {
     ITypeInfo * t1 = a.queryExprType();
     ITypeInfo * t2 = b.queryExprType();
@@ -4861,7 +4893,7 @@ void HqlGram::warnIfFoldsToConstant(IHqlExpression * expr, const attribute & err
 void HqlGram::warnIfRecordPacked(IHqlExpression * expr, const attribute & errpos)
 {
     IHqlExpression * record = expr->queryRecord();
-    if (record && record->hasProperty(packedAtom))
+    if (record && record->hasAttribute(packedAtom))
         reportWarning(WRN_PACKED_MAY_CHANGE, errpos.pos, "Packed record used for external input or output, packed formats may change");
 }
 
@@ -5373,7 +5405,7 @@ bool HqlGram::expandWholeAndExcept(IHqlExpression * dataset, const attribute & e
         OwnedHqlExpr except;
         if (e.isAttribute())
         {
-            _ATOM attr = e.queryName();
+            IAtom * attr = e.queryName();
             if (attr == exceptAtom)
             {
                 hadExcept = true;
@@ -5431,7 +5463,7 @@ void HqlGram::expandWholeAndExcept(IHqlExpression * dataset, attribute & a)
 
 void HqlGram::expandSortedAsList(HqlExprArray & args)
 {
-    LinkedHqlExpr sorted = queryProperty(sortedAtom, args);
+    LinkedHqlExpr sorted = queryAttribute(sortedAtom, args);
     if (!sorted)
         return;
 
@@ -5442,7 +5474,7 @@ void HqlGram::expandSortedAsList(HqlExprArray & args)
 
 IHqlExpression * HqlGram::createAssert(attribute & condAttr, attribute * msgAttr, attribute & flagsAttr)
 {
-    if (queryPropertyInList(constAtom, flagsAttr.queryExpr()))
+    if (queryAttributeInList(constAtom, flagsAttr.queryExpr()))
     {
         checkConstant(condAttr);
         if (msgAttr)
@@ -5496,7 +5528,7 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
         node_operator eop = e.getOperator();
         if (e.isAttribute())
         {
-            _ATOM attr = e.queryName();
+            IAtom * attr = e.queryName();
             bool ok = false;
             if (attributes)
             {
@@ -5628,7 +5660,7 @@ IHqlExpression * HqlGram::createDistributeCond(IHqlExpression * leftDs, IHqlExpr
         IHqlExpression * rightField = rightRecord->queryChild(i);
         if (rightField->getOperator() == no_field)
         {
-            IHqlExpression * leftField = leftScope->lookupSymbol(rightField->queryName());
+            IHqlExpression * leftField = leftScope->lookupSymbol(rightField->queryId());
             if (!leftField)
             {
                 reportError(ERR_FIELD_NOT_FOUND, err, "Could not find a field %s in the dataset", rightField->queryName()->str());
@@ -5695,7 +5727,7 @@ void HqlGram::reportError(int errNo, const ECLlocation & pos, const char* format
     va_end(args);
 }
 
-void HqlGram::reportErrorUnexpectedX(const attribute& errpos, _ATOM unexpected)
+void HqlGram::reportErrorUnexpectedX(const attribute& errpos, IAtom * unexpected)
 {
     reportError(ERR_UNEXPECTED_ATTRX, errpos, "Unexpected attribute %s", unexpected->str());
 }
@@ -5846,7 +5878,7 @@ void HqlGram::addResult(IHqlExpression *_query, const attribute& errpos)
     parseResults.append(*query.getClear());
 }
 
-void HqlGram::checkFormals(_ATOM name, HqlExprArray& parms, HqlExprArray& defaults, attribute& object)
+void HqlGram::checkFormals(IIdAtom * name, HqlExprArray& parms, HqlExprArray& defaults, attribute& object)
 {
     node_operator op = object.queryExpr()->getOperator();
     bool isMacro = (op == no_macro);
@@ -5855,7 +5887,7 @@ void HqlGram::checkFormals(_ATOM name, HqlExprArray& parms, HqlExprArray& defaul
     {
         IHqlExpression* parm = (IHqlExpression*)&parms.item(idx);
 
-        if (isMacro && !parm->hasProperty(noTypeAtom))
+        if (isMacro && !parm->hasAttribute(noTypeAtom))
             reportError(ERR_MACRO_NOPARAMTYPE, object, "Type is not allowed for macro: parameter %d of %s", idx+1, name->str());
 
         //
@@ -5873,20 +5905,20 @@ void HqlGram::checkFormals(_ATOM name, HqlExprArray& parms, HqlExprArray& defaul
     }   
 }
 
-void HqlGram::addParameter(const attribute & errpos, _ATOM name, ITypeInfo* type, IHqlExpression* defValue)
+void HqlGram::addParameter(const attribute & errpos, IIdAtom * name, ITypeInfo* type, IHqlExpression* defValue)
 {
     HqlExprArray attrs;
     endList(attrs);
-    if (hasProperty(fieldsAtom, attrs))
+    if (hasAttribute(fieldsAtom, attrs))
     {
         type = makeSortListType(type);
-        if (!defValue && hasProperty(optAtom, attrs))
+        if (!defValue && hasAttribute(optAtom, attrs))
             defValue = createValue(no_sortlist, LINK(type));
     }
     addActiveParameterOwn(errpos, createParameter(name, nextParameterIndex(), type, attrs), defValue);
 }
 
-void HqlGram::addFunctionParameter(const attribute & errpos, _ATOM name, ITypeInfo* type, IHqlExpression* defValue)
+void HqlGram::addFunctionParameter(const attribute & errpos, IIdAtom * name, ITypeInfo* type, IHqlExpression* defValue)
 {
     ActiveScopeInfo & activeScope = defineScopes.tos();
     OwnedHqlExpr formals = activeScope.createFormals(false);
@@ -5901,7 +5933,7 @@ void HqlGram::addFunctionParameter(const attribute & errpos, _ATOM name, ITypeIn
     addActiveParameterOwn(errpos, createParameter(name, nextParameterIndex(), LINK(funcType), attrs), defValue);
 }
 
-void HqlGram::addFunctionProtoParameter(const attribute & errpos, _ATOM name, IHqlExpression * donor, IHqlExpression* defValue)
+void HqlGram::addFunctionProtoParameter(const attribute & errpos, IIdAtom * name, IHqlExpression * donor, IHqlExpression* defValue)
 {
     assertex(donor->isFunction());
 
@@ -5947,7 +5979,7 @@ IHqlExpression *HqlGram::bindParameters(const attribute & errpos, IHqlExpression
                         HqlExprArray args;
                         args.append(*LINK(body));
                         unwindChildren(args, function, 1);
-                        OwnedHqlExpr newFunction = createFunctionDefinition(function->queryName(), args);
+                        OwnedHqlExpr newFunction = createFunctionDefinition(function->queryId(), args);
                         OwnedHqlExpr boundExpr = createBoundFunction(this, newFunction, actuals, lookupCtx.functionCache, expandCallsWhenBound);
                         
                         // get rid of the wrapper
@@ -6083,7 +6115,7 @@ FunctionCallInfo::FunctionCallInfo(IHqlExpression * _funcdef)
         IHqlExpression * formals = queryFunctionParameters(funcdef);
         numFormals = formals->numChildren();
         //Don't allow implicit hidden parameters to be specified
-        while (numFormals && formals->queryChild(numFormals-1)->hasProperty(_hidden_Atom))
+        while (numFormals && formals->queryChild(numFormals-1)->hasAttribute(_hidden_Atom))
             numFormals--;
     }
 }
@@ -6107,7 +6139,7 @@ void FunctionCallInfo::flushPendingComponents()
     {
         IHqlExpression * formals = queryFunctionParameters(funcdef);
         IHqlExpression * formal = formals->queryChild(actuals.ordinality());
-        assertex(formal && formal->hasProperty(fieldsAtom));
+        assertex(formal && formal->hasAttribute(fieldsAtom));
         actuals.append(*createValue(no_sortlist, formal->getType(), pendingComponents));
         pendingComponents.kill();
     }
@@ -6131,7 +6163,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
         return LINK(actual);
 
     ITypeInfo * actualType = actual->queryType();
-    _ATOM formalName = formal->queryName();
+    IIdAtom * formalName = formal->queryId();
     if (actualType==NULL || 
         ((actualType->getTypeCode() == type_void) && !actual->isFunction()))
     {
@@ -6232,11 +6264,11 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
         break;
     }
 
-//  if (formal->hasProperty(constAtom) && funcdef && !isExternalFunction(funcdef))
-    if (errpos && formal->hasProperty(assertConstAtom))
+//  if (formal->hasAttribute(constAtom) && funcdef && !isExternalFunction(funcdef))
+    if (errpos && formal->hasAttribute(assertConstAtom))
         ret.setown(checkConstant(*errpos, ret));
 
-    if (formal->hasProperty(fieldAtom))
+    if (formal->hasAttribute(fieldAtom))
     {
         if (!isValidFieldReference(actual))
         {
@@ -6253,7 +6285,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
                 reportError(ERR_EXPECTED, *errpos, "Expression expected for parameter %s.  Fields from records can only be passed to field references", formalName->str());
     }
 
-    if (formal->hasProperty(fieldsAtom))
+    if (formal->hasAttribute(fieldsAtom))
     {
         if (!isValidFieldReference(actual) && actualTC != type_sortlist)
         {
@@ -6266,8 +6298,9 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
     return ret.getClear();
 }
 
-static unsigned findParameterByName(IHqlExpression * formals, _ATOM searchName)
+static unsigned findParameterByName(IHqlExpression * formals, IIdAtom * searchId)
 {
+    IAtom * searchName = searchId->lower();
     ForEachChild(i, formals)
     {
         if (formals->queryChild(i)->queryName() == searchName)
@@ -6298,7 +6331,7 @@ void HqlGram::leaveActualTopScope(FunctionCallInfo & call)
     }
 }
 
-bool HqlGram::processParameter(FunctionCallInfo & call, _ATOM name, IHqlExpression * actualValue, const attribute& errpos)
+bool HqlGram::processParameter(FunctionCallInfo & call, IIdAtom * name, IHqlExpression * actualValue, const attribute& errpos)
 {
     IHqlExpression * func = call.funcdef;
     if (!func)
@@ -6307,7 +6340,7 @@ bool HqlGram::processParameter(FunctionCallInfo & call, _ATOM name, IHqlExpressi
         return false;
     }
 
-    _ATOM funcName = func->queryName();
+    IIdAtom * funcName = func->queryId();
     IHqlExpression * formals = queryFunctionParameters(func);
 
     unsigned targetActual = call.actuals.ordinality();
@@ -6341,10 +6374,10 @@ bool HqlGram::processParameter(FunctionCallInfo & call, _ATOM name, IHqlExpressi
         while (targetActual < call.numFormals)
         {
             IHqlExpression * formal = formals->queryChild(targetActual);
-            if (!formal->hasProperty(optAtom))
+            if (!formal->hasAttribute(optAtom))
             {
                 //Non opt <?> may skip this argument if we have already had one that is compatible
-                if (!formal->hasProperty(fieldsAtom))
+                if (!formal->hasAttribute(fieldsAtom))
                     break;
                 if (call.pendingComponents.ordinality() == 0)
                     break;
@@ -6375,7 +6408,7 @@ bool HqlGram::processParameter(FunctionCallInfo & call, _ATOM name, IHqlExpressi
     call.fillWithOmitted(targetActual);
 
     //Process <??>.  Append to a pending list as many actual parameters as we can that are compatible, and later create a no_sortlist in its place.
-    if (!name && formal->hasProperty(fieldsAtom) && (checked->queryType()->getTypeCode() != type_sortlist))
+    if (!name && formal->hasAttribute(fieldsAtom) && (checked->queryType()->getTypeCode() != type_sortlist))
     {
         call.pendingComponents.append(*LINK(checked));
         return true;
@@ -6395,7 +6428,7 @@ bool HqlGram::processParameter(FunctionCallInfo & call, _ATOM name, IHqlExpressi
 
 bool HqlGram::checkParameters(IHqlExpression* func, HqlExprArray& actuals, const attribute& errpos)
 {
-    _ATOM funcName = func->queryName();
+    IIdAtom * funcName = func->queryId();
     if (!func->isFunction())
     {
         if (actuals.length())
@@ -6417,7 +6450,7 @@ bool HqlGram::checkParameters(IHqlExpression* func, HqlExprArray& actuals, const
             IHqlExpression * defvalue = queryDefaultValue(defaults, idx);
             if (!defvalue)
             {
-                _ATOM formalName = formal->queryName();
+                IIdAtom * formalName = formal->queryId();
                 reportError(ERR_PARAM_NODEFVALUE, errpos, "Omitted parameter %s has no default value", formalName->str());
                 return false;
             }
@@ -6434,7 +6467,7 @@ void HqlGram::addActiveParameterOwn(const attribute & errpos, IHqlExpression * p
     activeScope.activeParameters.append(*param);
     activeScope.activeDefaults.append(*ensureNormalizedDefaultValue(defaultValue));
 
-    if (defaultValue && !param->hasProperty(noTypeAtom))
+    if (defaultValue && !param->hasAttribute(noTypeAtom))
     {
         OwnedHqlExpr newActual = checkParameter(&errpos, defaultValue, param, true, NULL);
     }
@@ -6469,7 +6502,7 @@ void HqlGram::checkBuildIndexFilenameFlags(IHqlExpression * dataset, attribute &
 
 IHqlExpression * HqlGram::createBuildFileFromTable(IHqlExpression * table, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos)
 {
-    IHqlExpression * originAttr = table->queryProperty(_origin_Atom);
+    IHqlExpression * originAttr = table->queryAttribute(_origin_Atom);
     IHqlExpression * ds = originAttr->queryChild(0);
     IHqlExpression * mode = table->queryChild(2);
     OwnedHqlExpr flags=flagsAttr.getExpr();
@@ -6494,7 +6527,7 @@ IHqlExpression * HqlGram::createBuildFileFromTable(IHqlExpression * table, attri
         ForEachItemIn(i, expandedFlags)
         {
             IHqlExpression & cur = expandedFlags.item(i);
-            _ATOM name = cur.queryName();
+            IAtom * name = cur.queryName();
             if ((name == overwriteAtom) ||(name == backupAtom) || (name == namedAtom) || (name == updateAtom) || (name == expireAtom))
                 args.append(OLINK(cur));
             else if (name == persistAtom)
@@ -6520,7 +6553,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
 
     if (!isKey(index))
     {
-        if (index->getOperator() == no_table && index->hasProperty(_origin_Atom))
+        if (index->getOperator() == no_table && index->hasAttribute(_origin_Atom))
             return createBuildFileFromTable(index, flagsAttr, filename, errpos);
         flagsAttr.release();
         reportError(ERR_EXPECTED_INDEX,indexAttr,"Expected an index as the first parameter");
@@ -6583,7 +6616,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         ForEachItemIn(i, extra)
         {
             IHqlExpression & cur = extra.item(i);
-            _ATOM name = cur.queryName();
+            IAtom * name = cur.queryName();
             if (name == distributedAtom)
                 distribution.setown(&cur);
             else if (name == persistAtom)
@@ -6598,7 +6631,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
         IHqlExpression * cur = index->queryChild(iflag);
         if (cur->isAttribute())
         {
-            _ATOM name = cur->queryName();
+            IAtom * name = cur->queryName();
             if ((name == sort_AllAtom) || (name == sort_KeyedAtom) || (name == fixedAtom) || (name == compressedAtom) || (name == dedupAtom))
                 args.append(*LINK(cur));
             else if (name == distributedAtom)
@@ -6610,7 +6643,7 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
             }
         }
     }
-    IHqlExpression * payload = index->queryProperty(_payload_Atom);
+    IHqlExpression * payload = index->queryAttribute(_payload_Atom);
     if (payload)
         args.append(*LINK(payload));
     if (distribution)
@@ -6703,13 +6736,13 @@ IHqlExpression * HqlGram::checkOutputRecord(IHqlExpression *record, const attrib
                     {
                         HqlExprArray args;
                         unwindChildren(args, field);
-                        newField.setown(createField(field->queryName(), newRecord->getType(), args));
+                        newField.setown(createField(field->queryId(), newRecord->getType(), args));
                     }
                 }
                 else
                 {
 
-                    _ATOM name = field->queryName();
+                    IIdAtom * name = field->queryId();
                     reportError(ERR_REC_FIELDNODEFVALUE, errpos, REC_FLD_ERR_STR, name ? name->str() : "?");
                     allConstant = false;                                        // no point reporting this as well.
 
@@ -6743,7 +6776,7 @@ void HqlGram::processUpdateAttr(attribute & attr)
     HqlExprArray args;
     unwindChildren(args, expr);
 
-    if (expr->queryProperty(updateAtom))
+    if (expr->queryAttribute(updateAtom))
     {
         removeProperty(args, updateAtom);
         args.append(*createAttribute(updateAtom, createConstant((__int64)getExpressionCRC(expr))));
@@ -6819,7 +6852,7 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
     case no_field:
         {
             ITypeInfo * type = expr->queryType();
-            _ATOM name = expr->queryName();
+            IIdAtom * id = expr->queryId();
             switch (type->getTypeCode())
             {
             case type_real:
@@ -6845,20 +6878,20 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                 }
             case type_dictionary:
                 if (!variableOk || !isPayload)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "Dictionaries (%s) are not supported inside indexes", name->str());
+                    reportError(ERR_INDEX_BADTYPE, errpos, "Dictionaries (%s) are not supported inside indexes", id->str());
                 break;
             case type_table:
             case type_groupedtable:
                 if (!variableOk)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "Datasets (%s) are not supported inside indexes", name->str());
+                    reportError(ERR_INDEX_BADTYPE, errpos, "Datasets (%s) are not supported inside indexes", id->str());
                 break;
             case type_packedint:
                 if (!isPayload)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "PACKED integers (%s) are not supported inside indexes", name->str());
+                    reportError(ERR_INDEX_BADTYPE, errpos, "PACKED integers (%s) are not supported inside indexes", id->str());
                 break;
             case type_set:
                 if (!variableOk)
-                    reportError(ERR_INDEX_BADTYPE, errpos, "SETS (%s) are not supported inside indexes", name->str());
+                    reportError(ERR_INDEX_BADTYPE, errpos, "SETS (%s) are not supported inside indexes", id->str());
                 break;
             case type_int:
             case type_swapint:
@@ -6866,7 +6899,7 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                 {
                     if (type->isSigned() ||
                         ((type->getTypeCode() == type_littleendianint) && (type->getSize() != 1)))
-                        reportError(ERR_INDEX_BADTYPE, errpos.pos, "Signed or little-endian field %s is not supported inside a keyed record field ", name->str());
+                        reportError(ERR_INDEX_BADTYPE, errpos.pos, "Signed or little-endian field %s is not supported inside a keyed record field ", id->str());
                 }
                 break;
             default:
@@ -6874,7 +6907,7 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                     reportIndexFieldType(expr, false, errpos);
                 else if ((type->getSize() == UNKNOWN_LENGTH) && !variableOk)
                 {
-                    reportError(ERR_INDEX_BADTYPE, errpos, "Variable size fields (%s) are not supported inside indexes", name->str());
+                    reportError(ERR_INDEX_BADTYPE, errpos, "Variable size fields (%s) are not supported inside indexes", id->str());
                     break;
                 }
             }
@@ -6926,7 +6959,7 @@ IHqlExpression * HqlGram::createRecordFromDataset(IHqlExpression * ds)
         {
             //MORE: This should clone all attributes - not just extractFieldAttrs(), but if so it would also need to map the
             //fields referenced in COUNT(SELF.x) as well.
-            fields.append(*createField(field->queryName(), field->getType(), createSelectExpr(LINK(ds), LINK(field)), extractFieldAttrs(field)));
+            fields.append(*createField(field->queryId(), field->getType(), createSelectExpr(LINK(ds), LINK(field)), extractFieldAttrs(field)));
         }
     }
 
@@ -6944,7 +6977,7 @@ IHqlExpression * HqlGram::cleanIndexRecord(IHqlExpression * record)
         if (field->getOperator() == no_field && hasUninheritedAttribute(field))
         {
             IHqlExpression * value = queryRealChild(field, 0);
-            fields.append(*createField(field->queryName(), field->getType(), LINK(value), extractFieldAttrs(field)));
+            fields.append(*createField(field->queryId(), field->getType(), LINK(value), extractFieldAttrs(field)));
             same = false;
         }
         else
@@ -6971,12 +7004,12 @@ public:
     }
     virtual bool include(IHqlExpression * field) 
     { 
-        _ATOM name = field->queryName();
-        OwnedHqlExpr match = scope->lookupSymbol(name);
+        IIdAtom * id = field->queryId();
+        OwnedHqlExpr match = scope->lookupSymbol(id);
         if (!match)
             return true;
         if (field->queryType() != match->queryType())
-            gram.reportError(ERR_TYPEMISMATCH_RECORD, errpos, "Field %s has different type in records", name->str());
+            gram.reportError(ERR_TYPEMISMATCH_RECORD, errpos, "Field %s has different type in records", id->str());
         return false;
     }
 protected:
@@ -7037,12 +7070,12 @@ public:
     }
     virtual bool include(IHqlExpression * field) 
     { 
-        _ATOM name = field->queryName();
-        OwnedHqlExpr match = scope->lookupSymbol(name);
+        IIdAtom * id = field->queryId();
+        OwnedHqlExpr match = scope->lookupSymbol(id);
         if (match)
         {
             if (field->queryType() != match->queryType())
-                gram.reportError(ERR_TYPEMISMATCH_RECORD, errpos, "Field %s has different type in records", name->str());
+                gram.reportError(ERR_TYPEMISMATCH_RECORD, errpos, "Field %s has different type in records", id->str());
             return true;
         }
         return false;
@@ -7137,7 +7170,7 @@ static void unwindExtraFields(HqlExprArray & fields, IHqlExpression * expr)
         case no_attr:
         case no_attr_link:
         case no_attr_expr:
-            if (!queryProperty(cur->queryName(), fields))
+            if (!queryAttribute(cur->queryName(), fields))
                 fields.append(*LINK(cur));
             break;
         case no_record:
@@ -7268,7 +7301,7 @@ public:
         case no_cluster:
             return LINK(expr);
         case no_globalscope:
-            if (!expr->hasProperty(optAtom))
+            if (!expr->hasAttribute(optAtom))
                 return LINK(expr);
             break;
         case NO_AGGREGATE:
@@ -7318,24 +7351,24 @@ void HqlGram::checkGrouping(const attribute& errpos, HqlExprArray & parms, IHqlE
 
                     if (!ok)
                     {
-                        _ATOM name = NULL;
+                        IIdAtom * id = NULL;
                         
                         switch(field->getOperator())
                         {
                         case no_select:
-                            name = field->queryChild(1)->queryName();
+                            id = field->queryChild(1)->queryId();
                             break;
                         case no_field:  
-                            name = field->queryName();
+                            id = field->queryId();
                             break;
                         default:
-                            name = field->queryName();
+                            id = field->queryId();
                             break;
                         }
 
                         StringBuffer msg("Field ");
-                        if (name)
-                            msg.append("'").append(name).append("' ");
+                        if (id)
+                            msg.append("'").append(id->str()).append("' ");
                         msg.append("in TABLE does not appear to be properly defined by grouping conditions");
                         reportWarning(ERR_GROUP_BADSELECT,errpos.pos, "%s", msg.str());
                     }
@@ -7390,7 +7423,7 @@ void HqlGram::checkGrouping(const attribute & errpos, IHqlExpression * dataset, 
 }
 
 
-void HqlGram::checkConditionalAggregates(_ATOM name, IHqlExpression * value, const attribute & errpos)
+void HqlGram::checkConditionalAggregates(IIdAtom * name, IHqlExpression * value, const attribute & errpos)
 {
     if (!value->isGroupAggregateFunction())
         return;
@@ -7441,14 +7474,14 @@ void HqlGram::checkProjectedFields(IHqlExpression * e, attribute & errpos)
             IHqlExpression * value = field->queryChild(0);
             if (value)
             {
-                _ATOM name = field->queryName();
+                IIdAtom * id = field->queryId();
                 bool isVariableSize = (value->queryType()->getSize() == UNKNOWN_LENGTH);
                 if (value->getOperator() == no_implicitcast)
                     value = value->queryChild(0);
                 if (isVariableSize)
                 {
                     if (hadVariableAggregate)
-                        reportError(ERR_AGG_FIELD_AFTER_VAR, errpos, "Field %s: Fields cannot follow a variable length aggregate in the record", name ? name->str() : "");
+                        reportError(ERR_AGG_FIELD_AFTER_VAR, errpos, "Field %s: Fields cannot follow a variable length aggregate in the record", id ? id->str() : "");
 
                     if (value->isGroupAggregateFunction())
                         hadVariableAggregate = true;
@@ -7456,7 +7489,7 @@ void HqlGram::checkProjectedFields(IHqlExpression * e, attribute & errpos)
 
                 
                 if (isVariableOffset)
-                    checkConditionalAggregates(name, value, errpos);
+                    checkConditionalAggregates(id, value, errpos);
 
                 if (isVariableSize)
                     isVariableOffset = true;
@@ -7550,7 +7583,6 @@ static const char * getName(IHqlExpression * e)
 
 void HqlGram::checkDistribution(attribute &errpos, IHqlExpression *input, bool localSpecified, bool ignoreGrouping)
 {
-    IInterface *distribution = input->queryType()->queryDistributeInfo();
     bool inputIsGrouped = isGrouped(input);
     if (localSpecified)
     {
@@ -7559,7 +7591,7 @@ void HqlGram::checkDistribution(attribute &errpos, IHqlExpression *input, bool l
     }
     else
     {
-        if (distribution && isExplicitlyDistributed(input))
+        if (isExplicitlyDistributed(input))
         {
             if (!inputIsGrouped || ignoreGrouping)
             {
@@ -7572,7 +7604,7 @@ void HqlGram::checkDistribution(attribute &errpos, IHqlExpression *input, bool l
 
 void HqlGram::checkDistribution(attribute &errpos, IHqlExpression * newExpr, bool ignoreGrouping)
 {
-    checkDistribution(errpos, newExpr->queryChild(0), newExpr->hasProperty(localAtom), ignoreGrouping);
+    checkDistribution(errpos, newExpr->queryChild(0), newExpr->hasAttribute(localAtom), ignoreGrouping);
 }
 
 bool HqlGram::isDiskFile(IHqlExpression * expr)
@@ -7582,7 +7614,7 @@ bool HqlGram::isDiskFile(IHqlExpression * expr)
     case no_table:
         return true;
     case no_cluster:
-        return !expr->hasProperty(fewAtom);
+        return !expr->hasAttribute(fewAtom);
     case no_colon:
         {
             ForEachChild(i, expr)
@@ -7615,21 +7647,40 @@ bool HqlGram::isFilteredDiskFile(IHqlExpression * expr)
 
 void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
 {
-    bool lonly = join->hasProperty(leftonlyAtom);
-    bool ronly = join->hasProperty(rightonlyAtom);
-    bool fonly = join->hasProperty(fullonlyAtom);
-    bool lo = join->hasProperty(leftouterAtom) || lonly;
-    bool ro = join->hasProperty(rightouterAtom) || ronly;
-    bool fo = join->hasProperty(fullouterAtom) || fonly;
-    bool keep = join->hasProperty(keepAtom);
-    IHqlExpression * rowLimit = join->queryProperty(rowLimitAtom);
+    bool lonly = join->hasAttribute(leftonlyAtom);
+    bool ronly = join->hasAttribute(rightonlyAtom);
+    bool fonly = join->hasAttribute(fullonlyAtom);
+    bool lo = join->hasAttribute(leftouterAtom) || lonly;
+    bool ro = join->hasAttribute(rightouterAtom) || ronly;
+    bool fo = join->hasAttribute(fullouterAtom) || fonly;
+    bool keep = join->hasAttribute(keepAtom);
+    bool isLookup = join->hasAttribute(lookupAtom);
+    bool isSmart = join->hasAttribute(smartAtom);
+    bool isAll = join->hasAttribute(allAtom);
+    IHqlExpression * rowLimit = join->queryAttribute(rowLimitAtom);
+    IHqlExpression * keyed = join->queryAttribute(keyedAtom);
 
-    IHqlExpression * keyed = join->queryProperty(keyedAtom);
     if (keyed)
     {
-        if (join->hasProperty(allAtom) || join->hasProperty(lookupAtom))
-            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL not compatible with KEYED");
+        if (isAll || isLookup || isSmart)
+            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL/SMART is not compatible with KEYED");
+    }
+    else if (isLookup)
+    {
+        //The following should be, and will become, an error.  However too many legacy queries have it, so make a warning for now.
+        if (isAll)
+            reportWarning(ERR_KEYEDINDEXINVALID, err.pos, "ALL is not compatible with LOOKUP");
+        if (isSmart)
+            reportError(ERR_KEYEDINDEXINVALID, err.pos, "SMART is not compatible with LOOKUP");
+    }
+    else if (isSmart)
+    {
+        if (isAll)
+            reportError(ERR_KEYEDINDEXINVALID, err, "ALL is not compatible with KEYED");
+    }
 
+    if (keyed)
+    {
         IHqlExpression * index = keyed->queryChild(0);
         if (index)
         {
@@ -7673,41 +7724,42 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
             }
         }
     }
-    if (join->hasProperty(lookupAtom))
+    if (isLookup || isSmart)
     {
-        bool isMany = join->hasProperty(manyAtom);
+        bool isMany = join->hasAttribute(manyAtom) || isSmart;
+        const char * joinText = isSmart ? "Smart" : "Lookup";
         if (ro || fo)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "JOIN(LOOKUP) only supports INNER, LEFT OUTER, and LEFT ONLY joins");
-        if (join->hasProperty(partitionRightAtom))
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support PARTITION RIGHT");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins only support INNER, LEFT OUTER, and LEFT ONLY joins", joinText);
+        if (join->hasAttribute(partitionRightAtom))
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support PARTITION RIGHT", joinText);
         if (keep && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support KEEP");
-        if (join->hasProperty(atmostAtom) && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support ATMOST");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support KEEP", joinText);
+        if (join->hasAttribute(atmostAtom) && !isMany)
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support ATMOST", joinText);
         if (rowLimit && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support LIMIT (they can only match 1 entry)");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support LIMIT (they can only match 1 entry)", joinText);
         if (isKey(join->queryChild(1)))
-            reportWarning(ERR_BADKIND_LOOKUPJOIN, err.pos, "Lookup specified on an unfiltered keyed join - was this intended?");
+            reportWarning(ERR_BADKIND_LOOKUPJOIN, err.pos, "%s specified on an unfiltered keyed join - was this intended?", joinText);
     }
     else if (isKeyedJoin(join))
     {
         if (ro || fo)
             reportError(ERR_INVALIDKEYEDJOIN, err, "Keyed joins only support LEFT OUTER/ONLY");
-        if (join->hasProperty(partitionRightAtom))
+        if (join->hasAttribute(partitionRightAtom))
             reportError(ERR_INVALIDKEYEDJOIN, err, "Keyed joins do not support PARTITION RIGHT");
     }
-    if (join->hasProperty(allAtom))
+    if (join->hasAttribute(allAtom))
     {
-        if (join->hasProperty(partitionRightAtom))
+        if (join->hasAttribute(partitionRightAtom))
             reportError(ERR_INVALIDALLJOIN, err, "JOIN(,ALL) does not support PARTITION RIGHT");
         if (ro || fo)
             reportError(ERR_INVALIDALLJOIN, err, "JOIN(ALL) only supports INNER, LEFT OUTER, and LEFT ONLY joins");
-        if (join->hasProperty(atmostAtom))
+        if (join->hasAttribute(atmostAtom))
             reportError(ERR_INVALIDALLJOIN, err, "JOIN(ALL) does not support ATMOST");
         if (rowLimit)
             reportError(ERR_INVALIDALLJOIN, err, "JOIN(ALL) does not support LIMIT");
     }
-    if (join->hasProperty(atmostAtom))
+    if (join->hasAttribute(atmostAtom))
     {
         if (fo || ro)
             reportError(ERR_BAD_JOINFLAG, err, "ATMOST cannot be used with FULL or RIGHT ONLY/OUTER");
@@ -7724,7 +7776,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
     {
         if (rowLimit)
             reportError(ERR_BAD_JOINFLAG, err, "LIMIT cannot be used in combination ONLY");
-        if (join->hasProperty(onFailAtom))
+        if (join->hasAttribute(onFailAtom))
             reportError(ERR_BAD_JOINFLAG, err, "ONFAIL cannot be used in combination ONLY");
     }
 
@@ -7737,12 +7789,13 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
         if (isKey(cur))
             reportWarning(ERR_BAD_JOINFLAG, err.pos, "Filtered RIGHT prevents a keyed join being used.  Consider including the filter in the join condition.");
     }
+
 }
 
 
 void HqlGram::checkLoopFlags(const attribute &err, IHqlExpression * loopExpr)
 {
-    if (loopExpr->hasProperty(parallelAtom))
+    if (loopExpr->hasAttribute(parallelAtom))
     {
         unsigned base = (loopExpr->getOperator() == no_loop ? 1 : 2);
         if (!queryRealChild(loopExpr, base))
@@ -7808,7 +7861,7 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
             break;
         case no_field:
             {
-                OwnedHqlExpr match = scope->lookupSymbol(cur->queryName());
+                OwnedHqlExpr match = scope->lookupSymbol(cur->queryId());
                 if (match)
                 {
                     //Ignore any fields that are completely duplicated in the payload to allow
@@ -7898,7 +7951,7 @@ void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & p
     if (!lastFieldType || !lastFieldType->isInteger())
     {
         IHqlSimpleScope * payloadScope = payload ? payload->querySimpleScope() : NULL;
-        _ATOM implicitFieldName;
+        IIdAtom * implicitFieldName;
         for (unsigned suffix =1;;suffix++)
         {
             StringBuffer name;
@@ -7906,7 +7959,7 @@ void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & p
             if (suffix > 1)
                 name.append(suffix);
             name.append("__");
-            implicitFieldName = createIdentifierAtom(name);
+            implicitFieldName = createIdAtom(name);
             OwnedHqlExpr resolved = scope->lookupSymbol(implicitFieldName);
             if (!resolved && payloadScope)
                 resolved.setown(payloadScope->lookupSymbol(implicitFieldName));
@@ -7936,7 +7989,7 @@ void HqlGram::extractIndexRecordAndExtra(SharedHqlExpr & record, SharedHqlExpr &
         extra.setown(createComma(LINK(record->queryChild(1)), extra.getClear()));
         record.set(record->queryChild(0));
     }
-    IHqlExpression *payload = record->queryProperty(_payload_Atom);
+    IHqlExpression *payload = record->queryAttribute(_payload_Atom);
     if (payload)
     {
         extra.setown(createComma(extra.getClear(), LINK(payload)));
@@ -8051,7 +8104,7 @@ void HqlGram::checkDedup(IHqlExpression *ds, IHqlExpression *flags, attribute &a
 void HqlGram::checkDistributer(attribute & err, HqlExprArray & args)
 {
     IHqlExpression * input = &args.item(0);
-    IHqlExpression * inputPayload = queryProperty(_payload_Atom, args);
+    IHqlExpression * inputPayload = queryAttribute(_payload_Atom, args);
     ForEachItemIn(idx, args)
     {
         IHqlExpression & cur = args.item(idx);
@@ -8106,7 +8159,7 @@ void HqlGram::checkValidCsvRecord(const attribute & errpos, IHqlExpression * rec
 
 void HqlGram::checkValidPipeRecord(const attribute & errpos, IHqlExpression * record, IHqlExpression * attrs, IHqlExpression * expr)
 {
-    if (queryPropertyInList(csvAtom, attrs) || (expr && expr->hasProperty(csvAtom)))
+    if (queryAttributeInList(csvAtom, attrs) || (expr && expr->hasAttribute(csvAtom)))
         checkValidCsvRecord(errpos, record);
 }
 
@@ -8230,8 +8283,8 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
                 return true;
             }
 
-            _ATOM leftName = leftExpr->queryName();
-            _ATOM rightName = rightExpr->queryName();
+            IAtom * leftName = leftExpr->queryName();
+            IAtom * rightName = rightExpr->queryName();
             if (leftName != rightName)
             {
                 reportError(ERR_TYPEMISMATCH_DATASET, atr, "Name mismatch for corresponding fields %s vs %s",leftName->str(), rightName->str());
@@ -8362,7 +8415,7 @@ IHqlExpression * HqlGram::createScopedSequenceExpr()
     OwnedHqlExpr value = createSequenceExpr();
     HqlExprArray attrs;
     attrs.append(*createAttribute(_hidden_Atom));
-    IHqlExpression * param = createParameter(createIdentifierAtom(paramName.str()), parameters.ordinality(), value->getType(), attrs);
+    IHqlExpression * param = createParameter(createIdAtom(paramName.str()), parameters.ordinality(), value->getType(), attrs);
     parameters.append(*param);
     targetScope.activeDefaults.append(*LINK(value));
     return LINK(param);
@@ -8420,9 +8473,9 @@ void HqlGram::checkRecordIsValid(const attribute &atr, IHqlExpression *record)
 void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
 {
     IHqlExpression * expr = atr.queryExpr();
-    if (appearsToBeSorted(expr->queryType(), isLocal, true))
+    if (appearsToBeSorted(expr, isLocal, true))
         return;
-    if (!isLocal && appearsToBeSorted(expr->queryType(), true, true))
+    if (!isLocal && appearsToBeSorted(expr, true, true))
     {
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "INPUT to MERGE appears to be sorted locally but not globally");
         return;
@@ -8441,7 +8494,7 @@ void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
         }
     }
     
-    if (isGrouped(expr) && appearsToBeSorted(expr->queryType(), false, false))
+    if (isGrouped(expr) && appearsToBeSorted(expr, false, false))
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE is only sorted with the group");
     else
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE doesn't appear to be sorted");
@@ -8477,7 +8530,7 @@ void HqlGram::checkRecordsMatch(attribute & atr, HqlExprArray & args)
     }
 }
 
-void HqlGram::checkNotAlreadyDefined(_ATOM name, IHqlScope * scope, const attribute & idattr)
+void HqlGram::checkNotAlreadyDefined(IIdAtom * name, IHqlScope * scope, const attribute & idattr)
 {
     OwnedHqlExpr expr = scope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
     if (expr)
@@ -8490,7 +8543,7 @@ void HqlGram::checkNotAlreadyDefined(_ATOM name, IHqlScope * scope, const attrib
 }
 
 
-void HqlGram::checkNotAlreadyDefined(_ATOM name, const attribute & idattr)
+void HqlGram::checkNotAlreadyDefined(IIdAtom * name, const attribute & idattr)
 {
     ActiveScopeInfo & activeScope = defineScopes.tos();
     if (activeScope.localScope)
@@ -8556,7 +8609,7 @@ IHqlExpression * HqlGram::addSideEffects(IHqlExpression * expr)
     return createCompound(compound, LINK(expr));
 }
 
-void HqlGram::createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind)
+void HqlGram::createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind)
 {
     OwnedHqlExpr left = leftAttr.getExpr();
     OwnedHqlExpr right = rightAttr.getExpr();
@@ -8570,7 +8623,7 @@ void HqlGram::createAppendFiles(attribute & targetAttr, attribute & leftAttr, at
     targetAttr.setPosition(leftAttr);
 }
 
-void HqlGram::createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind)
+void HqlGram::createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind)
 {
     OwnedHqlExpr left = leftAttr.getExpr();
     OwnedHqlExpr right = rightAttr.getExpr();
@@ -8640,7 +8693,7 @@ bool HqlGram::isVirtualFunction(DefineIdSt * defineid, const attribute & errpos)
         if (scope)
         {
             IHqlExpression * scopeExpr = scope->queryExpression();
-            if (scopeExpr->hasProperty(interfaceAtom) || scopeExpr->hasProperty(virtualAtom))
+            if (scopeExpr->hasAttribute(interfaceAtom) || scopeExpr->hasAttribute(virtualAtom))
                 return true;
         }
     }
@@ -8714,7 +8767,7 @@ bool HqlGram::areSymbolsCompatible(IHqlExpression * expr, bool isParametered, Hq
 }
 
 
-void HqlGram::checkDerivedCompatible(_ATOM name, IHqlExpression * scope, IHqlExpression * expr, bool isParametered, HqlExprArray & parameters, attribute const & errpos)
+void HqlGram::checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHqlExpression * expr, bool isParametered, HqlExprArray & parameters, attribute const & errpos)
 {
     ForEachChild(i, scope)
     {
@@ -8790,7 +8843,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
 {
     OwnedHqlExpr expr = _expr;
     // env symbol
-    _ATOM name = defineid->id;
+    IIdAtom * name = defineid->id;
     checkNotAlreadyDefined(name, idattr);
 
     ActiveScopeInfo & activeScope = defineScopes.tos();
@@ -8813,7 +8866,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
         // define the symbol
         if (defineid->scope & (EXPORT_FLAG | SHARED_FLAG))
         {
-            if (expectedAttribute && (expectedAttribute != name) && (activeScope.localScope == parseScope))
+            if (expectedAttribute && (expectedAttribute->lower() != name->lower()) && (activeScope.localScope == parseScope))
             {
                 OwnedHqlExpr resolved = parseScope->lookupSymbol(expectedAttribute, LSFsharedOK, lookupCtx);
                 if (resolved)
@@ -8902,9 +8955,9 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
 {
     IHqlScope * exprScope = expr->queryScope();
     IHqlExpression * scopeExpr = queryExpression(scope);
-    _ATOM moduleName = NULL;
+    IIdAtom * moduleName = NULL;
     if (!inType)
-        moduleName = createIdentifierAtom(scope->queryFullName());
+        moduleName = createIdAtom(scope->queryFullName());
 
     unsigned symbolFlags = 0;
     if (scopeExpr && scopeExpr->getOperator() == no_virtualscope)
@@ -8949,7 +9002,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     OwnedHqlExpr expr;
     IHqlExpression * failure = NULL;
     DefineIdSt* defineid = nameattr.getDefineId();
-    _ATOM name = defineid->id;
+    IIdAtom * name = defineid->id;
     Owned<ITypeInfo> type = defineid->getType();
     assertex(name);
 
@@ -9028,7 +9081,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
 
     case no_virtualscope:
         {
-            IHqlExpression * libraryInterface = queryPropertyChild(base, libraryAtom, 0);
+            IHqlExpression * libraryInterface = queryAttributeChild(base, libraryAtom, 0);
             if (libraryInterface)
             {
                 //check the parameters for this symbol match the parameters on the library attribute
@@ -9052,7 +9105,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
         OwnedHqlExpr anyMatch = localScope->lookupSymbol(name, LSFsharedOK, lookupCtx);
         OwnedHqlExpr localMatch  = localScope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
 
-        if (localScopeExpr->hasProperty(virtualAtom) || localScopeExpr->hasProperty(interfaceAtom))
+        if (localScopeExpr->hasAttribute(virtualAtom) || localScopeExpr->hasAttribute(interfaceAtom))
         {
             if (canBeVirtual(expr))
                 defineid->scope |= VIRTUAL_FLAG;
@@ -9067,7 +9120,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                     reportError(ERR_SHOULD_BE_EXPORTED, nameattr, "Private symbol %s clashes with public symbol in base module", name->str());
             }
 
-            if (localScopeExpr->hasProperty(interfaceAtom))
+            if (localScopeExpr->hasAttribute(interfaceAtom))
             {
 //              defineid->scope |= EXPORT_FLAG;
                 reportError(ERR_SHOULD_BE_EXPORTED, nameattr, "Symbol %s in INTERFACE should be EXPORTed or SHARED", name->str());
@@ -9075,7 +9128,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
         }
         else
         {
-            if (anyMatch && !localScopeExpr->hasProperty(_virtualSeq_Atom))
+            if (anyMatch && !localScopeExpr->hasAttribute(_virtualSeq_Atom))
             {
                 //Not quite right - it is a problem if the place it is defined in isn't virtual
                 reportError(ERR_CANNOT_REDEFINE, nameattr, "Cannot redefine definition %s from a non-virtual MODULE", name->str());
@@ -9093,7 +9146,9 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                     {
                         //allow dataset with no record to match, as long as base type is the same
                         if (queryRecord(type) != queryNullRecord() || (type->getTypeCode() != matchType->getTypeCode()))
+                        {
                             reportError(ERR_SAME_TYPE_REQUIRED, nameattr, "Explicit type for %s doesn't match definition in base module", name->str());
+                        }
                         else
                         {
                             type.set(matchType);
@@ -9171,7 +9226,7 @@ void HqlGram::definePatternSymbolProduction(attribute & nameattr, const attribut
 
     checkFormals(defineid->id,defineScopes.tos().activeParameters,defineScopes.tos().activeDefaults,valueAttr);
 
-    _ATOM name = defineid->id;
+    IIdAtom * name = defineid->id;
     Owned<ITypeInfo> idType = defineid->getType();
     IHqlExpression *expr = valueAttr.getExpr();
     ITypeInfo *etype = expr->queryType();
@@ -9199,12 +9254,12 @@ void HqlGram::definePatternSymbolProduction(attribute & nameattr, const attribut
     assertex(name);
 
     {
-        _ATOM moduleName = globalScope->queryName();
+        IIdAtom * moduleId = globalScope->queryId();
         HqlExprArray args;
         args.append(*expr);
-        args.append(*createAttribute(name));
-        if (moduleName)
-            args.append(*createAttribute(moduleName));
+        args.append(*createId(name));
+        if (moduleId)
+            args.append(*createId(moduleId));
         if (queryParametered())
             args.append(*createAttribute(_function_Atom));
         expr = createValue(no_pat_instance, expr->getType(), args);
@@ -9234,7 +9289,8 @@ bool HqlGram::checkCompatibleSymbol(const attribute & errpos, IHqlExpression * p
     
 IHqlExpression * HqlGram::extractBranchMatch(const attribute & errpos, IHqlExpression & curSym, HqlExprArray & values)
 {
-    _ATOM name = curSym.queryName();
+    IIdAtom * id = curSym.queryId();
+    IAtom * name = id->lower();
     ForEachItemIn(i, values)
     {
         IHqlExpression & cur = values.item(i);
@@ -9251,14 +9307,14 @@ IHqlExpression * HqlGram::extractBranchMatch(const attribute & errpos, IHqlExpre
     }
 
     //No Match found, check if is was previously defined in the current scope (?what about nesting?)
-    OwnedHqlExpr match = lookupSymbol(name, errpos);
+    OwnedHqlExpr match = lookupSymbol(id, errpos);
     if (!match)
     {
         //MORE If this was used as a temporary variable just within this branch, then that's ok.
         // The following test is no good though, we need to check if reused only in this branch.
 //      if (curSym.isShared())
 //          return NULL;
-        reportWarning(WRN_COND_ASSIGN_NO_PREV, errpos.pos, "Conditional assignment to %s isn't defined in all branches, and has no previous definition", name->str());
+        reportWarning(WRN_COND_ASSIGN_NO_PREV, errpos.pos, "Conditional assignment to %s isn't defined in all branches, and has no previous definition", id->str());
         return NULL;
     }
 
@@ -9312,7 +9368,7 @@ void HqlGram::processIfScope(const attribute & errpos, IHqlExpression * cond, IH
         {
             HqlExprArray matches;
             IHqlExpression & curSym = curArray.array.item(j);
-            _ATOM name = curSym.queryName();
+            IIdAtom * id = curSym.queryId();
             OwnedITypeInfo condType = extractBranchMatches(errpos, curSym, branches, matches);
             if (condType)
             {
@@ -9341,9 +9397,9 @@ void HqlGram::processIfScope(const attribute & errpos, IHqlExpression * cond, IH
                 OwnedHqlExpr newSym = createSymbolFromValue(&curSym, value);
                 if (activeScope.localScope)
                 {
-                    OwnedHqlExpr match = activeScope.localScope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
+                    OwnedHqlExpr match = activeScope.localScope->lookupSymbol(id, LSFsharedOK|LSFignoreBase, lookupCtx);
                     if (match)
-                        reportError(ERR_ID_REDEFINE, errpos, "Identifier '%s' is already defined as a public symbol in this context", name->str());
+                        reportError(ERR_ID_REDEFINE, errpos, "Identifier '%s' is already defined as a public symbol in this context", id->str());
                 }
                 defineScope->defineSymbol(newSym.getClear());
             }
@@ -9358,14 +9414,14 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
 {
     IHqlExpression * scopeExpr = queryExpression(scope);
     AtomArray inherited;
-    IHqlExpression * virtualSeqAttr = scopeExpr->queryProperty(_virtualSeq_Atom);
+    IHqlExpression * virtualSeqAttr = scopeExpr->queryAttribute(_virtualSeq_Atom);
     ForEachChild(i, scopeExpr)
     {
         IHqlExpression * cur = scopeExpr->queryChild(i);
         IHqlScope * curBase = cur->queryScope();
         if (curBase)
         {
-            IHqlExpression * baseVirtualAttr = cur->queryProperty(_virtualSeq_Atom);
+            IHqlExpression * baseVirtualAttr = cur->queryAttribute(_virtualSeq_Atom);
             bool baseIsLibrary = cur->getOperator() == no_libraryscopeinstance;
 
             //Find all the symbols exported by this base module
@@ -9375,9 +9431,10 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
 
             ForEachItemIn(iSym, syms)
             {
-                _ATOM name = syms.item(iSym).queryName();
-                OwnedHqlExpr baseSym = curBase->lookupSymbol(name, LSFsharedOK|LSFfromderived, lookupCtx);
-                OwnedHqlExpr match  = scope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
+                IIdAtom * id = syms.item(iSym).queryId();
+                IAtom * name = id->lower();
+                OwnedHqlExpr baseSym = curBase->lookupSymbol(id, LSFsharedOK|LSFfromderived, lookupCtx);
+                OwnedHqlExpr match  = scope->lookupSymbol(id, LSFsharedOK|LSFignoreBase, lookupCtx);
 
                 LinkedHqlExpr mapped = baseSym;
                 //Replace any references to the base module attribute with this new module.
@@ -9393,7 +9450,7 @@ void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errp
                         if (mapped->queryBody() != match->queryBody())
                         {
                             //MORE: Could allow it to be ambiguous (by creating a no_purevirtual), but better to require immediate resolution
-                            reportError(ERR_AMBIGUOUS_DEF, errpos, "Definition %s must be specified, it has different definitions in base modules", name->str());
+                            reportError(ERR_AMBIGUOUS_DEF, errpos, "Definition %s must be specified, it has different definitions in base modules", id->str());
                         }
                     }
                 }
@@ -9433,18 +9490,18 @@ void HqlGram::checkExportedModule(const attribute & errpos, IHqlExpression * sco
         IHqlExpression & cur = symbols.item(i);
         if (isExported(&cur))
         {
-            _ATOM name = cur.queryName();
-            OwnedHqlExpr value = scope->lookupSymbol(name, LSFpublic, lookupCtx);
+            IIdAtom * id = cur.queryId();
+            OwnedHqlExpr value = scope->lookupSymbol(id, LSFpublic, lookupCtx);
 
             if (value)
             {
                 if (value->isFunction())
-                    reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export functional definition %s", name->str());
+                    reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export functional definition %s", id->str());
                 else if (value->isDataset() || value->isDatarow() || value->queryType()->isScalar())
                 {
                 }
                 else if (value->isList())
-                    reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export list definition %s (use a dataset instead)", name->str());
+                    reportError(ERR_BAD_LIBRARY_SYMBOL, errpos, "Library modules cannot export list definition %s (use a dataset instead)", id->str());
                 else
                 {
                     //Should we report an error, or should we just ignore it?  Probably doesn't cause any problems as long as caught
@@ -9521,14 +9578,14 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
         }
     }
 
-    if (body->hasProperty(libraryAtom))
+    if (body->hasAttribute(libraryAtom))
         reportWarning(WRN_NOT_INTERFACE, errpos.pos, "LIBRARY() seems to reference an implementation rather than the interface definition");
-    IHqlExpression * internalAttr = queryPropertyInList(internalAtom,name);
+    IHqlExpression * internalAttr = queryAttributeInList(internalAtom,name);
     if (internalAttr)
     {
         IHqlExpression * internalFunc = internalAttr->queryChild(0);
         IHqlExpression * internalModule = internalFunc->queryChild(0);
-        IHqlExpression * libraryAttr = internalModule->queryProperty(libraryAtom);
+        IHqlExpression * libraryAttr = internalModule->queryAttribute(libraryAtom);
         if (!libraryAttr || func != libraryAttr->queryChild(0))
             reportError(ERR_PROTOTYPE_MISMATCH, errpos, "Module referenced in INTERNAL() doesn't implement the required library interface");
     }
@@ -9548,7 +9605,7 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
             else
             {
                 //non dataset returns are nasty!  Need to be converted to selects from datasets...
-                OwnedHqlExpr field = createField(unknownAtom, cur.getType(), NULL, NULL);
+                OwnedHqlExpr field = createField(unknownId, cur.getType(), NULL, NULL);
                 OwnedHqlExpr newRecord = createRecord(field);
                 OwnedHqlExpr ds = createDataset(no_null, LINK(newRecord));
                 newValue.setown(createPureVirtual(ds->queryType()));
@@ -9567,7 +9624,7 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
 
     LibraryInputMapper inputMapper(func);
     OwnedHqlExpr newParameters = createValueSafe(no_sortlist, makeSortListType(NULL), inputMapper.queryRealParameters());
-    OwnedHqlExpr newFunction = createFunctionDefinition(func->queryName(), newBody.getClear(), newParameters.getClear(), NULL, NULL);
+    OwnedHqlExpr newFunction = createFunctionDefinition(func->queryId(), newBody.getClear(), newParameters.getClear(), NULL, NULL);
 
     HqlExprArray realActuals;
     inputMapper.mapLogicalToReal(realActuals, actuals);
@@ -9588,7 +9645,7 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
         IHqlExpression & cur = oldSymbols.item(iMap);
         if (isExported(&cur) && !cur.isFunction())
         {
-            OwnedHqlExpr boundSymbol = boundScope->lookupSymbol(cur.queryName(),LSFpublic,lookupCtx);
+            OwnedHqlExpr boundSymbol = boundScope->lookupSymbol(cur.queryId(),LSFpublic,lookupCtx);
             assertex(boundSymbol);
             LinkedHqlExpr newValue = boundSymbol->queryBody();
             if (!cur.isDataset() && !cur.isDatarow())
@@ -9615,16 +9672,16 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
 
 //==========================================================================================================
 
-IHqlExpression * HqlGram::createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp, _ATOM name)
+IHqlExpression * HqlGram::createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp, IIdAtom *matchId)
 {
     if (!ifaceExpr->queryType()->assignableFrom(scopeExpr->queryType()))
         reportError(ERR_NOT_BASE_MODULE, errpos, "Module doesn't implement the interface supplied");
-    return ::createEvaluateOutputModule(lookupCtx, scopeExpr, ifaceExpr, lookupCtx.queryExpandCallsWhenBound(), outputOp, name);
+    return ::createEvaluateOutputModule(lookupCtx, scopeExpr, ifaceExpr, lookupCtx.queryExpandCallsWhenBound(), outputOp, matchId);
 }
 
 IHqlExpression * HqlGram::createStoredModule(const attribute & errpos, IHqlExpression * scopeExpr)
 {
-    if (!scopeExpr->queryProperty(_virtualSeq_Atom))
+    if (!scopeExpr->queryAttribute(_virtualSeq_Atom))
         reportError(ERR_NOT_INTERFACE, errpos, "Argument must be an interface or virtual module");
     return ::createStoredModule(scopeExpr);
 }
@@ -9671,7 +9728,7 @@ IHqlExpression * HqlGram::createIff(attribute & condAttr, attribute & leftAttr, 
     ITypeInfo * type = checkPromoteIfType(leftAttr, rightAttr);
     OwnedHqlExpr left = leftAttr.getExpr();
     OwnedHqlExpr right = rightAttr.getExpr();
-    OwnedHqlExpr field = createField(valueAtom, type, NULL, NULL);
+    OwnedHqlExpr field = createField(valueId, type, NULL, NULL);
     OwnedHqlExpr record = createRecord(field);
     OwnedHqlExpr lhs = createIffDataset(record, left);
     OwnedHqlExpr rhs = createIffDataset(record, right);
@@ -9735,14 +9792,14 @@ void HqlGram::canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const 
     reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", msg.str());
 }
 
-_ATOM HqlGram::getNameFromExpr(attribute& attr)
+IIdAtom * HqlGram::getNameFromExpr(attribute& attr)
 {
     OwnedHqlExpr expr = attr.getExpr();
     loop
     {
         IHqlExpression * name = queryNamedSymbol(expr);
         if (name)
-            return name->queryName();
+            return name->queryId();
 
         switch (expr->getOperator())
         {
@@ -9754,22 +9811,22 @@ _ATOM HqlGram::getNameFromExpr(attribute& attr)
             break;
         default:
             {
-                _ATOM name = expr->queryName();
-                if (name && (name != unnamedAtom))
-                    return name;
+                IIdAtom * id = expr->queryId();
+                if (id && (id->lower() != unnamedId->lower()))
+                    return id;
                 reportError(ERR_EXPECTED_IDENTIFIER, attr, "Expected an identifier");
-                return unknownAtom;
+                return unknownId;
             }
         }
     }
 }
 
-_ATOM HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
+IIdAtom * HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
 {
 //  while (expr->getOperator() == no_indirect)
 //      expr = expr->queryChild(0);
 
-    _ATOM name = expr->queryName();
+    IIdAtom * name = expr->queryId();
     if (!name)
     {
         switch (expr->getOperator())
@@ -9779,10 +9836,10 @@ _ATOM HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
         case no_indirect:
             return createFieldNameFromExpr(expr->queryChild(0));
         case no_countgroup:
-            name = createUnnamedFieldName("_unnamed_cnt_");
+            name = createUnnamedFieldId("_unnamed_cnt_");
             break;
         case no_existsgroup:
-            name = createUnnamedFieldName("_unnamed_exists_");
+            name = createUnnamedFieldId("_unnamed_exists_");
             break;
         case no_vargroup:
         case no_avegroup:
@@ -9793,8 +9850,8 @@ _ATOM HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
                 StringBuffer temp;
                 temp.append("_unnamed_").append(getOpString(expr->getOperator())).append("_");
                 temp.toLowerCase();
-                temp.append(createFieldNameFromExpr(expr->queryChild(0)));
-                name = createUnnamedFieldName(temp.str());
+                temp.append(createFieldNameFromExpr(expr->queryChild(0))->lower());
+                name = createUnnamedFieldId(temp.str());
             }
             break;
         case no_covargroup:
@@ -9803,10 +9860,10 @@ _ATOM HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
                 StringBuffer temp;
                 temp.append("_unnamed_").append(getOpString(expr->getOperator())).append("_");
                 temp.toLowerCase();
-                temp.append(createFieldNameFromExpr(expr->queryChild(0)));
+                temp.append(createFieldNameFromExpr(expr->queryChild(0))->lower());
                 temp.append("_");
-                temp.append(createFieldNameFromExpr(expr->queryChild(1)));
-                name = createUnnamedFieldName(temp.str());
+                temp.append(createFieldNameFromExpr(expr->queryChild(1))->lower());
+                name = createUnnamedFieldId(temp.str());
             }
             break;
         }
@@ -9821,10 +9878,9 @@ inline bool isDollarModule(IHqlExpression * expr)
 
 IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpression * expr)
 {
-    _ATOM name = expr->queryName();
     if (isDollarModule(expr))
         return LINK(queryExpression(globalScope));
-    if (name != _dot_Atom)
+    if (expr->queryName() != _dot_Atom)
     {
         if (!lookupCtx.queryRepository())
         {
@@ -9836,9 +9892,10 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
             return NULL;
         }
 
-        OwnedHqlExpr importMatch = lookupCtx.queryRepository()->queryRootScope()->lookupSymbol(name, LSFimport, lookupCtx);
+        IIdAtom * id = expr->queryId();
+        OwnedHqlExpr importMatch = lookupCtx.queryRepository()->queryRootScope()->lookupSymbol(id, LSFimport, lookupCtx);
         if (!importMatch)
-            importMatch.setown(parseScope->lookupSymbol(name, LSFsharedOK, lookupCtx));
+            importMatch.setown(parseScope->lookupSymbol(id, LSFsharedOK, lookupCtx));
 
         if (!importMatch || !importMatch->queryScope())
         {
@@ -9847,9 +9904,9 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
 
             StringBuffer msg;
             if (!importMatch)
-                msg.appendf("Import names unknown module \"%s\"", name->getAtomNamePtr()); 
+                msg.appendf("Import names unknown module \"%s\"", id->getAtomNamePtr());
             else
-                msg.appendf("Import item  \"%s\" is not a module", name->getAtomNamePtr()); 
+                msg.appendf("Import item  \"%s\" is not a module", id->getAtomNamePtr());
             reportError(ERR_MODULE_UNKNOWN, msg.toCharArray(),  
                         lexObject->getActualLineNo(), 
                         lexObject->getActualColumn(), 
@@ -9863,20 +9920,20 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     OwnedHqlExpr parent = resolveImportModule(errpos, expr->queryChild(0));
     if (!parent)
         return NULL;
-    _ATOM childName = expr->queryChild(1)->queryName();
-    OwnedHqlExpr resolved = parent->queryScope()->lookupSymbol(childName, LSFpublic, lookupCtx);
+    IIdAtom * childId = expr->queryChild(1)->queryId();
+    OwnedHqlExpr resolved = parent->queryScope()->lookupSymbol(childId, LSFpublic, lookupCtx);
     if (!resolved)
     {
         const char * parentName = parent->queryName()->str();
         if (!parentName)
             parentName = "$";
-        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", parentName, childName->str());
+        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", parentName, childId->str());
         return NULL;
     }
     IHqlScope * ret = resolved->queryScope();
     if (!ret)
     {
-        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "'%s' is not a module", childName->str());
+        reportError(ERR_OBJ_NOSUCHFIELD, errpos, "'%s' is not a module", childId->str());
         return NULL;
     }
     return resolved.getClear();
@@ -9895,12 +9952,12 @@ void HqlGram::processImportAll(attribute & modulesAttr)
             if (!defaultScopes.contains(*moduleScope))
                 defaultScopes.append(*LINK(moduleScope));
             if (!isDollarModule(&modules.item(i)))
-                defineImport(modulesAttr, module, module->queryName());
+                defineImport(modulesAttr, module, module->queryId());
         }
     }
 }
 
-void HqlGram::processImport(attribute & modulesAttr, _ATOM aliasName)
+void HqlGram::processImport(attribute & modulesAttr, IIdAtom * aliasName)
 {
     HqlExprArray modules;
     modulesAttr.unwindCommaList(modules);
@@ -9921,7 +9978,7 @@ void HqlGram::processImport(attribute & modulesAttr, _ATOM aliasName)
         OwnedHqlExpr module = resolveImportModule(modulesAttr, &cur);
         if (module)
         {
-            _ATOM newName = aliasName ? aliasName : module->queryName();
+            IIdAtom * newName = aliasName ? aliasName : module->queryId();
             defineImport(modulesAttr, module, newName);
             IHqlScope * moduleScope = module->queryScope();
             if (moduleScope->isImplicit())
@@ -9932,7 +9989,7 @@ void HqlGram::processImport(attribute & modulesAttr, _ATOM aliasName)
 
 
 
-void HqlGram::processImport(attribute & membersAttr, attribute & modulesAttr, _ATOM aliasName)
+void HqlGram::processImport(attribute & membersAttr, attribute & modulesAttr, IIdAtom * aliasName)
 {
     HqlExprArray modules;
     HqlExprArray members;
@@ -9963,20 +10020,20 @@ void HqlGram::processImport(attribute & membersAttr, attribute & modulesAttr, _A
     IHqlScope * moduleScope = module->queryScope();
     ForEachItemIn(i, members)
     {
-        _ATOM name = members.item(i).queryName();
-        Owned<IHqlExpression> resolved = moduleScope->lookupSymbol(name, LSFpublic, lookupCtx);
+        IIdAtom * id = members.item(i).queryId();
+        Owned<IHqlExpression> resolved = moduleScope->lookupSymbol(id, LSFpublic, lookupCtx);
         if (resolved)
         {
-            _ATOM newName = aliasName ? aliasName : name;
+            IIdAtom * newName = aliasName ? aliasName : id;
             defineImport(membersAttr, resolved, newName);
         }
         else
-            reportError(ERR_OBJ_NOSUCHFIELD, modulesAttr, "Module '%s' does not contain a definition named '%s'", module->queryName()->str(), name->str());
+            reportError(ERR_OBJ_NOSUCHFIELD, modulesAttr, "Module '%s' does not contain a definition named '%s'", module->queryName()->str(), id->str());
     }
 }
 
 
-void HqlGram::defineImport(const attribute & errpos, IHqlExpression * imported, _ATOM newName)
+void HqlGram::defineImport(const attribute & errpos, IHqlExpression * imported, IIdAtom * newName)
 {
     if (!imported || !newName)
         return;
@@ -10233,6 +10290,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case MIN: msg.append("MIN"); break;
     case MODULE: msg.append("MODULE"); break;
     case MOFN: msg.append("MOFN"); break;
+    case MULTIPLE: msg.append("MULTIPLE"); break;
     case NAMED: msg.append("NAMED"); break;
     case NAMEOF: msg.append("__NAMEOF__"); break;
     case NAMESPACE: msg.append("NAMESPACE"); break;
@@ -10331,6 +10389,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case SIZEOF: msg.append("SIZEOF"); break;
     case SKEW: msg.append("SKEW"); break;
     case SKIP: msg.append("SKIP"); break;
+    case SMART: msg.append("SMART"); break;
     case SOAPACTION: msg.append("SOAPACTION"); break;
     case __STAND_ALONE__: msg.append("__STAND_ALONE__"); break;
     case HTTPHEADER: msg.append("HTTPHEADER"); break;
@@ -10457,6 +10516,7 @@ static void getTokenText(StringBuffer & msg, int token)
         msg.append("function-name"); 
         break;
 
+    case BOOL_CONST: msg.append("boolean"); break;
     case REAL_CONST:
     case INTEGER_CONST: msg.append("number"); break;
     case STRING_CONST: msg.append("string"); break;
@@ -10542,7 +10602,7 @@ void HqlGram::simplifyExpected(int *expected)
                        AVE, VARIANCE, COVARIANCE, CORRELATION, WHICH, REJECTED, SIZEOF, RANK, RANKED, COUNTER, '+', '-', '(', '~', TYPE_LPAREN, ROWDIFF, WORKUNIT,
                        FAILCODE, FAILMESSAGE, FROMUNICODE, __GROUPED__, ISNULL, ISVALID, XMLDECODE, XMLENCODE, XMLTEXT, XMLUNICODE,
                        MATCHED, MATCHLENGTH, MATCHPOSITION, MATCHTEXT, MATCHUNICODE, MATCHUTF8, NOFOLD, NOHOIST, NOTHOR, OPT, REGEXFIND, REGEXREPLACE, RELATIONSHIP, SEQUENTIAL, SKIP, TOUNICODE, UNICODEORDER, UNSORTED,
-                       KEYUNICODE, TOK_TRUE, TOK_FALSE, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
+                       KEYUNICODE, TOK_TRUE, TOK_FALSE, BOOL_CONST, NOT, EXISTS, WITHIN, LEFT, RIGHT, SELF, '[', HTTPCALL, SOAPCALL, ALL, TOK_ERROR, TOK_CATCH, __COMMON__, __COMPOUND__, RECOVERY, CLUSTERSIZE, CHOOSENALL, BNOT, STEPPED, ECLCRC, NAMEOF,
                        TOXML, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
@@ -10739,7 +10799,7 @@ void HqlGram::checkWorkflowMultiples(IHqlExpression * previousWorkflow, IHqlExpr
     node_operator newOp = newWorkflow->getOperator();
     HqlExprArray workflows;
     previousWorkflow->unwindList(workflows, no_comma);
-    _ATOM newName = newWorkflow->queryName();
+    IAtom * newName = newWorkflow->queryName();
     ForEachItemIn(idx, workflows)
     {
         IHqlExpression & cur = workflows.item(idx);
@@ -10847,7 +10907,7 @@ static void expandDefJoinAttrs(IHqlExpression * newRec, IHqlExpression * record)
         case no_attr:
         case no_attr_link:
         case no_attr_expr:
-            if (!newRec->hasProperty(cur->queryName()))
+            if (!newRec->hasAttribute(cur->queryName()))
                 newRec->addOperand(LINK(cur));
             break;
         }
@@ -10863,7 +10923,7 @@ static void checkExtraCommonFields(IHqlSimpleScope * scope, IHqlExpression * rec
         {
         case no_field:
             {
-                OwnedHqlExpr match = scope->lookupSymbol(cur->queryName());
+                OwnedHqlExpr match = scope->lookupSymbol(cur->queryId());
                 if (!match)
                     *hasExtra = true;
                 else
@@ -10889,7 +10949,7 @@ static void expandDefJoinFields(IHqlExpression * newRec, IHqlSimpleScope * scope
         {
         case no_field:
             {
-                OwnedHqlExpr match = scope->lookupSymbol(cur->queryName());
+                OwnedHqlExpr match = scope->lookupSymbol(cur->queryId());
                 if (!match)
                     newRec->addOperand(LINK(cur));
                 break;
@@ -10910,7 +10970,7 @@ void HqlGram::addConditionalAssign(const attribute & errpos, IHqlExpression * se
     IHqlSimpleScope * rightScope = rightSelect->queryRecord()->querySimpleScope();
     OwnedHqlExpr tgt = createSelectExpr(LINK(self), LINK(field));
     OwnedHqlExpr leftSrc = createSelectExpr(LINK(leftSelect), LINK(field));
-    OwnedHqlExpr rightSrc = createSelectExpr(LINK(rightSelect), rightScope->lookupSymbol(field->queryName()));
+    OwnedHqlExpr rightSrc = createSelectExpr(LINK(rightSelect), rightScope->lookupSymbol(field->queryId()));
     if (field->isDatarow())
     {
         addConditionalRowAssign(errpos, tgt, leftSrc, rightSrc, field->queryRecord());
@@ -10981,7 +11041,7 @@ IHqlExpression* HqlGram::createDefJoinTransform(IHqlExpression* left,IHqlExpress
     OwnedHqlExpr leftSelect = createSelector(no_left, left, seq);
     OwnedHqlExpr rightSelect = createSelector(no_right, right, seq);
 
-    if (queryPropertyInList(fullouterAtom, flags) || queryPropertyInList(fullonlyAtom, flags))
+    if (queryAttributeInList(fullouterAtom, flags) || queryAttributeInList(fullonlyAtom, flags))
     {
         ForEachItemIn(i, commonFields)
         {
@@ -10990,7 +11050,7 @@ IHqlExpression* HqlGram::createDefJoinTransform(IHqlExpression* left,IHqlExpress
         }
     }
 
-    if (queryPropertyInList(rightouterAtom, flags) || queryPropertyInList(rightonlyAtom, flags))
+    if (queryAttributeInList(rightouterAtom, flags) || queryAttributeInList(rightonlyAtom, flags))
     {
         addAssignall(LINK(self), LINK(rightSelect), errpos);
         addAssignall(LINK(self), LINK(leftSelect), errpos);
@@ -11216,7 +11276,7 @@ PseudoPatternScope::PseudoPatternScope(IHqlExpression * _patternList) : CHqlScop
     patternList = _patternList;     // Do not link!
 }
 
-IHqlExpression * PseudoPatternScope::lookupSymbol(_ATOM name, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * PseudoPatternScope::lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     const char * text = name->str();
     if (*text == '$')
@@ -11328,7 +11388,7 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
     //The attribute will be added to the current scope as a side-effect of parsing the attribute.
     IFileContents * contents = forwardSymbol->queryDefinitionText();
     HqlGram parser(_parent, scope, contents, NULL, false);
-    parser.setExpectedAttribute(forwardSymbol->queryName());
+    parser.setExpectedAttribute(forwardSymbol->queryId());
     parser.setAssociateWarnings(true);
     parser.getLexer()->set_yyLineNo(forwardSymbol->getStartLine());
     parser.getLexer()->set_yyColumn(forwardSymbol->getStartColumn());
@@ -11338,7 +11398,7 @@ bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpres
 }
 
 
-void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, _ATOM name)
+void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * name)
 {
     HqlLookupContext attrCtx(ctx);
     attrCtx.noteBeginAttribute(scope, contents, name);
@@ -11357,12 +11417,14 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
 
 void testHqlInternals()
 {
-    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u)\n",
+    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u) prop(%u)\n",
             (unsigned)sizeof(CHqlConstant),
             (unsigned)sizeof(CHqlExpressionWithType),
             (unsigned)sizeof(CHqlSelectExpression),
             (unsigned)sizeof(CHqlDataset),
-            (unsigned)sizeof(CHqlAnnotation));
+            (unsigned)sizeof(CHqlAnnotation),
+            (unsigned)sizeof(CHqlDynamicProperty)
+            );
 
     //
     // test getOpString()
@@ -11574,7 +11636,7 @@ IHqlExpression *HqlGram::doParse()
     if (!expectedAttribute)
         return actions.getClear();
 
-    _ATOM moduleName = createIdentifierAtom(globalScope->queryFullName());
+    IIdAtom * moduleName = createIdAtom(globalScope->queryFullName());
     Owned<IFileContents> contents = LINK(lexObject->query_FileContents());
     unsigned lengthText = 0;
     containerScope->defineSymbol(expectedAttribute, moduleName, actions.getClear(), true, false, 0, contents, 1, 1, 0, 0, lengthText);

@@ -43,23 +43,23 @@ typedef byte transformdepth_t;
 
 class CHqlExprMeta;
 
-//class HQL_API CHqlExpression : implements IHqlExpression, public CInterface
-class HQL_API CHqlDynamicAttribute
+class HQL_API CHqlDynamicProperty
 {
     friend class CHqlExpression;
 public:
-    inline CHqlDynamicAttribute(_ATOM _name, IHqlExpression *_value)
-        : name(_name), value(_value)
+    inline CHqlDynamicProperty(ExprPropKind _kind, IInterface *_value)
+        : kind(_kind), value(_value)
     {
         next = NULL;
     }
-    ~CHqlDynamicAttribute() { delete next; }
+    ~CHqlDynamicProperty() { delete next; }
 
 protected:
-    _ATOM name;
-    CHqlDynamicAttribute * next;
-    LinkedHqlExpr value;
+    CHqlDynamicProperty * next;
+    ExprPropKind kind;
+    Linked<IInterface> value;
 };
+
 
 class CUsedTablesBuilder;
 
@@ -97,8 +97,12 @@ public:
     void addActiveTable(IHqlExpression * expr);
     void cleanupProduction();
     inline void removeActive(IHqlExpression * expr) { inScopeTables.zap(*expr); }
+    void removeParent(IHqlExpression * expr);
+    void removeActiveRecords();
     void removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right);
     void set(CUsedTables & tables) { tables.set(inScopeTables, newScopeTables); }
+
+    inline bool isIndependentOfScope() const { return inScopeTables.ordinality() == 0; }
 
 protected:
     HqlExprCopyArray inScopeTables;     // may need to rename, since use has changed.
@@ -118,7 +122,7 @@ public:
 
 protected:
     unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad
-                                // Worth storing becuase it significantly speeds up equality checking
+                                // Worth storing because it significantly speeds up equality checking
     IInterface * transformExtra[NUM_PARALLEL_TRANSFORMS];
     unsigned cachedCRC;
     unsigned infoFlags;
@@ -126,7 +130,7 @@ protected:
     unsigned short infoFlags2;
     transformdepth_t transformDepth[NUM_PARALLEL_TRANSFORMS];           // 1 byte
 
-    CHqlDynamicAttribute * attributes;
+    CHqlDynamicProperty * attributes;
     HqlExprArray operands;
 
 protected:
@@ -147,7 +151,7 @@ protected:
     //Used for determining how a no_select should be interpreted e.g., in table gathering. 
     inline bool isSelectRootAndActive() const
     {
-        if (hasProperty(newAtom))
+        if (hasAttribute(newAtom))
             return false;
         IHqlExpression * ds = queryChild(0);
         if ((ds->getOperator() == no_select) && ds->isDatarow())
@@ -165,7 +169,6 @@ protected:
         operands.append(child);
         onAppendOperand(child, which);
     }
-    IHqlExpression * queryExistingAttribute(_ATOM propName) const;
 
     void initFlagsBeforeOperands();
     void updateFlagsAfterOperands();
@@ -175,7 +178,8 @@ protected:
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
 
-    void addAttribute(_ATOM name, IHqlExpression * value);
+    virtual void addProperty(ExprPropKind kind, IInterface * value);
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
 
 public:
     virtual void Link(void) const;
@@ -185,13 +189,14 @@ public:
 
     virtual bool isExprClosed() const { return hashcode!=0; }
     virtual bool isFullyBound() const { return fullyBound(); };
-    virtual _ATOM queryName() const { return NULL; }
+    virtual IAtom * queryName() const { return NULL; }
+    virtual IIdAtom * queryId() const;
     virtual node_operator getOperator() const { return op; }
     virtual IHqlDataset *queryDataset() { return NULL; };
     virtual IHqlScope *queryScope();
     virtual IHqlSimpleScope *querySimpleScope();
-    virtual IHqlExpression *queryProperty(_ATOM propName) const;
-    virtual IHqlExpression *queryAttribute(_ATOM propName);
+    virtual IHqlExpression *queryAttribute(IAtom * propName) const;
+    virtual IHqlExpression *queryProperty(ExprPropKind kind);
     virtual IHqlExpression *queryFunctionDefinition() const { return NULL; };
     virtual IHqlExpression *queryExternalDefinition() const { return NULL; };
     virtual unsigned getInfoFlags() const { return infoFlags; }
@@ -237,7 +242,7 @@ public:
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body) { return LINK(body); }
     virtual void unwindList(HqlExprArray &dst, node_operator);
 
-    virtual _ATOM           queryFullModuleName() const { return NULL; }
+    virtual IIdAtom *           queryFullModuleId() const { return NULL; }
     virtual ISourcePath *   querySourcePath() const { return NULL; }
 
     virtual IInterface *    queryTransformExtra();
@@ -283,6 +288,7 @@ public:
     inline CHqlExpressionWithTables(node_operator op) : CHqlExpression(op) {}
 
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -291,9 +297,11 @@ protected:
     void cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to);
     void cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables);
     void cachePotentialTablesUsed(CUsedTablesBuilder & used);
-    void cacheTablesProcessChildScope(CUsedTablesBuilder & used);
+    void cacheTablesProcessChildScope(CUsedTablesBuilder & used, bool ignoreInputs);
     void cacheTablesUsed();
     void cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr);
+
+    void calcTablesUsed(CUsedTablesBuilder & used, bool ignoreInputs);
 
 protected:
     CUsedTables usedTables;
@@ -322,23 +330,23 @@ protected:
 
 class CHqlNamedExpression : public CHqlExpressionWithType
 {
-    friend HQL_API IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _ATOM name);
-    friend HQL_API IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, _ATOM name, HqlExprArray & args);
+    friend HQL_API IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id);
+    friend HQL_API IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id, HqlExprArray & args);
 
 protected:
-    _ATOM name;
+    IIdAtom * id;
 
 protected:
-    CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, ...);
-    CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, HqlExprArray & _ownedOperands);
+    CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id, ...);
+    CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id, HqlExprArray & _ownedOperands);
 
     virtual void sethash();
     virtual bool                equals(const IHqlExpression & other) const;
 
 public:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
-    virtual _ATOM queryName() const { return name; }
-
+    virtual IAtom * queryName() const { return id->lower(); }
+    virtual IIdAtom * queryId() const { return id; }
 };
 
 
@@ -353,6 +361,7 @@ public:
     virtual ITypeInfo *getType();
 
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -395,7 +404,7 @@ class CFileContents : public CInterfaceOf<IFileContents>
 {
 private:
     Linked<IFile> file;
-    StringAttr fileContents;
+    MemoryAttr fileContents;
     Linked<ISourcePath> sourcePath;
     bool delayedRead;
 
@@ -406,21 +415,24 @@ public:
 
     virtual IFile * queryFile() { return file; }
     virtual ISourcePath * querySourcePath() { return sourcePath; }
-    virtual const char *getText()
+    virtual const char * getText()
     {
         ensureLoaded();
-        return fileContents.sget();
+        return (const char *)fileContents.get();
     }
+    //NB: This is the string length, so subtract one to remove the null terminator
     virtual size32_t length() 
     { 
         ensureLoaded();
-        return fileContents.length();
+        return fileContents.length()-1;
     }
 
 private:
     bool preloadFromFile();
     void ensureLoaded();
     void ensureUtf8(MemoryBuffer & contents);
+    void setContents(size32_t len, const char * query);
+    void setContentsOwn(MemoryBuffer & contents);
 };
 
 class HQL_API CHqlAnnotation: public CHqlExpression
@@ -469,7 +481,8 @@ public:
 //Following are redirected to body
     virtual ITypeInfo *queryType() const;
     virtual ITypeInfo *getType();
-    virtual _ATOM queryName() const;
+    virtual IAtom * queryName() const;
+    virtual IIdAtom * queryId() const;
     virtual bool isScope();
     virtual bool isType();
     virtual bool isConstant();
@@ -487,6 +500,7 @@ public:
     virtual IHqlExpression *queryChild(unsigned idx) const;
     virtual unsigned numChildren() const;
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -499,12 +513,12 @@ public:
     virtual IHqlExpression *queryFunctionDefinition() const;
     virtual IHqlExpression *queryExternalDefinition() const;
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false);
-    virtual IHqlExpression *queryProperty(_ATOM propName) const;
-    virtual IHqlExpression *queryAttribute(_ATOM propName);
+    virtual IHqlExpression *queryAttribute(IAtom * propName) const;
+    virtual IHqlExpression *queryProperty(ExprPropKind kind);
     virtual IHqlExpression * clone(HqlExprArray &);
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body) = 0;
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body);
-    virtual _ATOM               queryFullModuleName() const;
+    virtual IIdAtom * queryFullModuleId() const;
     virtual bool isFullyBound() const;
     virtual IHqlExpression *addOperand(IHqlExpression *);
     virtual StringBuffer& getTextBuf(StringBuffer& buf);
@@ -525,8 +539,9 @@ class HQL_API CHqlSymbolAnnotation : public CHqlAnnotation, public IHqlNamedAnno
 public:
     IMPLEMENT_IINTERFACE_USING(CHqlAnnotation)
 
-    virtual _ATOM queryName() const { return name; }
-    virtual _ATOM queryFullModuleName() const { return module; }
+    virtual IAtom * queryName() const { return id->lower(); }
+    virtual IIdAtom * queryId() const { return id; }
+    virtual IIdAtom * queryFullModuleId() const { return moduleId; }
     virtual IHqlExpression *queryFunctionDefinition() const;
     virtual unsigned getSymbolFlags() const;
 
@@ -545,14 +560,14 @@ public:
     virtual void setRepositoryFlags(unsigned _flags) { symbolFlags |= (_flags & ob_registryflags); }
 
 protected:
-    CHqlSymbolAnnotation(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
+    CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _moduleId, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
     ~CHqlSymbolAnnotation();
 
     virtual void sethash();
 
 protected:
-    _ATOM name;
-    _ATOM module;
+    IIdAtom * id;
+    IIdAtom * moduleId;
     IHqlExpression *funcdef;
     unsigned symbolFlags;
 };
@@ -560,11 +575,11 @@ protected:
 class HQL_API CHqlSimpleSymbol : public CHqlSymbolAnnotation
 {
 public:
-    static IHqlExpression * makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
+    static IHqlExpression * makeSymbol(IIdAtom * _id, IIdAtom * _moduleId, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
 
 //interface IHqlNamedAnnotation
     virtual IFileContents * getBodyContents() { return NULL; }
-    virtual IHqlExpression * cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs);
+    virtual IHqlExpression * cloneSymbol(IIdAtom * optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs);
     virtual int getStartLine() const { return 0; }
     virtual int getStartColumn() const { return 0; }
     virtual int getStartPos() const { return 0; }
@@ -572,14 +587,14 @@ public:
     virtual int getEndPos() const { return 0; }
 
 protected:
-    CHqlSimpleSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
+    CHqlSimpleSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
 };
 
 class HQL_API CHqlNamedSymbol: public CHqlSymbolAnnotation
 {
 public:
-    static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
-    static CHqlNamedSymbol *makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int lineno, int column, int _startpos, int _bodypos, int _endpos);
+    static CHqlNamedSymbol *makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
+    static CHqlNamedSymbol *makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int lineno, int column, int _startpos, int _bodypos, int _endpos);
 
     virtual ISourcePath * querySourcePath() const;
     
@@ -598,11 +613,11 @@ public:
 
 //interface IHqlNamedAnnotation
     virtual IFileContents * getBodyContents();
-    virtual IHqlExpression * cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs);
+    virtual IHqlExpression * cloneSymbol(IIdAtom * optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs);
 
 protected:
-    CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _obFlags);
-    CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos);
+    CHqlNamedSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _obFlags);
+    CHqlNamedSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos);
 
 protected:
     Linked<IFileContents> text;
@@ -716,21 +731,22 @@ protected:
 class CHqlField: public CHqlExpressionWithType
 {
 private:
-    _ATOM               name;
+    IIdAtom * id;
 
     virtual void sethash();
     virtual bool equals(const IHqlExpression & other) const;
     void onCreateField();
 public:
-    CHqlField(_ATOM, ITypeInfo *type, IHqlExpression *defaultValue);
-    CHqlField(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands);
-//  CHqlField(_ATOM _name, ITypeInfo *_type, IHqlExpression *_defValue, IHqlExpression *_attrs);
+    CHqlField(IIdAtom *, ITypeInfo *type, IHqlExpression *defaultValue);
+    CHqlField(IIdAtom * _id, ITypeInfo *_type, HqlExprArray &_ownedOperands);
+//  CHqlField(IIdAtom * _id, ITypeInfo *_type, IHqlExpression *_defValue, IHqlExpression *_attrs);
 
     virtual StringBuffer &toString(StringBuffer &ret);
 //  virtual StringBuffer &toSQL(StringBuffer &, bool paren, IHqlDataset *scope, bool useAliases, node_operator op = no_none);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
-    virtual _ATOM queryName() const { return name; }
+    virtual IAtom * queryName() const { return id->lower(); }
+    virtual IIdAtom * queryId() const { return id; }
 };
 
 class CHqlRow: public CHqlExpressionWithType
@@ -743,20 +759,21 @@ public:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlSimpleScope *querySimpleScope();
     virtual IHqlDataset *queryDataset();
-    virtual _ATOM queryName() const;
+    virtual IAtom * queryName() const;
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);
 };
 
 
 class CHqlExternal: public CHqlExpressionWithType
 {
-    _ATOM name;
+    IIdAtom * id;
 
-    CHqlExternal(_ATOM name, ITypeInfo *, HqlExprArray &_ownedOperands);
+    CHqlExternal(IIdAtom * id, ITypeInfo *, HqlExprArray &_ownedOperands);
     virtual bool equals(const IHqlExpression & other) const;
 public:
-    static CHqlExternal *makeExternalReference(_ATOM name, ITypeInfo *, HqlExprArray &_ownedOperands);
-    virtual _ATOM queryName() const { return name; }
+    static CHqlExternal *makeExternalReference(IIdAtom * id, ITypeInfo *, HqlExprArray &_ownedOperands);
+    virtual IAtom * queryName() const { return id->lower(); }
+    virtual IIdAtom * queryId() const { return id; }
 };
 
 class CHqlExternalCall: public CHqlExpressionWithType
@@ -765,7 +782,8 @@ protected:
     OwnedHqlExpr funcdef;
 
     CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * type, HqlExprArray &parms);
-    virtual _ATOM queryName() const { return funcdef->queryName(); }
+    virtual IAtom * queryName() const { return funcdef->queryName(); }
+    virtual IIdAtom * queryId() const { return funcdef->queryId(); }
     virtual void sethash();
     virtual bool equals(const IHqlExpression & other) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
@@ -783,6 +801,7 @@ class CHqlExternalDatasetCall: public CHqlExternalCall, implements IHqlDataset
 
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlDataset *queryDataset() { return this; }
+    virtual IHqlExpression * queryExpression() { return this; }
 
 //interface IHqlDataset
     virtual IHqlDataset* queryTable()               { return this; }
@@ -797,18 +816,18 @@ class CHqlExternalDatasetCall: public CHqlExternalCall, implements IHqlDataset
 class SymbolTable
 {
 public:
-    inline void setValue(_ATOM name, IHqlExpression * value)
+    inline void setValue(IAtom * name, IHqlExpression * value)
     {
         CriticalBlock block(cs);
         map.setValue(name, value);
     }
-    inline bool contain(_ATOM name) const
+    inline bool contain(IAtom * name) const
     {
         CriticalBlock block(cs);
         IHqlExpression * ret = map.getValue(name);
         return (ret != NULL);
     }
-    inline IHqlExpression * getLinkedValue(_ATOM name) const
+    inline IHqlExpression * getLinkedValue(IAtom * name) const
     {
         CriticalBlock block(cs);
         IHqlExpression * ret = map.getValue(name);
@@ -824,7 +843,7 @@ public:
         CriticalBlock block(cs);
         map.kill();
     }
-    inline void remove(_ATOM name)
+    inline void remove(IAtom * name)
     {
         CriticalBlock block(cs);
         map.remove(name);
@@ -845,7 +864,7 @@ public:
     }
 
 protected:
-    MapXToMyClass<_ATOM, _ATOM, IHqlExpression> map;
+    MapXToMyClass<IAtom *, IAtom *, IHqlExpression> map;
     mutable CriticalSection cs;
 };
 
@@ -863,10 +882,10 @@ protected:
     SymbolTable & table;
 };
 #else
-class SymbolTable : public MapXToMyClass<_ATOM, _ATOM, IHqlExpression>
+class SymbolTable : public MapXToMyClass<IAtom *, IAtom *, IHqlExpression>
 {
 public:
-    inline IHqlExpression * getLinkedValue(_ATOM name) const
+    inline IHqlExpression * getLinkedValue(IAtom * name) const
     {
         IHqlExpression * ret = getValue(name);
         if (ret)
@@ -877,9 +896,9 @@ public:
 typedef HashIterator SymbolTableIterator;
 #endif
 
-inline IHqlExpression * lookupSymbol(SymbolTable & symbols, _ATOM searchName, bool sharedOK)
+inline IHqlExpression * lookupSymbol(SymbolTable & symbols, IIdAtom * searchName, bool sharedOK)
 {
-    OwnedHqlExpr ret = symbols.getLinkedValue(searchName);
+    OwnedHqlExpr ret = symbols.getLinkedValue(searchName->lower());
 
     if (!ret)
         return NULL; 
@@ -890,16 +909,17 @@ inline IHqlExpression * lookupSymbol(SymbolTable & symbols, _ATOM searchName, bo
     return ret.getClear();
 }
 
-typedef class MapXToMyClassViaBase<_ATOM, _ATOM, CHqlField, IHqlExpression> FieldTable;
+typedef class MapXToMyClassViaBase<IAtom *, IAtom *, CHqlField, IHqlExpression> FieldTable;
 
-typedef class MapXToMyClassViaBase<_ATOM, _ATOM, IFileContents, IFileContents> FileContentsTable;
+typedef class MapXToMyClassViaBase<IAtom *, IAtom *, IFileContents, IFileContents> FileContentsTable;
 
 class CHqlDelayedCall: public CHqlExpressionWithType
 {
     OwnedHqlExpr param;
 protected:
     CHqlDelayedCall(IHqlExpression * _param, ITypeInfo * type, HqlExprArray &parms);
-    virtual _ATOM queryName() const { return param->queryName(); }
+    virtual IAtom * queryName() const { return param->queryName(); }
+    virtual IIdAtom * queryId() const { return param->queryId(); }
     virtual void sethash();
     virtual bool equals(const IHqlExpression & other) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
@@ -917,6 +937,7 @@ class CHqlDelayedDatasetCall: public CHqlDelayedCall, implements IHqlDataset
     IMPLEMENT_IINTERFACE_USING(CHqlDelayedCall)
 
     virtual IHqlDataset *queryDataset() { return this; }
+    virtual IHqlExpression * queryExpression() { return this; }
 
 //interface IHqlDataset
     virtual IHqlDataset* queryTable()               { return this; }
@@ -935,14 +956,15 @@ public:
     CHqlDelayedScopeCall(IHqlExpression * _param, ITypeInfo * type, HqlExprArray &parms);
     IMPLEMENT_IINTERFACE_USING(CHqlDelayedCall)
 
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) { throwUnexpected(); }
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { throwUnexpected(); }
+    virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) { throwUnexpected(); }
+    virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { throwUnexpected(); }
     virtual void defineSymbol(IHqlExpression * expr) { throwUnexpected(); }
-    virtual void removeSymbol(_ATOM name) { throwUnexpected(); }
+    virtual void removeSymbol(IIdAtom * id) { throwUnexpected(); }
 
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual void    getSymbols(HqlExprArray& exprs) const;
-    virtual _ATOM   queryName() const;
+    virtual IAtom *   queryName() const;
+    virtual IIdAtom * queryId() const;
     virtual const char * queryFullName() const  { throwUnexpected(); }
     virtual ISourcePath * querySourcePath() const   { throwUnexpected(); }
     virtual bool hasBaseClass(IHqlExpression * searchBase);
@@ -952,8 +974,8 @@ public:
 
     virtual bool isImplicit() const { return false; }
     virtual bool isPlugin() const { return false; }
-    virtual int getPropInt(_ATOM a, int def) const { return def; }
-    virtual bool getProp(_ATOM a, StringBuffer &ret) const { return false; }
+    virtual int getPropInt(IAtom * a, int def) const { return def; }
+    virtual bool getProp(IAtom * a, StringBuffer &ret) const { return false; }
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
 
@@ -972,14 +994,14 @@ class HQL_API CHqlScope : public CHqlExpressionWithType, implements IHqlScope, i
 {
 protected:
     Owned<IFileContents> text;
-    _ATOM name;
+    IIdAtom * id;
     StringAttr fullName;                //Fully qualified name of this nested module   E.g.: PARENT.CHILD.GRANDCHILD
     SymbolTable symbols;
 
     virtual bool equals(const IHqlExpression & other) const;
 
 public:
-    CHqlScope(node_operator _op, _ATOM _name, const char * _fullName);
+    CHqlScope(node_operator _op, IIdAtom * _id, const char * _fullName);
     CHqlScope(node_operator _op);
     CHqlScope(IHqlScope* scope);
     ~CHqlScope();
@@ -994,22 +1016,23 @@ public:
 
 //interface IHqlScope
     virtual IHqlExpression * queryExpression() { return this; }
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isPublic, bool isShared, unsigned symbolFlags, IFileContents *, int lineno, int column, int _startpos, int _bodypos, int _endpos);
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags);
+    virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isPublic, bool isShared, unsigned symbolFlags, IFileContents *, int lineno, int column, int _startpos, int _bodypos, int _endpos);
+    virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags);
     virtual void defineSymbol(IHqlExpression * expr);
-    virtual void removeSymbol(_ATOM name);
+    virtual void removeSymbol(IIdAtom * id);
 
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
 
-    virtual _ATOM   queryName() const {return name;}
+    virtual IAtom * queryName() const {return id->lower();}
+    virtual IIdAtom * queryId() const { return id; }
     virtual const char * queryFullName() const  { return fullName; }
     virtual ISourcePath * querySourcePath() const { return text ? text->querySourcePath() : NULL; }
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
     virtual bool isImplicit() const { return false; }
     virtual bool isPlugin() const { return false; }
-    virtual int getPropInt(_ATOM, int) const;
-    virtual bool getProp(_ATOM, StringBuffer &) const;
+    virtual int getPropInt(IAtom *, int) const;
+    virtual bool getProp(IAtom *, StringBuffer &) const;
 
     virtual void    getSymbols(HqlExprArray& exprs) const;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
@@ -1031,7 +1054,7 @@ public:
     virtual IValue * castFrom(size32_t len, const UChar * text)  { return NULL; }
     virtual StringBuffer &getECLType(StringBuffer & out)  { return out.append("MODULE"); }
     virtual StringBuffer &getDescriptiveType(StringBuffer & out)  { return out.append("MODULE"); }
-    virtual const char *queryTypeName()         { return name->str(); }
+    virtual const char *queryTypeName()         { return id->str(); }
     virtual unsigned getCardinality()           { return 0; }
     virtual bool isInteger()                    { return false; }
     virtual bool isReference()                  { return false; }
@@ -1040,14 +1063,9 @@ public:
     virtual bool isSwappedEndian()              { return false; }
     virtual ICharsetInfo * queryCharset()       { return NULL; }
     virtual ICollationInfo * queryCollation()   { return NULL; }
-    virtual _ATOM queryLocale()                 { return NULL; }
-//  virtual _ATOM queryName() const             { return name; }
+    virtual IAtom * queryLocale()                 { return NULL; }
+//  virtual IAtom * queryName() const             { return id; }
     virtual ITypeInfo * queryChildType()        { return NULL; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return this; }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }
@@ -1060,7 +1078,7 @@ public:
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 
 protected:
-    void throwRecursiveError(_ATOM name);
+    void throwRecursiveError(IIdAtom * id);
 };
 
 class HQL_API CHqlRemoteScope : public CHqlScope, implements IHqlRemoteScope
@@ -1079,10 +1097,10 @@ protected:
     virtual bool equals(const IHqlExpression & other) const;
 
     virtual void repositoryLoadModule(HqlLookupContext & ctx, bool forceAll);
-    virtual IHqlExpression * repositoryLoadSymbol(_ATOM attrName);
+    virtual IHqlExpression * repositoryLoadSymbol(IIdAtom * attrName);
 
 public:
-    CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepositoryCallback *_repository, IProperties* _props, IFileContents * _text, bool _lazy, IEclSource * _eclSource);
+    CHqlRemoteScope(IIdAtom * _id, const char * _fullName, IEclRepositoryCallback *_repository, IProperties* _props, IFileContents * _text, bool _lazy, IEclSource * _eclSource);
     ~CHqlRemoteScope();
     IMPLEMENT_IINTERFACE_USING(CHqlScope)
 
@@ -1093,7 +1111,7 @@ public:
     virtual void sethash();
 
 //interface IHqlScope
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx);
     virtual void defineSymbol(IHqlExpression * expr);
     using CHqlScope::defineSymbol;
@@ -1106,10 +1124,10 @@ public:
 
     virtual bool isImplicit() const;
     virtual bool isPlugin() const;
-    virtual int getPropInt(_ATOM, int) const;
-    virtual bool getProp(_ATOM, StringBuffer &) const;
-    virtual void setProp(_ATOM, const char *);
-    virtual void setProp(_ATOM, int);
+    virtual int getPropInt(IAtom *, int) const;
+    virtual bool getProp(IAtom *, StringBuffer &) const;
+    virtual void setProp(IAtom *, const char *);
+    virtual void setProp(IAtom *, int);
     virtual IEclSource * queryEclSource() const { return eclSource; }
 };
 
@@ -1119,7 +1137,7 @@ protected:
     virtual bool equals(const IHqlExpression & other) const;
 
 public:
-    CHqlLocalScope(node_operator _op, _ATOM _name, const char * _fullName);
+    CHqlLocalScope(node_operator _op, IIdAtom * _id, const char * _fullName);
     CHqlLocalScope(IHqlScope* scope);
 
 //interface IHqlExpression
@@ -1145,12 +1163,12 @@ protected:
 protected:
     virtual bool equals(const IHqlExpression & other) const;
     IHqlScope * deriveConcreteScope();
-    IHqlExpression * lookupBaseSymbol(IHqlExpression * & definitionModule, _ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    IHqlExpression * lookupBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     void resolveUnboundSymbols();
     void ensureVirtualSeq();
 
 public:
-    CHqlVirtualScope(_ATOM _name, const char * _fullName);
+    CHqlVirtualScope(IIdAtom * _id, const char * _fullName);
 
 //interface IHqlExpression
     virtual IHqlExpression *addOperand(IHqlExpression * arg);
@@ -1158,13 +1176,12 @@ public:
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlExpression *closeExpr();
     virtual void defineSymbol(IHqlExpression * expr);
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
-    virtual bool queryForceSymbolVirtual(_ATOM searchName, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual bool queryForceSymbolVirtual(IIdAtom * searchName, HqlLookupContext & ctx);
     virtual void sethash();
 
 //interface IHqlScope
     virtual bool allBasesFullyBound() const { return fullyBoundBase; }
-    virtual _ATOM   queryName() const {return name;}
     virtual IHqlScope * queryConcreteScope() { return containsVirtual ? concrete.get() : this; }
 };
 
@@ -1172,11 +1189,11 @@ public:
 class HQL_API CHqlMergedScope : public CHqlScope
 {
 public:
-    CHqlMergedScope(_ATOM _name, const char * _fullName) : CHqlScope(no_mergedscope, _name, _fullName) { mergedAll = false; }
+    CHqlMergedScope(IIdAtom * _id, const char * _fullName) : CHqlScope(no_mergedscope, _id, _fullName) { mergedAll = false; }
 
     void addScope(IHqlScope * scope);
 
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx);
     virtual bool allBasesFullyBound() const;
     virtual bool isImplicit() const;
@@ -1196,9 +1213,9 @@ protected:
     CopyArray parents;
 
 public:
-    CHqlMultiParentScope(_ATOM, ...);
+    CHqlMultiParentScope(IIdAtom *, ...);
 
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual IHqlScope * queryConcreteScope() { return this; }
     virtual bool allBasesFullyBound() const { return true; }
 };
@@ -1214,11 +1231,11 @@ public:
     // copy constructor
     CHqlContextScope(IHqlScope* scope);
 
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value,bool exported, bool shared, unsigned symbolFlags)
-    {  defined.setValue(name,value);  }
+    virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value,bool exported, bool shared, unsigned symbolFlags)
+    {  defined.setValue(id->lower(),value);  }
 
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
-    {  return defined.getLinkedValue(searchName); }
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+    {  return defined.getLinkedValue(searchName->lower()); }
 
     virtual IHqlScope * queryConcreteScope()    { return this; }
     virtual bool allBasesFullyBound() const { return false; }
@@ -1264,6 +1281,7 @@ public:
     virtual ITypeInfo *getType();
 
     virtual bool isIndependentOfScope() { return true; }
+    virtual bool isIndependentOfScopeIgnoringInputs() { return true; }
     virtual bool usesSelector(IHqlExpression * selector) { return false; }
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) {}
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) {}
@@ -1273,23 +1291,24 @@ class CHqlParameter : public CHqlExpressionWithType
 {
 protected:
     unique_id_t uid;
-    _ATOM name;
+    IIdAtom * id;
     unsigned idx;
 
     virtual void sethash();
-    CHqlParameter(_ATOM name, unsigned idx, ITypeInfo *type);
+    CHqlParameter(IIdAtom * id, unsigned idx, ITypeInfo *type);
     ~CHqlParameter();
 
     virtual bool equals(const IHqlExpression & other) const;
 public:
-    static IHqlExpression *makeParameter(_ATOM name, unsigned idx, ITypeInfo *type, HqlExprArray & attrs);
+    static IHqlExpression *makeParameter(IIdAtom * id, unsigned idx, ITypeInfo *type, HqlExprArray & attrs);
 
 //interface IHqlExpression
 
     StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlSimpleScope *querySimpleScope();
-    virtual _ATOM queryName() const { return name; }
+    virtual IAtom * queryName() const { return id->lower(); }
+    virtual IIdAtom * queryId() const { return id; }
     virtual unsigned __int64 querySequenceExtra() { return idx; }
 };
 
@@ -1298,12 +1317,13 @@ class CHqlDatasetParameter : public CHqlParameter, implements IHqlDataset
 public:
     IMPLEMENT_IINTERFACE_USING(CHqlParameter)
 
-    CHqlDatasetParameter(_ATOM name, unsigned idx, ITypeInfo *type)
-     : CHqlParameter(name, idx, type) { }
+    CHqlDatasetParameter(IIdAtom * id, unsigned idx, ITypeInfo *type)
+     : CHqlParameter(id, idx, type) { }
 
 //IHqlExpression
     virtual bool assignableFrom(ITypeInfo * source) { type_t tc = source->getTypeCode(); return tc==type_table; }
     virtual IHqlDataset *queryDataset() { return this; }
+    virtual IHqlExpression * queryExpression() { return this; }
 
 //CHqlParameter
 
@@ -1325,12 +1345,13 @@ class CHqlDictionaryParameter : public CHqlParameter, implements IHqlDataset
 public:
     IMPLEMENT_IINTERFACE_USING(CHqlParameter)
 
-    CHqlDictionaryParameter(_ATOM name, unsigned idx, ITypeInfo *type)
-     : CHqlParameter(name, idx, type) { }
+    CHqlDictionaryParameter(IIdAtom * id, unsigned idx, ITypeInfo *type)
+     : CHqlParameter(id, idx, type) { }
 
 //IHqlExpression
     virtual bool assignableFrom(ITypeInfo * source) { type_t tc = source->getTypeCode(); return tc==type_dictionary; }
     virtual IHqlDataset *queryDataset() { return this; }
+    virtual IHqlExpression * queryExpression() { return this; }
 
 //CHqlParameter
 
@@ -1356,7 +1377,7 @@ protected:
 
     virtual void sethash();
 public:
-    CHqlScopeParameter(_ATOM name, unsigned idx, ITypeInfo *type);
+    CHqlScopeParameter(IIdAtom * id, unsigned idx, ITypeInfo *type);
 
 //IHqlExpression
     virtual bool assignableFrom(ITypeInfo * source);
@@ -1365,7 +1386,7 @@ public:
 
 //IHqlScope
     virtual void defineSymbol(IHqlExpression * expr)            { throwUnexpected(); }
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
 
     virtual void getSymbols(HqlExprArray& exprs) const          { typeScope->getSymbols(exprs); }
     virtual IHqlScope * queryConcreteScope() { return NULL; }
@@ -1394,7 +1415,7 @@ public:
 
 //IHqlScope
     virtual void defineSymbol(IHqlExpression * expr)            { throwUnexpected(); }
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual bool hasBaseClass(IHqlExpression * searchBase)      { return libraryScope->hasBaseClass(searchBase); }
     virtual bool allBasesFullyBound() const { return false; }
     virtual IHqlScope * queryConcreteScope()    { return this; }
@@ -1420,10 +1441,11 @@ public:
 
 //IHqlScope
     virtual IHqlExpression * queryExpression() { return this; }
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
 
     virtual void    getSymbols(HqlExprArray& exprs) const;
-    virtual _ATOM   queryName() const { return NULL; }
+    virtual IAtom *   queryName() const { return NULL; }
+    virtual IIdAtom * queryId() const { return NULL; }
     virtual const char * queryFullName() const { return NULL; }
     virtual ISourcePath * querySourcePath() const { return NULL; }
     virtual bool hasBaseClass(IHqlExpression * searchBase);
@@ -1436,14 +1458,14 @@ public:
 
     virtual bool isImplicit() const { return false; }
     virtual bool isPlugin() const { return false; }
-    virtual int getPropInt(_ATOM, int dft) const { return dft; }
-    virtual bool getProp(_ATOM, StringBuffer &) const { return false; }
+    virtual int getPropInt(IAtom *, int dft) const { return dft; }
+    virtual bool getProp(IAtom *, StringBuffer &) const { return false; }
 
 //IHqlCreateScope
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) { throwUnexpected(); }
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { throwUnexpected(); }
+    virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) { throwUnexpected(); }
+    virtual void defineSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { throwUnexpected(); }
     virtual void defineSymbol(IHqlExpression * expr) { throwUnexpected(); }
-    virtual void removeSymbol(_ATOM name) { throwUnexpected(); }
+    virtual void removeSymbol(IIdAtom * id) { throwUnexpected(); }
 
 protected:
     ITypeInfo * type;
@@ -1467,14 +1489,14 @@ public:
 class CHqlAttribute : public CHqlExpressionWithTables
 {
 protected:
-    _ATOM name;
-    CHqlAttribute(node_operator _op, _ATOM _name);
+    IAtom * name;
+    CHqlAttribute(node_operator _op, IAtom * _name);
     virtual bool equals(const IHqlExpression & other) const;
     virtual void sethash();
     virtual bool isAttribute() const { return true; }
 public:
-    static CHqlAttribute *makeAttribute(node_operator op, _ATOM name);
-    virtual _ATOM queryName() const { return name; }
+    static CHqlAttribute *makeAttribute(node_operator op, IAtom * name);
+    virtual IAtom * queryName() const { return name; }
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual StringBuffer &printAliases(StringBuffer &s, unsigned, bool &) { return s; }
@@ -1485,14 +1507,14 @@ public:
 class CHqlUnknown : public CHqlExpressionWithType
 {
 protected:
-    _ATOM name;
+    IAtom * name;
     LinkedIInterface extra;
-    CHqlUnknown(node_operator _op, ITypeInfo * _type, _ATOM _name, IInterface * _extra);
+    CHqlUnknown(node_operator _op, ITypeInfo * _type, IAtom * _name, IInterface * _extra);
     virtual bool equals(const IHqlExpression & other) const;
     virtual void sethash();
 public:
-    static CHqlUnknown *makeUnknown(node_operator _op, ITypeInfo * _type, _ATOM _name, IInterface * _extra);
-    virtual _ATOM queryName() const { return name; }
+    static CHqlUnknown *makeUnknown(node_operator _op, ITypeInfo * _type, IAtom * _name, IInterface * _extra);
+    virtual IAtom * queryName() const { return name; }
     virtual IInterface *queryUnknownExtra();
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
@@ -1503,15 +1525,15 @@ class CHqlSequence : public CHqlExpressionWithType
 {
 protected:
     unsigned __int64 seq;
-    _ATOM name;
+    IAtom * name;
 
-    CHqlSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq);
+    CHqlSequence(node_operator _op, ITypeInfo * _type, IAtom * _name, unsigned __int64 _seq);
     virtual bool equals(const IHqlExpression & other) const;
     virtual bool isAttribute() const { return op==no_attr; }
     virtual void sethash();
 public:
-    static CHqlSequence *makeSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq);
-    virtual _ATOM queryName() const { return name; }
+    static CHqlSequence *makeSequence(node_operator _op, ITypeInfo * _type, IAtom * _name, unsigned __int64 _seq);
+    virtual IAtom * queryName() const { return name; }
     virtual unsigned __int64 querySequenceExtra() { return seq; }
     virtual StringBuffer &toString(StringBuffer &ret);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
@@ -1549,7 +1571,7 @@ public:
     virtual IHqlExpression *addOperand(IHqlExpression *field);
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual bool equals(const IHqlExpression & other) const;
-    virtual _ATOM queryName() const { return unnamedAtom; }
+    virtual IAtom * queryName() const { return unnamedId->lower(); }
     virtual void sethash();
     virtual ITypeInfo *queryType() const;
     virtual ITypeInfo *getType();
@@ -1581,13 +1603,8 @@ public:
     virtual bool isSwappedEndian()              { return false; }
     virtual ICharsetInfo * queryCharset()       { return NULL; }
     virtual ICollationInfo * queryCollation()   { return NULL; }
-    virtual _ATOM queryLocale()                 { return NULL; }
+    virtual IAtom * queryLocale()                 { return NULL; }
     virtual ITypeInfo * queryChildType()        { return NULL; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return this; }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }
@@ -1598,7 +1615,7 @@ public:
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 
 // IHqlSimpleScope
-    IHqlExpression *lookupSymbol(_ATOM fieldName);
+    IHqlExpression *lookupSymbol(IIdAtom * fieldName);
     void insertSymbols(IHqlExpression * expr);
 };
 
@@ -1627,6 +1644,7 @@ public:
     static CHqlDataset *makeDataset(node_operator op, ITypeInfo *type, HqlExprArray &operands);
 
     virtual IHqlDataset *queryDataset() { return this; };
+    virtual IHqlExpression * queryExpression() { return this; }
     virtual IHqlSimpleScope *querySimpleScope();
     virtual IHqlDataset* queryTable();
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);
@@ -1634,10 +1652,14 @@ public:
     bool equals(const IHqlExpression & r) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
 
+    virtual void addProperty(ExprPropKind kind, IInterface * value);
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
+
 protected:
     IHqlDataset *rootTable;
     IHqlExpression * container;
     OwnedHqlExpr normalized;
+    Owned<IInterface> metaProperty;
 
     void cacheParent();
 
@@ -1662,10 +1684,10 @@ private:
     ITypeInfo *logical;
     ITypeInfo *physical;
     IHqlExpression *funcdef;
-    _ATOM name;
+    IIdAtom * id;
 
 public:
-    CHqlAlienType(_ATOM, IHqlScope *, IHqlExpression * _funcdef);
+    CHqlAlienType(IIdAtom *, IHqlScope *, IHqlExpression * _funcdef);
     ~CHqlAlienType();
 
     IMPLEMENT_IINTERFACE_USING(CHqlExpression)
@@ -1693,9 +1715,9 @@ public:
     virtual IValue * castFrom(double value)  { return NULL; }
     virtual IValue * castFrom(size32_t len, const char * text)  { return NULL; }
     virtual IValue * castFrom(size32_t len, const UChar * text)  { return NULL; }
-    virtual StringBuffer &getECLType(StringBuffer & out)  { return out.append(name); }
+    virtual StringBuffer &getECLType(StringBuffer & out)  { return out.append(id->lower()); }
     virtual StringBuffer &getDescriptiveType(StringBuffer & out)  { return getECLType(out); }
-    virtual const char *queryTypeName()         { return name->str(); }
+    virtual const char *queryTypeName()         { return id->lower()->str(); }
     virtual unsigned getCardinality();
     virtual bool isInteger()                    { return logical->isInteger(); }
     virtual bool isReference()                  { return false; }
@@ -1704,14 +1726,10 @@ public:
     virtual bool isSwappedEndian()              { return logical->isSwappedEndian(); }
     virtual ICharsetInfo * queryCharset()       { return logical->queryCharset(); }
     virtual ICollationInfo * queryCollation()   { return logical->queryCollation(); }
-    virtual _ATOM queryLocale()                 { return logical->queryLocale(); }
-    virtual _ATOM queryName() const             { return name; }
+    virtual IAtom * queryLocale()                 { return logical->queryLocale(); }
+    virtual IAtom * queryName() const { return id->lower(); }
+    virtual IIdAtom * queryId() const { return id; }
     virtual ITypeInfo * queryChildType() { return logical; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return logical->queryPromotedType(); }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }
@@ -1723,7 +1741,7 @@ public:
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 
 // IHqlSimpleScope
-    IHqlExpression *lookupSymbol(_ATOM fieldName);
+    IHqlExpression *lookupSymbol(IIdAtom * fieldName);
 
 // interface IHqlAlienTypeInfo
     virtual ITypeInfo *getLogicalType() { return LINK(logical); }
@@ -1736,10 +1754,10 @@ public:
     virtual IHqlExpression * queryLoadFunction();
     virtual IHqlExpression * queryLengthFunction();
     virtual IHqlExpression * queryStoreFunction();
-    virtual IHqlExpression * queryFunction(_ATOM name);
+    virtual IHqlExpression * queryFunction(IIdAtom * id);
 
 private:
-    IHqlExpression * queryMemberFunc(_ATOM name);
+    IHqlExpression * queryMemberFunc(IIdAtom * id);
 };
 
 class CHqlEnumType : public CHqlExpressionWithType
@@ -1765,18 +1783,18 @@ private:
     unsigned errcount;
 public:
     SilentErrorReceiver() { errcount = 0; }
-    virtual void reportError(int errNo, const char *msg, _ATOM filename, int _lineno, int _column, int _pos);
+    virtual void reportError(int errNo, const char *msg, IIdAtom * filename, int _lineno, int _column, int _pos);
     unsigned getErrCount() { return errcount; }
 };
 
 */
 
 class HqlGramCtx;
-extern void defineSymbol(_ATOM name, IHqlExpression *value);
-extern void parseAttribute(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, _ATOM name);
+extern void defineSymbol(IIdAtom * id, IHqlExpression *value);
+extern void parseAttribute(IHqlScope *scope, IFileContents * contents, HqlLookupContext & ctx, IIdAtom * id);
 extern bool parseForwardModuleMember(HqlGramCtx & _parent, IHqlScope *scope, IHqlExpression * forwardSymbol, HqlLookupContext & ctx);
 
-IHqlExpression *createAttribute(node_operator op, _ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3);
-IHqlExpression *createAttribute(node_operator op, _ATOM name, HqlExprArray & args);
+IHqlExpression *createAttribute(node_operator op, IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3);
+IHqlExpression *createAttribute(node_operator op, IAtom * name, HqlExprArray & args);
 
 #endif

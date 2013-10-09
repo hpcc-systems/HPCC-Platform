@@ -118,7 +118,7 @@ public:
     {
         synchronized procedure(readMutex);
 
-        int bytesRead;
+        int bytesRead = 0;
         inputLen = 0;
         while ((inputLen < bytesPerQuery) && (bytesRead = read(0, inputBuffer+inputLen, bytesPerQuery-inputLen)) > 0)
             inputLen += bytesRead;

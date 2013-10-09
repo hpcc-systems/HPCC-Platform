@@ -366,7 +366,7 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
     try
     {
         StringBuffer totalThorTimeValue;
-        unsigned totalThorTimerCount; //Do we need this?
+        unsigned totalThorTimerCount = 0; //Do we need this?
 
         IArrayOf<IEspECLTimer> timers;
         Owned<IStringIterator> it = &cw->getTimers();
@@ -1286,11 +1286,11 @@ void WsWuInfo::getEclSchemaFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpr
         }
     case no_field:
         {
-            if (expr->hasProperty(__ifblockAtom))
+            if (expr->hasAttribute(__ifblockAtom))
                 break;
             ITypeInfo * type = expr->queryType();
             IAtom * name = expr->queryName();
-            IHqlExpression * nameAttr = expr->queryProperty(namedAtom);
+            IHqlExpression * nameAttr = expr->queryAttribute(namedAtom);
             StringBuffer outname;
             if (nameAttr && nameAttr->queryChild(0) && nameAttr->queryChild(0)->queryValue())
                 nameAttr->queryChild(0)->queryValue()->getStringValue(outname);

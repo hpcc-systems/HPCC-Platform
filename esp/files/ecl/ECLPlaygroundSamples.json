@@ -20,6 +20,8 @@
 		{ "name": "GRAPH", "filename": "GRAPH_Example.ecl" },
 		{ "name": "GROUP", "filename": "GROUP_Example.ecl" },
 		{ "name": "ITERATE", "filename": "ITERATE_Example.ecl" },
+		{ "name": "Java Simple", "filename": "SimpleJava.ecl" },
+		{ "name": "Java Embed", "filename": "EmbedJava.ecl" },
 		{ "name": "JOIN_ATMOST_LIMIT", "filename": "JOIN_ATMOST_LIMIT_Example.ecl" },
 		{ "name": "JOIN_dupes", "filename": "JOIN_dupes_example.ecl" },
 		{ "name": "JOIN", "filename": "JOIN_Example.ecl" },

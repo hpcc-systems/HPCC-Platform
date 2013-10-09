@@ -261,13 +261,13 @@ public:
 class HQL_API DebugDifferenceAnalyser : public QuickHqlTransformer
 {
 public:
-    DebugDifferenceAnalyser(_ATOM _search);
+    DebugDifferenceAnalyser(IIdAtom * _search);
 
     virtual void doAnalyse(IHqlExpression * expr);
     
 protected:
     IHqlExpression * prev;
-    _ATOM search;
+    IIdAtom * search;
 };
 
 //---------------------------------------------------------------------------
@@ -1241,6 +1241,7 @@ ii) make it dependant on the thing that can change - e.g.,
 
 */
 
+extern HQL_API IHqlExpression * lookupNewSelectedField(IHqlExpression * ds, IHqlExpression * field);
 extern HQL_API IHqlExpression * newReplaceSelector(IHqlExpression * expr, IHqlExpression * oldSelector, IHqlExpression * newSelector);
 extern HQL_API void newReplaceSelector(HqlExprArray & target, const HqlExprArray & source, IHqlExpression * oldSelector, IHqlExpression * newSelector);
 extern HQL_API IHqlExpression * queryNewReplaceSelector(IHqlExpression * expr, IHqlExpression * oldSelector, IHqlExpression * newSelector);

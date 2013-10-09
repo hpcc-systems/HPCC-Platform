@@ -73,8 +73,8 @@ void HqlCppLibrary::extractOutputs()
         IHqlExpression & cur = symbols.item(i);
         if (isExported(&cur))
         {
-            _ATOM name = cur.queryName();
-            OwnedHqlExpr value = scope->lookupSymbol(name, LSFpublic, dummyctx);
+            IIdAtom * id = cur.queryId();
+            OwnedHqlExpr value = scope->lookupSymbol(id, LSFpublic, dummyctx);
 
             if (value && !value->isFunction())
             {
@@ -141,7 +141,7 @@ unsigned HqlCppLibrary::getHash(const HqlExprArray & values, unsigned crc) const
 }
 
 
-unsigned HqlCppLibrary::queryOutputIndex(_ATOM name) const
+unsigned HqlCppLibrary::queryOutputIndex(IAtom * name) const
 {
     ForEachItemIn(i, outputs)
     {
@@ -166,7 +166,7 @@ HqlCppLibraryInstance::HqlCppLibraryInstance(HqlCppTranslator & translator, IHql
     assertex(libraryFuncdef->getOperator() == no_funcdef);
     IHqlExpression * libraryScope = libraryFuncdef->queryChild(0);
     assertex(libraryScope->getOperator() == no_libraryscope);
-    IHqlExpression * libraryInterface = queryPropertyChild(libraryScope, implementsAtom, 0);
+    IHqlExpression * libraryInterface = queryAttributeChild(libraryScope, implementsAtom, 0);
     assertex(libraryInterface);
 
     library.setown(new HqlCppLibrary(translator, libraryInterface, clusterType));
@@ -196,9 +196,9 @@ public:
         if (oldModule == newModule)
             return LINK(expr);
 
-        _ATOM attrName = expr->queryChild(3)->queryName();
+        IIdAtom * id = expr->queryChild(3)->queryId();
         HqlDummyLookupContext dummyctx(NULL);
-        OwnedHqlExpr value = newModule->queryScope()->lookupSymbol(attrName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+        OwnedHqlExpr value = newModule->queryScope()->lookupSymbol(id, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
         assertex(value != NULL);
         IHqlExpression * oldAttr = expr->queryChild(2);
         if (oldAttr->isDataset() || oldAttr->isDatarow())
@@ -226,7 +226,7 @@ protected:
     {
         IHqlScope * oldScope = libraryExpr->queryScope();
         IHqlScope * lookupScope = oldScope;
-        IHqlExpression * interfaceExpr = queryPropertyChild(libraryExpr, implementsAtom, 0);
+        IHqlExpression * interfaceExpr = queryAttributeChild(libraryExpr, implementsAtom, 0);
         if (interfaceExpr)
             lookupScope = interfaceExpr->queryScope();
 
@@ -239,8 +239,8 @@ protected:
             IHqlExpression & cur = symbols.item(i);
             if (isExported(&cur))
             {
-                _ATOM name = cur.queryName();
-                OwnedHqlExpr oldSymbol = oldScope->lookupSymbol(name, LSFpublic, dummyctx);
+                IIdAtom * id = cur.queryId();
+                OwnedHqlExpr oldSymbol = oldScope->lookupSymbol(id, LSFpublic, dummyctx);
                 OwnedHqlExpr newValue;
                 ITypeInfo * type = oldSymbol->queryType();
                 if (oldSymbol->isDataset() || oldSymbol->isDatarow())
@@ -250,7 +250,7 @@ protected:
                 else
                 {
                     //Convert a scalar to a select from a dataset
-                    OwnedHqlExpr field = createField(unknownAtom, LINK(type), NULL, NULL);
+                    OwnedHqlExpr field = createField(unknownId, LINK(type), NULL, NULL);
                     OwnedHqlExpr newRecord = createRecord(field);
                     OwnedHqlExpr ds = createDataset(no_null, LINK(newRecord));
                     newValue.setown(createNullExpr(ds));
@@ -263,7 +263,7 @@ protected:
                     HqlExprArray parms;
                     unwindChildren(parms, oldSymbol, 1);
                     IHqlExpression * formals = createSortList(parms);
-                    newValue.setown(createFunctionDefinition(name, newValue.getClear(), formals, NULL, NULL));
+                    newValue.setown(createFunctionDefinition(id, newValue.getClear(), formals, NULL, NULL));
                 }
 
                 IHqlExpression * newSym = oldSymbol->cloneAllAnnotations(newValue);
@@ -300,10 +300,10 @@ public:
                 assertex(scopeFunc->getOperator() == no_funcdef);
                 IHqlExpression * moduleExpr = scopeFunc->queryChild(0);
                 assertex(moduleExpr->getOperator() == no_libraryscope);
-                IHqlExpression * internalExpr = moduleExpr->queryProperty(internalAtom);
+                IHqlExpression * internalExpr = moduleExpr->queryAttribute(internalAtom);
                 if (internalExpr)
                 {
-                    IHqlExpression * nameExpr = moduleExpr->queryProperty(nameAtom);
+                    IHqlExpression * nameExpr = moduleExpr->queryAttribute(nameAtom);
                     if (!matchedInternalLibraries.contains(*nameExpr))
                     {
                         internalLibraries.append(*transformEmbeddedLibrary(scopeFunc));
@@ -410,7 +410,7 @@ static IHqlExpression * convertScalarToDataset(IHqlExpression * expr)
         break;
     }
 
-    OwnedHqlExpr field = createField(valueAtom, expr->getType(), NULL, NULL);
+    OwnedHqlExpr field = createField(valueId, expr->getType(), NULL, NULL);
     OwnedHqlExpr record = createRecord(field);
     OwnedHqlExpr assign = createAssign(createSelectExpr(createSelector(no_self, record, NULL), LINK(field)), LINK(expr));
     OwnedHqlExpr row = createRow(no_createrow, createValue(no_transform, makeTransformType(record->getType()), LINK(assign)));
@@ -433,7 +433,7 @@ void HqlCppLibraryImplementation::mapLogicalToImplementation(HqlExprArray & expr
     ForEachItemIn(i, outputs)
     {
         IHqlExpression & curOutput = outputs.item(i);
-        OwnedHqlExpr output = scope->lookupSymbol(curOutput.queryName(), LSFpublic, dummyctx);
+        OwnedHqlExpr output = scope->lookupSymbol(curOutput.queryId(), LSFpublic, dummyctx);
 
         // Do a global replace of input(n) with no_getgraphresult(n), and no_param with no_
         if (!output->isDatarow() && !output->isDataset())
@@ -450,7 +450,7 @@ void HqlCppLibraryImplementation::mapLogicalToImplementation(HqlExprArray & expr
 
 //---------------------------------------------------------------------------
 
-void ThorBoundLibraryActivity::noteOutputUsed(_ATOM name)
+void ThorBoundLibraryActivity::noteOutputUsed(IAtom * name)
 {
     unsigned matchIndex = libraryInstance->library->queryOutputIndex(name);
     assertex(matchIndex != NotFound);
@@ -514,10 +514,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     IHqlExpression * moduleFunction = expr->queryDefinition();      // no_funcdef
     IHqlExpression * module = moduleFunction->queryChild(0);
     assertex(module->getOperator() == no_libraryscope);
-    IHqlExpression * nameAttr = module->queryProperty(nameAtom);
+    IHqlExpression * nameAttr = module->queryAttribute(nameAtom);
     OwnedHqlExpr name = foldHqlExpression(nameAttr->queryChild(0));
     IValue * nameValue = name->queryValue();
-    IHqlExpression * originalName = queryPropertyChild(module, _original_Atom, 0);
+    IHqlExpression * originalName = queryAttributeChild(module, _original_Atom, 0);
 
     StringBuffer libraryName;
     if (nameValue)
@@ -554,7 +554,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     }
 
     instance->addAttributeInt("_interfaceHash", library->getInterfaceHash());
-    instance->addAttributeBool("embedded", module->hasProperty(internalAtom));
+    instance->addAttributeBool("embedded", module->hasAttribute(internalAtom));
     instance->addAttributeInt("_maxOutputs", library->outputs.ordinality());
     if (!targetHThor())
         instance->addAttributeInt("_graphid", nextActivityId());            // reserve an id...
@@ -585,7 +585,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     ForEachItemIn(iout, library->outputs)
     {
         IHqlExpression & cur = library->outputs.item(iout);
-        OwnedHqlExpr dataset = moduleScope->lookupSymbol(cur.queryName(), LSFpublic, dummyCtx);
+        OwnedHqlExpr dataset = moduleScope->lookupSymbol(cur.queryId(), LSFpublic, dummyCtx);
         assertex(dataset && dataset->queryRecord());
         MetaInstance meta(*this, dataset->queryRecord(), isGrouped(dataset));
         buildMetaInfo(meta);

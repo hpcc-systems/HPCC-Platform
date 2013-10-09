@@ -1050,7 +1050,7 @@ public:
                     StringBuffer fn;
                     StringBuffer dir;
                     StringBuffer lastdir;
-                    cDirDesc *pdir;
+                    cDirDesc *pdir = NULL;
                     bool islost = false;
                     bool incluster = true;          
                     for (unsigned p=0;p<np;p++) {
@@ -1986,8 +1986,7 @@ class CSashaXRefServer: public ISashaServer, public Thread
     bool stopped;
     Semaphore stopsem;
     Mutex runmutex;
-    Owned<IRemoteConnection> statusconn;
-    bool ignorelazylost;
+    bool ignorelazylost, suspendCoalescer;
 
     class cRunThread: public Thread
     {
@@ -2003,7 +2002,6 @@ class CSashaXRefServer: public ISashaServer, public Thread
             parent.runXRef(servers,false,false);
             return 0;
         }
-    
     }; 
 
 
@@ -2013,6 +2011,7 @@ public:
     CSashaXRefServer()
         : Thread("CSashaXRefServer")
     {
+        suspendCoalescer = true; // can be overridden by configuration setting
         stopped = false;
     }
 
@@ -2044,23 +2043,23 @@ public:
     {
         if (stopped||!clustcsl||!*clustcsl)
             return;
-        struct cSuspendResume
+        class CSuspendResume : public CSimpleInterface
         {
-            Owned<IRemoteConnection> &statusconn;
-            cSuspendResume(Owned<IRemoteConnection> &_statusconn) 
-                : statusconn(_statusconn)
+        public:
+            CSuspendResume()
             {
-                statusconn.clear();
                 PROGLOG(LOGPFX "suspending coalesce");
                 suspendCoalescingServer();
             }
-            ~cSuspendResume() 
+            ~CSuspendResume()
             {
-                statusconn.clear();
                 PROGLOG(LOGPFX "resuming coalesce");
                 resumeCoalescingServer();
             }
-        } suspendresume(statusconn);
+        };
+        Owned<CSimpleInterface> suspendresume;
+        if (suspendCoalescer)
+            suspendresume.setown(new CSuspendResume());
         synchronized block(runmutex);
         if (stopped)
             return;
@@ -2163,28 +2162,6 @@ public:
             conn->queryRoot()->setPropBool("@useSasha",on);
     }
 
-    void initStatus(const char *cluster)
-    {
-        StringBuffer xpath;
-        xpath.appendf("/DFU/XREF/Cluster[@name=\"%s\"]",cluster);
-        loop {
-            statusconn.setown(querySDS().connect(xpath.str(),myProcessSession(),RTM_NONE,INFINITE));
-            if (statusconn)
-                break;
-            Owned<IRemoteConnection> conn = querySDS().connect("/DFU/XREF",myProcessSession(),RTM_CREATE_QUERY|RTM_LOCK_WRITE ,INFINITE);
-            StringBuffer xpath2;
-            xpath2.appendf("Cluster[@name=\"%s\"]",cluster);
-            if (!conn->queryRoot()->hasProp(xpath2.str()))
-                conn->queryRoot()->addPropTree("Cluster",createPTree("Cluster"))->setProp("@name",cluster);
-        }
-    }
-
-    void setStatus(const char *string) 
-    {
-        statusconn->queryRoot()->setProp("@status",string);
-        statusconn->commit();
-    }
-
     int run()
     {
         Owned<IPropertyTree> props = serverConfig->getPropTree("DfuXRef");
@@ -2203,6 +2180,7 @@ public:
         if (!interval)
             stopped = !eclwatchprovider;
         setSubmittedOk(eclwatchprovider);
+        suspendCoalescer = props->getPropBool("@suspendCoalescerDuringXref", true);
         ignorelazylost = props->getPropBool("@ignoreLazyLost",true);
         PROGLOG(LOGPFX "min interval = %d hr", interval);
         unsigned initinterval = (interval-1)/2+1;  // wait a bit til dali has started
@@ -2271,10 +2249,6 @@ class CSashaExpiryServer: public ISashaServer, public Thread
     bool stopped;
     Semaphore stopsem;
     Mutex runmutex;
-    Owned<IRemoteConnection> statusconn;
-
-    
-
 
 public:
     IMPLEMENT_IINTERFACE;

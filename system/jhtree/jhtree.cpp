@@ -114,7 +114,7 @@ void SegMonitorList::checkSize(size32_t keyedSize, char const * keyname)
     {
         StringBuffer err;
         err.appendf("Key size mismatch on key %s - size was %u, expected %u", keyname, getSize(), keyedSize);
-        IException *e = MakeStringException(1000, "%s", err.str());
+        IException *e = MakeStringExceptionDirect(1000, err.str());
         EXCLOG(e, err.str());
         throw e;
     }
@@ -605,7 +605,7 @@ public:
             {
                 StringBuffer err;
                 err.appendf("Key size mismatch - key file (%s) indicates record size should be %d, but ECL declaration was %d", keyName.get(), keySize, eclKeySize);
-                IException *e = MakeStringException(1000, "%s", err.str());
+                IException *e = MakeStringExceptionDirect(1000, err.str());
                 EXCLOG(e, err.str());
                 throw e;
             }
@@ -940,7 +940,7 @@ public:
                 StringBuffer err;
                 err.append("Could not translate index read filters during layout translation of index ").append(keyName.get()).append(": ");
                 layoutTrans->queryFailure().getDetail(err);
-                throw MakeStringException(0, "%s", err.str());
+                throw MakeStringExceptionDirect(0, err.str());
             }
         }
         segs.finish();

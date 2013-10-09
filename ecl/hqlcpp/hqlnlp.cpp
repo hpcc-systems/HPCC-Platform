@@ -114,7 +114,7 @@ void MatchReference::getPath(StringBuffer & path)
     {
         if (idx)
             path.append(".");
-        path.append(queryPatternName(&names.item(idx)));
+        path.append(queryPatternName(&names.item(idx))->lower());
     }
 }
 
@@ -123,10 +123,10 @@ StringBuffer & MatchReference::getDebugText(StringBuffer & out, RegexIdAllocator
     ForEachItemIn(i1, names)
     {
         IHqlExpression & curName = names.item(i1);
-        _ATOM name = queryPatternName(&curName);
+        IAtom * name = queryPatternName(&curName)->lower();
         if (i1)
             out.append("/");
-        out.append(name);
+        out.append(name->str());
         out.append("{").append(idAllocator.queryID(curName.queryChild(0), name)).append("}");
         unsigned inst = (unsigned)indices.item(i1).queryValue()->getIntValue();
         if (inst != UNKNOWN_INSTANCE)
@@ -140,7 +140,7 @@ void MatchReference::compileMatched(RegexIdAllocator & idAllocator, UnsignedArra
     ForEachItemIn(idx, names)
     {
         IHqlExpression & curName = names.item(idx);
-        ids.append(idAllocator.queryID(curName.queryChild(0), queryPatternName(&curName)));
+        ids.append(idAllocator.queryID(curName.queryChild(0), queryPatternName(&curName)->lower()));
         indexValues.append((unsigned)indices.item(idx).queryValue()->getIntValue());
     }
 }
@@ -168,10 +168,10 @@ NlpParseContext::NlpParseContext(IHqlExpression * _expr, IWorkUnit * _wu, const 
     }
 
     info.charSize = (info.type == type_unicode) ? sizeof(UChar) : sizeof(char);
-    IHqlExpression * sepAttr = expr->queryProperty(separatorAtom);
+    IHqlExpression * sepAttr = expr->queryAttribute(separatorAtom);
     if (sepAttr)
         info.separator.set(sepAttr->queryChild(0));
-    info.caseSensitive = !expr->hasProperty(noCaseAtom);        // default true.
+    info.caseSensitive = !expr->hasAttribute(noCaseAtom);        // default true.
     info.dfaRepeatMax = options.dfaRepeatMax;
     info.dfaRepeatMaxScore = options.dfaRepeatMaxScore;
     info.uidBase = getUniqueId();
@@ -257,7 +257,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
             }
             validctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
             validctx.associateExpr(activeValidateMarkerExpr, activeValidateMarkerExpr);
-            translator.bindTableCursor(validctx, queryMatchxxxPseudoFile(), queryMatchxxxPseudoFile());
+            translator.bindTableCursor(validctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
             if (translator.queryOptions().spotCSE)
                 validateExpr.setown(spotScalarCSE(validateExpr));
             translator.buildReturn(validctx, validateExpr);
@@ -362,7 +362,7 @@ void NlpParseContext::extractMatchedSymbols(IHqlExpression * expr)
     }
 }
 
-bool NlpParseContext::isMatched(IHqlExpression * expr, _ATOM name)
+bool NlpParseContext::isMatched(IHqlExpression * expr, IAtom * name)
 {
     if (allMatched)
         return true;
@@ -449,13 +449,13 @@ static void getOptions(IHqlExpression * expr, INlpParseAlgorithm::MatchAction & 
 {
     matchAction = INlpParseAlgorithm::NlpMatchAll;
     scanAction = INlpParseAlgorithm::NlpScanNext;
-    if (expr->hasProperty(firstAtom))       matchAction = INlpParseAlgorithm::NlpMatchFirst;
-    if (expr->hasProperty(allAtom))         matchAction = INlpParseAlgorithm::NlpMatchAll;
+    if (expr->hasAttribute(firstAtom))       matchAction = INlpParseAlgorithm::NlpMatchFirst;
+    if (expr->hasAttribute(allAtom))         matchAction = INlpParseAlgorithm::NlpMatchAll;
 
-    if (expr->hasProperty(noScanAtom))      scanAction = INlpParseAlgorithm::NlpScanNone;
-    if (expr->hasProperty(scanAtom))        scanAction = INlpParseAlgorithm::NlpScanNext;
-    if (expr->hasProperty(scanAllAtom))     scanAction = INlpParseAlgorithm::NlpScanAll;
-    if (expr->hasProperty(wholeAtom))       scanAction = INlpParseAlgorithm::NlpScanWhole;
+    if (expr->hasAttribute(noScanAtom))      scanAction = INlpParseAlgorithm::NlpScanNone;
+    if (expr->hasAttribute(scanAtom))        scanAction = INlpParseAlgorithm::NlpScanNext;
+    if (expr->hasAttribute(scanAllAtom))     scanAction = INlpParseAlgorithm::NlpScanAll;
+    if (expr->hasAttribute(wholeAtom))       scanAction = INlpParseAlgorithm::NlpScanWhole;
 }
 
 void NlpParseContext::getDebugText(StringBuffer & s, unsigned detail)
@@ -491,16 +491,16 @@ void NlpParseContext::setParserOptions(INlpParseAlgorithm & parser)
     INlpParseAlgorithm::ScanAction scanAction;
     getOptions(expr, matchAction, scanAction);
 
-    IHqlExpression * keep = expr->queryProperty(keepAtom);
+    IHqlExpression * keep = expr->queryAttribute(keepAtom);
     unsigned keepLimit = keep ? (unsigned)keep->queryChild(0)->queryValue()->getIntValue() : 0;
-    IHqlExpression * atmost = expr->queryProperty(atmostAtom);
+    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
     unsigned atmostLimit = atmost ? (unsigned)atmost->queryChild(0)->queryValue()->getIntValue() : 0;
-    IHqlExpression * maxLength = expr->queryProperty(maxLengthAtom);
+    IHqlExpression * maxLength = expr->queryAttribute(maxLengthAtom);
     size32_t maxLengthValue = maxLength ? (unsigned)maxLength->queryChild(0)->queryValue()->getIntValue() : DEFAULT_PATTERN_MAX_LENGTH;
 
     parser.setOptions(matchAction, scanAction, info.inputFormat(), keepLimit, atmostLimit);
-    parser.setChoose(expr->hasProperty(minAtom), expr->hasProperty(maxAtom), expr->hasProperty(bestAtom), !expr->hasProperty(manyAtom));
-    parser.setJoin(expr->hasProperty(notMatchedAtom), expr->hasProperty(notMatchedOnlyAtom));
+    parser.setChoose(expr->hasAttribute(minAtom), expr->hasAttribute(maxAtom), expr->hasAttribute(bestAtom), !expr->hasAttribute(manyAtom));
+    parser.setJoin(expr->hasAttribute(notMatchedAtom), expr->hasAttribute(notMatchedOnlyAtom));
     parser.setLimit(maxLengthValue);
 }
 
@@ -515,7 +515,7 @@ void HqlCppTranslator::doBuildParseTransform(BuildCtx & classctx, IHqlExpression
     ensureRowAllocated(funcctx, "crSelf");
     funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
     funcctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
-    bindTableCursor(funcctx, queryMatchxxxPseudoFile(), queryMatchxxxPseudoFile());
+    bindTableCursor(funcctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
 
     // Bind left to "left" and right to RIGHT
     IHqlExpression * dataset = expr->queryChild(0);
@@ -616,8 +616,8 @@ void HqlCppTranslator::doBuildParseSearchText(BuildCtx & classctx, IHqlExpressio
 void HqlCppTranslator::doBuildParseExtra(BuildCtx & classctx, IHqlExpression * expr)
 {
     StringBuffer flags;
-    if (expr->hasProperty(groupAtom)) flags.append("|PFgroup");
-    if (expr->hasProperty(parallelAtom)) flags.append("|PFparallel");
+    if (expr->hasAttribute(groupAtom)) flags.append("|PFgroup");
+    if (expr->hasAttribute(parallelAtom)) flags.append("|PFparallel");
 
     if (flags.length())
         doBuildUnsignedFunction(classctx, "getFlags", flags.str()+1);
@@ -687,7 +687,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     //This will become conditional on the flags....
     unsigned startPrepareTime = msTick();
     ITimeReporter * reporter = options.addTimingToWorkunit ? timeReporter : NULL;
-    if (expr->hasProperty(tomitaAtom))
+    if (expr->hasAttribute(tomitaAtom))
         nlpParse = createTomitaContext(expr, code->workunit, options, reporter);
     else
     {
@@ -846,15 +846,15 @@ void HqlCppTranslator::doBuildMatched(BuildCtx & ctx, const CHqlBoundTarget * ta
     }
 
     unsigned matchedIndex = nlpParse->addMatchReference(patternExpr);
-    _ATOM func;
+    IIdAtom * func;
     switch (expr->getOperator())
     {
-    case no_matched:        func = getMatchedAtom; break;
-    case no_matchtext:      func = getMatchTextAtom; break;
-    case no_matchunicode:   func = getMatchUnicodeAtom; break;
-    case no_matchlength:    func = getMatchLengthAtom; break;
-    case no_matchposition:  func = getMatchPositionAtom; break;
-    case no_matchutf8:      func = getMatchUtf8Atom; break;
+    case no_matched:        func = getMatchedId; break;
+    case no_matchtext:      func = getMatchTextId; break;
+    case no_matchunicode:   func = getMatchUnicodeId; break;
+    case no_matchlength:    func = getMatchLengthId; break;
+    case no_matchposition:  func = getMatchPositionId; break;
+    case no_matchutf8:      func = getMatchUtf8Id; break;
     default: UNIMPLEMENTED;
     }
 
@@ -879,7 +879,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowMatchRow(BuildCtx & ctx, IHqlEx
     HqlExprArray args;
     args.append(*createQuoted("matched", makeVoidType()));
     args.append(*createConstant((__int64)matchedIndex));
-    OwnedHqlExpr call = bindTranslatedFunctionCall(getMatchRowAtom, args);
+    OwnedHqlExpr call = bindTranslatedFunctionCall(getMatchRowId, args);
 
     IHqlExpression * record = expr->queryRecord();
     StringBuffer rowName;
@@ -922,17 +922,17 @@ void HqlCppTranslator::doBuildMatchAttr(BuildCtx & ctx, const CHqlBoundTarget * 
         args.append(*LINK(marker->queryExpr()));
         args.append(*LINK(expr->queryChild(0)));
 
-        _ATOM name;
+        IIdAtom * name;
         switch (exprType->getTypeCode())
         {
         case type_string:
-            name = getProductionTextAtom;
+            name = getProductionTextId;
             break;
         case type_unicode:
-            name = getProductionUnicodeAtom;
+            name = getProductionUnicodeId;
             break;
         case type_utf8:
-            name = getProductionUtf8Atom;
+            name = getProductionUtf8Id;
             break;
         default:
             throwUnexpectedType(exprType);
@@ -968,17 +968,17 @@ IReferenceSelector * HqlCppTranslator::doBuildRowMatchAttr(BuildCtx & ctx, IHqlE
         throwError(HQLERR_AccessMatchAttrInChildQuery);
 
     HqlExprArray args;
-    _ATOM name;
+    IIdAtom * name;
     HqlExprAssociation * marker = ctx.queryMatchExpr(activeProductionMarkerExpr);
     if (marker)
     {
-        name = getProductionResultAtom;
+        name = getProductionResultId;
         args.append(*LINK(marker->queryExpr()));
         args.append(*LINK(expr->queryChild(1)));
     }
     else
     {
-        name = getRootResultAtom;
+        name = getRootResultId;
         args.append(*createQuoted("matched", makeVoidType()));
     }
 

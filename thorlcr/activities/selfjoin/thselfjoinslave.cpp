@@ -163,7 +163,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart("SELFJOIN", container.queryId());
+        dataLinkStart();
         bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & helper->getJoinFlags());
         bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
 

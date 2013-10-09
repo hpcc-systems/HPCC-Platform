@@ -199,7 +199,7 @@ MemoryBuffer & serializeKind(MemoryBuffer & out, ThorRegexKind kind)
     return out.append((byte)kind);
 }
 
-void deserialize(MemoryBuffer & in, _ATOM & name)
+void deserialize(MemoryBuffer & in, IAtom * & name)
 {
     StringAttr x;
     in.read(x);
@@ -3148,7 +3148,7 @@ RegexMatchStateSave * RegexStateCache::createStateSave(RegexNamed * def)
     return new RegexMatchStateSave(def);
 }
 
-RegexMatchStateSave * RegexStateCache::createStateSave(_ATOM _name, regexid_t _id)
+RegexMatchStateSave * RegexStateCache::createStateSave(IAtom * _name, regexid_t _id)
 {
     if (matchStateSaves.ordinality())
     {

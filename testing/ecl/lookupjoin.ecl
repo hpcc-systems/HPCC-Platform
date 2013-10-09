@@ -46,7 +46,7 @@ j4 := join(lhs,rhs,left.did=right.did,testLookup(left, right, 'LOOKUP, MANY'),LO
 j5 := join(lhs,rhs,left.did=right.did,testLookup(left, right, 'LOOKUP, MANY, ATMOST'),LOOKUP, MANY, ATMOST(2));
 j6 := join(lhs,rhs,left.did=right.did,testLookup(left, right, 'LOOKUP, MANY, LIMIT(SKIP)'),LOOKUP, MANY, LIMIT(2, SKIP));
 j7 := join(lhs,rhs,left.did=right.did,testLookup(left, right, 'LOOKUP, MANY, LIMIT, ONFAIL'),LOOKUP, MANY, LIMIT(2), ONFAIL(testLookup(left, right, 'FAILED: LOOKUP, MANY, LIMIT, ONFAIL')));
-j8 := join(GROUP(dlhs,let),drhs,left.let=right.let,testLookup(left, right, 'LOOKUP LHSGROUPED'),LOOKUP, MANY);
+j8 := join(GROUP(dlhs,let),NOFOLD(drhs),left.let=right.let,testLookup(left, right, 'LOOKUP LHSGROUPED'),LOOKUP, MANY);
 tj8 := SORT(TABLE(j8, { letL, unsigned4 c := COUNT(GROUP), unsigned4 tot := SUM(group,did), label }), letL);
 j9 := SORT(join(dlhs,drhs,left.let=right.let,testLookup(left, right, 'LOOKUP MANY LOCAL'),LOOKUP, LOCAL), did);
 output(j1);

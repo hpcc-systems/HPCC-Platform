@@ -211,9 +211,9 @@ set(CPACK_SOURCE_IGNORE_FILES
 ## Run file configuration to set build tag along with install lines for generated
 ## config files.
 ###
-set( BUILD_TAG "${CPACK_RPM_PACKAGE_VERSION}_${version}-${stagever}")
+set( BUILD_TAG "${projname}_${version}-${stagever}")
 if (USE_GIT_DESCRIBE OR CHECK_GIT_TAG)
-    FETCH_GIT_TAG (${CMAKE_SOURCE_DIR} ${CPACK_RPM_PACKAGE_VERSION}_${version} GIT_BUILD_TAG)
+    FETCH_GIT_TAG (${CMAKE_SOURCE_DIR} ${projname}_${version} GIT_BUILD_TAG)
     message ("-- Git tag is '${GIT_BUILD_TAG}'")
     if (NOT "${GIT_BUILD_TAG}" STREQUAL "${BUILD_TAG}")
         if (CHECK_GIT_TAG)

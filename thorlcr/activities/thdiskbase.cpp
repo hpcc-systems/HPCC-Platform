@@ -38,8 +38,8 @@ CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterAct
 void CDiskReadMasterBase::init()
 {
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
-    OwnedRoxieString fileName(helper->getFileName());
-    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
+    fileName.setown(helper->getFileName());
+    file.setown(queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true));
 
     if (file)
     {
@@ -97,7 +97,6 @@ void CDiskReadMasterBase::init()
 void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 {
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
-    OwnedRoxieString fileName(helper->getFileName());
     dst.append(fileName);
     dst.append(subfileLogicalFilenames.ordinality());
     if (subfileLogicalFilenames.ordinality())
@@ -116,13 +115,7 @@ void CDiskReadMasterBase::done()
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
     fileDesc.clear();
     if (!abortSoon) // in case query has relinquished control of file usage to another query (e.g. perists) 
-    {
-        if (0 != (helper->getFlags() & TDXupdateaccessed))
-        {
-            OwnedRoxieString fileName(helper->getFileName());
-            queryThorFileManager().updateAccessTime(container.queryJob(), fileName);
-        }
-    }
+        queryThorFileManager().updateAccessTime(container.queryJob(), fileName);
 }
 
 void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
@@ -283,6 +276,7 @@ void CWriteMasterBase::init()
             blockCompressed = true;
         if (blockCompressed)
             props.setPropBool("@blockCompressed", true);
+        props.setProp("@kind", "flat");
         if (TAKdiskwrite == container.getKind() && (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
         { // do early, because this will be local act. and will not come back to master until end of owning graph.
             publish();
@@ -391,7 +385,7 @@ const void *getAggregate(CActivityBase &activity, unsigned partialResults, IRowI
         }
     }
     RtlDynamicRowBuilder result(rowIf.queryRowAllocator(), false);
-    size32_t sz;
+    size32_t sz = 0;
     bool first = true;
     _partialResults = 0;
     for (;_partialResults<partialResults; _partialResults++)

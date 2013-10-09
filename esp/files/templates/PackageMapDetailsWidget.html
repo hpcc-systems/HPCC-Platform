@@ -1,0 +1,39 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}Summary" style="width: 100%; height: 100%" data-dojo-props='title:"Summary", iconClass:"iconWorkunit"' data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Activate" data-dojo-attach-event="onClick:_onActivate" data-dojo-type="dijit.form.Button">Activate</div>
+                    <div id="${id}Deactivate" data-dojo-attach-event="onClick:_onDeactivate" data-dojo-type="dijit.form.Button">Deactivate</div>
+                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                </div>
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <h2>
+                        <div id="${id}StateIdImage" title="" class="iconWorkunit" ></div>&nbsp<span id="${id}PMID" class="bold">PMID</span>
+                    </h2>
+                    <form id="${id}SummaryForm">
+                        <ul>
+                            <li>
+                                <label class="Prompt" for="Target">Target:</label>
+                                <div><input id="${id}Target" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" disabled/></div>
+                            </li>
+                            <li>
+                                <label class="Prompt" for="Process">Process Filter:</label>
+                                <div><input id="${id}Process" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" disabled/></div>
+                            </li>
+                            <!--li>
+                                <label class="Prompt" for="Description">Description:</label>
+                                <div><input id="${id}Description" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox"/></div>
+                            </li-->
+                        </ul>
+                    </form>
+                </div>
+            </div>
+            <div id="${id}XML" title="XML" data-dojo-props="isXmlContent: true" data-dojo-type="PackageSourceWidget">
+            </div>
+            <div id="${id}Validate" title="Validate" data-dojo-type="PackageSourceWidget">
+            </div>
+        </div>
+    </div>
+</div>

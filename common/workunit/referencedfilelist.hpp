@@ -41,7 +41,8 @@ interface IReferencedFile : extends IInterface
 {
     virtual const char *getLogicalName() const =0;
     virtual unsigned getFlags() const =0;
-    virtual const SocketEndpoint &getForeignIP() const =0;
+    virtual const SocketEndpoint &getForeignIP(SocketEndpoint &ep) const =0;
+    virtual const char *queryPackageId() const =0;
 };
 
 interface IReferencedFileIterator : extends IIteratorOf<IReferencedFile> { };
@@ -53,13 +54,13 @@ interface IReferencedFileList : extends IInterface
     virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)=0;
     virtual void addFilesFromPackageMap(IPropertyTree *pm)=0;
 
-    virtual void addFile(const char *ln)=0;
+    virtual void addFile(const char *ln, const char *daliip=NULL, const char *sourceProcessCluster=NULL)=0;
     virtual void addFiles(StringArray &files)=0;
 
     virtual IReferencedFileIterator *getFiles()=0;
-    virtual void resolveFiles(const char *process, const char *remoteIP, const char *srcCluster, bool checkLocalFirst, bool addSubFiles)=0;
-    virtual void cloneAllInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo)=0;
-    virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo)=0;
+    virtual void resolveFiles(const char *process, const char *remoteIP, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool resolveForeign=false)=0;
+    virtual void cloneAllInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign=false)=0;
+    virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign=false)=0;
     virtual void cloneRelationships()=0;
 };
 

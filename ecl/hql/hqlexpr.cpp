@@ -63,15 +63,16 @@
 //#define CONSISTENCY_CHECK
 //#define GATHER_LINK_STATS
 //#define VERIFY_EXPR_INTEGRITY
+//#define CHECK_RECORD_CONSISTENCY
 
 // To debug a symbol in the C++ generated code, use SEARCH_NAME*
 // and set a breakpoint on debugMatchedName() below
 #ifdef _DEBUG
 //#define DEBUG_SCOPE
-//#define CHECK_RECORD_CONSITENCY
+//#define CHECK_RECORD_CONSISTENCY
 //#define PARANOID
-//#define SEARCH_NAME1   "vL6R"
-//#define SEARCH_NAME2   "v19"
+//#define SEARCH_NAME1   "v1"
+//#define SEARCH_NAME2   "v2"
 //#define SEARCH_IEXPR 0x0681cb0
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
@@ -325,7 +326,7 @@ bool HqlExprArray::containsBody(IHqlExpression & expr)
     return false;
 }
 
-IHqlExpression * queryProperty(_ATOM prop, const HqlExprArray & exprs)
+IHqlExpression * queryAttribute(IAtom * prop, const HqlExprArray & exprs)
 {
     ForEachItemIn(idx, exprs)
     {
@@ -337,7 +338,7 @@ IHqlExpression * queryProperty(_ATOM prop, const HqlExprArray & exprs)
 }
 
 
-IHqlExpression * queryPropertyInList(_ATOM search, IHqlExpression * cur)
+IHqlExpression * queryAttributeInList(IAtom * search, IHqlExpression * cur)
 {
     if (cur)
     {
@@ -350,10 +351,10 @@ IHqlExpression * queryPropertyInList(_ATOM search, IHqlExpression * cur)
                 return cur;
             break;
         case no_comma:
-            IHqlExpression * match = queryPropertyInList(search, cur->queryChild(0));
+            IHqlExpression * match = queryAttributeInList(search, cur->queryChild(0));
             if (match)
                 return match;
-            return queryPropertyInList(search, cur->queryChild(1));
+            return queryAttributeInList(search, cur->queryChild(1));
         }
     }
     return NULL;
@@ -459,7 +460,7 @@ extern HQL_API IHqlExpression * forceCloneSymbol(IHqlExpression * donor, IHqlExp
     return result.getClear();
 }
 
-extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, _ATOM newname, IHqlExpression * newbody, IHqlExpression * newfuncdef, HqlExprArray * operands)
+extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, IIdAtom * newname, IHqlExpression * newbody, IHqlExpression * newfuncdef, HqlExprArray * operands)
 {
     assertex(donor->getAnnotationKind() == annotate_symbol);
     IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(donor->queryAnnotation());
@@ -467,7 +468,7 @@ extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, _ATOM newnam
 }
 
 
-extern HQL_API IHqlExpression * queryAnnotationProperty(_ATOM search, IHqlExpression * annotation)
+extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpression * annotation)
 {
     unsigned i=0;
     IHqlExpression * cur;
@@ -479,7 +480,7 @@ extern HQL_API IHqlExpression * queryAnnotationProperty(_ATOM search, IHqlExpres
     return NULL;
 }
 
-extern HQL_API IHqlExpression * queryMetaProperty(_ATOM search, IHqlExpression * expr)
+extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -496,7 +497,7 @@ extern HQL_API IHqlExpression * queryMetaProperty(_ATOM search, IHqlExpression *
     }
 }
 
-extern HQL_API void gatherMetaProperties(HqlExprArray & matches, _ATOM search, IHqlExpression * expr)
+extern HQL_API void gatherMetaProperties(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -520,7 +521,7 @@ extern HQL_API void gatherMetaProperties(HqlExprArray & matches, _ATOM search, I
     }
 }
 
-extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, _ATOM search, IHqlExpression * expr)
+extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -637,7 +638,7 @@ static void setDefinitionText(IPropertyTree * target, const char * prop, IFileCo
     target->setProp("@sourcePath", sourcePath->str());
 }
 
-void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
+void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
     if (queryArchive())
     {
@@ -839,7 +840,7 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
+void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
     if (queryNestedDependTree())
         createDependencyEntry(scope, name);
@@ -893,19 +894,20 @@ void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpressio
 }
 
 
-void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, _ATOM name)
+void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * id)
 {
     const char * moduleName = parentScope->queryFullName();
+    const char * nameText = id->lower()->str();
 
     StringBuffer xpath;
-    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(name).append("\"]");
+    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(nameText).append("\"]");
 
     IPropertyTree * attr = queryNestedDependTree()->queryPropTree(xpath.str());
     if (!attr)
     {
         attr = queryNestedDependTree()->addPropTree("Attr", createPTree());
         attr->setProp("@module", moduleName);
-        attr->setProp("@name", name->str());
+        attr->setProp("@name", nameText);
     }
     curAttrTree.set(attr);
 }
@@ -1439,10 +1441,11 @@ const char *getOpString(node_operator op)
     case no_delayedscope: return "no_delayedscope";
     case no_assertconcrete: return "no_assertconcrete";
     case no_unboundselect: return "no_unboundselect";
+    case no_id: return "no_id";
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
+    case no_unused24: case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
@@ -1931,7 +1934,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_keyeddistribute:
         return childdataset_leftright;
     case no_select:
-        if (expr->hasProperty(newAtom) && expr->isDataset())
+        if (expr->hasAttribute(newAtom) && expr->isDataset())
             return childdataset_dataset;
         return childdataset_none;
     case no_sub:
@@ -2221,7 +2224,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
             return 1;
         return 0;
     case no_select:
-        if (dataset->hasProperty(newAtom) && dataset->isDataset())
+        if (dataset->hasAttribute(newAtom) && dataset->isDataset())
             return 1;
         return 0;
     case no_normalize:
@@ -2329,7 +2332,7 @@ node_operator queryHasRows(IHqlExpression * expr)
     }
 #ifdef _DEBUG
     //This would imply a missing entry above....
-    assertex(!expr->queryProperty(_rowsid_Atom));
+    assertex(!expr->queryAttribute(_rowsid_Atom));
 #endif
     return no_none;
 }
@@ -2695,7 +2698,7 @@ bool isAggregateDataset(IHqlExpression * expr)
         return true;
     case no_newusertable:
         {
-            if (expr->hasProperty(aggregateAtom))
+            if (expr->hasAttribute(aggregateAtom))
                 return true;
             IHqlExpression * grouping = expr->queryChild(3);
             if (grouping && !grouping->isAttribute())
@@ -2705,7 +2708,7 @@ bool isAggregateDataset(IHqlExpression * expr)
     case no_selectfields:
     case no_usertable:
         {
-            if (expr->hasProperty(aggregateAtom))
+            if (expr->hasAttribute(aggregateAtom))
                 return true;
             IHqlExpression * grouping = expr->queryChild(2);
             if (grouping && !grouping->isAttribute())
@@ -2921,6 +2924,8 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
         {
             if (!expr->queryRecord())
                 return LINK(expr);      // something seriously wrong - will get picked up elsewhere...
+            if(!queryOriginalRecord(type))
+                 throwUnexpectedX("Cast to DATASET with no record TYPE specified");   //  cf. HPCC-9847
             OwnedHqlExpr transform = createRecordMappingTransform(no_newtransform, queryOriginalRecord(type), expr->queryNormalizedSelector());
             if (transform)
                 return createDatasetF(no_newusertable, LINK(expr), LINK(queryOriginalRecord(type)), LINK(transform), NULL);
@@ -3073,6 +3078,12 @@ void CHqlExpression::appendOperands(IHqlExpression * arg0, ...)
     va_end(args);
 }
 
+IIdAtom * CHqlExpression::queryId() const
+{
+    assertex(!isAttribute());
+    return NULL;
+}
+
 void CHqlExpression::setOperands(HqlExprArray & _ownedOperands)
 {
     unsigned max = _ownedOperands.ordinality();
@@ -3148,7 +3159,7 @@ void CHqlExpression::initFlagsBeforeOperands()
         infoFlags |= HEFcontainsAlias|HEFcontainsAliasLocally;
         break;
     case no_dataset_alias:
-        if (!queryProperty(_normalized_Atom))
+        if (!queryAttribute(_normalized_Atom))
             infoFlags |= HEFcontainsDatasetAliasLocally;
         break;
     case no_activetable:
@@ -3234,6 +3245,10 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_decimalstack:
         infoFlags |= HEFaction;
         break;
+    case no_getresult:
+    case no_workunit_dataset:
+        infoFlags |= HEFaccessRuntimeContext;
+        break;
     }
 }
 
@@ -3313,7 +3328,7 @@ void CHqlExpression::updateFlagsAfterOperands()
         break;
     case no_globalscope:
         infoFlags2 |= HEF2mustHoist;
-        if (hasProperty(optAtom))
+        if (hasAttribute(optAtom))
             break;
         //fall through
     case no_colon:
@@ -3410,9 +3425,13 @@ void CHqlExpression::updateFlagsAfterOperands()
         infoFlags &= ~HEFcontainsDataset;
         assertex(queryChild(0)->isDictionary() == queryChild(1)->isDictionary());
         break;
+    case no_internalselect:
+        assertex(!queryChild(3)->isAttribute());
+        break;
     case no_delayedselect:
     case no_libraryselect:
     case no_unboundselect:
+        assertex(!queryChild(3)->isAttribute());
         //kill any flag derived from selecting pure virtual members
         infoFlags &= ~HEFcontextDependentException;
         break;
@@ -3445,14 +3464,14 @@ void CHqlExpression::updateFlagsAfterOperands()
         infoFlags |= HEFcontainsThisNode;
         break;
     case no_getgraphresult:
-        if (hasProperty(_streaming_Atom))
+        if (hasAttribute(_streaming_Atom))
             infoFlags2 |= HEF2mustHoist;
         break;
     case no_getgraphloopresult:
         infoFlags2 |= HEF2mustHoist;
         break;
     case no_alias:
-        if (queryProperty(globalAtom))
+        if (queryAttribute(globalAtom))
             infoFlags2 &= ~HEF2containsNonGlobalAlias;
         else
             infoFlags2 |= HEF2containsNonGlobalAlias;
@@ -3469,7 +3488,7 @@ void CHqlExpression::updateFlagsAfterOperands()
         {
             IHqlExpression * body = queryExternalDefinition()->queryChild(0);
             assertex(body);
-            if (!body->hasProperty(pureAtom))
+            if (!body->hasAttribute(pureAtom))
                 infoFlags2 &= ~HEF2constant;
         }
         break;
@@ -3483,7 +3502,7 @@ void CHqlExpression::updateFlagsAfterOperands()
                 IHqlExpression * bodycode = body->queryChild(0);
                 if (bodycode->getOperator() == no_embedbody)
                 {
-                    if (bodycode->queryProperty(actionAtom))
+                    if (bodycode->queryAttribute(actionAtom))
                         infoFlags |= HEFvolatile;
                 }
             }
@@ -3494,13 +3513,13 @@ void CHqlExpression::updateFlagsAfterOperands()
     case no_workunit_dataset:
     case no_getresult:
         {
-            if (false && matchesConstantValue(queryPropertyChild(this, sequenceAtom, 0), ResultSequenceOnce))
+            if (false && matchesConstantValue(queryAttributeChild(this, sequenceAtom, 0), ResultSequenceOnce))
                 infoFlags |= HEFvolatile;
             break;
         }
     case no_embedbody:
         {
-            if (queryProperty(actionAtom))
+            if (queryAttribute(actionAtom))
                 infoFlags |= HEFvolatile;
             break;
         }
@@ -3510,14 +3529,16 @@ void CHqlExpression::updateFlagsAfterOperands()
 switch (op)
     {
     case no_select:
-#ifdef CHECK_RECORD_CONSITENCY
+#ifdef CHECK_RECORD_CONSISTENCY
         {
             //Paranoid check to ensure that illegal no_selects aren't created (e.g., when dataset has link counted child, but field of select isn't)
             IHqlExpression * field = queryChild(1);
             IHqlExpression * lhsRecord = queryChild(0)->queryRecord();
             if (lhsRecord && lhsRecord->numChildren() && field->getOperator() == no_field)
             {
-                OwnedHqlExpr resolved = lhsRecord->querySimpleScope()->lookupSymbol(field->queryName());
+                OwnedHqlExpr resolved = lhsRecord->querySimpleScope()->lookupSymbol(field->queryId());
+                if (resolved && resolved != field)
+                    EclIR::dump_ir(resolved.get(), field);
                 assertex(!resolved || resolved == field);
             }
         }
@@ -3534,14 +3555,18 @@ switch (op)
         }
         break;
     case no_assign:
-#ifdef CHECK_RECORD_CONSITENCY
+#ifdef CHECK_RECORD_CONSISTENCY
         assertex(queryChild(0)->getOperator() != no_assign);
         assertex(queryChild(1)->getOperator() != no_assign);
         {
             IHqlExpression * lhsRecord = queryChild(0)->queryRecord();
             IHqlExpression * rhsRecord = queryChild(1)->queryRecord();
             if (lhsRecord && rhsRecord)
+            {
+                //This condition can be broken inside a transform that changes the types of fields.
+                //It could possibly be avoided by more selective calls to transform.
                 assertex(recordTypesMatch(lhsRecord, rhsRecord));
+            }
         }
 #endif
 #ifdef PARANOID
@@ -3602,7 +3627,7 @@ switch (op)
     case no_newsoapcall:
     case no_soapcall:
         {
-            IHqlExpression * onFail = queryProperty(onFailAtom);
+            IHqlExpression * onFail = queryAttribute(onFailAtom);
             if (onFail)
             {
                 IHqlExpression * transform = onFail->queryChild(0);
@@ -3625,7 +3650,8 @@ switch (op)
         IHqlExpression * ds = queryChild(0);
         if ((ds->getOperator() == no_select) && !ds->isDataset())
         {
-            if (hasProperty(newAtom) && isNewSelector(ds))
+            assertex(!hasAttribute(newAtom));
+            if (hasAttribute(newAtom) && isNewSelector(ds))
             {
                 IHqlExpression * root = queryDatasetCursor(ds);
                 if (root->isDataset())
@@ -3908,7 +3934,7 @@ unsigned CHqlExpression::getCachedEclCRC()
         break;
     case no_attr_expr:
         {
-            const _ATOM name = queryBody()->queryName();
+            const IAtom * name = queryBody()->queryName();
             //Horrible backward compatibility "fix" for record crcs - they need to remain the same otherwise files
             //will be incompatible.
             if (name == maxLengthAtom || name == xpathAtom || name == cardinalityAtom || name == caseAtom || name == maxCountAtom || name == choosenAtom || name == maxSizeAtom || name == namedAtom || name == rangeAtom || name == xmlDefaultAtom || name == virtualAtom)
@@ -3947,7 +3973,7 @@ unsigned CHqlExpression::getCachedEclCRC()
         break;
     case no_field:
         {
-            _ATOM name = queryName();
+            IAtom * name = queryName();
             if (name)
             {
                 const char * nameText = name->str();
@@ -3967,7 +3993,7 @@ unsigned CHqlExpression::getCachedEclCRC()
     case no_attr_expr:
     case no_attr_link:
         {
-            const _ATOM name = queryBody()->queryName();
+            const IAtom * name = queryBody()->queryName();
             if (name == _uid_Atom)
                 return 0;
             const char * nameText = name->str();
@@ -4065,9 +4091,9 @@ IHqlScope * closeScope(IHqlScope * scope)
     return expr->closeExpr()->queryScope();
 }
 
-bool getProperty(IHqlExpression * expr, _ATOM propname, StringBuffer &ret)
+bool getProperty(IHqlExpression * expr, IAtom * propname, StringBuffer &ret)
 {
-    IHqlExpression* match = expr->queryProperty(propname);
+    IHqlExpression* match = expr->queryAttribute(propname);
     if (match)
     {
         IHqlExpression * value = match->queryChild(0);
@@ -4078,7 +4104,7 @@ bool getProperty(IHqlExpression * expr, _ATOM propname, StringBuffer &ret)
     return false;
 }
 
-IHqlExpression *CHqlExpression::queryProperty(_ATOM propname) const
+IHqlExpression *CHqlExpression::queryAttribute(IAtom * propname) const
 {
     unsigned kids = numChildren();
     for (unsigned i = 0; i < kids; i++)
@@ -4436,7 +4462,7 @@ IHqlExpression * CHqlExpression::calcNormalizedSelector() const
 {
     IHqlExpression * left = &operands.item(0);
     IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
-    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasProperty(newAtom)))
+    if ((normalizedLeft != left) || ((operands.ordinality() > 2) && hasAttribute(newAtom)))
     {
         HqlExprArray args;
         appendArray(args, operands);
@@ -4568,12 +4594,12 @@ IHqlExpression *CHqlExpressionWithType::clone(HqlExprArray &newkids)
 
 //--------------------------------------------------------------------------------------------------------------
 
-CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, ...) : CHqlExpressionWithType(_op, _type)
+CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id, ...) : CHqlExpressionWithType(_op, _type)
 {
-    name = _name;
+    id = _id;
 
     va_list args;
-    va_start(args, _name);
+    va_start(args, _id);
     for (;;)
     {
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
@@ -4587,17 +4613,17 @@ CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _A
     va_end(args);
 }
 
-CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(_op, _type, _ownedOperands)
+CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(_op, _type, _ownedOperands)
 {
-    name = _name;
+    id = _id;
 }
 
 
 IHqlExpression *CHqlNamedExpression::clone(HqlExprArray &newkids)
 {
     if (op == no_funcdef)
-        return createFunctionDefinition(name, newkids);
-    return (new CHqlNamedExpression(op, getType(), name, newkids))->closeExpr();
+        return createFunctionDefinition(id, newkids);
+    return (new CHqlNamedExpression(op, getType(), id, newkids))->closeExpr();
 }
 
 bool CHqlNamedExpression::equals(const IHqlExpression & r) const
@@ -4614,14 +4640,19 @@ bool CHqlNamedExpression::equals(const IHqlExpression & r) const
 void CHqlNamedExpression::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = HASHFIELD(name);
+    hashcode = HASHFIELD(id);
 }
 
-IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, _ATOM name, HqlExprArray & args)
+IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id, HqlExprArray & args)
 {
-    return (new CHqlNamedExpression(op, type, name, args))->closeExpr();
+    return (new CHqlNamedExpression(op, type, id, args))->closeExpr();
 }
 
+IHqlExpression *createId(IIdAtom * id)
+{
+    HqlExprArray args;
+    return createNamedValue(no_id, makeNullType(), id, args);
+}
 
 //--------------------------------------------------------------------------------------------------------------
 
@@ -4791,7 +4822,38 @@ void CUsedTablesBuilder::cleanupProduction()
 {
     ForEachItemInRev(i, inScopeTables)
     {
-        if (inScopeTables.item(i).getOperator() == no_matchattr)
+        switch (inScopeTables.item(i).getOperator())
+        {
+        case no_matchattr:
+        case no_matchrow:
+            inScopeTables.remove(i);
+            break;
+        }
+    }
+}
+
+void CUsedTablesBuilder::removeParent(IHqlExpression * expr)
+{
+    IHqlExpression * sel = expr->queryNormalizedSelector();
+    removeActive(sel);
+
+    loop
+    {
+        IHqlExpression * root = queryRoot(expr);
+        if (!root || root->getOperator() != no_select)
+            break;
+        if (!root->hasAttribute(newAtom))
+            break;
+        expr = root->queryChild(0);
+        removeActive(expr->queryNormalizedSelector());
+    }
+}
+
+void CUsedTablesBuilder::removeActiveRecords()
+{
+    ForEachItemInRev(i, inScopeTables)
+    {
+        if (inScopeTables.item(i).isRecord())
             inScopeTables.remove(i);
     }
 }
@@ -4802,7 +4864,7 @@ void CUsedTablesBuilder::removeRows(IHqlExpression * expr, IHqlExpression * left
     if (rowsSide == no_none)
         return;
 
-    IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);
+    IHqlExpression * rowsid = expr->queryAttribute(_rowsid_Atom);
     switch (rowsSide)
     {
     case no_left:
@@ -4879,19 +4941,41 @@ void CHqlExpressionWithTables::cachePotentialTablesUsed(CUsedTablesBuilder & use
 }
 
 
-void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder & used)
+void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder & used, bool ignoreInputs)
 {
     unsigned max = numChildren();
     switch (getChildDatasetType(this))
     {
     case childdataset_none: 
+        cacheChildrenTablesUsed(used, 0, max);
+        break;
     case childdataset_many_noscope:
+        if (ignoreInputs)
+        {
+            unsigned first = getFirstActivityArgument(this);
+            unsigned last = first + getNumActivityArguments(this);
+            cacheChildrenTablesUsed(used, 0, first);
+            cacheChildrenTablesUsed(used, last, max);
+        }
+        else
+            cacheChildrenTablesUsed(used, 0, max);
+        break;
+    case childdataset_dataset_noscope:
+        if (ignoreInputs)
+            cacheChildrenTablesUsed(used, 1, max);
+        else
+            cacheChildrenTablesUsed(used, 0, max);
+        break;
     case childdataset_if:
+        if (ignoreInputs)
+            cacheChildrenTablesUsed(used, 0, 1);
+        else
+            cacheChildrenTablesUsed(used, 0, max);
+        break;
     case childdataset_case:
     case childdataset_map:
-    case childdataset_dataset_noscope: 
+        //Assume the worst
         cacheChildrenTablesUsed(used, 0, max);
-        //None of these have any scoped arguments, so no need to remove them
         break;
     case childdataset_many:
         {
@@ -4899,15 +4983,17 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             unsigned firstAttr = getNumChildTables(this);
             cacheChildrenTablesUsed(used, firstAttr, max);
             used.removeActive(queryActiveTableSelector());
-            cacheChildrenTablesUsed(used, 0, firstAttr);
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, firstAttr);
             break;
         }
     case childdataset_dataset:
         {
             IHqlExpression * ds = queryChild(0);
             cacheChildrenTablesUsed(used, 1, max);
-            used.removeActive(ds->queryNormalizedSelector());
-            cacheChildrenTablesUsed(used, 0, 1);
+            used.removeParent(ds);
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, 1);
         }
         break;
     case childdataset_datasetleft:
@@ -4917,9 +5003,22 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
-            used.removeActive(ds->queryNormalizedSelector());
+            used.removeParent(ds);
             used.removeRows(this, left, NULL);
-            cacheChildrenTablesUsed(used, 0, 1);
+            switch (op)
+            {
+            case no_parse:
+            case no_newparse:
+                used.cleanupProduction();
+                used.removeActive(queryNlpParsePseudoTable());
+                break;
+            case no_xmlparse:
+            case no_newxmlparse:
+                used.removeActive(queryXmlParsePseudoTable());
+                break;
+            }
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
 #endif
@@ -4933,7 +5032,9 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
             used.removeRows(this, left, NULL);
-            cacheChildrenTablesUsed(used, 0, 1);
+
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
 #endif
@@ -4950,7 +5051,9 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             used.removeActive(left);
             used.removeActive(right);
             used.removeRows(this, left, right);
-            cacheChildrenTablesUsed(used, 0, 1);
+
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
             used.addHiddenTable(right, selSeq);
@@ -4964,7 +5067,7 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
             cacheChildrenTablesUsed(used, 1, max);
-            used.removeActive(ds->queryNormalizedSelector());
+            used.removeParent(ds);
             used.removeActive(left);
             used.removeActive(right);
             used.removeRows(this, left, right);
@@ -4990,12 +5093,14 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
                 //two datasets form of normalize is weird because right dataset is based on left
                 cacheChildrenTablesUsed(used, 1, 2);
                 used.removeActive(left);
-                cacheChildrenTablesUsed(used, 0, 1);
+                if (!ignoreInputs)
+                    cacheChildrenTablesUsed(used, 0, 1);
             }
             else
             {
                 used.removeActive(left);
-                cacheChildrenTablesUsed(used, 0, 2);
+                if (!ignoreInputs)
+                    cacheChildrenTablesUsed(used, 0, 2);
             }
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
@@ -5012,6 +5117,177 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
 }
 
 
+void CHqlExpressionWithTables::calcTablesUsed(CUsedTablesBuilder & used, bool ignoreInputs)
+{
+    switch (op)
+    {
+    case no_attr:
+    case no_attr_link:
+    case no_keyed:
+    case no_colon:
+    case no_cluster:
+    case no_nameof:
+    case no_translated:
+    case no_constant:
+        break;
+    case no_select:
+        {
+            IHqlExpression * ds = queryChild(0);
+            if (isSelectRootAndActive())
+            {
+                used.addActiveTable(ds);
+            }
+            else
+            {
+                ds->gatherTablesUsed(used);
+            }
+            break;
+        }
+    case no_activerow:
+        used.addActiveTable(queryChild(0));
+        break;
+    case no_rows:
+    case no_rowset:
+        //MORE: This is a bit strange!
+        used.addActiveTable(queryChild(0));
+        break;
+    case no_left:
+    case no_right:
+        used.addActiveTable(this);
+        break;
+    case no_counter:
+        //NB: Counter is added as a pseudo table, because it is too hard to keep track of nested counters otherwise
+        used.addActiveTable(this);
+        break;
+    case no_filepos:
+    case no_file_logicalname:
+        used.addActiveTable(queryChild(0));
+        break;
+    case NO_AGGREGATE:
+    case no_createset:
+        {
+#ifdef GATHER_HIDDEN_SELECTORS
+            cachePotentialTablesUsed(used);
+            used.removeParent(queryChild(0));
+#else
+            HqlExprCopyArray childInScopeTables;
+            ForEachChild(idx, this)
+                queryChild(idx)->gatherTablesUsed(NULL, &childInScopeTables);
+
+            //The argument to the operator is a new table, don't inherit grandchildren
+            IHqlExpression * ds = queryChild(0);
+            cacheInheritChildTablesUsed(ds, used, childInScopeTables);
+#endif
+        }
+        break;
+    case no_sizeof:
+        cachePotentialTablesUsed(used);
+        used.removeActive(queryActiveTableSelector());
+        used.removeActiveRecords();
+        break;
+    case no_externalcall:
+    case no_rowvalue:
+    case no_offsetof:
+    case no_eq:
+    case no_ne:
+    case no_lt:
+    case no_le:
+    case no_gt:
+    case no_ge:
+    case no_order:
+    case no_assign:
+    case no_call:
+    case no_libraryscopeinstance:
+        //MORE: Should check this doesn't make the comparison invalid.
+        cachePotentialTablesUsed(used);
+        break;
+    case no_keyindex:
+    case no_newkeyindex:
+        cacheChildrenTablesUsed(used, 1, numChildren());
+        used.removeParent(queryChild(0));
+        //Distributed attribute might contain references to the no_activetable
+        used.removeActive(queryActiveTableSelector());
+        break;
+    case no_evaluate:
+        cacheTableUseage(used, queryChild(0));
+        queryChild(1)->gatherTablesUsed(used);
+        break;
+    case no_table:
+        {
+            cacheChildrenTablesUsed(used, 0, numChildren());
+            IHqlExpression * parent = queryChild(3);
+            if (parent)
+                used.removeParent(parent);
+            break;
+        }
+    case no_pat_production:
+        {
+            cacheChildrenTablesUsed(used, 0, numChildren());
+            used.cleanupProduction();
+            break;
+        }
+    default:
+        {
+            ITypeInfo * thisType = queryType();
+            unsigned max = numChildren();
+            if (max)
+            {
+                if (thisType)
+                {
+                    switch (thisType->getTypeCode())
+                    {
+                    case type_void:
+                    case type_dictionary:
+                    case type_table:
+                    case type_groupedtable:
+                    case type_row:
+                    case type_transform:
+                        {
+                            cacheTablesProcessChildScope(used, ignoreInputs);
+                            IHqlExpression * counter = queryAttribute(_countProject_Atom);
+                            if (counter)
+                                used.removeActive(counter->queryChild(0));
+                            break;
+                        }
+                    default:
+                        cacheChildrenTablesUsed(used, 0, max);
+                        break;
+                    }
+                }
+                else
+                    cacheChildrenTablesUsed(used, 0, max);
+            }
+            break;
+        }
+    }
+
+    switch (op)
+    {
+    case no_xmltext:
+    case no_xmlunicode:
+    case no_xmlproject:
+        used.addActiveTable(queryXmlParsePseudoTable());
+        break;
+    case no_matched:
+    case no_matchtext:
+    case no_matchunicode:
+    case no_matchlength:
+    case no_matchposition:
+    case no_matchrow:
+    case no_matchutf8:
+    case no_matchattr:
+        used.addActiveTable(queryNlpParsePseudoTable());
+        break;
+    case no_externalcall:
+        {
+            IHqlExpression * def = queryExternalDefinition()->queryChild(0);
+            if (def->hasAttribute(userMatchFunctionAtom))
+                used.addActiveTable(queryNlpParsePseudoTable());
+            break;
+        }
+    }
+}
+
 void CHqlExpressionWithTables::cacheTablesUsed()
 {
     if (!(infoFlags & HEFgatheredNew))
@@ -5021,7 +5297,8 @@ void CHqlExpressionWithTables::cacheTablesUsed()
         //So need an ensureCached() function surrounding it that is cs protected.
 
         //Special case some common operators that can avoid going through the general code
-        bool specialCased = true;
+        bool specialCased = false;
+        if (false)
         switch (op)
         {
         case no_attr:
@@ -5076,125 +5353,7 @@ void CHqlExpressionWithTables::cacheTablesUsed()
         if (!specialCased)
         {
             CUsedTablesBuilder used;
-            if (numChildren())
-            {
-                switch (op)
-                {
-                case no_select:
-                    {
-                        IHqlExpression * ds = queryChild(0);
-                        dbgassertex(!isSelectRootAndActive());
-                        ds->gatherTablesUsed(used);
-                        break;
-                    }
-                case NO_AGGREGATE:
-                case no_createset:
-                    {
-    #ifdef GATHER_HIDDEN_SELECTORS
-                        cachePotentialTablesUsed(used);
-                        used.removeActive(queryChild(0)->queryNormalizedSelector());
-    #else
-                        HqlExprCopyArray childInScopeTables;
-                        ForEachChild(idx, this)
-                            queryChild(idx)->gatherTablesUsed(NULL, &childInScopeTables);
-
-                        //The argument to the operator is a new table, don't inherit grandchildren
-                        IHqlExpression * ds = queryChild(0);
-                        cacheInheritChildTablesUsed(ds, used, childInScopeTables);
-    #endif
-                    }
-                    break;
-                case no_externalcall:
-                case no_rowvalue:
-                case no_sizeof:
-                case no_offsetof:
-                case no_eq:
-                case no_ne:
-                case no_lt:
-                case no_le:
-                case no_gt:
-                case no_ge:
-                case no_order:
-                case no_assign:
-                case no_call:
-                case no_libraryscopeinstance:
-                    //MORE: Should check this doesn't make the comparison invalid.
-                    cachePotentialTablesUsed(used);
-                    break;
-                case no_keyindex:
-                case no_newkeyindex:
-                    cacheChildrenTablesUsed(used, 1, numChildren());
-                    used.removeActive(queryChild(0)->queryNormalizedSelector());
-                    break;
-                case no_evaluate:
-                    cacheTableUseage(used, queryChild(0));
-                    queryChild(1)->gatherTablesUsed(used);
-                    break;
-                case no_table:
-                    {
-                        cacheChildrenTablesUsed(used, 0, numChildren());
-                        IHqlExpression * parent = queryChild(3);
-                        if (parent)
-                            used.removeActive(parent->queryNormalizedSelector());
-                        break;
-                    }
-                case no_pat_production:
-                    {
-                        cacheChildrenTablesUsed(used, 0, numChildren());
-                        used.cleanupProduction();
-                        break;
-                    }
-                case no_parse:
-                case no_newparse:
-                    {
-                        cacheTablesProcessChildScope(used);
-                        used.cleanupProduction();
-                        //Not strictly true - need to inherit from arg(0) if present.
-                        used.removeActive(queryMatchxxxPseudoFile());
-                        break;
-                    }
-                default:
-                    {
-                        ITypeInfo * thisType = queryType();
-                        if (thisType)
-                        {
-                            switch (thisType->getTypeCode())
-                            {
-                            case type_void:
-                            case type_dictionary:
-                            case type_table:
-                            case type_groupedtable:
-                            case type_row:
-                            case type_transform:
-                                {
-                                    cacheTablesProcessChildScope(used);
-                                    IHqlExpression * counter = queryProperty(_countProject_Atom);
-                                    if (counter)
-                                        used.removeActive(counter->queryChild(0));
-                                    break;
-                                }
-                            default:
-                                cacheChildrenTablesUsed(used, 0, numChildren());
-                            }
-                        }
-                        else
-                            cacheChildrenTablesUsed(used, 0, numChildren());
-                        break;
-                    }
-                }
-            }
-            switch (op)
-            {
-            case no_matched:
-            case no_matchtext:
-            case no_matchunicode:
-            case no_matchlength:
-            case no_matchposition:
-            case no_matchrow:
-            case no_matchutf8:
-                used.addActiveTable(queryMatchxxxPseudoFile());
-                break;
-            }
+            calcTablesUsed(used, false);
             used.set(usedTables);
         }
         infoFlags |= HEFgatheredNew;
@@ -5205,6 +5364,14 @@ bool CHqlExpressionWithTables::isIndependentOfScope()
 {
     cacheTablesUsed();
     return usedTables.isIndependentOfScope();
+}
+
+bool CHqlExpressionWithTables::isIndependentOfScopeIgnoringInputs()
+{
+    CUsedTablesBuilder used;
+    //MORE: We could try using a flag set by cacheTablesUsed() instead
+    calcTablesUsed(used, true);
+    return used.isIndependentOfScope();
 }
 
 bool CHqlExpressionWithTables::usesSelector(IHqlExpression * selector)
@@ -5298,7 +5465,7 @@ IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(HqlExprArray & o
 #endif
     IHqlExpression * left = &ownedOperands.item(0);
     IHqlExpression * normalizedLeft = left->queryNormalizedSelector();
-    bool needNormalize = (normalizedLeft != left) || ((ownedOperands.ordinality() > 2) && ::hasProperty(newAtom, ownedOperands));
+    bool needNormalize = (normalizedLeft != left) || ((ownedOperands.ordinality() > 2) && ::hasAttribute(newAtom, ownedOperands));
 
     CHqlSelectBaseExpression * select;
     if (needNormalize)
@@ -5313,16 +5480,30 @@ IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(HqlExprArray & o
 
 bool CHqlSelectBaseExpression::isIndependentOfScope()
 {
-    IHqlExpression * ds = queryChild(0);
     if (isSelectRootAndActive())
     {
         return false;
     }
     else
     {
+        IHqlExpression * ds = queryChild(0);
         return ds->isIndependentOfScope();
     }
 }
+
+bool CHqlSelectBaseExpression::isIndependentOfScopeIgnoringInputs()
+{
+    if (isSelectRootAndActive())
+    {
+        return false;
+    }
+    else
+    {
+        IHqlExpression * ds = queryChild(0);
+        return ds->isIndependentOfScopeIgnoringInputs();
+    }
+}
+
 
 bool CHqlSelectBaseExpression::usesSelector(IHqlExpression * selector)
 {
@@ -5455,36 +5636,36 @@ ITypeInfo *CHqlConstant::getType()
 
 //==============================================================================================================
 
-CHqlField::CHqlField(_ATOM _name, ITypeInfo *_type, IHqlExpression *defvalue)
+CHqlField::CHqlField(IIdAtom * _id, ITypeInfo *_type, IHqlExpression *defvalue)
  : CHqlExpressionWithType(no_field, _type)
 {
     appendOperands(defvalue, NULL);
-    assertex(_name);
-    name = _name;
+    assertex(_id);
+    id = _id;
     onCreateField();
 }
 
-CHqlField::CHqlField(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands) 
+CHqlField::CHqlField(IIdAtom * _id, ITypeInfo *_type, HqlExprArray &_ownedOperands)
 : CHqlExpressionWithType(no_field, _type, _ownedOperands)
 {
-    assertex(_name);
-    name = _name;
+    assertex(_id);
+    id = _id;
     onCreateField();
 }
 
 void CHqlField::onCreateField()
 {
-    bool hasLCA = hasProperty(_linkCounted_Atom);
+    bool hasLCA = hasAttribute(_linkCounted_Atom);
     ITypeInfo * newType = setLinkCountedAttr(type, hasLCA);
     type->Release();
     type = newType;
 
 #ifdef _DEBUG
-    if (hasLinkCountedModifier(type) != hasProperty(_linkCounted_Atom))
+    if (hasLinkCountedModifier(type) != hasAttribute(_linkCounted_Atom))
         throwUnexpected();
 #endif
 #ifdef DEBUG_ON_CREATE
-    if (queryName() == createIdentifierAtom("imgLength"))
+    if (queryName() == createIdAtom("imgLength"))
         PrintLog("Create field %s=%p", expr->queryName()->str(), expr);
 #endif
 
@@ -5506,7 +5687,7 @@ void CHqlField::onCreateField()
     case type_groupedtable:
         typeExpr = queryRecord();
 #ifdef _DEBUG
-        assertex(!recordRequiresLinkCount(typeExpr) || hasProperty(_linkCounted_Atom));
+        assertex(!recordRequiresLinkCount(typeExpr) || hasAttribute(_linkCounted_Atom));
 #endif
         break;
     }
@@ -5525,7 +5706,7 @@ bool CHqlField::equals(const IHqlExpression & r) const
     if (CHqlExpression::equals(r))
     {
         const CHqlField *fr = QUERYINTERFACE(&r, const CHqlField);
-        if (fr && fr->name==name)
+        if (fr && fr->id==id)
             return true;
     }
     return false;
@@ -5533,20 +5714,20 @@ bool CHqlField::equals(const IHqlExpression & r) const
 
 IHqlExpression *CHqlField::clone(HqlExprArray &newkids)
 {
-    CHqlField* e = new CHqlField(name, LINK(type), newkids);
+    CHqlField* e = new CHqlField(id, LINK(type), newkids);
     return e->closeExpr();
 }
 
 StringBuffer &CHqlField::toString(StringBuffer &ret)
 {
-    ret.append(*name);
+    ret.append(id->str());
     return ret;
 }
 
 void CHqlField::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = hashc((unsigned char *) &name, sizeof(name), hashcode);
+    HASHFIELD(id);
 }
 
 
@@ -5558,7 +5739,7 @@ CHqlRow::CHqlRow(node_operator op, ITypeInfo * type, HqlExprArray & _ownedOperan
     switch (op)
     {
     case no_select: 
-        if (!hasProperty(newAtom))
+        if (!hasAttribute(newAtom))
         {
             normalized.setown(calcNormalizedSelector());
         }
@@ -5591,7 +5772,7 @@ IHqlExpression * CHqlRow::clone(HqlExprArray &newkids)
     return createRow(op, newkids);
 }
 
-_ATOM CHqlRow::queryName() const
+IAtom * CHqlRow::queryName() const
 {
     switch (op)
     {
@@ -5828,7 +6009,7 @@ IHqlDataset *CHqlDataset::queryTable()
 
     StringBuffer s("queryDataset() return NULL for: ");
     s.append(getOpString(op));
-    throw MakeStringException(2, "%s", s.str());
+    throw MakeStringExceptionDirect(2, s.str());
 }
 
 void CHqlDataset::sethash() 
@@ -5994,7 +6175,7 @@ void CHqlDataset::cacheParent()
                     IHqlDataset * parent = pDataset->queryTable();
                     if (parent)
                     {
-                        container = queryExpression(parent->queryRootTable());
+                        container = ::queryExpression(parent->queryRootTable());
                         container->Link();
                     }
                 }
@@ -6020,7 +6201,7 @@ void CHqlDataset::cacheParent()
             IHqlExpression * ds = queryChild(0);
             container = LINK(queryDatasetCursor(ds)->queryNormalizedSelector(false));
 #ifdef _DEBUG
-            assertex(!hasProperty(newAtom) || !isAlwaysActiveRow(ds));
+            assertex(!hasAttribute(newAtom) || !isAlwaysActiveRow(ds));
 #endif
             break;
         }
@@ -6051,7 +6232,7 @@ void CHqlDataset::cacheParent()
     if (op != no_select)
     {
         IHqlDataset * table = queryTable();
-        IHqlExpression * tableExpr = queryExpression(table);//->queryNormalizedSelector();
+        IHqlExpression * tableExpr = ::queryExpression(table);
         if (tableExpr != this)
         {
             normalized.set(tableExpr->queryNormalizedSelector());
@@ -6166,7 +6347,6 @@ void CHqlRecord::sethash()
 {
     // Can't use base class as that includes type (== this) which would make it different every time
     setInitialHash(0);
-//  HASHFIELD(name);
     assertex(fields.count() != 0 || isEmptyRecord(this));
 }
 
@@ -6187,7 +6367,7 @@ void CHqlRecord::insertSymbols(IHqlExpression * expr)
     {
     case no_field:
         {
-            _ATOM name = expr->queryName();
+            IAtom * name = expr->queryName();
             if (name)
                 fields.setValue(name, expr);
         }
@@ -6227,9 +6407,9 @@ CHqlRecord::~CHqlRecord()
 }
 
 /* return: linked */
-IHqlExpression *CHqlRecord::lookupSymbol(_ATOM fieldName)
+IHqlExpression *CHqlRecord::lookupSymbol(IIdAtom * fieldName)
 {
-    IHqlExpression *ret = fields.getValue(fieldName);
+    IHqlExpression *ret = fields.getValue(fieldName->lower());
     ::Link(ret);
     return ret;
 }
@@ -6364,6 +6544,11 @@ bool CHqlAnnotation::isIndependentOfScope()
     return body->isIndependentOfScope();
 }
 
+bool CHqlAnnotation::isIndependentOfScopeIgnoringInputs()
+{
+    return body->isIndependentOfScopeIgnoringInputs();
+}
+
 bool CHqlAnnotation::usesSelector(IHqlExpression * selector)
 {
     return body->usesSelector(selector);
@@ -6384,9 +6569,9 @@ IHqlExpression *CHqlAnnotation::queryChild(unsigned idx) const
     return body->queryChild(idx);
 }
 
-IHqlExpression *CHqlAnnotation::queryProperty(_ATOM propname) const
+IHqlExpression *CHqlAnnotation::queryAttribute(IAtom * propname) const
 {
-    return body->queryProperty(propname);
+    return body->queryAttribute(propname);
 }
 
 IHqlExpression * CHqlAnnotation::queryAnnotationParameter(unsigned idx) const
@@ -6431,14 +6616,14 @@ bool CHqlAnnotation::isFullyBound() const
     return body->isFullyBound();
 }
 
-IAtom * CHqlAnnotation::queryFullModuleName() const
+IIdAtom * CHqlAnnotation::queryFullModuleId() const
 {
-    return body->queryFullModuleName();
+    return body->queryFullModuleId();
 }
 
-IHqlExpression * CHqlAnnotation::queryAttribute(_ATOM name)
+IHqlExpression * CHqlAnnotation::queryProperty(ExprPropKind kind)
 {
-    return body->queryAttribute(name);
+    return body->queryProperty(kind);
 }
 
 IHqlExpression * CHqlAnnotation::queryNormalizedSelector(bool skipIndex)
@@ -6536,6 +6721,11 @@ IAtom * CHqlAnnotation::queryName() const
     return body->queryName();
 }
 
+IIdAtom * CHqlAnnotation::queryId() const
+{
+    return body->queryId();
+}
+
 ITypeInfo * CHqlAnnotation::queryType() const
 {
     return body->queryType();
@@ -6615,8 +6805,8 @@ static void associateBindMap(HqlExprArray & selects, IHqlExpression * formal, IH
     unsigned numMaps = maps.ordinality();
     for (unsigned i=0; i < numMaps; i+= 2)
     {
-        _ATOM mapFrom = maps.item(i).queryName();
-        _ATOM mapTo = maps.item(i+1).queryName();
+        IIdAtom * mapFrom = maps.item(i).queryName();
+        IIdAtom * mapTo = maps.item(i+1).queryName();
 
         ForEachItemIn(j, selects)
         {
@@ -6645,7 +6835,7 @@ static void associateBindByName(HqlExprArray & selects, IHqlExpression * formal,
         IHqlExpression * curFormal = selectFrom->queryChild(1);
         if (!selectFrom->queryTransformExtra())
         {
-            _ATOM name = curFormal->queryName();
+            IIdAtom * name = curFormal->queryName();
             OwnedHqlExpr to = actualScope->lookupSymbol(name);
             if (!to)
             {
@@ -6664,12 +6854,12 @@ static void associateBindByName(HqlExprArray & selects, IHqlExpression * formal,
 
 //---------------------------------------------------------------------------------------------------------------------
 
-CHqlSymbolAnnotation::CHqlSymbolAnnotation(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
+CHqlSymbolAnnotation::CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _moduleId, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
 : CHqlAnnotation(_expr)
 {
-    name = _name;
+    id = _id;
     symbolFlags = _symbolFlags;
-    module = _module;
+    moduleId = _moduleId;
     funcdef = _funcdef;
     if (funcdef && containsInternalSelect(funcdef))
         infoFlags |= HEFinternalSelect;
@@ -6678,9 +6868,9 @@ CHqlSymbolAnnotation::CHqlSymbolAnnotation(_ATOM _name, _ATOM _module, IHqlExpre
 void CHqlSymbolAnnotation::sethash()
 {
     hashcode = 0;
-    HASHFIELD(name);
+    HASHFIELD(id);
     HASHFIELD(body);
-    HASHFIELD(module);
+    HASHFIELD(moduleId);
 }
 
 CHqlSymbolAnnotation::~CHqlSymbolAnnotation()
@@ -6694,13 +6884,13 @@ bool CHqlSymbolAnnotation::equals(const IHqlExpression & other) const
         return false;
 
     //Must be a named symbol if got here
-    if (name != other.queryName())
+    if (id != other.queryId())
         return false;
 
     if ((symbolFlags != other.getSymbolFlags()) || (funcdef != other.queryFunctionDefinition()))
         return false;
 
-    if (module != other.queryFullModuleName())
+    if (moduleId != other.queryFullModuleId())
         return false;
 
     if (op == no_nobody)
@@ -6724,7 +6914,7 @@ IHqlExpression * CHqlSymbolAnnotation::cloneAnnotation(IHqlExpression * newbody)
 {
     if (body == newbody)
         return LINK(this);
-    return cloneSymbol(name, newbody, funcdef, NULL);
+    return cloneSymbol(id, newbody, funcdef, NULL);
 }
 
 IHqlExpression *CHqlSymbolAnnotation::queryFunctionDefinition() const
@@ -6745,36 +6935,36 @@ inline unsigned combineSymbolFlags(unsigned symbolFlags, bool exported, bool sha
     return symbolFlags | (exported ? ob_exported : 0) | (shared ? ob_shared : 0);
 }
 
-CHqlSimpleSymbol::CHqlSimpleSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
-: CHqlSymbolAnnotation(_name, _module, _expr, _funcdef, _symbolFlags)
+CHqlSimpleSymbol::CHqlSimpleSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
+: CHqlSymbolAnnotation(_id, _module, _expr, _funcdef, _symbolFlags)
 {
 }
 
-IHqlExpression *CHqlSimpleSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _flags)
+IHqlExpression *CHqlSimpleSymbol::makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _flags)
 {
-    CHqlSimpleSymbol *e = new CHqlSimpleSymbol(_name, _module, _expr, _funcdef, _flags);
+    CHqlSimpleSymbol *e = new CHqlSimpleSymbol(_id, _module, _expr, _funcdef, _flags);
     return e->closeExpr();
 }
 
-IHqlExpression * CHqlSimpleSymbol::cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
+IHqlExpression * CHqlSimpleSymbol::cloneSymbol(IIdAtom * optid, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
 {
     assertex(!optargs || optargs->ordinality() == 0);
-    _ATOM newname = optname ? optname : name;
+    IIdAtom * newid = optid ? optid : id;
     IHqlExpression * newbody = optnewbody ? optnewbody : body;
     IHqlExpression * newfuncdef = optnewfuncdef ? optnewfuncdef : funcdef;
 
-    if (newname == name && newbody==body && newfuncdef==funcdef)
+    if (newid == id && newbody==body && newfuncdef==funcdef)
         return LINK(this);
 
-    return makeSymbol(newname, module, LINK(newbody), LINK(newfuncdef), symbolFlags);
+    return makeSymbol(newid, moduleId, LINK(newbody), LINK(newfuncdef), symbolFlags);
 }
 
 
 //---------------------------------------------------------------------------------------------------------------------
 
 
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _symbolFlags)
-: CHqlSymbolAnnotation(_name, _module, _expr, NULL, combineSymbolFlags(_symbolFlags, _exported, _shared))
+CHqlNamedSymbol::CHqlNamedSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _symbolFlags)
+: CHqlSymbolAnnotation(_id, _module, _expr, NULL, combineSymbolFlags(_symbolFlags, _exported, _shared))
 {
     startpos = 0;
     bodypos = 0;
@@ -6783,8 +6973,8 @@ CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_ex
     startColumn = 0;
 }
 
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
-: CHqlSymbolAnnotation(_name, _module, _expr, _funcdef, combineSymbolFlags(_symbolFlags, _exported, _shared))
+CHqlNamedSymbol::CHqlNamedSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
+: CHqlSymbolAnnotation(_id, _module, _expr, _funcdef, combineSymbolFlags(_symbolFlags, _exported, _shared))
 {
     text.set(_text);
     startpos = _startpos;
@@ -6794,33 +6984,33 @@ CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_ex
     startColumn = _startColumn;
 }
 
-CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags)
+CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags)
 {
-    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _exported, _shared, _flags);
+    CHqlNamedSymbol *e = new CHqlNamedSymbol(_id, _module, _expr, _exported, _shared, _flags);
     return (CHqlNamedSymbol *) e->closeExpr();
 }
 
 
-CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
+CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
 {
-    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _startLine, _startColumn, _startpos, _bodypos, _endpos);
+    CHqlNamedSymbol *e = new CHqlNamedSymbol(_id, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _startLine, _startColumn, _startpos, _bodypos, _endpos);
     return (CHqlNamedSymbol *) e->closeExpr();
 }
 
-IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
+IHqlExpression * CHqlNamedSymbol::cloneSymbol(IIdAtom * optid, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
 {
-    _ATOM newname = optname ? optname : name;
+    IIdAtom * newid = optid ? optid : id;
     IHqlExpression * newbody = optnewbody ? optnewbody : body;
     IHqlExpression * newfuncdef = optnewfuncdef ? optnewfuncdef : funcdef;
     HqlExprArray * newoperands = optargs ? optargs : &operands;
 
-    if (newname == name && newbody==body && newfuncdef==funcdef)
+    if (newid == id && newbody==body && newfuncdef==funcdef)
     {
         if (newoperands == &operands || arraysSame(*newoperands, operands))
             return LINK(this);
     }
 
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(newname, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, startLine, startColumn, startpos, bodypos, endpos);
+    CHqlNamedSymbol * e = new CHqlNamedSymbol(newid, moduleId, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, startLine, startColumn, startpos, bodypos, endpos);
     //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
     e->operands.ensure(newoperands->ordinality());
     ForEachItemIn(idx, *newoperands)
@@ -7193,9 +7383,7 @@ bool CFileContents::preloadFromFile()
         mb.setLength(sizeRead);
     } while (rd);
     ensureUtf8(mb);
-    mb.append((byte)0);
-    mb.truncate();
-    fileContents.setown(static_cast<char *>(mb.detach()));
+    setContentsOwn(mb);
     return true;
 }
 
@@ -7235,23 +7423,42 @@ void CFileContents::ensureLoaded()
     byte * contents = static_cast<byte *>(buffer.reserve(sizeToRead));
     size32_t sizeRead = io->read(0, sizeToRead, contents);
     ensureUtf8(buffer);
-    buffer.append((byte)0);
+    setContentsOwn(buffer);
 
-    fileContents.setown(static_cast<char *>(buffer.detach()));
     if (sizeRead != sizeToRead)
         throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
 }
 
 CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath) 
-: fileContents(query), sourcePath(_sourcePath)
+: sourcePath(_sourcePath)
 {
+    if (query)
+        setContents(strlen(query), query);
+
     delayedRead = false;
 }
 
 CFileContents::CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath) 
-: fileContents(query, len), sourcePath(_sourcePath)
+: sourcePath(_sourcePath)
 {
+    setContents(len, query);
     delayedRead = false;
+}
+
+
+void CFileContents::setContents(unsigned len, const char * query)
+{
+    void * buffer = fileContents.allocate(len+1);
+    memcpy(buffer, query, len);
+    ((byte *)buffer)[len] = '\0';
+}
+
+void CFileContents::setContentsOwn(MemoryBuffer & buffer)
+{
+    buffer.append((byte)0);
+    buffer.truncate();
+    size32_t len = buffer.length();
+    fileContents.setOwn(len, buffer.detach());
 }
 
 IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath)
@@ -7306,8 +7513,8 @@ extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents
 
 //==============================================================================================================
 
-CHqlScope::CHqlScope(node_operator _op, _ATOM _name, const char * _fullName)
-: CHqlExpressionWithType(_op, NULL), name(_name), fullName(_fullName)
+CHqlScope::CHqlScope(node_operator _op, IIdAtom * _id, const char * _fullName)
+: CHqlExpressionWithType(_op, NULL), id(_id), fullName(_fullName)
 {
     type = this;
 }
@@ -7315,7 +7522,7 @@ CHqlScope::CHqlScope(node_operator _op, _ATOM _name, const char * _fullName)
 CHqlScope::CHqlScope(IHqlScope* scope)
 : CHqlExpressionWithType(no_scope, NULL)
 {
-    name = scope->queryName();
+    id = scope->queryId();
     fullName.set(scope->queryFullName());
     CHqlScope* s = QUERYINTERFACE(scope, CHqlScope);
     if (s && s->text)
@@ -7326,7 +7533,7 @@ CHqlScope::CHqlScope(IHqlScope* scope)
 CHqlScope::CHqlScope(node_operator _op) 
 : CHqlExpressionWithType(_op, NULL)
 {
-    name = NULL;
+    id = NULL;
     type = this;
 }
 
@@ -7427,7 +7634,7 @@ IHqlExpression *CHqlScope::clone(HqlExprArray &newkids)
     return clone(newkids, syms)->queryExpression();
 }
 
-IHqlExpression * createFunctionDefinition(_ATOM name, IHqlExpression * value, IHqlExpression * parameters, IHqlExpression * defaults, IHqlExpression * attrs)
+IHqlExpression * createFunctionDefinition(IIdAtom * id, IHqlExpression * value, IHqlExpression * parameters, IHqlExpression * defaults, IHqlExpression * attrs)
 {
     HqlExprArray args;
     args.append(*value);
@@ -7436,10 +7643,10 @@ IHqlExpression * createFunctionDefinition(_ATOM name, IHqlExpression * value, IH
         args.append(*defaults);
     if (attrs)
         attrs->unwindList(args, no_comma);
-    return createFunctionDefinition(name, args);
+    return createFunctionDefinition(id, args);
 }
 
-IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args)
+IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
 {
     IHqlExpression * body = &args.item(0);
     IHqlExpression * formals = &args.item(1);
@@ -7454,7 +7661,7 @@ IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args)
         IHqlExpression * formal = formals->queryChild(i);
         HqlExprArray attrs;
         unwindChildren(attrs, formal);
-        IHqlExpression * normal = createParameter(formal->queryName(), UnadornedParameterIndex, formal->getType(), attrs);
+        IHqlExpression * normal = createParameter(formal->queryId(), UnadornedParameterIndex, formal->getType(), attrs);
         normalized.append(*normal);
         defaultReplacer.setMapping(formal->queryBody(), normal);
     }
@@ -7467,28 +7674,28 @@ IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args)
     ITypeInfo * type = makeFunctionType(body->getType(), LINK(formals), LINK(defaults));
 #endif
 
-    return createNamedValue(no_funcdef, type, name, args);
+    return createNamedValue(no_funcdef, type, id, args);
 }
 
 
 
-void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *value, 
+void CHqlScope::defineSymbol(IIdAtom * _id, IIdAtom * moduleName, IHqlExpression *value,
                              bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int lineno, int column,
                              int _startpos, int _bodypos, int _endpos)
 {
     if (!moduleName)
-        moduleName = name;
+        moduleName = id;
 
-    IHqlExpression * symbol = createSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, lineno, column, _startpos, _bodypos, _endpos);
+    IHqlExpression * symbol = createSymbol(_id, moduleName, value, NULL, exported, shared, symbolFlags, fc, lineno, column, _startpos, _bodypos, _endpos);
     defineSymbol(symbol);
 }
 
-void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags)
+void CHqlScope::defineSymbol(IIdAtom * _id, IIdAtom * moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags)
 {
-    if (!moduleName) moduleName = name;
-    if (!_name) _name = internalAtom;
-    defineSymbol(createSymbol(_name, moduleName, value, exported, shared, symbolFlags));
+    assertex(_id);
+    if (!moduleName) moduleName = id;
+    defineSymbol(createSymbol(_id, moduleName, value, exported, shared, symbolFlags));
 }
 
 void CHqlScope::defineSymbol(IHqlExpression * expr)
@@ -7502,17 +7709,16 @@ void CHqlScope::defineSymbol(IHqlExpression * expr)
     expr->Release();
 }
 
-void CHqlScope::removeSymbol(_ATOM name)
+void CHqlScope::removeSymbol(IIdAtom * _id)
 {
-    symbols.remove(name);
-//  symbols.setValue(name, NULL);
+    symbols.remove(_id->lower());
     //in general infoFlags needs recalculating - although currently I think this can only occur when a constant has been added
 }
 
 
-IHqlExpression *CHqlScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    OwnedHqlExpr ret = symbols.getLinkedValue(searchName);
+    OwnedHqlExpr ret = symbols.getLinkedValue(searchName->lower());
 
     if (!ret)
         return NULL; 
@@ -7524,12 +7730,12 @@ IHqlExpression *CHqlScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, 
 }
 
 
-int CHqlScope::getPropInt(_ATOM a, int def) const
+int CHqlScope::getPropInt(IAtom * a, int def) const
 {
     return def;
 }
 
-bool CHqlScope::getProp(_ATOM a, StringBuffer &ret) const
+bool CHqlScope::getProp(IAtom * a, StringBuffer &ret) const
 { 
     return false;
 }
@@ -7545,7 +7751,7 @@ void CHqlScope::getSymbols(HqlExprArray& exprs) const
         IHqlExpression *cur = localSymbols.mapToValue(&iter.query());
         if (!cur)
         {
-            _ATOM name = * static_cast<_ATOM const *>(iter.query().getKey());
+            IAtom * name = * static_cast<IAtom * const *>(iter.query().getKey());
             throw MakeStringException(ERR_INTERNAL_NOEXPR, "INTERNAL: getSymbol %s has no associated expression", name ? name->str() : "");
         }
 
@@ -7565,7 +7771,7 @@ IHqlScope * CHqlScope::cloneAndClose(HqlExprArray & children, HqlExprArray & sym
     return closeExpr()->queryScope();
 }
 
-void CHqlScope::throwRecursiveError(_ATOM searchName)
+void CHqlScope::throwRecursiveError(IIdAtom * searchName)
 {
     StringBuffer filename;
     if (fullName)
@@ -7610,7 +7816,7 @@ static bool scopesEqual(const IHqlScope * l, const IHqlScope * r)
 
 //==============================================================================================================
 
-CHqlRemoteScope::CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepositoryCallback * _repository, IProperties* _props, IFileContents * _text, bool _lazy, IEclSource * _eclSource)
+CHqlRemoteScope::CHqlRemoteScope(IIdAtom * _name, const char * _fullName, IEclRepositoryCallback * _repository, IProperties* _props, IFileContents * _text, bool _lazy, IEclSource * _eclSource)
 : CHqlScope(no_remotescope, _name, _fullName), eclSource(_eclSource)
 {
     text.set(_text);
@@ -7717,7 +7923,7 @@ IHqlExpression *CHqlRemoteScope::clone(HqlExprArray &newkids)
 }
 
 
-IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
 //  PrintLog("lookupSymbol %s#%d", searchName->getAtomNamePtr(),version);
     preloadSymbols(ctx, false);
@@ -7833,7 +8039,7 @@ IFileContents * CHqlRemoteScope::queryDefinitionText() const
     return text;
 }
 
-int CHqlRemoteScope::getPropInt(_ATOM a, int def) const
+int CHqlRemoteScope::getPropInt(IAtom * a, int def) const
 {
     if (props)
         return props->getPropInt(a->getAtomNamePtr(), def);
@@ -7841,21 +8047,21 @@ int CHqlRemoteScope::getPropInt(_ATOM a, int def) const
         return def;
 }
 
-bool CHqlRemoteScope::getProp(_ATOM a, StringBuffer &ret) const
+bool CHqlRemoteScope::getProp(IAtom * a, StringBuffer &ret) const
 { 
     return (props != NULL && props->getProp(a->getAtomNamePtr(), ret));
 }
 
 
 
-void CHqlRemoteScope::setProp(_ATOM a, int val)
+void CHqlRemoteScope::setProp(IAtom * a, int val)
 {
     if (!props)
         props = createProperties();
     props->setProp(a->getAtomNamePtr(), val);
 }
 
-void CHqlRemoteScope::setProp(_ATOM a, const char * val)
+void CHqlRemoteScope::setProp(IAtom * a, const char * val)
 {
     if (!props)
         props = createProperties();
@@ -7872,7 +8078,7 @@ void CHqlRemoteScope::repositoryLoadModule(HqlLookupContext & ctx, bool forceAll
     }
 }
 
-IHqlExpression * CHqlRemoteScope::repositoryLoadSymbol(_ATOM attrName)
+IHqlExpression * CHqlRemoteScope::repositoryLoadSymbol(IIdAtom * attrName)
 {
     if (loadedAllSymbols)
         return NULL;
@@ -7948,7 +8154,7 @@ CHqlLocalScope::CHqlLocalScope(IHqlScope* scope)
 {
 }
 
-CHqlLocalScope::CHqlLocalScope(node_operator _op, _ATOM _name, const char * _fullName) 
+CHqlLocalScope::CHqlLocalScope(node_operator _op, IIdAtom * _name, const char * _fullName)
 : CHqlScope(_op, _name, _fullName)
 {
 }
@@ -7978,7 +8184,7 @@ IHqlExpression *CHqlLocalScope::clone(HqlExprArray &newkids)
 
 IHqlScope * CHqlLocalScope::clone(HqlExprArray & children, HqlExprArray & symbols)
 {
-    CHqlScope * cloned = new CHqlLocalScope(op, name, fullName);
+    CHqlScope * cloned = new CHqlLocalScope(op, id, fullName);
     return cloned->cloneAndClose(children, symbols);
 }
 
@@ -8009,7 +8215,7 @@ c) Ensure all system plugins are parsed (so that (d) works, and allows the parsi
 void CHqlMergedScope::addScope(IHqlScope * scope)
 {
     //This only supports real scopes - it can't be based on modile definitions that could be virtual.
-    assertex(!scope->queryExpression()->queryProperty(_virtualSeq_Atom));
+    assertex(!scope->queryExpression()->queryAttribute(_virtualSeq_Atom));
     if (mergedScopes.ordinality())
     {
         const char * name0 = mergedScopes.item(0).queryFullName();
@@ -8037,17 +8243,17 @@ inline bool canMergeDefinition(IHqlExpression * expr)
     return true;
 }
 
-IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     CriticalBlock block(cs);
-    OwnedHqlExpr resolved = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
+    OwnedHqlExpr resolved = CHqlScope::lookupSymbol(searchId, lookupFlags, ctx);
     if (resolved)
     {
         node_operator resolvedOp = resolved->getOperator();
         if (resolvedOp == no_merge_pending)
         {
             if (lookupFlags & LSFrequired)
-                throwRecursiveError(searchName);
+                throwRecursiveError(searchId);
             return NULL;
         }
         if (resolvedOp == no_merge_nomatch)
@@ -8061,7 +8267,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
             return NULL;
     }
 
-    OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(mergePendingMarker), ob_exported);
+    OwnedHqlExpr recursionGuard = createSymbol(searchId, LINK(mergePendingMarker), ob_exported);
     defineSymbol(LINK(recursionGuard));
 
     OwnedHqlExpr previousMatch;
@@ -8070,7 +8276,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
     unsigned symbolFlags = 0;
     ForEachItemIn(i, mergedScopes)
     {
-        OwnedHqlExpr matched = mergedScopes.item(i).lookupSymbol(searchName, lookupFlags, ctx);
+        OwnedHqlExpr matched = mergedScopes.item(i).lookupSymbol(searchId, lookupFlags, ctx);
         if (matched)
         {
             if (!canMergeDefinition(matched))
@@ -8083,7 +8289,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
             if (previousMatch)
             {
                 IHqlScope * previousScope = previousMatch->queryScope();
-                mergeScope.setown(new CHqlMergedScope(searchName, previousScope->queryFullName()));
+                mergeScope.setown(new CHqlMergedScope(searchId, previousScope->queryFullName()));
                 mergeScope->addScope(previousScope);
             }
 
@@ -8107,7 +8313,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
     if (mergeScope)
     {
         OwnedHqlExpr newScope = mergeScope.getClear()->closeExpr();
-        IHqlExpression * symbol = createSymbol(searchName, name, LINK(newScope), true, false, symbolFlags);
+        IHqlExpression * symbol = createSymbol(searchId, id, LINK(newScope), true, false, symbolFlags);
         defineSymbol(symbol);
         return LINK(symbol);
     }
@@ -8117,7 +8323,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
         return previousMatch.getClear();
     }
     //Indicate that no match was found to save work next time.
-    defineSymbol(createSymbol(searchName, LINK(mergeNoMatchMarker), ob_exported));
+    defineSymbol(createSymbol(searchId, LINK(mergeNoMatchMarker), ob_exported));
     return NULL;
 }
 
@@ -8143,9 +8349,9 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
         ForEachItemIn(iSym, scopeSymbols)
         {
             IHqlExpression & cur = scopeSymbols.item(iSym);
-            _ATOM curName = cur.queryName();
+            IIdAtom * curName = cur.queryId();
 
-            OwnedHqlExpr prev = symbols.getLinkedValue(curName);
+            OwnedHqlExpr prev = symbols.getLinkedValue(curName->lower());
             if (prev)
             {
                 //Unusual - check that this hasn't already been resolved by a call to lookupSymbol()
@@ -8158,7 +8364,7 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
                         //a child scope hasn't resolved it yet.
                         if (prev->getOperator() != no_nobody)
                         {
-                            IHqlExpression * newSymbol = createSymbol(curName, name, NULL, true, false, 0);
+                            IHqlExpression * newSymbol = createSymbol(curName, id, NULL, true, false, 0);
                             defineSymbol(newSymbol);
                         }
                     }
@@ -8214,7 +8420,7 @@ IHqlScope * CHqlLibraryInstance::clone(HqlExprArray & children, HqlExprArray & s
 }
 
 
-IHqlExpression *CHqlLibraryInstance::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlLibraryInstance::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr ret = libraryScope->lookupSymbol(searchName, lookupFlags, ctx);
 
@@ -8270,7 +8476,7 @@ static IHqlExpression * cloneFunction(IHqlExpression * expr)
         unsigned seq = (unsigned)formal->querySequenceExtra();
         HqlExprArray attrs;
         unwindChildren(attrs, formal);
-        OwnedHqlExpr newFormal = createParameter(formal->queryName(), seq, formal->getType(), attrs);
+        OwnedHqlExpr newFormal = createParameter(formal->queryId(), seq, formal->getType(), attrs);
         assertex(formal != newFormal || seq == UnadornedParameterIndex);
         replacer.setMapping(formal, newFormal);
     }
@@ -8283,20 +8489,16 @@ IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * modul
     IHqlExpression * record = queryOriginalRecord(attr);
     if (!record)
         record = queryNullRecord();
-    IHqlExpression * grouping = queryGrouping(attr);
-    IHqlExpression * distribution = queryDistribution(attr);
 
     HqlExprArray args;
     args.append(*LINK(record));
     args.append(*LINK(moduleMarker));
     args.append(*LINK(attr));
-    args.append(*createOpenNamedValue(no_attrname, makeVoidType(), attr->queryName())->closeExpr());
+    args.append(*createOpenNamedValue(no_attrname, makeVoidType(), attr->queryId())->closeExpr());
     if (lookupFlags & LSFignoreBase)
         args.append(*createAttribute(ignoreBaseAtom));
-    if (grouping)
-        args.append(*createAttribute(groupedAtom, LINK(grouping)));
-    if (distribution)
-        args.append(*createAttribute(distributedAtom, LINK(distribution)));
+    if (isGrouped(attr))
+        args.append(*createAttribute(groupedAtom));
 
     OwnedHqlExpr ret;
     if (attr->isFunction())
@@ -8339,10 +8541,10 @@ public:
         {
             if (match == visited)
             {
-                _ATOM name = expr->queryName();
-                const char * nameText = name ? name->str() : "";
-                ECLlocation loc(searchModule->queryProperty(_location_Atom));
-                reportError(errors, HQLERR_CycleWithModuleDefinition, loc, HQLERR_CycleWithModuleDefinition_Text, nameText);
+                IIdAtom * id = expr->queryId();
+                const char * idText = id ? id->str() : "";
+                ECLlocation loc(searchModule->queryAttribute(_location_Atom));
+                reportError(errors, HQLERR_CycleWithModuleDefinition, loc, HQLERR_CycleWithModuleDefinition_Text, idText);
             }
 
 #ifdef TRANSFORM_STATS
@@ -8378,8 +8580,8 @@ public:
         case no_internalselect:
             if (expr->queryChild(1) == searchModule)
             {
-                _ATOM name = expr->queryChild(3)->queryName();
-                return getVirtualReplacement(name);
+                IIdAtom * id = expr->queryChild(3)->queryId();
+                return getVirtualReplacement(id);
             }
             break;
         }
@@ -8388,7 +8590,7 @@ public:
     }
 
 protected:
-    virtual IHqlExpression * getVirtualReplacement(_ATOM name) = 0;
+    virtual IHqlExpression * getVirtualReplacement(IIdAtom * id) = 0;
 
 protected:
     OwnedHqlExpr visited;
@@ -8407,9 +8609,9 @@ public:
     {
     }
 
-    virtual IHqlExpression * getVirtualReplacement(_ATOM name)
+    virtual IHqlExpression * getVirtualReplacement(IIdAtom * name)
     {
-        OwnedHqlExpr value = symbols.getLinkedValue(name);
+        OwnedHqlExpr value = symbols.getLinkedValue(name->lower());
         return transform(value);
     }
 
@@ -8430,9 +8632,9 @@ public:
     {
     }
 
-    virtual IHqlExpression * getVirtualReplacement(_ATOM name)
+    virtual IHqlExpression * getVirtualReplacement(IIdAtom * id)
     {
-        return paramScope->lookupSymbol(name, lookupFlags, ctx);
+        return paramScope->lookupSymbol(id, lookupFlags, ctx);
     }
 
 protected:
@@ -8554,7 +8756,7 @@ bool canBeVirtual(IHqlExpression * expr)
     return true;
 }
 
-CHqlVirtualScope::CHqlVirtualScope(_ATOM _name, const char * _fullName) 
+CHqlVirtualScope::CHqlVirtualScope(IIdAtom * _name, const char * _fullName)
 : CHqlScope(no_virtualscope, _name, _fullName)
 {
     isAbstract = false;
@@ -8568,7 +8770,7 @@ IHqlExpression *CHqlVirtualScope::addOperand(IHqlExpression * arg)
 {
     if (arg->isAttribute())
     {
-        _ATOM name = arg->queryName();
+        IAtom * name = arg->queryName();
         if (name == _virtualSeq_Atom)
         {
             if (arg->querySequenceExtra() == 0)
@@ -8578,7 +8780,7 @@ IHqlExpression *CHqlVirtualScope::addOperand(IHqlExpression * arg)
                 arg->Release();
                 return this;
             }
-            assertex(!hasProperty(_virtualSeq_Atom));
+            assertex(!hasAttribute(_virtualSeq_Atom));
             containsVirtual = true;
         }
         else if (name == interfaceAtom || name == virtualAtom)
@@ -8590,7 +8792,7 @@ IHqlExpression *CHqlVirtualScope::addOperand(IHqlExpression * arg)
     }
     else if (arg->isScope())
     {
-        if (arg->hasProperty(_virtualSeq_Atom))
+        if (arg->hasAttribute(_virtualSeq_Atom))
             ensureVirtualSeq();
         else if (arg->getOperator() == no_param)
             ensureVirtualSeq();    // yuk- needs another member function.
@@ -8638,7 +8840,7 @@ IHqlExpression *CHqlVirtualScope::clone(HqlExprArray &newkids)
 
 IHqlScope * CHqlVirtualScope::clone(HqlExprArray & children, HqlExprArray & symbols)
 {
-    CHqlScope * cloned = new CHqlVirtualScope(name, fullName);
+    CHqlScope * cloned = new CHqlVirtualScope(id, fullName);
     return cloned->cloneAndClose(children, symbols);
 }
 
@@ -8675,7 +8877,7 @@ void CHqlVirtualScope::defineSymbol(IHqlExpression * expr)
     CHqlScope::defineSymbol(expr);
 }
 
-bool CHqlVirtualScope::queryForceSymbolVirtual(_ATOM searchName, HqlLookupContext & ctx)
+bool CHqlVirtualScope::queryForceSymbolVirtual(IIdAtom * searchName, HqlLookupContext & ctx)
 {
     if (allVirtual)
         return true;
@@ -8691,7 +8893,7 @@ bool CHqlVirtualScope::queryForceSymbolVirtual(_ATOM searchName, HqlLookupContex
     return false;
 }
 
-IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitionModule, _ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     ForEachChild(i, this)
     {
@@ -8710,7 +8912,7 @@ IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitio
     return NULL;
 }
 
-IHqlExpression *CHqlVirtualScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlVirtualScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     //Are we just trying to find out what the definition in this scope is?
     if (lookupFlags & LSFignoreBase)
@@ -8744,7 +8946,7 @@ IHqlExpression *CHqlVirtualScope::lookupSymbol(_ATOM searchName, unsigned lookup
             {
                 //All internal references need to be recursively replaced with no_delayedselect
                 //e.g., if fields used to provide default values for records.
-                ParameterVirtualSymbolReplacer replacer(ctx, this, queryProperty(_virtualSeq_Atom), LSFsharedOK);
+                ParameterVirtualSymbolReplacer replacer(ctx, this, queryAttribute(_virtualSeq_Atom), LSFsharedOK);
                 return replacer.transform(match);
             }
             return match.getClear();
@@ -8780,7 +8982,7 @@ IHqlExpression *CHqlVirtualScope::lookupSymbol(_ATOM searchName, unsigned lookup
                 //throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
                 //All internal references need to be recursively replaced with no_internalselect
                 //e.g., if fields used to provide default values for records.
-                ParameterVirtualSymbolReplacer replacer(ctx, this, definitionModule->queryProperty(_virtualSeq_Atom), LSFsharedOK|LSFfromderived);
+                ParameterVirtualSymbolReplacer replacer(ctx, this, definitionModule->queryAttribute(_virtualSeq_Atom), LSFsharedOK|LSFfromderived);
                 return replacer.transform(match);
             }
             return match.getClear();
@@ -8789,7 +8991,7 @@ IHqlExpression *CHqlVirtualScope::lookupSymbol(_ATOM searchName, unsigned lookup
 
         //References to "virtual" members are always represented with a delayed reference,
         //so that the correct definition will be used.
-        return createDelayedReference(no_internalselect, queryProperty(_virtualSeq_Atom), match, lookupFlags, ctx);
+        return createDelayedReference(no_internalselect, queryAttribute(_virtualSeq_Atom), match, lookupFlags, ctx);
     }
 
     return NULL;
@@ -8818,7 +9020,7 @@ IHqlScope * CHqlVirtualScope::deriveConcreteScope()
 
     //begin scope
     {
-        ConcreteVirtualSymbolReplacer replacer(NULL, queryProperty(_virtualSeq_Atom), symbols);
+        ConcreteVirtualSymbolReplacer replacer(NULL, queryAttribute(_virtualSeq_Atom), symbols);
         SymbolTableIterator iter(symbols);
         ForEach(iter)
         {
@@ -8835,7 +9037,7 @@ IHqlScope * CHqlVirtualScope::deriveConcreteScope()
 
 void CHqlVirtualScope::resolveUnboundSymbols()
 {
-    IHqlExpression * virtualAttr = queryProperty(_virtualSeq_Atom);
+    IHqlExpression * virtualAttr = queryAttribute(_virtualSeq_Atom);
     ThrowingErrorReceiver errors;
     HqlDummyLookupContext localCtx(&errors);
     SymbolTableIterator iter(symbols);
@@ -8845,7 +9047,7 @@ void CHqlVirtualScope::resolveUnboundSymbols()
         IHqlExpression *cur = symbols.mapToValue(&iter.query());
         if (cur->getOperator() == no_unboundselect)
         {
-            _ATOM searchName = cur->queryName();
+            IIdAtom * searchName = cur->queryId();
             OwnedHqlExpr match;
             ForEachChild(i, this)
             {
@@ -8861,7 +9063,7 @@ void CHqlVirtualScope::resolveUnboundSymbols()
                         if (resolvedOp == no_unboundselect || resolvedOp == no_purevirtual)
                             throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
 
-                        match.setown(quickFullReplaceExpression(resolved, child->queryProperty(_virtualSeq_Atom), virtualAttr));
+                        match.setown(quickFullReplaceExpression(resolved, child->queryAttribute(_virtualSeq_Atom), virtualAttr));
                         break;
                     }
                 }
@@ -8901,7 +9103,7 @@ public:
     }
 
     virtual void defineSymbol(IHqlExpression * expr);
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context);
 
 protected:
@@ -8939,7 +9141,7 @@ void CHqlForwardScope::defineSymbol(IHqlExpression * expr)
         CHqlVirtualScope::defineSymbol(expr);
 }
 
-IHqlExpression *CHqlForwardScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr resolvedSym = resolved->lookupSymbol(searchName, lookupFlags, ctx);
     if (resolvedSym && resolvedSym->getOperator() == no_processing)
@@ -8996,7 +9198,7 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
         syms.sort(compareSymbolsByName);            // Make errors consistent
         ForEachItemIn(i, syms)
         {
-            _ATOM cur = syms.item(i).queryName();
+            IIdAtom * cur = syms.item(i).queryId();
             ::Release(lookupSymbol(cur, LSFsharedOK, *activeContext));
             //Could have been fully resolved while looking up a symbol!
             if (resolvedAll)
@@ -9012,7 +9214,7 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
 }
 
 
-void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName, IFileContents * contents, unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn)
+void addForwardDefinition(IHqlScope * scope, IIdAtom * symbolName, IIdAtom * moduleName, IFileContents * contents, unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn)
 {
     IHqlExpression * cur = createSymbol(symbolName, moduleName, NULL, NULL,
                             isExported, !isExported, symbolFlags,
@@ -9025,7 +9227,7 @@ void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName,
 
 //==============================================================================================================
 
-CHqlMultiParentScope::CHqlMultiParentScope(_ATOM _name, ...)
+CHqlMultiParentScope::CHqlMultiParentScope(IIdAtom * _name, ...)
  : CHqlScope(no_privatescope, _name, _name->str())
 {
     va_list args;
@@ -9038,13 +9240,13 @@ CHqlMultiParentScope::CHqlMultiParentScope(_ATOM _name, ...)
 
         //This should only be used for parser scopes (which are real and non virtual).
         IHqlExpression * parentExpr = parent->queryExpression();
-        assertex(!parentExpr->hasProperty(_virtualSeq_Atom));
+        assertex(!parentExpr->hasAttribute(_virtualSeq_Atom));
         parents.append(*parent);
     }
     va_end(args);
 }
 
-IHqlExpression *CHqlMultiParentScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlMultiParentScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     IHqlExpression *ret = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
     if (ret)
@@ -9075,9 +9277,9 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
         
         if(value)
         {
-            _ATOM valueName = value->queryName();
+            IIdAtom * valueId = value->queryId();
             //debug.appendf(" %s",name->str());
-            defined.setValue(valueName,value); 
+            defined.setValue(valueId->lower(),value);
         }
     }
     //PrintLog(debug.str());
@@ -9086,10 +9288,10 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
 //==============================================================================================================
 
 static UniqueSequenceCounter parameterSequence;
-CHqlParameter::CHqlParameter(_ATOM _name, unsigned _idx, ITypeInfo *_type)
+CHqlParameter::CHqlParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *_type)
  : CHqlExpressionWithType(no_param, _type)
 {
-    name = _name;
+    id = _id;
     idx = _idx;
     infoFlags |= HEFunbound;
     uid = (idx == UnadornedParameterIndex) ? 0 : parameterSequence.next();
@@ -9106,29 +9308,29 @@ bool CHqlParameter::equals(const IHqlExpression & _other) const
     const CHqlParameter & other = static_cast<const CHqlParameter &>(_other);
     if (uid != other.uid)
         return false;
-    if ((name != other.name) || (idx != other.idx))
+    if ((id != other.id) || (idx != other.idx))
         return false;
     return true;
 }
 
-IHqlExpression * CHqlParameter::makeParameter(_ATOM _name, unsigned _idx, ITypeInfo *_type, HqlExprArray & _attrs)
+IHqlExpression * CHqlParameter::makeParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *_type, HqlExprArray & _attrs)
 {
     IHqlExpression * e;
     type_t tc = _type->getTypeCode();
     switch (tc)
     {
     case type_dictionary:
-        e = new CHqlDictionaryParameter(_name, _idx, _type);
+        e = new CHqlDictionaryParameter(_id, _idx, _type);
         break;
     case type_table:
     case type_groupedtable:
-        e = new CHqlDatasetParameter(_name, _idx, _type);
+        e = new CHqlDatasetParameter(_id, _idx, _type);
         break;
     case type_scope:
-        e = new CHqlScopeParameter(_name, _idx, _type);
+        e = new CHqlScopeParameter(_id, _idx, _type);
         break;
     default:
-        e = new CHqlParameter(_name, _idx, _type); 
+        e = new CHqlParameter(_id, _idx, _type);
         break;
     }
     ForEachItemIn(i, _attrs)
@@ -9148,19 +9350,19 @@ void CHqlParameter::sethash()
 {
     CHqlExpression::sethash();
     HASHFIELD(uid);
-    HASHFIELD(name);
+    HASHFIELD(id);
     HASHFIELD(idx);
 }
 
 IHqlExpression *CHqlParameter::clone(HqlExprArray &newkids)
 {
-    return makeParameter(name, idx, LINK(type), newkids);
+    return makeParameter(id, idx, LINK(type), newkids);
 }
 
 StringBuffer &CHqlParameter::toString(StringBuffer &ret)
 {
     ret.append('%');
-    ret.append(*name);
+    ret.append(id->str());
     ret.append('-');
     ret.append(idx);
     return ret;
@@ -9168,14 +9370,14 @@ StringBuffer &CHqlParameter::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlScopeParameter::CHqlScopeParameter(_ATOM _name, unsigned _idx, ITypeInfo *_type)
- : CHqlScope(no_param, _name, _name->str())
+CHqlScopeParameter::CHqlScopeParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *_type)
+ : CHqlScope(no_param, _id, _id->str())
 {
     type = _type;
     idx = _idx;
     typeScope = ::queryScope(type);
     infoFlags |= HEFunbound;
-    if (!hasProperty(_virtualSeq_Atom))
+    if (!hasAttribute(_virtualSeq_Atom))
         addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
@@ -9192,7 +9394,7 @@ bool CHqlScopeParameter::equals(const IHqlExpression & _other) const
     const CHqlScopeParameter & other = static_cast<const CHqlScopeParameter &>(_other);
     if (uid != other.uid)
         return false;
-    if ((name != other.name) || (idx != other.idx))
+    if ((id != other.id) || (idx != other.idx))
         return false;
     return (this == &_other);
 }
@@ -9200,7 +9402,7 @@ bool CHqlScopeParameter::equals(const IHqlExpression & _other) const
 IHqlExpression *CHqlScopeParameter::clone(HqlExprArray &newkids)
 {
     throwUnexpected();
-    return createParameter(name, idx, LINK(type), newkids);
+    return createParameter(id, idx, LINK(type), newkids);
 }
 
 IHqlScope * CHqlScopeParameter::clone(HqlExprArray & children, HqlExprArray & symbols)
@@ -9212,20 +9414,20 @@ void CHqlScopeParameter::sethash()
 {
     CHqlScope::sethash();
     HASHFIELD(uid);
-    HASHFIELD(name);
+    HASHFIELD(id);
     HASHFIELD(idx);
 }
 
 StringBuffer &CHqlScopeParameter::toString(StringBuffer &ret)
 {
     ret.append('%');
-    ret.append(*name);
+    ret.append(id->str());
     ret.append('-');
     ret.append(idx);
     return ret;
 }
 
-IHqlExpression * CHqlScopeParameter::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlScopeParameter::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr match = typeScope->lookupSymbol(searchName, lookupFlags|LSFfromderived, ctx);
     if (!match)
@@ -9238,7 +9440,7 @@ IHqlExpression * CHqlScopeParameter::lookupSymbol(_ATOM searchName, unsigned loo
         if (containsInternalSelect(match))
         {
             IHqlExpression * typeScopeExpr = ::queryExpression(typeScope);
-            ParameterVirtualSymbolReplacer replacer(ctx, this, typeScopeExpr->queryProperty(_virtualSeq_Atom), LSFsharedOK);
+            ParameterVirtualSymbolReplacer replacer(ctx, this, typeScopeExpr->queryAttribute(_virtualSeq_Atom), LSFsharedOK);
             match.setown(replacer.transform(match));
         }
 
@@ -9263,7 +9465,7 @@ CHqlDelayedScope::CHqlDelayedScope(HqlExprArray &_ownedOperands)
     typeScope = ::queryScope(scopeType);
     assertex(typeScope);
 
-    if (!hasProperty(_virtualSeq_Atom))
+    if (!hasAttribute(_virtualSeq_Atom))
         addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
@@ -9289,7 +9491,7 @@ IHqlScope * CHqlDelayedScope::clone(HqlExprArray & children, HqlExprArray & symb
     throwUnexpected();
 }
 
-IHqlExpression * CHqlDelayedScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlDelayedScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     IHqlScope * scope = queryChild(0)->queryScope();
     if (scope)
@@ -9409,12 +9611,12 @@ StringBuffer &CHqlVariable::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlAttribute::CHqlAttribute(node_operator _op, _ATOM _name) : CHqlExpressionWithTables(_op)
+CHqlAttribute::CHqlAttribute(node_operator _op, IAtom * _name) : CHqlExpressionWithTables(_op)
 {
     name = _name;
 }
 
-CHqlAttribute *CHqlAttribute::makeAttribute(node_operator op, _ATOM name) 
+CHqlAttribute *CHqlAttribute::makeAttribute(node_operator op, IAtom * name)
 {
     CHqlAttribute* e = new CHqlAttribute(op, name);
     return e;
@@ -9470,13 +9672,13 @@ ITypeInfo * CHqlAttribute::getType()
 
 //==============================================================================================================
 
-CHqlUnknown::CHqlUnknown(node_operator _op, ITypeInfo * _type, _ATOM _name, IInterface * _extra) : CHqlExpressionWithType(_op, _type)
+CHqlUnknown::CHqlUnknown(node_operator _op, ITypeInfo * _type, IAtom * _name, IInterface * _extra) : CHqlExpressionWithType(_op, _type)
 {
     name = _name;
     extra.setown(_extra);
 }
 
-CHqlUnknown *CHqlUnknown::makeUnknown(node_operator _op, ITypeInfo * _type, _ATOM _name, IInterface * _extra) 
+CHqlUnknown *CHqlUnknown::makeUnknown(node_operator _op, ITypeInfo * _type, IAtom * _name, IInterface * _extra)
 {
     if (!_type) _type = makeVoidType();
     return new CHqlUnknown(_op, _type, _name, _extra);
@@ -9519,14 +9721,14 @@ StringBuffer &CHqlUnknown::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlSequence::CHqlSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq) : CHqlExpressionWithType(_op, _type)
+CHqlSequence::CHqlSequence(node_operator _op, ITypeInfo * _type, IAtom * _name, unsigned __int64 _seq) : CHqlExpressionWithType(_op, _type)
 {
     infoFlags |= HEFhasunadorned;
     name = _name;
     seq = _seq;
 }
 
-CHqlSequence *CHqlSequence::makeSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq) 
+CHqlSequence *CHqlSequence::makeSequence(node_operator _op, ITypeInfo * _type, IAtom * _name, unsigned __int64 _seq)
 {
     if (!_type) _type = makeNullType();
     return new CHqlSequence(_op, _type, _name, _seq);
@@ -9563,9 +9765,9 @@ StringBuffer &CHqlSequence::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlExternal::CHqlExternal(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_external, _type, _ownedOperands)
+CHqlExternal::CHqlExternal(IIdAtom * _id, ITypeInfo *_type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_external, _type, _ownedOperands)
 {
-    name = _name;
+    id = _id;
 }
 
 bool CHqlExternal::equals(const IHqlExpression &r) const
@@ -9573,9 +9775,9 @@ bool CHqlExternal::equals(const IHqlExpression &r) const
     return (this == &r);
 }
 
-CHqlExternal *CHqlExternal::makeExternalReference(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands)
+CHqlExternal *CHqlExternal::makeExternalReference(IIdAtom * _id, ITypeInfo *_type, HqlExprArray &_ownedOperands)
 {
-    return new CHqlExternal(_name, _type, _ownedOperands);
+    return new CHqlExternal(_id, _type, _ownedOperands);
 }
 
 //==============================================================================================================
@@ -9584,21 +9786,24 @@ CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type,
 {
     IHqlExpression * def = funcdef->queryChild(0);
     //Once aren't really pure, but are as far as the code generator is concerned.  Split into more flags if it becomes an issue.
-    if (!def->hasProperty(pureAtom) && !def->hasProperty(onceAtom))
+    if (!def->hasAttribute(pureAtom) && !def->hasAttribute(onceAtom))
     {
         infoFlags |= (HEFvolatile);
     }
     
-    if (def->hasProperty(actionAtom) || (type && type->getTypeCode() == type_void))
+    if (def->hasAttribute(actionAtom) || (type && type->getTypeCode() == type_void))
         infoFlags |= HEFaction;
 
-    if (def->hasProperty(userMatchFunctionAtom))
+    if (def->hasAttribute(userMatchFunctionAtom))
     {
         infoFlags |= HEFcontainsNlpText;
     }
 
-    if (def->hasProperty(contextSensitiveAtom))
+    if (def->hasAttribute(contextSensitiveAtom))
         infoFlags |= HEFcontextDependentException;
+
+    if (def->hasAttribute(ctxmethodAtom) || def->hasAttribute(gctxmethodAtom) || def->hasAttribute(globalContextAtom) || def->hasAttribute(contextAtom))
+        infoFlags |= HEFaccessRuntimeContext;
 }
 
 bool CHqlExternalCall::equals(const IHqlExpression & other) const
@@ -9712,11 +9917,11 @@ CHqlDelayedScopeCall::CHqlDelayedScopeCall(IHqlExpression * _param, ITypeInfo * 
 : CHqlDelayedCall(_param, type, parms) 
 {
     typeScope = ::queryScope(type); // no need to link
-    if (!hasProperty(_virtualSeq_Atom))
+    if (!hasAttribute(_virtualSeq_Atom))
         addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
-IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr match = typeScope->lookupSymbol(searchName, lookupFlags, ctx);
     if (!match)
@@ -9737,9 +9942,14 @@ IHqlScope * CHqlDelayedScopeCall::queryConcreteScope()
     return NULL;
 }
 
-_ATOM CHqlDelayedScopeCall::queryName() const
+IAtom * CHqlDelayedScopeCall::queryName() const
 {
     return typeScope->queryName();
+}
+
+IIdAtom * CHqlDelayedScopeCall::queryId() const
+{
+    return typeScope->queryId();
 }
 
 bool CHqlDelayedScopeCall::hasBaseClass(IHqlExpression * searchBase)
@@ -9754,9 +9964,9 @@ bool CHqlDelayedScopeCall::hasBaseClass(IHqlExpression * searchBase)
 #pragma warning( disable : 4355 )
 #endif
 /* In parm: scope is linked */
-CHqlAlienType::CHqlAlienType(_ATOM _name, IHqlScope *_scope, IHqlExpression * _funcdef) : CHqlExpressionWithTables(no_type)
+CHqlAlienType::CHqlAlienType(IIdAtom * _id, IHqlScope *_scope, IHqlExpression * _funcdef) : CHqlExpressionWithTables(no_type)
 {
-    name = _name;
+    id = _id;
     scope = _scope;
     funcdef = _funcdef;
 
@@ -9826,7 +10036,7 @@ unsigned CHqlAlienType::getCardinality()
 
 IHqlExpression *CHqlAlienType::clone(HqlExprArray &newkids)
 {
-    IHqlExpression * ret = new CHqlAlienType(name, LINK(scope), LINK(funcdef));
+    IHqlExpression * ret = new CHqlAlienType(id, LINK(scope), LINK(funcdef));
     ForEachItemIn(idx2, newkids)
         ret->addOperand(&OLINK(newkids.item(idx2)));
     return ret->closeExpr();
@@ -9845,9 +10055,9 @@ unsigned CHqlAlienType::getMaxSize()
     if (size != UNKNOWN_LENGTH)
         return size;
 
-    OwnedHqlExpr maxSize = lookupSymbol(maxSizeAtom);
+    OwnedHqlExpr maxSize = lookupSymbol(maxSizeId);
     if (!maxSize)
-        maxSize.setown(lookupSymbol(maxLengthAtom));
+        maxSize.setown(lookupSymbol(maxLengthId));
     if (maxSize)
     {
         OwnedHqlExpr folded = foldHqlExpression(maxSize);
@@ -9865,30 +10075,30 @@ IHqlExpression *CHqlAlienType::queryFunctionDefinition() const
 
 IHqlExpression * CHqlAlienType::queryLoadFunction()
 {
-    return queryMemberFunc(loadAtom);
+    return queryMemberFunc(loadId);
 }
 
 IHqlExpression * CHqlAlienType::queryLengthFunction()
 {
-    OwnedHqlExpr func = lookupSymbol(physicalLengthAtom);
+    OwnedHqlExpr func = lookupSymbol(physicalLengthId);
     assertex(func);
     return func;
 }
 
 IHqlExpression * CHqlAlienType::queryStoreFunction()
 {
-    return queryMemberFunc(storeAtom);
+    return queryMemberFunc(storeId);
 }
 
-IHqlExpression * CHqlAlienType::queryFunction(_ATOM name)
+IHqlExpression * CHqlAlienType::queryFunction(IIdAtom * id)
 {
-    OwnedHqlExpr func = lookupSymbol(name);
+    OwnedHqlExpr func = lookupSymbol(id);
     if (func)
         assertex(func->getOperator() == no_funcdef);
     return func;
 }
 
-IHqlExpression * CHqlAlienType::queryMemberFunc(_ATOM search)
+IHqlExpression * CHqlAlienType::queryMemberFunc(IIdAtom * search)
 {
     OwnedHqlExpr func = lookupSymbol(search);
     assertex(func);
@@ -9897,7 +10107,7 @@ IHqlExpression * CHqlAlienType::queryMemberFunc(_ATOM search)
 }
 
 
-IHqlExpression *CHqlAlienType::lookupSymbol(_ATOM searchName)
+IHqlExpression *CHqlAlienType::lookupSymbol(IIdAtom * searchName)
 {
     HqlDummyLookupContext ctx(NULL);
     return scope->lookupSymbol(searchName, LSFpublic, ctx);
@@ -9910,15 +10120,15 @@ size32_t CHqlAlienType::getSize()
 }
 
 /* in parm _scope: linked */
-extern IHqlExpression *createAlienType(_ATOM _name, IHqlScope *_scope)
+extern IHqlExpression *createAlienType(IIdAtom * _id, IHqlScope *_scope)
 {
-    return new CHqlAlienType(_name, _scope, NULL);
+    return new CHqlAlienType(_id, _scope, NULL);
 }
 
-extern IHqlExpression *createAlienType(_ATOM name, IHqlScope * scope, HqlExprArray &newkids, IHqlExpression * funcdef)
+extern IHqlExpression *createAlienType(IIdAtom * id, IHqlScope * scope, HqlExprArray &newkids, IHqlExpression * funcdef)
 {
 //  assertex(!funcdef);     // I'm not sure what value this has...
-    IHqlExpression * ret = new CHqlAlienType(name, scope, funcdef);
+    IHqlExpression * ret = new CHqlAlienType(id, scope, funcdef);
     ForEachItemIn(idx2, newkids)
         ret->addOperand(&OLINK(newkids.item(idx2)));
     return ret->closeExpr();
@@ -9987,9 +10197,9 @@ void CHqlTemplateFunctionContext::sethash()
 
 //==============================================================================================================
 
-extern IHqlExpression *createParameter(_ATOM name, unsigned idx, ITypeInfo *type, HqlExprArray & attrs)
+extern IHqlExpression *createParameter(IIdAtom * id, unsigned idx, ITypeInfo *type, HqlExprArray & attrs)
 {
-    return CHqlParameter::makeParameter(name, idx, type, attrs);
+    return CHqlParameter::makeParameter(id, idx, type, attrs);
 }
 
 extern IHqlExpression *createValue(node_operator op)
@@ -10025,7 +10235,7 @@ extern IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type)
     return new CHqlExpressionWithType(op, type);
 }
 
-extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _ATOM name)
+extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id)
 {
 #if defined(_DEBUG)
     //reports calling the wrong function if enabled.... some examples can't be fixed yet...
@@ -10047,7 +10257,7 @@ extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _
         }
     }
 #endif
-    return new CHqlNamedExpression(op, type, name, NULL);
+    return new CHqlNamedExpression(op, type, id, NULL);
 }
 
 extern IHqlExpression *createValue(node_operator op, IHqlExpression *p1, IHqlExpression *p2)
@@ -10152,13 +10362,13 @@ extern IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1, IHql
     return CHqlExpressionWithType::makeExpression(op, makeBoolType(), p1, p2, p3, NULL);
 }
 
-extern IHqlExpression *createField(IAtom *name, ITypeInfo *type, HqlExprArray & _ownedOperands)
+extern IHqlExpression *createField(IIdAtom *id, ITypeInfo *type, HqlExprArray & _ownedOperands)
 {
-    IHqlExpression * field = new CHqlField(name, type, _ownedOperands);
+    IHqlExpression * field = new CHqlField(id, type, _ownedOperands);
     return field->closeExpr();
 }
 
-extern IHqlExpression *createField(IAtom *name, ITypeInfo *type, IHqlExpression *defaultValue, IHqlExpression * attrs)
+extern IHqlExpression *createField(IIdAtom *id, ITypeInfo *type, IHqlExpression *defaultValue, IHqlExpression * attrs)
 {
     HqlExprArray args;
     if (defaultValue)
@@ -10168,13 +10378,13 @@ extern IHqlExpression *createField(IAtom *name, ITypeInfo *type, IHqlExpression 
         attrs->unwindList(args, no_comma);
         attrs->Release();
     }
-    IHqlExpression* expr = new CHqlField(name, type, args);
+    IHqlExpression* expr = new CHqlField(id, type, args);
     return expr->closeExpr();
 }
 
-extern HQL_API IHqlExpression *createQuoted(const char * name, ITypeInfo *type)
+extern HQL_API IHqlExpression *createQuoted(const char * text, ITypeInfo *type)
 {
-    return CHqlVariable::makeVariable(no_quoted, name, type);
+    return CHqlVariable::makeVariable(no_quoted, text, type);
 }
 
 extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type)
@@ -10182,7 +10392,7 @@ extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type
     return CHqlVariable::makeVariable(no_variable, name, type);
 }
 
-IHqlExpression *createAttribute(node_operator op, _ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
+IHqlExpression *createAttribute(node_operator op, IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     assertex(name);
     IHqlExpression * ret = CHqlAttribute::makeAttribute(op, name);
@@ -10197,7 +10407,7 @@ IHqlExpression *createAttribute(node_operator op, _ATOM name, IHqlExpression * v
     return ret->closeExpr();
 }
 
-IHqlExpression *createAttribute(node_operator op, _ATOM name, HqlExprArray & args)
+IHqlExpression *createAttribute(node_operator op, IAtom * name, HqlExprArray & args)
 {
     IHqlExpression * ret = CHqlAttribute::makeAttribute(op, name);
     ForEachItemIn(idx, args)
@@ -10205,64 +10415,64 @@ IHqlExpression *createAttribute(node_operator op, _ATOM name, HqlExprArray & arg
     return ret->closeExpr();
 }
 
-extern HQL_API IHqlExpression *createAttribute(_ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
+extern HQL_API IHqlExpression *createAttribute(IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     return createAttribute(no_attr, name, value, value2, value3);
 }
 
-extern HQL_API IHqlExpression *createAttribute(_ATOM name, HqlExprArray & args)
+extern HQL_API IHqlExpression *createAttribute(IAtom * name, HqlExprArray & args)
 {
     return createAttribute(no_attr, name, args);
 }
 
-extern HQL_API IHqlExpression *createExprAttribute(_ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
+extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     return createAttribute(no_attr_expr, name, value, value2, value3);
 }
 
-extern HQL_API IHqlExpression *createExprAttribute(_ATOM name, HqlExprArray & args)
+extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, HqlExprArray & args)
 {
     return createAttribute(no_attr_expr, name, args);
 }
 
-extern HQL_API IHqlExpression *createLinkAttribute(_ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
+extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     return createAttribute(no_attr_link, name, value, value2, value3);
 }
 
-extern HQL_API IHqlExpression *createLinkAttribute(_ATOM name, HqlExprArray & args)
+extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, HqlExprArray & args)
 {
     return createAttribute(no_attr_link, name, args);
 }
 
-extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, _ATOM name, IInterface * extra)
+extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, IAtom * name, IInterface * extra)
 {
     IHqlExpression * ret = CHqlUnknown::makeUnknown(op, type, name, extra);
     return ret->closeExpr();
 }
 
-extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type, _ATOM name, unsigned __int64 seq)
+extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type, IAtom * name, unsigned __int64 seq)
 {
     IHqlExpression * ret = CHqlSequence::makeSequence(op, type, name, seq);
     return ret->closeExpr();
 }
 
-IHqlExpression *createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags)
+IHqlExpression *createSymbol(IIdAtom * id, IHqlExpression *expr, unsigned exportFlags)
 {
-    return CHqlSimpleSymbol::makeSymbol(name, NULL, expr, NULL, exportFlags);
+    return CHqlSimpleSymbol::makeSymbol(id, NULL, expr, NULL, exportFlags);
 }
 
-IHqlExpression * createSymbol(_ATOM name, _ATOM moduleName, IHqlExpression * expr, bool exported, bool shared, unsigned symbolFlags)
+IHqlExpression * createSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression * expr, bool exported, bool shared, unsigned symbolFlags)
 {
-    return CHqlSimpleSymbol::makeSymbol(name, moduleName, expr, NULL, combineSymbolFlags(symbolFlags, exported, shared));
+    return CHqlSimpleSymbol::makeSymbol(id, moduleName, expr, NULL, combineSymbolFlags(symbolFlags, exported, shared));
 }
 
-IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
+IHqlExpression * createSymbol(IIdAtom * _id, IIdAtom * moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                              bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int lineno, int column,
                              int _startpos, int _bodypos, int _endpos)
 {
-    return CHqlNamedSymbol::makeSymbol(_name, moduleName, expr, funcdef,
+    return CHqlNamedSymbol::makeSymbol(_id, moduleName, expr, funcdef,
                              exported, shared, symbolFlags,
                              fc, lineno, column, _startpos, _bodypos, _endpos);
 }
@@ -10354,8 +10564,8 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
     case no_getresult:
     {
         IHqlExpression * record = &parms.item(0);
-        IHqlExpression * metadata = queryProperty(_metadata_Atom, parms);
-        bool linkCounted = (queryProperty(_linkCounted_Atom, parms) || recordRequiresLinkCount(record));
+        IHqlExpression * metadata = queryAttribute(_metadata_Atom, parms);
+        bool linkCounted = (queryAttribute(_linkCounted_Atom, parms) || recordRequiresLinkCount(record));
         if (!metadata)
         {
             ITypeInfo * recordType = createRecordType(record);
@@ -10525,7 +10735,7 @@ inline bool isExternalMethodDefinition(IHqlExpression * funcdef)
     {
         IHqlExpression * body = funcdef->queryChild(0);
         if ((body->getOperator() == no_external) && 
-            (body->hasProperty(methodAtom) || body->hasProperty(omethodAtom)))
+            (body->hasAttribute(methodAtom) || body->hasAttribute(omethodAtom)))
             return true;
     }
     return false;
@@ -10735,13 +10945,13 @@ protected:
                 OwnedHqlExpr newModule = transform(oldModule);
                 if (oldModule != newModule)
                 {
-                    _ATOM selectedName = expr->queryChild(3)->queryName();
-                    newModule.setown(checkCreateConcreteModule(ctx.errors, newModule, newModule->queryProperty(_location_Atom)));
+                    IIdAtom * selectedName = expr->queryChild(3)->queryId();
+                    newModule.setown(checkCreateConcreteModule(ctx.errors, newModule, newModule->queryAttribute(_location_Atom)));
 
                     HqlDummyLookupContext dummyctx(ctx.errors);
                     IHqlScope * newScope = newModule->queryScope();
                     if (newScope)
-                        return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+                        return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
                     return ::replaceChild(expr, 1, newModule);
                 }
                 break;
@@ -10969,7 +11179,8 @@ static void createAssignAll(HqlExprArray & assigns, IHqlExpression * self, IHqlE
         case no_field:
             {
                 OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(cur));
-                OwnedHqlExpr source = createSelectExpr(LINK(left), LINK(cur));
+                OwnedHqlExpr field = lookupNewSelectedField(left, cur);;
+                OwnedHqlExpr source = createSelectExpr(LINK(left), field.getClear());
                 assigns.append(*createAssign(target.getClear(), source.getClear()));
                 break;
             }
@@ -11233,60 +11444,6 @@ static void checkConsistent(IHqlExpression* e)
     }
 }
 
-class JoinEqualityMapper
-{
-public:
-    inline JoinEqualityMapper(const HqlExprArray & params)
-    {
-        left = &params.item(0);
-        right = &params.item(1);
-        selSeq = ::queryProperty(_selectorSequence_Atom, params);
-    }
-
-    IHqlExpression * mapEqualities(IHqlExpression * expr, IHqlExpression * cond)
-    {
-        if (cond->getOperator() == no_assertkeyed)
-            cond = cond->queryChild(0);
-
-        if (cond->getOperator() == no_and)
-        {
-            OwnedHqlExpr mapped = mapEqualities(expr, cond->queryChild(0));
-            return mapEqualities(mapped, cond->queryChild(1));
-        }
-        else if (cond->getOperator() == no_eq)
-        {
-            IHqlExpression * lhs = cond->queryChild(0);
-            IHqlExpression * rhs = cond->queryChild(1);
-            if (lhs->queryType() == rhs->queryType())
-            {
-                IHqlExpression * leftSelect = queryDatasetCursor(lhs);
-                IHqlExpression * rightSelect = queryDatasetCursor(rhs);
-                if (isLeft(leftSelect) && isRight(rightSelect))
-                    return replaceExpression(expr, rhs, lhs);
-                if (isRight(leftSelect) && isLeft(rightSelect))
-                    return replaceExpression(expr, lhs, rhs);
-            }
-        }
-        return LINK(expr);
-    }
-
-protected:
-    inline bool isMatch(IHqlExpression * expr, node_operator op, IHqlExpression * side)
-    {
-        return (expr->getOperator() == op) &&
-            (expr->queryRecord()->queryBody() == side->queryRecord()->queryBody()) &&
-            (expr->queryChild(1) == selSeq);
-    }
-    inline bool isLeft(IHqlExpression * expr) { return isMatch(expr, no_left, left); }
-    inline bool isRight(IHqlExpression * expr) { return isMatch(expr, no_right, right); }
-
-protected:
-    IHqlExpression * left;
-    IHqlExpression * right;
-    IHqlExpression * selSeq;
-};
-
-
 //NOTE: The type information - e.g., distribution, grouping, sorting cannot include the dataset of the primary file
 //because for a no_newusertable etc. that would result in a circular reference.
 //so all references to fields in the primary file have no_activetable as the selector.
@@ -11295,999 +11452,46 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
 #ifdef GATHER_LINK_STATS
     insideCreate++;
 #endif
-    IHqlExpression * dataset = NULL;
-    ITypeInfo * datasetType = NULL;
-    ITypeInfo * childType = NULL;
-    ITypeInfo * rowType = NULL;
-    ITypeInfo * recordType = NULL;
-    IHqlExpression * distributeInfo = NULL;
+
+    switch (op)
+    {
+    case no_select:
+        //This can occur in very unusual situations...
+        if ((parms.ordinality() > 2) && isAlwaysActiveRow(&parms.item(0)))
+            removeProperty(parms, newAtom);
+        break;
+    case no_denormalize:
+        {
+            IHqlExpression * transform = &parms.item(3);
+            assertex(recordTypesMatch(parms.item(0).queryRecordType(), transform->queryRecordType()));
+            break;
+        }
+    case no_rollup:
+        {
+            IHqlExpression * transform = &parms.item(2);
+            assertRecordTypesMatch(parms.item(0).queryRecordType(), transform->queryRecordType());
+            break;
+        }
+    case no_iterate:
+        {
+            IHqlExpression * transform = &parms.item(1);
+            assertRecordTypesMatch(parms.item(0).queryRecordType(), transform->queryRecordType());
+            break;
+        }
+     }
 
 #if 0
     //Some debug code for adding a pseudo attribute to all datasets - to help find all places that wouldn't allow hints to
     //be added without causing problems.  no_filter, no_if, no_case, no_map still have issues.
-    if (!queryProperty(_metadata_Atom, parms) && 
+    if (!queryAttribute(_metadata_Atom, parms) &&
         (op != no_select) && (op != no_translated) && (op != no_colon))
         parms.append(*createAttribute(_metadata_Atom));
 #endif
 
-    switch (op)
-    {
-    case no_activetable:
-        throwUnexpected();
-    case no_table:
-    case no_temptable:
-    case no_inlinetable:
-    case no_xmlproject:
-    case no_null:
-    case no_anon:
-    case no_pseudods:
-    case no_all:
-    case no_workunit_dataset:
-    case no_getgraphresult:
-    case no_getgraphloopresult:
-    case no_fail:
-    case no_skip:
-    case no_datasetfromrow:
-    case no_datasetfromdictionary:
-    case no_if:
-    case no_translated:
-    case no_rows:
-        break;
-    case no_chooseds:
-        datasetType = parms.item(1).queryType();
-        break;
-    case no_mergejoin:
-    case no_nwayjoin:
-    case no_nwaymerge:
-        datasetType = parms.item(0).queryType()->queryChildType();
-        break;
-    case no_compound:
-        dataset = &parms.item(1);
-        datasetType = dataset->queryType();
-        break;
-    case no_select:
-        {
-            IHqlExpression * field = &parms.item(1);
-            datasetType = field->queryType();
-            //This can occur in very unusual situations...
-            if ((parms.ordinality() > 2) && isAlwaysActiveRow(&parms.item(0)))
-                removeProperty(parms, newAtom);
-        }
-        break;
-    default:
-        {
-            dataset = &parms.item(0);
-            datasetType = dataset->queryType();
-        }
-        break;
-    }
-
-    if (datasetType)
-    {
-        childType = datasetType->queryChildType();
-        switch (datasetType->getTypeCode())
-        {
-        case type_groupedtable:
-            rowType = childType->queryChildType();
-            break;
-        case type_row:
-            rowType = datasetType;
-            break;
-        case type_record:
-            recordType = datasetType;
-            break;
-        default:
-            rowType = childType;
-            break;
-        }
-        if (rowType)
-            recordType = rowType->queryChildType();
-
-        distributeInfo = queryDistribution(datasetType);
-    }
-
-    //Following need to be filled in ready for type creation at the end...
-    //gather all the type rules together so we don't get inconsistencies.
-    Owned<ITypeInfo> type;
-    switch (op)
-    {
-    case no_table:
-        {
-            assertex(parms.isItem(1));
-            OwnedHqlExpr sortOrder;
-            Linked<IHqlExpression> recorddef = &parms.item(1);
-            IHqlExpression * newDistributeInfo = NULL;
-            ITypeInfo * recordType = createRecordType(recorddef); 
-            ITypeInfo * rowType = makeRowType(recordType);
-            type.setown(makeTableType(rowType, newDistributeInfo, LINK(sortOrder), LINK(sortOrder)));
-            IHqlExpression * grouping = queryProperty(groupedAtom, parms);
-            if (grouping)
-            {
-                assertex(!grouping->queryChild(0));
-                type.setown(getTypeGrouped(type, queryUnknownSortlist(), true));
-            }
-            break;
-        }
-    case no_null:
-    case no_fail:
-    case no_anon:
-    case no_pseudods:
-    case no_skip:
-    case no_all:
-    case no_workunit_dataset:
-    case no_getgraphresult:
-    case no_getgraphloopresult:
-    case no_getresult:
-    case no_rows:
-    case no_internalselect:
-    case no_delayedselect:
-    case no_unboundselect:
-    case no_libraryselect:
-    case no_purevirtual:
-    case no_libraryinput:
-        {
-            bool matchesAnyMeta =  ((op == no_null) || (op == no_fail));
-            IHqlExpression * record = &parms.item(0);
-            IHqlExpression * metadata = queryProperty(_metadata_Atom, parms);
-            bool linkCounted = (queryProperty(_linkCounted_Atom, parms) || recordRequiresLinkCount(record));
-            if (!metadata)
-            {
-                IHqlExpression * distributed = queryProperty(distributedAtom, parms);
-                IHqlExpression * distribution = distributed ? distributed->queryChild(0) : NULL;
-
-                ITypeInfo * recordType = createRecordType(record);
-                assertex(recordType->getTypeCode() == type_record);
-                ITypeInfo * rowType = makeRowType(recordType);
-                if (matchesAnyMeta)
-                    type.setown(makeTableType(rowType, LINK(queryAnyDistributionAttribute()), LINK(queryAnyOrderSortlist()), LINK(queryAnyOrderSortlist())));
-                else
-                    type.setown(makeTableType(rowType, LINK(distribution), NULL, NULL));
-                IHqlExpression * grouped = queryProperty(groupedAtom, parms);
-                if (grouped)
-                {
-                    LinkedHqlExpr groupExpr = grouped->queryChild(0);
-                    assertex(!groupExpr || groupExpr->getOperator() == no_sortlist);
-                    if (!groupExpr)
-                        groupExpr.set(queryUnknownSortlist());
-                    type.setown(makeGroupedTableType(type.getClear(), groupExpr.getClear(), NULL));
-                }
-            }
-            else
-                type.setown(getTypeFromMeta(record, metadata, 0));
-
-            if (linkCounted)
-                type.setown(setLinkCountedAttr(type, true));
-            break;
-        }
-    case no_translated:
-        type.setown(parms.item(0).getType());
-        assertex(parms.ordinality()>1);     // should have a count or a length
-        break;
-    case no_inlinetable:
-    case no_dataset_from_transform:
-    case no_xmlproject:
-    case no_temptable:
-    case no_id2blob:
-    case no_embedbody:
-        type.setown(makeTableType(makeRowType(createRecordType(&parms.item(1))), NULL, NULL, NULL));
-        if (queryProperty(_linkCounted_Atom, parms))
-            type.setown(setLinkCountedAttr(type, true));
-        if (queryProperty(streamedAtom, parms))
-            type.setown(setStreamedAttr(type, true));
-        break;
-    case no_pipe:
-        {
-            if (parms.isItem(2) && (parms.item(2).getOperator() == no_record))
-                type.setown(makeTableType(makeRowType(createRecordType(&parms.item(2))), NULL, NULL, NULL));
-            else
-                type.setown(makeTableType(makeRowType(LINK(recordType)), NULL, NULL, NULL));
-            if (queryProperty(groupAtom, parms))
-                type.setown(getTypeGrouped(type, queryUnknownSortlist(), true));
-            break;
-        }
-    case no_combine:
-    case no_combinegroup:
-        {
-            IHqlExpression * transform = &parms.item(2);
-            OwnedHqlExpr leftSelect = createSelector(no_left, &parms.item(0), queryProperty(_selectorSequence_Atom, parms));
-            TableProjectMapper mapper;
-            mapper.setMapping(transform, leftSelect);
-            type.setown(getTypeProject(datasetType, transform->queryRecord(), mapper));
-            //Not at all sure about this wierd case
-            break;
-        }
-    case no_process:
-        {
-            IHqlExpression * transform = &parms.item(2);
-            OwnedHqlExpr leftSelect = createSelector(no_left, &parms.item(0), queryProperty(_selectorSequence_Atom, parms));
-            TableProjectMapper mapper;
-            mapper.setMapping(transform, leftSelect);
-            type.setown(getTypeProject(datasetType, transform->queryRecord(), mapper));
-            break;
-        }
-    case no_fetch:
-        {
-            //Currently fetch is assumed to preserve nothing (since I suspect thor doesn't)
-            IHqlExpression * transform = &parms.item(3);
-            type.setown(makeTableType(makeRowType(LINK(transform->queryRecordType())), NULL, NULL, NULL));
-            break;
-        }
-
-    case no_denormalize:
-    case no_denormalizegroup:
-    case no_join:
-    case no_selfjoin:
-    case no_joincount:
-        {
-            IHqlExpression * transform = &parms.item(3);
-            if (op == no_denormalize)
-                assertex(recordTypesMatch(recordType, transform->queryRecordType()));
-
-            //JOIN does not preserve sort order or grouping.  
-            //It does preserve distribution if distribution fields are projected
-            bool isLookupJoin = queryProperty(lookupAtom, parms) != NULL;
-            bool isAllJoin = queryProperty(allAtom, parms) != NULL;
-            bool isHashJoin = queryProperty(hashAtom, parms) != NULL;
-            bool isKeyedJoin = !isAllJoin && !isLookupJoin && (queryProperty(keyedAtom, parms) || isKey(&parms.item(1)));
-            bool isLocal = (queryProperty(localAtom, parms) != NULL);
-            bool fo = queryProperty(fullonlyAtom, parms) || queryProperty(fullouterAtom, parms); 
-            bool createDefaultLeft = fo || queryProperty(rightonlyAtom, parms) || queryProperty(rightouterAtom, parms);
-            bool createDefaultRight = fo || queryProperty(leftonlyAtom, parms) || queryProperty(leftouterAtom, parms);
-
-            OwnedHqlExpr leftSelect = createSelector(no_left, &parms.item(0), queryProperty(_selectorSequence_Atom, parms));
-            if (isKeyedJoin || isAllJoin || isLookupJoin)
-            {
-                //If default left hand records created, then can't preserve distn etc.
-                type.set(datasetType);
-                if (!createDefaultLeft)
-                {
-                    bool preservesOrder = !queryProperty(unorderedAtom, parms);
-                    if (isKeyedJoin)
-                        preservesOrder = queryProperty(_ordered_Atom, parms) != NULL;
-                    if (!preservesOrder)
-                        type.setown(getTypeRemoveAllSortOrders(type));
-
-                    LinkedHqlExpr mapTransform = transform;
-                    // If there is a join equality LEFT.x = RIGHT.x, and the transform contains a reference to RIGHT.x
-                    // substitute LEFT.x instead.
-                    // The modified transform is used for mapping the sort/grouping information
-                    // which means that information about sort orders are more likely to be preserved (for keyed joins).
-                    if (!createDefaultRight && ((op == no_join) || (op == no_selfjoin)))
-                    {
-                        //Only bother to modify the transform if something useful is going to be mapped in
-                        //the meta information - otherwise this can be expensive for no gain.
-                        if (hasUsefulMetaInformation(type))
-                        {
-                            JoinEqualityMapper mapper(parms);
-                            mapTransform.setown(mapper.mapEqualities(transform, &parms.item(2)));
-                        }
-                    }
-                    TableProjectMapper mapper;
-                    mapper.setMapping(mapTransform, leftSelect);
-                    type.setown(getTypeProject(type, transform->queryRecord(), mapper));
-                }
-                else
-                    type.setown(getTypeCannotProject(type, transform->queryRecord()));
-            }
-            else if (isLocal)
-            {
-                //local operation so try and preserve the current distribution, no clue about the following sort order, 
-                //and result is never grouped.
-                if (queryProperty(_lightweight_Atom, parms) && !createDefaultLeft)
-                {
-                    //Implementation detail: lightweight joins preserve the lhs sort order
-                    //Can be very useful for converting subsequent joins to lightweight joins.
-                    TableProjectMapper mapper;
-                    mapper.setMapping(transform, leftSelect);
-
-                    if (hasProperty(unorderedAtom, parms))
-                        type.setown(getTypeRemoveAllSortOrders(datasetType));
-                    else
-                        type.set(datasetType);
-                    type.setown(getTypeUngroup(type));
-                    type.setown(getTypeProject(type, transform->queryRecord(), mapper));
-                }
-                else
-                {
-                    IHqlExpression * leftDistributeInfo = distributeInfo;
-                    IHqlExpression * rightDistributeInfo = queryDistribution(parms.item(1).queryType());
-
-                    IHqlExpression * newDistributeInfo = NULL;
-                    if (isKnownDistribution(leftDistributeInfo) || isKnownDistribution(rightDistributeInfo))
-                    {
-                        TableProjectMapper mapper;
-                        mapper.setMapping(transform, NULL);
-
-                        if (isKnownDistribution(leftDistributeInfo) && !createDefaultLeft)
-                            newDistributeInfo = mapJoinDistribution(mapper, leftDistributeInfo, leftSelect);
-                        if (!newDistributeInfo && isKnownDistribution(rightDistributeInfo) && !createDefaultRight)
-                        {
-                            OwnedHqlExpr rightSelect = createSelector(no_right, &parms.item(1), queryProperty(_selectorSequence_Atom, parms));
-                            newDistributeInfo = mapJoinDistribution(mapper, rightDistributeInfo, rightSelect);
-                        }
-                    }
-                    if (!newDistributeInfo)
-                        newDistributeInfo = getUnknownAttribute();
-                    type.setown(makeTableType(makeRowType(LINK(transform->queryRecordType())), newDistributeInfo, NULL, NULL));
-                }
-            }
-            else if (isHashJoin)
-            {
-                //MORE: Should examine the join condition, and set the resulting distribution/sort order if preserved from either size
-                type.setown(makeTableType(makeRowType(LINK(transform->queryRecordType())), getUnknownAttribute(), NULL, NULL));
-            }
-            else
-            {
-                type.setown(makeTableType(makeRowType(LINK(transform->queryRecordType())), NULL, NULL, NULL));
-            }
-            break;
-        }
-    case no_dedup:
-        {
-            type.set(datasetType);
-            bool isLocal = hasProperty(localAtom, parms);
-            bool hasAll = hasProperty(hashAtom, parms) || hasProperty(allAtom, parms);
-
-            if (!isGrouped(datasetType))
-            {
-                //dedup,all kills the sort order, and global removes the distribution
-                if (hasAll)
-                {
-                    if (isLocal)
-                        type.setown(makeTableType(LINK(rowType), LINK(distributeInfo), NULL, NULL));
-                    else
-                        type.setown(makeTableType(LINK(rowType), NULL, NULL, NULL));
-                }
-                else if (!isLocal)
-                    type.setown(getTypeRemoveDistribution(type));
-            }
-            else
-            {
-                //Some implementations of Dedup all within a group can kill the group sort order
-                if (hasAll)
-                    type.setown(getTypeRemoveActiveSort(type));
-            }
-            break;
-        }
-    case no_group:
-    case no_grouped:
-    case no_assertgrouped:
-        {
-            bool hasFields = (parms.isItem(1) && !parms.item(1).isAttribute());
-            if (hasFields)
-            {
-                OwnedHqlExpr mappedGrouping = replaceSelector(&parms.item(1), dataset, cachedActiveTableExpr);
-                bool isLocal = queryProperty(localAtom, parms) != NULL;
-                if (queryProperty(allAtom, parms))
-                {
-                    //group,all destroys any previous sort order, may destroy distribution.
-                    if (isLocal)
-                        type.setown(makeTableType(LINK(rowType), LINK(distributeInfo), NULL, NULL));
-                    else
-                        type.setown(makeTableType(LINK(rowType), NULL, NULL, NULL));
-                    type.setown(getTypeGrouped(type, mappedGrouping, isLocal));
-                }
-                else
-                    type.setown(getTypeGrouped(datasetType, mappedGrouping, isLocal));
-            }
-            else
-                type.setown(getTypeUngroup(datasetType));
-            break;
-        }
-    case no_distribute:
-    case no_distributed:
-    case no_assertdistributed:
-        {
-            if (queryProperty(skewAtom, parms))
-            {
-                type.setown(getTypeUnknownDistribution(datasetType));
-                type.setown(getTypeRemoveAllSortOrders(type));
-            }
-            else
-            {
-                OwnedHqlExpr mappedDistributeInfo = replaceSelector(&parms.item(1), dataset, cachedActiveTableExpr);
-                IHqlExpression * sorted = queryProperty(mergeAtom, parms);
-                if (sorted)
-                {
-                    OwnedHqlExpr mappedSorted = replaceSelector(sorted->queryChild(0), dataset, cachedActiveTableExpr);
-                    type.setown(getTypeDistribute(datasetType, mappedDistributeInfo, mappedSorted));
-                }
-                else
-                    type.setown(getTypeDistribute(datasetType, mappedDistributeInfo, NULL));
-            }
-            break;
-        }
-    case no_preservemeta:
-        {
-            IHqlExpression * distribution = queryRemoveOmitted(&parms.item(1));
-            IHqlExpression * globalSort = queryRemoveOmitted(&parms.item(2));
-            IHqlExpression * localSort = queryRemoveOmitted(&parms.item(3));
-            IHqlExpression * grouping = queryRemoveOmitted(&parms.item(4));
-            IHqlExpression * groupSort = queryRemoveOmitted(&parms.item(5));
-            type.setown(makeTableType(LINK(rowType), LINK(distribution), LINK(globalSort), LINK(localSort)));
-            if (grouping)
-                type.setown(makeGroupedTableType(type.getClear(), LINK(grouping), LINK(groupSort)));
-            break;
-        }
-    case no_keyeddistribute:
-        {
-            //destroy grouping and sort order, sets new distribution info
-            //to be usable this needs to really save a reference to the actual index used.
-            OwnedHqlExpr newDistribution = createAttribute(keyedAtom, replaceSelector(&parms.item(1), dataset, cachedActiveTableExpr));
-            type.setown(getTypeDistribute(datasetType, newDistribution, NULL));
-            break;
-        }
-    case no_subsort:
-        {
-            bool isLocal = queryProperty(localAtom, parms) != NULL;
-            OwnedHqlExpr normalizedSortOrder = replaceSelector(&parms.item(1), dataset, cachedActiveTableExpr);
-            OwnedHqlExpr mappedGrouping = replaceSelector(&parms.item(2), dataset, cachedActiveTableExpr);
-            type.setown(getTypeSubSort(datasetType, mappedGrouping, normalizedSortOrder, isLocal));
-            break;
-        }
-    case no_cosort:
-    case no_sort:
-    case no_sorted:
-    case no_assertsorted:
-    case no_topn:
-    case no_stepped:            // stepped implies the sort order matches the stepped criteria
-        {
-            OwnedHqlExpr normalizedSortOrder;
-            bool isLocal = queryProperty(localAtom, parms) != NULL;
-            if (parms.isItem(1) && !parms.item(1).isAttribute())
-                normalizedSortOrder.setown(replaceSelector(&parms.item(1), dataset, cachedActiveTableExpr));
-
-            type.set(datasetType);
-            if (isLocal || queryProperty(globalAtom, parms))
-                type.setown(getTypeUngroup(type));
-            if (isGrouped(type))
-                type.setown(getTypeGroupSort(type, normalizedSortOrder));
-            else if (queryProperty(localAtom, parms))
-                type.setown(getTypeLocalSort(type, normalizedSortOrder));
-            else
-            {
-                type.setown(getTypeGlobalSort(type, normalizedSortOrder));
-                if ((op == no_topn) || (op == no_sorted))
-                    type.setown(getTypeRemoveDistribution(type));
-                //MORE: cosort?
-            }
-            break;
-        }
-    case no_iterate:
-    case no_transformebcdic:
-    case no_transformascii:
-    case no_hqlproject:
-    case no_normalize:
-    case no_rollup:
-    case no_newparse:
-    case no_newxmlparse:
-    case no_rollupgroup:
-        {
-            //These may lose the sort order because they may modify the sort fields or change the 
-            //projected fields.  Grouping also translated, but remains even if no mapping.
-            TableProjectMapper mapper;
-            IHqlExpression * transform;
-            bool globalActivityTransfersRows = false;
-            OwnedHqlExpr leftSelect = createSelector(no_left, dataset, queryProperty(_selectorSequence_Atom, parms));
-            switch (op)
-            {
-            case no_rollup:
-                transform = &parms.item(2);
-                globalActivityTransfersRows = true;
-                mapper.setMapping(transform, leftSelect);
-                assertRecordTypesMatch(recordType, transform->queryRecordType());
-                break;
-            case no_normalize:
-                transform = &parms.item(2);
-                mapper.setMapping(transform, leftSelect);
-                break;
-            case no_newxmlparse:
-                transform = &parms.item(3);
-                mapper.setMapping(transform, leftSelect);
-                break;
-            case no_newparse:
-                transform = &parms.item(4);
-                mapper.setMapping(transform, leftSelect);
-                break;
-            case no_iterate:
-                {
-                    OwnedHqlExpr rightSelect = createSelector(no_right, dataset, queryProperty(_selectorSequence_Atom, parms));
-                    transform = &parms.item(1);
-                    globalActivityTransfersRows = true;
-                    mapper.setMapping(transform, rightSelect);          // only if keep from right will it be preserved.
-                    assertex(recordTypesMatch(recordType, transform->queryRecordType()));
-                    break;
-                }
-            case no_transformebcdic:
-            case no_transformascii:
-            case no_hqlproject:
-            case no_rollupgroup:
-                transform = &parms.item(1);
-                mapper.setMapping(transform, leftSelect);
-                break;
-            default:
-                assertex(!"Missing entry...");
-                break;
-            }
-
-            type.set(datasetType);
-            if (op == no_rollupgroup)
-                type.setown(getTypeUngroup(type));
-            if (globalActivityTransfersRows && !queryProperty(localAtom, parms) && !isGrouped(datasetType))
-                type.setown(getTypeRemoveDistribution(type));
-
-            type.setown(getTypeProject(type, transform->queryRecord(), mapper));
-            //Tag a count project as sorted in some way, we could spot which field (if any) was initialised with it.
-            if ((op == no_hqlproject) && queryProperty(_countProject_Atom, parms))
-            {
-                bool isLocal = queryProperty(localAtom, parms) != NULL;
-                if (!appearsToBeSorted(type, isLocal, false))
-                {
-                    if (isGrouped(type))
-                        type.setown(getTypeGroupSort(type, queryUnknownSortlist()));
-                    else if (isLocal)
-                        type.setown(getTypeLocalSort(type, queryUnknownSortlist()));
-                    else
-                        type.setown(getTypeGlobalSort(type, queryUnknownSortlist()));
-                }
-            }
-            break;
-        }
-    case no_keyindex:
-    case no_newkeyindex:
-        {
-            IHqlExpression * record = &parms.item(1);
-            type.setown(makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL));
-            if (queryProperty(sortedAtom, parms)) 
-            {
-                HqlExprArray sortExprs;
-                if (queryProperty(sort_KeyedAtom, parms))
-                {
-                    IHqlExpression * payloadAttr = queryProperty(_payload_Atom, parms);
-                    unsigned payloadCount = payloadAttr ? (unsigned)getIntValue(payloadAttr->queryChild(0), 1) : 1;
-                    unsigned payloadIndex = firstPayloadField(record, payloadCount);
-                    unwindRecordAsSelects(sortExprs, record, cachedActiveTableExpr, payloadIndex);
-                }
-                else
-                    unwindRecordAsSelects(sortExprs, record, cachedActiveTableExpr);
-
-                OwnedHqlExpr sortOrder = createSortList(sortExprs);
-                if (queryProperty(noRootAtom, parms))
-                    type.setown(getTypeLocalSort(type, sortOrder));
-                else
-                    type.setown(getTypeGlobalSort(type, sortOrder));
-            }
-            break;
-        }
-    case no_httpcall:
-        {
-            IHqlExpression * record = &parms.item(3);
-            type.setown(makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL));
-            break;
-        }
-    case no_soapcall:
-        {
-            IHqlExpression * record = &parms.item(3);
-            type.setown(makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL));
-            break;
-        }
-    case no_newsoapcall:
-        {
-            IHqlExpression * record = &parms.item(4);
-            type.setown(makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL));
-            break;
-        }
-    case no_soapcall_ds:
-        {
-            IHqlExpression * record = &parms.item(4);
-            type.setown(getTypeCannotProject(datasetType, record));
-            break;
-        }
-    case no_newsoapcall_ds:
-        {
-            IHqlExpression * record = &parms.item(5);
-            type.setown(getTypeCannotProject(datasetType, record));
-            break;
-        }
-    case no_parse:
-        {
-            //Assume we can't work out anything about the sort order/grouping/distribution.
-            //Not strictly true, but it will do for the moment.
-            IHqlExpression * record = &parms.item(3);
-            type.setown(getTypeCannotProject(datasetType, record));
-            break;
-        }
-    case no_xmlparse:
-        {
-            IHqlExpression * record = &parms.item(2);
-            //Assume we can't work out anything about the sort order/grouping/distribution.
-            //Not strictly true, but it will do for the moment.
-            type.setown(getTypeCannotProject(datasetType, record));
-            break;
-        }
-    case no_selectfields:
-    case no_aggregate:
-    case no_newaggregate:
-    case no_newusertable:
-    case no_usertable:
-        {
-            IHqlExpression * record = &parms.item(1);
-            if (record->getOperator() == no_null)
-            {
-                type.set(datasetType);
-                break;
-            }
-
-            TableProjectMapper mapper;
-            record = record->queryRecord();
-
-            IHqlExpression * grouping = NULL;
-            IHqlExpression * mapping = NULL;
-            LinkedHqlExpr selector = dataset;
-            switch (op)
-            {
-            case no_usertable:
-            case no_selectfields:
-                mapping = record;
-                if (parms.isItem(2))
-                    grouping = &parms.item(2);
-                break;
-            case no_aggregate:
-                selector.setown(createSelector(no_left, dataset, queryProperty(_selectorSequence_Atom, parms)));
-                if (!hasProperty(mergeTransformAtom, parms))
-                    mapping = &parms.item(2);
-                if (parms.isItem(3))
-                    grouping = &parms.item(3);
-                break;
-            case no_newaggregate:
-            case no_newusertable:
-                mapping = &parms.item(2);
-                if (parms.isItem(3))
-                    grouping = &parms.item(3);
-                break;
-            }
-
-            if (!mapping)
-                mapper.setUnknownMapping();
-            else
-                mapper.setMapping(mapping, selector);
-
-            if (grouping && grouping->isAttribute())
-                grouping = NULL;
-
-            type.set(datasetType);
-            if (grouping)
-            {
-                if (hasProperty(groupedAtom, parms))
-                {
-                    //A grouped hash aggregate - the sort order within the groups will be lost.
-                    type.setown(getTypeRemoveActiveSort(type));
-                }
-                else
-                {
-                    //grouping causes the sort order (and distribution) to be lost - because it might be done by a hash aggregate.
-                    type.setown(getTypeRemoveAllSortOrders(type));
-                    if (!queryProperty(localAtom, parms))
-                        type.setown(getTypeUnknownDistribution(type));      // will be distributed by some function of the grouping fields
-
-                    //Aggregation removes grouping, unless explicitly marked as a grouped operation
-                    type.setown(getTypeUngroup(type));
-                }
-            }
-            else
-            {
-                //Aggregation removes grouping
-                if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()) || hasProperty(aggregateAtom, parms))
-                    type.setown(getTypeUngroup(type));
-            }
-            //Now map any fields that we can.
-            type.setown(getTypeProject(type, record, mapper));
-            break;
-        }
-    case no_nonempty:
-        {
-            //We can take the intersection of the input types for non empty since only one is read.
-            type.set(datasetType);
-            unsigned max = parms.ordinality();
-            for (unsigned i=1; i < max; i++)
-            {
-                IHqlExpression & cur = parms.item(i);
-                if (!cur.isAttribute())
-                    type.setown(getTypeIntersection(type, cur.queryType()));
-            }
-            break;
-        }
-    case no_addfiles:
-    case no_regroup:
-    case no_cogroup:
-    case no_chooseds:
-        {
-            // Note Concatenation destroys sort order 
-            // If all the source files have the same distribution then preserve it, else just mark as distributed...
-            unsigned max = parms.ordinality();
-            bool allGrouped = isGrouped(datasetType);
-            bool sameDistribution = true;
-            bool allInputsIdentical = true;
-            unsigned firstDataset = (op == no_chooseds) ? 1 : 0;
-            for (unsigned i=firstDataset+1; i < max; i++)
-            {
-                IHqlExpression & cur = parms.item(i);
-                if (!cur.isAttribute())
-                {
-                    if (&cur != dataset)
-                        allInputsIdentical = false;
-                    IHqlExpression * curDist = queryDistribution(cur.queryType());
-                    if (!curDist)
-                        distributeInfo = NULL;
-                    else if (curDist != distributeInfo)
-                        sameDistribution = false;
-
-                    if (!isGrouped(&cur))
-                        allGrouped = false;
-                }
-            }
-
-            IHqlExpression * newDistribution = NULL;
-            if (distributeInfo)
-            {
-                //sort distributions are not identical - except in the unusual case where
-                //the inputs are identical (e.g., x + x).  Can change if uids get created for sorts.
-                if (sameDistribution && (!isSortedDistribution(distributeInfo) || allInputsIdentical))
-                    newDistribution = LINK(distributeInfo);
-                else
-                    newDistribution = getUnknownAttribute();
-            }
-
-            type.setown(makeTableType(LINK(rowType), newDistribution, NULL, NULL));
-            if (allGrouped || (op == no_cogroup))
-                type.setown(getTypeGrouped(type, queryUnknownSortlist(), true));
-            break;
-        }
-    case no_normalizegroup:
-        {
-            //Not very nice - it is hard to track anything through a group normalize.
-            ITypeInfo * newRecordType = parms.item(1).queryRecordType();
-            IHqlExpression * distribution = distributeInfo ? getUnknownAttribute() : NULL;
-            type.setown(makeTableType(makeRowType(LINK(newRecordType)), distribution, NULL, NULL));
-            if (isGrouped(dataset))
-                type.setown(getTypeGrouped(type, queryUnknownSortlist(), true));
-            break;
-        }
-    case no_if:
-        {
-            IHqlExpression & left = parms.item(1);
-            IHqlExpression & right = parms.item(2);
-            ITypeInfo * leftType = left.queryType();
-            ITypeInfo * rightType = right.queryType();
-            if (left.getOperator() == no_null)
-                type.set(rightType);
-            else if (right.getOperator() == no_null)
-                type.set(leftType);
-            else
-                type.setown(getTypeIntersection(leftType, rightType));
-            break;
-        }
-    case no_case:
-    case no_mapto:
-        //following is wrong, but they get removed pretty quickly so I don't really care
-        type.set(parms.item(1).queryType());
-        break;
-    case no_map:
-        //following is wrong, but they get removed pretty quickly so I don't really care
-        type.set(parms.item(0).queryType());
-        break;
-    case no_merge:
-        {
-            HqlExprArray components;
-            IHqlExpression * order= queryProperty(sortedAtom, parms);       // already uses no_activetable to refer to dataset
-            assertex(order);
-            unwindChildren(components, order);
-            OwnedHqlExpr sortlist = createSortList(components);
-            if (queryProperty(localAtom, parms))
-                type.setown(getTypeLocalSort(datasetType, sortlist));
-            else
-                type.setown(makeTableType(LINK(rowType), NULL, LINK(sortlist), LINK(sortlist)));
-            break;
-        }
-    case no_mergejoin:
-    case no_nwayjoin:
-    case no_nwaymerge:
-        {
-            IHqlExpression * order;
-            switch (op)
-            {
-            case no_mergejoin:
-                order = &parms.item(2);
-                break;
-            case no_nwayjoin:
-                order = &parms.item(3);
-                break;
-            case no_nwaymerge:
-                order = &parms.item(1);
-                break;
-            }
-            assertex(order);
-            IHqlExpression * selSeq = queryProperty(_selectorSequence_Atom, parms);
-            OwnedHqlExpr selector = createSelector(no_left, queryRecord(recordType), selSeq);
-            OwnedHqlExpr normalizedOrder = replaceSelector(order, selector, cachedActiveTableExpr);
-            HqlExprArray components;
-            unwindChildren(components, normalizedOrder);
-            OwnedHqlExpr sortlist = createSortList(components);
-            //These are all currently implemented as local activities, need to change following if no longer true
-            type.setown(getTypeLocalSort(datasetType, sortlist));
-            break;
-        }
-    case no_choosen:
-    case no_choosesets:
-    case no_enth:
-    case no_sample:
-        //grouped preserves everything
-        //otherwise it preserves distribution, global and local order (no data is transferred even for global), but not the grouping.
-        if (queryProperty(groupedAtom, parms))
-            type.set(datasetType);
-        else
-            type.setown(getTypeUngroup(datasetType));
-        break;
-    case no_allnodes:
-        {
-            IHqlExpression * merge = queryProperty(mergeAtom, parms);
-            if (merge)
-            {
-                //more - sort order defined
-            }
-            type.setown(makeTableType(LINK(rowType), NULL, NULL, NULL));
-            break;
-        }
-    case no_colon:
-        //Persist shouldn't preserve the distribution, since can't guarantee done on same width cluster.
-        if (queryOperatorInList(no_persist, &parms.item(1)))
-            type.setown(getTypeUnknownDistribution(datasetType));
-        else if (queryOperatorInList(no_stored, &parms.item(1)))
-            type.setown(getTypeCannotProject(datasetType, dataset->queryRecord()));
-        else
-            type.set(datasetType);
-        break;
-    case no_alias_project:
-    case no_alias_scope:
-    case no_cachealias:
-    case no_cloned:
-    case no_globalscope:
-    case no_comma:
-    case no_compound:
-    case no_filter:
-    case no_keyed:
-    case no_nofold:
-    case no_nohoist:
-    case no_section:
-    case no_sectioninput:
-    case no_sub:
-    case no_thor:
-    case no_nothor:
-    case no_compound_indexread:
-    case no_compound_diskread:
-    case no_compound_disknormalize:
-    case no_compound_diskaggregate:
-    case no_compound_diskcount:
-    case no_compound_diskgroupaggregate:
-    case no_compound_indexnormalize:
-    case no_compound_indexaggregate:
-    case no_compound_indexcount:
-    case no_compound_indexgroupaggregate:
-    case no_compound_childread:
-    case no_compound_childnormalize:
-    case no_compound_childaggregate:
-    case no_compound_childcount:
-    case no_compound_childgroupaggregate:
-    case no_compound_selectnew:
-    case no_compound_inline:
-    case no_field:
-    case no_metaactivity:
-    case no_split:
-    case no_spill:
-    case no_readspill:
-    case no_commonspill:
-    case no_writespill:
-    case no_throughaggregate:
-    case no_limit:
-    case no_catchds:
-    case no_keyedlimit:
-    case no_compound_fetch:
-    case no_preload:
-    case no_alias:
-    case no_catch:
-    case no_activerow:
-    case no_newrow:
-    case no_assert_ds:
-    case no_spillgraphresult:
-    case no_cluster:
-    case no_forcenolocal:
-    case no_thisnode:
-    case no_forcelocal:
-    case no_filtergroup:
-    case no_forcegraph:
-    case no_related:
-    case no_executewhen:
-    case no_outofline:
-    case no_select:
-    case no_fieldmap:
-    case no_owned_ds:
-    case no_dataset_alias:
-        type.set(datasetType);
-        break;
-    case no_loop:
-        {
-            IHqlExpression & body = parms.item(4);
-            type.setown(getTypeIntersection(datasetType, body.queryChild(0)->queryType()));
-            break;
-        }
-    case no_graphloop:
-        {
-            IHqlExpression & body = parms.item(2);
-            type.setown(getTypeIntersection(datasetType, body.queryChild(0)->queryType()));
-            break;
-        }
-    case no_serialize:
-        {
-            assertex(parms.ordinality() >= 2);
-            IHqlExpression & form = parms.item(1);
-            assertex(form.isAttribute());
-            type.setown(getSerializedForm(datasetType, form.queryName()));
-            break;
-        }
-    case no_deserialize:
-        {
-            assertex(parms.ordinality() >= 3);
-            IHqlExpression & record = parms.item(1);
-            IHqlExpression & form = parms.item(2);
-            assertex(form.isAttribute());
-            ITypeInfo * recordType = record.queryType();
-            OwnedITypeInfo rowType = makeRowType(LINK(recordType));
-            assertex(record.getOperator() == no_record);
-            if (datasetType->getTypeCode() == type_groupedtable)
-            {
-                ITypeInfo * childType = datasetType->queryChildType();
-                OwnedITypeInfo newChildType = replaceChildType(childType, rowType);
-                type.setown(replaceChildType(datasetType, newChildType));
-            }
-            else
-                type.setown(replaceChildType(datasetType, rowType));
-
-            //MORE: The distribution etc. won't be correct....
-            type.setown(setLinkCountedAttr(type, true));
-
-#ifdef _DEBUG
-            OwnedITypeInfo serializedType = getSerializedForm(type, form.queryName());
-            assertex(recordTypesMatch(serializedType, datasetType));
-#endif
-            break;
-        }
-    case no_rowsetindex:
-    case no_rowsetrange:
-        type.set(childType);
-        break;
-    case no_datasetfromrow:
-    case no_datasetfromdictionary:
-        type.setown(makeTableType(makeRowType(createRecordType(&parms.item(0))), NULL, NULL, NULL));
-        break;
-    default:
-        UNIMPLEMENTED_XY("Type calculation for dataset operator", getOpString(op));
-        break;
-    }
-
-#ifdef _DEBUG
-    IHqlExpression * gt = queryGrouping(type);
-    assertex(!gt || gt->getOperator() == no_sortlist);
-    IHqlExpression * st = queryGlobalSortOrder(type);
-    assertex(!st || st->getOperator() == no_sortlist);
-#endif
-#if 0
-    checkConsistent(queryDistribution(type));
-    checkConsistent((IHqlExpression*)type->queryGlobalSortInfo());
-    checkConsistent((IHqlExpression*)type->queryLocalUngroupedSortInfo());
-    checkConsistent((IHqlExpression*)type->queryGroupInfo());
-#endif
+    Owned<ITypeInfo> type = calculateDatasetType(op, parms);
 
     IHqlExpression * ret = CHqlDataset::makeDataset(op, type.getClear(), parms);
+
 #ifdef GATHER_LINK_STATS
     insideCreate--;
 #endif
@@ -12605,7 +11809,7 @@ extern IHqlExpression * createTranslatedExternalCall(IErrorReceiver * errors, IH
 }
 
 
-extern IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, IHqlExpression *props)
+extern IHqlExpression *createExternalReference(IIdAtom * id, ITypeInfo *_type, IHqlExpression *props)
 {
     HqlExprArray attributes;
     if (props)
@@ -12613,12 +11817,12 @@ extern IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, IHq
         props->unwindList(attributes, no_comma);
         props->Release();
     }
-    return CHqlExternal::makeExternalReference(name, _type, attributes)->closeExpr();
+    return CHqlExternal::makeExternalReference(id, _type, attributes)->closeExpr();
 }
 
-extern IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, HqlExprArray & attributes)
+extern IHqlExpression *createExternalReference(IIdAtom * id, ITypeInfo *_type, HqlExprArray & attributes)
 {
-    return CHqlExternal::makeExternalReference(name, _type, attributes)->closeExpr();
+    return CHqlExternal::makeExternalReference(id, _type, attributes)->closeExpr();
 }
 
 IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
@@ -12635,7 +11839,7 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*createAttribute(contextSensitiveAtom));
 
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
-    OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryName(), LINK(returnType), attrs);
+    OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);
     return replaceChild(funcdef, 0, externalExpr);
 }
 
@@ -12900,7 +12104,7 @@ IHqlExpression * ensureActiveRow(IHqlExpression * expr)
     return createRow(no_activerow, LINK(expr->queryNormalizedSelector()));
 }
 
-IHqlExpression * ensureSerialized(IHqlExpression * expr, _ATOM serialForm)
+IHqlExpression * ensureSerialized(IHqlExpression * expr, IAtom * serialForm)
 {
     ITypeInfo * type = expr->queryType();
     Owned<ITypeInfo> serialType = getSerializedForm(type, serialForm);
@@ -12913,7 +12117,7 @@ IHqlExpression * ensureSerialized(IHqlExpression * expr, _ATOM serialForm)
     return createWrapper(no_serialize, serialType, args);
 }
 
-IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, _ATOM serialForm)
+IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, IAtom * serialForm)
 {
     assertex(type->getTypeCode() != type_record);
     Owned<ITypeInfo> serialType = getSerializedForm(type, serialForm);
@@ -13005,7 +12209,7 @@ extern IHqlScope *createPrivateScope()
 
 extern IHqlScope *createPrivateScope(IHqlScope * scope)
 {
-    return new CHqlLocalScope(no_privatescope, scope->queryName(), scope->queryFullName());
+    return new CHqlLocalScope(no_privatescope, scope->queryId(), scope->queryFullName());
 }
 
 extern IHqlScope* createScope(IHqlScope* scope)
@@ -13028,9 +12232,9 @@ extern IHqlScope* createConcreteScope()
     return new CHqlLocalScope(no_concretescope, NULL, NULL);
 }
 
-extern IHqlScope* createVirtualScope(_ATOM name, const char * fullName)
+extern IHqlScope* createVirtualScope(IIdAtom * id, const char * fullName)
 {
-    return new CHqlVirtualScope(name, fullName);
+    return new CHqlVirtualScope(id, fullName);
 }
 
 extern IHqlScope* createLibraryScope()
@@ -13038,10 +12242,10 @@ extern IHqlScope* createLibraryScope()
     return new CHqlLocalScope(no_libraryscope, NULL, NULL);
 }
 
-extern IHqlRemoteScope *createRemoteScope(_ATOM name, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * text, bool lazy, IEclSource * eclSource)
+extern IHqlRemoteScope *createRemoteScope(IIdAtom * id, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * text, bool lazy, IEclSource * eclSource)
 {
-    assertex(fullName || !name);
-    return new CHqlRemoteScope(name, fullName, ds, props, text, lazy, eclSource);
+    assertex(fullName || !id);
+    return new CHqlRemoteScope(id, fullName, ds, props, text, lazy, eclSource);
 }
 
 IHqlExpression * populateScopeAndClose(IHqlScope * scope, const HqlExprArray & children, const HqlExprArray & symbols)
@@ -13302,20 +12506,20 @@ extern HQL_API IHqlExpression * createNullExpr(ITypeInfo * type)
         {
             ITypeInfo * recordType = queryRecordType(type);
             IHqlExpression * record = queryExpression(recordType);
-            return createDataset(no_null, LINK(record), createGroupedAttribute(type));
+            return createDataset(no_null, LINK(record), createGroupedAttribute(NULL));
         }
     case type_table:
         {
             ITypeInfo * recordType = queryRecordType(type);
             IHqlExpression * record = queryExpression(recordType);
-            IHqlExpression * attr = queryProperty(type, _linkCounted_Atom);
+            IHqlExpression * attr = queryAttribute(type, _linkCounted_Atom);
             return createDataset(no_null, LINK(record), LINK(attr));
         }
     case type_dictionary:
         {
             ITypeInfo * recordType = queryRecordType(type);
             IHqlExpression * record = queryExpression(recordType);
-            IHqlExpression * attr = queryProperty(type, _linkCounted_Atom);
+            IHqlExpression * attr = queryAttribute(type, _linkCounted_Atom);
             return createDictionary(no_null, LINK(record), LINK(attr));
         }
     case type_row:
@@ -13358,7 +12562,7 @@ extern HQL_API IHqlExpression * createNullExpr(IHqlExpression * expr)
 {
     if (expr->getOperator()==no_select)
         return createNullExpr(expr->queryChild(1));
-    IHqlExpression * defaultValue = queryPropertyChild(expr, defaultAtom, 0);
+    IHqlExpression * defaultValue = queryAttributeChild(expr, defaultAtom, 0);
     if (defaultValue)
         return LINK(defaultValue);
     return createNullExpr(expr->queryType());
@@ -13470,7 +12674,7 @@ IHqlExpression * createCompareExpr(node_operator op, IHqlExpression * l, IHqlExp
 
 IHqlExpression * createNullDataset(IHqlExpression * ds)
 {
-    IHqlExpression * attr = isGrouped(ds) ? createGroupedAttribute(ds->queryType()) : NULL;
+    IHqlExpression * attr = isGrouped(ds) ? createGroupedAttribute(NULL) : NULL;
     return createDataset(no_null, LINK(ds->queryRecord()), attr);
 }
 
@@ -13551,7 +12755,7 @@ static IHqlExpression * processPseudoWorkflow(SharedHqlExpr & expr, HqlExprArray
         }
     case no_attr:
         {
-            _ATOM name = workflow->queryName();
+            IAtom * name = workflow->queryName();
             if (name == sectionAtom)
             {
                 processSectionPseudoWorkflow(expr, workflow, allActiveParameters);
@@ -13899,7 +13103,7 @@ static bool exprContainsCounter(RecursionChecker & checker, IHqlExpression * exp
     case no_select:
         {
             IHqlExpression * ds = expr->queryChild(0);
-            if (expr->hasProperty(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()))
+            if (isNewSelector(expr))
                 return exprContainsCounter(checker, ds, counter);
             return false;
         }
@@ -13942,7 +13146,7 @@ static IHqlExpression * applyInstantEclLimit(IHqlExpression * expr, unsigned lim
 
 static IHqlExpression *doInstantEclTransformation(IHqlExpression * subquery, unsigned limit)
 {
-    if (subquery->getOperator()==no_output && !queryRealChild(subquery, 1) && !subquery->hasProperty(allAtom)) 
+    if (subquery->getOperator()==no_output && !queryRealChild(subquery, 1) && !subquery->hasAttribute(allAtom))
     {
         IHqlExpression * ds = subquery->queryChild(0);
         OwnedHqlExpr limitedDs = applyInstantEclLimit(ds, limit);
@@ -14411,7 +13615,7 @@ public:
         {
         case no_field:
             {
-                if (expr->hasProperty(virtualAtom))
+                if (expr->hasAttribute(virtualAtom))
                 {
                     OwnedHqlExpr cleaned = removeProperty(expr, virtualAtom);
                     return QuickHqlTransformer::createTransformed(cleaned);
@@ -14446,10 +13650,10 @@ static bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur,
                         switch (type->getTypeCode())
                         {
                         case type_groupedtable:
-                            targetType.setown(makeGroupedTableType(makeTableType(makeRowType(newRecord->getType()), NULL, NULL, NULL), createAttribute(groupedAtom), NULL));
+                            targetType.setown(makeGroupedTableType(makeTableType(makeRowType(newRecord->getType()))));
                             break;
                         case type_table:
-                            targetType.setown(makeTableType(makeRowType(newRecord->getType()), NULL, NULL, NULL));
+                            targetType.setown(makeTableType(makeRowType(newRecord->getType())));
                             break;
                         case type_row:
                             targetType.set(makeRowType(newRecord->queryType()));
@@ -14465,12 +13669,12 @@ static bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur,
             }
 
             LinkedHqlExpr newField = cur;
-            if ((type != targetType) || cur->hasProperty(virtualAtom))
+            if ((type != targetType) || cur->hasAttribute(virtualAtom))
             {
                 HqlExprArray args;
                 unwindChildren(args, cur);
                 removeProperty(args, virtualAtom);
-                newField.setown(createField(cur->queryName(), targetType.getLink(), args));
+                newField.setown(createField(cur->queryId(), targetType.getLink(), args));
             }
             fields.append(*LINK(newField));
             transformer.setMapping(cur, newField);
@@ -14530,11 +13734,11 @@ IHqlExpression * queryDatasetCursor(IHqlExpression * ds)
 IHqlExpression * querySelectorDataset(IHqlExpression * expr, bool & isNew)
 {
     assertex(expr->getOperator() == no_select);
-    isNew = expr->hasProperty(newAtom);
+    isNew = expr->hasAttribute(newAtom);
     IHqlExpression * ds = expr->queryChild(0);
     while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
     {
-        if (ds->hasProperty(newAtom))
+        if (ds->hasAttribute(newAtom))
             isNew = true;
         assertex(ds->isDatarow());
         ds = ds->queryChild(0);
@@ -14545,12 +13749,12 @@ IHqlExpression * querySelectorDataset(IHqlExpression * expr, bool & isNew)
 bool isNewSelector(IHqlExpression * expr)
 {
     assertex(expr->getOperator() == no_select);
-    if (expr->hasProperty(newAtom))
+    if (expr->hasAttribute(newAtom))
         return true;
     IHqlExpression * ds = expr->queryChild(0);
     while ((ds->getOperator() == no_select) && !ds->isDataset() && !ds->isDictionary())
     {
-        if (ds->hasProperty(newAtom))
+        if (ds->hasAttribute(newAtom))
             return true;
         assertex(ds->isDatarow());
         ds = ds->queryChild(0);
@@ -14600,7 +13804,7 @@ IHqlExpression * querySkipDatasetMeta(IHqlExpression * dataset)
 
 //==============================================================================================================
 
-static ITypeInfo * doGetSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, _ATOM serialForm)
+static ITypeInfo * doGetSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, IAtom * serialForm)
 {
     ITypeInfo * promoted = type->queryPromotedType();
     switch (type->getTypeCode())
@@ -14648,7 +13852,7 @@ static ITypeInfo * doGetSimplifiedType(ITypeInfo * type, bool isConditional, boo
     UNIMPLEMENTED;  //i.e. doesn't make any sense....
 }
 
-ITypeInfo * getSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, _ATOM serialForm)
+ITypeInfo * getSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, IAtom * serialForm)
 {
     Owned<ITypeInfo> newType = doGetSimplifiedType(type, isConditional, isSerialized, serialForm);
     if (isSameBasicType(newType, type))
@@ -14669,13 +13873,13 @@ static void simplifyFileViewRecordTypes(HqlExprArray & fields, IHqlExpression * 
             bool forceSimplify = false;
             if (isKey)
             {
-                if (cur->hasProperty(blobAtom))
+                if (cur->hasAttribute(blobAtom))
                     forceSimplify = true;
             }
             else
             {
                 //MORE: Really not so sure about this...
-                if (cur->hasProperty(virtualAtom))
+                if (cur->hasAttribute(virtualAtom))
                     return;
             }
 
@@ -14695,14 +13899,14 @@ static void simplifyFileViewRecordTypes(HqlExprArray & fields, IHqlExpression * 
                     if (childNeedsTransform || hasLinkCountedModifier(type))
                     {
                         OwnedHqlExpr newRecord = fieldRecord->clone(subFields);
-                        targetType.setown(makeTableType(makeRowType(newRecord->getType()), NULL, NULL, NULL));
+                        targetType.setown(makeTableType(makeRowType(newRecord->getType())));
                     }
                     else
                         targetType.set(type);
 
-                    IHqlExpression * maxCountAttr = cur->queryProperty(maxCountAtom);
-                    IHqlExpression * countAttr = cur->queryProperty(countAtom);
-                    if (countAttr || cur->hasProperty(sizeofAtom))
+                    IHqlExpression * maxCountAttr = cur->queryAttribute(maxCountAtom);
+                    IHqlExpression * countAttr = cur->queryAttribute(countAtom);
+                    if (countAttr || cur->hasAttribute(sizeofAtom))
                         forceSimplify = true;
 
                     if (maxCountAttr)
@@ -14743,7 +13947,7 @@ static void simplifyFileViewRecordTypes(HqlExprArray & fields, IHqlExpression * 
                 inheritAttribute(attrs, cur, xpathAtom);
                 inheritAttribute(attrs, cur, xmlDefaultAtom);
                 inheritAttribute(attrs, cur, defaultAtom);
-                newField.setown(createField(cur->queryName(), targetType.getLink(), attrs));
+                newField.setown(createField(cur->queryId(), targetType.getLink(), attrs));
             }
             fields.append(*LINK(newField));
             break;
@@ -14756,7 +13960,7 @@ static void simplifyFileViewRecordTypes(HqlExprArray & fields, IHqlExpression * 
             HqlExprArray subfields;
             StringBuffer name;
             name.append("unnamed").append(++count);
-            subfields.append(*createField(createIdentifierAtom(name), makeBoolType(), NULL, createAttribute(__ifblockAtom)));
+            subfields.append(*createField(createIdAtom(name), makeBoolType(), NULL, createAttribute(__ifblockAtom)));
             simplifyFileViewRecordTypes(subfields, cur->queryChild(1), true, needsTransform, isKey, count);
 //          fields.append(*createValue(no_ifblock, makeVoidType(), createValue(no_not, makeBoolType(), createConstant(false)), createRecord(subfields)));
             fields.append(*createValue(no_ifblock, makeNullType(), createConstant(true), createRecord(subfields)));
@@ -14821,7 +14025,7 @@ static void getSimplifiedAssigns(HqlExprArray & assigns, IHqlExpression * tgt, I
     case no_field:
         {
             //MORE: Really not so sure about this...
-            if (src->hasProperty(virtualAtom) || src->hasProperty(__ifblockAtom))
+            if (src->hasAttribute(virtualAtom) || src->hasAttribute(__ifblockAtom))
                 return;
             OwnedHqlExpr srcSelect = sourceSelector ? createSelectExpr(LINK(sourceSelector), LINK(src)) : LINK(src);
             OwnedHqlExpr tgtSelect = createSelectExpr(LINK(targetSelector), LINK(tgt));
@@ -15061,9 +14265,9 @@ void unwindRecordAsSelects(HqlExprArray & children, IHqlExpression * record, IHq
 }
 
 
-void unwindProperty(HqlExprArray & args, IHqlExpression * expr, _ATOM name)
+void unwindProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
 {
-    IHqlExpression * attr = expr->queryProperty(name);
+    IHqlExpression * attr = expr->queryAttribute(name);
     if (attr)
         args.append(*LINK(attr));
 }
@@ -15103,9 +14307,9 @@ bool isKeyedJoin(IHqlExpression * expr)
     node_operator op = expr->getOperator();
     if ((op == no_join) || (op == no_joincount) || (op == no_denormalize) || (op == no_denormalizegroup))
     {
-        if (expr->hasProperty(allAtom) || expr->hasProperty(lookupAtom))
+        if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom))
             return false;
-        if (expr->hasProperty(keyedAtom) || containsAssertKeyed(expr->queryChild(2)))
+        if (expr->hasAttribute(keyedAtom) || containsAssertKeyed(expr->queryChild(2)))
             return true;
         //Keyed joins only support INNER/LEFT.  Default to a normal join for other join types.
         if (!isInnerJoin(expr) && !isLeftJoin(expr))
@@ -15183,18 +14387,20 @@ bool isSelfJoin(IHqlExpression * expr)
     if (datasetL->queryBody() != datasetR->queryBody())
         return false;
 
-    if (expr->hasProperty(allAtom) || expr->hasProperty(lookupAtom))
+    if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom))
+        return false;
+
+    if (expr->queryChild(2)->isConstant())
         return false;
 
     if (!joinSortOrdersMatch(expr->queryChild(2)))
         return false;
 
-    //Check this isn't going to generate a between join - if it is that takes precedence.  A bit arbitary
+    //Check this isn't going to generate a between join - if it is that takes precedence.  A bit arbitrary
     //when one is more efficient.
-    HqlExprArray leftSorts, rightSorts, slidingMatches;
-    bool isLimitedSubstringJoin;
-    OwnedHqlExpr fuzzy = findJoinSortOrders(expr, leftSorts, rightSorts, isLimitedSubstringJoin, &slidingMatches);
-    if ((slidingMatches.ordinality() != 0) && (leftSorts.ordinality() == slidingMatches.ordinality()))
+    JoinSortInfo joinInfo;
+    joinInfo.findJoinSortOrders(expr, true);
+    if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftReq().ordinality() == joinInfo.slidingMatches.ordinality()))
         return false;
     return true;
 }
@@ -15212,7 +14418,7 @@ bool isInnerJoin(IHqlExpression * expr)
 }
 
 
-_ATOM queryJoinKind(IHqlExpression * expr)
+IAtom * queryJoinKind(IHqlExpression * expr)
 {
     unsigned max = expr->numChildren();
     for (unsigned i=4; i < max; i++)
@@ -15224,7 +14430,7 @@ _ATOM queryJoinKind(IHqlExpression * expr)
         case no_attr_link:
         case no_attr_expr:
             {
-                _ATOM name = cur->queryName();
+                IAtom * name = cur->queryName();
                 //Only allow inner joins
                 if ((name == innerAtom) || (name == leftouterAtom) || (name == rightouterAtom) ||
                     (name == fullouterAtom) || (name == leftonlyAtom) ||
@@ -15240,19 +14446,19 @@ _ATOM queryJoinKind(IHqlExpression * expr)
 
 bool isFullJoin(IHqlExpression * expr)
 {
-    return expr->hasProperty(fullouterAtom) || expr->hasProperty(fullonlyAtom);
+    return expr->hasAttribute(fullouterAtom) || expr->hasAttribute(fullonlyAtom);
 }
 
 
 bool isLeftJoin(IHqlExpression * expr)
 {
-    return expr->hasProperty(leftouterAtom) || expr->hasProperty(leftonlyAtom);
+    return expr->hasAttribute(leftouterAtom) || expr->hasAttribute(leftonlyAtom);
 }
 
 
 bool isRightJoin(IHqlExpression * expr)
 {
-    return expr->hasProperty(rightouterAtom) || expr->hasProperty(rightonlyAtom);
+    return expr->hasAttribute(rightouterAtom) || expr->hasAttribute(rightonlyAtom);
 }
 
 
@@ -15264,7 +14470,7 @@ bool isSimpleInnerJoin(IHqlExpression * expr)
 
 bool isLimitedJoin(IHqlExpression * expr)
 {
-    return expr->hasProperty(keepAtom) || expr->hasProperty(rowLimitAtom) || expr->hasProperty(atmostAtom);
+    return expr->hasAttribute(keepAtom) || expr->hasAttribute(rowLimitAtom) || expr->hasAttribute(atmostAtom);
 }
 
 bool filterIsKeyed(IHqlExpression * expr)
@@ -15349,7 +14555,7 @@ unsigned getRepeatMax(IHqlExpression * expr)
 
 bool isStandardRepeat(IHqlExpression * expr)
 {
-    if (expr->hasProperty(minimalAtom)) return false;
+    if (expr->hasAttribute(minimalAtom)) return false;
 
     unsigned min = getRepeatMin(expr);
     unsigned max = getRepeatMax(expr);
@@ -15421,7 +14627,7 @@ extern HQL_API bool hasUnknownTransform(IHqlExpression * expr)
     switch (expr->getOperator())
     {
     case no_aggregate:
-        if (expr->hasProperty(mergeTransformAtom))
+        if (expr->hasAttribute(mergeTransformAtom))
             return true;
         break;
     case no_inlinetable:
@@ -15540,7 +14746,7 @@ IHqlExpression * createNullDictionary()
     return createDictionary(no_null, LINK(queryNullRecord()));
 }
 
-bool removeProperty(HqlExprArray & args, _ATOM name)
+bool removeProperty(HqlExprArray & args, IAtom * name)
 {
     bool removed = false;
     ForEachItemInRev(idx, args)
@@ -15576,7 +14782,7 @@ IHqlExpression * queryRecord(ITypeInfo * type)
 //NB: An ifblock is counted as a single payload field.
 unsigned numPayloadFields(IHqlExpression * index)
 {
-    IHqlExpression * payloadAttr = index->queryProperty(_payload_Atom);
+    IHqlExpression * payloadAttr = index->queryAttribute(_payload_Atom);
     if (payloadAttr)
         return (unsigned)getIntValue(payloadAttr->queryChild(0));
     return 1;
@@ -15705,9 +14911,9 @@ IHqlExpression * queryNewSelectAttrExpr()
 }
 
 //Follow inheritance structure when getting property value.
-IHqlExpression * queryRecordProperty(IHqlExpression * record, _ATOM name)
+IHqlExpression * queryRecordProperty(IHqlExpression * record, IAtom * name)
 {
-    IHqlExpression * match = record->queryProperty(name);
+    IHqlExpression * match = record->queryAttribute(name);
     if (match)
         return match;
     ForEachChild(i, record)
@@ -15752,7 +14958,7 @@ bool activityMustBeCompound(IHqlExpression * expr)
     case no_aggregate:
     case no_usertable:
     case no_hqlproject:
-        return expr->hasProperty(keyedAtom);
+        return expr->hasAttribute(keyedAtom);
     }
     return false;
 }
@@ -15790,7 +14996,7 @@ IHqlExpression * queryExpression(ITypeInfo * type)
 IHqlExpression * queryExpression(IHqlDataset * ds)
 {
     if (!ds) return NULL;
-    return QUERYINTERFACE(ds, IHqlExpression);
+    return ds->queryExpression();
 }
 
 IHqlScope * queryScope(ITypeInfo * type)
@@ -15834,7 +15040,7 @@ bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right)
     if (!leftRecord || !rightRecord)
         return leftRecord == rightRecord;
 
-    if (leftRecord->hasProperty(abstractAtom) || rightRecord->hasProperty(abstractAtom))
+    if (leftRecord->hasAttribute(abstractAtom) || rightRecord->hasAttribute(abstractAtom))
         return true;
 
     //This test compares the real record structure, ignoring names etc.   The code above just short-cicuits this test.
@@ -15850,15 +15056,20 @@ bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right)
     return false;
 }
 
-bool assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right)
+void assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right)
 {
     if (recordTypesMatch(left, right))
-        return true;
+        return;
 
     EclIR::dbglogIR(2, left, right);
     throwUnexpected();
 }
 
+
+void assertRecordTypesMatch(IHqlExpression * left, IHqlExpression * right)
+{
+    assertRecordTypesMatch(left->queryRecordType(), right->queryRecordType());
+}
 
 bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right)
 {
@@ -15893,16 +15104,13 @@ IHqlExpression * queryTransformSingleAssign(IHqlExpression * transform)
 
 IHqlExpression * convertToSimpleAggregate(IHqlExpression * expr)
 {
-    IHqlExpression * newAttr = expr->queryProperty(newAtom);
-    if (expr->getOperator() == no_select && newAttr)
+    if ((expr->getOperator() == no_select) && expr->queryAttribute(newAtom))
     {
         expr = expr->queryChild(0);
         if (!isSelectFirstRow(expr))
             return NULL;
         expr = expr->queryChild(0);
     }
-    else
-        newAttr = NULL;
 
     if (expr->getOperator() == no_compound_childaggregate)
         expr = expr->queryChild(0);
@@ -15950,8 +15158,8 @@ IHqlExpression * convertToSimpleAggregate(IHqlExpression * expr)
     args.append(*ds);
     for (unsigned i=0; i < numArgs; i++)
         args.append(*LINK(rhs->queryChild(i)));
-    unwindChildren(args, newAttr);
-    IHqlExpression * keyed = rhs->queryProperty(keyedAtom);
+
+    IHqlExpression * keyed = rhs->queryAttribute(keyedAtom);
     if (keyed)
         args.append(*LINK(keyed));
     OwnedHqlExpr aggregate = createValue(newop, rhs->getType(), args);
@@ -16063,15 +15271,15 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
     IHqlExpression * count = assign->queryChild(1);
     if (count->getOperator() != no_countgroup)
         return false;
-    return count->hasProperty(keyedAtom);
+    return count->hasAttribute(keyedAtom);
 }
 
 
-bool getBoolProperty(IHqlExpression * expr, _ATOM name, bool dft)
+bool getBoolProperty(IHqlExpression * expr, IAtom * name, bool dft)
 {
     if (!expr)
         return dft;
-    IHqlExpression * prop = expr->queryProperty(name);
+    IHqlExpression * prop = expr->queryAttribute(name);
     if (!prop)
         return dft;
     IHqlExpression * value = prop->queryChild(0);
@@ -16225,8 +15433,8 @@ extern bool areAllBasesFullyBound(IHqlExpression * module)
 
 bool isUpdatedConditionally(IHqlExpression * expr)
 {
-    IHqlExpression * updateAttr = expr->queryProperty(updateAtom);
-    return (updateAttr && !updateAttr->queryProperty(alwaysAtom));
+    IHqlExpression * updateAttr = expr->queryAttribute(updateAtom);
+    return (updateAttr && !updateAttr->queryAttribute(alwaysAtom));
 }
 
 ITypeInfo * getTypedefType(IHqlExpression * expr) 
@@ -16263,11 +15471,20 @@ extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements)
      return createValue(no_sortlist, makeSortListType(NULL), elements);
 }
 
+IHqlExpression * cloneFieldMangleName(IHqlExpression * field)
+{
+    StringBuffer newName;
+    newName.append(field->queryId()->str()).append("_").append(getUniqueId());
+    HqlExprArray children;
+    unwindChildren(children, field);
+    return createField(createIdAtom(newName), field->getType(), children);
+}
+
 //==============================================================================================================
 
 
 
-static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, _ATOM name)
+static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, IIdAtom * name)
 {
     try
     {
@@ -16295,23 +15512,23 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, IHqlScope * modS
     symbols.sort(compareSymbolsByName);
 
     ForEachItemIn(i, symbols)
-        safeLookupSymbol(ctx, modScope, symbols.item(i).queryName());
+        safeLookupSymbol(ctx, modScope, symbols.item(i).queryId());
 }
 
 static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * item)
 {
     try
     {
-        _ATOM moduleName = NULL;
-        _ATOM attrName = NULL;
+        IIdAtom * moduleName = NULL;
+        IIdAtom * attrName = NULL;
         const char * dot = strrchr(item, '.');
         if (dot)
         {
-            moduleName = createIdentifierAtom(item, dot-item);
-            attrName = createIdentifierAtom(dot+1);
+            moduleName = createIdAtom(item, dot-item);
+            attrName = createIdAtom(dot+1);
         }
         else
-            moduleName = createIdentifierAtom(item);
+            moduleName = createIdAtom(item);
 
         OwnedHqlExpr resolved = ctx.queryRepository()->queryRootScope()->lookupSymbol(moduleName, LSFpublic, ctx);
         if (resolved)
@@ -16370,15 +15587,16 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
 }
 
 
-_ATOM queryPatternName(IHqlExpression * expr)
+IIdAtom * queryPatternName(IHqlExpression * expr)
 {
     if (expr->getOperator() == no_pat_instance)
-        return expr->queryChild(1)->queryName();
+        return expr->queryChild(1)->queryId();
     return NULL;
 }
-IHqlExpression * createGroupedAttribute(ITypeInfo * type)
+
+IHqlExpression * createGroupedAttribute(IHqlExpression * grouping)
 {
-    return createAttribute(groupedAtom, LINK((IHqlExpression *)type->queryGroupInfo()));
+    return createAttribute(groupedAtom, LINK(grouping));
 }
 
 

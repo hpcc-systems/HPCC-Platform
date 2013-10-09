@@ -193,7 +193,7 @@ public:
     NlpMatchWalker(MatchState * state) { curMatch = state; }
     IMPLEMENT_IINTERFACE
 
-    virtual _ATOM queryName();
+    virtual IAtom * queryName();
     virtual unsigned queryID()                              { return curMatch->id; }
     virtual size32_t queryMatchSize();
     virtual const void * queryMatchStart();

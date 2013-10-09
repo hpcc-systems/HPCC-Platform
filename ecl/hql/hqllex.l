@@ -72,7 +72,8 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         return '$';
         
     /* check $ */
-    _ATOM name = createIdentifierAtom(tokenText);
+    IIdAtom * cname = createIdAtom(tokenText);
+    IAtom * name = cname->queryLower();
     if (lexer->macroParms)
     {
         StringBuffer macroval;
@@ -86,10 +87,10 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     IHqlExpression *expr; 
     //fprintf(stderr, "\nLookupSymbol %s\n",name->str());
     //Lookup expr last otherwise it leaks.
-    if ( !lookup  || lexer->macroGathering || lexer->skipping|| !(expr=lexer->lookupSymbol(name,returnToken)))
+    if ( !lookup  || lexer->macroGathering || lexer->skipping|| !(expr=lexer->lookupSymbol(cname,returnToken)))
     {
         TraceReturnToken(UNKNOWN_ID);
-        returnToken.setName(name);
+        returnToken.setId(cname);
         return UNKNOWN_ID;
     }
 
@@ -210,7 +211,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         }
     }
 
-    if (((op == no_param) && expr->hasProperty(fieldAtom)) || (op == no_indirect))
+    if (((op == no_param) && expr->hasAttribute(fieldAtom)) || (op == no_indirect))
     {
         switch (token)
         {
@@ -225,7 +226,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     if (!lexer->parserExpecting(token, activeState) && lexer->parserExpecting(UNKNOWN_ID, activeState))
     {
         returnToken.release();
-        returnToken.setName(name);
+        returnToken.setId(cname);
         token = UNKNOWN_ID;
     }
 
@@ -793,6 +794,7 @@ MERGEJOIN           { RETURNSYM(MERGEJOIN); }
 MIN                 { RETURNSYM(MIN); }
 MODULE              { RETURNHARD(MODULE); }
 MOFN                { RETURNSYM(MOFN); }
+MULTIPLE            { RETURNSYM(MULTIPLE); }
 NAMED               { RETURNSYM(NAMED); }
 __NAMEOF__          { RETURNSYM(NAMEOF); }
 NAMESPACE           { RETURNSYM(NAMESPACE); }
@@ -896,6 +898,7 @@ SINH                { RETURNSYM(SINH); }
 SIZEOF              { RETURNSYM(SIZEOF); }
 SKEW                { RETURNSYM(SKEW); }
 SKIP                { RETURNSYM(SKIP); }
+SMART               { RETURNSYM(SMART); }
 SOAPACTION          { RETURNSYM(SOAPACTION); }
 SOAPCALL            { RETURNSYM(SOAPCALL); }
 SORT                { RETURNSYM(SORT); }
@@ -980,6 +983,11 @@ __ECL_VERSION_SUBMINOR__ {
                         setupdatepos; 
                         returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_SUB, false));
                         return (INTEGER_CONST);
+                    }
+__ECL_LEGACY_MODE__ {
+                        setupdatepos;
+                        returnToken.setExpr(createConstant(queryLegacyEclSemantics()));
+                        return (BOOL_CONST);
                     }
 __OS__              { 
                         setupdatepos; 
@@ -1332,7 +1340,7 @@ RECORDSET           {
                         if (!lookup)
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
-                        returnToken.setType(makeTableType(NULL, NULL, NULL, NULL));
+                        returnToken.setType(makeTableType(NULL));
                         return(SIMPLE_TYPE);
                     }
 SWAPPED             { 

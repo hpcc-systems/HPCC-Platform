@@ -22,7 +22,7 @@
 
 char const * const scopeSeparator = ".";
 
-static _ATOM internalFposAtom;
+static IAtom * internalFposAtom;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     internalFposAtom = createAtom("__internal_fpos__");
@@ -58,7 +58,7 @@ FieldSearcher::FieldSearcher(IDefRecordElement const * elem)
         tab.setValue(elem->queryChild(i)->queryName(), i);
 }
 
-bool FieldSearcher::search(_ATOM search, unsigned & pos) const
+bool FieldSearcher::search(IAtom * search, unsigned & pos) const
 {
     unsigned * ret = tab.getValue(search);
     if(ret)
@@ -810,7 +810,7 @@ public:
         {
             Owned<IDefRecordBuilder> builder = createDErecord(4096);
             Owned<ITypeInfo> type;
-            _ATOM name;
+            IAtom * name;
             size32_t size;
             unsigned keyed;
             unsigned f;
@@ -897,7 +897,7 @@ public:
     }
 
 private:
-    bool getFieldData(unsigned m, unsigned f, Owned<ITypeInfo> & type, _ATOM & name, size32_t & size, unsigned & keyed)
+    bool getFieldData(unsigned m, unsigned f, Owned<ITypeInfo> & type, IAtom * & name, size32_t & size, unsigned & keyed)
     {
         switch(m)
         {

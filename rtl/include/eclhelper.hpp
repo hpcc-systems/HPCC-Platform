@@ -850,6 +850,9 @@ enum ThorActivityKind
     TAKexternalprocess,
     TAKdictionaryworkunitwrite,
     TAKdictionaryresultwrite,
+    TAKsmartjoin,
+    TAKsmartdenormalize,
+    TAKsmartdenormalizegroup,
 
     TAKlast
 };
@@ -1571,6 +1574,7 @@ enum {
     JFindexfromactivity          = 0x02000000,
     JFleftSortedLocally          = 0x04000000,
     JFrightSortedLocally         = 0x08000000,
+    JFsmart                      = 0x10000000,
 };
 
 // FetchFlags
@@ -2713,6 +2717,8 @@ struct IHThorDictionaryResultWriteArg : public IHThorArg
 
 //------------------------- Other stuff -------------------------
 
+struct IRemoteConnection;
+
 struct IGlobalCodeContext
 {
     virtual ICodeContext * queryCodeContext() = 0;
@@ -2729,10 +2735,12 @@ struct IGlobalCodeContext
 
     virtual void selectCluster(const char * cluster) = 0;
     virtual void restoreCluster() = 0;
-    virtual void startPersist(const char * name) = 0;
-    virtual void finishPersist() = 0;
+
+    // These next 5 are not used from generated code, and should be remove in 5.0
+    virtual IRemoteConnection *startPersist(const char * name) = 0;
+    virtual void finishPersist(IRemoteConnection *) = 0;
     virtual void clearPersist(const char * logicalName) = 0;
-    virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) = 0;
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) = 0;
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) = 0;
 
     virtual void setWorkflowCondition(bool value) = 0;

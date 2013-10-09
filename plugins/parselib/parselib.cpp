@@ -25,7 +25,7 @@
 
 #define PARSELIB_VERSION "PARSELIB 1.0.1"
 
-_ATOM separatorTagAtom;
+IAtom * separatorTagAtom;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     separatorTagAtom = createAtom("<separator>");
@@ -94,7 +94,7 @@ static void expandElementText(StringBuffer & s, IMatchWalker * walker)
 
 static void getDefaultParseTree(StringBuffer & s, IMatchWalker * cur)
 {
-    _ATOM name = cur->queryName();
+    IAtom * name = cur->queryName();
     if (name != separatorTagAtom)
     {
         if (name)
@@ -128,7 +128,7 @@ static void getDefaultParseTree(StringBuffer & s, IMatchWalker * cur)
 
 static void getXmlParseTree(StringBuffer & s, IMatchWalker * walker, unsigned indent)
 {
-    _ATOM name = walker->queryName();
+    IAtom * name = walker->queryName();
     if (name != separatorTagAtom)
     {
         unsigned max = walker->numChildren();

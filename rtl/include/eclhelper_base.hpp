@@ -1,3 +1,4 @@
+
 /*##############################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
@@ -3472,6 +3473,27 @@ protected:
     IOutputMetaData * meta;
 };
 
+class CLibraryCountAggregateArg : public CThorCountAggregateArg
+{
+public:
+    inline CLibraryCountAggregateArg(IOutputMetaData * _meta) : meta(_meta) {}
+
+    virtual IOutputMetaData * queryOutputMeta() { return meta; }
+
+protected:
+    IOutputMetaData * meta;
+};
+
+class CLibraryExistsAggregateArg : public CThorExistsAggregateArg
+{
+public:
+    inline CLibraryExistsAggregateArg(IOutputMetaData * _meta) : meta(_meta) {}
+
+    virtual IOutputMetaData * queryOutputMeta() { return meta; }
+
+protected:
+    IOutputMetaData * meta;
+};
 
 class EclProcess : public RtlCInterface, implements IEclProcess
 {

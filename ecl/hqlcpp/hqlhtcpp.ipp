@@ -166,7 +166,7 @@ public:
 
     BuildCtx &   onlyEvalOnceContext();
     inline IPropertyTree * querySubgraphNode() { return subgraph ? subgraph->tree.get() : NULL; }
-    inline void setImplementationClass(_ATOM name) { implementationClassName = name; }
+    inline void setImplementationClass(IIdAtom * name) { implementationClassName = name; }
     void setInternalSink(bool value);
 
     void changeActivityKind(ThorActivityKind newKind);
@@ -191,11 +191,12 @@ public:
     StringAttr   graphLabel;
     StringBuffer baseClassExtra;
     MetaInstance meta;
-    _ATOM        implementationClassName;
+    IIdAtom *        implementationClassName;
     ABoundActivity* table;
     bool         isMember;
     bool         instanceIsLocal;
     bool         isCoLocal;
+    bool         isNoAccess;
     bool         executedRemotely;
     bool         includedInHeader;
     bool         isLocal;
@@ -206,7 +207,9 @@ public:
     Owned<ParentExtract> parentExtract;
     Owned<EvalContext> parentEvalContext;
     IHqlStmt *  onCreateStmt;
+    IHqlStmt * classGroup;
     unsigned    onCreateMarker;
+    unsigned    initialGroupMarker;
     HqlExprArray constructorArgs;
     HqlExprCopyArray names;
     LocationArray locations;
@@ -273,8 +276,8 @@ public:
     virtual void setRow(BuildCtx & ctx, IReferenceSelector * rhs);
     virtual IReferenceSelector * select(BuildCtx & ctx, IHqlExpression * selectExpr);
 
-    virtual void buildDeserialize(BuildCtx & ctx, IHqlExpression * helper, _ATOM serializeForm);
-    virtual void buildSerialize(BuildCtx & ctx, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(BuildCtx & ctx, IHqlExpression * helper, IAtom * serializeForm);
+    virtual void buildSerialize(BuildCtx & ctx, IHqlExpression * helper, IAtom * serializeForm);
 
 private:
     DatasetSelector(DatasetSelector * _parent, BoundRow * _cursor, AColumnInfo * _column, IHqlExpression * _path);
@@ -291,8 +294,6 @@ protected:
     HqlExprAttr     path;
     bool            matchedDataset;
 };
-
-void extractAtmostArgs(IHqlExpression * atmost, SharedHqlExpr & atmostCond, SharedHqlExpr & atmostLimit);
 
 IHqlExpression * extractFilterConditions(HqlExprAttr & invariant, IHqlExpression * expr, IHqlExpression * dataset, bool spotCSE);
 bool isLibraryScope(IHqlExpression * expr);

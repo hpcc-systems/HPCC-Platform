@@ -88,7 +88,7 @@ void joinMulticastChannel(unsigned channel)
     {
         IpAddress multicastIp;
         getChannelIp(multicastIp, channel);
-        SocketEndpoint ep(CCD_MULTICAST_PORT, multicastIp);
+        SocketEndpoint ep(ccdMulticastPort, multicastIp);
         StringBuffer epStr;
         ep.getUrlStr(epStr);
         if (!multicastSocket->join_multicast_group(ep))
@@ -102,7 +102,7 @@ void openMulticastSocket()
 {
     if (!multicastSocket)
     {
-        multicastSocket.setown(ISocket::udp_create(CCD_MULTICAST_PORT));
+        multicastSocket.setown(ISocket::udp_create(ccdMulticastPort));
         multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
         size32_t actualSize = multicastSocket->get_receive_buffer_size();
         if (actualSize < udpMulticastBufferSize)
@@ -111,7 +111,7 @@ void openMulticastSocket()
             throwUnexpected();
         }
         if (traceLevel)
-            DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", CCD_MULTICAST_PORT, udpMulticastBufferSize, actualSize);
+            DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", ccdMulticastPort, udpMulticastBufferSize, actualSize);
         Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
         ForEach(*it)
         {
@@ -134,7 +134,7 @@ void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port)
         multicastIp = slaveIp;
     if (!isSlaveEndpoint(channel, multicastIp))
     {
-        SocketEndpoint &ep = *new SocketEndpoint(CCD_MULTICAST_PORT, multicastIp);
+        SocketEndpoint &ep = *new SocketEndpoint(ccdMulticastPort, multicastIp);
         slaveEndpoints[channel].append(ep);
     }
     if (channel)
@@ -465,6 +465,7 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     anyOutput = false;
     intercept = false;
     debuggerActive = false;
+    checkingHeap = false;
     traceActivityTimes = false;
     start = msTick();
     if (packet)
@@ -489,6 +490,8 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 traceActivityTimes = true;
             if (loggingFlags & LOGGING_BLIND)
                 blind = true;
+            if (loggingFlags & LOGGING_CHECKINGHEAP)
+                checkingHeap = true;
             if (loggingFlags & LOGGING_DEBUGGERACTIVE)
             {
                 assertex(traceLength > sizeof(unsigned short));
@@ -1742,8 +1745,12 @@ public:
         getChannelIp(snifferIp, snifferChannel);
         if (udpMaxSlotsPerClient > udpQueueSize)
             udpMaxSlotsPerClient = udpQueueSize;
-        receiveManager.setown(createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, CCD_SNIFFER_PORT, snifferIp, udpQueueSize, udpMaxSlotsPerClient, myNodeIndex));
-        sendManager.setown(createSendManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, CCD_SNIFFER_PORT, snifferIp, udpSendQueueSize, fastLaneQueue ? 3 : 2, udpResendEnabled ? udpMaxSlotsPerClient : 0, bucket, myNodeIndex));
+        unsigned serverFlowPort = topology->getPropInt("@serverFlowPort", CCD_SERVER_FLOW_PORT);
+        unsigned dataPort = topology->getPropInt("@dataPort", CCD_DATA_PORT);
+        unsigned clientFlowPort = topology->getPropInt("@clientFlowPort", CCD_CLIENT_FLOW_PORT);
+        unsigned snifferPort = topology->getPropInt("@snifferPort", CCD_SNIFFER_PORT);
+        receiveManager.setown(createReceiveManager(serverFlowPort, dataPort, clientFlowPort, snifferPort, snifferIp, udpQueueSize, udpMaxSlotsPerClient, myNodeIndex));
+        sendManager.setown(createSendManager(serverFlowPort, dataPort, clientFlowPort, snifferPort, snifferIp, udpSendQueueSize, fastLaneQueue ? 3 : 2, udpResendEnabled ? udpMaxSlotsPerClient : 0, bucket, myNodeIndex));
         running = false;
     }
 

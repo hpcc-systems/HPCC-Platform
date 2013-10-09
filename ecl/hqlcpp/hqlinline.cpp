@@ -90,6 +90,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     switch (op)
     {
     case no_workunit_dataset:
+        if (expr->hasAttribute(wuidAtom))
+            return 0;
         return RETassign;
     case no_alias:
         {
@@ -134,7 +136,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             return 0;
     case no_newusertable:
         {
-            if (expr->hasProperty(prefetchAtom))
+            if (expr->hasAttribute(prefetchAtom))
                 return 0;
             IHqlExpression * ds = expr->queryChild(0);
             unsigned childFlags = getInlineFlags(ctx, ds);
@@ -197,7 +199,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         }
     case no_limit:
         {
-            if (expr->hasProperty(skipAtom) || expr->hasProperty(onFailAtom))
+            if (expr->hasAttribute(skipAtom) || expr->hasAttribute(onFailAtom))
                 return 0;
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if (childFlags == 0)
@@ -278,7 +280,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_forcegraph:
         return 0;
     case no_section:
-        if (expr->hasProperty(graphAtom))       // force it to appear in the graph
+        if (expr->hasAttribute(graphAtom))       // force it to appear in the graph
             return 0;
         return getInlineFlags(ctx, expr->queryChild(0));
     case no_call:               
@@ -286,7 +288,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_getresult:
         return expr->isDatarow() ? RETevaluate : RETassign;
     case no_getgraphresult:
-        if (expr->hasProperty(_distributed_Atom))
+        if (expr->hasAttribute(_distributed_Atom))
             return 0;
         return expr->isDatarow() ? RETevaluate : RETassign;
     case no_temptable:
@@ -295,7 +297,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return RETiterate;
     case no_dataset_from_transform:
     {
-        if (expr->hasProperty(distributedAtom))
+        if (expr->hasAttribute(distributedAtom))
             return 0;
         if (transformContainsSkip(expr->queryChild(1)))
             return 0;
@@ -344,7 +346,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return RETassign;
     case no_join:
         {
-            if (!expr->hasProperty(allAtom) || isKeyedJoin(expr))
+            if (!expr->hasAttribute(allAtom) || isKeyedJoin(expr))
                 return 0;
             //conservatively check we support the attributes.
             unsigned max = expr->numChildren();
@@ -353,7 +355,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 IHqlExpression * cur = expr->queryChild(i);
                 if (!cur->isAttribute())
                     return 0;
-                _ATOM name = cur->queryName();
+                IAtom * name = cur->queryName();
                 //possibly implement keep as well.  (Local on a child join does nothing.)
                 if ((name != leftouterAtom) && (name != leftonlyAtom) && (name != innerAtom) && (name != allAtom) && (name != localAtom) && !isInternalAttributeName(name))
                     return 0;
@@ -492,6 +494,10 @@ bool alwaysEvaluatesToBound(IHqlExpression * expr)
 inline GraphLocalisation mergeLocalisation(GraphLocalisation l, GraphLocalisation r)
 {
     //options are GraphCoLocal, GraphNonLocal, GraphCoNonLocal, GraphNoAccess
+    if (l == GraphNeverAccess)
+        l = GraphNoAccess;
+    if (r == GraphNeverAccess)
+        r = GraphNoAccess;
     if (l == GraphNoAccess)
         return r;
     if (r == GraphNoAccess)
@@ -503,7 +509,122 @@ inline GraphLocalisation mergeLocalisation(GraphLocalisation l, GraphLocalisatio
     return l;
 }
 
-// A minimal function to catch the obviously context invarient items.
+bool exprExcludingInputNeedsParent(IHqlExpression * expr)
+{
+    unsigned first = getFirstActivityArgument(expr);
+    unsigned last = first + getNumActivityArguments(expr);
+
+    ForEachChild(i, expr)
+    {
+        if (i >= first && i < last)
+            continue;
+
+        IHqlExpression * cur = expr->queryChild(i);
+        if (isGraphDependent(cur) || usesRuntimeContext(cur))
+            return true;
+    }
+
+    if (!expr->isIndependentOfScopeIgnoringInputs())
+        return true;
+
+    return false;
+}
+
+bool exprIncludingInputNeedsParent(IHqlExpression * expr)
+{
+    if (isGraphDependent(expr) || usesRuntimeContext(expr))
+        return true;
+    if (!expr->isIndependentOfScope())
+        return true;
+    return false;
+}
+
+bool activityNeedsParent(IHqlExpression * expr)
+{
+    //This should always err on the side of yes...
+    switch (expr->getOperator())
+    {
+    case no_select:
+    case no_compound_diskread:
+    case no_compound_disknormalize:
+    case no_compound_diskaggregate:
+    case no_compound_diskcount:
+    case no_compound_diskgroupaggregate:
+    case no_compound_indexread:
+    case no_compound_indexnormalize:
+    case no_compound_indexaggregate:
+    case no_compound_indexcount:
+    case no_compound_indexgroupaggregate:
+        if (exprIncludingInputNeedsParent(expr))
+            return true;
+        break;
+    case no_libraryinput:
+        return true;
+    case no_hqlproject:
+    case no_newusertable:
+        //Filters might be merged into projects, so need to walk the inputs.
+        loop
+        {
+            if (activityNeedsParent(expr))
+                return true;
+            expr = expr->queryChild(0);
+            switch (expr->getOperator())
+            {
+            case no_sorted:
+            case no_filter:
+                break;
+            default:
+                return false;
+            }
+        }
+    case no_libraryscopeinstance:
+        {
+            //Obscure way to get at the name of the library being called.
+            IHqlExpression * moduleFunction = expr->queryBody()->queryDefinition();
+            IHqlExpression * module = moduleFunction->queryChild(0);
+            assertex(module->getOperator() == no_libraryscope);
+            IHqlExpression * nameAttr = module->queryAttribute(nameAtom);
+            if (activityNeedsParent(nameAttr))
+                return true;
+            return exprExcludingInputNeedsParent(expr);
+        }
+    default:
+        if (expr->isDatarow())
+        {
+            switch (expr->getOperator())
+            {
+            case no_split:
+            case no_spill:
+            case no_selectnth:
+                if (exprExcludingInputNeedsParent(expr))
+                    return true;
+                break;
+            default:
+                if (exprIncludingInputNeedsParent(expr))
+                    return true;
+                break;
+            }
+        }
+        else
+        {
+            if (exprExcludingInputNeedsParent(expr))
+                return true;
+        }
+        break;
+    }
+
+    //Assume the worse for queries based on ds.childdataset
+    if (getChildDatasetType(expr) & childdataset_hasdataset)
+    {
+        IHqlExpression * ds = queryRoot(expr);
+        if (ds && ds->getOperator() == no_select)
+            return true;
+    }
+    return false;
+}
+
+
+// A minimal function to catch the obviously context invariant items.
 static bool accessesData(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -533,23 +654,24 @@ static bool accessesData(IHqlExpression * expr)
     }
 }
 
-GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
+GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
 {
-    switch (expr->getOperator())
+    node_operator op = expr->getOperator();
+    switch (op)
     {
     case no_compound_diskread:
         {
-            if (isLocalActivity(expr) || expr->hasProperty(_colocal_Atom))
+            if (isLocalActivity(expr) || expr->hasAttribute(_colocal_Atom))
                 return GraphCoLocal;
             //If a compound operation has been added, but with no other effect then don't allow that to change the localisation
             IHqlExpression * ds = expr->queryChild(0);
             if (ds->getOperator() == no_table)
-                return queryActivityLocalisation(ds);
+                return queryActivityLocalisation(ds, optimizeParentAccess);
             return GraphNonLocal;
         }
     case no_table:
-        if (expr->hasProperty(_noAccess_Atom))
-            return GraphNoAccess;
+        if (expr->hasAttribute(_noAccess_Atom))
+            return GraphNeverAccess;
         //fallthrough
     case no_keyindex:
     case no_newkeyindex:
@@ -562,7 +684,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_compound_indexaggregate:
     case no_compound_indexcount:
     case no_compound_indexgroupaggregate:
-        if (!isLocalActivity(expr) && !expr->hasProperty(_colocal_Atom))
+        if (!isLocalActivity(expr) && !expr->hasAttribute(_colocal_Atom))
             return GraphNonLocal;
         break;
     case no_compound_fetch:
@@ -574,12 +696,12 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_join:
     case no_denormalize:
     case no_denormalizegroup:
-        if (isKeyedJoin(expr) && !expr->hasProperty(localAtom))
+        if (isKeyedJoin(expr) && !expr->hasAttribute(localAtom))
             return GraphNonLocal;
         break;
     case no_output:
-        if (expr->hasProperty(_spill_Atom))
-            return GraphNoAccess;
+        if (expr->hasAttribute(_spill_Atom))
+            return GraphNeverAccess;
         break;
     case no_setgraphresult:
     case no_spillgraphresult:
@@ -607,7 +729,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_actionlist:
     case no_definesideeffect:
     case no_dataset_alias:
-        return GraphNoAccess;               // Will never access any data values from anywhere
+        return GraphNeverAccess;               // Will never access any data values from anywhere
     case no_hqlproject:
     case no_newusertable:
         //Many more of these could return GraphNoAccess if I determined that only constants and the input
@@ -618,17 +740,20 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_datasetfromrow:
         {
             if (getNumActivityArguments(expr) != 0)
-                return GraphNoAccess;
+                return GraphNeverAccess;
 
             IHqlExpression * row = expr->queryChild(0);
             switch (row->getOperator())
             {
             case no_createrow:
             case no_null:
-                return queryActivityLocalisation(row);
+                return queryActivityLocalisation(row, optimizeParentAccess);
             }
             break;
         }
+    case no_workunit_dataset:
+        return GraphCoLocal; // weird exception in roxie
+    case no_getgraphresult:
     case no_datasetfromdictionary:
         return GraphCoLocal;
     case no_createrow:
@@ -640,7 +765,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
                 if (accessesData(expr->queryChild(i)))
                     return GraphCoLocal;
             }
-            return GraphNoAccess;
+            return GraphNeverAccess;
         }
     case no_group:
     case no_choosen:
@@ -654,31 +779,45 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
                 if (accessesData(expr->queryChild(i)))
                     return GraphCoLocal;
             }
-            return GraphNoAccess;
+            return GraphNeverAccess;
         }
     case no_newaggregate:
         if (!queryRealChild(expr, 3))
         {
             node_operator op = querySimpleAggregate(expr, false, false);
             if (op == no_existsgroup || op == no_countgroup)
-                return GraphNoAccess;
+                return GraphNeverAccess;
             //Need to check if it accesses anything in the context!
         }
         break;
     }
+
+    if (optimizeParentAccess && !activityNeedsParent(expr))
+    {
+        switch (op)
+        {
+        case no_if:
+        case no_case:
+        case no_map:
+            //May be combined into a switch.
+            break;
+        default:
+            return GraphNoAccess;
+        }
+    }
     return GraphCoLocal;
 }
 
-bool isNonLocal(IHqlExpression * expr)
+bool isNonLocal(IHqlExpression * expr, bool optimizeParentAccess)
 {
-    return (queryActivityLocalisation(expr) == GraphNonLocal);
+    return (queryActivityLocalisation(expr, optimizeParentAccess) == GraphNonLocal);
 }
 
 
-static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr);
-static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr)
+static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess);
+static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
 {
-    GraphLocalisation localisation = queryActivityLocalisation(expr);
+    GraphLocalisation localisation = queryActivityLocalisation(expr, optimizeParentAccess);
 
     if (isSourceActivity(expr))
         return localisation;
@@ -698,7 +837,7 @@ static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr)
         break;
     case no_attr:
     case no_attr_expr:
-        return GraphNoAccess;
+        return GraphNeverAccess;
     default:
         numChildren = getNumActivityArguments(expr);
         break;
@@ -706,19 +845,21 @@ static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr)
 
     for (unsigned i = firstChild; i < numChildren; i++)
     {
-        localisation = mergeLocalisation(localisation, doGetGraphLocalisation(expr->queryChild(i)));
+        localisation = mergeLocalisation(localisation, doGetGraphLocalisation(expr->queryChild(i), optimizeParentAccess));
         if (localisation == GraphCoNonLocal)
             return localisation;
     }
     return localisation;
 }
 
-static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr)
+static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
 {
     IHqlExpression * cached = (IHqlExpression *)expr->queryTransformExtra();
     if (cached)
         return (GraphLocalisation)cached->queryValue()->getIntValue();
-    GraphLocalisation ret = queryGraphLocalisation(expr);
+    GraphLocalisation ret = queryGraphLocalisation(expr, optimizeParentAccess);
+    if (ret == GraphNeverAccess)
+        ret = GraphNoAccess;
     expr->setTransformExtraOwned(getSizetConstant((unsigned)ret));
     return ret;
 }
@@ -735,7 +876,7 @@ GraphLocalisation HqlCppTranslator::getGraphLocalisation(IHqlExpression * expr, 
         return GraphNonLocal;
 
     TransformMutexBlock lock;
-    return doGetGraphLocalisation(expr);
+    return doGetGraphLocalisation(expr, options.optimizeParentAccess);
 }
 
 bool HqlCppTranslator::isNeverDistributed(IHqlExpression * expr)
@@ -785,7 +926,7 @@ ParentExtract::~ParentExtract()
 
 void ParentExtract::associateCursors(BuildCtx & declarectx, BuildCtx & evalctx, GraphLocalisation childLocalisation)
 {
-    const CursorArray * boundCursors;
+    const CursorArray * boundCursors = NULL;
     switch (childLocalisation)
     {
     case GraphCoLocal:
@@ -856,7 +997,7 @@ void ParentExtract::beginCreateExtract(BuildCtx & ctx, bool doDeclare)
     HqlExprArray args;
     args.append(*LINK(serialization->queryBound()));
     args.append(*serialization->getFinalFixedSizeExpr());
-    translator.callProcedure(*buildctx, ensureRowAvailableAtom, args);
+    translator.callProcedure(*buildctx, ensureRowAvailableId, args);
 
     //Collect a list of cursors together... NB these are in reverse order..
     gatherActiveRows(*buildctx);
@@ -923,7 +1064,7 @@ void ParentExtract::beginChildActivity(BuildCtx & declareCtx, BuildCtx & startCt
                 {
                     HqlExprArray args;
                     args.append(*LINK(src));
-                    src.setown(translator.bindTranslatedFunctionCall(getBytesFromBuilderAtom, args));
+                    src.setown(translator.bindTranslatedFunctionCall(getBytesFromBuilderId, args));
                 }
             }
 
@@ -1114,10 +1255,10 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
             switch(represents->getOperator())
             {
             case no_null:
-                ok = !represents->hasProperty(clearAtom);           // Don't serialize rows used as default clear rows
+                ok = !represents->hasAttribute(clearAtom);           // Don't serialize rows used as default clear rows
                 break;
             case no_anon:
-                ok = !represents->hasProperty(selfAtom);
+                ok = !represents->hasAttribute(selfAtom);
                 break;
             default:
                 if (cur.isResultAlias())
@@ -1148,7 +1289,7 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
     }
 
     //MORE: Should possibly create two sets of cursors one if children are colocal, other if children aren't
-    //so colocal cursors can be used whereever possible.  Would change following to localisation != GraphNonLocal
+    //so colocal cursors can be used wherever possible.  Would change following to localisation != GraphNonLocal
     //and remove else
     if (localisation == GraphCoLocal || localisation == GraphCoNonLocal)
     {
@@ -1360,14 +1501,14 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
     if (isContextDependent(expr))
         return false;
 
-    if (!containsActiveDataset(expr))
+    if (isIndependentOfScope(expr))
         return true;//isColocal();
 
     //If can evaluate in parent's start context then always worth doing there.
     if (parent->isRowInvariant(expr))
         return true;
 
-    if (parentExtract->canEvaluate(expr))
+    if (parentExtract && parentExtract->canEvaluate(expr))
     {
         if (!isColocal() || !hasOnStart)
             return true;
@@ -1511,7 +1652,7 @@ void ClassEvalContext::createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, I
     assertex(ctxs.evalctx != NULL);
     translator.expandAliases(*ctxs.evalctx, value);
 
-    const _ATOM serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
+    IAtom * serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
     CHqlBoundTarget tempTarget;
     if (translator.needToSerializeToSlave(value))
     {
@@ -1538,7 +1679,7 @@ void ClassEvalContext::doCallNestedHelpers(const char * member, const char * act
 }
 
 
-void ClassEvalContext::ensureSerialized(CtxCollection & ctxs, const CHqlBoundTarget & target, _ATOM serializeForm)
+void ClassEvalContext::ensureSerialized(CtxCollection & ctxs, const CHqlBoundTarget & target, IAtom * serializeForm)
 {
     if (ctxs.serializectx)
         translator.ensureSerialized(target, *ctxs.serializectx, *ctxs.deserializectx, "*in", "out", serializeForm);
@@ -1587,7 +1728,7 @@ AliasKind ClassEvalContext::evaluateExpression(BuildCtx & ctx, IHqlExpression * 
 
         if (!isContextDependentExceptGraph(value))
         {
-            if (!isContextDependent(value) && !containsActiveDataset(value))
+            if (!isContextDependent(value) && !containsActiveDataset(value) && value->isIndependentOfScope())
             {
                 createMemberAlias(onCreate, ctx, value, tgt);
                 return CreateTimeAlias;
@@ -1628,7 +1769,7 @@ AliasKind ClassEvalContext::evaluateExpression(BuildCtx & ctx, IHqlExpression * 
 
 void ClassEvalContext::tempCompatiablityEnsureSerialized(const CHqlBoundTarget & tgt)
 {
-    const _ATOM serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
+    IAtom * serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
     ensureSerialized(onCreate, tgt, serializeForm);
 }
 

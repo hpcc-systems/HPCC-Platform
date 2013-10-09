@@ -240,18 +240,9 @@ void CTpWrapper::getTpDaliServers(IArrayOf<IConstTpDali>& list)
     }
 }
 
-void CTpWrapper::getTpEclServers(IArrayOf<IConstTpEclServer>& list)
+void CTpWrapper::getTpEclServers(IArrayOf<IConstTpEclServer>& list, const char* serverName)
 {
-    DBGLOG("CTpWrapper::getTpEclServers()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -262,6 +253,9 @@ void CTpWrapper::getTpEclServers(IArrayOf<IConstTpEclServer>& list)
 
         Owned<IEspTpEclServer> pService = createTpEclServer("","");
         const char* name = serviceTree.queryProp("@name");
+        if (serverName && stricmp(name, serverName))
+            continue;
+
         pService->setName(name);
         pService->setDescription(serviceTree.queryProp("@description"));
         pService->setBuild(serviceTree.queryProp("@build"));
@@ -1039,6 +1033,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
             Owned<IPropertyTreeIterator> thorClusters= cluster.getElements(eqThorCluster);
             Owned<IPropertyTreeIterator> roxieClusters= cluster.getElements(eqRoxieCluster);
             Owned<IPropertyTreeIterator> eclCCServerProcesses= cluster.getElements(eqEclCCServer);
+            Owned<IPropertyTreeIterator> eclServerProcesses= cluster.getElements(eqEclServer);
             Owned<IPropertyTreeIterator> eclSchedulerProcesses= cluster.getElements(eqEclScheduler);
             Owned<IPropertyTreeIterator> eclAgentProcesses= cluster.getElements(eqEclAgent);
 
@@ -1094,6 +1089,18 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
                 if (process && *process)
                 {
                     getTpEclCCServers(eclCCServerList, process);
+                }
+            }
+
+            //Read eclServer process
+            if ((version >= 1.19) && eclServerProcesses->first())
+            {
+                IArrayOf<IConstTpEclServer>& eclServerList = clusterInfo->getTpEclServers();
+                IPropertyTree &eclServerProcess = eclServerProcesses->query();
+                const char* process = eclServerProcess.queryProp("@process");
+                if (process && *process)
+                {
+                    getTpEclServers(eclServerList, process);
                 }
             }
 

@@ -48,6 +48,9 @@ define([
         idProperty: "id",
 
         doSearch: function (searchText) {
+            this.params = {
+                searchText: searchText
+            };
             this.searchText = searchText;
             this.selectChild(this.gridTab);
             this.refreshGrid();
@@ -57,6 +60,9 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            if (params.searchText) {
+                this.doSearch(params.searchText);
+            }
             this._refreshActionState();
         },
 

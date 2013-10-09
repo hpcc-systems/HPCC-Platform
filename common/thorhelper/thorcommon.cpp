@@ -772,6 +772,9 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKsubsort:                return "Sub Sort";
     case TAKdictionaryworkunitwrite:return "Dictionary Write";
     case TAKdictionaryresultwrite:  return "Dictionary Result";
+    case TAKsmartjoin:              return "Smart Join";
+    case TAKsmartdenormalize:       return "Smart Denormalize";
+    case TAKsmartdenormalizegroup:  return "Smart Denormalize Group";
     }
     throwUnexpected();
 }

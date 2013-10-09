@@ -27,7 +27,7 @@
 #include "eclcmd_core.hpp"
 
 
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, bool noarchive, bool displayWuid=true)
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true)
 {
     StringBuffer s;
     if (cmd.optVerbose)
@@ -83,7 +83,9 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
     if (w && *w)
     {
         if (wuid)
-            wuid->append(w);
+            wuid->clear().append(w);
+        if (wucluster)
+            wucluster->clear().append(resp->getWorkunit().getCluster());
         fprintf(stdout, "\n");
         if (cmd.optVerbose)
             fprintf(stdout, "Deployed\n   wuid: ");
@@ -162,7 +164,7 @@ public:
     virtual int processCMD()
     {
         Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
-        return doDeploy(*this, client, optTargetCluster.get(), optName.get(), NULL, optNoArchive) ? 0 : 1;
+        return doDeploy(*this, client, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive) ? 0 : 1;
     }
     virtual void usage()
     {
@@ -298,7 +300,7 @@ public:
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
-        else if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, optNoArchive))
+        else if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, NULL, optNoArchive))
             return 1;
 
         StringBuffer descr;
@@ -469,6 +471,7 @@ public:
         req->setNoRootTag(optNoRoot);
 
         StringBuffer wuid;
+        StringBuffer wuCluster;
         StringBuffer queryset;
         StringBuffer query;
 
@@ -488,14 +491,16 @@ public:
         else
         {
             req->setCloneWorkunit(false);
-            if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, optNoArchive, optVerbose))
+            if (!doDeploy(*this, client, optTargetCluster.get(), optName.get(), &wuid, &wuCluster, optNoArchive, optVerbose))
                 return 1;
             req->setWuid(wuid.str());
             if (optVerbose)
                 fprintf(stdout, "Running deployed workunit %s\n", wuid.str());
         }
 
-        if (optTargetCluster.length())
+        if (wuCluster.length())
+            req->setCluster(wuCluster.str());
+        else if (optTargetCluster.length())
             req->setCluster(optTargetCluster.get());
         req->setWait((int)optWaitTime);
         if (optInput.length())

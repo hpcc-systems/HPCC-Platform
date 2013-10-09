@@ -465,9 +465,14 @@
 #define HQLERR_PayloadMismatch                  3127
 #define HQLERR_MemberXContainsVirtualRef        3128
 #define HQLERR_FieldHasNoDefaultValue           3129
+#define HQLERR_AtmostFailMatchCondition         3130
+#define HQLERR_AtmostCannotImplementOpt         3131
+#define HQLERR_PrefixJoinRequiresEquality       3132
+#define HQLERR_AtmostFollowUnknownSubstr        3133
+#define HQLERR_AtmostLegacyMismatch             3134
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
-#define HQLERR_CycleWithModuleDefinition_Text   "Module definition contain an illegal cycle/recursive definition %s"
+#define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
 #define HQLERR_BadProjectOfStepping_Text        "Cannot calculate inversion of PROJECT on STEPPED index%s"
 #define HQLERR_DatasetNotExpected_Text          "Dataset not expected in this context"
 #define HQLERR_AtmostSubstringNotMatch_Text     "Equality on field[n..*] must match a similar equality"
@@ -492,10 +497,15 @@
 #define HQLERR_NoDefaultProvided_Text           "No value or default provided for field %s in inline table"
 #define HQLERR_TooManyInitializers_Text         "Too many initializers (value %s) for inline dataset definition"
 #define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s has the wrong type"
-#define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on a IFBLOCK for a inline table"
+#define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on an IFBLOCK for an inline table"
 #define HQLERR_PayloadMismatch_Text             "Mismatched => in inline dictionary definition"
 #define HQLERR_MemberXContainsVirtualRef_Text   "Member %s contains virtual references but not supported as virtual"
 #define HQLERR_FieldHasNoDefaultValue_Text      "Field '%s' doesn't have a defined value"
+#define HQLERR_AtmostFailMatchCondition_Text    "ATMOST(%s) failed to match part of the join condition"
+#define HQLERR_AtmostCannotImplementOpt_Text    "ATMOST() optional condition is too complex"
+#define HQLERR_PrefixJoinRequiresEquality_Text  "Global JOIN with no required equalities requires ALL"
+#define HQLERR_AtmostFollowUnknownSubstr_Text   "ATMOST [1..*] on an unknown length string must be last in the optional list"
+#define HQLERR_AtmostLegacyMismatch_Text        "Legacy JOIN condition on field[1..*] should be included in the optional fields"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

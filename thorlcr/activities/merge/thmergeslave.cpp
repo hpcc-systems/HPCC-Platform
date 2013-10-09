@@ -338,7 +338,7 @@ public:
         writer.clear();
         out.setown(createPartitionMerger(sample));
 
-        dataLinkStart("MERGE", container.queryId());
+        dataLinkStart();
     }
 
     virtual void stop()
@@ -455,7 +455,7 @@ public:
         Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;
         out.setown(createRowStreamMerger(streams.ordinality(), streams.getArray(), helper->queryCompare(), helper->dedup(), linkcounter));
 
-        dataLinkStart("MERGE", container.queryId());
+        dataLinkStart();
     }
 
     virtual void stop()

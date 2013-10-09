@@ -23,7 +23,7 @@
 #include "dautils.hpp"
 
 enum RoxieFileStatus { FileSizeMismatch, FileDateMismatch, FileCRCMismatch, FileIsValid, FileNotFound };
-enum RoxieFileType { ROXIE_KEY, ROXIE_FILE };
+enum RoxieFileType { ROXIE_KEY, ROXIE_FILE, ROXIE_PATCH, ROXIE_BASEINDEX };
 interface IFileIOArray;
 interface IRoxieFileCache;
 

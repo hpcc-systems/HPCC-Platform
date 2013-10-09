@@ -55,7 +55,7 @@ public:
         count = 0;
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart("GROUPITERATE", container.queryId());
+        dataLinkStart();
         RtlDynamicRowBuilder r(queryRowAllocator());
         size32_t sz = helper->createDefault(r);
         defaultLeft.setown(r.finalizeRowClear(sz));
@@ -153,7 +153,7 @@ public:
         eogNext = false;    
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart("GROUPPROCESS", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {

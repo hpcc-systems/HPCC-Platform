@@ -130,6 +130,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
 {
     StringAttr wuid;
     Owned<IWorkUnit> workunit;
+    StringBuffer idxStr;
 
     virtual void reportError(IException *e)
     {
@@ -196,6 +197,54 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         }
     }
 
+    void processOption(const char *option, const char *value, StringBuffer &eclccCmd, StringBuffer &eclccProgName, IPipeProcess &pipe, bool isLocal)
+    {
+        if (memicmp(option, "eclcc-", 6) == 0 || *option=='-')
+        {
+            //Allow eclcc-xx-<n> so that multiple values can be passed through for the same named debug symbol
+            const char * start = option + (*option=='-' ? 1 : 6);
+            const char * dash = strchr(start, '-');     // position of second dash, if present
+            StringAttr optName;
+            if (dash)
+                optName.set(start, dash-start);
+            else
+                optName.set(start);
+
+            if (stricmp(optName, "hook") == 0)
+            {
+                if (isLocal)
+                    throw MakeStringException(0, "eclcc-hook option can not be set per-workunit");  // for security reasons
+                eclccProgName.set(value);
+            }
+            else if (stricmp(optName, "compileOption") == 0)
+                eclccCmd.appendf(" -Wc,%s", value);
+            else if (stricmp(optName, "includeLibraryPath") == 0)
+                eclccCmd.appendf(" -I%s", value);
+            else if (stricmp(optName, "libraryPath") == 0)
+                eclccCmd.appendf(" -L%s", value);
+            else if (stricmp(start, "-allow")==0)
+            {
+                if (isLocal)
+                    throw MakeStringException(0, "eclcc-allow option can not be set per-workunit");  // for security reasons
+                eclccCmd.appendf(" -%s=%s", start, value);
+            }
+            else
+                eclccCmd.appendf(" -%s=%s", start, value);
+        }
+        else if (strchr(option, '-'))
+        {
+            StringBuffer envVar;
+            if (isLocal)
+                envVar.append("WU_");
+            envVar.append(option);
+            envVar.toUpperCase();
+            envVar.replace('-','_');
+            pipe.setenv(envVar, value);
+        }
+        else
+            eclccCmd.appendf(" -f%s=%s", option, value);
+    }
+
     bool compile(const char *wuid, const char *target, const char *targetCluster)
     {
         Owned<IConstWUQuery> query = workunit->getQuery();
@@ -210,7 +259,8 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         query->getQueryText(eclQuery);
         query->getQueryMainDefinition(mainDefinition);
 
-        StringBuffer eclccCmd("eclcc -shared");
+        StringBuffer eclccProgName("eclcc");
+        StringBuffer eclccCmd(" -shared");
         if (eclQuery.length())
             eclccCmd.append(" -");
         if (mainDefinition.length())
@@ -218,25 +268,17 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         if (workunit->getDebugValueBool("addTimingToWorkunit", true))
             eclccCmd.append(" --timings");
 
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        pipe->setenv("ECLCCSERVER_THREAD_INDEX", idxStr.str());
         Owned<IPropertyTreeIterator> options = globals->getElements("./Option");
         ForEach(*options)
         {
             IPropertyTree &option = options->query();
             const char *name = option.queryProp("@name");
             const char *value = option.queryProp("@value");
-            const char *cluster = option.queryProp("@cluster");
+            const char *cluster = option.queryProp("@cluster");                // if cluster is set it's specific to a particular target
             if (name && (cluster==NULL || cluster[0]==0 || strcmp(cluster, targetCluster)==0))
-            {
-                // options starting '-' are simply passed through to eclcc as name=value
-                // others are passed as -foption=value
-                // if cluster is set it's specific to a particular target
-                eclccCmd.append(" ");
-                if (name[0]!='-')
-                    eclccCmd.append("-f");
-                eclccCmd.append(name);
-                if (value)
-                    eclccCmd.append('=').append(value);
-            }
+                processOption(name, value, eclccCmd, eclccProgName, *pipe, false);
         }
         eclccCmd.appendf(" -o%s", wuid);
         eclccCmd.appendf(" -platform=%s", target);
@@ -247,30 +289,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             SCMStringBuffer debugStr, valueStr;
             debugValues->str(debugStr);
             workunit->getDebugValue(debugStr.str(), valueStr);
-            if (memicmp(debugStr.str(), "eclcc-", 6) == 0)
-            {
-                //Allow eclcc-xx-<n> so that multiple values can be passed through for the same named debug symbol
-                const char * start = debugStr.str() + 6;
-                const char * dash = strchr(start, '-');
-                StringAttr optName;
-                if (dash)
-                    optName.set(start, dash-start);
-                else
-                    optName.set(start);
-
-                if (stricmp(optName, "compileOption") == 0)
-                    eclccCmd.appendf(" -Wc,%s", valueStr.str());
-                else if (stricmp(optName, "includeLibraryPath") == 0)
-                    eclccCmd.appendf(" -I%s", valueStr.str());
-                else if (stricmp(optName, "libraryPath") == 0)
-                    eclccCmd.appendf(" -L%s", valueStr.str());
-                else if (stricmp(start, "-allow")==0)
-                    ; // Don't allow people to grant themselves permissions
-                else
-                    eclccCmd.appendf(" -%s=%s", start, valueStr.str());
-            }
-            else
-                eclccCmd.appendf(" -f%s=%s", debugStr.str(), valueStr.str());
+            processOption(debugStr.str(), valueStr.str(), eclccCmd, eclccProgName, *pipe, true);
         }
         if (workunit->getResultLimit())
         {
@@ -279,9 +298,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         try
         {
             unsigned time = msTick();
-            Owned<IPipeProcess> pipe = createPipeProcess();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
-            pipe->run("eclcc", eclccCmd, ".", true, false, true, 0);
+            eclccCmd.insert(0, eclccProgName);
+            pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0);
             errorReader->start();
             try
             {
@@ -339,8 +358,21 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         return false;
     }
 
+    void failCompilation(const char *error)
+    {
+        reportError(error, 2);
+        workunit->setState(WUStateFailed);
+        workunit->commit();
+        workunit.clear();
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
+    EclccCompileThread(unsigned _idx)
+    {
+        idxStr.append(_idx);
+    }
+
     virtual void init(void *param)
     {
         wuid.set((const char *) param);
@@ -364,18 +396,17 @@ public:
             workunit.clear();
             return;
         }
+        CSDSServerStatus serverstatus("ECLCCserver");
+        serverstatus.queryProperties()->setProp("WorkUnit",wuid.get());
+        serverstatus.commitProperties();
         workunit->setAgentSession(myProcessSession());
         SCMStringBuffer clusterName;
         workunit->getClusterName(clusterName);
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (!clusterInfo)
         {
-            StringBuffer errStr;
-            errStr.appendf("Cluster %s not recognized", clusterName.str());
-            reportError(errStr, 2);
-            workunit->setState(WUStateFailed);
-            workunit->commit();
-            workunit.clear();
+            VStringBuffer errStr("Cluster %s not recognized", clusterName.str());
+            failCompilation(errStr);
             return;
         }
         ClusterType platform = clusterInfo->getPlatform();
@@ -386,6 +417,25 @@ public:
         if (ok)
         {
             workunit->setState(WUStateCompiled);
+            SCMStringBuffer newClusterName;
+            workunit->getClusterName(newClusterName);   // Workunit can change the cluster name via #workunit, so reload it
+            if (strcmp(newClusterName.str(), clusterName.str()) != 0)
+            {
+                clusterInfo.setown(getTargetClusterInfo(clusterName.str()));
+                if (!clusterInfo)
+                {
+                    VStringBuffer errStr("Cluster %s by #workunit not recognized", clusterName.str());
+                    failCompilation(errStr);
+                    return;
+                }
+                if (platform != clusterInfo->getPlatform())
+                {
+                    VStringBuffer errStr("Cluster %s specified by #workunit is wrong type for this queue", clusterName.str());
+                    failCompilation(errStr);
+                    return;
+                }
+                clusterInfo.clear();
+            }
             if (workunit->getAction()==WUActionRun || workunit->getAction()==WUActionUnknown)  // Assume they meant run....
             {
                 if (isLibrary(workunit))
@@ -475,7 +525,7 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     Owned<IThreadPool> pool;
 
     unsigned threadsActive;
-    unsigned maxThreadsActive;
+    CriticalSection threadActiveCrit;
     bool running;
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
@@ -486,7 +536,6 @@ public:
         : queueName(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
     {
         threadsActive = 0;
-        maxThreadsActive = 0;
         running = false;
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
         serverstatus.queryProperties()->setProp("@queue",queueName.get());
@@ -548,7 +597,8 @@ public:
 
     virtual IPooledThread *createNew()
     {
-        return new EclccCompileThread();
+        CriticalBlock b(threadActiveCrit);
+        return new EclccCompileThread(threadsActive++);
     }
 
     virtual bool onAbort() 

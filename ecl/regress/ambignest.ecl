@@ -41,7 +41,7 @@ xnamesRecord t1(xNamesRecord l) := transform
             self := l2;
         end;
     p2 := project(s, t2(LEFT));
-    self.matches := normalize(p2, left.matches, transform(right));
+    self.matches := normalize(NOFOLD(p2), left.matches, transform(right));
     self := l;
     end;
 

@@ -103,7 +103,7 @@ public:
             sendN();
             throw;
         }
-        dataLinkStart("SELECTNTH", container.queryId());
+        dataLinkStart();
 
         seenNth = false;
         if (0==helper->getRowToSelect())

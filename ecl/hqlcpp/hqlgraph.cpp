@@ -66,7 +66,7 @@ void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value)
         addGraphAttribute(node, name)->setPropBool("@value", value);
 }
 
-void addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, _ATOM kind, const char * label, bool nWay)
+void addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, IAtom * kind, const char * label, bool nWay)
 {
     IPropertyTree *edge = createPTree();
     edge->setPropInt64("@target", target);
@@ -90,7 +90,7 @@ void addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsig
 }
 
 
-void addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, _ATOM kind, const char * label)
+void addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, IAtom * kind, const char * label)
 {
     StringBuffer idText;
     IPropertyTree *edge = createPTree();
@@ -160,10 +160,11 @@ LogicalGraphCreator::~LogicalGraphCreator()
 
 void LogicalGraphCreator::addAttribute(const char * name, const char * value)
 {
-    addGraphAttribute(activityNode, name, value);
+    if (value)
+        addGraphAttribute(activityNode, name, value);
 }
 
-void LogicalGraphCreator::addAttribute(const char * name, _ATOM value)
+void LogicalGraphCreator::addAttribute(const char * name, IAtom * value)
 {
     if (value)
         addGraphAttribute(activityNode, name, value->str());
@@ -215,7 +216,7 @@ void LogicalGraphCreator::beginSubGraph(const char * label, bool nested)
     }
 }
 
-void LogicalGraphCreator::connectActivities(IHqlExpression * fromExpr, IHqlExpression * toExpr, _ATOM kind, const char * label, bool nWay)
+void LogicalGraphCreator::connectActivities(IHqlExpression * fromExpr, IHqlExpression * toExpr, IAtom * kind, const char * label, bool nWay)
 {
     StringBuffer tempLabel;
     if (fromExpr->getOperator() == no_comma)
@@ -297,7 +298,7 @@ void LogicalGraphCreator::createGraphActivity(IHqlExpression * expr)
 
     //First generate children...
     //MORE: may want to do inputs first and dependents afterwards.
-    _ATOM dependencyKind = dependencyAtom;
+    IAtom * dependencyKind = dependencyAtom;
     unsigned first = getFirstActivityArgument(expr);
     unsigned last = first + getNumActivityArguments(expr);
     node_operator op = expr->getOperator();
@@ -372,8 +373,8 @@ void LogicalGraphCreator::createGraphActivity(IHqlExpression * expr)
     IHqlExpression * symbol = queryNamedSymbol(expr);
     if (symbol)
     {
-        addAttribute("name", symbol->queryName());
-        addAttribute("module", symbol->queryFullModuleName());
+        addAttribute("name", symbol->queryId()->str());
+        addAttribute("module", symbol->queryFullModuleId()->str());
         addAttributeInt("line", symbol->getStartLine());
         addAttributeInt("column", symbol->getStartColumn());
     }
@@ -563,8 +564,8 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
 {
     if (expr->queryBody() != expr)
     {
-        _ATOM module = includeModuleInText ? expr->queryFullModuleName() : NULL;
-        _ATOM name = includeNameInText ? expr->queryName() : NULL;
+        IIdAtom * module = includeModuleInText ? expr->queryFullModuleId() : NULL;
+        IIdAtom * name = includeNameInText ? expr->queryId() : NULL;
         StringBuffer header;
         if (module)
         {
@@ -576,18 +577,18 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
                 if (dot)
                 {
                     if (stricmp(dot+1, name->str()) == 0)
-                        header.append(module);
+                        header.append(module->str());
                     else
-                        header.append(module).append("::").append(name);
+                        header.append(module->str()).append("::").append(name->str());
                 }
                 else
-                    header.append(module).append(".").append(name);
+                    header.append(module->str()).append(".").append(name->str());
             }
             else
-                header.append(module);
+                header.append(module->str());
         }
         else if (name)
-            header.append(name);
+            header.append(name->str());
 
         if (header.length())
             temp.append(header).append("\n");
@@ -646,9 +647,9 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
             if (filename)
             {
                 temp.append("Output");
-                if (expr->hasProperty(xmlAtom))
+                if (expr->hasAttribute(xmlAtom))
                     temp.append(" XML");
-                else if (expr->hasProperty(csvAtom))
+                else if (expr->hasAttribute(csvAtom))
                     temp.append(" CSV");
                 queryExpandFilename(temp, filename);
             }
@@ -687,8 +688,8 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
     case no_extractresult:
     case no_setresult:
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
             temp.append("Store\n");
             getStoredDescription(temp, sequence, name, true);
             break;

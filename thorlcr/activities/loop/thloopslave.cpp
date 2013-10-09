@@ -286,7 +286,7 @@ public:
             }
         };
         ActPrintLog("maxIterations = %d", maxIterations);
-        dataLinkStart("LOOP", container.queryId());
+        dataLinkStart();
         nextRowFeeder.setown(new CNextRowFeeder(this, new CWrapper(*this)));
     }
     void doStop()
@@ -459,7 +459,7 @@ public:
         loopResults.setown(queryGraph().createThorGraphResults(0));
         helper->createParentExtract(extractBuilder);
         ActPrintLog("maxIterations = %d", maxIterations);
-        dataLinkStart("GRAPHLOOP", container.queryId());
+        dataLinkStart();
     }
     CATCH_NEXTROW()
     {
@@ -547,7 +547,7 @@ public:
         Owned<CGraphBase> graph = queryJob().getGraph(resultGraphId);
         Owned<IThorResult> result = graph->getResult(helper->querySequence(), queryGraph().isLocalChild());
         resultStream.setown(result->getRowStream());
-        dataLinkStart("LOCALRESULTREAD", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -626,7 +626,7 @@ public:
         IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());  // NB graph owns result
         resultWriter.setown(result->getWriter());
         startInput(inputs.item(0));
-        dataLinkStart("LOCALRESULTSPILL", container.queryId());
+        dataLinkStart();
     }
     CATCH_NEXTROW()
     {
@@ -824,7 +824,7 @@ public:
         selectedInput = container.whichBranch>=inputs.ordinality() ? NULL : inputs.item(container.whichBranch);
         if (selectedInput)
             startInput(selectedInput);
-        dataLinkStart(container.getKind(), container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -890,7 +890,7 @@ public:
         started = false;
         eos = false;
         ok = false;
-        dataLinkStart("CHILDNORMALIZE", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -963,7 +963,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         eos = false;
-        dataLinkStart("CHILDAGGREGATE", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -1020,7 +1020,7 @@ public:
         aggregated.clear();
         aggregated.setown(new CThorRowAggregator(*this, *helper, *helper));
         aggregated->start(queryRowAllocator());
-        dataLinkStart("CHILDGROUPAGGREGATE", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -1095,7 +1095,7 @@ public:
         lastInput.clear();
         nextOutput.clear();
         startInput(inputs.item(0));
-        dataLinkStart("CHILDTHROUGHNORMALIZE", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -1193,7 +1193,7 @@ public:
         }
         else
             abortSoon = true;
-        dataLinkStart("GRAPHLOOPRESULTREAD", container.queryId());
+        dataLinkStart();
     }
     virtual bool isGrouped() { return false; }
     CATCH_NEXTROW()

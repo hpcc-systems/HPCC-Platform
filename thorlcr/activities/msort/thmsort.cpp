@@ -56,6 +56,7 @@ class CMSortActivityMaster : public CMasterActivity
     IThorSorterMaster *imaster;
     mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
+    Owned<IDistributedFile> coSortFile;
     
 public:
     CMSortActivityMaster(CMasterGraphElement *info)
@@ -139,9 +140,9 @@ protected:
         OwnedRoxieString cosortlogname(helper->getSortedFilename());
         if (cosortlogname&&*cosortlogname) {
 
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), cosortlogname);
-            Owned<IFileDescriptor> fileDesc = file->getFileDescriptor();
-            queryThorFileManager().noteFileRead(container.queryJob(), file);
+            coSortFile.setown(queryThorFileManager().lookup(container.queryJob(), cosortlogname));
+            Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
+            queryThorFileManager().noteFileRead(container.queryJob(), coSortFile);
             unsigned o;
             for (o=0; o<fileDesc->numParts(); o++)
             {

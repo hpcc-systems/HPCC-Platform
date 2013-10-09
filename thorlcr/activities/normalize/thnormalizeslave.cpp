@@ -58,7 +58,7 @@ public:
         anyThisGroup = false;
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart("NORMALIZE", container.queryId()); 
+        dataLinkStart();
     }
     void stop()
     { 
@@ -141,7 +141,7 @@ public:
         input = inputs.item(0);
         startInput(input);
         anyThisGroup = false;
-        dataLinkStart("NORMALIZECHILD", container.queryId()); 
+        dataLinkStart();
         curChildRow = NULL;
     }
     void stop()
@@ -239,7 +239,7 @@ public:
         input = inputs.item(0);
         startInput(input);
         anyThisGroup = false;
-        dataLinkStart("NORMALIZECHILD", container.queryId()); 
+        dataLinkStart();
     }
     void stop()
     {

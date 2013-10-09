@@ -253,7 +253,7 @@ public:
         eof = false;
         OwnedRoxieString pipeProgram(helper->getPipeProgram());
         openPipe(pipeProgram, "PIPEREAD");
-        dataLinkStart("PIPEREAD", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -381,7 +381,7 @@ public:
             openPipe(pipeProgram, "PIPETHROUGH");
         }
         startInput(inputs.item(0));
-        dataLinkStart("PIPETHROUGH", container.queryId());
+        dataLinkStart();
         pipeWriter = new PipeWriterThread(*this);
         pipeWriter->start();
     }

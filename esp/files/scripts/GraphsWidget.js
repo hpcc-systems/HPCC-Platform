@@ -117,7 +117,7 @@ define([
 
             var context = this;
             retVal.on(".dgrid-row:click", function (evt) {
-                context.syncSelectionFrom(evt);
+                context.syncSelectionFrom(context.grid);
             });
 
             on(document, "." + this.id + "GraphClick:click", function (evt) {

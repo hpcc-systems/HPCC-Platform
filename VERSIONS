@@ -41,14 +41,18 @@ distro for which a pre-packaged binary is not available, then you should build
 the stable branch. Note that stable is rebased when a new MAJOR or MINOR version
 number release is published.
 
+Branches with names starting closedown- contain code that is being prepared for
+the next point release. 
+
 Branches with names starting candidate- contain code that is being prepared for
-release as a stable version. Fixes for bugs discovered during closedown testing
-will be merged into the current candidate- branch.
+release as a stable version. Individual release candidates will be tagged along these
+branches.
 
 When preparing a patch or a GitHub pull request, a new git branch should be created
-based on the appropriate target - if the change is to go into the next 3.6 build, then
-base it on candidate-3.6.x, for example. All changes that are accepted into candidate-3.6.x
-are normally merged into the master branch too.
+based on the appropriate target - if the change is to go into the next 4.0.x build, then
+base it on closedown-4.0.x, for example. All changes that are accepted into candidate-4.0.0
+are normally merged into closedown-4.0.x, and all changes in 4.0.x are normally merged to
+master, without requiring separate pull requests.
 
 Tags
 ====

@@ -2,7 +2,15 @@
 ## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
+
+externals := 
+    SERVICE
+string EncodeBase64(const data src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Encode';
+data DecodeBase64(const string src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Decode';
+    END;
+
 EXPORT Str := MODULE
+
 
 /*
   Since this is primarily a wrapper for a plugin, all the definitions for this standard library
@@ -390,5 +398,31 @@ EXPORT string ToHexPairs(data value) := lib_stringlib.StringLib.Data2String(valu
  */
 
 EXPORT data FromHexPairs(string hex_pairs) := lib_stringlib.StringLib.String2Data(hex_pairs);
+
+/*
+ * Encode binary data to base64 string.
+ *
+ * Every 3 data bytes are encoded to 4 base64 characters. If the length of the input is not divisible 
+ * by 3, up to 2 '=' characters are appended to the output. 
+ *
+ *
+ * @param value         The binary data array to process.
+ * @return              Base 64 encoded string.
+ */
+
+EXPORT STRING EncodeBase64(data value) := externals.EncodeBase64(value);
+
+/*
+ * Decode base64 encoded string to binary data.
+ *
+ * If the input is not valid base64 encoding (invalid characters, or ends mid-quartet), an empty
+ * result is returned. Whitespace in the input is skipped.
+ *
+ *
+ * @param value        The base 64 encoded string.
+ * @return             Decoded binary data if the input is valid else zero length data.
+ */
+
+EXPORT DATA DecodeBase64(STRING value) := externals.DecodeBase64(value);
 
 END;

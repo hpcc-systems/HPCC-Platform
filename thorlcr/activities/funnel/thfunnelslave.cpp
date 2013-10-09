@@ -337,7 +337,7 @@ public:
                 {
                     ActivityTimer s(activity.getTotalCyclesRef(), activity.queryTimeActivities(), NULL);
                     out.setown(createParallelFunnel(activity, inputs.getArray(), inputs.ordinality(), true, abortSoon));
-                    dataLinkStart("FUNNEL", activity.queryContainer().queryId());
+                    dataLinkStart();
                 }
                 const void *nextRow()
                 {
@@ -399,8 +399,7 @@ public:
             }
             if (!current) current = input;
         }
-
-        dataLinkStart("FUNNEL", container.queryId());
+        dataLinkStart();
     }
 
     void stop()
@@ -561,8 +560,7 @@ public:
                 throw;
             }
         }
-
-        dataLinkStart("COMBINE", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {
@@ -666,7 +664,7 @@ public:
                 throw;
             }
         }
-        dataLinkStart("REGROUP", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {
@@ -786,7 +784,7 @@ public:
             }
         }
         eoi = 0 == inputs.ordinality();
-        dataLinkStart("NONEMPTY", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -853,6 +851,10 @@ public:
     }
     void start()
     {
+        ActivityTimer s(totalCycles, timeActivities, NULL);
+
+        startInput(inputs.item(0));
+
         unsigned whichInput = helper->getInputIndex();
         selectedInput = NULL;
         if (whichInput--)
@@ -888,6 +890,7 @@ public:
     }
     void stop()
     {
+        stopInput(inputs.item(0));
         if (selectedInput)
             selectedInput->stop();
         dataLinkStop();
@@ -963,8 +966,13 @@ public:
         helper = (IHThorNWayInputArg *)queryHelper();
         grouped = helper->queryOutputMeta()->isGrouped(); // JCSMORE should match graph info, i.e. container.queryGrouped()
     }
+    void init(MemoryBuffer &data, MemoryBuffer &slaveData)
+    {
+        appendOutputLinked(this);
+    }
     void start()
     {
+        ActivityTimer s(totalCycles, timeActivities, NULL);
         bool selectionIsAll;
         size32_t selectionLen;
         rtlDataAttr selection;
@@ -994,14 +1002,12 @@ public:
                 selectedInputs.append(inputs.item(nextIndex-1));
             }
         }
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->start();
+        // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs
         dataLinkStart();
     }
     void stop()
     {
-        ForEachItemIn(i2, selectedInputs)
-            selectedInputs.item(i2)->stop();
+        // NB: Whatever pulls this IThorNWayInput, starts and stops the selectedInputs
         dataLinkStop();
     }
     CATCH_NEXTROW()

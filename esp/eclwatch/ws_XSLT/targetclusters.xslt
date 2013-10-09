@@ -363,6 +363,14 @@
                       <xsl:with-param name="cluster" select="$name"/>
                     </xsl:call-template>
                   </xsl:if>
+                  <xsl:if test="count(TpEclServers/TpEclServer)">
+                    <xsl:call-template name="showMachines">
+                      <xsl:with-param name="caption" select="'ECL Servers'"/>
+                      <xsl:with-param name="nodes" select="TpEclServers/TpEclServer"/>
+                      <xsl:with-param name="compType" select="'EclServerProcess'"/>
+                      <xsl:with-param name="cluster" select="$name"/>
+                    </xsl:call-template>
+                  </xsl:if>
                   <xsl:if test="count(TpEclAgents/TpEclAgent)">
                     <xsl:call-template name="showMachines">
                       <xsl:with-param name="caption" select="'ECL Agents'"/>
@@ -520,7 +528,7 @@
             <xsl:for-each select="TpMachines/*">
               <xsl:variable name="showDir">
                 <xsl:choose>
-                  <xsl:when test="$compType='EclCCServerProcess' or $compType='EclSchedulerProcess'">
+                  <xsl:when test="$compType='EclCCServerProcess' or $compType='EclServerProcess' or $compType='EclSchedulerProcess'">
                     <xsl:value-of select="Directory"/>
                   </xsl:when>
                   <xsl:when test="$compType='EclAgentProcess'">
@@ -531,6 +539,7 @@
               <xsl:variable name="type4">
                 <xsl:choose>
                   <xsl:when test="$compType='EclCCServerProcess'">Ecl CC Server Process</xsl:when>
+                  <xsl:when test="$compType='EclServerProcess'">Ecl Server Process</xsl:when>
                   <xsl:when test="$compType='EclAgentProcess'">Ecl Agent Process</xsl:when>
                   <xsl:when test="$compType='EclSchedulerProcess'">Ecl Scheduler Process</xsl:when>
                 </xsl:choose>

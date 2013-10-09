@@ -33,6 +33,7 @@
 #include "dadfs.hpp"
 #include "dasds.hpp"
 #include "daclient.hpp"
+#include <vector>
 
 #ifdef _DEBUG
 //#define TEST_DEADLOCK_RELEASE
@@ -90,48 +91,99 @@ inline bool validFNameChar(char c)
  * This helper class is used for temporary inline super-files
  * only.
  */
+
 class CMultiDLFN
 {
-    unsigned count;
-    CDfsLogicalFileName *dlfns;
-
+    std::vector<CDfsLogicalFileName> dlfns;
+    bool expanded;
+    StringBuffer prefix;
 public:
-    CMultiDLFN(const char *prefix,const StringArray &lfns)
+    CMultiDLFN(const char *_prefix,const StringArray &lfns)
     {
         unsigned c = lfns.ordinality();
-        count = 0;
-        dlfns = new CDfsLogicalFileName[c];
-        StringBuffer lfn(prefix);
-        size32_t l = lfn.length();
-        for (unsigned i=0;i<c;i++) {
+        StringBuffer lfn(_prefix);
+        size32_t len = lfn.length();
+        expanded = true;
+        for (unsigned i=0;i<c;i++) {    //Populate CDfsLogicalFileName array with each logical filespec
             const char * s = lfns.item(i);
             skipSp(s);
             if (*s=='~')
-                s++;
+                s++;//scope provided, create CDfsLogicalFileName as-is
             else {
-                lfn.setLength(l);
+                lfn.setLength(len);//scope not specified, append it before creating CDfsLogicalFileName
                 lfn.append(s);
                 s = lfn.str();
             }
-            dlfns[count++].set(s);
+            CDfsLogicalFileName lfn;
+            lfn.set(s);
+            dlfns.push_back(lfn);
+            if (expanded && (strchr(s,'*') || strchr(s,'?')))
+                expanded = false;
         }
+        prefix.append(_prefix);
     }
 
     CMultiDLFN(CMultiDLFN &other)
     {
-        count = other.ordinality();
-        dlfns = new CDfsLogicalFileName[count];
-        ForEachItemIn(i,other) {
-            dlfns[i].set(other.item(i));
-        }
+        expanded = other.expanded;
+        prefix = other.prefix;
+        ForEachItemIn(i,other)
+            dlfns.push_back(other.item(i));
     }
 
-    ~CMultiDLFN()
+    void expand(IUserDescriptor *_udesc)
     {
-        delete [] dlfns;
+        if (expanded)
+            return;
+        StringArray lfnExpanded;
+        StringBuffer tmp;
+        const char * s = prefix.str();
+        const char *start = strchr(s,'{');
+        for (unsigned idx=0; idx < dlfns.size(); idx++)
+        {
+            const char *suffix = dlfns.at(idx).get();
+            if (strchr(suffix,'*') || strchr(suffix,'?'))
+            {
+                tmp.clear();
+                if (*suffix=='~')
+                    tmp.append((strcmp(suffix+1,"*")==0) ? "?*" : suffix+1);
+                else
+                    tmp.append(suffix);
+                tmp.clip().toLowerCase();
+                Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),_udesc,false,true,NULL);
+                prefix.setLength(start-s);
+                ForEach(*iter)
+                {
+                    IPropertyTree &attr = iter->query();
+                    if (!&attr)
+                        continue;
+                    const char *name = attr.queryProp("@name");
+                    if (!name||!*name)
+                        continue;
+                    if (memicmp(name,prefix.str(),prefix.length())==0) // optimize
+                        lfnExpanded.append(name+prefix.length());
+                    else
+                    {
+                        tmp.clear().append('~').append(name); // need leading ~ otherwise will get two prefixes
+                        lfnExpanded.append(tmp.str());
+                    }
+                }
+            }
+            else
+                lfnExpanded.append(suffix);
+        }
+
+        dlfns.clear();
+        ForEachItemIn(i3,lfnExpanded)
+        {
+            CDfsLogicalFileName item;
+            item.set(lfnExpanded.item(i3));
+            dlfns.push_back(item);
+        }
+        expanded = true;
     }
 
-    static CMultiDLFN *create(const char *_mlfn, IUserDescriptor *_udesc)
+    static CMultiDLFN *create(const char *_mlfn)
     {
         StringBuffer mlfn(_mlfn);
         mlfn.trim();
@@ -145,7 +197,7 @@ public:
         const char *start = strchr(s,'{');
         if (!start)
             return NULL;
-        mlfn.setLength(start-s);
+        mlfn.setLength(start-s);//isolate prefix (anything before leading {
         StringArray lfns;
         lfns.appendList(start+1, ",");
         bool anywilds = false;
@@ -156,50 +208,8 @@ public:
                 break;
             }
         }
-        if (anywilds) {
-            StringArray lfnout;
-            StringBuffer tmp;
-            ForEachItemIn(i2,lfns) {
-                const char *suffix = lfns.item(i2);
-                if (strchr(suffix,'*')||strchr(suffix,'?')) {
-                    tmp.clear();
-                    if (*suffix=='~')
-                        tmp.append((strcmp(suffix+1,"*")==0)?"?*":suffix+1);
-                    else
-                        tmp.append(mlfn).append(suffix);
-                    tmp.clip().toLowerCase();
-                    Owned<IDFAttributesIterator> iter=queryDistributedFileDirectory().getDFAttributesIterator(tmp.str(),_udesc,false,true,NULL);
-                    mlfn.setLength(start-s);
-                    ForEach(*iter) {
-                        IPropertyTree &attr = iter->query();
-                        if (!&attr)
-                            continue;
-                        const char *name = attr.queryProp("@name");
-                        if (!name||!*name)
-                            continue;
-                        if (memicmp(name,mlfn.str(),mlfn.length())==0) // optimize
-                            lfnout.append(name+mlfn.length());
-                        else {
-                            tmp.clear().append('~').append(name); // need leading ~ otherwise will get two prefixes
-                            lfnout.append(tmp.str());
-                        }
-                    }
-                }
-                else
-                    lfnout.append(suffix);
-            }
-            lfns.kill();
-            ForEachItemIn(i3,lfnout) {
-                lfns.append(lfnout.item(i3));
-            }
-            // if wildcards, create object even if 0 matches,
-            // if 0 matches, the logical file will look like an empty temp. super "{}"
-            return new CMultiDLFN(mlfn.str(),lfns);
-        }
-        if (lfns.ordinality()==0)
-            return NULL;
-        CMultiDLFN *ret =  new CMultiDLFN(mlfn.str(),lfns);
-        if (ret->ordinality())
+        CMultiDLFN *ret =  new CMultiDLFN(mlfn.str(), lfns);
+        if (ret->ordinality() || anywilds)
             return ret;
         delete ret;
         return NULL;
@@ -207,16 +217,12 @@ public:
 
     const CDfsLogicalFileName &item(unsigned idx)
     {
-        assertex(idx<count);
-        return dlfns[idx];
+        assertex(idx < dlfns.size());
+        return dlfns.at(idx);
     }
 
-    unsigned ordinality()
-    {
-        return count;
-    }
-
-
+    inline unsigned ordinality() const { return dlfns.size(); }
+    inline bool isExpanded()     const { return expanded; }
 };
 
 
@@ -224,7 +230,6 @@ CDfsLogicalFileName::CDfsLogicalFileName()
 {
     allowospath = false;
     multi = NULL;
-    udesc = NULL;
     clear();
 }
 
@@ -250,6 +255,12 @@ bool CDfsLogicalFileName::isSet() const
     return s&&*s;
 }
 
+CDfsLogicalFileName & CDfsLogicalFileName::operator = (CDfsLogicalFileName const &from)
+{
+    set(from);
+    return *this;
+}
+
 void CDfsLogicalFileName::set(const CDfsLogicalFileName &other)
 {
     lfn.set(other.lfn);
@@ -268,52 +279,60 @@ bool CDfsLogicalFileName::isForeign() const
 {
     if (localpos!=0)
         return true;
-    if (multi) {
-        ForEachItemIn(i1,*multi) {
+    if (multi)
+    {
+        if (!multi->isExpanded())
+            throw MakeStringException(-1, "Must call CDfsLogicalFileName::expand() before calling CDfsLogicalFileName::isForeign(), wildcards are specified");
+        ForEachItemIn(i1,*multi)
             if (multi->item(i1).isForeign())        // if any are say all are
                 return true;
-        }
     }
     return false;
 }
 
-void CDfsLogicalFileName::set(const char *name)
+bool CDfsLogicalFileName::isExpanded() const
 {
-    clear();
-    StringBuffer str;
-    if (!name)
-        return;
-    skipSp(name);
-    try {
-        multi = CMultiDLFN::create(name,udesc);
-    }
-    catch (IException *e) {
-        StringBuffer err;
-        e->errorMessage(err);
-        WARNLOG("CDfsLogicalFileName::set %s",err.str());
-        e->Release();
-    }
-    if (multi) {
-        StringBuffer full;
-        full.append('{');
-        ForEachItemIn(i1,*multi) {
-            if (i1)
-                full.append(',');
-            const CDfsLogicalFileName &item = multi->item(i1);
-            full.append(item.get());
-            if (item.isExternal())
-                external = external || item.isExternal();
+    if (multi)
+        return multi->isExpanded();
+    return true;
+}
+
+void CDfsLogicalFileName::expand(IUserDescriptor *user)
+{
+    if (multi && !multi->isExpanded())
+    {
+        try
+        {
+            multi->expand(user);//expand wildcard specifications
+            StringBuffer full("{");
+            ForEachItemIn(i1,*multi)
+            {
+                if (i1)
+                    full.append(',');
+                const CDfsLogicalFileName &item = multi->item(i1);
+                StringAttr norm;
+                normalizeName(item.get(), norm);
+                full.append(norm);
+                if (item.isExternal())
+                    external = external || item.isExternal();
+            }
+            full.append('}');
+            lfn.set(full);
         }
-        full.append('}');
-        lfn.set(full);
-        return;
+        catch (IException *e)
+        {
+            StringBuffer err;
+            e->errorMessage(err);
+            ERRLOG("CDfsLogicalFileName::expand %s",err.str());
+            e->Release();
+            throw;
+        }
     }
-    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==NULL))) {
-        RemoteFilename rfn;
-        rfn.setRemotePath(name);
-        setExternal(rfn);
-        return;
-    }
+}
+
+void CDfsLogicalFileName::normalizeName(const char * name, StringAttr &res)
+{
+    StringBuffer str;
     StringBuffer nametmp;
     const char *s = name;
     const char *ct = NULL;
@@ -335,6 +354,12 @@ void CDfsLogicalFileName::set(const char *name)
         }
         s++;
     }
+    if (wilddetected)
+    {
+        res.set(name);
+        return;
+    }
+
     bool isext = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
     if (!isext&&wilddetected)
         throw MakeStringException(-1,"Wildcards not allowed in filename (%s)",name);
@@ -377,7 +402,7 @@ void CDfsLogicalFileName::set(const char *name)
                             str.append("::");
                             tailpos = str.length();
                             str.append(s+2);
-                            lfn.set(str);
+                            res.set(str);
                             return;
                         }
 
@@ -421,10 +446,49 @@ void CDfsLogicalFileName::set(const char *name)
     }
     skipSp(s);
     str.append(s).clip().toLowerCase();
-    lfn.set(str);
+    res.set(str);
 }
 
 
+void CDfsLogicalFileName::set(const char *name)
+{
+    clear();
+    StringBuffer str;
+    if (!name)
+        return;
+    skipSp(name);
+    try {
+        multi = CMultiDLFN::create(name);
+    }
+    catch (IException *e) {
+        StringBuffer err;
+        e->errorMessage(err);
+        WARNLOG("CDfsLogicalFileName::set %s",err.str());
+        e->Release();
+    }
+    if (multi) {
+        StringBuffer full;
+        full.append('{');
+        ForEachItemIn(i1,*multi) {
+            if (i1)
+                full.append(',');
+            const CDfsLogicalFileName &item = multi->item(i1);
+            full.append(item.get());
+            if (item.isExternal())
+                external = external || item.isExternal();
+        }
+        full.append('}');
+        lfn.set(full);
+        return;
+    }
+    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==NULL))) {
+        RemoteFilename rfn;
+        rfn.setRemotePath(name);
+        setExternal(rfn);
+        return;
+    }
+    normalizeName(name, lfn);
+}
 bool CDfsLogicalFileName::setValidate(const char *lfn,bool removeforeign)
 {
     // NB will allows multi
@@ -1826,20 +1890,34 @@ public:
     Owned<IBitSet> passesFilter;
 };
 
-IRemoteConnection *getElementsPaged( const char *basexpath,
-                                     const char *xpath,
-                                     const char *sortorder,
+void sortElements(IPropertyTreeIterator* elementsIter,
+                    const char *sortOrder,
+                    const char *nameFilterLo,
+                    const char *nameFilterHi,
+                    IArrayOf<IPropertyTree> &sortedElements)
+{
+    if (nameFilterLo&&!*nameFilterLo)
+        nameFilterLo = NULL;
+    if (nameFilterHi&&!*nameFilterHi)
+        nameFilterHi = NULL;
+    cSort sort;
+    if (sortOrder && *sortOrder)
+        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,sortedElements);
+    else
+        ForEach(*elementsIter)
+            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,&elementsIter->query());
+};
+
+IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
                                      unsigned startoffset,
                                      unsigned pagesize,
                                      ISortedElementsTreeFilter *postfilter, // filters before adding to page
                                      const char *owner,
                                      __int64 *hint,
-                                     const char *namefilterlo,
-                                     const char *namefilterhi,
                                      IArrayOf<IPropertyTree> &results,
                                      unsigned *total)
 {
-    if (pagesize==0)
+    if ((pagesize==0) || !elementsPager)
         return NULL;
     {
         CriticalBlock block(pagedElementsCacheSect);
@@ -1857,7 +1935,7 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
     if (!elem)
         elem.setown(new CPECacheElem(owner, postfilter));
     if (!elem->conn)
-        elem->conn.setown(getSortedElements(basexpath,xpath,sortorder,namefilterlo,namefilterhi,elem->totalres));
+        elem->conn.setown(elementsPager->getElements(elem->totalres));
     if (!elem->conn)
         return NULL;
     unsigned n;
@@ -2581,8 +2659,10 @@ public:
             mb.read(nm);
             s = (const char *)mb.readDirect(mb.length()-mb.getPos());
         }
-        else
+        else {
             nm = 0;
+            s = NULL;
+        }
         unsigned i;
         unsigned no = 0;
         mbout.append(no);
@@ -2736,7 +2816,6 @@ public:
 
     bool init(const char *fname,IUserDescriptor *user,bool onlylocal,bool onlydfs, bool write)
     {
-        lfn.setUserDescriptor(user);
         fileExists = false;
         if (!onlydfs)
             lfn.allowOsPath(true);

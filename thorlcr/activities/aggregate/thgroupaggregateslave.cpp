@@ -47,7 +47,7 @@ public:
         input=inputs.item(0);
         startInput(input);
         ungroupedExistsAggregate = (container.getKind() == TAKexistsaggregate) && !input->isGrouped();
-        dataLinkStart("GROUPAGGREGATE", container.queryId());
+        dataLinkStart();
     }
 
     void stop()

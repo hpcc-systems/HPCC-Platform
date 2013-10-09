@@ -35,12 +35,12 @@ public:
     {
         appendOutputLinked(this);
     }
-    void start(const char *act)
+    void start()
     {   
         input = inputs.item(0);
         anyThisGroup = false;
         startInput(input);
-        dataLinkStart(act, container.queryId());
+        dataLinkStart();
     }
     void stop()
     {
@@ -80,7 +80,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         matched = 0;
         abortSoon = !helper->canMatchAny();
-        CFilterSlaveActivityBase::start("FILTER");
+        CFilterSlaveActivityBase::start();
     }
     CATCH_NEXTROW()
     {
@@ -189,7 +189,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         abortSoon = !helper->canMatchAny();
         recordCount = 0;
-        CFilterSlaveActivityBase::start("FILTERPROJECT");
+        CFilterSlaveActivityBase::start();
     }
     CATCH_NEXTROW()
     {
@@ -259,7 +259,7 @@ public:
     {   
         ActivityTimer s(totalCycles, timeActivities, NULL);
         abortSoon = !helper->canMatchAny();
-        CFilterSlaveActivityBase::start("FILTERGROUP");
+        CFilterSlaveActivityBase::start();
     }
     CATCH_NEXTROW()
     {

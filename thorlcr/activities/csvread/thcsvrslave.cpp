@@ -410,7 +410,7 @@ public:
             }
         }
         out.setown(createSequentialPartHandler(partHandler, partDescs, false));
-        dataLinkStart("CCsvReadSlaveActivity", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

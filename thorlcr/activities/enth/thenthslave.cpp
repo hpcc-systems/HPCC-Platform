@@ -90,7 +90,7 @@ public:
         numerator = validRC(helper->getProportionNumerator());
         input.set(inputs.item(0));
         startInput(input);
-        dataLinkStart("ENTH", container.queryId());
+        dataLinkStart();
 
         if (localCountReq)
         {

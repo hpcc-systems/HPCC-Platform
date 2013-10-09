@@ -57,6 +57,7 @@ unsigned numServerThreads = 30;
 unsigned numSlaveThreads = 30;
 unsigned numRequestArrayThreads = 5;
 unsigned headRegionSize;
+unsigned ccdMulticastPort;
 bool enableHeartBeat = true;
 unsigned parallelLoopFlowLimit = 100;
 unsigned perChannelFlowLimit = 10;
@@ -67,7 +68,6 @@ unsigned readTimeout = 300;
 unsigned indexReadChunkSize = 60000;
 unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
-bool checkPrimaries = true;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
 bool traceServerSideCache = false;
@@ -125,6 +125,7 @@ unsigned defaultFetchPreload = 0;
 unsigned defaultFullKeyedJoinPreload = 0;
 unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
+bool defaultCheckingHeap = false;
 
 unsigned logQueueLen;
 unsigned logQueueDrop;
@@ -312,7 +313,7 @@ void addChannel(unsigned nodeNumber, unsigned channel, unsigned level)
     }
     if (!localSlave)
     {
-        addEndpoint(channel, getNodeAddress(nodeNumber), CCD_MULTICAST_PORT);
+        addEndpoint(channel, getNodeAddress(nodeNumber), ccdMulticastPort);
     }
 }
 
@@ -620,6 +621,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
 
         headRegionSize = topology->getPropInt("@headRegionSize", 50);
+        ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
         roxiemem::memTraceSizeLimit = (memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0);
         callbackRetries = topology->getPropInt("@callbackRetries", 3);
@@ -711,10 +713,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultFullKeyedJoinPreload = topology->getPropInt("@defaultFullKeyedJoinPreload", 0);
         defaultKeyedJoinPreload = topology->getPropInt("@defaultKeyedJoinPreload", 0);
         defaultPrefetchProjectPreload = topology->getPropInt("@defaultPrefetchProjectPreload", 10);
+        defaultCheckingHeap = topology->getPropInt("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
 
-        checkPrimaries = topology->getPropBool("@checkPrimaries", true);
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);
         roxiemem::setMemoryStatsInterval(memoryStatsInterval);

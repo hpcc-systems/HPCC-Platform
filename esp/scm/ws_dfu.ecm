@@ -45,7 +45,7 @@ ESPStruct DFULogicalFile
     string LongSize;
     string LongRecordCount;
     bool   isSuperfile;
-    bool   isZipfile;
+    [depr_ver("1.22")] bool   isZipfile;
     bool   isDirectory(false);
     bool   Replicate(false);
     [min_ver("1.01")] int64 IntSize;
@@ -53,6 +53,8 @@ ESPStruct DFULogicalFile
     [min_ver("1.02")] bool FromRoxieCluster;
     [min_ver("1.03")] bool BrowseData;
     [min_ver("1.14")] bool IsKeyFile;
+    [min_ver("1.22")] bool IsCompressed;
+    [min_ver("1.22")] int64 CompressedFileSize;
 };
 
 ESPStruct DFUPart
@@ -95,7 +97,7 @@ ESPStruct DFUFileDetail
 
     string Modified;
     string Ecl;
-    bool ZipFile(false);
+    [depr_ver("1.22")] bool ZipFile(false);
     ESPstruct DFUFileStat Stat;
     ESParray<ESPstruct DFUPart> DFUFileParts;
     bool isSuperfile(false);
@@ -105,6 +107,9 @@ ESPStruct DFUFileDetail
     [min_ver("1.06")] bool FromRoxieCluster;
     [min_ver("1.07")] ESParray<string, ECLGraph> Graphs;
     [min_ver("1.09")] string UserPermission;
+    [min_ver("1.21")] string ContentType;
+    [min_ver("1.22")] int64 CompressedFileSize;
+    [min_ver("1.22")] bool IsCompressed(false);
 };
 
 ESPStruct DFUSpaceItem
@@ -626,7 +631,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.20"), default_client_version("1.20"),
+    version("1.22"), default_client_version("1.22"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

@@ -54,7 +54,7 @@ public:
     unsigned queryMaxActivityId() { return seq; }
 
 protected:
-    void connectActivities(IHqlExpression * from, IHqlExpression * to, _ATOM kind, const char * comment = NULL, bool nWay = false);
+    void connectActivities(IHqlExpression * from, IHqlExpression * to, IAtom * kind, const char * comment = NULL, bool nWay = false);
     void createRootGraphActivity(IHqlExpression * expr);
     void createGraphActivity(IHqlExpression * expr);
     void createSubGraphActivity(IHqlExpression * expr);
@@ -70,7 +70,7 @@ protected:
     bool isWorkflowExpanded(IHqlExpression * expr) const;
 
     void addAttribute(const char * name, const char * value);
-    void addAttribute(const char * name, _ATOM value);
+    void addAttribute(const char * name, IAtom * value);
     void addAttributeInt(const char * name, __int64 value);
     void addAttributeBool(const char * name, bool value);
 
@@ -108,8 +108,8 @@ IPropertyTree * addGraphAttribute(IPropertyTree * node, const char * name);
 void addGraphAttribute(IPropertyTree * node, const char * name, const char * value);
 void addGraphAttributeInt(IPropertyTree * node, const char * name, __int64 value);
 void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value);
-void addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, _ATOM kind, const char * label, bool nWay);
-void addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, _ATOM kind, const char * label);
+void addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, IAtom * kind, const char * label, bool nWay);
+void addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, IAtom * kind, const char * label);
 void removeGraphAttribute(IPropertyTree * node, const char * name);
 
 #endif

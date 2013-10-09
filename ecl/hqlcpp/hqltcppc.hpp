@@ -116,7 +116,7 @@ public:
     virtual bool isSerialization() const                    { return true; }
     virtual ActivityInstance * queryActivity()              { return activity; }
 
-    IHqlExpression * createField(_ATOM name, ITypeInfo * type);         // returns a no_select reference to the field
+    IHqlExpression * createField(IIdAtom * id, ITypeInfo * type);         // returns a no_select reference to the field
     IHqlExpression * addSerializedValue(IHqlExpression * path, ITypeInfo * type, IHqlExpression * colocal, bool isConditional);
     IHqlExpression * ensureSerialized(IHqlExpression * path, IHqlExpression * colocal, bool isConditional);
     IHqlExpression * ensureSerialized(BuildCtx & ctx, IHqlExpression * colocal, IReferenceSelector * selector);

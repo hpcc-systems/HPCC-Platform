@@ -58,6 +58,9 @@
   <para><emphasis role="bold">DATASET(</emphasis><emphasis> dict
   </emphasis><emphasis role="bold">)</emphasis></para>
 
+  <para><emphasis role="bold">DATASET(</emphasis><emphasis> count, transform
+  </emphasis><emphasis role="bold"> [, DISTRIBUTED ] )</emphasis></para>
+
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
@@ -252,6 +255,28 @@
 
           <entry>The name of a DICTIONARY definition.</entry>
         </row>
+
+        <row>
+          <entry><emphasis>count</emphasis></entry>
+
+          <entry>An integer expression specifying the number of records to
+          create.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transform</emphasis></entry>
+
+          <entry>The TRANSFORM function that will create the records. This may
+          take an integer COUNTER parameter.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">DISTRIBUTED</emphasis></entry>
+
+          <entry>Optional. Specifies distributing the created records across
+          all nodes of the cluster. If omitted, all records are created on
+          node 1.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -295,6 +320,9 @@
 
   <para>The eighth form is used to define a DICTIONARY as a DATASET (see
   <emphasis role="bold">DATASET from DICTIONARY </emphasis>below).</para>
+
+  <para>The ninth form is used to create a DATASET using a TRANSFORM function
+  (see <emphasis role="bold">DATASET from TRANSFORM</emphasis> below)</para>
 
   <sect2 id="THOR-FLAT_Files">
     <title>THOR/FLAT Files</title>
@@ -422,7 +450,7 @@
     file (or part), and is used for those instances where a usable pointer to
     the record is needed, such as the BUILD function.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>PtblRec := RECORD
   STRING2 State := Person.per_st;
@@ -476,7 +504,8 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
       </indexterm>( </emphasis><emphasis>characters</emphasis><emphasis
     role="bold"> ) ]</emphasis><emphasis role="bold"> [, ESCAPE<indexterm>
         <primary>ESCAPE</primary>
-      </indexterm>( </emphasis><emphasis>esc</emphasis><emphasis role="bold"> ) ] [, MAXLENGTH<indexterm>
+      </indexterm>( </emphasis><emphasis>esc</emphasis><emphasis role="bold">
+    ) ] [, MAXLENGTH<indexterm>
         <primary>MAXLENGTH</primary>
       </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
     ) ]</emphasis></para>
@@ -571,18 +600,19 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
           <row>
             <entry><emphasis role="bold">ESCAPE</emphasis></entry>
 
-            <entry><para>Optional. The string escape character used to indicate 
-            the next character (usually a control character) is part of the data and not to be
-            interpreted as a field or row delimiter. If omitted, the default is a backslash ('\\') 
-            or the escape character specified in the spray operation that put the file on
-            disk.</para></entry>
+            <entry><para>Optional. The string escape character used to
+            indicate the next character (usually a control character) is part
+            of the data and not to be interpreted as a field or row delimiter.
+            If omitted, the default is the escape character specified in the
+            spray operation that put the file on disk (if any).</para></entry>
           </row>
 
           <row>
             <entry><emphasis>esc</emphasis></entry>
 
             <entry><para>A single string constant, or set of string constants,
-            that define the character(s) used to escape control characters.</para></entry>
+            that define the character(s) used to escape control
+            characters.</para></entry>
           </row>
 
           <row>
@@ -647,7 +677,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
     the default input is in ASCII format with any UNICODE fields in UTF8
     format.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>CSVRecord := RECORD
   UNSIGNED4 person_id;
@@ -757,7 +787,7 @@ file3 := DATASET('MyFile.CSV',
     virtually encompasses the whole thing, then the whole thing will be
     constructed as a referenceable structure that the ECL can get at.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>/* an XML file called "MyFile" contains this XML data:
 &lt;library&gt;
@@ -845,7 +875,7 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
         <primary>PIPE function</primary>
       </indexterm> and PIPE option on OUTPUT).</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>PtblRec := RECORD
   STRING2 State;
@@ -878,7 +908,7 @@ Ptbl := DATASET('~Thor50::RTTEMP::TestFile',
     by the <emphasis>wuid</emphasis> (workunit ID). This is a feature most
     useful in the Rapid Data Delivery Engine.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>//Named Output DATASET in the same workunit:
 a := OUTPUT(Person(per_st='FL') ,NAMED('FloridaFolk'));
@@ -930,7 +960,7 @@ OUTPUT(ds);</programlisting>
     using inline datasets (see the <emphasis role="bold">Child
     DATASETs</emphasis> discussion).</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>//Inline DATASET using definition values
 myrec := {REAL diff, INTEGER1 reason};
@@ -1015,7 +1045,7 @@ ds := DATASET([T1(123,'Fred','Jones'),
     <para>This form is only used in an expression context. It allows you to
     in-line a single record dataset.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>//the following examples demonstrate 4 ways to do the same thing:
 personRecord := RECORD
@@ -1169,7 +1199,7 @@ OUTPUT(p3);</programlisting>
 
     <programlisting>TABLE(ds, { ds.id, newChildren := ds.children(age != 10); });</programlisting>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>ParentRec := {INTEGER1 NameID, STRING20 Name};
 ParentTable := DATASET([{1,'Kevin'},{2,'Liz'},
@@ -1262,7 +1292,7 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
     are primarily for use in BEGINC++ functions or external C++ library
     functions.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>MyRec := {STRING1 Letter};
 SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
@@ -1368,7 +1398,7 @@ OUTPUT(b_Name);</programlisting>
         <primary>Treating DICTIONARY as a DATASET</primary>
       </indexterm>.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>rec := {STRING color,UNSIGNED1 code, STRING name};
 ColorCodes := DATASET([{'Black' ,0 , 'Fred'},
@@ -1387,5 +1417,39 @@ OUTPUT(ds);         </programlisting>
     linkend="RECORDOF">RECORDOF</link>, <link
     linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
     linkend="DICTIONARY">DICTIONARY</link></para>
+  </sect2>
+
+  <sect2 id="DATASET_from_TRANSFORM">
+    <title>DATASET from TRANSFORM</title>
+
+    <para><emphasis role="bold">DATASET(</emphasis><emphasis> count, transform
+    </emphasis><emphasis role="bold"> [, DISTRIBUTED ] )</emphasis></para>
+
+    <para>This form uses the<emphasis> transform </emphasis> to create the
+    records. The result type of the <emphasis>transform</emphasis> function
+    determines the structure. The integer COUNTER can be used to number each
+    iteration of the <emphasis>transform</emphasis> function.</para>
+
+    <para><emphasis role="bold">Example:</emphasis></para>
+
+    <programlisting>IMPORT STD;
+msg(UNSIGNED c) := 'Rec ' + (STRING)c + ' on node ' + (STRING)(STD.system.Thorlib.Node()+1);
+
+DS := DATASET(CLUSTERSIZE * 2, 
+              TRANSFORM({STRING line}, 
+                        SELF.line := msg(COUNTER)), 
+              DISTRIBUTED);
+DS;
+/* creates a result like this:
+   Rec 1 on node 1
+   Rec 2 on node 1
+   Rec 3 on node 2
+   Rec 4 on node 2
+   Rec 5 on node 3
+   Rec 6 on node 3 
+*/</programlisting>
+
+    <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
+    <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
   </sect2>
 </sect1>

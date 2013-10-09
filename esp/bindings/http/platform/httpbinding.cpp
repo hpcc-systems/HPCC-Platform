@@ -1526,7 +1526,7 @@ int EspHttpBinding::onGetRespSampleXml(IEspContext &ctx, CHttpRequest* request, 
 
 int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
-    StringArray fileNames;
+    StringArray fileNames, files;
     Owned<IMultiException> me = MakeMultiException("FileSpray::UploadFile()");
     try
     {
@@ -1536,12 +1536,12 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
         StringBuffer netAddress, path;
         request->getParameter("NetAddress", netAddress);
         request->getParameter("Path", path);
+        if (((netAddress.length() < 1) || (path.length() < 1)))
+            request->readUploadFileContent(fileNames, files);
+        else
+            request->readContentToFiles(netAddress, path, fileNames);
 
-        if ((netAddress.length() < 1) || (path.length() < 1))
-            throw MakeStringException(-1, "Upload destination not specified.");
-
-        request->readContentToFiles(netAddress, path, fileNames);
-        return onFinishUpload(ctx, request, response, serv, method, fileNames, NULL);
+        return onFinishUpload(ctx, request, response, serv, method, fileNames, files, NULL);
     }
     catch (IException* e)
     {
@@ -1551,10 +1551,11 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
     {
         me->append(*MakeStringExceptionDirect(-1, "Unknown Exception"));
     }
-    return onFinishUpload(ctx, request, response, serv, method, fileNames, me);
+    return onFinishUpload(ctx, request, response, serv, method, fileNames, files, me);
 }
 
-int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method, StringArray& fileNames, IMultiException *me)
+int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method,
+                                   StringArray& fileNames, StringArray& files, IMultiException *me)
 {
     response->setContentType("text/html; charset=UTF-8");
     StringBuffer content(
@@ -1582,7 +1583,6 @@ int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHtt
 
     return 0;
 }
-
 
 int EspHttpBinding::getWsdlMessages(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)
 {

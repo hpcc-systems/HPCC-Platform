@@ -20,7 +20,7 @@
 class FunctionParamInfo : public CInterface, implements IFunctionParamInfo
 {
 public:
-  FunctionParamInfo(ITypeInfo * type, _ATOM name, unsigned _dir, bool _isArray);
+  FunctionParamInfo(ITypeInfo * type, IAtom * name, unsigned _dir, bool _isArray);
   ~FunctionParamInfo();
   IMPLEMENT_IINTERFACE
 
@@ -33,7 +33,7 @@ public:
   enum { ParamIn = 1, ParamOut=2, ParamInOut=3 };
 protected:
   ITypeInfo *           type;
-  _ATOM                 name;
+  IAtom *                 name;
   unsigned              dir;
   bool                  isArray;
 };
@@ -41,7 +41,7 @@ protected:
 class FunctionInfo : public CInterface, implements IFunctionInfo
 {
 public:
-  FunctionInfo(_ATOM _name, IModuleInfo * _module);
+  FunctionInfo(IAtom * _name, IModuleInfo * _module);
   ~FunctionInfo();
   IMPLEMENT_IINTERFACE
 
@@ -50,7 +50,7 @@ public:
   virtual unsigned          getNumParameters();
   virtual const char *      queryCppName();
   virtual IModuleInfo *     queryModule();
-  virtual _ATOM             queryName();
+  virtual IAtom *             queryName();
   virtual IFunctionParamInfo *  queryParam(unsigned idx);
   virtual ITypeInfo *       queryReturnType();
 
@@ -59,7 +59,7 @@ public:
           void              setReturnType(ITypeInfo * type);
 
 protected:
-  _ATOM                 name;
+  IAtom *                 name;
   StringAttr            cppName;
   CIArray               params;
   ITypeInfo *           returnType;
@@ -90,7 +90,7 @@ public:
 
 //interface IFunctionDatabase
   virtual IFunctionInfo *   queryFunction(unsigned idx);
-  virtual IFunctionInfo *   queryFunction(_ATOM name);
+  virtual IFunctionInfo *   queryFunction(IAtom * name);
   virtual IModuleInfo *     queryModule(unsigned idx);
 
           void              addFunction(FunctionInfo & info) { functions.append(info); }

@@ -35,8 +35,7 @@ The following debug options are currently supported by the code generator:
 "expandRepeatAnyAsDfa"   true   - is ANY* expanded in a DFA
 "forceFakeThor"          false  - force code to use hthor.
 "freezePersists"         false  - stop persists being recreated.
-"globalFold"             true   - perform a global constant fold before generating
-    "globalFoldOptions"         - options for above.
+"globalFoldOptions"      0xffff - options for global folding.
 "globalOptimize"         false  - perform a global optimize?
 "groupAllDistribute"     false  - does group,all generate a distribute or a global sort?
 "maximizeLexer"          false  - maximize the amount of work done in the lexer (?default on?)
@@ -113,9 +112,9 @@ class HqlStmts;
 interface HQLCPP_API IHqlCppInstance : public IInterface
 {
 public:
-    virtual HqlStmts * ensureSection(_ATOM section) = 0;
+    virtual HqlStmts * ensureSection(IAtom * section) = 0;
     virtual const char * queryLibrary(unsigned idx) = 0;
-    virtual HqlStmts * querySection(_ATOM section) = 0;
+    virtual HqlStmts * querySection(IAtom * section) = 0;
     virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id=(unsigned)-1) = 0;
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id=(unsigned)-1) = 0;
     virtual void addManifest(const char *filename) = 0;

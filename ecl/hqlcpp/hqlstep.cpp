@@ -828,7 +828,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMerge(BuildCtx & ctx, IHql
     DatasetReference dsRef(dataset, no_left, querySelSeq(expr));        
     buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
 
-    if (expr->hasProperty(dedupAtom))
+    if (expr->hasAttribute(dedupAtom))
         doBuildBoolFunction(instance->classctx, "dedup", true);
 
     SteppingFieldSelection stepping;
@@ -859,11 +859,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
     buildInstancePrefix(instance);
 
-    IHqlExpression * mofn = expr->queryProperty(mofnAtom);
-    bool leftonly = expr->hasProperty(leftonlyAtom);
-    bool leftouter = expr->hasProperty(leftouterAtom);
+    IHqlExpression * mofn = expr->queryAttribute(mofnAtom);
+    bool leftonly = expr->hasAttribute(leftonlyAtom);
+    bool leftouter = expr->hasAttribute(leftouterAtom);
     IHqlExpression * selSeq = querySelSeq(expr);
-    IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);
+    IHqlExpression * rowsid = expr->queryAttribute(_rowsid_Atom);
     IHqlExpression * transform = (op == no_nwayjoin) ? expr->queryChild(2) : NULL;
     IHqlExpression * sortOrder = (op == no_nwayjoin) ? expr->queryChild(3) : expr->queryChild(2);
 
@@ -878,8 +878,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
 
     OwnedHqlExpr equalityList = stepCondition.createEqualitySortList();
     IHqlExpression * rangeSelect = stepCondition.queryRangeLeftSelector();
-    IHqlExpression * internalFlags = queryPropertyChild(expr, internalFlagsAtom, 0);
-    IHqlExpression * skew = expr->queryProperty(skewAtom);
+    IHqlExpression * internalFlags = queryAttributeChild(expr, internalFlagsAtom, 0);
+    IHqlExpression * skew = expr->queryAttribute(skewAtom);
 
     //Now generate all the helper functions....
     bool createClearRow = true;//(!leftouter && !leftonly);
@@ -894,11 +894,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNWayMergeJoin(BuildCtx & ctx, 
     else
         flags.append("|MJFinner");
 
-    if (expr->hasProperty(dedupAtom)) flags.append("|MJFdedup");
-    if (expr->hasProperty(steppedAtom)) flags.append("|MJFstepped");
+    if (expr->hasAttribute(dedupAtom)) flags.append("|MJFdedup");
+    if (expr->hasAttribute(steppedAtom)) flags.append("|MJFstepped");
     if (transform) flags.append("|MJFtransform");
     if (rangeSelect) flags.append("|MJFhasrange");
-    if (expr->hasProperty(assertAtom) && generateAsserts()) flags.append("|MJFassertsorted");
+    if (expr->hasAttribute(assertAtom) && generateAsserts()) flags.append("|MJFassertsorted");
     if (stepCondition.queryGlobalCompare()) flags.append("|MJFglobalcompare");
     if (createClearRow) flags.append("|MJFhasclearlow");
     if (skew) flags.append("|MJFhaspartition");

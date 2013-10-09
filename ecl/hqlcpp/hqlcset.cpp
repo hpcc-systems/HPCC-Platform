@@ -50,7 +50,7 @@
 
 IHqlExpression * getOutOfRangeValue(IHqlExpression * indexExpr)
 {
-    IHqlExpression * dft = indexExpr->queryProperty(defaultAtom);
+    IHqlExpression * dft = indexExpr->queryAttribute(defaultAtom);
     if (dft)
         return LINK(dft->queryChild(0));
     else
@@ -158,7 +158,7 @@ BoundRow * BaseDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpression * in
     StringBuffer cursorName;
     buildIterateClass(ctx, cursorName, NULL);
 
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    bool conditional = !indexExpr->hasAttribute(noBoundCheckAtom);
 
     //create a unique dataset and associate it with a call to select
     //set value to be the field selection from the dataset
@@ -365,7 +365,7 @@ BoundRow * InlineBlockDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needT
 BoundRow * InlineBlockDatasetCursor::buildSelectFirst(BuildCtx & ctx, IHqlExpression * indexExpr, bool createDefaultRowIfNull)
 {
     StringBuffer s, rowName;
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    bool conditional = !indexExpr->hasAttribute(noBoundCheckAtom);
     OwnedHqlExpr row = createRow(ctx, "row", rowName, (conditional && createDefaultRowIfNull));
 
     BuildCtx subctx(ctx);
@@ -446,7 +446,7 @@ BoundRow * InlineBlockDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpressi
     if (matchesConstantValue(index, 1))
         return buildSelectFirst(ctx, indexExpr, CREATE_DEAULT_ROW_IF_NULL_VALUE);
 
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    bool conditional = !indexExpr->hasAttribute(noBoundCheckAtom);
     //row = NULL
     StringBuffer s, rowName;
     OwnedHqlExpr row = createRow(ctx, "row", rowName, (conditional && CREATE_DEAULT_ROW_IF_NULL_VALUE));
@@ -635,7 +635,7 @@ BoundRow * InlineLinkedDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpress
 {
     OwnedHqlExpr index = foldHqlExpression(indexExpr->queryChild(1));
 
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    bool conditional = !indexExpr->hasAttribute(noBoundCheckAtom);
 
     //row = NULL
     StringBuffer s, rowName;
@@ -728,7 +728,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
     CHqlBoundTarget target;
     target.expr.set(tempRow->queryBound());
     HqlExprArray args;
-    _ATOM lookupFunction = NULL;
+    IIdAtom * lookupFunction = NULL;
     IHqlExpression *dictionary = mapExpr->queryChild(0);
     IHqlExpression *searchExpr = mapExpr->queryChild(1);
 
@@ -769,7 +769,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
         args.add(*LINK(dictionary), 0);
         args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
         args.append(*::createRow(no_null, LINK(record))); // the default record
-        lookupFunction = createAtom(optimizedLookupFunc);
+        lookupFunction = createIdAtom(optimizedLookupFunc);
     }
     else
     {
@@ -779,7 +779,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
         args.append(*LINK(dictionary));
         args.append(*LINK(searchExpr));
         args.append(*::createRow(no_null, LINK(record))); // the default record
-        lookupFunction = dictionaryLookupAtom;
+        lookupFunction = dictionaryLookupId;
     }
     Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
     OwnedHqlExpr call = translator.bindFunctionCall(lookupFunction, args, resultType);
@@ -798,7 +798,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
     OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
     unsigned numKeyFields = getFlatFieldCount(keyRecord);
-    _ATOM lookupFunction = NULL;
+    IIdAtom * lookupFunction = NULL;
     StringBuffer optimizedLookupFunc;
     if (numKeyFields == 1)
     {
@@ -832,7 +832,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     {
         args.add(*LINK(dictionary), 0);
         args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
-        lookupFunction = createAtom(optimizedLookupFunc);
+        lookupFunction = createIdAtom(optimizedLookupFunc);
     }
     else
     {
@@ -841,7 +841,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
         args.append(*createQuoted(lookupHelperName, makeBoolType()));
         args.append(*LINK(dictionary));
         args.append(*LINK(searchExpr));
-        lookupFunction = dictionaryLookupExistsAtom;
+        lookupFunction = dictionaryLookupExistsId;
     }
     OwnedHqlExpr call = translator.bindFunctionCall(lookupFunction, args, makeBoolType());
     translator.buildExpr(ctx, call, tgt);
@@ -851,7 +851,7 @@ void InlineLinkedDictionaryCursor::buildCountDict(BuildCtx & ctx, CHqlBoundExpr 
 {
     HqlExprArray args;
     args.append(*LINK(ds));
-    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryCountAtom, args, makeIntType(8, false));
+    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryCountId, args, makeIntType(8, false));
     translator.buildExpr(ctx, call, tgt);
 }
 
@@ -859,7 +859,7 @@ void InlineLinkedDictionaryCursor::buildExistsDict(BuildCtx & ctx, CHqlBoundExpr
 {
     HqlExprArray args;
     args.append(*LINK(ds));
-    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryExistsAtom, args, makeBoolType());
+    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryExistsId, args, makeBoolType());
     translator.buildExpr(ctx, call, tgt);
 }
 
@@ -1075,13 +1075,13 @@ void ListSetCursor::gatherSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHq
         CHqlBoundExpr boundIndex;
         ITypeInfo * elementType = expr->queryType()->queryChildType();  // not indexExpr->getType() because may now be more specific
         OwnedHqlExpr base0Index = adjustIndexBaseToZero(index);
-        if (indexExpr->hasProperty(noBoundCheckAtom))
+        if (indexExpr->hasAttribute(noBoundCheckAtom))
             translator.buildExpr(ctx, base0Index, boundIndex);
         else
             translator.buildSimpleExpr(ctx, base0Index, boundIndex);
         value.expr.setown(createValue(no_index, LINK(elementType), LINK(boundList.expr), LINK(boundIndex.expr)));
 
-        if (!indexExpr->hasProperty(noBoundCheckAtom))
+        if (!indexExpr->hasAttribute(noBoundCheckAtom))
         {
             ITypeInfo * indexType = boundIndex.expr->queryType();
             //ok to subtract early and remove a check for > 0 on unsigned values because they will wrap and fail upper limit test
@@ -1195,7 +1195,7 @@ GeneralSetCursor::GeneralSetCursor(HqlCppTranslator & _translator, IHqlExpressio
     ITypeInfo * elementType = LINK(expr->queryType()->queryChildType());
     if (!elementType)
         elementType = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
-    element.setown(createField(valueAtom, elementType, NULL));
+    element.setown(createField(valueId, elementType, NULL));
 
     HqlExprArray fields;
     fields.append(*LINK(element));
@@ -1258,9 +1258,9 @@ IHqlExpression * GeneralSetCursor::createDatasetSelect(IHqlExpression * indexExp
 
 void GeneralSetCursor::buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHqlBoundExpr & tgt)
 {
-    if (indexExpr->hasProperty(noBoundCheckAtom))
+    if (indexExpr->hasAttribute(noBoundCheckAtom))
     {
-        if (indexExpr->hasProperty(forceAllCheckAtom))
+        if (indexExpr->hasAttribute(forceAllCheckAtom))
             checkNotAll(ctx);
 
         OwnedHqlExpr dsIndexExpr = createDatasetSelect(indexExpr);
@@ -1278,7 +1278,7 @@ void GeneralSetCursor::buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExp
 
 void GeneralSetCursor::buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * indexExpr)
 {
-    if (!indexExpr->hasProperty(noBoundCheckAtom) || indexExpr->hasProperty(forceAllCheckAtom))
+    if (!indexExpr->hasAttribute(noBoundCheckAtom) || indexExpr->hasAttribute(forceAllCheckAtom))
         checkNotAll(ctx);
 
     OwnedHqlExpr dsIndexExpr = createDatasetSelect(indexExpr);
@@ -1383,7 +1383,7 @@ IHqlExpression * CreateSetCursor::createDatasetSelect(IHqlExpression * indexExpr
     }
     else
     {
-        OwnedHqlExpr field = createField(createIdentifierAtom("__f1__"), value->getType(), NULL);
+        OwnedHqlExpr field = createField(createIdAtom("__f1__"), value->getType(), NULL);
         IHqlExpression * aggregateRecord = createRecord(field);
 
         IHqlExpression * assign = createAssign(createSelectExpr(getSelf(aggregateRecord), LINK(field)), LINK(value));
@@ -1517,7 +1517,7 @@ BoundRow * DatasetBuilderBase::buildCreateRow(BuildCtx & ctx)
     return translator.bindSelf(ctx, dataset, builderName);
 }
 
-BoundRow * DatasetBuilderBase::buildDeserializeRow(BuildCtx & ctx, IHqlExpression * serializedInput, _ATOM serializeForm)
+BoundRow * DatasetBuilderBase::buildDeserializeRow(BuildCtx & ctx, IHqlExpression * serializedInput, IAtom * serializeForm)
 {
     StringBuffer serializerInstanceName;
     translator.ensureRowSerializer(serializerInstanceName, ctx, record, serializeForm, deserializerAtom);
@@ -1913,7 +1913,7 @@ void LinkedDictionaryBuilder::buildDeclare(BuildCtx & ctx)
 SetBuilder::SetBuilder(HqlCppTranslator & _translator, ITypeInfo * fieldType, IHqlExpression * _allVar) : translator(_translator)
 {
     HqlExprArray fields;
-    fields.append(*createField(valueAtom, LINK(fieldType), NULL));
+    fields.append(*createField(valueId, LINK(fieldType), NULL));
     record.setown(createRecord(fields));
     allVar.set(_allVar);
     activeRow = NULL;
@@ -2128,7 +2128,7 @@ void HqlCppTranslator::doBuildAssignAddSets(BuildCtx & ctx, const CHqlBoundTarge
     HqlExprArray args;
     args.append(*LINK(left));
     args.append(*LINK(right));
-    OwnedHqlExpr call = bindFunctionCall(appendSetXAtom, args, left->queryType());
+    OwnedHqlExpr call = bindFunctionCall(appendSetXId, args, left->queryType());
     buildExprAssign(ctx, target, call);
 }
 

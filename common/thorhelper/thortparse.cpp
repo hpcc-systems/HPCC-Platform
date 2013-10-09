@@ -83,10 +83,10 @@ Terminal::Terminal(symbol_id _id, const FeatureInfo * featureInfo, unsigned _len
 
 //---------------------------------------------------------------------------
 
-NonTerminal::NonTerminal(symbol_id _id, _ATOM _name, FeatureValue & _features, unsigned numSymbols, GrammarSymbol * * symbols, const byte * _reducePtr, size32_t _resultSize, byte * _resultRow) : GrammarSymbol(_id), resultSize(_resultSize), resultRow(_resultRow)
+NonTerminal::NonTerminal(symbol_id _id, IAtom * _name, FeatureValue & _features, unsigned numSymbols, GrammarSymbol * * symbols, const byte * _reducePtr, size32_t _resultSize, byte * _resultRow) : GrammarSymbol(_id), resultSize(_resultSize), resultRow(_resultRow)
 {
     unsigned nullCount = 0;
-    unsigned nonNullIndex;
+    unsigned nonNullIndex = 0;
     reduced.ensure(numSymbols);
     for (unsigned i= 0; i < numSymbols; i++)
     {
@@ -235,7 +235,7 @@ TomitaMatchWalker::TomitaMatchWalker(const PackedSymbolChoice & _choice, Grammar
     }
 }
 
-_ATOM TomitaMatchWalker::queryName()
+IAtom * TomitaMatchWalker::queryName()
 {
     return symbol->queryName();
 }

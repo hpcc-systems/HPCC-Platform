@@ -1,7 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,12 +13,9 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
--->
-<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
-<section>
-    <title>ecl/hqlcpp</title>
 
-    <para>
-        The ecl/hqlcpp directory contains the sources for the ecl/hqlcpp library.
-    </para>
-</section>
+FOREACH( iFILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/git.sh
+)
+    install ( PROGRAMS ${iFILES} DESTINATION ${EXEC_DIR} COMPONENT Runtime )
+ENDFOREACH ( iFILES )

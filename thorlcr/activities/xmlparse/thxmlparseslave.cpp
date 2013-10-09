@@ -71,7 +71,7 @@ public:
         eogNext = false;
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart("XMLPARSE", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

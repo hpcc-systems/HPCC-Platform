@@ -142,7 +142,7 @@ protected:
 };
 
 
-typedef CIArrayOf<CMemberInfo> CMemberInfoArray;
+typedef IArrayOf<CMemberInfo> CMemberInfoArray;
 
 struct ReadAheadState
 {
@@ -173,8 +173,8 @@ public:
 // AColumnInfo
     virtual void buildSizeOf(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
     virtual void buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, int direction);
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
-    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
+    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual IHqlExpression * createSelectorExpr();
@@ -244,8 +244,8 @@ public:
 //AColumnInfo
     virtual void buildAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target);
     virtual void buildExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
-    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
+    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
@@ -276,8 +276,8 @@ public:
     virtual void buildSizeOf(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
     virtual void buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, int direction);
     virtual void buildExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
-    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
+    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
@@ -294,8 +294,8 @@ protected:
     virtual void buildColumnAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target);
     virtual void calcCurrentOffset(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
 
-    void buildDeserializeToBuilder(HqlCppTranslator & translator, BuildCtx & ctx, IHqlCppDatasetBuilder * builder, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
-    virtual void buildDeserializeChildLoop(HqlCppTranslator & translator, BuildCtx & loopctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    void buildDeserializeToBuilder(HqlCppTranslator & translator, BuildCtx & ctx, IHqlCppDatasetBuilder * builder, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
+    virtual void buildDeserializeChildLoop(HqlCppTranslator & translator, BuildCtx & loopctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
 };
 
 class HQLCPP_API CSpecialIntColumnInfo : public CColumnInfo
@@ -316,7 +316,7 @@ public:
 //AColumnInfo
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
 
@@ -332,7 +332,7 @@ public:
 
 //AColumnInfo
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
@@ -348,7 +348,7 @@ public:
 //AColumnInfo
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
 
@@ -366,7 +366,7 @@ public:
 //Virtuals for column implementation
     virtual void buildAddress(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
@@ -397,7 +397,7 @@ public:
     virtual void buildAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target);
     virtual void buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, int direction);
     virtual void buildExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
 
@@ -468,7 +468,7 @@ protected:
 class HQLCPP_API CCsvColumnInfo : public CColumnInfo
 {
 public:
-    CCsvColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, _ATOM _encoding);
+    CCsvColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, IAtom * _encoding);
 
 //AColumnInfo
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
@@ -486,7 +486,7 @@ protected:
     IHqlExpression * getColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
 
 protected:
-    _ATOM encoding;
+    IAtom * encoding;
 };
 
 class HQLCPP_API CXmlColumnInfo : public CColumnInfo
@@ -507,7 +507,7 @@ public:
 
 protected:
     virtual void calcCurrentOffset(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector) {}
-    void buildFixedStringAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target, IHqlExpression * defaultValue, _ATOM func);
+    void buildFixedStringAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target, IHqlExpression * defaultValue, IIdAtom * func);
     IHqlExpression * getCallExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
     IHqlExpression * getXmlDatasetExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
     IHqlExpression * getXmlSetExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
@@ -608,13 +608,13 @@ public:
 class HQLCPP_API CsvColumnToOffsetMap : public ColumnToOffsetMap
 {
 public:
-    CsvColumnToOffsetMap(IHqlExpression * record, unsigned _maxRecordSize, bool _translateVirtuals, _ATOM _encoding);
+    CsvColumnToOffsetMap(IHqlExpression * record, unsigned _maxRecordSize, bool _translateVirtuals, IAtom * _encoding);
 
     virtual MapFormat getFormat()                   { return MapFormatCsv; }
     virtual CMemberInfo * createColumn(CContainerInfo * container, IHqlExpression * column, RecordOffsetMap & map);
 
 protected:
-    _ATOM encoding;
+    IAtom * encoding;
 };
 
 class HQLCPP_API XmlColumnToOffsetMap : public ColumnToOffsetMap
@@ -635,7 +635,7 @@ public:
 
 //AColumnInfo
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
@@ -651,9 +651,9 @@ public:
 
 //AColumnInfo
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
-    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value);
 
@@ -672,7 +672,7 @@ public:
 
 //AColumnInfo
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
@@ -684,7 +684,7 @@ public:
 
 protected:
     void setColumnFromBuilder(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlCppDatasetBuilder * builder);
-    virtual void buildDeserializeChildLoop(HqlCppTranslator & translator, BuildCtx & loopctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserializeChildLoop(HqlCppTranslator & translator, BuildCtx & loopctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
 
 protected:
     OwnedHqlExpr countField;
@@ -700,8 +700,8 @@ public:
 
 //AColumnInfo
     virtual void buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound);  // get() after conditions.
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
-    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
+    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm);
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state);
     virtual IHqlExpression * buildSizeOfUnbound(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector);
     virtual bool modifyColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value, node_operator op);

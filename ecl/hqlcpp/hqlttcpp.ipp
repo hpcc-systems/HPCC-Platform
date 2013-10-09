@@ -167,7 +167,7 @@ public:
     unsigned getMaxSequence() { return sequence; }
 
 protected:
-    void nextSequence(HqlExprArray & args, IHqlExpression * name, _ATOM overwriteAction, IHqlExpression * value, bool needAttr, bool * duplicate);
+    void nextSequence(HqlExprArray & args, IHqlExpression * name, IAtom * overwriteAction, IHqlExpression * value, bool needAttr, bool * duplicate);
     virtual IHqlExpression * doTransformRootExpr(IHqlExpression * expr);
     IHqlExpression * attachSequenceNumber(IHqlExpression * expr);
 
@@ -206,11 +206,13 @@ protected:
     IHqlExpression * normalizeSelect(IHqlExpression * expr);
     IHqlExpression * normalizeSubSort(IHqlExpression * expr);
     IHqlExpression * normalizeSort(IHqlExpression * expr);
-    IHqlExpression * normalizeSortSteppedIndex(IHqlExpression * expr, _ATOM attrName);
+    IHqlExpression * normalizeSortSteppedIndex(IHqlExpression * expr, IAtom * attrName);
     IHqlExpression * normalizeTempTable(IHqlExpression * expr);
 
     IHqlExpression * skipGroupsWithinGroup(IHqlExpression * expr, bool isLocal);
     IHqlExpression * skipOverGroups(IHqlExpression * dataset, bool isLocal);
+
+    bool isLightweightJoinCandidate(IHqlExpression * expr, bool isLocal, bool isLimitedSubstringJoin);
 
 protected:
     typedef NewHqlTransformer PARENT;
@@ -258,6 +260,7 @@ public:
     bool isFiltered:1;
     bool isPostFiltered:1;
     bool isCreateRowLimited:1;
+    bool hasOnFail:1;
 };
 
 enum
@@ -453,7 +456,7 @@ protected:
     IWorkflowItem *           addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, ContingencyData const & conts, IHqlExpression * cluster);
     IWorkflowItem *           addWorkflowContingencyToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, IHqlExpression * cluster, unsigned wfidFor) { ContingencyData conts; conts.contingencyFor = wfidFor; return addWorkflowToWorkunit(wfid, type, mode, dependencies, conts, cluster); }
 
-    void setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid);
+    void setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int  numPersistInstances);
     void setWorkflowSchedule(IWorkflowItem * wf, ScheduleData const & sched);
 
     virtual IHqlExpression *  createTransformed(IHqlExpression * expr);
@@ -531,6 +534,8 @@ protected:
     bool                      combineTrivialStored;
     bool                      isRootAction;
     bool                      isRoxie;
+    bool                      expandPersistInputDependencies;
+    bool                      multiplePersistInstances;
     UnsignedArray             cumulativeDependencies;
     UnsignedArray             emptyDependencies;
     UnsignedArray             storedWfids;
@@ -1083,7 +1088,6 @@ protected:
 };
 
 void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs);
-void normalizeAnnotations(HqlCppTranslator & translator, WorkflowArray & workflow);
 
 //---------------------------------------------------------------------------
 
@@ -1171,7 +1175,7 @@ protected:
 
 protected:
     IHqlExpression * transformChildrenNoAnnotations(IHqlExpression * expr);
-    IHqlExpression * makeRecursiveName(_ATOM searchModule, _ATOM searchName);
+    IHqlExpression * makeRecursiveName(IAtom * searchModule, IAtom * searchName);
     HqlTreeNormalizerInfo * queryLocationIndependentExtra(IHqlExpression * expr);
     IHqlExpression * transformSimpleConst(IHqlExpression * expr)
     {
@@ -1214,13 +1218,12 @@ void hoistNestedCompound(HqlCppTranslator & _translator, HqlExprArray & exprs);
 void hoistNestedCompound(HqlCppTranslator & _translator, WorkflowArray & workflow);
 
 //---------------------------------------------------------------------------
-void expandGlobalDatasets(WorkflowArray & array, IWorkUnit * wu, HqlCppTranslator & translator);
-void mergeThorGraphs(WorkflowArray & array, bool resourceConditionalActions, bool resourceSequential);
-void migrateExprToNaturalLevel(WorkflowArray & array, IWorkUnit * wu, HqlCppTranslator & translator);
-void removeTrivialGraphs(WorkflowArray & workflow);
+void expandGlobalDatasets(WorkflowItem & curWorkflow, IWorkUnit * wu, HqlCppTranslator & translator);
+void mergeThorGraphs(WorkflowItem & curWorkflow, bool resourceConditionalActions, bool resourceSequential);
+void migrateExprToNaturalLevel(WorkflowItem & curWorkflow, IWorkUnit * wu, HqlCppTranslator & translator);
+void removeTrivialGraphs(WorkflowItem & curWorkflow);
 void extractWorkflow(HqlCppTranslator & translator, HqlExprArray & exprs, WorkflowArray & out);
 void optimizeActivities(HqlExprArray & exprs, bool optimizeCountCompare, bool optimizeNonEmpty);
-void optimizeActivities(WorkflowArray & array, bool optimizeCountCompare, bool optimizeNonEmpty);
 IHqlExpression * optimizeActivities(IHqlExpression * expr, bool optimizeCountCompare, bool optimizeNonEmpty);
 IHqlExpression * insertImplicitProjects(HqlCppTranslator & translator, IHqlExpression * expr, bool optimizeSpills);
 void insertImplicitProjects(HqlCppTranslator & translator, HqlExprArray & exprs);

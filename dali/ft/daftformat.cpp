@@ -161,6 +161,17 @@ void CPartitioner::setTarget(IOutputProcessor * _target)
     target.set(_target);
 }
 
+void CPartitioner::setRecordStructurePresent(bool _recordStructurePresent)
+{
+
+}
+
+void CPartitioner::getRecordStructure(StringBuffer & _recordStructure)
+{
+    _recordStructure.clear();
+}
+
+
 //----------------------------------------------------------------------------
 
 
@@ -227,16 +238,32 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
     offset_t nextInputOffset = cursor.nextInputOffset;
     const byte *buffer = bufferBase();
 
-    bool processFullBuffer = true;
+    offset_t logStepOffset;
+    if( (splitOffset-inputOffset) < 1000000000 )
+    {
+        logStepOffset = splitOffset / 4;  // 25% step to display progress for files < ~1G split
+    }
+    else
+    {
+        logStepOffset = splitOffset / 100;  // 1% step to display progress for files > ~1G split
+    }
+    offset_t oldInputOffset = nextInputOffset;
+
     while (nextInputOffset < splitOffset)
     {
+        if( nextInputOffset > oldInputOffset + logStepOffset)
+        {
+            // Display progress
+            oldInputOffset = nextInputOffset;
+            LOG(MCdebugProgressDetail, unknownJob, "findSplitPoint(splitOffset:%"I64F"d) progress: %3.0f%% done.", splitOffset, (double)100.0*(double)nextInputOffset/(double)splitOffset);
+        }
 
         inputOffset = nextInputOffset;
 
         ensureBuffered(headerSize);
         assertex((headerSize ==0) || (numInBuffer != bufferOffset));
 
-        processFullBuffer =  (nextInputOffset + blockSize) < splitOffset;
+        bool processFullBuffer =  (nextInputOffset + blockSize) < splitOffset;
 
         unsigned size = getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, processFullBuffer);
 
@@ -270,6 +297,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 
     cursor.inputOffset = inputOffset;
     cursor.nextInputOffset = nextInputOffset;
+    LOG(MCdebugProgressDetail, unknownJob, "findSplitPoint(splitOffset:%"I64F"d) progress: %3.0f%% done.", splitOffset, 100.0);
 }
 
 
@@ -555,6 +583,40 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
 
     matcher.queryAddEntry(1, " ", WHITESPACE);
     matcher.queryAddEntry(1, "\t", WHITESPACE);
+    recordStructure.append("RECORD\n");
+    isRecordStructurePresent = false;
+    fieldCount = 0;
+    isFirstRow = true;
+}
+
+void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
+{
+    ++fieldCount;
+    recordStructure.append("    STRING ");
+    // If record structure present in the first row and we have at least one character
+    // long string then it will be this field name.
+    // Otherwise we use "fieldx" (where x is the number of this field) as name.
+    // This prevents to generate wrong record structure if field name(s) missing:
+    // e.g: first row -> fieldA,fieldB,,fieldC,\n
+
+    // Check the field name
+    StringBuffer fieldName;
+    fieldName.append(start, 0, len);
+    fieldName.trim();
+
+    if (isRecordStructurePresent && (0 < fieldName.length() ))
+    {
+        fieldName.replace('-', '_');
+        fieldName.replace(' ', '_');
+
+        recordStructure.append(fieldName);
+    }
+    else
+    {
+        recordStructure.append("field");
+        recordStructure.append(fieldCount);
+    }
+    recordStructure.append(";\n");
 }
 
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
@@ -593,6 +655,11 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
             // Quoted separator
             if (quote == 0)
             {
+                if (isFirstRow)
+                {
+                    storeFieldName((const char*)firstGood, lastGood-firstGood);
+                }
+
                 lastEscape = false;
                 quoteToStrip = 0;
                 firstGood = cur + matchLen;
@@ -602,6 +669,17 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         case TERMINATOR:
             if (quote == 0) // Is this a good idea? Means a mismatched quote is not fixed by EOL
             {
+               if (isFirstRow)
+               {
+                   // TODO For further improvement we can use second
+                   // row to check discovered record structure (field count).
+                   isFirstRow = false;
+
+                   // Process last field
+                   storeFieldName((const char*)firstGood, lastGood-firstGood);
+                   recordStructure.append("END;");
+               }
+
                if (processFullBuffer)
                {
                    last = cur + matchLen;
@@ -612,7 +690,7 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
                }
                else
                {
-                    return (size32_t)(cur + matchLen - start);
+                   return (size32_t)(cur + matchLen - start);
                }
             }
             lastGood = cur+matchLen;
@@ -769,6 +847,20 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
             else if (splitOffset - thisOffset < thisSize)
                 throwError2(DFTERR_UnexpectedReadFailure, fullPath.get(), splitOffset-thisOffset+thisHeaderSize);
         }
+        else
+        {
+            // We are in the first part of the file
+            bool eof;
+            if (format.maxRecordSize + maxElementLength > blockSize)
+                eof = !ensureBuffered(blockSize);
+            else
+                eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
+            bool fullBuffer = false;
+
+            // Discover record structure in the first record/row
+            getSplitRecordSize(buffer, numInBuffer, fullBuffer, eof);
+        }
+
         cursor.inputOffset = splitOffset + bufferOffset;
         if (noTranslation)
             cursor.outputOffset = cursor.inputOffset - thisOffset;
@@ -1203,6 +1295,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
     numInBuffer = bufferOffset = 0;
     if (splitOffset != 0)
     {
+        LOG(MCdebugProgressDetail, unknownJob, "CXmlQuickPartitioner::findSplitPoint(splitOffset:%"I64F"d)", splitOffset);
         unsigned delta = (unsigned)(splitOffset & (unitSize-1));
         if (delta)
             splitOffset += (unitSize - delta);
@@ -1227,7 +1320,10 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                     break;
                 }
                 if (sizeAvailable >= format.maxRecordSize)
-                    throwError(DFTERR_EndOfRecordNotFound);
+                {
+                    LOG(MCdebugProgressDetail, unknownJob, "CXmlQuickPartitioner::findSplitPoint: record size (>%d bytes) is larger than expected maxRecordSize (%d bytes) [and blockSize (%d bytes)]", sizeRecord, format.maxRecordSize, blockSize);
+                    throwError3(DFTERR_EndOfXmlRecordNotFound, splitOffset+bufferOffset, sizeRecord, format.maxRecordSize);
+                }
                 LOG(MCdebugProgress, unknownJob, "Failed to find split after reading %d", ensureSize);
                 ensureSize += blockSize;
                 if (ensureSize > format.maxRecordSize)
@@ -1376,6 +1472,16 @@ void CRemotePartitioner::setSource(unsigned _whichInput, const RemoteFilename & 
     passwordProvider.addPasswordForFilename(fullPath);
     compressedInput = _compressedInput;
     decryptKey.set(_decryptKey);
+}
+
+void CRemotePartitioner::setRecordStructurePresent(bool _recordStructurePresent)
+{
+
+}
+
+void CRemotePartitioner::getRecordStructure(StringBuffer & _recordStructure)
+{
+    _recordStructure.clear();
 }
 
 

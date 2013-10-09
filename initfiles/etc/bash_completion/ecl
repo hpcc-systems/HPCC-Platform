@@ -26,7 +26,7 @@
 _flag_option()
 {
     case "$1" in
-        "--help" | "-v" | "--verbose" | "--no-reload" | "--no-files" | "-A" | "--activate" | "-O" | "--overwrite" | "--ecl-only")
+        "--help" | "-v" | "--verbose" | "--no-reload" | "--no-files" | "-A" | "--activate" | "-O" | "--overwrite" | "--ecl-only" | "--legacy")
             echo 1
             ;;
         *)
@@ -150,7 +150,7 @@ _ecl_opts_packagemap()
 
 _ecl_opts_deploy()
 {
-    echo -n "-t= --target= -n= --name= --main= --ecl-only --limit= --snapshot= -sn="
+    echo -n "-t= --target= -n= --name= --main= --ecl-only --legacy --limit= --snapshot= -sn="
     echo -n "--wait= --manifest= "
 }
 

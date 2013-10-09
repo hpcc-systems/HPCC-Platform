@@ -453,6 +453,10 @@ public:
     {
         return CPackageNode::queryHash();
     }
+    virtual const char *queryId() const
+    {
+        return CPackageNode::queryId();
+    }
 };
 
 typedef CResolvedPackage<CRoxiePackageNode> CRoxiePackage;
@@ -1579,6 +1583,11 @@ private:
             {
                 checkCompleted = control->getPropBool("@val", true);
                 topology->setPropBool("@checkCompleted", checkCompleted );
+            }
+            else if (stricmp(queryName, "control:checkingHeap")==0)
+            {
+                defaultCheckingHeap = control->getPropBool("@val", true);
+                topology->setPropInt("@checkingHeap", defaultCheckingHeap);
             }
             else if (stricmp(queryName, "control:clearIndexCache")==0)
             {

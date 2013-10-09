@@ -349,8 +349,8 @@ public:
     CRoxieDaliHelper() : connectWatcher(this), serverStatus(NULL)
     {
         userdesc.setown(createUserDescriptor());
-        const char *roxieUser;
-        const char *roxiePassword;
+        const char *roxieUser = NULL;
+        const char *roxiePassword = NULL;
         if (topology)
         {
             roxieUser = topology->queryProp("@ldapUser");

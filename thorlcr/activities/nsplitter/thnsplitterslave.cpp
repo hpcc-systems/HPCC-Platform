@@ -210,7 +210,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
         {
             activity->ensureInputsConfigured();
             input->start();
-            dataLinkStart("SPLITTEROUTPUT", activity->queryContainer().queryId(), id);
+            dataLinkStart(id);
         }
         virtual bool isGrouped() { return activity->inputs.item(0)->isGrouped(); }
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info)

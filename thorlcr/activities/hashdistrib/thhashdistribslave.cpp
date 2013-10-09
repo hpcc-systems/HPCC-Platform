@@ -97,7 +97,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     Owned<ISmartRowBuffer> piperd;
 
     /*
-     * CSendBucket - a collection of rows destinate for a particular destination target(slave)
+     * CSendBucket - a collection of rows destined for a particular destination target(slave)
      */
     class CSendBucket : public CSimpleInterface, implements IRowStream
     {
@@ -1794,7 +1794,7 @@ public:
             Owned<IRowInterfaces> myRowIf = getRowInterfaces(); // avoiding circular link issues
             out.setown(distributor->connect(myRowIf, instrm, ihash, mergecmp));
         }
-        dataLinkStart("HASHDISTRIB", container.queryId());
+        dataLinkStart();
     }
     void start()
     {
@@ -2542,7 +2542,6 @@ protected:
     IRowStream *initialInput;
     Owned<IRowStream> currentInput;
     bool inputstopped, eos, lastEog, extractKey, local, isVariable, grouped;
-    const char *actTxt;
     IHThorHashDedupArg *helper;
     IHash *iHash, *iKeyHash;
     ICompare *iCompare, *rowKeyCompare;
@@ -2593,7 +2592,6 @@ public:
         : CSlaveActivity(_container), CThorDataLink(this), local(_local)
     {
         input = initialInput = NULL;
-        actTxt = NULL;
         initialNumBuckets = 0;
         inputstopped = eos = lastEog = extractKey = local = isVariable = grouped = false;
         helper = NULL;
@@ -2615,6 +2613,8 @@ public:
         iHash = helper->queryHash();
         appendOutputLinked(this);
         iCompare = helper->queryCompare();
+
+        // JCSMORE - really should ask / lookup what flags the allocator created for extractKey has...
         allocFlags = queryJob().queryThorAllocator()->queryFlags();
 
         // JCSMORE - it may not be worth extracting the key,
@@ -2671,7 +2671,7 @@ public:
         }
         ensureNumHashTables(initialNumBuckets);
         bucketHandler->init(initialNumBuckets);
-        dataLinkStart(actTxt, container.queryId());
+        dataLinkStart();
     }
     void stopInput()
     {
@@ -2684,7 +2684,7 @@ public:
     }
     void kill()
     {
-        ActPrintLog("%s: kill", actTxt);
+        ActPrintLog("kill");
         currentInput.clear();
         bucketHandler.clear();
         bucketHandlerStack.kill();
@@ -3195,11 +3195,10 @@ public:
     LocalHashDedupSlaveActivity(CGraphElementBase *container)
         : HashDedupSlaveActivityBase(container, true)
     {
-        actTxt = "LOCALHASHDEDUP";
     }
     void stop()
     {
-        ActPrintLog("%s: stopping", actTxt);
+        ActPrintLog("stopping");
         stopInput();
         dataLinkStop();
     }
@@ -3223,7 +3222,6 @@ public:
     GlobalHashDedupSlaveActivity(CGraphElementBase *container)
         : HashDedupSlaveActivityBase(container, false)
     {
-        actTxt = "HASHDEDUP";
         distributor = NULL;
         mptag = TAG_NULL;
     }
@@ -3258,7 +3256,7 @@ public:
     }
     void stop()
     {
-        ActPrintLog("%s: stopping", actTxt);
+        ActPrintLog("stopping");
         if (instrm)
         {
             instrm->stop();
@@ -3390,7 +3388,7 @@ public:
             }
         }
         joinhelper->init(strmL, strmR, ::queryRowAllocator(inL), ::queryRowAllocator(inR), ::queryRowMetaData(inL), &abortSoon);
-        dataLinkStart("HASHJOIN", container.queryId());
+        dataLinkStart();
     }
     void stopInput()
     {
@@ -3669,7 +3667,7 @@ public:
             ActPrintLog("Table after distribution contains %d entries", localAggTable->elementCount());
         }
         eos = false;
-        dataLinkStart("HASHAGGREGATE", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {

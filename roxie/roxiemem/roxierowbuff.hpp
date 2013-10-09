@@ -82,10 +82,12 @@ public:
     void kill();
     void transferRows(rowidx_t & outNumRows, const void * * & outRows);
 
+    // also needs to be locked otherwise they could be updated out of sync
+    inline rowidx_t numCommitted() const { return commitRows - firstRow; }
+
     //The block returned is only valid until the critical section is released
 
     inline rowidx_t firstCommitted() const { return firstRow; }
-    inline rowidx_t numCommitted() const { return commitRows - firstRow; }
 
     //Locking functions - use the RoxieOutputRowArrayLock class below.
     inline void lock() const { cs.enter(); }

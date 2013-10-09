@@ -424,11 +424,11 @@ IPropertyTree * SourceFieldUsage::createReport(bool includeFieldDetail, const IP
     expandSelects(entry, source->queryRecord(), queryActiveTableSelector(), usedAll, includeFieldDetail, numFields, numFieldsUsed);
     if (isKey(source))
     {
-        IHqlExpression * original = queryPropertyChild(source, _original_Atom, 0);
+        IHqlExpression * original = queryAttributeChild(source, _original_Atom, 0);
         if (!original)
             original = source;
         IHqlExpression * lastField = queryLastField(original->queryRecord());
-        if (usedFilepos || !lastField->hasProperty(_implicitFpos_Atom))
+        if (usedFilepos || !lastField->hasAttribute(_implicitFpos_Atom))
         {
             numFields++;
             if (usedFilepos || usedAll)

@@ -234,8 +234,6 @@ class CSubscriberContainerList;
 class CRemoteTreeBase : public PTree
 {
 public:
-    IMPLEMENT_IINTERFACE;
-
     CRemoteTreeBase(MemoryBuffer &mb, CPState _state=CPS_Unchanged);
     CRemoteTreeBase(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, CPState _state=CPS_Unchanged);
     void reset(unsigned state, bool sub=false);

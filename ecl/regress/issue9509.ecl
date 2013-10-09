@@ -15,14 +15,17 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _thlookupjoinslave_ipp
-#define _thlookupjoinslave_ipp
+xRecord := RECORD
+unsigned        id;
+unsigned        x;
+            END;
 
-#include "slave.ipp"
+yRecord := RECORD
+unsigned        id;
+unsigned        y;
+            END;
 
-activityslaves_decl CActivityBase *createLookupJoinSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createAllJoinSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createLookupDenormalizeSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createAllDenormalizeSlave(CGraphElementBase *container);
+xTable := dataset([{1,2}], xRecord);
+yTable := dataset([{1,3}], yRecord);
 
-#endif
+OUTPUT(COUNT(JOIN(xTable, yTable, LEFT.id= RIGHT.id)));

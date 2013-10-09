@@ -853,11 +853,24 @@ ESPresponse [encode(0), exceptions_inline] WUProcessGraphResponse
 ESPrequest WUGetGraphRequest
 {
     string Wuid;
-    [min_ver("1.19")] string GraphName; 
+    [min_ver("1.19")] string GraphName;
     [min_version("1.21")] string SubGraphId;
 };
 
 ESPresponse [exceptions_inline] WUGetGraphResponse
+{
+    ESParray<ESPstruct ECLGraphEx> Graphs;
+};
+
+ESPrequest WUQueryGetGraphRequest
+{
+    string Target;
+    string QueryId;
+    [min_ver("1.19")] string GraphName;
+    [min_version("1.21")] string SubGraphId;
+};
+
+ESPresponse [exceptions_inline] WUQueryGetGraphResponse
 {
     ESParray<ESPstruct ECLGraphEx> Graphs;
 };
@@ -1154,6 +1167,7 @@ ESPStruct ClusterQueryState
 {
     string Cluster;
     string State;
+    [min_ver("1.46")] string Errors;
 };
 
 ESPStruct [nil_remove] QuerySetQuery
@@ -1169,6 +1183,10 @@ ESPStruct [nil_remove] QuerySetQuery
     nonNegativeInteger warnTimeLimit;
     string priority;
     string Comment;
+    [min_ver("1.45")] string QuerySetId;
+    [min_ver("1.46")] bool IsLibrary;
+    [min_ver("1.46")] bool Activated;
+    [min_ver("1.46")] string PublishedBy;
 };
 
 ESPStruct QuerySetAlias
@@ -1205,6 +1223,33 @@ ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
     [min_ver("1.37")] ESParray<string> ClusterNames;
 };
 
+ESPrequest [nil_remove] WUListQueriesRequest
+{
+    string  QuerySetName;
+    string  ClusterName;
+    int64 MemoryLimitLow;
+    int64 MemoryLimitHigh;
+    nonNegativeInteger TimeLimitLow;
+    nonNegativeInteger TimeLimitHigh;
+    nonNegativeInteger WarnTimeLimitLow;
+    nonNegativeInteger WarnTimeLimitHigh;
+    nonNegativeInteger PriorityLow;
+    nonNegativeInteger PriorityHigh;
+
+    nonNegativeInteger PageSize(0);
+    nonNegativeInteger PageStartFrom(0);
+    string Sortby;
+    bool Descending(false);
+    int64 CacheHint;
+};
+
+ESPresponse [exceptions_inline] WUListQueriesResponse
+{
+    int   NumberOfQueries;
+    int64 CacheHint;
+    ESParray<ESPstruct QuerySetQuery> QuerysetQueries;
+};
+
 ESPrequest WUQueryDetailsRequest
 {
     string QueryId;
@@ -1235,7 +1280,13 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
 
     ESParray<string> LogicalFiles;
     [min_ver("1.44")] ESParray<ESPstruct QuerySuperFile, SuperFile> SuperFiles;
-
+    [min_ver("1.46")] bool IsLibrary;
+    [min_ver("1.46")] string Priority;
+    [min_ver("1.46")] string WUSnapShot; //Label
+    [min_ver("1.46")] string CompileTime;
+    [min_ver("1.46")] ESParray<string> LibrariesUsed;
+    [min_ver("1.46")] int CountGraphs;
+    [min_ver("1.46")] ESParray<string> GraphIds;
 };
 
 ESPrequest WUMultiQuerySetDetailsRequest
@@ -1362,7 +1413,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.44"), default_client_version("1.44"),
+    version("1.46"), default_client_version("1.46"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
@@ -1412,6 +1463,7 @@ ESPservice [
     ESPmethod WUFile(WULogFileRequest, WULogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
     ESPmethod WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
+    ESPmethod WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
     ESPmethod WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
 
     ESPmethod WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
@@ -1429,6 +1481,7 @@ ESPservice [
     ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
+    ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
 };
 
 

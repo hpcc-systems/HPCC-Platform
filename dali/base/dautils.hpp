@@ -59,11 +59,12 @@ class da_decl CDfsLogicalFileName
     CMultiDLFN *multi;   // for temp superfile
     bool external;
     bool allowospath;
-    IUserDescriptor *udesc;
+
 public:
     CDfsLogicalFileName();
     ~CDfsLogicalFileName();
 
+    CDfsLogicalFileName & operator = (CDfsLogicalFileName const &from);
     void set(const char *lfn);
     void set(const CDfsLogicalFileName &lfn);
     bool setValidate(const char *lfn,bool removeforeign=false); // checks for invalid chars
@@ -71,7 +72,6 @@ public:
     bool setFromMask(const char *partmask,const char *rootdir=NULL);
     void clear();
     bool isSet() const;
-    void setUserDescriptor(IUserDescriptor *_udesc) { udesc = _udesc; }
     /*
      * Foreign files are distributed files whose meta data is stored on a foreign
      * Dali Server, so their names are resolved externally.
@@ -133,6 +133,9 @@ public:
     const void resolveWild();  // only for multi
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
+    bool isExpanded() const;
+    void expand(IUserDescriptor *user);
+    void normalizeName(const char * name, StringAttr &res);
 };
 
 // abstract class, define getCmdText to return tracing text of commands
@@ -263,17 +266,22 @@ interface ISortedElementsTreeFilter : extends IInterface
 {
     virtual bool isOK(IPropertyTree &tree) = 0;
 };
-
-extern da_decl IRemoteConnection *getElementsPaged( const char *basexpath, 
-                                     const char *xpath, 
+interface IElementsPager : extends IInterface
+{
+    virtual IRemoteConnection *getElements(IArrayOf<IPropertyTree> &elements) = 0;
+};
+extern da_decl void sortElements( IPropertyTreeIterator* elementsIter,
                                      const char *sortorder, 
+                                     const char *namefilterlo, // if non null filter less than this value
+                                     const char *namefilterhi, // if non null filter greater than this value
+                                     IArrayOf<IPropertyTree> &sortedElements);
+
+extern da_decl IRemoteConnection *getElementsPaged(IElementsPager *elementsPager,
                                      unsigned startoffset, 
                                      unsigned pagesize, 
                                      ISortedElementsTreeFilter *postfilter, // if non-NULL filters before adding to page
                                      const char *owner,
                                      __int64 *hint,                         // if non null points to in/out cache hint
-                                     const char *namefilterlo, // if non null filter less than this value
-                                     const char *namefilterhi, // if non null filter greater than this value
                                      IArrayOf<IPropertyTree> &results,
                                      unsigned *total); // total possible filtered matches, i.e. irrespective of startoffset and pagesize
 

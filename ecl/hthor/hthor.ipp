@@ -1371,6 +1371,7 @@ private:
     bool limitFail;
     bool limitOnFail;
     bool hasGroupLimit;
+    bool isSmartJoin;
     unsigned keepCount;
     OwnedConstRoxieRow defaultRight;
     RtlDynamicRowBuilder outBuilder;

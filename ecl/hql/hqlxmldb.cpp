@@ -203,9 +203,7 @@ bool CXmlScope::appendValue(const char *name, const char *value)
     CXmlScope *scope = _findValue(name);
     if (scope)
     {
-        StringBuffer s;
-        scope->locals->getProp(name, s);
-        scope->locals->setProp(name, s.append(value).str());
+        scope->locals->appendProp(name, value);
         return true;
     }
     else

@@ -98,7 +98,7 @@ protected:
 
 
 typedef ICopyArrayOf<IHqlExpression> HqlExprCopyArray;
-typedef class MapXToMyClass<_ATOM, _ATOM, _ATOM> KeywordMap;
+typedef class MapXToMyClass<IAtom *, IAtom *, IAtom *> KeywordMap;
 typedef ICopyArrayOf<IAtom> AtomArray;
 
 const unsigned UnadornedParameterIndex = (unsigned)-1;
@@ -126,7 +126,7 @@ enum
     HEFfunctionOfGroupAggregate = 0x00000200,
     HEFvolatile                 = 0x00000400,           // value changes each time called - e.g., random()
     HEFaction                   = 0x00000800,           // an action, or something that can have a side-effect
-  HEF____unused4____          = 0x00000100,
+    HEFaccessRuntimeContext     = 0x00000100,
     HEFthrowscalar              = 0x00002000,           // scalar/action that can throw an exception
     HEFthrowds                  = 0x00004000,           // dataset that can throw an exception
     HEFoldthrows                = 0x00008000,           // old throws flag, which I should remove asap
@@ -166,7 +166,7 @@ enum
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
                                    HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontextDependentException|HEFcontainsAlias|HEFcontainsAliasLocally|
-                                   HEFinternalSelect|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally),
+                                   HEFinternalSelect|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally|HEFaccessRuntimeContext),
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
@@ -351,7 +351,7 @@ enum _node_operator {
         no_delayedscope,
         no_assertconcrete,
         no_unboundselect,
-    no_unused23,
+        no_id,
     no_unused24,
         no_dataset_from_transform,
         no_childquery,
@@ -783,6 +783,22 @@ enum annotate_kind
     annotate_max
 };
 
+//An enumeration of all the possible derived properties implemented by functions in hqlattr.hpp
+enum ExprPropKind
+{
+    EPnone,
+    EPrecordCount,
+    EPdiskserializedForm,
+    EPinternalserializedForm,
+    EPsize,
+    EPaligned,
+    EPunadorned,
+    EPlocationIndependent,
+    EPmeta,
+    EPmax
+};
+
+
 #ifdef ENABLE_ENUM_TYPE
     typedef enum _node_operator node_operator;
 #else
@@ -813,7 +829,7 @@ typedef IArrayOf<IECLError> IECLErrorArray;
 
 interface IHqlSimpleScope : public IInterface
 {
-    virtual IHqlExpression *lookupSymbol(_ATOM name) = 0;
+    virtual IHqlExpression *lookupSymbol(IIdAtom * name) = 0;
 };
 
 interface IHqlAlienTypeInfo : public IInterface
@@ -828,7 +844,7 @@ interface IHqlAlienTypeInfo : public IInterface
     virtual IHqlExpression * queryLoadFunction() = 0;
     virtual IHqlExpression * queryLengthFunction() = 0;
     virtual IHqlExpression * queryStoreFunction() = 0;
-    virtual IHqlExpression * queryFunction(_ATOM name) = 0;
+    virtual IHqlExpression * queryFunction(IIdAtom * name) = 0;
 };
 
 interface IFileContents : public IInterface
@@ -887,7 +903,7 @@ public:
     }
 
     void addForwardReference(IHqlScope * owner, IHasUnlinkedOwnerReference * child);
-    void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
+    void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name);
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     void noteEndAttribute();
@@ -949,8 +965,8 @@ public:
         functionCache = &parseCtx.defaultFunctionCache;
     }
 
-    void createDependencyEntry(IHqlScope * scope, _ATOM name);
-    void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name);
+    void createDependencyEntry(IHqlScope * scope, IIdAtom * name);
+    void noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name);
     void noteBeginModule(IHqlScope * scope, IFileContents * contents);
     void noteBeginQuery(IHqlScope * scope, IFileContents * contents);
     inline void noteEndAttribute() { parseCtx.noteEndAttribute(); }
@@ -1011,10 +1027,11 @@ inline unsigned makeLookupFlags(bool sharedOK, bool ignoreBase, bool required)
 interface IHqlScope : public IInterface
 {
     virtual IHqlExpression * queryExpression() = 0;
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx) = 0;
 
-    virtual void    getSymbols(HqlExprArray& exprs) const= 0;
-    virtual _ATOM   queryName() const = 0;
+    virtual void getSymbols(HqlExprArray& exprs) const= 0;
+    virtual IAtom * queryName() const = 0;
+    virtual IIdAtom * queryId() const = 0;
     virtual const char * queryFullName() const = 0;
     virtual ISourcePath * querySourcePath() const = 0;
     virtual bool hasBaseClass(IHqlExpression * searchBase) = 0;
@@ -1027,28 +1044,29 @@ interface IHqlScope : public IInterface
 
     virtual bool isImplicit() const = 0;
     virtual bool isPlugin() const = 0;
-    virtual int getPropInt(_ATOM, int) const = 0;
-    virtual bool getProp(_ATOM, StringBuffer &) const = 0;
+    virtual int getPropInt(IAtom *, int) const = 0;
+    virtual bool getProp(IAtom *, StringBuffer &) const = 0;
 
     //IHqlCreateScope
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) = 0;
-    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) = 0;
+    virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) = 0;
+    virtual void defineSymbol(IIdAtom * name, IIdAtom * moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) = 0;
     virtual void defineSymbol(IHqlExpression * expr) = 0;       // use with great care, expr must be a named symbol.
-    virtual void removeSymbol(_ATOM name) = 0;      // use with great care
+    virtual void removeSymbol(IIdAtom * name) = 0;      // use with great care
 };
 
 interface IEclSource;
 interface IHqlRemoteScope : public IInterface
 {
     virtual IHqlScope * queryScope() = 0;
-    virtual void setProp(_ATOM, const char *) = 0;
-    virtual void setProp(_ATOM, int) = 0;
+    virtual void setProp(IAtom *, const char *) = 0;
+    virtual void setProp(IAtom *, int) = 0;
     virtual IEclSource * queryEclSource() const = 0;
 };
 
 
 interface IHqlDataset : public IInterface
 {
+    virtual IHqlExpression * queryExpression() = 0;
     virtual IHqlDataset* queryTable() = 0;
     virtual IHqlDataset * queryRootTable() = 0;         // get DATASET definition.
     virtual IHqlExpression * queryContainer() = 0;          // this shouldn't really be used - won't extent to more arbitrary relation trees.
@@ -1061,7 +1079,8 @@ interface IHqlAnnotation;
 class HQL_API CUsedTablesBuilder;
 interface IHqlExpression : public IInterface
 {
-    virtual _ATOM queryName() const = 0;
+    virtual IAtom * queryName() const = 0;
+    virtual IIdAtom * queryId() const = 0;
     virtual node_operator getOperator() const = 0;
     virtual bool isBoolean() = 0;
     virtual bool isDataset() = 0;
@@ -1088,7 +1107,7 @@ interface IHqlExpression : public IInterface
     virtual unsigned getInfoFlags2() const = 0;
 
     virtual ISourcePath * querySourcePath() const = 0;
-    virtual _ATOM queryFullModuleName() const = 0;              // only defined for a named symbol
+    virtual IIdAtom * queryFullModuleId() const = 0;              // only defined for a named symbol
     virtual int  getStartLine() const = 0;
     virtual int  getStartColumn() const = 0;
     virtual IPropertyTree * getDocumentation() const = 0;
@@ -1101,6 +1120,7 @@ interface IHqlExpression : public IInterface
     virtual unsigned numChildren() const = 0;
     virtual bool isIndependentOfScope() = 0;
     virtual bool usesSelector(IHqlExpression * selector) = 0;
+    virtual bool isIndependentOfScopeIgnoringInputs() = 0;
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) = 0;
     virtual IValue *queryValue() const = 0;
     virtual IInterface *queryUnknownExtra() = 0;
@@ -1113,8 +1133,8 @@ interface IHqlExpression : public IInterface
     virtual IHqlExpression *queryExternalDefinition() const = 0;
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false) = 0;
 
-    virtual IHqlExpression *queryProperty(_ATOM propName) const = 0;
-    virtual IHqlExpression *queryAttribute(_ATOM propName) = 0;
+    virtual IHqlExpression *queryAttribute(IAtom * propName) const = 0;
+    virtual IHqlExpression *queryProperty(ExprPropKind kind) = 0;
 
     virtual ITypeInfo *queryRecordType() = 0;
     virtual IHqlExpression *queryRecord() = 0;
@@ -1157,7 +1177,7 @@ interface IHqlExpression : public IInterface
     inline bool isAnnotation() const { return getAnnotationKind() != annotate_none; }
     inline bool isNamedSymbol() const { return getAnnotationKind() == annotate_symbol; }
     inline bool isFunctionDefinition() const { return getOperator() == no_funcdef; }
-    inline bool hasProperty(_ATOM propName) const { return queryProperty(propName) != NULL; }
+    inline bool hasAttribute(IAtom * propName) const { return queryAttribute(propName) != NULL; }
     inline bool hasText() const 
     { 
         IFileContents * contents = queryDefinitionText();
@@ -1178,7 +1198,7 @@ interface IHqlAnnotation : public IInterface
 interface IHqlNamedAnnotation : public IHqlAnnotation
 {
     virtual IFileContents * getBodyContents() = 0;
-    virtual IHqlExpression * cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs) = 0;
+    virtual IHqlExpression * cloneSymbol(IIdAtom * optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs) = 0;
     virtual bool isExported() const = 0;
     virtual bool isShared() const = 0;
     virtual bool isPublic() const = 0;
@@ -1206,8 +1226,9 @@ extern HQL_API const char *getOpString(node_operator op);
 extern HQL_API IHqlExpression *createValue(node_operator op);
 extern HQL_API IHqlExpression *createValue(node_operator op, IHqlExpression *p1, IHqlExpression *p2);
 extern HQL_API IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type);
-extern HQL_API IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _ATOM name);
-extern HQL_API IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, _ATOM name, HqlExprArray & args);
+extern HQL_API IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id);
+extern HQL_API IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id, HqlExprArray & args);
+extern HQL_API IHqlExpression *createId(IIdAtom * id);
 
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type);
 extern HQL_API IHqlExpression *createValue(node_operator op, ITypeInfo * type, IHqlExpression *p1);
@@ -1230,8 +1251,8 @@ extern HQL_API IHqlExpression *createWrapper(node_operator op, ITypeInfo * type,
 //This doesn't consume its argument!
 extern HQL_API IHqlExpression *createWrappedExpr(IHqlExpression * expr, node_operator op, HqlExprArray & args);
 
-extern HQL_API IHqlExpression *createAlienType(_ATOM, IHqlScope *);
-extern HQL_API IHqlExpression *createAlienType(_ATOM name, IHqlScope * scope, HqlExprArray &newkids, IHqlExpression * funcdef=NULL);
+extern HQL_API IHqlExpression *createAlienType(IIdAtom *, IHqlScope *);
+extern HQL_API IHqlExpression *createAlienType(IIdAtom * name, IHqlScope * scope, HqlExprArray &newkids, IHqlExpression * funcdef=NULL);
 extern HQL_API IHqlExpression *createEnumType(ITypeInfo * _type, IHqlScope *_scope);
 
 extern HQL_API IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1);
@@ -1243,8 +1264,8 @@ extern HQL_API IHqlExpression *createList(node_operator op, ITypeInfo *type, IHq
 extern HQL_API IHqlExpression *createBinaryList(node_operator op, HqlExprArray & args);
 extern HQL_API IHqlExpression *createLeftBinaryList(node_operator op, HqlExprArray & args);
 
-extern HQL_API IHqlExpression *createField(_ATOM name, ITypeInfo *type, IHqlExpression *defaultValue, IHqlExpression *attrs=NULL);
-extern HQL_API IHqlExpression *createField(IAtom *name, ITypeInfo *type, HqlExprArray & args);
+extern HQL_API IHqlExpression *createField(IIdAtom * name, ITypeInfo *type, IHqlExpression *defaultValue, IHqlExpression *attrs=NULL);
+extern HQL_API IHqlExpression *createField(IIdAtom *name, ITypeInfo *type, HqlExprArray & args);
 extern HQL_API IHqlExpression *createConstant(bool constant);
 extern HQL_API IHqlExpression *createConstant(__int64 constant);
 extern HQL_API IHqlExpression *createConstant(const char *constant);
@@ -1264,35 +1285,36 @@ extern HQL_API IHqlExpression *createRow(node_operator op, HqlExprArray & args);
 extern HQL_API IHqlExpression *createRowF(node_operator op, ...);
 extern HQL_API IHqlExpression *createRecord();
 extern HQL_API IHqlExpression *createRecord(const HqlExprArray & fields);
-extern HQL_API IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, IHqlExpression *props);
-extern HQL_API IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, HqlExprArray & attributes);
+extern HQL_API IHqlExpression *createExternalReference(IIdAtom * name, ITypeInfo *_type, IHqlExpression *props);
+extern HQL_API IHqlExpression *createExternalReference(IIdAtom * name, ITypeInfo *_type, HqlExprArray & attributes);
 HQL_API IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef);
 extern HQL_API IHqlExpression *createBoundFunction(IErrorReceiver * errors, IHqlExpression *func, HqlExprArray & ownedActuals, HqlExprArray * functionCache, bool forceExpansion);
 extern HQL_API IHqlExpression *createReboundFunction(IHqlExpression *func, HqlExprArray & ownedActuals);
 extern HQL_API IHqlExpression *createTranslatedExternalCall(IErrorReceiver * errors, IHqlExpression *func, HqlExprArray &actuals);
-extern HQL_API IHqlExpression *createParameter(_ATOM name, unsigned idx, ITypeInfo *type, HqlExprArray & args);
+extern HQL_API IHqlExpression *createParameter(IIdAtom * name, unsigned idx, ITypeInfo *type, HqlExprArray & args);
 extern HQL_API IHqlExpression *createDatasetFromRow(IHqlExpression * ownedRow);
 extern HQL_API IHqlExpression * createTypedValue(node_operator op, ITypeInfo * type, HqlExprArray & args);
 extern HQL_API IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * newType);     //arguments must be linked
 
+extern HQL_API IHqlExpression * cloneFieldMangleName(IHqlExpression * expr);
 extern HQL_API IHqlExpression * expandOutOfLineFunctionCall(IHqlExpression * expr);
 extern HQL_API void expandDelayedFunctionCalls(IErrorReceiver * errors, HqlExprArray & exprs);
 
 extern HQL_API IHqlExpression *createQuoted(const char * name, ITypeInfo *type);
 extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type);
-extern HQL_API IHqlExpression * createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags);
-extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
-extern HQL_API IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
+extern HQL_API IHqlExpression * createSymbol(IIdAtom * name, IHqlExpression *expr, unsigned exportFlags);
+extern HQL_API IHqlExpression * createSymbol(IIdAtom * _name, IIdAtom * _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags);
+extern HQL_API IHqlExpression * createSymbol(IIdAtom * _name, IIdAtom * moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                                              bool exported, bool shared, unsigned symbolFlags,
                                              IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos);
-extern HQL_API IHqlExpression *createAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
-extern HQL_API IHqlExpression *createAttribute(_ATOM name, HqlExprArray & args);
-extern HQL_API IHqlExpression *createExprAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
-extern HQL_API IHqlExpression *createExprAttribute(_ATOM name, HqlExprArray & args);
-extern HQL_API IHqlExpression *createLinkAttribute(_ATOM name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
-extern HQL_API IHqlExpression *createLinkAttribute(_ATOM name, HqlExprArray & args);
-extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, _ATOM name, IInterface * value);
-extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type, _ATOM name, unsigned __int64 value);
+extern HQL_API IHqlExpression *createAttribute(IAtom * name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
+extern HQL_API IHqlExpression *createAttribute(IAtom * name, HqlExprArray & args);
+extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
+extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, HqlExprArray & args);
+extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, IHqlExpression * value = NULL, IHqlExpression * value2 = NULL, IHqlExpression * value3 = NULL);
+extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, HqlExprArray & args);
+extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, IAtom * name, IInterface * value);
+extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type, IAtom * name, unsigned __int64 value);
 extern HQL_API IHqlExpression *createCompareExpr(node_operator op, IHqlExpression * l, IHqlExpression * r);
 extern HQL_API IHqlExpression * createAliasOwn(IHqlExpression * expr, IHqlExpression * attr);
 inline IHqlExpression * createAlias(IHqlExpression * expr, IHqlExpression * attr) { return createAliasOwn(LINK(expr), LINK(attr)); }
@@ -1396,14 +1418,14 @@ extern HQL_API IHqlScope *createConcreteScope();
 extern HQL_API IHqlScope *createForwardScope(IHqlScope * parentScope, HqlGramCtx * parentCtx, HqlParseContext & parseCtx);
 extern HQL_API IHqlScope *createLibraryScope();
 extern HQL_API IHqlScope *createVirtualScope();
-extern HQL_API IHqlScope* createVirtualScope(_ATOM name, const char * fullName);
+extern HQL_API IHqlScope* createVirtualScope(IIdAtom * name, const char * fullName);
 extern HQL_API IHqlScope *createScope(node_operator op);
 extern HQL_API IHqlScope *createScope(IHqlScope * scope);
 extern HQL_API IHqlScope *createPrivateScope();
 extern HQL_API IHqlScope *createPrivateScope(IHqlScope * scope);
 extern HQL_API IHqlExpression * createDelayedScope(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createDelayedScope(HqlExprArray &newkids);
-extern HQL_API IHqlRemoteScope *createRemoteScope(_ATOM name, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * _text, bool lazy, IEclSource * eclSource);
+extern HQL_API IHqlRemoteScope *createRemoteScope(IIdAtom * name, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * _text, bool lazy, IEclSource * eclSource);
 extern HQL_API IHqlExpression * populateScopeAndClose(IHqlScope * scope, const HqlExprArray & children, const HqlExprArray & symbols);
 
 extern HQL_API IHqlExpression* createTemplateFunctionContext(IHqlExpression* body, IHqlScope* helperScope);
@@ -1420,8 +1442,8 @@ extern HQL_API bool isFullJoin(IHqlExpression * expr);
 extern HQL_API bool isLeftJoin(IHqlExpression * expr);
 extern HQL_API bool isRightJoin(IHqlExpression * expr);
 extern HQL_API bool isSimpleInnerJoin(IHqlExpression * expr);
-extern HQL_API _ATOM queryJoinKind(IHqlExpression * expr);
-inline bool isSpecificJoin(IHqlExpression * expr, _ATOM leftRightKind) { return queryJoinKind(expr) == leftRightKind; }
+extern HQL_API IAtom * queryJoinKind(IHqlExpression * expr);
+inline bool isSpecificJoin(IHqlExpression * expr, IAtom * leftRightKind) { return queryJoinKind(expr) == leftRightKind; }
 
 extern HQL_API bool isLimitedJoin(IHqlExpression * expr);
 extern HQL_API bool isGroupedActivity(IHqlExpression * expr);
@@ -1438,23 +1460,23 @@ extern HQL_API void unlockTransformMutex();
 extern HQL_API void PrintLogExprTree(IHqlExpression *expr, const char *caption = NULL, bool full = false);
 
 extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquery, unsigned limit);
-//extern HQL_API void loadImplicitScopes(IEclRepository &dataServer, HqlScopeArray &defualtScopes, int suppress, _ATOM suppressName);
+//extern HQL_API void loadImplicitScopes(IEclRepository &dataServer, HqlScopeArray &defualtScopes, int suppress, IIdAtom * suppressName);
 
 extern HQL_API unsigned getExpressionCRC(IHqlExpression * expr);
-extern HQL_API IHqlExpression * queryPropertyInList(_ATOM search, IHqlExpression * cur);
-extern HQL_API IHqlExpression * queryProperty(_ATOM search, const HqlExprArray & exprs);
+extern HQL_API IHqlExpression * queryAttributeInList(IAtom * search, IHqlExpression * cur);
+extern HQL_API IHqlExpression * queryAttribute(IAtom * search, const HqlExprArray & exprs);
 extern HQL_API IHqlExpression * queryAnnotation(IHqlExpression * expr, annotate_kind search);       // return first match
 extern HQL_API IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr);
 
 inline bool hasAnnotation(IHqlExpression * expr, annotate_kind search){ return queryAnnotation(expr, search) != NULL; }
 inline IHqlExpression * queryNamedSymbol(IHqlExpression * expr) { return queryAnnotation(expr, annotate_symbol); }
 inline bool hasNamedSymbol(IHqlExpression * expr) { return hasAnnotation(expr, annotate_symbol); }
-inline bool hasProperty(_ATOM search, HqlExprArray & exprs) { return queryProperty(search, exprs) != NULL; }
+inline bool hasAttribute(IAtom * search, const HqlExprArray & exprs) { return queryAttribute(search, exprs) != NULL; }
 
-extern HQL_API IHqlExpression * queryAnnotationProperty(_ATOM search, IHqlExpression * annotation);
-extern HQL_API IHqlExpression * queryMetaProperty(_ATOM search, IHqlExpression * expr);
-extern HQL_API void gatherMetaProperties(HqlExprArray & matches, _ATOM search, IHqlExpression * expr);
-extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, _ATOM search, IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpression * annotation);
+extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression * expr);
+extern HQL_API void gatherMetaProperties(HqlExprArray & matches, IAtom * search, IHqlExpression * expr);
+extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, IAtom * search, IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr);
 extern HQL_API void gatherLocations(HqlExprCopyArray & matches, IHqlExpression * expr);
@@ -1467,7 +1489,7 @@ extern HQL_API IHqlExpression * cloneMissingAnnotations(IHqlExpression * donor, 
 extern HQL_API IHqlExpression * forceCloneSymbol(IHqlExpression * donor, IHqlExpression * expr);
 
 // donor must be a symbol.  Any of the other arguments can be null to inherit the existing values
-extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, _ATOM optnewname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optoperands);
+extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, IIdAtom * optnewname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optoperands);
 
 extern HQL_API IHqlExpression * queryOperatorInList(node_operator search, IHqlExpression * cur);
 extern HQL_API IHqlExpression * queryOperator(node_operator search, const HqlExprArray & args);
@@ -1476,7 +1498,7 @@ extern HQL_API IHqlExpression * queryTable(IHqlExpression * dataset);
 extern HQL_API node_operator queryTableMode(IHqlExpression * expr);
 
 // Code for producing simplified records that the file viewer can cope with
-extern HQL_API ITypeInfo * getSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, _ATOM serialForm);
+extern HQL_API ITypeInfo * getSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, IAtom * serialForm);
 extern HQL_API IHqlExpression * getFileViewerRecord(IHqlExpression * record, bool isKey);
 extern HQL_API IHqlExpression * getRecordMappingTransform(node_operator op, IHqlExpression * tgt, IHqlExpression * src, IHqlExpression * sourceSelector);
 extern HQL_API IHqlExpression * getSimplifiedTransform(IHqlExpression * tgt, IHqlExpression * src, IHqlExpression * sourceSelector);
@@ -1493,7 +1515,7 @@ extern HQL_API void unwindCopyList(HqlExprCopyArray &dst, IHqlExpression * expr,
 extern HQL_API void unwindCommaCompound(HqlExprArray & target, IHqlExpression * expr);
 extern HQL_API void unwindRecordAsSelects(HqlExprArray & children, IHqlExpression * record, IHqlExpression * ds, unsigned max = (unsigned)-1);
 extern HQL_API unsigned unwoundCount(IHqlExpression * expr, node_operator op);
-extern HQL_API void unwindProperty(HqlExprArray & args, IHqlExpression * expr, _ATOM name);
+extern HQL_API void unwindProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name);
 extern HQL_API IHqlExpression * queryChildOperator(node_operator op, IHqlExpression * expr);
 extern HQL_API IHqlExpression * createSelector(node_operator op, IHqlExpression * ds, IHqlExpression * seq);
 extern HQL_API IHqlExpression * createUniqueId();
@@ -1513,8 +1535,8 @@ extern HQL_API bool isActivityIndependentOfScope(IHqlExpression * expr);
 extern HQL_API bool exprReferencesDataset(IHqlExpression * expr, IHqlExpression * dataset);
 extern HQL_API bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, IHqlExpression * expr);
 extern HQL_API bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, const HqlExprCopyArray & required);
-extern HQL_API IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, _ATOM serialForm);
-extern HQL_API IHqlExpression * ensureSerialized(IHqlExpression * expr, _ATOM serialForm);
+extern HQL_API IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, IAtom * serialForm);
+extern HQL_API IHqlExpression * ensureSerialized(IHqlExpression * expr, IAtom * serialForm);
 extern HQL_API bool isDummySerializeDeserialize(IHqlExpression * expr);
 
 extern HQL_API unsigned getRepeatMax(IHqlExpression * expr);
@@ -1526,7 +1548,7 @@ extern HQL_API IHqlExpression * getActiveTableSelector();
 extern HQL_API IHqlExpression * queryActiveTableSelector();
 extern HQL_API IHqlExpression * getSelf(IHqlExpression * ds);
 extern HQL_API IHqlExpression * querySelfReference();
-extern HQL_API bool removeProperty(HqlExprArray & args, _ATOM name);
+extern HQL_API bool removeProperty(HqlExprArray & args, IAtom * name);
 extern HQL_API void removeProperties(HqlExprArray & args);
 
 extern HQL_API bool isChildRelationOf(IHqlExpression * child, IHqlExpression * other);
@@ -1568,7 +1590,8 @@ extern HQL_API bool hasUninheritedAttribute(IHqlExpression * field);
 extern HQL_API IHqlExpression * extractChildren(IHqlExpression * value);
 extern HQL_API IHqlExpression * queryOnlyField(IHqlExpression * record);
 extern HQL_API bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right);
-extern HQL_API bool assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right);
+extern HQL_API void assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right);
+extern HQL_API void assertRecordTypesMatch(IHqlExpression * left, IHqlExpression * right);
 extern HQL_API bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right);
 extern HQL_API bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right);
 extern HQL_API IHqlExpression * queryOriginalRecord(IHqlExpression * expr);
@@ -1581,7 +1604,7 @@ extern HQL_API IHqlExpression * querySelectorDataset(IHqlExpression * select, bo
 extern HQL_API IHqlExpression * replaceSelectorDataset(IHqlExpression * expr, IHqlExpression * newDataset);
 extern HQL_API IHqlExpression * querySkipDatasetMeta(IHqlExpression * dataset);
 extern HQL_API bool isNewSelector(IHqlExpression * expr);
-extern HQL_API IHqlExpression * queryRecordProperty(IHqlExpression * record, _ATOM name);
+extern HQL_API IHqlExpression * queryRecordProperty(IHqlExpression * record, IAtom * name);
 extern HQL_API bool isExported(IHqlExpression * expr);
 extern HQL_API bool isShared(IHqlExpression * expr);
 extern HQL_API bool isImport(IHqlExpression * expr);
@@ -1593,7 +1616,7 @@ extern HQL_API bool isPublicSymbol(IHqlExpression * expr);
 extern HQL_API ITypeInfo * getSumAggType(IHqlExpression * arg);
 extern HQL_API ITypeInfo * getSumAggType(ITypeInfo * argType);
 
-extern HQL_API bool getProperty(IHqlExpression * expr, _ATOM propName, StringBuffer & ret);
+extern HQL_API bool getProperty(IHqlExpression * expr, IAtom * propName, StringBuffer & ret);
 
 extern HQL_API bool filterIsKeyed(IHqlExpression * expr);
 extern HQL_API bool filterIsUnkeyed(IHqlExpression * expr);
@@ -1602,7 +1625,7 @@ extern HQL_API bool isTrivialDataset(IHqlExpression * expr);
 extern HQL_API bool isInlineTrivialDataset(IHqlExpression * expr);
 extern HQL_API void gatherChildTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope, IHqlExpression * expr, unsigned firstChild);
 extern HQL_API IHqlScope * closeScope(IHqlScope * scope);
-extern HQL_API _ATOM queryPatternName(IHqlExpression * expr);
+extern HQL_API IIdAtom * queryPatternName(IHqlExpression * expr);
 extern HQL_API IHqlExpression * closeAndLink(IHqlExpression * expr);
 extern HQL_API IHqlExpression * createAbstractRecord(IHqlExpression * record);
 extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements);
@@ -1622,17 +1645,13 @@ inline bool isCast(IHqlExpression * expr)
 }
 extern HQL_API bool isKey(IHqlExpression * expr);
 
-inline IHqlExpression * queryGrouping(ITypeInfo * type)     { return static_cast<IHqlExpression *>(type->queryGroupInfo()); }
-inline IHqlExpression * queryDistribution(ITypeInfo * type) { return static_cast<IHqlExpression *>(type->queryDistributeInfo()); }
-inline IHqlExpression * queryGlobalSortOrder(ITypeInfo * type)  { return static_cast<IHqlExpression *>(type->queryGlobalSortInfo()); }
-inline IHqlExpression * queryLocalUngroupedSortOrder(ITypeInfo * type)  { return static_cast<IHqlExpression *>(type->queryLocalUngroupedSortInfo()); }
-inline IHqlExpression * queryGroupSortOrder(ITypeInfo * type)   { return static_cast<IHqlExpression *>(type->queryGroupSortInfo()); }
-inline IHqlExpression * queryGrouping(IHqlExpression * expr)        { return queryGrouping(expr->queryType()); }
-inline IHqlExpression * queryDistribution(IHqlExpression * expr)    { return queryDistribution(expr->queryType()); }
-inline IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr) { return queryGlobalSortOrder(expr->queryType()); }
-inline IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr) { return queryLocalUngroupedSortOrder(expr->queryType()); }
-inline IHqlExpression * queryGroupSortOrder(IHqlExpression * expr)  { return queryGroupSortOrder(expr->queryType()); }
-inline bool isGrouped(ITypeInfo * type)                     { return type && type->queryGroupInfo() != NULL; }
+extern HQL_API IHqlExpression * queryGrouping(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryDistribution(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryGroupSortOrder(IHqlExpression * expr);
+
+inline bool isGrouped(ITypeInfo * type)                     { return type && (type->getTypeCode() == type_groupedtable); }
 inline bool isGrouped(IHqlExpression * expr)                { return isGrouped(expr->queryType()); }
 
 inline IFunctionTypeExtra * queryFunctionTypeExtra(ITypeInfo * type)    { return static_cast<IFunctionTypeExtra *>(queryUnqualifiedType(type)->queryModifierExtra()); }
@@ -1643,9 +1662,9 @@ extern HQL_API IHqlExpression * queryFunctionDefaults(IHqlExpression * expr);
 
 inline IHqlExpression * querySelSeq(IHqlExpression * expr)
 {
-    return expr->queryProperty(_selectorSequence_Atom);
+    return expr->queryAttribute(_selectorSequence_Atom);
 }
-extern HQL_API IHqlExpression * createGroupedAttribute(ITypeInfo * type);
+extern HQL_API IHqlExpression * createGroupedAttribute(IHqlExpression * grouping);
 extern HQL_API bool isSameUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API bool isSameFullyUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API IHqlExpression * queryNewSelectAttrExpr();
@@ -1666,7 +1685,7 @@ inline bool containsNonGlobalAlias(IHqlExpression * expr)
 inline bool containsAssertKeyed(IHqlExpression * expr)  { return (expr->getInfoFlags() & HEFassertkeyed) != 0; }
 inline bool containsAssertStepped(IHqlExpression * expr){ return (expr->getInfoFlags2() & HEF2assertstepped) != 0; }
 inline bool containsCounter(IHqlExpression * expr)      { return (expr->getInfoFlags() & HEFcontainsCounter) != 0; }
-inline bool isCountProject(IHqlExpression * expr)       { return expr->hasProperty(_countProject_Atom); }
+inline bool isCountProject(IHqlExpression * expr)       { return expr->hasAttribute(_countProject_Atom); }
 inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip)) != 0; }
 inline bool containsSelf(IHqlExpression * expr)         { return (expr->getInfoFlags2() & (HEF2containsSelf)) != 0; }
 inline bool isContextDependentExceptGraph(IHqlExpression * expr)    
@@ -1676,6 +1695,7 @@ inline bool containsTranslated(IHqlExpression * expr)   { return (expr->getInfoF
 inline bool containsSideEffects(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFaction|HEFthrowscalar|HEFthrowds)) != 0; }
 inline bool containsInternalSelect(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFinternalSelect)) != 0; }
 inline bool containsThisNode(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFcontainsThisNode)) != 0; }
+inline bool usesRuntimeContext(IHqlExpression * expr)   { return (expr->getInfoFlags() & (HEFaccessRuntimeContext)) != 0; }
 
 inline bool containsWorkflow(IHqlExpression * expr)     { return (expr->getInfoFlags2() & (HEF2workflow)) != 0; }
 inline bool containsMustHoist(IHqlExpression * expr)    { return (expr->getInfoFlags2() & (HEF2mustHoist)) != 0; }
@@ -1686,11 +1706,11 @@ inline bool containsCall(IHqlExpression * expr, bool includeOutOfLine)
     return (expr->getInfoFlags2() & mask) != 0;
 }
 
-inline bool hasDynamic(IHqlExpression * expr)           { return expr->hasProperty(dynamicAtom); }
+inline bool hasDynamic(IHqlExpression * expr)           { return expr->hasAttribute(dynamicAtom); }
 inline bool isAbstractDataset(IHqlExpression * expr)    
 { 
     IHqlExpression * record = expr->queryRecord();
-    return record && record->hasProperty(abstractAtom);
+    return record && record->hasAttribute(abstractAtom);
 }
 inline IHqlExpression * queryRecord(IHqlExpression * expr)
 {
@@ -1788,8 +1808,8 @@ extern HQL_API void displayHqlCacheStats();
 inline bool isInScope(IHqlExpression * e)       { return e == e->queryNormalizedSelector(); }
 inline int boolToInt(bool x)                    { return x ? 1 : 0; }
 
-extern HQL_API IHqlExpression * createFunctionDefinition(_ATOM name, IHqlExpression * value, IHqlExpression * parms, IHqlExpression * defaults, IHqlExpression * attrs);
-extern HQL_API IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args);
+extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, IHqlExpression * value, IHqlExpression * parms, IHqlExpression * defaults, IHqlExpression * attrs);
+extern HQL_API IHqlExpression * createFunctionDefinition(IIdAtom * name, HqlExprArray & args);
 extern HQL_API IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr);
 extern HQL_API void gatherWarnings(IErrorReceiver * errs, IHqlExpression * expr);
 
@@ -1828,13 +1848,13 @@ extern HQL_API IFileContents * createFileContentsFromFile(const char * filename,
 extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents, size32_t offset, size32_t len);
 extern HQL_API IFileContents * createFileContents(IFile * file, ISourcePath * sourcePath);
 
-void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName, IFileContents * contents,
+void addForwardDefinition(IHqlScope * scope, IIdAtom * symbolName, IIdAtom * moduleName, IFileContents * contents,
                           unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn);
 
 extern HQL_API IPropertyTree * createAttributeArchive();
 extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContext & ctx);
 extern HQL_API void ensureSymbolsDefined(IHqlScope * scope, HqlLookupContext & ctx);
-extern HQL_API bool getBoolProperty(IHqlExpression * expr, _ATOM name, bool dft=false);
+extern HQL_API bool getBoolProperty(IHqlExpression * expr, IAtom * name, bool dft=false);
 
 extern HQL_API void setLegacyEclSemantics(bool _value);
 extern HQL_API bool queryLegacyEclSemantics();

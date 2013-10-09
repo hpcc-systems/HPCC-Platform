@@ -223,6 +223,11 @@ void Thread::adjustNiceLevel()
 #endif
 }
 
+bool Thread::isCurrentThread() const
+{
+    return GetCurrentThreadId() == threadid;
+}
+
 // _nicelevel ranges from -20 to 19, the higher the nice level, the less cpu time the thread will get.
 void Thread::setNice(char _nicelevel)
 {
@@ -583,7 +588,7 @@ void CThreadedPersistent::start()
         VStringBuffer msg("CThreadedPersistent::start(%s) - not ready", athread.getName());
         WARNLOG("%s", msg.str());
         PrintStackReport();
-        throw MakeStringException(-1, "%s", msg.str());
+        throw MakeStringExceptionDirect(-1, msg.str());
     }
     sem.signal();
 }
@@ -1253,6 +1258,9 @@ class CWindowsPipeProcess: public CInterface, implements IPipeProcess
     CriticalSection sect;
     bool aborted;
     StringAttr allowedprogs;
+    StringArray envVars;
+    StringArray envValues;
+
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -1329,6 +1337,9 @@ public:
         StartupInfo.hStdInput  = hasinput?hProgInput:GetStdHandle(STD_INPUT_HANDLE);
         
         PROCESS_INFORMATION ProcessInformation;
+
+        // MORE - should create a new environment block that is copy of parent's, then set all the values in envVars/envValues, and pass it
+
         if (!CreateProcess(NULL, (char *)prog, NULL,NULL,TRUE,0,NULL, dir&&*dir?dir:NULL, &StartupInfo,&ProcessInformation)) {
             if (_title) {
                 StringBuffer errstr;
@@ -1347,6 +1358,16 @@ public:
             CloseHandle(hProgError);
         return true;
     }
+
+    virtual void setenv(const char *var, const char *value)
+    {
+        assertex(var);
+        if (!value)
+            value = "";
+        envVars.append(var);
+        envValues.append(value);
+    }
+
     size32_t read(size32_t sz, void *buf)
     {
         DWORD sizeRead;
@@ -1747,6 +1768,8 @@ protected: friend class PipeWriterThread;
     MemoryBuffer stderrbuf;
     size32_t stderrbufsize;
     StringAttr allowedprogs;
+    StringArray envVars;
+    StringArray envValues;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1871,6 +1894,10 @@ public:
                 if (chdir(dir) == -1)
                     throw MakeStringException(-1, "CLinuxPipeProcess::run: could not change dir to %s", dir.get());
             }
+            ForEachItemIn(idx, envVars)
+            {
+                ::setenv(envVars.item(idx), envValues.item(idx), 1);
+            }
             execvp(argv[0],argv);
             _exit(START_FAILURE);    // must be _exit!!     
         }
@@ -1935,6 +1962,15 @@ public:
             stderrbufferthread->start();
         }
         return true;
+    }
+
+    virtual void setenv(const char *var, const char *value)
+    {
+        assertex(var);
+        if (!value)
+            value = "";
+        envVars.append(var);
+        envValues.append(value);
     }
     
     size32_t read(size32_t sz, void *buf)

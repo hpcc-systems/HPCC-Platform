@@ -156,7 +156,7 @@ StringBuffer & TomToken::getName(StringBuffer & out)
     IHqlExpression * expr = pattern;
     if (!expr)
         return out.append("EOF");
-    _ATOM name = expr->queryName();
+    IAtom * name = expr->queryName();
     if (expr->getOperator() == no_pat_instance)
     {
         name = expr->queryChild(1)->queryName();
@@ -551,7 +551,7 @@ void TomProduction::optimizeRules()
 
 //---------------------------------------------------------------------------
 
-TomRule::TomRule(IHqlExpression * expr, _ATOM _name, const TomFeatureArray & _features, bool _implicit, bool _isMatched)
+TomRule::TomRule(IHqlExpression * expr, IAtom * _name, const TomFeatureArray & _features, bool _implicit, bool _isMatched)
 {
     def.set(expr);
     cloneLinkedArray(features, _features);
@@ -1013,7 +1013,7 @@ TomGuard * TomitaContext::createGuard(IHqlExpression * featureExpr, IHqlExpressi
             StringBuffer text;
             valueExpr->queryValue()->getStringValue(text);
             //MORE: case sensitivity/unicode
-            _ATOM value = createAtom(text);
+            IAtom * value = createAtom(text);
             return new TomStrGuard(feature, value);
         }
     case type_int:
@@ -1159,7 +1159,7 @@ void TomitaContext::createProductions(TomRule * rule, IHqlExpression * expr, boo
 }
 
 
-TomRule * TomitaContext::createRule(IHqlExpression * expr, _ATOM name, bool expandTokens)
+TomRule * TomitaContext::createRule(IHqlExpression * expr, IAtom * name, bool expandTokens)
 {
     TomRule * rule = queryRule(expr, name);
     if (!rule)
@@ -1207,7 +1207,7 @@ void TomitaContext::createSteps(TomRule * self, TomProduction * production, IHql
                 canExpand = isToken(def, expandTokens);
             if (!canExpand)
             {
-                if (expr->hasProperty(_function_Atom))
+                if (expr->hasAttribute(_function_Atom))
                     createSteps(self, production, def, expandTokens);
                 else
                 {
@@ -1420,7 +1420,7 @@ void TomitaContext::generateLexer()
         throwError1(HQLERR_TomitaPatternTooComplex, s.str());
     }
 
-    IHqlExpression * separator = expr->queryProperty(separatorAtom);
+    IHqlExpression * separator = expr->queryAttribute(separatorAtom);
     if (separator)
     {
         RegexContext regex2(expr, wu(), translatorOptions, timeReporter, NLPAregexStack);
@@ -1433,7 +1433,7 @@ void TomitaContext::generateLexer()
     else
         parser.skipDfa.setEmpty();
 
-    IHqlExpression * terminator = expr->queryProperty(terminatorAtom);
+    IHqlExpression * terminator = expr->queryAttribute(terminatorAtom);
     if (terminator)
         addLexerTerminator(terminator->queryChild(0));
 
@@ -1936,7 +1936,7 @@ TomFeature * TomitaContext::queryFeature(IHqlExpression * expr)
 }
 
 
-TomRule * TomitaContext::queryRule(IHqlExpression * expr, _ATOM name)
+TomRule * TomitaContext::queryRule(IHqlExpression * expr, IAtom * name)
 {
     //MORE: May need a hash table!
     ForEachItemIn(idx, rules)

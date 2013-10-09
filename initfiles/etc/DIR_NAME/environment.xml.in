@@ -776,7 +776,6 @@
                 callbackTimeout="500"
                 checkCompleted="true"
                 checkFileDate="true"
-                checkPrimaries="true"
                 clusterWidth="1"
                 copyResources="false"
                 crcResources="false"
@@ -977,7 +976,6 @@
                pluginsPath="${PLUGINS_PATH}"
                replicateAsync="false"
                replicateOutputs="false"
-               slaves="1"
                watchdogEnabled="true"
                watchdogProgressEnabled="true">
    <Debug/>

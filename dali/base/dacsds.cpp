@@ -573,7 +573,7 @@ void CClientRemoteTree::beforeDispose()
 void CClientRemoteTree::Link() const
 {
     connection.Link(); // inc ref count on connection
-    CInterface::Link();
+    CRemoteTreeBase::Link();
 }
 
 bool CClientRemoteTree::Release() const
@@ -581,12 +581,12 @@ bool CClientRemoteTree::Release() const
     //Note: getLinkCount() is not thread safe.
     if (1 < getLinkCount())  //NH -> JCS - you sure this is best way to do this?
     {           
-        bool res = CInterface::Release();
+        bool res = CRemoteTreeBase::Release();
         connection.Release(); // if this tree is not being destroyed then decrement usage count on connection
         return res;
     }
     else
-        return CInterface::Release();
+        return CRemoteTreeBase::Release();
 }
 
 void CClientRemoteTree::deserializeSelfRT(MemoryBuffer &mb)
@@ -766,7 +766,7 @@ ChildMap *CClientRemoteTree::_checkChildren()
 IPropertyTree *CClientRemoteTree::ownPTree(IPropertyTree *tree)
 {
     // if taking ownership of an orphaned clientremote tree need to reset it's attributes.
-    if ((connection.queryStateChanges()) && isEquivalent(tree) && (!QUERYINTERFACE(tree, CInterface)->IsShared()))
+    if ((connection.queryStateChanges()) && isEquivalent(tree) && (!QUERYINTERFACE(tree, CClientRemoteTree)->IsShared()))
     {
         ((CClientRemoteTree *)tree)->reset(CPS_Changed, true);
         return tree;

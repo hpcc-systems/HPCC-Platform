@@ -214,6 +214,12 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:if test="string(@AWUsCacheTimeout) != ''">
                 <AWUsCacheMinutes><xsl:value-of select="@AWUsCacheTimeout"/></AWUsCacheMinutes>
             </xsl:if>
+            <xsl:if test="string(@serverForArchivedECLWU) != ''">
+                <xsl:variable name="sashaServer" select="@serverForArchivedECLWU"/>
+                <xsl:variable name="sashaServerIP" select="/Environment/Software/SashaServerProcess[@name=$sashaServer]/Instance/@netAddress"/>
+                <xsl:variable name="sashaServerPort" select="/Environment/Software/SashaServerProcess[@name=$sashaServer]/Instance/@port"/>
+                <serverForArchivedECLWU netAddress="{$sashaServerIP}" port="{$sashaServerPort}" />
+            </xsl:if>
                         <xsl:if test="string(@allowNewRoxieOnDemandQuery) != ''">
                 <AllowNewRoxieOnDemandQuery><xsl:value-of select="@allowNewRoxieOnDemandQuery"/></AllowNewRoxieOnDemandQuery>
             </xsl:if>

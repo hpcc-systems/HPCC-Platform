@@ -334,7 +334,7 @@ void CContainerInfo::calcCachedSize(const SizeStruct & offset, SizeStruct & size
     if (cachedSize.isEmpty())
     {
         IHqlExpression * record = column->queryRecord();
-        if (record->hasProperty(_nonEmpty_Atom))
+        if (record->hasAttribute(_nonEmpty_Atom))
             cachedSize.addFixed(1);
     }
 
@@ -459,7 +459,7 @@ void callDeserializeGetN(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpr
     args.append(*LINK(helper));
     args.append(*LINK(boundSize));
     args.append(*LINK(address));
-    OwnedHqlExpr call = translator.bindTranslatedFunctionCall(deserializerReadNAtom, args);
+    OwnedHqlExpr call = translator.bindTranslatedFunctionCall(deserializerReadNId, args);
     ctx.addExpr(call);
 }
 
@@ -467,7 +467,7 @@ IHqlExpression * callDeserializerGetSize(HqlCppTranslator & translator, BuildCtx
 {
     HqlExprArray args;
     args.append(*LINK(helper));
-    OwnedHqlExpr call = translator.bindFunctionCall(deserializerReadSizeAtom, args);
+    OwnedHqlExpr call = translator.bindFunctionCall(deserializerReadSizeId, args);
     OwnedHqlExpr sizeVariable = ctx.getTempDeclare(sizetType, call);
     return LINK(sizeVariable);
 }
@@ -479,7 +479,7 @@ void callDeserializerSkipInputSize(HqlCppTranslator & translator, BuildCtx & ctx
     HqlExprArray args;
     args.append(*LINK(helper));
     args.append(*LINK(bound.expr));
-    translator.callProcedure(ctx, deserializerSkipNAtom, args);
+    translator.callProcedure(ctx, deserializerSkipNId, args);
 }
 
 void callDeserializerSkipInputTranslatedSize(HqlCppTranslator & translator, BuildCtx & ctx, IHqlExpression * helper, IHqlExpression * size)
@@ -487,7 +487,7 @@ void callDeserializerSkipInputTranslatedSize(HqlCppTranslator & translator, Buil
     HqlExprArray args;
     args.append(*LINK(helper));
     args.append(*LINK(size));
-    translator.callProcedure(ctx, deserializerSkipNAtom, args);
+    translator.callProcedure(ctx, deserializerSkipNId, args);
 }
 
 void CMemberInfo::associateSizeOf(BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * rawSize, size32_t extraSize)
@@ -533,14 +533,14 @@ void CMemberInfo::doBuildSkipInput(HqlCppTranslator & translator, BuildCtx & ctx
 
 IHqlExpression * CMemberInfo::createSelfPeekDeserializer(HqlCppTranslator & translator, IHqlExpression * helper)
 {
-    IHqlExpression * size = column->queryAttribute(_attrSize_Atom);
+    IHqlExpression * size = column->queryProperty(EPsize);
     LinkedHqlExpr maxSize = size->queryChild(2);
     if (!maxSize || maxSize->isAttribute())
         maxSize.setown(getSizetConstant(MAX_RECORD_SIZE));
     HqlExprArray peekArgs;
     peekArgs.append(*LINK(helper));
     peekArgs.append(*LINK(maxSize));
-    return translator.bindTranslatedFunctionCall(deserializerPeekAtom, peekArgs);
+    return translator.bindTranslatedFunctionCall(deserializerPeekId, peekArgs);
 }
 
 void CMemberInfo::gatherMaxRowSize(SizeStruct & totalSize, IHqlExpression * newSize, size32_t fixedExtra, IReferenceSelector * selector)
@@ -599,7 +599,7 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
         HqlExprArray args2;
         args2.append(*LINK(row->queryBound()));
         args2.append(*LINK(bound.expr));
-        translator.callProcedure(ctx, ensureRowAvailableAtom, args2);
+        translator.callProcedure(ctx, ensureRowAvailableId, args2);
     }
     else
     {
@@ -629,7 +629,7 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
             args2.append(*LINK(row->queryBuilder()));
             args2.append(*LINK(bound.expr));
             args2.append(*createConstant(unknownVarStringType->castFrom(fieldname.length(), fieldname.str())));
-            OwnedHqlExpr call = translator.bindFunctionCall(ensureCapacityAtom, args2);
+            OwnedHqlExpr call = translator.bindFunctionCall(ensureCapacityId, args2);
 
             bool combined = false;
             if (bound.expr->isConstant())
@@ -667,7 +667,7 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
             args2.append(*LINK(bound.expr));
             args2.append(*LINK(max));
             args2.append(*createConstant(unknownVarStringType->castFrom(fieldname.length(), fieldname.str())));
-            translator.callProcedure(ctx, checkFieldOverflowAtom, args2);
+            translator.callProcedure(ctx, checkFieldOverflowId, args2);
         }
     }
 }
@@ -777,12 +777,12 @@ void CMemberInfo::getXPath(StringBuffer & out)
 {
     if (container)
         container->getContainerXPath(out);
-    IHqlExpression * xpath = column->queryProperty(xpathAtom);
+    IHqlExpression * xpath = column->queryAttribute(xpathAtom);
     if (xpath)
         xpath->queryChild(0)->queryValue()->getStringValue(out);
     else
     {
-        IHqlExpression * named = column->queryProperty(namedAtom);
+        IHqlExpression * named = column->queryAttribute(namedAtom);
         if (named)
             named->queryChild(0)->queryValue()->getStringValue(out);
         else
@@ -883,7 +883,7 @@ void CContainerInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, I
 
     if (children.ordinality() == 0)
     {
-        if (column->queryRecord()->hasProperty(_nonEmpty_Atom))
+        if (column->queryRecord()->hasAttribute(_nonEmpty_Atom))
         {
             //Clear on an empty record that has the _nonEmpty_attrbute clears the implicit byte
             Owned<ITypeInfo> dummyType = makeIntType(1, false);
@@ -902,7 +902,7 @@ void CContainerInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, I
     }
 }
 
-void CContainerInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CContainerInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     ForEachItemIn(idx, children)
     {
@@ -912,7 +912,7 @@ void CContainerInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & 
     }
 }
 
-void CContainerInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CContainerInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     ForEachItemIn(idx, children)
     {
@@ -991,7 +991,7 @@ void CContainerInfo::setRow(HqlCppTranslator & translator, BuildCtx & ctx, IRefe
     args.append(*LINK(targetAddress.expr));
     args.append(*LINK(sourceAddress.expr));
     args.append(*LINK(length.expr));
-    translator.callProcedure(ctx, memcpyAtom, args);
+    translator.callProcedure(ctx, memcpyId, args);
 
     //Use the size just calulated for the field
     associateSizeOf(ctx, selector, length.expr, 0);
@@ -1033,12 +1033,12 @@ void CContainerInfo::getContainerXPath(StringBuffer & out)
     if (column->getOperator() == no_field)
     {
         StringBuffer temp;
-        IHqlExpression * xpath = column->queryProperty(xpathAtom);
+        IHqlExpression * xpath = column->queryAttribute(xpathAtom);
         if (xpath)
             xpath->queryChild(0)->queryValue()->getStringValue(temp);
         else
         {
-            IHqlExpression * named = column->queryProperty(namedAtom);
+            IHqlExpression * named = column->queryAttribute(namedAtom);
             if (named)
                 named->queryChild(0)->queryValue()->getStringValue(temp);
             else
@@ -1150,7 +1150,7 @@ void CIfBlockInfo::buildExpr(HqlCppTranslator & translator, BuildCtx & ctx, IRef
     throwUnexpected();
 }
 
-void CIfBlockInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CIfBlockInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     //MORE: This should really associate offset of the ifblock with the offset of its first child as well.
     CHqlBoundExpr boundSize;
@@ -1168,7 +1168,7 @@ void CIfBlockInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ct
     CContainerInfo::buildDeserialize(translator, condctx, selector, helper, serializeForm);
 }
 
-void CIfBlockInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CIfBlockInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr cond = selector->queryRootRow()->bindToRow(condition, queryRootSelf());
     CHqlBoundExpr bound;
@@ -1433,7 +1433,7 @@ void CColumnInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, IRef
     setColumn(translator, ctx, selector, null);
 }
 
-void CColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     CHqlBoundExpr boundSize;
     OwnedHqlExpr unboundSize = ensureType(buildSizeOfUnbound(translator, ctx, selector), sizetType);
@@ -1442,7 +1442,7 @@ void CColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx
     doBuildDeserialize(translator, ctx, selector, helper, boundSize.expr);
 }
 
-void CColumnInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CColumnInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr sizeOfExpr = createValue(no_sizeof, LINK(sizetType), LINK(selector->queryExpr()));
     CHqlBoundExpr boundSize;
@@ -1452,7 +1452,7 @@ void CColumnInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, 
     args.append(*LINK(helper));
     args.append(*LINK(boundSize.expr));
     args.append(*getColumnAddress(translator, ctx, selector, queryPhysicalType()));
-    OwnedHqlExpr call = translator.bindTranslatedFunctionCall(serializerPutAtom, args);
+    OwnedHqlExpr call = translator.bindTranslatedFunctionCall(serializerPutId, args);
     ctx.addExpr(call);
 }
 
@@ -1477,7 +1477,7 @@ bool CColumnInfo::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, 
             args.append(*LINK(state.helper));
             args.append(*getSizetConstant(columnSize));
             args.append(*getPointer(tempVariable));
-            OwnedHqlExpr call = translator.bindTranslatedFunctionCall(deserializerReadNAtom, args);
+            OwnedHqlExpr call = translator.bindTranslatedFunctionCall(deserializerReadNId, args);
             ctx.addExpr(call);
 
             OwnedHqlExpr translated = createTranslated(tempVariable);
@@ -1560,7 +1560,7 @@ CSpecialIntColumnInfo::CSpecialIntColumnInfo(CContainerInfo * _container, CMembe
 void CSpecialIntColumnInfo::buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound)
 {
     ITypeInfo * type = queryType();
-    _ATOM func = readIntAtom[type->getSize()][type->isSigned()];
+    IIdAtom * func = readIntId[type->getSize()][type->isSigned()];
 
     HqlExprArray args;
     args.append(*getColumnAddress(translator, ctx, selector, queryPhysicalType()));
@@ -1575,7 +1575,7 @@ void CSpecialIntColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & 
 {
     ITypeInfo * type = queryType();
     ITypeInfo * promoted = type->queryPromotedType();
-    _ATOM func = writeIntAtom[type->getSize()];
+    IIdAtom * func = writeIntId[type->getSize()];
 
     if (isConditional())
     {
@@ -1608,7 +1608,7 @@ CPackedIntColumnInfo::CPackedIntColumnInfo(CContainerInfo * _container, CMemberI
 void CPackedIntColumnInfo::buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound)
 {
     ITypeInfo * type = queryType();
-    _ATOM func = type->isSigned() ? getPackedSignedAtom : getPackedUnsignedAtom;
+    IIdAtom * func = type->isSigned() ? getPackedSignedId : getPackedUnsignedId;
 
     HqlExprArray args;
     args.append(*getColumnAddress(translator, ctx, selector, queryPhysicalType()));
@@ -1629,10 +1629,10 @@ IHqlExpression * CPackedIntColumnInfo::buildSizeOfUnbound(HqlCppTranslator & tra
 {
     HqlExprArray args;
     args.append(*getColumnAddress(translator, ctx, selector, queryPhysicalType()));
-    return createValue(no_translated, LINK(sizetType), translator.bindTranslatedFunctionCall(getPackedSizeAtom, args));
+    return createValue(no_translated, LINK(sizetType), translator.bindTranslatedFunctionCall(getPackedSizeId, args));
 }
 
-void CPackedIntColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CPackedIntColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr size = getSizetConstant(queryType()->queryPromotedType()->getSize()+1);    // an over-estimate, but more efficient than working out exactly.
     checkAssignOk(translator, ctx, selector, size, 0);
@@ -1640,7 +1640,7 @@ void CPackedIntColumnInfo::buildDeserialize(HqlCppTranslator & translator, Build
     HqlExprArray args;
     args.append(*LINK(helper));
     args.append(*getColumnAddress(translator, ctx, selector, queryPhysicalType()));
-    translator.buildTranslatedFunctionCall(ctx, deserializerReadPackedIntAtom, args);
+    translator.buildTranslatedFunctionCall(ctx, deserializerReadPackedIntId, args);
 }
 
 bool CPackedIntColumnInfo::buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state)
@@ -1651,14 +1651,14 @@ bool CPackedIntColumnInfo::buildReadAhead(HqlCppTranslator & translator, BuildCt
     HqlExprArray args;
     args.append(*LINK(state.helper));
     args.append(*getPointer(tempVar));
-    translator.buildTranslatedFunctionCall(ctx, deserializerReadPackedIntAtom, args);
+    translator.buildTranslatedFunctionCall(ctx, deserializerReadPackedIntId, args);
     return true;
 }
 
 void CPackedIntColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value)
 {
     ITypeInfo * type = queryType();
-    _ATOM func = type->isSigned() ? setPackedSignedAtom : setPackedUnsignedAtom;
+    IIdAtom * func = type->isSigned() ? setPackedSignedId : setPackedUnsignedId;
 
     OwnedHqlExpr size = getSizetConstant(type->queryPromotedType()->getSize()+1);   // an over-estimate, but more efficient than working out exactly.
     checkAssignOk(translator, ctx, selector, size, 0);
@@ -1703,7 +1703,7 @@ void CSpecialStringColumnInfo::gatherSize(SizeStruct & target)
 }
 
 
-void CSpecialStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CSpecialStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, sizetType);
     OwnedHqlExpr addressStr = getColumnAddress(translator, ctx, selector, queryType(), sizeof(size32_t));
@@ -1726,7 +1726,7 @@ void CSpecialStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, B
 
         assertex(!row->isSerialization() && row->queryBuilder());
 
-        _ATOM func = deserializerReadUtf8Atom;
+        IIdAtom * func = deserializerReadUtf8Id;
         HqlExprArray args;
         args.append(*LINK(helper));
         args.append(*LINK(row->queryBuilder()));
@@ -1767,7 +1767,7 @@ bool CSpecialStringColumnInfo::buildReadAhead(HqlCppTranslator & translator, Bui
         HqlExprArray args;
         args.append(*LINK(state.helper));
         args.append(*LINK(lengthVariable));
-        translator.callProcedure(ctx, deserializerSkipUtf8Atom, args);
+        translator.callProcedure(ctx, deserializerSkipUtf8Id, args);
     }
     else
     {
@@ -1841,7 +1841,7 @@ IHqlExpression * CSpecialVStringColumnInfo::buildSizeOfUnbound(HqlCppTranslator 
     return createTranslatedOwned(length);
 }
 
-void CSpecialVStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CSpecialVStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     BoundRow * row = selector->queryRootRow();
 
@@ -1855,14 +1855,14 @@ void CSpecialVStringColumnInfo::buildDeserialize(HqlCppTranslator & translator, 
 
     assertex(!row->isSerialization() && row->queryBuilder());
 
-    _ATOM func;
+    IIdAtom * func;
     switch (queryType()->getTypeCode())
     {
     case type_varstring:
-        func = deserializerReadVStrAtom;
+        func = deserializerReadVStrId;
         break;
     case type_varunicode:
-        func = deserializerReadVUniAtom;
+        func = deserializerReadVUniId;
         break;
     default:
         throwUnexpected();
@@ -1884,14 +1884,14 @@ bool CSpecialVStringColumnInfo::buildReadAhead(HqlCppTranslator & translator, Bu
     HqlExprArray args;
     args.append(*LINK(state.helper));
 
-    _ATOM func;
+    IIdAtom * func;
     switch (queryType()->getTypeCode())
     {
     case type_varstring:
-        func = deserializerSkipVStrAtom;
+        func = deserializerSkipVStrId;
         break;
     case type_varunicode:
-        func = deserializerSkipVUniAtom;
+        func = deserializerSkipVUniId;
         break;
     default:
         throwUnexpected();
@@ -1940,7 +1940,7 @@ void CSpecialVStringColumnInfo::setColumn(HqlCppTranslator & translator, BuildCt
     {
         args.append(*target.getLink());
         args.append(*translator.getElementPointer(bound.expr));     
-        translator.callProcedure(ctx, strcpyAtom, args);
+        translator.callProcedure(ctx, strcpyId, args);
     }
     else
     {
@@ -1948,7 +1948,7 @@ void CSpecialVStringColumnInfo::setColumn(HqlCppTranslator & translator, BuildCt
         args.append(*target.getLink());
         args.append(*LINK(length));
         args.append(*translator.getElementPointer(bound.expr));
-        translator.callProcedure(ctx, str2VStrAtom, args);
+        translator.callProcedure(ctx, str2VStrId, args);
     }
 }
 
@@ -2009,7 +2009,7 @@ IHqlExpression * CAlienColumnInfo::buildSizeOfUnbound(HqlCppTranslator & transla
     return doBuildSizeOfUnbound(translator, ctx, selector, NULL);
 }
 
-void CAlienColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CAlienColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr unboundSize = doBuildSizeOfUnbound(translator, ctx, selector, helper);
         
@@ -2204,7 +2204,7 @@ void CBitfieldContainerInfo::buildClear(HqlCppTranslator & translator, BuildCtx 
     setColumn(translator, condctx, selector, null);
 }
 
-void CBitfieldContainerInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CBitfieldContainerInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr size = getSizetConstant(column->queryType()->getSize());
     doBuildDeserialize(translator, ctx, selector, helper, size);
@@ -2379,7 +2379,7 @@ bool CVirtualColumnInfo::isFixedSize()
 
 void CVirtualColumnInfo::buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound)
 {
-    IHqlExpression * virtualAttr = column->queryProperty(virtualAtom);
+    IHqlExpression * virtualAttr = column->queryAttribute(virtualAtom);
     OwnedHqlExpr value = getVirtualReplacement(column, virtualAttr->queryChild(0), selector->queryRootRow()->querySelector());
     OwnedHqlExpr cast = ensureExprType(value, column->queryType()->queryPromotedType());
     translator.buildExpr(ctx, cast, bound);
@@ -2394,7 +2394,7 @@ void CVirtualColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx
 
 
 //******* For CSV the offset is the field number, not a byte offset ***********
-CCsvColumnInfo::CCsvColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, _ATOM _encoding) : CColumnInfo(_container, _prior, _column)
+CCsvColumnInfo::CCsvColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, IAtom * _encoding) : CColumnInfo(_container, _prior, _column)
 {
     encoding = _encoding;
 }
@@ -2494,7 +2494,7 @@ IHqlExpression * CCsvColumnInfo::getColumnExpr(HqlCppTranslator & translator, Bu
     {
         HqlExprArray args;
         args.append(*LINK(value));
-        value.setown(translator.bindFunctionCall(csvStr2BoolAtom,args));
+        value.setown(translator.bindFunctionCall(csvStr2BoolId,args));
     }
     else
         value.setown(ensureExprType(value, columnType));
@@ -2508,7 +2508,7 @@ void CCsvColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IR
 
 //---------------------------------------------------------------------------
 
-static _ATOM getXmlReadFunction(ITypeInfo * type, bool hasDefault)
+static IIdAtom * getXmlReadFunction(ITypeInfo * type, bool hasDefault)
 {
     type = type->queryPromotedType();
     if (hasDefault)
@@ -2517,19 +2517,19 @@ static _ATOM getXmlReadFunction(ITypeInfo * type, bool hasDefault)
         {
         case type_unicode:
         case type_varunicode:
-            return columnReadUnicodeXAtom;
+            return columnReadUnicodeXId;
         case type_utf8:
-            return columnReadUtf8XAtom;
+            return columnReadUtf8XId;
         case type_int:
         case type_swapint:
         case type_packedint:
-            return columnReadIntAtom;
+            return columnReadIntId;
         case type_data:
-            return columnReadDataXAtom;
+            return columnReadDataXId;
         case type_boolean:
-            return columnReadBoolAtom;
+            return columnReadBoolId;
         default:
-            return columnReadStringXAtom;
+            return columnReadStringXId;
         }
     }
     else
@@ -2538,19 +2538,19 @@ static _ATOM getXmlReadFunction(ITypeInfo * type, bool hasDefault)
         {
         case type_unicode:
         case type_varunicode:
-            return columnGetUnicodeXAtom;
+            return columnGetUnicodeXId;
         case type_utf8:
-            return columnGetUtf8XAtom;
+            return columnGetUtf8XId;
         case type_int:
         case type_swapint:
         case type_packedint:
-            return columnGetIntAtom;
+            return columnGetIntId;
         case type_data:
-            return columnGetDataXAtom;
+            return columnGetDataXId;
         case type_boolean:
-            return columnGetBoolAtom;
+            return columnGetBoolId;
         default:
-            return columnGetStringXAtom;
+            return columnGetStringXId;
         }
     }
 }
@@ -2582,7 +2582,7 @@ bool CXmlColumnInfo::isFixedSize()
 }
 
 
-void CXmlColumnInfo::buildFixedStringAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target, IHqlExpression * defaultValue, _ATOM func)
+void CXmlColumnInfo::buildFixedStringAssign(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, const CHqlBoundTarget & target, IHqlExpression * defaultValue, IIdAtom * func)
 {
     StringBuffer row,path;
     selector->queryRootRow()->queryBound()->toString(row);
@@ -2604,22 +2604,22 @@ void CXmlColumnInfo::buildColumnAssign(HqlCppTranslator & translator, BuildCtx &
     Linked<ITypeInfo> type = queryPhysicalType();
     if (type->getSize() != UNKNOWN_LENGTH)
     {
-        _ATOM func = NULL;
-        IHqlExpression * defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+        IIdAtom * func = NULL;
+        IHqlExpression * defaultValue = queryAttributeChild(column, xmlDefaultAtom, 0);
         if (!defaultValue)
-            defaultValue = queryPropertyChild(column, defaultAtom, 0);
+            defaultValue = queryAttributeChild(column, defaultAtom, 0);
 
         switch (type->getTypeCode())
         {
         case type_string:
             if (type->queryCharset()->queryName() == asciiAtom)
-                func = defaultValue ? columnReadStringAtom : columnGetStringAtom;
+                func = defaultValue ? columnReadStringId : columnGetStringId;
             break;
         case type_data:
-            func = defaultValue ? columnReadDataAtom : columnGetDataAtom;
+            func = defaultValue ? columnReadDataId : columnGetDataId;
             break;
         case type_qstring:
-            func = defaultValue ? columnReadQStringAtom : columnGetQStringAtom;
+            func = defaultValue ? columnReadQStringId : columnGetQStringId;
             break;
         }
 
@@ -2748,9 +2748,9 @@ IHqlExpression * CXmlColumnInfo::getXmlSetExpr(HqlCppTranslator & translator, Bu
     Owned<IHqlCppSetBuilder> builder = translator.createTempSetBuilder(elementType, temp.isAll);
     builder->buildDeclare(ctx);
 
-    LinkedHqlExpr defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+    LinkedHqlExpr defaultValue = queryAttributeChild(column, xmlDefaultAtom, 0);
     if (!defaultValue)
-        defaultValue.set(queryPropertyChild(column, defaultAtom, 0));
+        defaultValue.set(queryAttributeChild(column, defaultAtom, 0));
     bool defaultIsAllValue = defaultValue && (defaultValue->getOperator() == no_all);
     if (checkForAll)
     {
@@ -2760,7 +2760,7 @@ IHqlExpression * CXmlColumnInfo::getXmlSetExpr(HqlCppTranslator & translator, Bu
         isAllArgs.append(*createConstant(fullFieldPath.str()));
         if (defaultValue)
             isAllArgs.append(*createConstant(defaultIsAllValue));
-        OwnedHqlExpr isAll = translator.bindFunctionCall(defaultValue ? columnReadSetIsAllAtom : columnGetSetIsAllAtom, isAllArgs);
+        OwnedHqlExpr isAll = translator.bindFunctionCall(defaultValue ? columnReadSetIsAllId : columnGetSetIsAllId, isAllArgs);
         builder->setAll(ctx, isAll);
     }
     else
@@ -2788,10 +2788,10 @@ IHqlExpression * CXmlColumnInfo::getXmlSetExpr(HqlCppTranslator & translator, Bu
 IHqlExpression * CXmlColumnInfo::getCallExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector)
 {
     Linked<ITypeInfo> type = queryPhysicalType();
-    _ATOM func = NULL;
-    IHqlExpression * defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+    IIdAtom * func = NULL;
+    IHqlExpression * defaultValue = queryAttributeChild(column, xmlDefaultAtom, 0);
     if (!defaultValue)
-        defaultValue = queryPropertyChild(column, defaultAtom, 0);
+        defaultValue = queryAttributeChild(column, defaultAtom, 0);
 
     switch (type->getTypeCode())
     {
@@ -2803,15 +2803,15 @@ IHqlExpression * CXmlColumnInfo::getCallExpr(HqlCppTranslator & translator, Buil
         return getXmlSetExpr(translator, ctx, selector);
     case type_string:
         if ((type->getSize() != UNKNOWN_LENGTH) && type->queryCharset()->queryName() == asciiAtom)
-            func = defaultValue ? columnReadStringAtom : columnGetStringAtom;
+            func = defaultValue ? columnReadStringId : columnGetStringId;
         break;
     case type_data:
         if (type->getSize() != UNKNOWN_LENGTH)
-            func = defaultValue ? columnReadDataAtom : columnGetDataAtom;
+            func = defaultValue ? columnReadDataId : columnGetDataId;
         break;
     case type_qstring:
         if (type->getSize() != UNKNOWN_LENGTH)
-            func = defaultValue ? columnReadQStringAtom : columnGetQStringAtom;
+            func = defaultValue ? columnReadQStringId : columnGetQStringId;
         break;
     }
 
@@ -2903,7 +2903,7 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
             if (column->queryType()->getTypeCode() != type_bitfield)
                 completeActiveBitfields();
 
-            if (translateVirtuals && column->hasProperty(virtualAtom) && (column->queryType()->getSize() != UNKNOWN_LENGTH))
+            if (translateVirtuals && column->hasAttribute(virtualAtom) && (column->queryType()->getSize() != UNKNOWN_LENGTH))
                 created = new CVirtualColumnInfo(container, prior, column);
             else
                 created = createColumn(container, column, map);
@@ -2999,7 +2999,7 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
                 IHqlExpression * cur = column->queryChild(i);
                 if (cur->isAttribute())
                 {
-                    _ATOM name = cur->queryName();
+                    IAtom * name = cur->queryName();
                     if (name == countAtom)
                         count = cur->queryChild(0);
                     else if (name == sizeofAtom)
@@ -3007,7 +3007,7 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
                 }
             }
 
-            if (column->hasProperty(_linkCounted_Atom))
+            if (column->hasAttribute(_linkCounted_Atom))
                 created = new CChildLinkedDatasetColumnInfo(container, prior, column, map, defaultMaxRecordSize);
             else if (count || size)
                 created = new CChildLimitedDatasetColumnInfo(container, prior, column, map, defaultMaxRecordSize);
@@ -3195,7 +3195,7 @@ bool canReadFromCsv(IHqlExpression * record)
 }
 
 
-CsvColumnToOffsetMap::CsvColumnToOffsetMap(IHqlExpression * _record, unsigned _maxRecordSize, bool _translateVirtuals, _ATOM _encoding) : ColumnToOffsetMap(_record, 1, _maxRecordSize, _translateVirtuals)
+CsvColumnToOffsetMap::CsvColumnToOffsetMap(IHqlExpression * _record, unsigned _maxRecordSize, bool _translateVirtuals, IAtom * _encoding) : ColumnToOffsetMap(_record, 1, _maxRecordSize, _translateVirtuals)
 {
     encoding = _encoding;
 }
@@ -3423,11 +3423,11 @@ IHqlExpression * SerializationRow::ensureSerialized(IHqlExpression * path, IHqlE
 
 IHqlExpression * SerializationRow::addSerializedValue(IHqlExpression * path, ITypeInfo * type, IHqlExpression * colocal, bool isConditional)
 {
-    _ATOM name = NULL;
+    IIdAtom * id = NULL;
     if (path->getOperator() == no_select)
-        name = path->queryChild(1)->queryName();
+        id = path->queryChild(1)->queryId();
     Owned<ITypeInfo> newType = getSimplifiedType(type, isConditional, (colocal == NULL), internalAtom);
-    OwnedHqlExpr newSelect = createField(name, newType);
+    OwnedHqlExpr newSelect = createField(id, newType);
 
     OwnedHqlExpr deserialized;
     if (colocal)
@@ -3453,16 +3453,16 @@ IHqlExpression * SerializationRow::addSerializedValue(IHqlExpression * path, ITy
     return LINK(deserialized);
 }
 
-IHqlExpression * SerializationRow::createField(_ATOM name, ITypeInfo * type)
+IHqlExpression * SerializationRow::createField(IIdAtom * id, ITypeInfo * type)
 {
-    if (!name)
+    if (!id)
     {
         StringBuffer fieldName;
         fieldName.append("__f").append(numFields()).append("__");
-        name = createIdentifierAtom(fieldName);
+        id = createIdAtom(fieldName);
     }
     IHqlExpression * attr = hasLinkCountedModifier(type) ? getLinkCountedAttr() : NULL;
-    OwnedHqlExpr newField = ::createField(name, LINK(type), attr, NULL);
+    OwnedHqlExpr newField = ::createField(id, LINK(type), attr, NULL);
     if (serializedMap->queryRootColumn()->lookupColumn(newField))
         return createField(NULL, type);                     // name clash -> create a new unnamed field
 

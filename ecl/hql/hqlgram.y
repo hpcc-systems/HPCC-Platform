@@ -187,6 +187,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   ENTH
   ENUM
   TOK_ERROR
+  ESCAPE
   EVALUATE
   EVENT
   EVENTEXTRA
@@ -297,6 +298,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   MIN
   MODULE
   MOFN
+  MULTIPLE
   NAMED
   NAMEOF
   NAMESPACE
@@ -396,6 +398,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   SIZEOF
   SKEW
   SKIP
+  SMART
   SOAPACTION
   SOAPCALL
   SORT
@@ -415,7 +418,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TAN
   TANH
   TERMINATOR
-  ESCAPE
   THEN
   THISNODE
   THOR
@@ -520,6 +522,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   VALUE_MACRO
   DEFINITIONS_MACRO
 
+  BOOL_CONST
   INTEGER_CONST
   STRING_CONST
   DATA_CONST
@@ -645,12 +648,12 @@ importItem
                         }
     | importSelectorList AS UNKNOWN_ID
                         {
-                            parser->processImport($1, $3.getName());
+                            parser->processImport($1, $3.getId());
                             $$.clear();
                         }
     | importSelectorList FROM importSelector AS UNKNOWN_ID
                         {
-                            parser->processImport($1, $3, $5.getName());
+                            parser->processImport($1, $3, $5.getId());
                             $$.clear();
                         }
     | '*' FROM importSelector
@@ -697,14 +700,14 @@ importSelector
 
 importId
     : UNKNOWN_ID        {
-                            $$.setExpr(createAttribute($1.getName()), $1);
+                            $$.setExpr(createId($1.getId()), $1);
                         }
     | '$'               {
                             $$.setExpr(createAttribute(selfAtom), $1);
                         }
     | importId '.' UNKNOWN_ID
                         {
-                            $$.setExpr(createAttribute(_dot_Atom, $1.getExpr(), createAttribute($3.getName())), $1);
+                            $$.setExpr(createAttribute(_dot_Atom, $1.getExpr(), createId($3.getId())), $1);
                         }
     ;
 
@@ -725,8 +728,7 @@ explicitDatasetType
     : explicitDatasetType1
     | GROUPED explicitDatasetType1
                         {
-                            IHqlExpression * grouping = getUnknownSortlist();
-                            $$.setType(makeGroupedTableType($2.getType(), grouping, NULL));
+                            $$.setType(makeGroupedTableType($2.getType()));
                             $$.setPosition($1);
                         }
     ;
@@ -734,7 +736,7 @@ explicitDatasetType
 explicitDatasetType1
     : DATASET
                         {
-                            $$.setType(makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL));
+                            $$.setType(makeTableType(makeRowType(queryNullRecord()->getType())));
                             $$.setPosition($1);
                         }
     | DATASET '(' recordDef childDatasetOptions ')'
@@ -742,7 +744,7 @@ explicitDatasetType1
                             OwnedHqlExpr record = $3.getExpr();
                             OwnedHqlExpr options = $4.getExpr();
                             ITypeInfo * recordType = createRecordType(record);
-                            Owned<ITypeInfo> tableType = makeTableType(makeRowType(recordType), NULL, NULL, NULL);
+                            Owned<ITypeInfo> tableType = makeTableType(makeRowType(recordType));
                             if (options)
                                 tableType.setown(makeAttributeModifier(LINK(tableType), createAttribute(_childAttr_Atom, LINK(options))));
                             $$.setType(tableType.getClear());
@@ -852,7 +854,7 @@ paramType
     | abstractDataset   {
                             OwnedHqlExpr record = $1.getExpr();
                             OwnedHqlExpr abstractRecord = createAbstractRecord(record);
-                            OwnedITypeInfo type = makeTableType(makeRowType(abstractRecord->getType()), NULL, NULL, NULL);
+                            OwnedITypeInfo type = makeTableType(makeRowType(abstractRecord->getType()));
                             $$.setType(type.getClear(), $1);
                             parser->setTemplateAttribute();
                         }
@@ -989,7 +991,7 @@ macro
 #endif
 
                             //Use a named symbol to associate a line number/column
-                            expr = createSymbol(macroAtom, NULL, expr, NULL,
+                            expr = createSymbol(macroId, NULL, expr, NULL,
                                                 false, false, (object_type)0,
                                                 NULL,
                                                 yylval.pos.lineno, yylval.pos.column, 0, 0, 0);
@@ -1005,7 +1007,7 @@ macro
 #endif
 
                             //Use a named symbol to associate a line number/column
-                            expr = createSymbol(macroAtom, NULL, expr, NULL,
+                            expr = createSymbol(macroId, NULL, expr, NULL,
                                                 false, false, (object_type)0,
                                                 NULL,
                                                 yylval.pos.lineno, yylval.pos.column, 0, 0, 0);
@@ -1190,7 +1192,7 @@ startTYPE
 
 defineid
     : UNKNOWN_ID        {
-                            parser->beginDefineId($1.getName(), NULL);
+                            parser->beginDefineId($1.getId(), NULL);
                             $$.setType(NULL);
                             $$.setPosition($1);
                         }
@@ -1219,21 +1221,21 @@ defineid
                             Owned<ITypeInfo> type = $1.getType();
                             if (type->getTypeCode() == type_alien)
                                 type.set(type->queryPromotedType());
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type.getClear());
                             $$.setPosition($1);
                         }
     | globalScopedDatasetId knownOrUnknownId
                         {
                             OwnedHqlExpr ds = $1.getExpr();
-                            parser->beginDefineId($2.getName(), ds->queryType());
+                            parser->beginDefineId($2.getId(), ds->queryType());
                             $$.setType(ds->getType());
                             $$.setPosition($1);
                         }
     | UNKNOWN_ID UNKNOWN_ID
                         {
-                            parser->reportError(ERR_UNKNOWN_TYPE, $1, "Unknown type '%s'", $1.getName()->str());
-                            parser->beginDefineId($2.getName(), NULL);
+                            parser->reportError(ERR_UNKNOWN_TYPE, $1, "Unknown type '%s'", $1.getId()->str());
+                            parser->beginDefineId($2.getId(), NULL);
                             $$.setType(NULL);
                             $$.setPosition($1);
                         }
@@ -1242,8 +1244,8 @@ defineid
 
 knownOrUnknownId
     : UNKNOWN_ID
-    | knownId           { $$.setName(parser->getNameFromExpr($1)); $$.setPosition($1); }
-    | knownFunction1    { $$.setName(parser->getNameFromExpr($1)); $$.setPosition($1); }
+    | knownId           { $$.setId(parser->getNameFromExpr($1)); $$.setPosition($1); }
+    | knownFunction1    { $$.setId(parser->getNameFromExpr($1)); $$.setPosition($1); }
     ;
 
 knownId
@@ -1317,14 +1319,14 @@ definePatternId
     : TOK_PATTERN knownOrUnknownId  
                         {
                             ITypeInfo *type = makePatternType();
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
     | RULE knownOrUnknownId 
                         {
                             ITypeInfo *type = makeRuleType(NULL);
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
@@ -1332,21 +1334,21 @@ definePatternId
                         {
                             OwnedHqlExpr record = $3.getExpr();
                             ITypeInfo *type = makeRuleType(record->getType());
-                            parser->beginDefineId($5.getName(), type);
+                            parser->beginDefineId($5.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
     | TOKEN knownOrUnknownId    
                         {
                             ITypeInfo *type = makeTokenType();
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
     | userTypedefPattern knownOrUnknownId
                         {
                             ITypeInfo *type = $1.getType();
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
@@ -1663,6 +1665,13 @@ persistOpt
     : fewMany
     | expireAttr
     | clusterAttr
+    | SINGLE            {   $$.setExpr(createAttribute(singleAtom), $1); }
+    | MULTIPLE          {   $$.setExpr(createExprAttribute(multipleAtom), $1); }
+    | MULTIPLE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createExprAttribute(multipleAtom, $3.getExpr()), $1);
+                        }
     ;
 
 globalOpts
@@ -1760,7 +1769,7 @@ transform
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()), $1);
                         }
-    | startInlineTransform transformOptions ',' transformations ')'
+    | startInlineTransform transformOptions semiComma transformations ')'
                         {
                             $$.setExpr(parser->closeTransform($4), $1);
                             parser->leaveCompoundObject();
@@ -1818,7 +1827,7 @@ startTransform
 
 transformOptions
     :
-    | transformOptions ',' transformOption
+    | transformOptions semiComma transformOption
                         {
                             parser->appendTransformOption($3.getExpr());
                             $$.setPosition($1);
@@ -2260,12 +2269,12 @@ actionStmt
                             IHqlExpression * filename = options.ordinality() ? &options.item(0) : NULL;
                             if (!filename || filename->isAttribute())
                             {
-                                if (queryProperty(extendAtom, options) && !queryProperty(namedAtom, options))
+                                if (queryAttribute(extendAtom, options) && !queryAttribute(namedAtom, options))
                                     parser->reportError(ERR_EXTEND_NOT_VALID, $7, "EXTEND is only valid on NAMED outputs");
                             }
                             else
                             {
-                                if (queryProperty(extendAtom, options))
+                                if (queryAttribute(extendAtom, options))
                                     parser->reportError(ERR_NOLONGER_SUPPORTED,$7,"EXTEND is no longer supported on OUTPUT to file");
 
                                 if (filename->isPure())
@@ -2310,13 +2319,13 @@ actionStmt
                             }
                             pipe->unwindList(args, no_comma);
                             $9.unwindCommaList(args);
-                            IHqlExpression * output = queryProperty(outputAtom, args);
+                            IHqlExpression * output = queryAttribute(outputAtom, args);
                             if (output)
                             {
                                 unwindChildren(args, output);
                                 args.zap(*output);
                             }
-                            if (queryProperty(csvAtom, args))
+                            if (queryAttribute(csvAtom, args))
                                 parser->checkValidCsvRecord($3, args.item(0).queryRecord());
 
                             parser->warnIfRecordPacked(&args.item(0), $1);
@@ -2329,7 +2338,7 @@ actionStmt
                             OwnedHqlExpr select = createDatasetF(no_selectfields, dataset, record, NULL); //createUniqueId(), NULL);
                             OwnedHqlExpr flags = $4.getExpr();
 
-                            if (queryPropertyInList(extendAtom, flags) && !queryPropertyInList(namedAtom, flags))
+                            if (queryAttributeInList(extendAtom, flags) && !queryAttributeInList(namedAtom, flags))
                                 parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on NAMED outputs");
 
                             HqlExprArray args;
@@ -2343,7 +2352,7 @@ actionStmt
                         {
                             parser->normalizeExpression($3);
                             OwnedHqlExpr flags = $4.getExpr();
-                            if (queryPropertyInList(extendAtom, flags))
+                            if (queryAttributeInList(extendAtom, flags))
                                 parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on a dataset");
                             HqlExprArray args;
                             args.append(*$3.getExpr());
@@ -2355,7 +2364,7 @@ actionStmt
                         {
                             parser->normalizeExpression($3);
                             OwnedHqlExpr flags = $4.getExpr();
-                            if (queryPropertyInList(extendAtom, flags))
+                            if (queryAttributeInList(extendAtom, flags))
                                 parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on a dataset");
                             HqlExprArray args;
                             args.append(*createDataset(no_datasetfromdictionary, $3.getExpr()));
@@ -2367,7 +2376,7 @@ actionStmt
     | OUTPUT '(' dataRow optOutputWuFlags ')'
                         {
                             OwnedHqlExpr flags = $4.getExpr();
-                            if (queryPropertyInList(extendAtom, flags))
+                            if (queryAttributeInList(extendAtom, flags))
                                 parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on a dataset");
                             HqlExprArray args;
                             args.append(*$3.getExpr());
@@ -2591,7 +2600,7 @@ actionStmt
                         {
                             OwnedHqlExpr abstract = $3.getExpr();
                             OwnedHqlExpr concrete = parser->checkConcreteModule($3, abstract);
-                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, concrete, no_evaluate_stmt, $5.getName()), $1);
+                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, concrete, no_evaluate_stmt, $5.getId()), $1);
                         }
     | DISTRIBUTION '(' startTopFilter beginList optDistributionFlags ignoreDummyList ')' endTopFilter
                         {
@@ -2899,21 +2908,21 @@ hintList
 hintItem
     : hintName
                         {
-                            $$.setExpr(createExprAttribute($1.getName()));
+                            $$.setExpr(createExprAttribute($1.getId()->lower()));
                             $$.setPosition($1);
                         }
     | hintName '(' beginList hintExprList ')'
                         {
                             HqlExprArray args;
                             parser->endList(args);
-                            $$.setExpr(createExprAttribute($1.getName(), args));
+                            $$.setExpr(createExprAttribute($1.getId()->lower(), args));
                             $$.setPosition($1);
                         }
     ;
 
 hintName
     : UNKNOWN_ID
-    | OUTPUT            {   $$.setName(outputAtom); }
+    | OUTPUT            {   $$.setId(outputId); }
     ;
 
 hintExprList
@@ -2952,7 +2961,7 @@ hintExpr
                         }
     | UNKNOWN_ID
                         {
-                            $$.setExpr(createAttribute($1.getName()), $1);
+                            $$.setExpr(createAttribute($1.getId()->lower()), $1);
                         }
     ;
 
@@ -3645,18 +3654,18 @@ paramDefinition
     : setType knownOrUnknownId defvalue 
                         {   
                             $$.clear(); 
-                            parser->addParameter($1, $2.getName(), $1.getType(), $3.getExpr());
+                            parser->addParameter($1, $2.getId(), $1.getType(), $3.getExpr());
                         }
     | paramType knownOrUnknownId defvalue   
                         {   
                             $$.clear();
-                            parser->addParameter($1, $2.getName(), $1.getType(), $3.getExpr());
+                            parser->addParameter($1, $2.getId(), $1.getType(), $3.getExpr());
                         }
     | UNKNOWN_ID defvalue
                         {
                            $$.clear();
                            parser->addListElement(createAttribute(noTypeAtom));
-                           parser->addParameter($1, $1.getName(), LINK(parser->defaultIntegralType), $2.getExpr());
+                           parser->addParameter($1, $1.getId(), LINK(parser->defaultIntegralType), $2.getExpr());
                         }
     | anyFunction defvalue
                         {
@@ -3664,34 +3673,34 @@ paramDefinition
                            $$.clear();
                            parser->addListElement(createAttribute(noTypeAtom));
                            OwnedHqlExpr func = $1.getExpr();
-                           parser->addParameter($1, func->queryName(), LINK(parser->defaultIntegralType), $2.getExpr());
+                           parser->addParameter($1, func->queryId(), LINK(parser->defaultIntegralType), $2.getExpr());
                         }
     | ANY DATASET knownOrUnknownId
                         {
                             $$.clear();
-                            parser->addParameter($1, $3.getName(), makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL), NULL);
+                            parser->addParameter($1, $3.getId(), makeTableType(makeRowType(queryNullRecord()->getType())), NULL);
                         }
     | ANY knownOrUnknownId defvalue
                         {
                             $$.clear();
                             parser->setTemplateAttribute();
-                            parser->addParameter($1, $2.getName(), makeAnyType(), $3.getExpr());
+                            parser->addParameter($1, $2.getId(), makeAnyType(), $3.getExpr());
                         }
     | paramType knownOrUnknownId nestedParmdef defFuncValue
                         {
                             $$.clear();
-                            parser->addFunctionParameter($1, $2.getName(), $1.getType(), $4.getExpr());
+                            parser->addFunctionParameter($1, $2.getId(), $1.getType(), $4.getExpr());
                         }
     | setType knownOrUnknownId nestedParmdef defFuncValue
                         {
                             $$.clear();
-                            parser->addFunctionParameter($1, $2.getName(), $1.getType(), $4.getExpr());
+                            parser->addFunctionParameter($1, $2.getId(), $1.getType(), $4.getExpr());
                         }
  // Use a function as a prototype for the argument type - kind of a substitute for a typedef
     | anyFunction UNKNOWN_ID defFuncValue
                         {
                             $$.clear();
-                            parser->addFunctionProtoParameter($1, $2.getName(), $1.getExpr(), $3.getExpr());
+                            parser->addFunctionProtoParameter($1, $2.getId(), $1.getExpr(), $3.getExpr());
                         }
     ;
 
@@ -3756,7 +3765,7 @@ funcDef
     : funcRetType knownOrUnknownId realparmdef attribs ';'
                         {
                             $$.clear($1);
-                            _ATOM name = $2.getName();
+                            IIdAtom * name = $2.getId();
                             OwnedITypeInfo type = $1.getType();
                             OwnedHqlExpr attrs = $4.getExpr();
                             parser->processServiceFunction($2, name, attrs, type);
@@ -3764,7 +3773,7 @@ funcDef
     | knownOrUnknownId realparmdef attribs ';'
                         {
                             $$.clear($1);
-                            _ATOM name = $1.getName();
+                            IIdAtom * name = $1.getId();
                             OwnedITypeInfo type = makeVoidType();
                             OwnedHqlExpr attrs = $3.getExpr();
                             parser->processServiceFunction($1, name, attrs, type);
@@ -3786,21 +3795,21 @@ attrib
     : knownOrUnknownId EQ UNKNOWN_ID        
                         {
                             parser->reportWarning(WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
-                            $$.setExpr(createAttribute($1.getName(), createConstant(*$3.getName())));
+                            $$.setExpr(createAttribute($1.getId()->lower(), createConstant(*$3.getId())));
                         }
     | knownOrUnknownId EQ const
                         {
-                            $$.setExpr(createAttribute($1.getName(), $3.getExpr()), $1);
+                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr()), $1);
                         }
     | knownOrUnknownId                  
-                        {   $$.setExpr(createAttribute($1.getName()));  }
+                        {   $$.setExpr(createAttribute($1.getId()->lower()));  }
     | knownOrUnknownId '(' const ')'
                         {
-                            $$.setExpr(createAttribute($1.getName(), $3.getExpr()), $1);
+                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr()), $1);
                         }
     | knownOrUnknownId '(' const ',' const ')'
                         {
-                            $$.setExpr(createAttribute($1.getName(), $3.getExpr(), $5.getExpr()), $1);
+                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr(), $5.getExpr()), $1);
                         }
     ;
 
@@ -3934,7 +3943,7 @@ recordDef
     | recordDef '-' UNKNOWN_ID
                         {
                             OwnedHqlExpr left = $1.getExpr();
-                            OwnedHqlExpr right = createAttribute($3.getName());
+                            OwnedHqlExpr right = createId($3.getId());
                             $$.setExpr(parser->createRecordExcept(left, right, $1));
                             $$.setPosition($1);
                             parser->checkRecordIsValid($1, $$.queryExpr());
@@ -3958,7 +3967,7 @@ recordDef
     | recordDef AND NOT UNKNOWN_ID
                         {
                             OwnedHqlExpr left = $1.getExpr();
-                            OwnedHqlExpr right = createAttribute($4.getName());
+                            OwnedHqlExpr right = createId($4.getId());
                             $$.setExpr(parser->createRecordExcept(left, right, $1));
                             $$.setPosition($1);
                             parser->checkRecordIsValid($1, $$.queryExpr());
@@ -4024,12 +4033,12 @@ dsEnd
 
 UnknownIdList
     : UNKNOWN_ID        {
-                            $$.setExpr(createAttribute($1.getName()));
+                            $$.setExpr(createId($1.getId()));
                             $$.setPosition($1);
                         }
     | UnknownIdList ',' UNKNOWN_ID
                         {
-                            $$.setExpr(createComma($1.getExpr(), createAttribute($3.getName())));
+                            $$.setExpr(createComma($1.getExpr(), createId($3.getId())));
                             $$.setPosition($1);
                         }
     ;
@@ -4148,7 +4157,7 @@ fieldDef
                             parser->normalizeExpression($1);
                             IHqlExpression *value = $1.getExpr();
 
-                            _ATOM name = parser->createFieldNameFromExpr(value);
+                            IIdAtom * name = parser->createFieldNameFromExpr(value);
 
                             IHqlExpression * attrs = extractAttrsFromExpr(value);
 
@@ -4163,12 +4172,12 @@ fieldDef
                             {
                                 //The following adds the field instead of creating a new field based on the old one.
                                 //More efficient, but changes a few CRCs, so disabled for moment.
-                                parser->checkFieldnameValid($1, field->queryName());
+                                parser->checkFieldnameValid($1, field->queryId());
                                 parser->addToActiveRecord(LINK(field));
                             }
                             else
                             {
-                                _ATOM name = parser->createFieldNameFromExpr(value);
+                                IIdAtom * name = parser->createFieldNameFromExpr(value);
                                 IHqlExpression * attrs = extractAttrsFromExpr(value);
 
                                 parser->addField($1, name, value->getType(), NULL, attrs);
@@ -4183,12 +4192,12 @@ fieldDef
                                 //The following adds the field instead of creating a new field based on the old one.
                                 //More efficient, but changes a few CRCs, so disabled for moment.
                                 IHqlExpression * field = queryFieldFromSelect(value);
-                                parser->checkFieldnameValid($1, field->queryName());
+                                parser->checkFieldnameValid($1, field->queryId());
                                 parser->addToActiveRecord(LINK(field));
                             }
                             else
                             {
-                                _ATOM name = parser->createFieldNameFromExpr(value);
+                                IIdAtom * name = parser->createFieldNameFromExpr(value);
                                 IHqlExpression * attrs = extractAttrsFromExpr(value);
 
                                 parser->addField($1, name, value->getType(), NULL, attrs);
@@ -4205,7 +4214,7 @@ fieldDef
                             IHqlExpression *attrs = $2.getExpr();
                             if (!attrs)
                                 attrs = extractAttrsFromExpr(value);
-                            parser->addField($1, $1.getName(), value->getType(), value, attrs);
+                            parser->addField($1, $1.getId(), value->getType(), value, attrs);
                             $$.clear();
                         }
     | UNKNOWN_ID optFieldAttrs ASSIGN dataRow
@@ -4214,7 +4223,7 @@ fieldDef
                             IHqlExpression *attrs = $2.getExpr();
                             if (!attrs)
                                 attrs = extractAttrsFromExpr(value);
-                            parser->addField($1, $1.getName(), makeRowType(LINK(value->queryRecordType())), value, attrs);
+                            parser->addField($1, $1.getId(), makeRowType(LINK(value->queryRecordType())), value, attrs);
                             $$.clear();
                         }
     | typeDef knownOrUnknownId optFieldAttrs defaultValue
@@ -4226,7 +4235,7 @@ fieldDef
                             OwnedITypeInfo type = $1.getType();
                             if (type->getTypeCode() == type_record)
                                 type.setown(makeRowType(type.getClear()));
-                            parser->addField($2, $2.getName(), type.getClear(), value, $3.getExpr());
+                            parser->addField($2, $2.getId(), type.getClear(), value, $3.getExpr());
                         }
     | ANY knownOrUnknownId optFieldAttrs defaultValue
                         {
@@ -4235,7 +4244,7 @@ fieldDef
 
                             //Syntactic oddity.  A record means a row of that record type.
                             OwnedITypeInfo type = makeAnyType();
-                            parser->addField($2, $2.getName(), type.getClear(), value, $3.getExpr());
+                            parser->addField($2, $2.getId(), type.getClear(), value, $3.getExpr());
                         }
     | typeDef knownOrUnknownId '[' expression ']' optFieldAttrs defaultValue
                         {
@@ -4254,8 +4263,8 @@ fieldDef
                             }
 
                             IHqlExpression *value = $7.getExpr();
-                            Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL);
-                            parser->addDatasetField($2, $2.getName(), datasetType, value, attrs.getClear());
+                            Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)));
+                            parser->addDatasetField($2, $2.getId(), datasetType, value, attrs.getClear());
                         }
     | setType knownOrUnknownId optFieldAttrs defaultValue
                         {
@@ -4263,36 +4272,36 @@ fieldDef
                             IHqlExpression *value = $4.getExpr();
 
                             ITypeInfo *type = $1.getType();
-                            parser->addField($2, $2.getName(), type, value, $3.getExpr());
+                            parser->addField($2, $2.getId(), type, value, $3.getExpr());
                         }
     | explicitDatasetType knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
                             Owned<ITypeInfo> type = $1.getType();
-                            parser->addDatasetField($2, $2.getName(), type, $4.getExpr(), $3.getExpr());
+                            parser->addDatasetField($2, $2.getId(), type, $4.getExpr(), $3.getExpr());
                         }
     | UNKNOWN_ID optFieldAttrs ASSIGN dataSet
                         {
                             IHqlExpression * value = $4.getExpr();
-                            parser->addDatasetField($1, $1.getName(), NULL, value, $2.getExpr());
+                            parser->addDatasetField($1, $1.getId(), NULL, value, $2.getExpr());
                             $$.clear();
                         }
     | explicitDictionaryType knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
                             Owned<ITypeInfo> type = $1.getType();
-                            parser->addDictionaryField($2, $2.getName(), type, $4.getExpr(), $3.getExpr());
+                            parser->addDictionaryField($2, $2.getId(), type, $4.getExpr(), $3.getExpr());
                         }
     | UNKNOWN_ID optFieldAttrs ASSIGN dictionary
                         {
                             IHqlExpression * value = $4.getExpr();
-                            parser->addDictionaryField($1, $1.getName(), value->queryType(), value, $2.getExpr());
+                            parser->addDictionaryField($1, $1.getId(), value->queryType(), value, $2.getExpr());
                             $$.clear();
                         }
     | alienTypeInstance knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
-                            parser->addField($2, $2.getName(), $1.getType(), $4.getExpr(), $3.getExpr());
+                            parser->addField($2, $2.getId(), $1.getType(), $4.getExpr(), $3.getExpr());
                         }
     | recordDef         {
                             //This distinguish between an inline record definition, and an out-of-line definition
@@ -4305,7 +4314,7 @@ fieldDef
                             parser->normalizeExpression($1);
                             IHqlExpression *value = $1.getExpr();
 
-                            _ATOM name = parser->createFieldNameFromExpr(value);
+                            IIdAtom * name = parser->createFieldNameFromExpr(value);
 
                             IHqlExpression * attrs = extractAttrsFromExpr(value);
 
@@ -4321,7 +4330,7 @@ fieldDef
     | dataRow               {
                             IHqlExpression *e = $1.getExpr();
                             IHqlExpression * attrs = extractAttrsFromExpr(e);
-                            _ATOM name = parser->createFieldNameFromExpr(e);
+                            IIdAtom * name = parser->createFieldNameFromExpr(e);
                             parser->addField($1, name, makeRowType(LINK(e->queryRecordType())), e, attrs);
                             //e->Release();
                             $$.clear();
@@ -4340,7 +4349,7 @@ fieldDef
                                 ForEachItemIn(i, items)
                                 {
                                     IHqlExpression * value = &items.item(i);
-                                    _ATOM name = parser->createFieldNameFromExpr(value);
+                                    IIdAtom * name = parser->createFieldNameFromExpr(value);
                                     IHqlExpression * attrs = extractAttrsFromExpr(value);
                                     parser->addField($1, name, value->getType(), LINK(value), attrs);
                                 }
@@ -4441,7 +4450,7 @@ fieldAttr
                             OwnedHqlExpr expr = $1.getExpr();
                             StringBuffer text;
                             getStringValue(text, expr);
-                            $$.setExpr(createAttribute(createIdentifierAtom(text.str())), $1);
+                            $$.setExpr(createAttribute(createAtom(text.str())), $1);
                         }
     | STRING_CONST '(' expression ')'
                         {
@@ -4449,7 +4458,7 @@ fieldAttr
                             OwnedHqlExpr expr = $1.getExpr();
                             StringBuffer text;
                             getStringValue(text, expr);
-                            $$.setExpr(createAttribute(createIdentifierAtom(text), $3.getExpr()), $1);
+                            $$.setExpr(createAttribute(createAtom(text), $3.getExpr()), $1);
                         }
     | LINKCOUNTED     
                         {
@@ -5212,7 +5221,7 @@ expr
                             {
                                 parser->normalizeExpression($1, type_unicode, false);
                                 parser->normalizeExpression($3, type_unicode, false);
-                                _ATOM locale = parser->ensureCommonLocale($1, $3);
+                                IAtom * locale = parser->ensureCommonLocale($1, $3);
                                 // cannot be certain of length of concatenated unicode string due to normalization
                                 ITypeInfo * type;
                                 if(($1.queryExprType()->getTypeCode() == type_utf8) && ($3.queryExprType()->getTypeCode() == type_utf8))
@@ -6385,7 +6394,7 @@ primexpr1
                             parser->normalizeExpression($3, type_unicode, false);
                             parser->normalizeExpression($5, type_unicode, false);
                             ::Release(parser->checkPromoteType($3, $5));
-                            _ATOM locale = parser->ensureCommonLocale($3, $5);
+                            IAtom * locale = parser->ensureCommonLocale($3, $5);
                             $$.setExpr(createValue(no_unicodeorder, makeIntType(4, true), $3.getExpr(), $5.getExpr(), createConstant(locale->str()), createConstant(3)));
                         }
     | UNICODEORDER '(' expression ',' expression ',' expression ')'
@@ -6404,7 +6413,7 @@ primexpr1
                         {
                             parser->normalizeExpression($3, type_unicode, false);
                             parser->normalizeExpression($5, type_unicode, false);
-                            _ATOM locale = parser->ensureCommonLocale($3, $5);
+                            IAtom * locale = parser->ensureCommonLocale($3, $5);
                             parser->normalizeExpression($8, type_int, false);
                             ::Release(parser->checkPromoteType($3, $5));
                             $$.setExpr(createValue(no_unicodeorder, makeIntType(4, true), $3.getExpr(), $5.getExpr(), createConstant(locale->str()), $8.getExpr()));
@@ -6770,7 +6779,7 @@ libraryName
                             //want to create a name based on the name of the scope reference, but one that will be commmoned up between all
                             //internal instances of the same library.
                             OwnedHqlExpr internal = $3.getExpr();
-                            _ATOM name = internal->queryName();
+                            IAtom * name = internal->queryName();
                             StringBuffer nameText;
                             nameText.append("lib").append(name).append("_").append(getExpressionCRC(internal));
                             OwnedHqlExpr nameExpr = createExprAttribute(nameAtom, createConstant(nameText.str()));
@@ -6800,7 +6809,7 @@ scopeProjectOpt
     : OPT               {   $$.setExpr(createAttribute(optAtom)); $$.setPosition($1); }
     | UNKNOWN_ID            // Will include known ids as well since they won't be returned as known ids.
                         {
-                            $$.setExpr(createAttribute($1.getName()));
+                            $$.setExpr(createId($1.getId()));
                             $$.setPosition($1);
                         }
     ;
@@ -6843,7 +6852,7 @@ globalValueAttribute
                             }
                             else
                             {
-                                _ATOM name = parser->createFieldNameFromExpr(rhs);
+                                IIdAtom * name = parser->createFieldNameFromExpr(rhs);
                                 const char * text = name ? name->str() : "?";
                                 parser->reportError(ERR_OBJ_NOACTIVEDATASET, $1, "No active dataset to resolve field '%s'", text);
                                 $$.setExpr(createNullExpr(rhs));
@@ -7583,16 +7592,16 @@ simpleDataSet
                             OwnedHqlExpr dedup = createDataset(no_dedup, ds, createComma(flags, $7.getExpr()));
 
                             parser->checkDistribution($3, dedup, false);
-                            bool hasHash = dedup->hasProperty(hashAtom);
-                            if (hasHash || dedup->hasProperty(allAtom))
+                            bool hasHash = dedup->hasAttribute(hashAtom);
+                            if (hasHash || dedup->hasAttribute(allAtom))
                             {
-                                IHqlExpression * keep = dedup->queryProperty(keepAtom);
+                                IHqlExpression * keep = dedup->queryAttribute(keepAtom);
                                 if (keep && !matchesConstantValue(keep->queryChild(0), 1))
                                     parser->reportError(ERR_DEDUP_ALL_KEEP, $4, "KEEP is not supported for DEDUP(ALL)");
                             }
                             if (hasHash)
                             {
-                                if (dedup->hasProperty(rightAtom))
+                                if (dedup->hasAttribute(rightAtom))
                                     parser->reportError(ERR_DEDUP_ALL_KEEP, $4, "RIGHT is not supported for DEDUP(HASH)");
                             }
 
@@ -7646,13 +7655,12 @@ simpleDataSet
 
                             IHqlExpression * ds = createDataset(no_keyeddistribute, left, createComma(right, cond, LINK(attr), $12.getExpr()));
 
-                            HqlExprArray leftSorts, rightSorts;
-                            bool isLimitedSubstringJoin;
-                            OwnedHqlExpr match = findJoinSortOrders(cond, NULL, NULL, NULL, leftSorts, rightSorts, isLimitedSubstringJoin, NULL);
+                            JoinSortInfo joinInfo;
+                            joinInfo.findJoinSortOrders(cond, NULL, NULL, NULL, false);
                             unsigned numUnsortedFields = numPayloadFields(right);
-                            if (match || (!ds->hasProperty(firstAtom) && (leftSorts.ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
+                            if (joinInfo.extraMatch || (!ds->hasAttribute(firstAtom) && (joinInfo.queryLeftReq().ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"Condition on DISTRIBUTE must match the key exactly");
-                            if (isLimitedSubstringJoin)
+                            if (joinInfo.hasOptionalEqualities())
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"field[1..*] is not supported for a keyed distribute");
 
                             //Should check that all index fields are accounted for...
@@ -7729,13 +7737,13 @@ simpleDataSet
 
                             IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $10.getExpr())));
 
-                            bool isLocal = join->hasProperty(localAtom);
+                            bool isLocal = join->hasAttribute(localAtom);
                             parser->checkDistribution($3, left, isLocal, true);
                             parser->checkDistribution($5, right, isLocal, true);
                             parser->checkJoinFlags($1, join);
                             parser->checkOnFailRecord(join, $1);
 
-                            if (!join->hasProperty(allAtom))
+                            if (!join->hasAttribute(allAtom))
                                 parser->warnIfFoldsToConstant(cond, $7);
 
                             $$.setExpr(join, $1);
@@ -7760,7 +7768,7 @@ simpleDataSet
                             IHqlExpression * ds = $3.getExpr();
                             IHqlExpression * cond = $6.getExpr();
                             IHqlExpression * tform = $8.getExpr();
-                            if (!queryPropertyInList(sortedAtom, $10.queryExpr()))
+                            if (!queryAttributeInList(sortedAtom, $10.queryExpr()))
                                 parser->reportError(ERR_EXPECTED, $10, "SORTED() is required for STEPPED join");
 
                             OwnedHqlExpr flags;
@@ -7776,7 +7784,7 @@ simpleDataSet
                         {
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
-                            if (!queryProperty(sortedAtom, sortItems))
+                            if (!queryAttribute(sortedAtom, sortItems))
                                 parser->reportWarning(WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
 
                             IHqlExpression * ds = $3.getExpr();
@@ -7973,8 +7981,8 @@ simpleDataSet
                             args.append(*LINK(ds));
                             args.append(*$5.getExpr());
                             $6.unwindCommaList(args);
-                            node_operator op = queryProperty(keyedAtom, args) || queryProperty(countAtom, args) ? no_keyedlimit : no_limit;
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            node_operator op = queryAttribute(keyedAtom, args) || queryAttribute(countAtom, args) ? no_keyedlimit : no_limit;
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail && !parser->checkTransformTypeMatch($6, ds, onFail->queryChild(0)))
                                 args.zap(*onFail);
                             $$.setExpr(createDataset(op, args));
@@ -7987,7 +7995,7 @@ simpleDataSet
                             args.append(*LINK(ds));
                             args.append(*$5.getExpr());
                             $6.unwindCommaList(args);
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail && !parser->checkTransformTypeMatch($4, ds, onFail->queryChild(0)))
                                 args.zap(*onFail);
                             $$.setExpr(createDataset(no_catchds, args));
@@ -8003,7 +8011,7 @@ simpleDataSet
                             args.append(*$5.getExpr());
                             args.append(*$7.getExpr());
                             $8.unwindCommaList(args);
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail && !parser->checkTransformTypeMatch($4, ds, onFail->queryChild(0)))
                                 args.zap(*onFail);
                             $$.setExpr(createDataset(no_catchds, args));
@@ -8012,7 +8020,7 @@ simpleDataSet
 */
     | MERGE '(' startTopFilter ',' mergeDataSetList ')' endTopFilter
                         {
-                            bool isLocal = queryPropertyInList(localAtom, $5.queryExpr()) != NULL;
+                            bool isLocal = queryAttributeInList(localAtom, $5.queryExpr()) != NULL;
                             parser->checkMergeInputSorted($3, isLocal);
                             OwnedHqlExpr ds = $3.getExpr();
 
@@ -8022,7 +8030,7 @@ simpleDataSet
                             if (rest)
                                 rest->unwindList(args, no_comma);
 
-                            IHqlExpression * sorted = queryProperty(sortedAtom, args);
+                            IHqlExpression * sorted = queryAttribute(sortedAtom, args);
                             OwnedHqlExpr newSorted;
                             if (!sorted)
                             {
@@ -8064,7 +8072,7 @@ simpleDataSet
                             args.append(*LINK(ds));
                             if (rest)
                                 rest->unwindList(args, no_comma);
-                            IHqlExpression * group = queryProperty(groupAtom, args);
+                            IHqlExpression * group = queryAttribute(groupAtom, args);
                             if (!group)
                             {
                                 parser->reportError(ERR_COGROUP_NO_GROUP, $1, "COGROUP requires a GROUP() parameter");
@@ -8200,19 +8208,6 @@ simpleDataSet
                             OwnedHqlExpr attrs;
                             IHqlExpression *groupOrder = parser->processSortList($6, no_group, input, sortItems, NULL, &attrs);
                             OwnedHqlExpr args = createComma(groupOrder, LINK(attrs));
-                            
-                            //Non-all Group only make sense if the rows are together.  This can occur if
-                            //the dataset is sorted, or if previous operation was a grouped aggregate
-                            bool isLocal = queryPropertyInList(localAtom, attrs) != NULL;
-                            if (groupOrder && !queryPropertyInList(allAtom, attrs) && !appearsToBeSorted(input->queryType(), isLocal, true))
-                            {
-                                bool ok = (input->getOperator() == no_usertable) &&
-                                          (datasetHasGroupBy(input));// || isGrouped(input->queryChild(0)));
-                                if (!ok && !isLocal && isPartitionedForGroup(input, groupOrder, false) && appearsToBeSorted(input->queryType(), true, true))
-                                    ok = true;
-                                if (!ok && (groupOrder && groupOrder->numChildren()))
-                                    parser->reportWarning(WRN_NOT_SORTED, $2.pos, "GROUP on a table that does not appear to be sorted, was this intended?");
-                            }
                             $$.setExpr(createDataset(no_group, input.getClear(), args.getClear()), $1);
                         }
     | GROUPED '(' startTopFilter startGROUP beginList sortList endGROUP
@@ -8279,10 +8274,10 @@ simpleDataSet
                             OwnedHqlExpr attrs;
                             OwnedHqlExpr grouping = parser->processSortList($7, no_usertable, dataset, sortItems, NULL, &attrs);
 
-                            if (grouping && !queryPropertyInList(groupedAtom, attrs))
+                            if (grouping && !queryAttributeInList(groupedAtom, attrs))
                             {
                                 parser->checkGrouping($7, dataset,record,grouping);
-                                if (dataset->getOperator() == no_group && dataset->queryType()->queryGroupInfo())
+                                if (dataset->getOperator() == no_group && isGrouped(dataset))
                                     parser->reportWarning(WRN_GROUPINGIGNORED, $3.pos, "Grouping of table input will have no effect, was this intended?");
                             }
 
@@ -8466,7 +8461,7 @@ simpleDataSet
                             OwnedHqlExpr quoted = createExprAttribute(quoteAtom, LINK(empty));
                             OwnedHqlExpr separator = createExprAttribute(separatorAtom, LINK(empty));
                             OwnedHqlExpr mode = createValue(no_csv, makeNullType(), quoted.getClear(), separator.getClear(), option.getClear());
-                            OwnedHqlExpr field = createField(lineIdAtom, LINK(type), NULL);
+                            OwnedHqlExpr field = createField(lineId, LINK(type), NULL);
                             OwnedHqlExpr record = createRecord(field);
 
                             //LOCAL(expression) is now an overloaded the syntax, so disambiguate here...
@@ -8595,7 +8590,7 @@ simpleDataSet
 
                             OwnedHqlExpr attrs = $6.getExpr();
                             parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), attrs, NULL);
-                            parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryPropertyInList(outputAtom, attrs));
+                            parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryAttributeInList(outputAtom, attrs));
 
                             $$.setExpr(createDataset(no_pipe, $3.getExpr(), createComma($5.getExpr(), LINK(attrs))));
                             $$.setPosition($1);
@@ -8605,7 +8600,7 @@ simpleDataSet
                             parser->normalizeExpression($5, type_string, false);
 
                             OwnedHqlExpr attrs = $8.getExpr();
-                            parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryPropertyInList(outputAtom, attrs));
+                            parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryAttributeInList(outputAtom, attrs));
                             parser->checkValidPipeRecord($7, $7.queryExpr()->queryRecord(), attrs, NULL);
 
                             $$.setExpr(createDataset(no_pipe, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), LINK(attrs))));
@@ -8642,10 +8637,10 @@ simpleDataSet
                             }
                             else
                             {
-                                IHqlExpression * best = queryPropertyInList(bestAtom, attrs);
+                                IHqlExpression * best = queryAttributeInList(bestAtom, attrs);
                                 if (best)
                                     parser->checkMaxCompatible(sortOrder, best, $9);
-                                bool isLocal = (queryPropertyInList(localAtom, attrs)!=NULL);
+                                bool isLocal = (queryAttributeInList(localAtom, attrs)!=NULL);
                                 parser->checkDistribution($3, input, isLocal, false);
                                 attrs.setown(createComma(sortOrder, $5.getExpr(), LINK(attrs)));
                                 $$.setExpr(createDataset(no_topn, input, attrs.getClear()));
@@ -8825,7 +8820,7 @@ simpleDataSet
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             parser->checkOutputRecord($9, false);
                             IHqlExpression * ds = createDataset(no_parse, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), createComma($12.getExpr(), $14.getExpr())));
-                            if (ds->hasProperty(tomitaAtom) && (ds->queryChild(2)->queryType()->getTypeCode() == type_pattern))
+                            if (ds->hasAttribute(tomitaAtom) && (ds->queryChild(2)->queryType()->getTypeCode() == type_pattern))
                                 parser->reportError(ERR_EXPECTED_RULE, $7, "Expected a rule as parameter to PARSE");
                             $$.setExpr(ds);
                             $$.setPosition($1);
@@ -8835,7 +8830,7 @@ simpleDataSet
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             IHqlExpression * record = $9.queryExpr()->queryRecord();
                             IHqlExpression * ds = createDataset(no_newparse, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), LINK(record), createComma($9.getExpr(), $12.getExpr(), $14.getExpr())));
-                            if (ds->hasProperty(tomitaAtom) && (ds->queryChild(2)->queryType()->getTypeCode() == type_pattern))
+                            if (ds->hasAttribute(tomitaAtom) && (ds->queryChild(2)->queryType()->getTypeCode() == type_pattern))
                                 parser->reportError(ERR_EXPECTED_RULE, $7, "Expected a rule as parameter to PARSE");
                             $$.setExpr(ds);
                             $$.setPosition($1);
@@ -8979,7 +8974,7 @@ simpleDataSet
                             HqlExprArray args;
                             args.append(*LINK(ds));
                             $6.unwindCommaList(args);
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail && !parser->checkTransformTypeMatch($4, ds, onFail->queryChild(0)))
                                 args.zap(*onFail);
                             $$.setExpr(createDataset(no_allnodes, args));
@@ -9408,7 +9403,7 @@ sectionArgument
     ;
 
 enumDef
-    : enumBegin enumValues ')'
+    : enumBegin enumFirst enumValues ')'
                         {
                             $$.setExpr(parser->leaveEnum($1), $1);
                         }
@@ -9418,19 +9413,24 @@ enumBegin
     : ENUM '('
                         {
                             OwnedITypeInfo type = makeIntType(4, false);
-                            parser->enterEnum(type);
-                            $$.clear();
-                        }
-    | ENUM '(' SIMPLE_TYPE ','
-                        {
-                            OwnedITypeInfo type = $3.getType();
-                            parser->enterEnum(type);
+                            parser->enterEnum($1, type);
                             $$.clear();
                         }
     ;
 
-enumValues
+enumFirst
     : enumValue
+    | scalarType
+                        {
+                            OwnedITypeInfo type = $1.getType();
+                            parser->setEnumType($1, type);
+                            $$.clear();
+                        }
+    ;
+
+
+enumValues
+    :
     | enumValues ',' enumValue
     ;
 
@@ -9442,6 +9442,20 @@ enumValue
                         }
     | UNKNOWN_ID EQ expression
                         {
+                            parser->normalizeExpression($3, type_numeric, false);
+                            OwnedHqlExpr nextValue = $3.getExpr();
+                            parser->processEnum($1, nextValue);
+                            $$.clear();
+                        }
+    | SCOPE_ID
+                        {
+                            $1.setId(parser->getNameFromExpr($1));
+                            parser->processEnum($1, NULL);
+                            $$.clear();
+                        }
+    | SCOPE_ID EQ expression
+                        {
+                            $1.setId(parser->getNameFromExpr($1));
                             parser->normalizeExpression($3, type_numeric, false);
                             OwnedHqlExpr nextValue = $3.getExpr();
                             parser->processEnum($1, nextValue);
@@ -9561,7 +9575,7 @@ mode
                             $3.unwindCommaList(args);
 
                             //Create expression in a form that is backward compatible
-                            IHqlExpression * name = queryProperty(rowAtom, args);
+                            IHqlExpression * name = queryAttribute(rowAtom, args);
                             if (name)
                             {
                                 args.add(*LINK(name->queryChild(0)), 0);
@@ -10035,6 +10049,7 @@ JoinFlag
     | GROUPED           {   $$.setExpr(createComma(createAttribute(lookupAtom), createAttribute(manyAtom), createAttribute(groupedAtom))); $$.setPosition($1); }
     | MANY              {   $$.setExpr(createAttribute(manyAtom)); $$.setPosition($1); }
     | LOOKUP            {   $$.setExpr(createAttribute(lookupAtom)); $$.setPosition($1); }
+    | SMART             {   $$.setExpr(createAttribute(smartAtom)); $$.setPosition($1); }
     | NOSORT            {   $$.setExpr(createAttribute(noSortAtom)); $$.setPosition($1); }
     | NOSORT '(' LEFT ')'
                         {   $$.setExpr(createAttribute(noSortAtom, createAttribute(leftAtom))); $$.setPosition($1); }
@@ -10044,7 +10059,7 @@ JoinFlag
                         {
                             parser->normalizeExpression($3, type_numeric, false);
                             if ($3.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $4, "ATMOST(0) doesn't make any sense");
+                                parser->reportError(ERR_BAD_JOINFLAG, $3, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
@@ -10053,7 +10068,24 @@ JoinFlag
                             parser->normalizeExpression($3, type_boolean, false);
                             parser->normalizeExpression($5, type_numeric, false);
                             if ($5.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $6, "ATMOST(0) doesn't make any sense");
+                                parser->reportError(ERR_BAD_JOINFLAG, $5, "ATMOST(0) doesn't make any sense");
+                            $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | ATMOST '(' expression ',' sortListExpr ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_boolean, false);
+                            parser->normalizeExpression($7, type_numeric, false);
+                            if ($7.isZero())
+                                parser->reportError(ERR_BAD_JOINFLAG, $7, "ATMOST(0) doesn't make any sense");
+                            $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr(), $7.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | ATMOST '(' sortListExpr ',' expression ')'
+                        {
+                            parser->normalizeExpression($5, type_numeric, false);
+                            if ($5.isZero())
+                                parser->reportError(ERR_BAD_JOINFLAG, $5, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
@@ -10089,7 +10121,7 @@ JoinFlag
                             args.append(*$3.getExpr());
                             $4.unwindCommaList(args);
 
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail)
                             {
                                 onFail->Link();
@@ -10700,23 +10732,23 @@ optActualValue
 namedActual
     : UNKNOWN_ID ASSIGN actualValue
                         {
-                            parser->addNamedActual($1, $1.getName(), $3.getExpr());
+                            parser->addNamedActual($1, $1.getId(), $3.getExpr());
                             $$.clear();
                             $$.setPosition($1);
                         }
     | NAMED UNKNOWN_ID ASSIGN actualValue
                         {
-                            parser->addNamedActual($1, $2.getName(), $4.getExpr());
+                            parser->addNamedActual($1, $2.getId(), $4.getExpr());
                             $$.clear();
                             $$.setPosition($1);
                         }
     | goodObject ASSIGN actualValue
                         {
                             OwnedHqlExpr nameExpr = $1.getExpr();
-                            _ATOM name = nameExpr->queryName();
+                            IIdAtom * name = nameExpr->queryId();
                             if (!name)
                             {
-                                name = unknownAtom;
+                                name = unknownId;
                                 parser->reportError(ERR_EXPECTED_ID, $1, "Expected a parameter name");
                             }
                             parser->addNamedActual($1, name, $3.getExpr());
@@ -10971,8 +11003,8 @@ fieldMaps1
 fieldMap
     :  UNKNOWN_ID ASSIGN UNKNOWN_ID
                         {
-                            IHqlExpression* attr1 = createAttribute($1.getName());
-                            IHqlExpression* attr2 = createAttribute($3.getName());
+                            IHqlExpression* attr1 = createId($1.getId());
+                            IHqlExpression* attr2 = createId($3.getId());
                             parser->addListElement(createComma(attr1, attr2));
                             $$.clear();
                         }
@@ -11418,6 +11450,7 @@ const
     | TOK_FALSE         {
                             $$.setExpr(createConstant(false), $1);
                         }
+    | BOOL_CONST
     ;
 
 stringConstExpr
@@ -11694,7 +11727,7 @@ pattern0
     | pattern0 '?'      {
                             parser->checkPattern($1, true);
                             IHqlExpression * pattern = $1.getExpr();
-                            if ((pattern->getOperator() == no_pat_repeat) && (!pattern->hasProperty(minimalAtom)))
+                            if ((pattern->getOperator() == no_pat_repeat) && (!pattern->hasAttribute(minimalAtom)))
                             {
                                 HqlExprArray args;
                                 unwindChildren(args, pattern);
@@ -11784,16 +11817,16 @@ pattern0
     | USE '(' UNKNOWN_ID ')'
                         {
                             parser->checkUseLocation($1);
-                            _ATOM moduleName = parser->globalScope->queryName();
+                            IAtom * moduleName = parser->globalScope->queryName();
                             IHqlExpression * module = moduleName ? createAttribute(moduleAtom, createAttribute(moduleName)) : NULL;
-                            IHqlExpression * id = createAttribute(nameAtom, createAttribute($3.getName()));
+                            IHqlExpression * id = createAttribute(nameAtom, createId($3.getId()));
                             $$.setExpr(createValue(no_pat_use, makeRuleType(NULL), id, module));
                         }
     | USE '(' UNKNOWN_ID '.' UNKNOWN_ID ')'
                         {
                             parser->checkUseLocation($1);
-                            IHqlExpression * module = createAttribute(moduleAtom, createAttribute($3.getName()));
-                            IHqlExpression * id = createAttribute(nameAtom, createAttribute($5.getName()));
+                            IHqlExpression * module = createAttribute(moduleAtom, createId($3.getId()));
+                            IHqlExpression * id = createAttribute(nameAtom, createId($5.getId()));
                             $$.setExpr(createValue(no_pat_use, makeRuleType(NULL), module, id));
                         }
     | USE '(' recordDef ',' stringConstExpr ')'
@@ -11805,17 +11838,17 @@ pattern0
     | USE '(' recordDef ',' UNKNOWN_ID ')'
                         {
                             parser->checkUseLocation($1);
-                            _ATOM moduleName = parser->globalScope->queryName();
+                            IAtom * moduleName = parser->globalScope->queryName();
                             IHqlExpression * module = moduleName ? createAttribute(moduleAtom, createAttribute(moduleName)) : NULL;
-                            IHqlExpression * id = createAttribute(nameAtom, createAttribute($5.getName()));
+                            IHqlExpression * id = createAttribute(nameAtom, createId($5.getId()));
                             OwnedHqlExpr record = $3.getExpr();
                             $$.setExpr(createValue(no_pat_use, makeRuleType(record->getType()), id, module));
                         }
     | USE '(' recordDef ',' UNKNOWN_ID '.' UNKNOWN_ID ')'
                         {
                             parser->checkUseLocation($1);
-                            IHqlExpression * module = createAttribute(moduleAtom, createAttribute($5.getName()));
-                            IHqlExpression * id = createAttribute(nameAtom, createAttribute($7.getName()));
+                            IHqlExpression * module = createAttribute(moduleAtom, createId($5.getId()));
+                            IHqlExpression * id = createAttribute(nameAtom, createId($7.getId()));
                             OwnedHqlExpr record = $3.getExpr();
                             $$.setExpr(createValue(no_pat_use, makeRuleType(record->getType()), module, id));
                         }
@@ -11917,12 +11950,12 @@ optPatternActualValue
 namedPatternActual
     : UNKNOWN_ID ASSIGN patternParamval
                         {
-                            parser->addNamedActual($1, $1.getName(), $3.getExpr());
+                            parser->addNamedActual($1, $1.getId(), $3.getExpr());
                             $$.clear($1);
                         }
     | NAMED UNKNOWN_ID ASSIGN patternParamval
                         {
-                            parser->addNamedActual($1, $2.getName(), $4.getExpr());
+                            parser->addNamedActual($1, $2.getId(), $4.getExpr());
                             $$.clear($1);
                         }
     ;
@@ -12026,7 +12059,7 @@ defineFeatureId
     : FEATURE knownOrUnknownId  
                         {
                             ITypeInfo *type = makeFeatureType();
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }

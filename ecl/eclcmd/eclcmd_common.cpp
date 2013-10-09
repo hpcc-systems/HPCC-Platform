@@ -369,6 +369,8 @@ public:
     void buildCmd(StringBuffer &cmdLine)
     {
         cmdLine.set("eclcc -E");
+        if (cmd.optLegacy)
+            cmdLine.append(" -legacy");
         appendOptPath(cmdLine, 'I', cmd.optImpPath.str());
         appendOptPath(cmdLine, 'L', cmd.optLibPath.str());
         if (cmd.optAttributePath.length())
@@ -556,6 +558,8 @@ eclCmdOptionMatchIndicator EclCmdWithEclTarget::matchCommandLineOption(ArgvItera
     if (iter.matchOption(optSnapshot, ECLOPT_SNAPSHOT) || iter.matchOption(optSnapshot, ECLOPT_SNAPSHOT_S))
         return EclCmdOptionMatch;
     if (iter.matchFlag(optNoArchive, ECLOPT_ECL_ONLY))
+        return EclCmdOptionMatch;
+    if (iter.matchFlag(optLegacy, ECLOPT_LEGACY) || iter.matchFlag(optLegacy, ECLOPT_LEGACY_DASH))
         return EclCmdOptionMatch;
     if (iter.matchOption(optResultLimit, ECLOPT_RESULT_LIMIT))
         return EclCmdOptionMatch;

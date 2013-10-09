@@ -56,14 +56,15 @@ static IHqlExpression * cacheLinkCountedAttr;
 static IHqlExpression * cacheReferenceAttr;
 static IHqlExpression * cacheStreamedAttr;
 static IHqlExpression * cacheUnadornedAttr;
-static IHqlExpression * matchxxxPseudoFile;
+static IHqlExpression * nlpParsePsuedoTable;
+static IHqlExpression * xmlParsePsuedoTable;
 static IHqlExpression * cachedQuotedNullExpr;
 static IHqlExpression * cachedGlobalSequenceNumber;
 static IHqlExpression * cachedLocalSequenceNumber;
 static IHqlExpression * cachedStoredSequenceNumber;
 static IHqlExpression * cachedOmittedValueExpr;
 
-static void initBoolAttr(_ATOM name, IHqlExpression * x[2])
+static void initBoolAttr(IAtom * name, IHqlExpression * x[2])
 {
     x[0] = createExprAttribute(name, createConstant(false));
     x[1] = createExprAttribute(name, createConstant(true));
@@ -77,14 +78,15 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     sizetCacheCs = new CriticalSection;
     constUnknownVarStringType = makeConstantModifier(makeVarStringType(UNKNOWN_LENGTH));
     defaultMaxRecordLengthExpr = createQuoted("<default-max-length>", makeIntType(sizeof(size32_t), false));
-    cacheAlignedAttr = createAttribute(_attrAligned_Atom);
+    cacheAlignedAttr = createAttribute(_propAligned_Atom);
     cacheEmbeddedAttr = createAttribute(embeddedAtom);
     cacheInlineAttr = createAttribute(inlineAtom);
     cacheLinkCountedAttr = createAttribute(_linkCounted_Atom);
     cacheReferenceAttr = createAttribute(referenceAtom);
     cacheStreamedAttr = createAttribute(streamedAtom);
-    cacheUnadornedAttr = createAttribute(_attrUnadorned_Atom);
-    matchxxxPseudoFile = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(matchxxxPseudoFileAtom));
+    cacheUnadornedAttr = createAttribute(_propUnadorned_Atom);
+    nlpParsePsuedoTable = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(_nlpParse_Atom));
+    xmlParsePsuedoTable = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(_xmlParse_Atom));
     cachedQuotedNullExpr = createValue(no_nullptr, makeBoolType());
     cachedOmittedValueExpr = createValue(no_omitted, makeAnyType());
 
@@ -110,7 +112,8 @@ MODULE_EXIT()
     cacheReferenceAttr->Release();
     cacheStreamedAttr->Release();
     cacheUnadornedAttr->Release();
-    matchxxxPseudoFile->Release();
+    xmlParsePsuedoTable->Release();
+    nlpParsePsuedoTable->Release();
     cachedQuotedNullExpr->Release();
     cachedGlobalSequenceNumber->Release();
     cachedLocalSequenceNumber->Release();
@@ -144,12 +147,12 @@ IHqlExpression * createUIntConstant(unsigned __int64 val)
     return createConstant(createMinIntValue(val));
 }
 
-inline _ATOM createMangledName(IHqlExpression * module, IHqlExpression * child)
+inline IIdAtom * createMangledName(IHqlExpression * module, IHqlExpression * child)
 {
     StringBuffer mangledName;
     mangledName.append(module->queryName()).append(".").append(child->queryName());
 
-    return createIdentifierAtom(mangledName.str());
+    return createIdAtom(mangledName.str());
 }
 
 IHqlExpression * queryDefaultMaxRecordLengthExpr()
@@ -162,7 +165,7 @@ HQL_API IHqlExpression * getFixedSizeAttr(unsigned size)
     if (size >= FIXEDATTR_CACHE_SIZE)
     {
         OwnedHqlExpr sizeExpr = getSizetConstant(size);
-        return createExprAttribute(_attrSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
+        return createExprAttribute(_propSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
     }
 
     CriticalBlock block(*sizetCacheCs);     // reuse the critical section
@@ -170,7 +173,7 @@ HQL_API IHqlExpression * getFixedSizeAttr(unsigned size)
     if (!match)
     {
         OwnedHqlExpr sizeExpr = getSizetConstant(size);
-        match = fixedAttrSizeCache[size] = createExprAttribute(_attrSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
+        match = fixedAttrSizeCache[size] = createExprAttribute(_propSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
     }
     return LINK(match);
 }
@@ -230,9 +233,14 @@ extern HQL_API IHqlExpression * getReferenceAttr()
     return LINK(cacheReferenceAttr);
 }
 
-extern HQL_API IHqlExpression * queryMatchxxxPseudoFile()
+extern HQL_API IHqlExpression * queryNlpParsePseudoTable()
 {
-    return matchxxxPseudoFile;
+    return nlpParsePsuedoTable;
+}
+
+extern HQL_API IHqlExpression * queryXmlParsePseudoTable()
+{
+    return xmlParsePsuedoTable;
 }
 
 IHqlExpression * getGlobalSequenceNumber()      { return LINK(cachedGlobalSequenceNumber); }
@@ -472,7 +480,7 @@ bool recordContainsBlobs(IHqlExpression * record)
         {
         case no_field:
             {
-                if (cur->hasProperty(blobAtom))
+                if (cur->hasAttribute(blobAtom))
                     return true;
                 IHqlExpression * childRecord = cur->queryRecord();
                 if (childRecord && recordContainsBlobs(childRecord))
@@ -504,7 +512,7 @@ IHqlExpression * queryVirtualFileposField(IHqlExpression * record)
     ForEachChild(idx, record)
     {
         IHqlExpression * cur = record->queryChild(idx);
-        IHqlExpression * attr = cur->queryProperty(virtualAtom);
+        IHqlExpression * attr = cur->queryAttribute(virtualAtom);
         if (attr)
             return cur;
     }
@@ -552,7 +560,7 @@ void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpress
     }
 }
 
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
 
 static IHqlExpression * queryOnlyTableChild(IHqlExpression * expr)
 {
@@ -599,13 +607,134 @@ static IHqlExpression * findCommonExpression(IHqlExpression * lower, IHqlExpress
 }
 
 
+//---------------------------------------------------------------------------------------------------------------------
+
+bool isCommonSubstringRange(IHqlExpression * expr)
+{
+    if (expr->getOperator() != no_substring)
+        return false;
+    IHqlExpression * range = expr->queryChild(1);
+    return (range->getOperator() == no_rangecommon);
+}
+
+IHqlExpression * removeCommonSubstringRange(IHqlExpression * expr)
+{
+    if (expr->getOperator() != no_substring)
+        return LINK(expr);
+    IHqlExpression * range = expr->queryChild(1);
+    if (range->getOperator() != no_rangecommon)
+        return LINK(expr);
+    IHqlExpression * value = expr->queryChild(0);
+    IHqlExpression * from = range->queryChild(0);
+    if (matchesConstantValue(from, 1))
+        return LINK(value);
+    OwnedHqlExpr newRange = createValue(no_rangefrom, makeNullType(), LINK(from));
+    return replaceChild(expr, 1, newRange.getClear());
+}
+
+void AtmostLimit::extractAtmostArgs(IHqlExpression * atmost)
+{
+    limit.setown(getSizetConstant(0));
+    if (atmost)
+    {
+        unsigned cur = 0;
+        IHqlExpression * arg = atmost->queryChild(0);
+        if (arg && arg->isBoolean())
+        {
+            required.set(arg);
+            arg = atmost->queryChild(++cur);
+        }
+        if (arg && arg->queryType()->getTypeCode() == type_sortlist)
+        {
+            unwindChildren(optional, arg);
+            arg = atmost->queryChild(++cur);
+        }
+        if (arg)
+            limit.set(arg);
+    }
+}
+
+
+static bool matchesAtmostCondition(IHqlExpression * cond, HqlExprArray & atConds, unsigned & numMatched)
+{
+    if (atConds.find(*cond) != NotFound)
+    {
+        numMatched++;
+        return true;
+    }
+    if (cond->getOperator() != no_assertkeyed)
+        return false;
+    unsigned savedMatched = numMatched;
+    HqlExprArray conds;
+    cond->queryChild(0)->unwindList(conds, no_and);
+    ForEachItemIn(i, conds)
+    {
+        if (!matchesAtmostCondition(&conds.item(i), atConds, numMatched))
+        {
+            numMatched = savedMatched;
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool doSplitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard)
+{
+    if (atmostCond)
+    {
+        //If join condition has evaluated to a constant then allow any atmost condition.
+        if (!condition->isConstant())
+        {
+            HqlExprArray conds, atConds;
+            condition->unwindList(conds, no_and);
+            atmostCond->unwindList(atConds, no_and);
+            unsigned numAtmostMatched = 0;
+            ForEachItemIn(i, conds)
+            {
+                IHqlExpression & cur = conds.item(i);
+                if (matchesAtmostCondition(&cur, atConds, numAtmostMatched))
+                    extendConditionOwn(hard, no_and, LINK(&cur));
+                else
+                    extendConditionOwn(fuzzy, no_and, LINK(&cur));
+            }
+            if (atConds.ordinality() != numAtmostMatched)
+            {
+                hard.clear();
+                fuzzy.clear();
+                return false;
+            }
+        }
+    }
+    else
+        hard.set(condition);
+    return true;
+}
+
+void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard)
+{
+    if (!doSplitFuzzyCondition(condition, atmostCond, fuzzy, hard))
+    {
+        //Ugly, but sometimes the condition only matches after it has been constant folded.
+        //And this function can be called from the normalizer before the expression tree is folded.
+        OwnedHqlExpr foldedCond = foldHqlExpression(condition);
+        OwnedHqlExpr foldedAtmost = foldHqlExpression(atmostCond);
+        if (!doSplitFuzzyCondition(foldedCond, foldedAtmost, fuzzy, hard))
+        {
+            StringBuffer s;
+            getExprECL(atmostCond, s);
+            throwError1(HQLERR_AtmostFailMatchCondition, s.str());
+        }
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 
 
 class JoinOrderSpotter
 {
 public:
-    JoinOrderSpotter(IHqlExpression * _leftDs, IHqlExpression * _rightDs, IHqlExpression * seq, HqlExprArray & _leftSorts, HqlExprArray & _rightSorts) : leftSorts(_leftSorts), rightSorts(_rightSorts)
+    JoinOrderSpotter(IHqlExpression * _leftDs, IHqlExpression * _rightDs, IHqlExpression * seq, JoinSortInfo & _joinOrder) : joinOrder(_joinOrder)
     {
         if (_leftDs)
             left.setown(createSelector(no_left, _leftDs, seq));
@@ -613,7 +742,8 @@ public:
             right.setown(createSelector(no_right, _rightDs, seq));
     }
 
-    IHqlExpression * doFindJoinSortOrders(IHqlExpression * condition, HqlExprArray * slidingMatches, HqlExprCopyArray & matched);
+    IHqlExpression * doFindJoinSortOrders(IHqlExpression * condition, bool allowSlidingMatch, HqlExprCopyArray & matched);
+    bool doProcessOptional(IHqlExpression * condition);
     void findImplicitBetween(IHqlExpression * condition, HqlExprArray & slidingMatches, HqlExprCopyArray & matched, HqlExprCopyArray & pending);
 
 protected:
@@ -625,8 +755,7 @@ protected:
 protected:
     OwnedHqlExpr left;
     OwnedHqlExpr right;
-    HqlExprArray & leftSorts;
-    HqlExprArray & rightSorts;
+    JoinSortInfo & joinOrder;
 };
 
 
@@ -653,7 +782,7 @@ IHqlExpression * JoinOrderSpotter::doTraverseStripSelect(IHqlExpression * expr, 
         IHqlExpression * table = expr->queryChild(0);
 
         node_operator curKind = table->getOperator();
-        if (curKind == no_select || expr->hasProperty(newAtom))
+        if (curKind == no_select || expr->hasAttribute(newAtom))
         {
             //I'm not sure this is a good idea for elements with newAtom - can end up with weird join conditions
             HqlExprArray args;
@@ -729,7 +858,7 @@ void JoinOrderSpotter::unwindSelectorRecord(HqlExprArray & target, IHqlExpressio
     }
 }
 
-IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * condition, HqlExprArray * slidingMatches, HqlExprCopyArray & matched)
+IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * condition, bool allowSlidingMatch, HqlExprCopyArray & matched)
 {
     IHqlExpression *l = condition->queryChild(0);
     IHqlExpression *r = condition->queryChild(1);
@@ -738,8 +867,8 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
     {
     case no_and:
         {
-            IHqlExpression *lmatch = doFindJoinSortOrders(l, slidingMatches, matched);
-            IHqlExpression *rmatch = doFindJoinSortOrders(r, slidingMatches, matched);
+            IHqlExpression *lmatch = doFindJoinSortOrders(l, allowSlidingMatch, matched);
+            IHqlExpression *rmatch = doFindJoinSortOrders(r, allowSlidingMatch, matched);
             if (lmatch)
             {
                 if (rmatch)
@@ -764,26 +893,26 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
 
             if ((leftSelectKind == no_left) && (rightSelectKind == no_right))
             {
-                leftSorts.append(*leftStrip.getClear());
-                rightSorts.append(*rightStrip.getClear());
+                joinOrder.leftReq.append(*leftStrip.getClear());
+                joinOrder.rightReq.append(*rightStrip.getClear());
                 return NULL;
             }
             if ((leftSelectKind == no_right) && (rightSelectKind == no_left))
             {
-                leftSorts.append(*rightStrip.getClear());
-                rightSorts.append(*leftStrip.getClear());
+                joinOrder.leftReq.append(*rightStrip.getClear());
+                joinOrder.rightReq.append(*leftStrip.getClear());
                 return NULL;
             }
             if (((l == left) && (r == right)) || ((l == right) && (r == left)))
             {
-                unwindSelectorRecord(leftSorts, queryActiveTableSelector(), left->queryRecord());
-                unwindSelectorRecord(rightSorts, queryActiveTableSelector(), right->queryRecord());
+                unwindSelectorRecord(joinOrder.leftReq, queryActiveTableSelector(), left->queryRecord());
+                unwindSelectorRecord(joinOrder.rightReq, queryActiveTableSelector(), right->queryRecord());
                 return NULL;
             }
         }
         return LINK(condition);
     case no_between:
-        if (slidingMatches)
+        if (allowSlidingMatch)
         {
             node_operator leftSelectKind = no_none;
             node_operator rightSelectKind = no_none;
@@ -797,7 +926,7 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
                 IHqlExpression * common = findCommonExpression(lowerStrip,upperStrip);
                 if (common)
                 {
-                    slidingMatches->append(*createValue(no_between, makeBoolType(), LINK(leftStrip), LINK(lowerStrip), LINK(upperStrip), createExprAttribute(commonAtom, LINK(common))));
+                    joinOrder.slidingMatches.append(*createValue(no_between, makeBoolType(), LINK(leftStrip), LINK(lowerStrip), LINK(upperStrip), createExprAttribute(commonAtom, LINK(common))));
                     return NULL;
                 }
             }
@@ -812,6 +941,50 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
 
     default:
         return LINK(condition);
+    }
+}
+
+bool JoinOrderSpotter::doProcessOptional(IHqlExpression * condition)
+{
+    switch(condition->getOperator())
+    {
+    //MORE We could support no_and by adding a list to both sides, but I can't see it being worth the effort.
+    case no_constant:
+        //remove silly "and true" conditions
+        if (condition->queryValue()->getBoolValue())
+            return true;
+        return false;
+    case no_eq:
+        {
+            IHqlExpression *l = condition->queryChild(0);
+            IHqlExpression *r = condition->queryChild(1);
+            node_operator leftSelectKind = no_none;
+            node_operator rightSelectKind = no_none;
+            OwnedHqlExpr leftStrip = traverseStripSelect(l, leftSelectKind);
+            OwnedHqlExpr rightStrip = traverseStripSelect(r, rightSelectKind);
+
+            if ((leftSelectKind == no_left) && (rightSelectKind == no_right))
+            {
+                joinOrder.leftOpt.append(*leftStrip.getClear());
+                joinOrder.rightOpt.append(*rightStrip.getClear());
+                return true;
+            }
+            if ((leftSelectKind == no_right) && (rightSelectKind == no_left))
+            {
+                joinOrder.leftOpt.append(*rightStrip.getClear());
+                joinOrder.rightOpt.append(*leftStrip.getClear());
+                return true;
+            }
+            if (((l == left) && (r == right)) || ((l == right) && (r == left)))
+            {
+                unwindSelectorRecord(joinOrder.leftOpt, queryActiveTableSelector(), left->queryRecord());
+                unwindSelectorRecord(joinOrder.rightOpt, queryActiveTableSelector(), right->queryRecord());
+                return true;
+            }
+        }
+        return false;
+    default:
+        return false;
     }
 }
 
@@ -867,57 +1040,42 @@ void JoinOrderSpotter::findImplicitBetween(IHqlExpression * condition, HqlExprAr
     }
 }
 
-static bool isCommonSubstringRange(IHqlExpression * expr)
+JoinSortInfo::JoinSortInfo()
 {
-    if (expr->getOperator() != no_substring)
-        return false;
-    IHqlExpression * range = expr->queryChild(1);
-    return (range->getOperator() == no_rangecommon);
+    conditionAllEqualities = false;
 }
 
-static IHqlExpression * getSimplifiedCommonSubstringRange(IHqlExpression * expr)
+void JoinSortInfo::findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, bool allowSlidingMatch)
 {
-    IHqlExpression * rawSelect = expr->queryChild(0);
-    IHqlExpression * range = expr->queryChild(1);
-    IHqlExpression * rangeLow = range->queryChild(0);
-    if (matchesConstantValue(rangeLow, 1))
-        return LINK(rawSelect);
-    HqlExprArray args;
-    args.append(*LINK(rawSelect));
-    args.append(*createValue(no_rangefrom, makeNullType(), LINK(rangeLow)));
-    return expr->clone(args);
-}
-
-
-IHqlExpression * findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches)
-{
-    JoinOrderSpotter spotter(leftDs, rightDs, seq, leftSorts, rightSorts);
+    JoinOrderSpotter spotter(leftDs, rightDs, seq, *this);
     HqlExprCopyArray matched;
-    if (slidingMatches)
+    if (allowSlidingMatch)
     {
         //First spot any implicit betweens using x >= a and x <= b.  Do it first so that the second pass doesn't
         //reorder the join condition (this still reorders it slightly by moving the implicit betweens before explicit)
         HqlExprCopyArray pending;
-        spotter.findImplicitBetween(condition, *slidingMatches, matched, pending);
+        spotter.findImplicitBetween(condition, slidingMatches, matched, pending);
     }
-    OwnedHqlExpr ret = spotter.doFindJoinSortOrders(condition, slidingMatches, matched);
     
-    //Check for x[n..*] - a no_rangecommon, and ensure they are tagged as the last sorts.
-    unsigned numCommonRange = 0;
-    ForEachItemInRev(i, leftSorts)
+    extraMatch.setown(spotter.doFindJoinSortOrders(condition, allowSlidingMatch, matched));
+    conditionAllEqualities = (extraMatch == NULL);
+
+    //Support for legacy syntax where x[n..*] was present in join and atmost condition
+    //Ensure they are tagged as optional join fields.
+    ForEachItemInRev(i, leftReq)
     {
-        IHqlExpression & left = leftSorts.item(i);
-        IHqlExpression & right = rightSorts.item(i);
+        IHqlExpression & left = leftReq.item(i);
+        IHqlExpression & right = rightReq.item(i);
         if (isCommonSubstringRange(&left))
         {
             if (isCommonSubstringRange(&right))
             {
-                //MORE: May be best to remove the substring syntax as this point - or modify it if start != 1.
-                leftSorts.append(*getSimplifiedCommonSubstringRange(&left));
-                leftSorts.remove(i);
-                rightSorts.append(*getSimplifiedCommonSubstringRange(&right));
-                rightSorts.remove(i);
-                numCommonRange++;
+                if (leftOpt.ordinality())
+                    throwError(HQLERR_AtmostLegacyMismatch);
+                leftOpt.append(OLINK(left));
+                leftReq.remove(i);
+                rightOpt.append(OLINK(right));
+                rightReq.remove(i);
             }
             else
                 throwError(HQLERR_AtmostSubstringNotMatch);
@@ -928,29 +1086,64 @@ IHqlExpression * findJoinSortOrders(IHqlExpression * condition, IHqlExpression *
                 throwError(HQLERR_AtmostSubstringNotMatch);
         }
     }
-    isLimitedSubstringJoin = numCommonRange != 0;
-    if (numCommonRange > 1)
-        throwError(HQLERR_AtmostSubstringSingleInstance);
 
-    if ((numCommonRange == 0) && slidingMatches)
+    if (!hasOptionalEqualities() && allowSlidingMatch)
     {
-        ForEachItemIn(i, *slidingMatches)
+        ForEachItemIn(i, slidingMatches)
         {
-            IHqlExpression & cur = slidingMatches->item(i);
-            leftSorts.append(*LINK(cur.queryChild(0)));
-            rightSorts.append(*LINK(cur.queryChild(3)->queryChild(0)));
+            IHqlExpression & cur = slidingMatches.item(i);
+            leftReq.append(*LINK(cur.queryChild(0)));
+            rightReq.append(*LINK(cur.queryChild(3)->queryChild(0)));
         }
     }
 
-
-    return ret.getClear();
 }
 
-extern HQL_API IHqlExpression * findJoinSortOrders(IHqlExpression * expr, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches)
+void JoinSortInfo::findJoinSortOrders(IHqlExpression * expr, bool allowSlidingMatch)
 {
     IHqlExpression * lhs = expr->queryChild(0);
-    return findJoinSortOrders(expr->queryChild(2), lhs, queryJoinRhs(expr), querySelSeq(expr), leftSorts, rightSorts, isLimitedSubstringJoin, slidingMatches);
+    IHqlExpression * rhs = queryJoinRhs(expr);
+    IHqlExpression * selSeq = querySelSeq(expr);
+
+    atmost.extractAtmostArgs(expr->queryAttribute(atmostAtom));
+    if (atmost.optional.ordinality())
+    {
+        JoinOrderSpotter spotter(lhs, rhs, selSeq, *this);
+        ForEachItemIn(i, atmost.optional)
+        {
+            if (!spotter.doProcessOptional(&atmost.optional.item(i)))
+                throwError(HQLERR_AtmostCannotImplementOpt);
+        }
+    }
+
+    OwnedHqlExpr fuzzy, hard;
+    splitFuzzyCondition(expr->queryChild(2), atmost.required, fuzzy, hard);
+    findJoinSortOrders(hard, lhs, rhs, selSeq, allowSlidingMatch);
+
+    extraMatch.setown(extendConditionOwn(no_and, extraMatch.getClear(), fuzzy.getClear()));
 }
+
+static void appendOptElements(HqlExprArray & target, const HqlExprArray & src)
+{
+    ForEachItemIn(i, src)
+    {
+        IHqlExpression & cur = src.item(i);
+        //Strip the substring syntax when adding the optional compares to the sort list
+        target.append(*removeCommonSubstringRange(&cur));
+    }
+}
+
+void JoinSortInfo::initSorts()
+{
+    if (!leftSorts.ordinality())
+    {
+        appendArray(leftSorts, leftReq);
+        appendOptElements(leftSorts, leftOpt);
+        appendArray(rightSorts, rightReq);
+        appendOptElements(rightSorts, rightOpt);
+    }
+}
+
 
 IHqlExpression * createImpureOwn(IHqlExpression * expr)
 {
@@ -965,12 +1158,12 @@ IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 
 bool canBeSlidingJoin(IHqlExpression * expr)
 {
-    if (expr->hasProperty(hashAtom) || expr->hasProperty(lookupAtom) || expr->hasProperty(allAtom))
+    if (expr->hasAttribute(hashAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom)|| expr->hasAttribute(allAtom))
         return false;
-    if (expr->hasProperty(rightouterAtom) || expr->hasProperty(fullouterAtom) ||
-        expr->hasProperty(leftonlyAtom) || expr->hasProperty(rightonlyAtom) || expr->hasProperty(fullonlyAtom))
+    if (expr->hasAttribute(rightouterAtom) || expr->hasAttribute(fullouterAtom) ||
+        expr->hasAttribute(leftonlyAtom) || expr->hasAttribute(rightonlyAtom) || expr->hasAttribute(fullonlyAtom))
         return false;
-    if (expr->hasProperty(atmostAtom))
+    if (expr->hasAttribute(atmostAtom))
         return false;
     return true;
 }
@@ -1045,7 +1238,7 @@ DedupInfoExtractor::DedupInfoExtractor(IHqlExpression * expr)
         case no_attr_expr:
         case no_attr_link:
             {
-                _ATOM name = cur->queryName();
+                IAtom * name = cur->queryName();
                 if (name == hashAtom)
                     compareAllRows = true;
                 else if (name == localAtom)
@@ -1252,7 +1445,7 @@ IHqlExpression * getExpandSelectExpr(IHqlExpression * expr)
         case no_record:
             {
                 IHqlSimpleScope * scope = mappingExpr->querySimpleScope();
-                OwnedHqlExpr matched = scope->lookupSymbol(field->queryName());
+                OwnedHqlExpr matched = scope->lookupSymbol(field->queryId());
                 assertex(matched == field);
                 ret = LINK(queryRealChild(field, 0));
                 break;
@@ -1327,14 +1520,14 @@ interface IHintVisitor
 class SearchHintVisitor : implements IHintVisitor
 {
 public:
-    SearchHintVisitor(_ATOM _name) : name(_name) {}
+    SearchHintVisitor(IAtom * _name) : name(_name) {}
 
     virtual IHqlExpression * visit(IHqlExpression * hint) 
     {
-        return hint->queryProperty(name);
+        return hint->queryAttribute(name);
     }
 
-    _ATOM name;
+    IAtom * name;
 };
 
 
@@ -1391,7 +1584,7 @@ static IHqlExpression * walkHints(IHqlExpression * expr, IHintVisitor & visitor)
     return NULL;
 }
 
-IHqlExpression * queryHint(IHqlExpression * expr, _ATOM name)
+IHqlExpression * queryHint(IHqlExpression * expr, IAtom * name)
 {
     SearchHintVisitor visitor(name);
     return walkHints(expr, visitor);
@@ -1403,7 +1596,7 @@ void gatherHints(HqlExprCopyArray & target, IHqlExpression * expr)
     walkHints(expr, visitor);
 }
 
-IHqlExpression * queryHintChild(IHqlExpression * expr, _ATOM name, unsigned idx)
+IHqlExpression * queryHintChild(IHqlExpression * expr, IAtom * name, unsigned idx)
 {
     IHqlExpression * match = queryHint(expr, name);
     if (match)
@@ -1565,7 +1758,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
             //no_libraryscopeinstance I guess.
             IHqlExpression * libraryFuncDef = expr->queryDefinition();
             IHqlExpression * library = libraryFuncDef->queryChild(0);
-            if (library->hasProperty(_noStreaming_Atom))
+            if (library->hasAttribute(_noStreaming_Atom))
                 return 0;
             IHqlExpression * libraryFormals = libraryFuncDef->queryChild(1);
             unsigned numStreaming = 0;
@@ -1624,7 +1817,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
     case no_denormalizegroup:
     case no_join:
     case no_joincount:
-        if (isKeyedJoin(expr) && !expr->hasProperty(_complexKeyed_Atom))
+        if (isKeyedJoin(expr) && !expr->hasAttribute(_complexKeyed_Atom))
             return 1;
         return 2;
     case no_combine:
@@ -1672,7 +1865,7 @@ bool isDistributedSourceActivity(IHqlExpression * expr)
     case no_compound_indexgroupaggregate:
         return true;
     case no_getgraphresult:
-        return expr->hasProperty(_distributed_Atom);
+        return expr->hasAttribute(_distributed_Atom);
     case no_workunit_dataset:
     case no_getgraphloopresult:
     case no_temptable:
@@ -1924,9 +2117,9 @@ bool isTrivialSelectN(IHqlExpression * expr)
     return false;
 }
 
-IHqlExpression * queryPropertyChild(IHqlExpression * expr, _ATOM name, unsigned idx)
+IHqlExpression * queryAttributeChild(IHqlExpression * expr, IAtom * name, unsigned idx)
 {
-    IHqlExpression * match = expr->queryProperty(name);
+    IHqlExpression * match = expr->queryAttribute(name);
     if (match)
         return match->queryChild(idx);
     return NULL;
@@ -1940,7 +2133,7 @@ int getResultSequenceValue(IHqlExpression * set)
     case no_ensureresult:
     case no_extractresult:
     case no_output:
-        return (int)getIntValue(queryPropertyChild(set, sequenceAtom, 0), 0);
+        return (int)getIntValue(queryAttributeChild(set, sequenceAtom, 0), 0);
     }
     return 0;
 }
@@ -1948,7 +2141,7 @@ int getResultSequenceValue(IHqlExpression * set)
 
 IHqlExpression * querySequence(IHqlExpression * expr)
 {
-    IHqlExpression * seq = expr->queryProperty(sequenceAtom);
+    IHqlExpression * seq = expr->queryAttribute(sequenceAtom);
     if (seq)
         return seq->queryChild(0);
     if (expr->queryValue())
@@ -1958,7 +2151,7 @@ IHqlExpression * querySequence(IHqlExpression * expr)
 
 IHqlExpression * queryResultName(IHqlExpression * expr)
 {
-    IHqlExpression * name = expr->queryProperty(namedAtom);
+    IHqlExpression * name = expr->queryAttribute(namedAtom);
     if (name)
         return name->queryChild(0);
     return NULL;
@@ -1977,7 +2170,7 @@ IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int6
         return NULL;
     
     //grouped sort->choosen.  Don't convert unless choosen preserves grouping
-    if (isGrouped(child) && !expr->hasProperty(groupedAtom))
+    if (isGrouped(child) && !expr->hasAttribute(groupedAtom))
         return NULL;
 
     OwnedHqlExpr count = foldHqlExpression(expr->queryChild(1));
@@ -1998,19 +2191,19 @@ IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int6
     }
     else 
     {
-        if (!expr->hasProperty(fewAtom) || first)
+        if (!expr->hasAttribute(fewAtom) || first)
             return NULL;
     }
 
     //choosen(sort(x,a,local),n) -> do the topn local, but need to reapply the global choosen
-    if (expr->hasProperty(localAtom))
+    if (expr->hasAttribute(localAtom))
     {
-        if (!child->hasProperty(localAtom))
+        if (!child->hasAttribute(localAtom))
             return NULL;
     }
     else
     {
-        if (child->hasProperty(localAtom))
+        if (child->hasAttribute(localAtom))
             clone = true;
     }
     HqlExprArray args;
@@ -2220,8 +2413,8 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
     case no_workunit_dataset:
         if (flags & GatherResultRead)
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, nameAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, nameAtom, 0);
             addResultRead(sequence, name, false);
         }
         break;
@@ -2236,8 +2429,8 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
     case no_getresult:
         if (flags & GatherResultRead)
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
             addResultRead(sequence, name, false);
         }
         break;
@@ -2246,21 +2439,21 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
     case no_extractresult:
         if (flags & GatherResultWrite)
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
             addResultWrite(sequence, name, false);
         }
         break;
     case no_definesideeffect:
         if (flags & GatherResultWrite)
         {
-            addResultWrite(expr->queryProperty(_uid_Atom), NULL, false);
+            addResultWrite(expr->queryAttribute(_uid_Atom), NULL, false);
         }
         break;
     case no_callsideeffect:
         if (flags & GatherResultRead)
         {
-            addResultRead(expr->queryProperty(_uid_Atom), NULL, false);
+            addResultRead(expr->queryAttribute(_uid_Atom), NULL, false);
         }
         break;
     }
@@ -2370,7 +2563,7 @@ protected:
         IHqlExpression * record = ds->queryRecord();
         assertex(record);
         IHqlSimpleScope * scope = record->querySimpleScope();
-        OwnedHqlExpr match = scope->lookupSymbol(field->queryName());
+        OwnedHqlExpr match = scope->lookupSymbol(field->queryId());
         if (match != field)
         {
             EclIR::dbglogIR(2, field, match.get());
@@ -2416,7 +2609,7 @@ void DependencyGatherer::doGatherDependencies(IHqlExpression * expr)
         first = 3;
         break;
     case no_executewhen:
-        if (expr->hasProperty(beforeAtom))
+        if (expr->hasAttribute(beforeAtom))
         {
             for (unsigned i=max; i-- != 0; )
                 doGatherDependencies(expr->queryChild(i));
@@ -2600,7 +2793,7 @@ unsigned countTotalFields(IHqlExpression * record, bool includeVirtual)
                 count += countTotalFields(expr->queryRecord(), includeVirtual);
                 break;
             default:
-                if (includeVirtual || !expr->hasProperty(virtualAtom))
+                if (includeVirtual || !expr->hasAttribute(virtualAtom))
                     count++;
                 break;
             }
@@ -3021,7 +3214,7 @@ IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldTyp
 {
     if (!fieldType)
         fieldType = value->queryType();
-    OwnedHqlExpr field = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
+    OwnedHqlExpr field = createField(unnamedId, LINK(fieldType), NULL, NULL);
     OwnedHqlExpr record = createRecord(field);
 
     OwnedHqlExpr dataset;
@@ -3298,8 +3491,8 @@ unsigned numAttributes(const IHqlExpression * expr)
 
 IHqlExpression * createGetResultFromSetResult(IHqlExpression * setResult, ITypeInfo * type)
 {
-    IHqlExpression * seqAttr = setResult->queryProperty(sequenceAtom);
-    IHqlExpression * aliasAttr = setResult->queryProperty(namedAtom);
+    IHqlExpression * seqAttr = setResult->queryAttribute(sequenceAtom);
+    IHqlExpression * aliasAttr = setResult->queryAttribute(namedAtom);
     Linked<ITypeInfo> valueType = type;
     if (!valueType)
     {
@@ -3344,7 +3537,7 @@ IHqlExpression * convertScalarToGraphResult(IHqlExpression * value, ITypeInfo * 
 
 IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
 {
-    OwnedHqlExpr counterField = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
+    OwnedHqlExpr counterField = createField(unnamedId, LINK(fieldType), NULL, NULL);
     OwnedHqlExpr counterRecord = createRecord(counterField);
     HqlExprArray args;
     args.append(*LINK(counterRecord));
@@ -3356,21 +3549,21 @@ IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo *
     return ensureExprType(select, scalarType);
 }
 
-_ATOM queryCsvEncoding(IHqlExpression * mode)
+IAtom * queryCsvEncoding(IHqlExpression * mode)
 {
     if (mode)
     {
-        if (mode->queryProperty(asciiAtom))
+        if (mode->queryAttribute(asciiAtom))
             return asciiAtom;
-        if (mode->queryProperty(ebcdicAtom))
+        if (mode->queryAttribute(ebcdicAtom))
             return ebcdicAtom;
-        if (mode->queryProperty(unicodeAtom))
+        if (mode->queryAttribute(unicodeAtom))
             return unicodeAtom;
     }
     return NULL;
 }
 
-_ATOM queryCsvTableEncoding(IHqlExpression * tableExpr)
+IAtom * queryCsvTableEncoding(IHqlExpression * tableExpr)
 {
     if (!tableExpr)
         return NULL;
@@ -3643,13 +3836,13 @@ IDefRecordElement * RecordMetaCreator::createField(IHqlExpression * cur, IHqlExp
         childDefRecord.setown(createRecord(fieldRecord, self));
         break;
     case type_table:
-        defType.setown(makeTableType(makeRowType(makeRecordType()), NULL, NULL, NULL));
+        defType.setown(makeTableType(makeRowType(makeRecordType())));
         childDefRecord.setown(::createMetaRecord(fieldRecord, callback));
         break;
     case type_groupedtable:
         {
-            ITypeInfo * tableType = makeTableType(makeRowType(makeRecordType()), NULL, NULL, NULL);
-            defType.setown(makeGroupedTableType(tableType, createAttribute(groupedAtom), NULL));
+            ITypeInfo * tableType = makeTableType(makeRowType(makeRecordType()));
+            defType.setown(makeGroupedTableType(tableType));
             childDefRecord.setown(::createMetaRecord(fieldRecord, callback));
             break;
         }
@@ -3661,7 +3854,7 @@ IDefRecordElement * RecordMetaCreator::createField(IHqlExpression * cur, IHqlExp
     }
     size32_t maxSize = 0;
     Owned<IDefRecordElement> elem = createDEfield(cur->queryName(), defType, childDefRecord, maxSize);
-    if (cur->hasProperty(blobAtom))
+    if (cur->hasAttribute(blobAtom))
     {
         Owned<ITypeInfo> blobType = makeBlobType();
         return createDEfield(cur->queryName(), blobType, elem, 0);
@@ -3921,7 +4114,7 @@ public:
     ModuleExpander(HqlLookupContext & _ctx, bool _expandCallsWhenBound, node_operator _outputOp) 
         : ctx(_ctx), expandCallsWhenBound(_expandCallsWhenBound), outputOp(_outputOp) {}
 
-    IHqlExpression * createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix, _ATOM matchName);
+    IHqlExpression * createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix, IIdAtom *matchId);
 
 protected:
     HqlLookupContext ctx;
@@ -3929,7 +4122,7 @@ protected:
     node_operator outputOp;
 };
 
-IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix, _ATOM matchName)
+IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix, IIdAtom *matchId)
 {
     IHqlScope * scope = scopeExpr->queryScope();
 
@@ -3944,7 +4137,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
     ForEachItemIn(i, symbols)
     {
         IHqlExpression & cur = symbols.item(i);
-        _ATOM name = cur.queryName();
+        IIdAtom * name = cur.queryId();
         OwnedHqlExpr resolved = scope->lookupSymbol(name, LSFpublic, ctx);
         LinkedHqlExpr value = resolved;
         if (value && value->isFunction())
@@ -3980,7 +4173,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
         }
         if (value && isExported(resolved))
         {
-            lowername.clear().append(prefix).append(name).toLowerCase();
+            lowername.clear().append(prefix).append(name->lower()).toLowerCase();
 
             node_operator op = no_none;
             if (outputOp == no_output)
@@ -4011,6 +4204,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
             switch (value->getOperator())
             {
             case no_typedef:
+            case no_enum:
                 op = no_none;
                 break;
             }
@@ -4018,11 +4212,11 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
             if (value->isScope())
             {
                 lowername.append(".");
-                OwnedHqlExpr child = createExpanded(value, value, lowername.str(), matchName);
+                OwnedHqlExpr child = createExpanded(value, value, lowername.str(), matchId);
                 if (child->getOperator() != no_null)
                     outputs.append(*child.getClear());
             }
-            else if (!matchName || name==matchName)
+            else if (!matchId || name->lower()==matchId->lower())
             {
                 if (op != no_none)
                 {
@@ -4038,10 +4232,10 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
 }
 
 
-IHqlExpression * createEvaluateOutputModule(HqlLookupContext & ctx, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, bool expandCallsWhenBound, node_operator outputOp, _ATOM name)
+IHqlExpression * createEvaluateOutputModule(HqlLookupContext & ctx, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, bool expandCallsWhenBound, node_operator outputOp, IIdAtom *id)
 {
     ModuleExpander expander(ctx, expandCallsWhenBound, outputOp);
-    return expander.createExpanded(scopeExpr, ifaceExpr, NULL, name);
+    return expander.createExpanded(scopeExpr, ifaceExpr, NULL, id);
 }
 
 
@@ -4059,8 +4253,7 @@ extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr)
     newScopeExpr->addOperand(LINK(scopeExpr));
 
     HqlExprArray noParameters;
-    StringBuffer lowername;
-    _ATOM moduleName = NULL;
+    IIdAtom * moduleName = NULL;
     ForEachItemIn(i, symbols)
     {
         IHqlExpression & cur = symbols.item(i);
@@ -4072,9 +4265,8 @@ extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr)
                 if (value->getOperator() == no_purevirtual)
                     value.setown(createNullExpr(value));
 
-                _ATOM name = symbols.item(i).queryName();
-                lowername.clear().append(name).toLowerCase();
-                OwnedHqlExpr failure = createValue(no_stored, makeVoidType(), createConstant(lowername));
+                IIdAtom * name = symbols.item(i).queryId();
+                OwnedHqlExpr failure = createValue(no_stored, makeVoidType(), createConstant(name->lower()->str()));
 
                 HqlExprArray meta;
                 value.setown(attachWorkflowOwn(meta, value.getClear(), failure, NULL));
@@ -4113,11 +4305,11 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
     if ((newop == no_mingroup || newop == no_maxgroup) && (arg->getOperator() == no_select))
         field.set(arg->queryChild(1));                  // inherit maxlength etc...
     else
-        field.setown(createField(valueAtom, expr->getType(), NULL));
+        field.setown(createField(valueId, expr->getType(), NULL));
 
     IHqlExpression * aggregateRecord = createRecord(field);
-    IHqlExpression * keyedAttr = expr->queryProperty(keyedAtom);
-    IHqlExpression * prefetchAttr = expr->queryProperty(prefetchAtom);
+    IHqlExpression * keyedAttr = expr->queryAttribute(keyedAtom);
+    IHqlExpression * prefetchAttr = expr->queryAttribute(prefetchAtom);
 
     HqlExprArray valueArgs;
     unwindChildren(valueArgs, expr, 1);
@@ -4271,19 +4463,19 @@ IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...)
 }
 
 
-extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, _ATOM name)
+extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, IAtom * name)
 {
-    IHqlExpression * match = donor->queryProperty(name);
+    IHqlExpression * match = donor->queryAttribute(name);
     if (match)
         attrs.append(*LINK(match));
 }
 
-IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name)
+IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, IAtom * name)
 {
-    return appendOwnedOperand(expr, LINK(donor->queryProperty(name)));
+    return appendOwnedOperand(expr, LINK(donor->queryAttribute(name)));
 }
 
-IHqlExpression * appendAttribute(IHqlExpression * expr, _ATOM attr)
+IHqlExpression * appendAttribute(IHqlExpression * expr, IAtom * attr)
 {
     return appendOwnedOperand(expr, createAttribute(attr));
 }
@@ -4316,7 +4508,7 @@ IHqlExpression * removeChildOp(IHqlExpression * expr, node_operator op)
     return expr->clone(args);
 }
 
-IHqlExpression * removeProperty(IHqlExpression * expr, _ATOM attr)
+IHqlExpression * removeProperty(IHqlExpression * expr, IAtom * attr)
 {
     HqlExprArray args;
     unwindChildren(args, expr);
@@ -4435,7 +4627,7 @@ void SplitDatasetAttributeTransformer::analyseExpr(IHqlExpression * expr)
 void SplitDatasetAttributeTransformer::doAnalyseSelect(IHqlExpression * expr)
 {
     IHqlExpression * ds = expr->queryChild(0);
-    if (expr->hasProperty(newAtom))
+    if (expr->hasAttribute(newAtom))
     {
         if (!datasets.contains(*ds))
         {
@@ -4458,7 +4650,7 @@ IHqlExpression * SplitDatasetAttributeTransformer::createTransformed(IHqlExpress
     switch (expr->getOperator())
     {
     case no_select:
-        if (expr->hasProperty(newAtom))
+        if (expr->hasAttribute(newAtom))
             return doTransformSelect(expr);
         break;
     case no_colon:
@@ -4501,7 +4693,7 @@ bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlE
             switch (cur->getOperator())
             {
             case no_getgraphresult:
-                remove = !expr->hasProperty(_distributed_Atom);
+                remove = !expr->hasAttribute(_distributed_Atom);
                 break;
             case no_workunit_dataset:
             case no_getgraphloopresult:
@@ -4564,7 +4756,7 @@ bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlE
         break;
     case 2:
         {
-            OwnedHqlExpr field = createField(unnamedAtom, value->getType(), NULL);
+            OwnedHqlExpr field = createField(unnamedId, value->getType(), NULL);
             OwnedHqlExpr transform = createTransformForField(field, value);
             OwnedHqlExpr combine = createDatasetF(no_combine, LINK(&newDatasets.item(0)), LINK(&newDatasets.item(1)), LINK(transform), LINK(selSeq), NULL);
             OwnedHqlExpr first = createRowF(no_selectnth, LINK(combine), getSizetConstant(1), createAttribute(noBoundCheckAtom), NULL);
@@ -4652,14 +4844,14 @@ static bool splitDatasetAttribute(SharedHqlExpr & dataset, SharedHqlExpr & attri
 #endif
 
     node_operator leftOp = left->getOperator();
-    if ((leftOp !=no_select) || expr->hasProperty(newAtom))
+    if ((leftOp !=no_select) || expr->hasAttribute(newAtom))
     {
         //Ensure selections from dictionaries do not have a separate activity for the row lookup.
         if (leftOp == no_selectmap)
             return false;
 
         //If this is a selection from an inscope dataset then this must not be assumed to be an input dataset.
-        if (expr->isDataset() && !expr->hasProperty(newAtom))
+        if (expr->isDataset() && !expr->hasAttribute(newAtom))
             return false;
 
         IHqlExpression * lhs = LINK(left);
@@ -4762,7 +4954,7 @@ bool containsVirtualFields(IHqlExpression * record)
         switch (cur->getOperator())
         {
         case no_field:
-            if (cur->hasProperty(virtualAtom))
+            if (cur->hasAttribute(virtualAtom))
                 return true;
             //does not walk into nested records
             break;
@@ -4789,7 +4981,7 @@ IHqlExpression * removeVirtualFields(IHqlExpression * record)
         switch (cur->getOperator())
         {
         case no_field:
-            if (!cur->hasProperty(virtualAtom))
+            if (!cur->hasAttribute(virtualAtom))
                 args.append(*LINK(cur));
             //does not walk into nested records
             break;
@@ -4816,7 +5008,7 @@ static HqlTransformerInfo fieldPropertyRemoverInfo("FieldPropertyRemover");
 class FieldPropertyRemover : public NewHqlTransformer
 {
 public:
-    FieldPropertyRemover(_ATOM _name) : NewHqlTransformer(fieldPropertyRemoverInfo), name(_name) {}
+    FieldPropertyRemover(IAtom * _name) : NewHqlTransformer(fieldPropertyRemoverInfo), name(_name) {}
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)
     {
@@ -4831,7 +5023,7 @@ public:
         case no_field:
             {
                 OwnedHqlExpr transformed = transformField(expr);
-                while (transformed->hasProperty(name))
+                while (transformed->hasAttribute(name))
                     transformed.setown(removeProperty(transformed, name));
                 return transformed.getClear();
             }
@@ -4842,10 +5034,10 @@ public:
     }
 
 private:
-    _ATOM name;
+    IAtom * name;
 };
 
-IHqlExpression * removePropertyFromFields(IHqlExpression * expr, _ATOM name)
+IHqlExpression * removePropertyFromFields(IHqlExpression * expr, IAtom * name)
 {
     FieldPropertyRemover remover(name);
     return remover.transformRoot(expr);
@@ -4869,8 +5061,8 @@ void VirtualReplacer::createProjectAssignments(HqlExprArray & assigns, IHqlExpre
         {
             OwnedHqlExpr target = createSelectExpr(LINK(tgtSelector), LINK(expr));
             IHqlExpression * newValue;
-            if (expr->hasProperty(virtualAtom))
-                newValue = getVirtualReplacement(expr, expr->queryProperty(virtualAtom)->queryChild(0), dataset);
+            if (expr->hasAttribute(virtualAtom))
+                newValue = getVirtualReplacement(expr, expr->queryAttribute(virtualAtom)->queryChild(0), dataset);
             else
                 newValue = createSelectExpr(LINK(srcSelector), LINK(expr));
             assigns.append(*createAssign(target.getClear(), newValue));
@@ -5237,8 +5429,8 @@ IHqlExpression * TempTableTransformer::createTempTableTransform(IHqlExpression *
     OwnedHqlExpr self = getSelf(record);
     HqlMapTransformer mapping;
     unsigned col = 0;
-    IHqlExpression * rowPayloadAttr = curRow->queryProperty(_payload_Atom);
-    IHqlExpression * recordPayloadAttr = record->queryProperty(_payload_Atom);
+    IHqlExpression * rowPayloadAttr = curRow->queryAttribute(_payload_Atom);
+    IHqlExpression * recordPayloadAttr = record->queryAttribute(_payload_Atom);
     if (rowPayloadAttr)
     {
         unsigned rowPayload =  (unsigned) getIntValue(rowPayloadAttr->queryChild(0));
@@ -5247,20 +5439,20 @@ IHqlExpression * TempTableTransformer::createTempTableTransform(IHqlExpression *
         {
             unsigned recordPayload =  (unsigned) getIntValue(recordPayloadAttr->queryChild(0));
             if (rowPayload != recordPayload)
-                ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+                ERRORAT(curRow->queryAttribute(_location_Atom), HQLERR_PayloadMismatch);
         }
         else
-            ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+            ERRORAT(curRow->queryAttribute(_location_Atom), HQLERR_PayloadMismatch);
     }
     else if (recordPayloadAttr)
-        ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+        ERRORAT(curRow->queryAttribute(_location_Atom), HQLERR_PayloadMismatch);
 
     OwnedHqlExpr ret = createTempTableTransform(self, curRow, record, col, self, mapping, true);
     if (queryRealChild(curRow, col))
     {
         StringBuffer s;
         getExprECL(curRow->queryChild(col), s);
-        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_TooManyInitializers, s.str());
+        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_TooManyInitializers, s.str());
     }
     return ret.getClear();
 }
@@ -5290,10 +5482,10 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         {
                             src.set(expr->queryChild(0));
                             if (!src || src->isAttribute())
-                                src.set(queryPropertyChild(expr, defaultAtom, 0));
+                                src.set(queryAttributeChild(expr, defaultAtom, 0));
                             if (!src)
                             {
-                                ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
                                 return;
                             }
                         }
@@ -5323,7 +5515,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         {
                             if (!recordTypesMatch(src, target))
                             {
-                                ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                                 return;
                             }
                             if (isGrouped(src))
@@ -5334,7 +5526,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         }
                         else
                         {
-                            ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                             return;
                         }
                     }
@@ -5344,7 +5536,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         {
                             if (!recordTypesMatch(src, target))
                             {
-                                ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                                 return;
                             }
                             castValue.set(src);
@@ -5391,7 +5583,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                     {
                         IHqlExpression * defaultValue = expr->queryChild(0);
                         if (!defaultValue || defaultValue->isAttribute())
-                            defaultValue = queryPropertyChild(expr, defaultAtom, 0);
+                            defaultValue = queryAttributeChild(expr, defaultAtom, 0);
                         src.setown(replaceSelfRefSelector(defaultValue, self));
                         if (src)
                             src.setown(mapper.transformRoot(src));
@@ -5399,25 +5591,25 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
 
                     if (!src || src->isAttribute())
                     {
-                        if (expr->hasProperty(virtualAtom))
-                            ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_VirtualFieldInTempTable, expr->queryName()->str());
+                        if (expr->hasAttribute(virtualAtom))
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_VirtualFieldInTempTable, expr->queryName()->str());
                         else
-                            ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
                         return;
                     }
                     if (src->getOperator() == no_recordlist)
                     {
-                        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatiableInitailiser, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatiableInitailiser, expr->queryName()->str());
                         return;
                     }
                     else if (type->isScalar() != src->queryType()->isScalar())
                     {
-                        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                         return;
                     }
                     else if (strictTypeChecking && !type->assignableFrom(src->queryType()))
                     {
-                        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                     }
                     castValue.setown(ensureExprType(src, type));
                 }
@@ -5502,8 +5694,8 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
 
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
 {
-    IHqlExpression * payload = record->queryProperty(_payload_Atom);
-    unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
+    IHqlExpression * payload = record->queryAttribute(_payload_Atom);
+    unsigned payloadSize = payload ? (unsigned)getIntValue(payload->queryChild(0)) : 0;
     unsigned max = record->numChildren() - payloadSize;
     IHqlExpression *newrec = createRecord();
     for (unsigned idx = 0; idx < max; idx++)
@@ -5529,13 +5721,13 @@ IHqlExpression *recursiveStretchFields(IHqlExpression *record)
             case type_row:
             {
                 OwnedHqlExpr childType = recursiveStretchFields(child->queryRecord());
-                newrec->addOperand(createField(child->queryName(), makeRowType(childType->getType()), NULL, NULL));
+                newrec->addOperand(createField(child->queryId(), makeRowType(childType->getType()), NULL, NULL));
                 break;
             }
             default:
             {
                 Owned<ITypeInfo> stretched = getMaxLengthType(fieldType);
-                newrec->addOperand(createField(child->queryName(), stretched.getClear(), NULL, NULL));
+                newrec->addOperand(createField(child->queryId(), stretched.getClear(), NULL, NULL));
                 break;
             }
             }
@@ -5835,12 +6027,12 @@ void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpression * expr, bool
     //Option to not sort by fields that aren't part of the sorted key.
     unsigned indexFirstPayload = firstPayloadField(buildRecord, payloadCount);
     unsigned max;
-    bool sortPayload = sortIndexPayload ? !expr->hasProperty(sort_KeyedAtom) : expr->hasProperty(sort_AllAtom);
+    bool sortPayload = sortIndexPayload ? !expr->hasAttribute(sort_KeyedAtom) : expr->hasAttribute(sort_AllAtom);
     if (sortPayload)
     {
         max = buildRecord->numChildren();
         //If the last field is an implicit fpos, then they will all have the same value, so no point sorting.
-        if (queryLastField(buildRecord)->hasProperty(_implicitFpos_Atom))
+        if (queryLastField(buildRecord)->hasAttribute(_implicitFpos_Atom))
             max--;
     }
     else
@@ -5904,7 +6096,7 @@ LibraryInputMapper::LibraryInputMapper(IHqlExpression * _libraryInterface)
 {
     assertex(libraryInterface->getOperator() == no_funcdef);
     scopeExpr.set(libraryInterface->queryChild(0));
-    streamingAllowed = !scopeExpr->hasProperty(_noStreaming_Atom);  // ?? is this in the correct place, probably, just nasty
+    streamingAllowed = !scopeExpr->hasAttribute(_noStreaming_Atom);  // ?? is this in the correct place, probably, just nasty
 
     expandParameters();
 }
@@ -5936,7 +6128,7 @@ void LibraryInputMapper::expandParameter(IHqlExpression * expr, unsigned & nextP
         ForEachItemIn(i, symbols)
         {
             IHqlExpression & cur = symbols.item(i);
-            _ATOM nestedName = createMangledName(expr, &cur);
+            IIdAtom * nestedName = createMangledName(expr, &cur);
 
             //default values are handled elsewhere - lost from the mapped values here.
             HqlExprArray attrs;
@@ -5949,15 +6141,18 @@ void LibraryInputMapper::expandParameter(IHqlExpression * expr, unsigned & nextP
 }
 
 
-unsigned LibraryInputMapper::findParameter(_ATOM search)
+unsigned LibraryInputMapper::findParameter(IIdAtom * searchId)
 {
+    IAtom * searchName = searchId->lower();
     ForEachItemIn(i, realParameters)
-        if (realParameters.item(i).queryName() == search)
+    {
+        if (realParameters.item(i).queryName() == searchName)
             return i;
+    }
     return NotFound;
 }
 
-IHqlExpression * LibraryInputMapper::resolveParameter(_ATOM search)
+IHqlExpression * LibraryInputMapper::resolveParameter(IIdAtom * search)
 {
     unsigned match = findParameter(search);
     assertex(match != NotFound);
@@ -6006,7 +6201,7 @@ void LibraryInputMapper::mapRealToLogical(HqlExprArray & inputExprs, HqlExprArra
                 result = createValue(no_libraryinput, cur->getType(), seq);
         }
         
-        inputExprs.append(*createSymbol(cur->queryName(), result, ob_private));
+        inputExprs.append(*createSymbol(cur->queryId(), result, ob_private));
     }
 
     IHqlExpression * formals = libraryInterface->queryChild(1);
@@ -6029,7 +6224,7 @@ IHqlExpression * LibraryInputMapper::mapRealToLogical(const HqlExprArray & input
             IHqlExpression * param = resolveParameter(createMangledName(expr, &cur));
             OwnedHqlExpr mapped = mapRealToLogical(inputExprs, param, libraryId);
 
-            OwnedHqlExpr named = createSymbol(cur.queryName(), LINK(mapped), ob_private);
+            OwnedHqlExpr named = createSymbol(cur.queryId(), LINK(mapped), ob_private);
             newScope->defineSymbol(named.getClear());
         }
         return queryExpression(closeScope(newScope.getClear()));
@@ -6069,7 +6264,7 @@ void LibraryInputMapper::mapLogicalToReal(HqlExprArray & mapped, IHqlExpression 
             IHqlExpression & cur = symbols.item(i);
             IHqlExpression * param = resolveParameter(createMangledName(expr, &cur));
             
-            OwnedHqlExpr childValue = valueScope->lookupSymbol(cur.queryName(), LSFpublic, lookupCtx);
+            OwnedHqlExpr childValue = valueScope->lookupSymbol(cur.queryId(), LSFpublic, lookupCtx);
             mapLogicalToReal(mapped, param, childValue);
         }
     }
@@ -6151,7 +6346,7 @@ void GraphIdCollector::analyseExpr(IHqlExpression * expr)
     case no_getgraphresult:
         if (externalIds)
         {
-            IHqlExpression * id = queryPropertyChild(expr, externalAtom, 0);
+            IHqlExpression * id = queryAttributeChild(expr, externalAtom, 0);
             if (id)
                 graphs.append(*id);
         }
@@ -6174,7 +6369,7 @@ void gatherGraphReferences(HqlExprCopyArray & graphs, IHqlExpression * value, bo
 
 //---------------------------------------------------------------------------
 
-_ATOM getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first)
+IAtom * getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first)
 {
     //warnings are assumed to be infrequent, so don't worry about efficiency here.
     const unsigned max = overrides.ordinality();
@@ -6197,7 +6392,7 @@ WarningProcessor::WarningProcessor()
 void WarningProcessor::addWarning(IECLError * warning)
 {
     //warnings are assumed to be infrequent, so don't worry about efficiency here.
-    _ATOM action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
+    IAtom * action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
 
     if (action == defaultAtom)
         appendUnique(possibleWarnings, warning);
@@ -6213,7 +6408,7 @@ void WarningProcessor::addWarning(IECLError * warning)
     }
 }
 
-void WarningProcessor::addGlobalOnWarning(unsigned code, _ATOM action)
+void WarningProcessor::addGlobalOnWarning(unsigned code, IAtom * action)
 {
     globalOnWarnings.append(*createAttribute(onWarningAtom, getSizetConstant(code), createAttribute(action)));
 }
@@ -6275,7 +6470,7 @@ void WarningProcessor::report(IErrorReceiver & errors)
 
 void WarningProcessor::report(IErrorReceiver * errors, IErrorReceiver * warnings, IECLError * warning)
 {
-    _ATOM action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
+    IAtom * action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
 
     if (action == defaultAtom)
         action = getWarningAction(warning->errorCode(), globalOnWarnings, 0);
@@ -6325,7 +6520,7 @@ void WarningProcessor::applyGlobalOnWarning()
     ForEachItemIn(i, possibleWarnings)
     {
         IECLError & cur = possibleWarnings.item(i);
-        _ATOM action = getWarningAction(cur.errorCode(), globalOnWarnings, 0);
+        IAtom * action = getWarningAction(cur.errorCode(), globalOnWarnings, 0);
         if (action == defaultAtom || action == warningAtom)
         {
             if (cur.isError())
@@ -6401,7 +6596,7 @@ extern HQL_API bool isKeyedDataset(IHqlExpression * expr)
     case no_newusertable:
     case no_aggregate:
     case no_newaggregate:
-        return expr->hasProperty(keyedAtom);
+        return expr->hasAttribute(keyedAtom);
     }
     return false;
 }
@@ -6456,7 +6651,7 @@ extern HQL_API bool isValidFieldReference(IHqlExpression * expr)
     case no_indirect:
         return true;
     case no_param:
-        return expr->hasProperty(fieldAtom);
+        return expr->hasAttribute(fieldAtom);
     }
     return false;
 }
@@ -6595,13 +6790,13 @@ public:
         ITypeInfo * retType = funcdef->queryType()->queryChildType();
 
         enum { ServiceApi, RtlApi, BcdApi, CApi, LocalApi } api = ServiceApi;
-        if (body->hasProperty(eclrtlAtom))
+        if (body->hasAttribute(eclrtlAtom))
             api = RtlApi;
-        else if (body->hasProperty(bcdAtom))
+        else if (body->hasAttribute(bcdAtom))
             api = BcdApi;
-        else if (body->hasProperty(cAtom))
+        else if (body->hasAttribute(cAtom))
             api = CApi;
-        else if (body->hasProperty(localAtom))
+        else if (body->hasAttribute(localAtom))
             api = LocalApi;
 
         StringBuffer entrypoint;
@@ -6615,7 +6810,7 @@ public:
             return true;
         }
 
-        if (body->hasProperty(oldSetFormatAtom))
+        if (body->hasAttribute(oldSetFormatAtom))
             return false;
 
         mangled.append("_Z").append(entrypoint.length()).append(entrypoint);
@@ -6624,11 +6819,11 @@ public:
         StringBuffer mangledReturnParameters;
         mangleFunctionReturnType(mangledReturn, mangledReturnParameters, retType);
 
-        if (body->hasProperty(contextAtom))
+        if (body->hasAttribute(contextAtom))
             mangled.append("P12ICodeContext");
-        else if (body->hasProperty(globalContextAtom) )
+        else if (body->hasAttribute(globalContextAtom) )
             mangled.append("P18IGlobalCodeContext");
-        else if (body->hasProperty(userMatchFunctionAtom))
+        else if (body->hasAttribute(userMatchFunctionAtom))
             mangled.append("P12IMatchWalker");
 
         mangled.append(mangledReturnParameters);
@@ -6638,8 +6833,8 @@ public:
             IHqlExpression * param = formals->queryChild(i);
             ITypeInfo *paramType = param->queryType();
 
-            bool isOut = param->hasProperty(outAtom);
-            bool isConst = param->hasProperty(constAtom);
+            bool isOut = param->hasAttribute(outAtom);
+            bool isConst = param->hasAttribute(constAtom);
 
             if (isOut)
                 mangled.append("R");
@@ -6825,13 +7020,13 @@ public:
         IHqlExpression *formals = funcdef->queryChild(1);
 
         enum { ServiceApi, RtlApi, BcdApi, CApi, LocalApi } api = ServiceApi;
-        if (body->hasProperty(eclrtlAtom))
+        if (body->hasAttribute(eclrtlAtom))
             api = RtlApi;
-        else if (body->hasProperty(bcdAtom))
+        else if (body->hasAttribute(bcdAtom))
             api = BcdApi;
-        else if (body->hasProperty(cAtom))
+        else if (body->hasAttribute(cAtom))
             api = CApi;
-        else if (body->hasProperty(localAtom))
+        else if (body->hasAttribute(localAtom))
             api = LocalApi;
 
         StringBuffer entrypoint;
@@ -6845,7 +7040,7 @@ public:
             return true;
         }
 
-        if (body->hasProperty(oldSetFormatAtom))
+        if (body->hasAttribute(oldSetFormatAtom))
             return false;
 
         mangled.append("?").append(entrypoint).append("@@").append("Y");
@@ -6870,11 +7065,11 @@ public:
 
         mangled.append(mangledReturn);
 
-        if (body->hasProperty(contextAtom))
+        if (body->hasAttribute(contextAtom))
             mangled.append("PVICodeContext@@");
-        else if (body->hasProperty(globalContextAtom) )
+        else if (body->hasAttribute(globalContextAtom) )
             mangled.append("PVIGlobalCodeContext@@");
-        else if (body->hasProperty(userMatchFunctionAtom))
+        else if (body->hasAttribute(userMatchFunctionAtom))
             mangled.append("PVIMatchWalker@@");
 
         if (mangledReturnParameters.length())
@@ -6885,8 +7080,8 @@ public:
             IHqlExpression * param = formals->queryChild(i);
             ITypeInfo *paramType = param->queryType();
 
-            bool isOut = param->hasProperty(outAtom);
-            bool isConst = param->hasProperty(constAtom);
+            bool isOut = param->hasAttribute(outAtom);
+            bool isConst = param->hasAttribute(constAtom);
 
             if (isOut)
                 appendRef(mangled, false);
@@ -7107,7 +7302,7 @@ static void trimSlash(StringBuffer & name)
 
 void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer * valueName, IHqlExpression * field, const char * defaultItemName, bool reading)
 {
-    IHqlExpression * xpathAttr = field->queryProperty(xpathAtom);
+    IHqlExpression * xpathAttr = field->queryAttribute(xpathAtom);
     if (xpathAttr)
     {
         StringBuffer tagName;
@@ -7167,7 +7362,7 @@ void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer *
     }
     else
     {
-        IHqlExpression * namedAttr = field->queryProperty(namedAtom);
+        IHqlExpression * namedAttr = field->queryAttribute(namedAtom);
         if (namedAttr)
             namedAttr->queryChild(0)->queryValue()->getStringValue(name);
     }
@@ -7230,7 +7425,7 @@ static ITypeInfo * containsSingleSimpleFieldBlankXPath(IHqlExpression * record)
     if (field->getOperator() != no_field)
         return NULL;
 
-    IHqlExpression * xpath = field->queryProperty(xpathAtom);
+    IHqlExpression * xpath = field->queryAttribute(xpathAtom);
     if (!xpath)
         return NULL;
 
@@ -7629,11 +7824,11 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
         {
             assertex(optLhs);
             IHqlExpression * field = optLhs->queryChild(1);
-            if (!field->hasProperty(countAtom) && !field->hasProperty(sizeofAtom))
+            if (!field->hasAttribute(countAtom) && !field->hasAttribute(sizeofAtom))
             {
                 if (rhsOp == no_null)
                 {
-                    if (field->hasProperty(_linkCounted_Atom))
+                    if (field->hasAttribute(_linkCounted_Atom))
                     {
                         rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
                         memset(out.reserve(sizeof(byte * *)), 0, sizeof(byte * *));
@@ -7866,7 +8061,7 @@ static void createMappingAssigns(HqlExprArray & assigns, IHqlExpression * selfSe
             break;
         case no_field:
             {
-                OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryName());
+                OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryId());
                 assertex(oldField);
                 OwnedHqlExpr selfSelected = createSelectExpr(LINK(selfSelector), LINK(cur));
                 OwnedHqlExpr oldSelected = createSelectExpr(LINK(oldSelector), LINK(oldField));
@@ -7981,7 +8176,7 @@ static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLook
     if (expr->isScope())
     {
         IHqlScope * scope = expr->queryScope();
-        OwnedHqlExpr main = scope->lookupSymbol(createAtom("main"), LSFpublic, ctx);
+        OwnedHqlExpr main = scope->lookupSymbol(createIdAtom("main"), LSFpublic, ctx);
         if (main)
             return main.getClear();
 
@@ -8102,7 +8297,7 @@ IHqlExpression * queryTableOrSplitter(IHqlExpression * expr)
 //Convert no_dataset_alias(expr, uid) to expr'
 IHqlExpression * normalizeDatasetAlias(IHqlExpression * expr)
 {
-    IHqlExpression * uid = expr->queryProperty(_uid_Atom);
+    IHqlExpression * uid = expr->queryAttribute(_uid_Atom);
     assertex(uid);
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * table = queryTableOrSplitter(dataset);
@@ -8179,7 +8374,7 @@ IHqlExpression * normalizeAnyDatasetAliases(IHqlExpression * expr)
         transformed.setown(expr->clone(args));
     }
 
-    if ((op == no_dataset_alias) && !transformed->hasProperty(_normalized_Atom))
+    if ((op == no_dataset_alias) && !transformed->hasAttribute(_normalized_Atom))
         return normalizeDatasetAlias(transformed);
     return transformed.getClear();
 }
@@ -8193,7 +8388,7 @@ bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side)
     if (!child)
         return true;
 
-    _ATOM name = child->queryName();
+    IAtom * name = child->queryName();
     if (side == no_left)
         return name == leftAtom;
     if (side == no_right)
@@ -8205,6 +8400,9 @@ bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side)
 
 IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField)
 {
+    while (transform->getOperator() == no_alias_scope)
+        transform = transform->queryChild(0);
+
     ForEachChild(i, transform)
     {
         IHqlExpression * cur = transform->queryChild(i);

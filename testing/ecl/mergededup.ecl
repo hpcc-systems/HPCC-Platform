@@ -271,7 +271,7 @@ trec checksort(trec l, trec r) := TRANSFORM
 END;
 
 
-checksorted := iterate(distributed(mergedrecs,nodenum), checksort(LEFT, RIGHT), local); // local for speed
+checksorted := NOFOLD(iterate(distributed(mergedrecs,nodenum), checksort(LEFT, RIGHT), local)); // local for speed
 
 if(count(checksorted) = CLUSTERSIZE*5*numrecs, output('Merge succeeded'), FAIL('ERROR (1) - count did not match expected'));
 
@@ -286,6 +286,6 @@ trec checkdedup(trec l, trec r) := TRANSFORM
     SELF := L;
 END;
 
-checkdeduped := iterate(distributed(mergeddeduprecs,nodenum), checkdedup(LEFT, RIGHT) , local);
+checkdeduped := NOFOLD(iterate(distributed(mergeddeduprecs,nodenum), checkdedup(LEFT, RIGHT) , local));
 
 if(count(checkdeduped) <= CLUSTERSIZE*5*numrecs, output('Dedup succeeded'), FAIL('ERROR (2) - count did not match expected'));

@@ -1928,6 +1928,48 @@ IFile* CHttpRequest::createUploadFile(StringBuffer netAddress, const char* fileP
     return createIFile(rfn);
 }
 
+void CHttpRequest::readUploadFileContent(StringArray& fileNames, StringArray& files)
+{
+    Owned<CMimeMultiPart> multipart = new CMimeMultiPart("1.0", m_content_type.get(), "", "", "");
+    multipart->parseContentType(m_content_type.get());
+
+    MemoryBuffer fileContent, moreContent;
+    __int64 bytesNotRead = m_content_length64;
+    while (1)
+    {
+        StringBuffer fileName, content;
+        if (!readUploadFileName(multipart, fileName, fileContent, bytesNotRead))
+        {
+            DBGLOG("No file name found for upload");
+            return;
+        }
+
+        bool foundAnotherFile = false;
+        while (1)
+        {
+            foundAnotherFile = multipart->separateMultiParts(fileContent, moreContent, bytesNotRead);
+            if (fileContent.length() > 0)
+                content.append(fileContent.length(), fileContent.toByteArray());
+
+            fileContent.clear();
+            if (moreContent.length() > 0)
+            {
+                fileContent.append(moreContent.length(), (void*) moreContent.toByteArray());
+                moreContent.clear();
+            }
+
+            if(foundAnotherFile || (bytesNotRead <= 0) || !readContentToBuffer(fileContent, bytesNotRead))
+                break;
+        }
+
+        fileNames.append(fileName);
+        files.append(content);
+        if (!foundAnotherFile)
+            break;
+    }
+    return;
+}
+
 int CHttpRequest::readContentToFiles(StringBuffer netAddress, StringBuffer path, StringArray& fileNames)
 {
     const char* contentType = m_content_type.get();

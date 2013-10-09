@@ -185,7 +185,7 @@ interface IEclRepositoryCallback : public IEclRepository
 {
 //Should only be called and implemented for concrete repositories
     virtual bool loadModule(IHqlRemoteScope * rScope, IErrorReceiver * errs, bool forceAll) = 0;
-    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IAtom * searchName) = 0;
+    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName) = 0;
 };
 
 

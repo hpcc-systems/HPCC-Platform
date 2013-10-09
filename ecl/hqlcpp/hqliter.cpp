@@ -199,7 +199,7 @@ IHqlExpression * gatherSelectorLevels(HqlExprArray & iterators, IHqlExpression *
         if (!root || root->getOperator() != no_select)
             return expr;
         iterators.add(*LINK(expr), 0);
-        if (!root->hasProperty(newAtom))
+        if (!root->hasAttribute(newAtom))
             return NULL;
         expr = root->queryChild(0);
     }

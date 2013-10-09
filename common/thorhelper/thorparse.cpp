@@ -21,7 +21,7 @@
 #include "eclrtl.hpp"
 #include "eclhelper.hpp"
 
-_ATOM separatorTagAtom;
+IAtom * separatorTagAtom;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     separatorTagAtom = createAtom("<separator>");
@@ -213,6 +213,8 @@ size32_t CMatchedResults::getMatchLength(unsigned idx)
     case NlpUnicode:
         len = size / sizeof(UChar);
         break;
+    default:
+        throwUnexpected();
     }
     return len;
 }
@@ -336,7 +338,7 @@ void CMatchedResults::kill()
 //---------------------------------------------------------------------------
 
 
-_ATOM NlpMatchWalker::queryName()     
+IAtom * NlpMatchWalker::queryName()
 { 
     return curMatch->queryName(); 
 }
@@ -405,7 +407,7 @@ static void expandElementText(StringBuffer & s, IMatchWalker * walker)
 
 static void getDefaultParseTree(StringBuffer & s, IMatchWalker * cur)
 {
-    _ATOM name = cur->queryName();
+    IAtom * name = cur->queryName();
     if (name != separatorTagAtom)
     {
         if (name)
@@ -446,7 +448,7 @@ void getDefaultParseTree(IMatchWalker * walker, unsigned & len, char * & text)
 
 static void getXmlParseTree(StringBuffer & s, IMatchWalker * walker, unsigned indent)
 {
-    _ATOM name = walker->queryName();
+    IAtom * name = walker->queryName();
     if (name != separatorTagAtom)
     {
         unsigned max = walker->numChildren();

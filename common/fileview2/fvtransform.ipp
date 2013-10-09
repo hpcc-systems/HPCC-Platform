@@ -61,12 +61,12 @@ void getInvertedCardinality(StringBuffer & out, const char * cardinality);
 class FILEVIEW_API ViewFieldTransformer : public CInterface
 {
 public:
-    ViewFieldTransformer(_ATOM _name)
+    ViewFieldTransformer(IAtom * _name)
         : name(_name)
     {}
 
-    inline bool matches(_ATOM search) const { return name == search; }
-    inline _ATOM queryName() const { return name; }
+    inline bool matches(IIdAtom * search) const { return name == search->lower(); }
+    inline IAtom * queryName() const { return name; }
     
     virtual ViewFieldTransformer * bind(const HqlExprArray & args);
 
@@ -76,7 +76,7 @@ protected:
     virtual void transform(unsigned & lenTarget, char * & target, unsigned lenSource, const char * source) = 0;
 
 protected:
-    _ATOM name;
+    IAtom * name;
 };
 
 class FILEVIEW_API ViewFailTransformer : public ViewFieldTransformer
@@ -117,7 +117,7 @@ protected:
 class FILEVIEW_API ViewFieldUtf8Transformer : public ViewFieldTransformer
 {
 public:
-    ViewFieldUtf8Transformer(_ATOM _name, utf8FieldTransformerFunction _function)
+    ViewFieldUtf8Transformer(IAtom * _name, utf8FieldTransformerFunction _function)
         : ViewFieldTransformer(_name), function(_function)
     {}
 
@@ -133,7 +133,7 @@ protected:
 class FILEVIEW_API ViewFieldUnicodeTransformer : public ViewFieldTransformer
 {
 public:
-    ViewFieldUnicodeTransformer(_ATOM _name, unicodeFieldTransformerFunction _function)
+    ViewFieldUnicodeTransformer(IAtom * _name, unicodeFieldTransformerFunction _function)
         : ViewFieldTransformer(_name), function(_function)
     {}
 
@@ -149,7 +149,7 @@ protected:
 class FILEVIEW_API ViewFieldStringTransformer : public ViewFieldTransformer
 {
 public:
-    ViewFieldStringTransformer(_ATOM _name, stringFieldTransformerFunction _function)
+    ViewFieldStringTransformer(IAtom * _name, stringFieldTransformerFunction _function)
         : ViewFieldTransformer(_name), function(_function)
     {}
 

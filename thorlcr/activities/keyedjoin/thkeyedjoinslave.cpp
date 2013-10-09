@@ -2040,7 +2040,7 @@ public:
         pool->setOrdering(preserveGroups, preserveOrder);
         resultDistStream->setInput(input);
 
-        dataLinkStart("KEYEDJOIN", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

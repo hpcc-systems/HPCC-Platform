@@ -42,6 +42,11 @@ define([
         countProperty: "Count",
 
         _watched: [],
+        preRequest: function (request) {
+            if (request.Sortby && request.Sortby === "TotalThorTime") {
+                request.Sortby = "ThorTime";
+            }
+        },
         create: function (id) {
             return new Workunit({
                 Wuid: id
@@ -86,7 +91,7 @@ define([
         _ResultsSetter: function (Results) {
             var results = [];
             var sequenceResults = [];
-            var namedResults = [];
+            var namedResults = {};
             for (var i = 0; i < Results.ECLResult.length; ++i) {
                 var espResult = ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i]));
                 results.push(espResult);

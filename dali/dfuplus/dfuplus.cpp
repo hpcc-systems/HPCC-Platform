@@ -378,8 +378,12 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
         if(terminator && *terminator)
             req->setSourceCsvTerminate(terminator);
         const char* quote = globals->queryProp("quote");
-        if(quote && *quote)
+        if(quote)
+        {
+            // Pass quote definition string from command line if defined
+            // even it is empty to override default value
             req->setSourceCsvQuote(quote);
+        }
         const char* escape = globals->queryProp("escape");
         if(escape && *escape)
             req->setSourceCsvEscape(escape);
@@ -428,6 +432,9 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
 
     if(globals->hasProp("failIfNoSourceFile"))
         req->setFailIfNoSourceFile(globals->getPropBool("failIfNoSourceFile",false));
+
+    if(globals->hasProp("recordStructurePresent"))
+        req->setRecordStructurePresent(globals->getPropBool("recordStructurePresent",false));
 
     if(srcxml == NULL)
         info("\nVariable spraying from %s on %s to %s\n", srcfile, srcip, dstname);

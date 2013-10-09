@@ -30,7 +30,7 @@ class CDiskReadMasterVF : public CDiskReadMasterBase
 {
 public:
     CDiskReadMasterVF(CMasterGraphElement *info) : CDiskReadMasterBase(info) { }
-    virtual void validateFile(IDistributedFile *file)
+    virtual void validateFile()
     {
         IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
         bool codeGenGrouped = 0 != (TDXgrouped & helper->getFlags());
@@ -49,10 +49,7 @@ public:
                 if (isGrouped)
                     rSz--; // eog byte not to be included in this test.
                 if (rSz != recordSize->getMinRecordSize())
-                {
-                    OwnedRoxieString fileName(helper->getFileName());
                     throw MakeThorException(TE_RecordSizeMismatch, "Published record size %d for file %s, does not match coded record size %d", rSz, fileName.get(), recordSize->getMinRecordSize());
-                }
             }
             if (!fileDesc->isCompressed() && (TDXcompress & helper->getFlags()))
             {
@@ -60,7 +57,6 @@ public:
                 if (isGrouped) rSz++;
                 if (rSz >= MIN_ROWCOMPRESS_RECSIZE)
                 {
-                    OwnedRoxieString fileName(helper->getFileName());
                     Owned<IException> e = MakeActivityWarning(&container, TE_CompressionMismatch, "Ignoring compression attribute on file '%s', which is not published as compressed in DFS", fileName.get());
                     container.queryJob().fireException(e);
                 }
@@ -83,10 +79,7 @@ public:
     {
         IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
         if (0 != (helper->getFlags() & TDXtemporary) && !container.queryJob().queryUseCheckpoints())
-        {
-            OwnedRoxieString fileName(helper->getFileName());
             container.queryTempHandler()->deregisterFile(fileName, fileDesc->queryProperties().getPropBool("@pausefile"));
-        }
     }
     virtual void init()
     {
@@ -172,8 +165,6 @@ public:
         {
             if (!helper->hasSegmentMonitors() && !helper->hasFilter() && !(helper->getFlags() & TDXtemporary))
             {
-                OwnedRoxieString fileName(helper->getFileName());
-                Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()));
                 if (file.get() && canMatch)
                 {
                     if (0 != (TDRunfilteredcount & helper->getFlags()) && file->queryAttributes().hasProp("@recordCount"))

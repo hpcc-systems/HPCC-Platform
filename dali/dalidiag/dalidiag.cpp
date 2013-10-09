@@ -105,7 +105,7 @@ void timeQorSDS(bool timeq)
     MemoryBuffer mb;
     Owned<INamedQueueConnection> qconn;
     Owned<IRemoteConnection> sdsconn;
-    IPropertyTree *sdsroot;
+    IPropertyTree *sdsroot = NULL;
     Owned<IQueueChannel> channel;
     CTestSDSSubscription testsdssub;
     SubscriptionId sdssubid=0;

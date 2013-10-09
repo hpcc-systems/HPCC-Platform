@@ -22,11 +22,11 @@
 
 #define MAX_MAXLENGTH (INFINITE_LENGTH-1)
 
-extern HQL_API IHqlExpression * queryProperty(ITypeInfo * type, _ATOM search);
-extern HQL_API IHqlExpression * queryPropertyChild(ITypeInfo * type, _ATOM search, unsigned idx);
-extern HQL_API void cloneFieldModifier(Owned<ITypeInfo> & type, ITypeInfo * donorType, _ATOM attr);
+extern HQL_API IHqlExpression * queryAttribute(ITypeInfo * type, IAtom * search);
+extern HQL_API IHqlExpression * queryAttributeChild(ITypeInfo * type, IAtom * search, unsigned idx);
+extern HQL_API void cloneFieldModifier(Owned<ITypeInfo> & type, ITypeInfo * donorType, IAtom * attr);
 extern HQL_API ITypeInfo * cloneEssentialFieldModifiers(ITypeInfo * donor, ITypeInfo * rawtype);
-extern HQL_API ITypeInfo * removeProperty(ITypeInfo * type, _ATOM search);
+extern HQL_API ITypeInfo * removeProperty(ITypeInfo * type, IAtom * search);
 
 extern HQL_API size32_t getMinRecordSize(IHqlExpression * record);
 extern HQL_API size32_t getExpectedRecordSize(IHqlExpression * record);
@@ -42,11 +42,11 @@ inline bool isFixedSizeRecord(IHqlExpression * record) { return !isVariableSizeR
 
 extern HQL_API bool recordRequiresLinkCount(IHqlExpression * expr);
 extern HQL_API bool recordRequiresDestructor(IHqlExpression * expr);
-extern HQL_API bool recordRequiresSerialization(IHqlExpression * expr, _ATOM serializeForm);
-extern HQL_API bool typeRequiresDeserialization(ITypeInfo * type, _ATOM serializeForm); // or can we use the serialized form directly
-extern HQL_API bool recordSerializationDiffers(IHqlExpression * expr, _ATOM serializeForm1, _ATOM serializeForm2);
-extern HQL_API IHqlExpression * getSerializedForm(IHqlExpression * expr, _ATOM variation);
-extern HQL_API ITypeInfo * getSerializedForm(ITypeInfo * type, _ATOM variation);
+extern HQL_API bool recordRequiresSerialization(IHqlExpression * expr, IAtom * serializeForm);
+extern HQL_API bool typeRequiresDeserialization(ITypeInfo * type, IAtom * serializeForm); // or can we use the serialized form directly
+extern HQL_API bool recordSerializationDiffers(IHqlExpression * expr, IAtom * serializeForm1, IAtom * serializeForm2);
+extern HQL_API IHqlExpression * getSerializedForm(IHqlExpression * expr, IAtom * variation);
+extern HQL_API ITypeInfo * getSerializedForm(ITypeInfo * type, IAtom * variation);
 extern HQL_API IHqlExpression * getPackedRecord(IHqlExpression * expr);
 
 //This returns a record that compares equal with another result if the normalized records will compare equal
@@ -66,10 +66,10 @@ extern HQL_API bool isLinkedRowset(ITypeInfo * t);
 extern HQL_API bool isArrayRowset(ITypeInfo * t);
 extern HQL_API bool hasLinkedRow(ITypeInfo * t);
 
-inline bool hasLinkCountedModifier(ITypeInfo * t)    { return queryProperty(t, _linkCounted_Atom) != NULL; }
+inline bool hasLinkCountedModifier(ITypeInfo * t)    { return queryAttribute(t, _linkCounted_Atom) != NULL; }
 inline bool hasOutOfLineRows(ITypeInfo * type) { return (hasOutOfLineModifier(type) || hasLinkCountedModifier(type)); }
 inline bool hasLinkCountedModifier(IHqlExpression * expr)    { return hasLinkCountedModifier(expr->queryType()); }
-inline bool hasStreamedModifier(ITypeInfo * t)   { return queryProperty(t, streamedAtom) != NULL; }
+inline bool hasStreamedModifier(ITypeInfo * t)   { return queryAttribute(t, streamedAtom) != NULL; }
 
 extern HQL_API ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue);
 extern HQL_API ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue);
@@ -80,5 +80,8 @@ extern HQL_API IHqlExpression * queryRecordCountInfo(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getRecordCountInfo(IHqlExpression * expr);
 extern HQL_API bool hasNoMoreRowsThan(IHqlExpression * expr, __int64 limit);
 extern HQL_API bool spillToWorkunitNotFile(IHqlExpression * expr, ClusterType platform);
+
+class CHqlMetaProperty;
+extern HQL_API CHqlMetaProperty * queryMetaProperty(IHqlExpression * expr);
 
 #endif

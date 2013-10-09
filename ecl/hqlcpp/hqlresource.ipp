@@ -59,7 +59,6 @@ public:
     bool     preventKeyedSplit;
     bool     preventSteppedSplit;
     bool     minimizeSkewBeforeSpill;
-    bool     useMpForDistribute;
     bool     expandSingleConstRow;
     bool     createSpillAsDataset;
     bool     optimizeSharedInputs;
@@ -107,7 +106,7 @@ public:
     unsigned clusterSize;
 };
 
-enum LinkKind { UnconditionalLink, ConditionalLink, SequenceLink };
+enum LinkKind { UnconditionalLink, SequenceLink };
 
 class ResourceGraphInfo;
 class ResourceGraphLink : public CInterface
@@ -161,7 +160,7 @@ public:
     bool isDependentOn(ResourceGraphInfo & other, bool allowDirect);
     bool isVeryCheap();
     bool mergeInSibling(ResourceGraphInfo & other, const CResources & limit);
-    bool mergeInSource(ResourceGraphInfo & other, const CResources & limit, bool isConditionalLink);
+    bool mergeInSource(ResourceGraphInfo & other, const CResources & limit);
     void removeResources(const CResources & value);
 
     bool isSharedInput(IHqlExpression * expr);
@@ -170,7 +169,7 @@ public:
 
 protected:
     void display();
-    void mergeGraph(ResourceGraphInfo & other, bool isConditionalLink, bool mergeConditions);
+    void mergeGraph(ResourceGraphInfo & other, bool mergeConditions);
     bool evalDependentOn(ResourceGraphInfo & other, bool ignoreSources);
 
 public:
@@ -204,6 +203,32 @@ public:
 };
 
 
+class CChildDependent : public CInterface
+{
+public:
+    CChildDependent(IHqlExpression * _original, IHqlExpression * _hoisted, bool _alwaysHoist, bool _isSingleNode, bool _forceHoist)
+    : original(_original), hoisted(_hoisted), alwaysHoist(_alwaysHoist), isSingleNode(_isSingleNode), forceHoist(_forceHoist)
+    {
+        projectedHoisted.set(hoisted);
+        projected = NULL;
+    }
+
+public:
+    IHqlExpression * original;
+    LinkedHqlExpr hoisted;
+    LinkedHqlExpr projectedHoisted;
+    bool forceHoist;
+    bool alwaysHoist;
+    bool isSingleNode;
+    IHqlExpression * projected;
+};
+
+class ChildDependentArray : public CIArrayOf<CChildDependent>
+{
+public:
+    unsigned findOriginal(IHqlExpression * expr);
+};
+
 class ResourcerInfo : public CInterface, public IInterface
 {
 public:
@@ -216,8 +241,10 @@ public:
     IHqlExpression * createTransformedExpr(IHqlExpression * expr);
 
     bool addCondition(IHqlExpression * condition);
+    void addProjected(IHqlExpression * projected);
     bool alwaysExpand();
     unsigned calcNumConditionalUses();
+    void clearProjected();
     bool expandRatherThanSpill(bool noteOtherSpills);
     bool expandRatherThanSplit();
     bool isExternalSpill();
@@ -225,8 +252,8 @@ public:
     bool isSplit();
     bool isSpilledWrite();
     bool okToSpillThrough();
-    void noteUsedFromChild()            { linkedFromChild = true; outputToUseForSpill = NULL; }
-    unsigned numInternalUses()          { return numUses - numExternalUses - aggregates.ordinality(); }
+    void noteUsedFromChild(bool _forceHoist);
+    unsigned numInternalUses();
     unsigned numSplitPaths();
     void setConditionSource(IHqlExpression * condition, bool isFirst);
 
@@ -249,6 +276,12 @@ public:
         }
         return false;
     }
+    inline bool isResourcedActivity() const
+    {
+        return isActivity || containsActivity;
+    }
+
+
 
 protected:
     bool spillSharesSplitter();
@@ -274,11 +307,11 @@ public:
     HqlExprAttr pathToSplitter;
     HqlExprArray aggregates;
     HqlExprArray conditions;
-    HqlExprArray childDependents;
-    HqlExprCopyArray originalChildDependents;
-    BoolArray childSingleNode;
+    ChildDependentArray childDependents;
     HqlExprAttr spilledDataset;
     HqlExprAttr splitterOutput;
+    HqlExprArray projected;
+    HqlExprAttr projectedExpr;
 
     unsigned numUses;
     unsigned numExternalUses;
@@ -291,9 +324,12 @@ public:
     bool balanced;
     bool isAlreadyInScope;
     bool linkedFromChild;
+    bool forceHoist;
     bool neverSplit;
     byte pathToExpr;
     bool isConditionalFilter;
+    bool projectResult;
+    bool visited;
 };
 
 struct DependencySourceInfo
@@ -335,11 +371,15 @@ protected:
     void replaceGraphReferences(ResourceGraphInfo * oldGraph, ResourceGraphInfo * newGraph);
 
 //Pass 1
-    void gatherChildSplitPoints(IHqlExpression * expr, BoolArray & alwaysHoistChild, ResourcerInfo * info, unsigned first, unsigned last);
-    bool findSplitPoints(IHqlExpression * expr);
+    void gatherChildSplitPoints(IHqlExpression * expr, ResourcerInfo * info, unsigned first, unsigned last);
+    bool findSplitPoints(IHqlExpression * expr, bool isProjected);
     void findSplitPoints(HqlExprArray & exprs);
     void noteConditionalChildren(BoolArray & alwaysHoistChild);
+    void deriveUsageCounts(IHqlExpression * expr);
+    void deriveUsageCounts(const HqlExprArray & exprs);
     void extendSplitPoints();
+    void projectChildDependents();
+    IHqlExpression * projectChildDependent(IHqlExpression * expr);
 
 //Pass 2
     void createInitialGraph(IHqlExpression * expr, IHqlExpression * owner, ResourceGraphInfo * ownerGraph, LinkKind linkKind, bool forceNewGraph);
@@ -430,7 +470,7 @@ protected:
     CResourceOptions options;
     HqlExprArray rootConditions;
     HqlExprCopyArray activeSelectors;
-    HqlExprCopyArray conditionalChildren;
+    ChildDependentArray allChildDependents;
 };
 
 #endif

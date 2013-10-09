@@ -141,7 +141,7 @@ protected:
 public:
     CHqlParserPseduoScope(HqlGram * _parser) : CHqlScope(no_privatescope) { parser = _parser; }
 
-    virtual IHqlExpression *lookupSymbol(_ATOM name, unsigned lookupFlags, HqlLookupContext & ctx)
+    virtual IHqlExpression *lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx)
     {
         attribute errpos;
         errpos.clearPosition();
@@ -262,7 +262,7 @@ StringBuffer &HqlLex::getTokenText(StringBuffer &ret)
     return ret.append(yyPosition - yyStartPos, yyBuffer+yyStartPos);
 }
 
-IHqlExpression *HqlLex::lookupSymbol(_ATOM name, const attribute& errpos) 
+IHqlExpression *HqlLex::lookupSymbol(IIdAtom * name, const attribute& errpos)
 {
     return yyParser->lookupSymbol(name, errpos);
 }
@@ -302,15 +302,21 @@ IHqlExpression * HqlLex::createIntegerConstant(__int64 value, bool isSigned)
     return createConstant(createIntValue(value, makeIntType(8, isSigned)));
 }
 
-void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
+void HqlLex::pushText(IFileContents * text, int startLineNo, int startColumn)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath);
-    inmacro = new HqlLex(yyParser, macroContents, NULL, NULL);
+    inmacro = new HqlLex(yyParser, text, NULL, NULL);
     inmacro->set_yyLineNo(startLineNo);
     inmacro->set_yyColumn(startColumn);
+}
+
+
+void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
+{
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath);
+    pushText(macroContents, startLineNo, startColumn);
 }
 
 
@@ -329,14 +335,15 @@ void HqlLex::pushText(const char *s)
 #endif
 }
 
-void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, _ATOM argumentName, unsigned& parmno,IProperties *macroParms)
+void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentId, unsigned& parmno,IProperties *macroParms)
 {
     IHqlExpression * formals = queryFunctionParameters(funcdef);
     IHqlExpression * defaults = queryFunctionDefaults(funcdef);
     unsigned numFormals = formals->numChildren();
     unsigned thisParam = (unsigned)-1;
-    if (argumentName)
+    if (argumentId)
     {
+        IAtom * argumentName = argumentId->lower();
         unsigned argNum = 0;
         for (unsigned i=0; i < numFormals; i++)
         {
@@ -348,7 +355,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
         }
 
         if (argNum == 0)
-            reportError(errpos, ERR_NAMED_PARAM_NOT_FOUND, "Named parameter '%s' not found in macro", argumentName->str());
+            reportError(errpos, ERR_NAMED_PARAM_NOT_FOUND, "Named parameter '%s' not found in macro", argumentId->str());
         else
             thisParam = argNum;
     }
@@ -413,8 +420,8 @@ void HqlLex::pushMacro(IHqlExpression *expr)
     IHqlExpression * defaults = expr->queryChild(2);
     unsigned formalParmCt = formals->numChildren();
     unsigned parmno = 0;
-    _ATOM possibleName = NULL;
-    _ATOM argumentName = NULL;
+    IIdAtom * possibleName = NULL;
+    IIdAtom * argumentName = NULL;
     while (parenDepth)
     {
         tok = yyLex(nextToken, false, 0);
@@ -473,7 +480,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
             // no attempt to recover at the end of the file, but cleanup is needed.
             return;
         case UNKNOWN_ID:
-            possibleName = nextToken.getName();
+            possibleName = nextToken.getId();
             //fall through
         default:
             curParam.append(' ');
@@ -746,7 +753,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
     StringBuffer forwhat;
     forwhat.appendf("#DECLARE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -773,7 +780,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
             continue;
         }
     
-        name = returnToken.getName();
+        name = returnToken.getId();
         declareXmlSymbol(returnToken, name->getAtomNamePtr());
         
         tok = yyLex(returnToken, false,0);
@@ -833,7 +840,7 @@ void HqlLex::doSet(YYSTYPE & returnToken, bool append)
     StringBuffer forwhat;
     forwhat.appendf("%s(%d,%d)",append?"#APPEND":"#SET",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -846,7 +853,7 @@ void HqlLex::doSet(YYSTYPE & returnToken, bool append)
         returnToken.release();
         return;
     }
-    name = returnToken.getName();
+    name = returnToken.getId();
     if (yyLex(returnToken, false,0) != ',')
     {
         reportError(returnToken, ERR_EXPECTED_COMMA, ", expected"); 
@@ -879,7 +886,7 @@ void HqlLex::doLine(YYSTYPE & returnToken)
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
     forwhat.appendf("LINE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -928,7 +935,7 @@ void HqlLex::doError(YYSTYPE & returnToken, bool isError)
     StringBuffer forwhat;
     forwhat.appendf("%s(%d,%d)",isError?"#ERROR":"#WARNING",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -964,7 +971,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
     StringBuffer forwhat;
     forwhat.appendf("#EXPORT(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM exportname = NULL;
+    IIdAtom * exportname = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -977,7 +984,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         returnToken.release();
         return;
     }
-    exportname = returnToken.getName();
+    exportname = returnToken.getId();
     if (yyLex(returnToken, false,0) != ',')
     {
         reportError(returnToken, ERR_EXPECTED_COMMA, ", expected"); 
@@ -1034,7 +1041,7 @@ void HqlLex::doTrace(YYSTYPE & returnToken)
     StringBuffer forwhat;
     forwhat.appendf("#TRACE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -1074,7 +1081,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
     StringBuffer forwhat;
     forwhat.appendf("#FOR(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -1087,17 +1094,18 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
         returnToken.release();
         return;
     }
-    name = returnToken.getName();
-    forFilter.clear();
+    name = returnToken.getId();
+
+    StringBuffer forFilterText;
     // Note - we gather the for filter and body in skip mode (deferring evaluation of #if etc) since the context will be different each time...
     skipping = 1;
     int tok = yyLex(returnToken, false,0);
     if (tok == '(')
     {
-        forFilter.append('(');
-        while (getParameter(forFilter, forwhat.str()))
-            forFilter.append(") AND (");
-        forFilter.append(')');
+        forFilterText.append('(');
+        while (getParameter(forFilterText, forwhat.str()))
+            forFilterText.append(") AND (");
+        forFilterText.append(')');
         tok = yyLex(returnToken, false,0);
     }
     if (tok != ')')
@@ -1108,8 +1116,9 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
         pushText(get_yyText());
         returnToken.release();
     }
+
     // Now gather the tokens we are going to repeat...
-    forBody.clear();
+    StringBuffer forBodyText;
     for (;;)
     {
         int tok = yyLex(returnToken, false,0);
@@ -1127,12 +1136,17 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
         }
         if (tok == HASHEND && !skipping)
             break;
-        forBody.append(' ');
-        getTokenText(forBody);
+        forBodyText.append(' ');
+        getTokenText(forBodyText);
         returnToken.release();
     } 
     ::Release(forLoop);
+
     forLoop = getSubScopes(returnToken, name->getAtomNamePtr(), doAll);
+    if (forFilterText.length())
+        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
+
     loopTimes = 0;
     if (forLoop && forLoop->first()) // more - check filter
         checkNextLoop(returnToken, true, startLine, startCol);
@@ -1146,7 +1160,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
     
 
     // Now gather the tokens we are going to repeat...
-    forBody.clear();
+    StringBuffer forBodyText;
     // Note - we gather the for filter and body in skip mode (deferring evaluation of #if etc) since the context will be different each time...
     skipping = 1;
     hasHashbreak = false;
@@ -1167,8 +1181,8 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
         }
         if (tok == HASHEND && !skipping)
             break;
-        forBody.append(' ');
-        getTokenText(forBody);
+        forBodyText.append(' ');
+        getTokenText(forBodyText);
         returnToken.release();
     } 
     if (!hasHashbreak)
@@ -1176,9 +1190,11 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
         reportError(returnToken, ERR_TMPLT_NOBREAKINLOOP,"No #BREAK inside %s: infinite loop will occur", forwhat.str());
         return;
     }
+
     ::Release(forLoop);
     forLoop = new CDummyScopeIterator(ensureTopXmlScope(returnToken));
     forFilter.clear();
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
     loopTimes = 0;
     if (forLoop->first()) // more - check filter
         checkNextLoop(returnToken, true,startLine,startCol);
@@ -1303,11 +1319,11 @@ static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const cha
         const char* pAttr = attrName;
         while(*pAttr==' ') pAttr++;
 
-        OwnedHqlExpr match = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdentifierAtom(pModule), LSFpublic, ctx);
+        OwnedHqlExpr match = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdAtom(pModule), LSFpublic, ctx);
         IHqlScope * scope = match ? match->queryScope() : NULL;
         if (scope)
         {
-            OwnedHqlExpr expr = scope->lookupSymbol(createIdentifierAtom(pAttr), LSFpublic, ctx); 
+            OwnedHqlExpr expr = scope->lookupSymbol(createIdAtom(pAttr), LSFpublic, ctx); 
             if (expr)
                 return true;
         }
@@ -1335,7 +1351,7 @@ void HqlLex::doUniqueName(YYSTYPE & returnToken)
     } 
     else 
     {
-        _ATOM name = returnToken.getName();
+        IIdAtom * name = returnToken.getId();
         StringAttr pattern("__#__$__");
 
         tok = yyLex(returnToken, false,0);
@@ -1457,7 +1473,7 @@ void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, in
     {
         bool filtered;
         IXmlScope *subscope = (IXmlScope *) &forLoop->query();
-        if (forFilter.length())
+        if (forFilter)
         {
 #ifdef TIMING_DEBUG
             MTIME_SECTION(timer, "HqlLex::checkNextLoopcond");
@@ -1470,7 +1486,7 @@ void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, in
             filtered = false;
         if (!filtered)
         {
-            pushText(forBody.str(),startLine,startCol);
+            pushText(forBody,startLine,startCol);
             inmacro->xmlScope = LINK(subscope);
             return;
         }
@@ -1588,7 +1604,7 @@ bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, 
                 {
                 case StateStart:
                     {
-                        expr.setown(lookupSymbol(returnToken.getName(), returnToken));
+                        expr.setown(lookupSymbol(returnToken.getId(), returnToken));
                         state = expr ? StateDot : StateFailed;
                         break;
                     }
@@ -1605,7 +1621,7 @@ bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, 
                         IHqlScope * scope = expr->queryScope();
                         if (scope)
                         {
-                            expr.setown(yyParser->lookupSymbol(scope, returnToken.getName()));
+                            expr.setown(yyParser->lookupSymbol(scope, returnToken.getId()));
                             if (expr)
                                 state = StateDot;
                         }
@@ -1673,29 +1689,32 @@ void HqlLex::doDefined(YYSTYPE & returnToken)
         pushText(param2Text);
 }
 
-IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
+IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, int startLine, int startCol)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
 #endif
     //  Use an ECL reserved word as the scope name to avoid name conflicts with these defined localscope.
-    Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedAtom,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL); 
+    Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedId,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL);
 
     HqlGramCtx parentContext(yyParser->lookupCtx);
     yyParser->saveContext(parentContext, false);
-    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath());
     HqlGram parser(parentContext, scope, contents, xmlScope, true);
     parser.getLexer()->set_yyLineNo(startLine);
     parser.getLexer()->set_yyColumn(startCol);
     return parser.yyParse(false, false);
 }
 
-IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
+
+IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
 {
-#ifdef TIMING_DEBUG
-    MTIME_SECTION(timer, "HqlLex::parseConstExpression");
-#endif
-    OwnedHqlExpr expr = parseECL(curParam, xmlScope, startLine, startCol);
+    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath());
+    return parseECL(contents, xmlScope, startLine, startCol);
+}
+
+
+IValue *HqlLex::foldConstExpression(const YYSTYPE & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol)
+{
     OwnedIValue value;
     if (expr)
     {
@@ -1721,6 +1740,24 @@ IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curPa
         reportError(errpos, ERR_EXPECTED_CONST, "Constant expression expected"); // errpos could be better
 
     return value.getClear();
+}
+
+IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
+{
+#ifdef TIMING_DEBUG
+    MTIME_SECTION(timer, "HqlLex::parseConstExpression");
+#endif
+    OwnedHqlExpr expr = parseECL(curParam, xmlScope, startLine, startCol);
+    return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
+}
+
+IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, IFileContents * text, IXmlScope *xmlScope, int startLine, int startCol)
+{
+#ifdef TIMING_DEBUG
+    MTIME_SECTION(timer, "HqlLex::parseConstExpression");
+#endif
+    OwnedHqlExpr expr = parseECL(text, xmlScope, startLine, startCol);
+    return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
 }
 
 int hexchar(char c)

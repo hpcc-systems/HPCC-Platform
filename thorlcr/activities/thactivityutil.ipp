@@ -38,9 +38,6 @@
 #define OUTPUT_RECORDSIZE
 
 
-//void startInput(CActivityBase *activity, IThorDataLink * i, const char *extra=NULL);
-//void stopInput(IThorDataLink * i, const char * activityName = NULL, activity_id activitiyId = 0);
-
 class CPartHandler : public CSimpleInterface, implements IRowStream
 {
 public:
@@ -92,29 +89,13 @@ class CThorDataLink : implements IThorDataLink
 {
     CActivityBase *owner;
     rowcount_t count, icount;
-    char *activityName;
-    activity_id activityId;
     unsigned outputId;
     unsigned limit;
 
 protected:
-    inline void dataLinkStart()
+    inline void dataLinkStart(unsigned _outputId = 0)
     {
-        dataLinkStart(NULL, 0);
-    }
-    inline void dataLinkStart(ThorActivityKind kind, activity_id activityId, unsigned outputId = 0)
-    {
-        dataLinkStart(activityKindStr(kind), activityId, outputId);
-    }
-    inline void dataLinkStart(const char * _activityName, activity_id _activityId, unsigned _outputId = 0)
-    {
-        if(_activityName) 
-        {
-            StringBuffer x(_activityName);
-            activityName = x.toUpperCase().detach();
-            activityId = _activityId;
-            outputId = _outputId;
-        }
+        outputId = _outputId;
 #ifdef _TESTING
         ActPrintLog(owner, "ITDL starting for output %d", outputId);
 #endif
@@ -136,11 +117,6 @@ protected:
 #ifdef _TESTING
         ActPrintLog(owner, "ITDL output %d stopped, count was %"RCPF"d", outputId, getDataLinkCount());
 #endif
-        if(activityName) 
-        {
-            free(activityName);
-            activityName = NULL;
-        }
     }
 
     inline void dataLinkIncrement()
@@ -178,8 +154,6 @@ public:
     CThorDataLink(CActivityBase *_owner) : owner(_owner)
     {
         icount = count = 0;
-        activityName = NULL;
-        activityId = 0;
     }
 #ifdef _TESTING
     ~CThorDataLink()
@@ -223,6 +197,7 @@ interface ISmartBufferNotify
     virtual void onInputFinished(rowcount_t count) =0;
 };
 
+
 class CThorRowAggregator : public RowAggregator
 {
     CActivityBase &activity;
@@ -238,7 +213,7 @@ public:
 };
 
 interface IDiskUsage;
-IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity,IThorDataLink *in,size32_t bufsize,bool spillenabled,bool preserveLhsGrouping=true,rowcount_t maxcount=RCUNBOUND,ISmartBufferNotify *notify=NULL, bool inputstarted=false, IDiskUsage *_diskUsage=NULL); //maxcount is maximum rows to read set to RCUNBOUND for all
+IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity,IThorDataLink *in,size32_t bufsize,bool spillenabled,bool preserveGrouping=true,rowcount_t maxcount=RCUNBOUND,ISmartBufferNotify *notify=NULL, bool inputstarted=false, IDiskUsage *_diskUsage=NULL); //maxcount is maximum rows to read set to RCUNBOUND for all
 
 bool isSmartBufferSpillNeeded(CActivityBase *act);
 

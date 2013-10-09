@@ -474,7 +474,7 @@ public:
             abortlimit = (unsigned)-1;
         keepremaining = keepmax;
         outputmetaL = _outputmeta;
-        if (TAKdenormalize == kind || TAKhashdenormalize == kind)
+        if (TAKdenormalize == kind || TAKhashdenormalize == kind || TAKlookupdenormalize == kind || TAKsmartdenormalize == kind)
             denormTmp.setAllocator(allocator).ensureRow();
         return true;
     }
@@ -553,6 +553,8 @@ public:
                     switch (kind) {
                         case TAKdenormalize:
                         case TAKhashdenormalize:
+                        case TAKlookupdenormalize:
+                        case TAKsmartdenormalize:
                         {
                             const void *lhs = defaultLeft;
                             do {
@@ -569,6 +571,8 @@ public:
                         }
                         case TAKdenormalizegroup:
                         case TAKhashdenormalizegroup:
+                        case TAKlookupdenormalizegroup:
+                        case TAKsmartdenormalizegroup:
                             assertex(!denormRows.ordinality());
                             do {
                                 denormRows.append(nextright.getLink());
@@ -582,6 +586,8 @@ public:
                         case TAKhashjoin:
                         case TAKselfjoin:
                         case TAKselfjoinlight:
+                        case TAKlookupjoin:
+                        case TAKsmartjoin:
                             gotsz = helper->transform(ret, defaultLeft, nextright);
                             nextR();
                             break;
@@ -596,6 +602,8 @@ public:
                 switch (kind) {
                     case TAKdenormalize:
                     case TAKhashdenormalize:
+                    case TAKlookupdenormalize:
+                    case TAKsmartdenormalize:
                     {
                         const void *lhs = defaultLeft;
                         do {
@@ -614,7 +622,8 @@ public:
                     }
                     case TAKdenormalizegroup:
                     case TAKhashdenormalizegroup:
-
+                    case TAKlookupdenormalizegroup:
+                    case TAKsmartdenormalizegroup:
                         assertex(!denormRows.ordinality());
                         do {
                             if (!rightgroupmatched[rightidx])
@@ -633,6 +642,8 @@ public:
                     case TAKhashjoin:
                     case TAKselfjoin:
                     case TAKselfjoinlight:
+                    case TAKlookupjoin:
+                    case TAKsmartjoin:
                         if (!rightgroupmatched[rightidx]) 
                             gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx));
                         rightidx++;
@@ -648,16 +659,22 @@ public:
                 switch (kind) {
                     case TAKdenormalize:
                     case TAKhashdenormalize:
+                    case TAKlookupdenormalize:
+                    case TAKsmartdenormalize:
                         fret.set(nextleft);
                         break;
                     case TAKdenormalizegroup:
                     case TAKhashdenormalizegroup:
+                    case TAKlookupdenormalizegroup:
+                    case TAKsmartdenormalizegroup:
                         gotsz = helper->transform(ret, nextleft, NULL, 0, (const void **)NULL);
                         break;
                     case TAKjoin:
                     case TAKhashjoin:
                     case TAKselfjoin:
                     case TAKselfjoinlight:
+                    case TAKlookupjoin:
+                    case TAKsmartjoin:
                         gotsz = helper->transform(ret, nextleft, defaultRight);
                         break;
                     default:
@@ -667,12 +684,26 @@ public:
             else
             {
                 // output group if needed before advancing
-                if ((TAKdenormalize == kind || TAKhashdenormalize == kind) && outSz)
-                    fret.setown(denormLhs.getClear()); // denormLhs holding transform progress
-                else if ((TAKdenormalizegroup == kind || TAKhashdenormalizegroup == kind) && denormRows.ordinality())
+
+                switch (kind)
                 {
-                    gotsz = helper->transform(ret, nextleft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
-                    denormRows.kill();
+                    case TAKdenormalize:
+                    case TAKhashdenormalize:
+                    case TAKlookupdenormalize:
+                    case TAKsmartdenormalize:
+                        if (outSz)
+                            fret.setown(denormLhs.getClear()); // denormLhs holding transform progress
+                        break;
+                    case TAKdenormalizegroup:
+                    case TAKhashdenormalizegroup:
+                    case TAKlookupdenormalizegroup:
+                    case TAKsmartdenormalizegroup:
+                        if (denormRows.ordinality())
+                        {
+                            gotsz = helper->transform(ret, nextleft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
+                            denormRows.kill();
+                        }
+                        break;
                 }
             }
             nextL();            // output outer once
@@ -692,6 +723,8 @@ public:
                     switch (kind) {
                         case TAKdenormalize:
                         case TAKhashdenormalize:
+                        case TAKlookupdenormalize:
+                        case TAKsmartdenormalize:
                         {
                             size32_t sz = helper->transform(ret, denormLhs, rightgroup.query(rightidx), ++denormCount);
                             if (sz)
@@ -704,6 +737,8 @@ public:
                         }
                         case TAKdenormalizegroup:
                         case TAKhashdenormalizegroup:
+                        case TAKlookupdenormalizegroup:
+                        case TAKsmartdenormalizegroup:
                         {
                             const void *rhsRow = rightgroup.query(rightidx);
                             LinkThorRow(rhsRow);
@@ -715,6 +750,8 @@ public:
                         case TAKhashjoin:
                         case TAKselfjoin:
                         case TAKselfjoinlight:
+                        case TAKlookupjoin:
+                        case TAKsmartjoin:
                             gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx));
                             break;
                         default:
@@ -740,9 +777,13 @@ public:
         {
         case TAKdenormalizegroup:
         case TAKhashdenormalizegroup:
+        case TAKlookupdenormalizegroup:
+        case TAKsmartdenormalizegroup:
             denormRows.kill(); // fall through
         case TAKdenormalize:
         case TAKhashdenormalize:
+        case TAKlookupdenormalize:
+        case TAKsmartdenormalize:
             outSz = 0;
             denormLhs.clear();
             denormCount = 0;
@@ -1479,7 +1520,7 @@ public:
     {
         MemoryBuffer rmatchedbuf;  
         CThorExpandingRowArray &rgroup = selfJoin?work.lgroup:work.rgroup;
-        bool *rmatched;
+        bool *rmatched = NULL;
         if (rightouter) {
             rmatched = (bool *)rmatchedbuf.clear().reserve(rgroup.ordinality());
             memset(rmatched,0,rgroup.ordinality());
@@ -1627,13 +1668,9 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         {
             PROGLOG("CMultiCoreJoinHelper::cWorker started");
 
-            // Create an allocator per thread, to avoid heavy contention
-            // JCSMORE - there should be a way to ask the cache for an allocator that is based on flags
-            activity_id activityId = parent->activity.queryContainer().queryId();
+            CJobBase &job = parent->activity.queryJob();
             Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
-            IOutputMetaData *meta = rowIf->queryRowMetaData();
-            roxiemem::IRowManager *rowManager = parent->activity.queryJob().queryRowManager();
-            Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, activityId, 1, (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
+            Owned<IEngineRowAllocator> allocator = job.getRowAllocator(rowIf->queryRowMetaData(), parent->activity.queryActivityId(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             IRowWriter *rowWriter = rowStream->queryWriter();
             loop
@@ -1831,13 +1868,9 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
         }
         int run()
         {
-            // Create an allocator per thread, to avoid heavy contention
-            // JCSMORE - there should be a way to ask the cache for an allocator that is based on flags
-            activity_id activityId = parent->activity.queryContainer().queryId();
+            CJobBase &job = parent->activity.queryJob();
             Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
-            IOutputMetaData *meta = rowIf->queryRowMetaData();
-            roxiemem::IRowManager *rowManager = parent->activity.queryJob().queryRowManager();
-            Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, activityId, 1, (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
+            Owned<IEngineRowAllocator> allocator = job.getRowAllocator(rowIf->queryRowMetaData(), parent->activity.queryActivityId(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             Owned<IRowWriter> rowWriter = parent->multiWriter->getWriter();
             PROGLOG("CMulticoreUnorderedJoinHelper::cWorker started");

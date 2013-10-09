@@ -45,15 +45,15 @@
 //#define DATA_STRING_COMPATIBLE
 #define HASHFIELD(p) hashcode = hashc((unsigned char *) &p, sizeof(p), hashcode)
 
-static _ATOM asciiAtom;
-static _ATOM dataAtom;
-static _ATOM ebcdicAtom;
-static _ATOM utf8Atom;
-static _ATOM asciiCodepageAtom;
-static _ATOM ebcdicCodepageAtom;
-static _ATOM ascii2ebcdicAtom;
-static _ATOM ebcdic2asciiAtom;
-static _ATOM emptyAtom;
+static IAtom * asciiAtom;
+static IAtom * dataAtom;
+static IAtom * ebcdicAtom;
+static IAtom * utf8Atom;
+static IAtom * asciiCodepageAtom;
+static IAtom * ebcdicCodepageAtom;
+static IAtom * ascii2ebcdicAtom;
+static IAtom * ebcdic2asciiAtom;
+static IAtom * emptyAtom;
 static CriticalSection * typeCS;
 static TypeCache * globalTypeCache;
 
@@ -955,7 +955,7 @@ bool CUnicodeTypeInfo::assignableFrom(ITypeInfo *t2)
 
 //---------------------------------------------------------------------------
 
-CVarUnicodeTypeInfo::CVarUnicodeTypeInfo(unsigned len, _ATOM _locale) : CUnicodeTypeInfo(len, _locale) 
+CVarUnicodeTypeInfo::CVarUnicodeTypeInfo(unsigned len, IAtom * _locale) : CUnicodeTypeInfo(len, _locale)
 {
 #if UNKNOWN_LENGTH != 0
     assertex(len != 0);
@@ -1379,40 +1379,6 @@ bool CTableTypeInfo::assignableFrom(ITypeInfo *t2)
     return false;
 }
 
-IInterface *CTableTypeInfo::queryDistributeInfo()
-{
-    return distributeinfo;
-}
-
-IInterface *CTableTypeInfo::queryGlobalSortInfo()
-{
-    return globalsortinfo;
-}
-
-IInterface *CTableTypeInfo::queryLocalUngroupedSortInfo()
-{
-    return localsortinfo;
-}
-
-unsigned CTableTypeInfo::getHash() const
-{
-    unsigned hashcode = CBasedTypeInfo::getHash();
-    HASHFIELD(distributeinfo);
-    HASHFIELD(globalsortinfo);
-    HASHFIELD(localsortinfo);
-    return hashcode;
-}
-
-
-bool CTableTypeInfo::equals(const CTypeInfo & _other) const
-{
-    if (!CBasedTypeInfo::equals(_other))
-        return false;
-    const CTableTypeInfo & other = static_cast<const CTableTypeInfo &>(_other);
-    return (distributeinfo == other.distributeinfo) && (globalsortinfo == other.globalsortinfo) && (localsortinfo == other.localsortinfo);
-}
-
-
 StringBuffer & CTableTypeInfo::getECLType(StringBuffer & out)   
 { 
     ITypeInfo * recordType = ::queryRecordType(this);
@@ -1425,12 +1391,11 @@ StringBuffer & CTableTypeInfo::getECLType(StringBuffer & out)
     return out; 
 }
 
+
 void CTableTypeInfo::serialize(MemoryBuffer &tgt)
-{ 
-    assertex(!globalsortinfo && !localsortinfo && !distributeinfo);
+{
     CBasedTypeInfo::serializeSkipChild(tgt);
 }
-
 
 bool CGroupedTableTypeInfo::assignableFrom(ITypeInfo *t2)
 {
@@ -1445,55 +1410,6 @@ bool CGroupedTableTypeInfo::assignableFrom(ITypeInfo *t2)
     }
     return false;
 }
-
-IInterface *CGroupedTableTypeInfo::queryDistributeInfo()
-{
-    return queryChildType()->queryDistributeInfo();
-}
-
-IInterface *CGroupedTableTypeInfo::queryGroupInfo()
-{
-    return groupinfo;
-}
-
-IInterface *CGroupedTableTypeInfo::queryGlobalSortInfo()
-{
-    return queryChildType()->queryGlobalSortInfo();
-}
-
-IInterface *CGroupedTableTypeInfo::queryLocalUngroupedSortInfo()
-{
-    return queryChildType()->queryLocalUngroupedSortInfo();
-}
-
-IInterface *CGroupedTableTypeInfo::queryGroupSortInfo()
-{
-    return groupsortinfo;
-}
-
-unsigned CGroupedTableTypeInfo::getHash() const
-{
-    unsigned hashcode = CBasedTypeInfo::getHash();
-    HASHFIELD(groupinfo);
-    HASHFIELD(groupsortinfo);
-    return hashcode;
-}
-
-
-bool CGroupedTableTypeInfo::equals(const CTypeInfo & _other) const
-{
-    if (!CBasedTypeInfo::equals(_other))
-        return false;
-    const CGroupedTableTypeInfo & other = static_cast<const CGroupedTableTypeInfo &>(_other);
-    return (groupsortinfo == other.groupsortinfo) && (groupinfo == other.groupinfo);
-}
-
-void CGroupedTableTypeInfo::serialize(MemoryBuffer &tgt)
-{ 
-    assertex(!groupsortinfo && !groupinfo);
-    CBasedTypeInfo::serialize(tgt);
-}
-
 
 bool CSetTypeInfo::assignableFrom(ITypeInfo *t2)
 {
@@ -1682,7 +1598,7 @@ extern DEFTYPE_API ITypeInfo *makeQStringType(int len)
     return ret;
 }
 
-extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, _ATOM locale)
+extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, IAtom * locale)
 {
     if(!locale)
         locale = emptyAtom;
@@ -1706,7 +1622,7 @@ extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, _ATOM locale)
     return ret;
 }
 
-extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, _ATOM locale)
+extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, IAtom * locale)
 {
     if(!locale)
         locale = emptyAtom;
@@ -1731,7 +1647,7 @@ extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, _ATOM locale)
     return ret;
 }
 
-extern DEFTYPE_API ITypeInfo *makeUtf8Type(unsigned len, _ATOM locale)
+extern DEFTYPE_API ITypeInfo *makeUtf8Type(unsigned len, IAtom * locale)
 {
     if(!locale)
         locale = emptyAtom;
@@ -2014,10 +1930,10 @@ extern DEFTYPE_API ITypeInfo *makeRuleType(ITypeInfo *basetype)
     return commonUpType(new CRuleTypeInfo(basetype));
 }
 
-extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype, IInterface * distributeinfo, IInterface *globalsortinfo, IInterface *localsortinfo)
+extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype)
 {
     assertex(!basetype || basetype->getTypeCode() == type_row);
-    return commonUpType(new CTableTypeInfo(basetype, distributeinfo, globalsortinfo, localsortinfo));
+    return commonUpType(new CTableTypeInfo(basetype));
 }
 
 extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype)
@@ -2026,9 +1942,9 @@ extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype)
     return commonUpType(new CDictionaryTypeInfo(basetype));
 }
 
-extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype, IInterface *groupinfo, IInterface *sortinfo)
+extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype)
 {
-    return commonUpType(new CGroupedTableTypeInfo(basetype, groupinfo, sortinfo));
+    return commonUpType(new CGroupedTableTypeInfo(basetype));
 }
 
 extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * parameters, IInterface * defaults)
@@ -2987,12 +2903,12 @@ ICharsetInfo * CCollationInfo::getCharset()
 
 //---------------------------------------------------------------------------
 
-CTranslationInfo::CTranslationInfo(_ATOM _name, ICharsetInfo * _src, ICharsetInfo * _tgt) : src(_src), tgt(_tgt)
+CTranslationInfo::CTranslationInfo(IAtom * _name, ICharsetInfo * _src, ICharsetInfo * _tgt) : src(_src), tgt(_tgt)
 {
     name = _name;
 }
 
-_ATOM CTranslationInfo::queryName()
+IAtom * CTranslationInfo::queryName()
 {
     return name;
 }
@@ -3061,7 +2977,7 @@ StringBuffer & CEbcdic2AsciiTranslationInfo::translate(StringBuffer & tgt, unsig
 
 //---------------------------------------------------------------------------
 
-ICharsetInfo * getCharset(_ATOM atom)
+ICharsetInfo * getCharset(IAtom * atom)
 {
     if ((atom == NULL) || (atom == asciiAtom))
     {
@@ -3090,7 +3006,7 @@ ICharsetInfo * getCharset(_ATOM atom)
     return NULL;
 }
 
-ICollationInfo * getCollation(_ATOM atom)
+ICollationInfo * getCollation(IAtom * atom)
 {
 #if _DEBUG
     const char* name = atom->str();
@@ -3232,7 +3148,7 @@ bool haveCommonLocale(ITypeInfo * type1, ITypeInfo * type2)
     return ((type1->queryLocale() == type2->queryLocale()) || hasDefaultLocale(type1) || hasDefaultLocale(type2));
 }
 
-_ATOM getCommonLocale(ITypeInfo * type1, ITypeInfo * type2)
+IAtom * getCommonLocale(ITypeInfo * type1, ITypeInfo * type2)
 {
     //for the moment, disallow binary ops unless locales identical or one is default --- may later change, e.g. to use common parent where present
     if(!hasDefaultLocale(type1))
@@ -3409,10 +3325,10 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
         newType.setown(makeDictionaryType(LINK(newChild)));
         break;
     case type_table:
-        newType.setown(makeTableType(LINK(newChild), LINK(type->queryDistributeInfo()), LINK(type->queryGlobalSortInfo()), LINK(type->queryLocalUngroupedSortInfo())));
+        newType.setown(makeTableType(LINK(newChild)));
         break;
     case type_groupedtable:
-        newType.setown(makeGroupedTableType(LINK(newChild), LINK(type->queryGroupInfo()), LINK(type->queryGroupSortInfo())));
+        newType.setown(makeGroupedTableType(LINK(newChild)));
         break;
     case type_row:
         newType.setown(makeRowType(LINK(newChild)));
@@ -3425,6 +3341,9 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
         break;
     case type_sortlist:
         newType.setown(makeSortListType(LINK(newChild)));
+        break;
+    case type_rule:
+        newType.setown(makeRuleType(LINK(newChild)));
         break;
     default:
         throwUnexpected();
@@ -3628,12 +3547,12 @@ extern DEFTYPE_API ITypeInfo * deserializeType(MemoryBuffer &src)
     case type_table:
         {
             ITypeInfo *base = deserializeType(src);
-            return makeTableType(makeRowType(base), NULL, NULL, NULL);
+            return makeTableType(makeRowType(base));
         }
     case type_groupedtable:
         {
             ITypeInfo *base = deserializeType(src);
-            return makeGroupedTableType(base, NULL, NULL);
+            return makeGroupedTableType(base);
         }
 
         

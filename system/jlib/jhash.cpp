@@ -57,8 +57,6 @@
 // (see paper at http://burtleburtle.net/bob/hash/evahash.html for more info)
 
 // Global atom table
-static CriticalSection atomCrit;
-static KeptLowerCaseAtomTable *globalAtomTable = NULL;
 
 MODULE_INIT(INIT_PRIORITY_JHASH)
 {
@@ -240,9 +238,11 @@ const char *IAtom::getAtomNamePtr() const
    return getNamePtr();
 }
 
-const char *IAtom::getNamePtr() const
+IAtom * IIdAtom::lower() const
 {
-   return (const char *) getKey();
+    if (!this)
+        return NULL;
+    return queryLower();
 }
 
 //-- Mapping ---------------------------------------------------
@@ -262,6 +262,14 @@ unsigned AtomBase::getHash() const              { return hash; }
 void     AtomBase::setHash(unsigned hval)       { hash = hval; }
 
 const void * AtomBase::getKey() const           { return key; }
+
+//-- Case Atom ---------------------------------------------------
+
+CaseAtom::CaseAtom(const void * k) : hash(0)
+{
+    text = strdup((const char *)k);
+    lower = createLowerCaseAtom(text);
+}
 
 //-- HashTable ---------------------------------------------------
 
@@ -473,6 +481,8 @@ void ObservedHashTable::onRemove(void * et)
 
 //===========================================================================
 
+static CriticalSection atomCrit;
+static KeptLowerCaseAtomTable *globalAtomTable = NULL;
 inline KeptLowerCaseAtomTable * queryGlobalAtomTable()
 {
     if (!globalAtomTable)
@@ -483,14 +493,14 @@ inline KeptLowerCaseAtomTable * queryGlobalAtomTable()
     return globalAtomTable;
 }
 
-extern jlib_decl _ATOM createAtom(const char *value)
+extern jlib_decl IAtom * createAtom(const char *value)
 {
     if (!value) return NULL;
     CriticalBlock crit(atomCrit);
     return queryGlobalAtomTable()->addAtom(value);
 }
 
-extern jlib_decl _ATOM createAtom(const char *value, size32_t len)
+extern jlib_decl IAtom * createAtom(const char *value, size32_t len)
 {
     if (!value || !len)
         return NULL;
@@ -501,8 +511,40 @@ extern jlib_decl _ATOM createAtom(const char *value, size32_t len)
     return queryGlobalAtomTable()->addAtom(nullTerminated);
 }
 
+//===========================================================================
+
+static CriticalSection caseAtomCrit;
+static KeptCaseAtomTable *globalCaseAtomTable = NULL;
+inline KeptCaseAtomTable * queryGlobalCaseAtomTable()
+{
+    if (!globalCaseAtomTable)
+    {
+        globalCaseAtomTable = new KeptCaseAtomTable;
+        globalCaseAtomTable->reinit(2000);
+    }
+    return globalCaseAtomTable;
+}
+
+extern jlib_decl IIdAtom * createIdAtom(const char *value)
+{
+    if (!value) return NULL;
+    CriticalBlock crit(caseAtomCrit);
+    return queryGlobalCaseAtomTable()->addAtom(value);
+}
+
+extern jlib_decl IIdAtom * createIdAtom(const char *value, size32_t len)
+{
+    if (!value || !len)
+        return NULL;
+    char * nullTerminated = (char *)alloca(len+1);
+    memcpy(nullTerminated, value, len);
+    nullTerminated[len] = 0;
+    CriticalBlock crit(caseAtomCrit);
+    return queryGlobalCaseAtomTable()->addAtom(nullTerminated);
+}
+
 #ifdef THE_GLOBAL_HASH_TABLE_BECOMES_CASE_SENSITIVE
-extern jlib_decl _ATOM createLowerCaseAtom(const char *value)
+extern jlib_decl IAtom * createLowerCaseAtom(const char *value)
 {
     if (!value) return NULL;
 
@@ -517,7 +559,7 @@ extern jlib_decl _ATOM createLowerCaseAtom(const char *value)
     return queryGlobalAtomTable()->addAtom(value);
 }
 
-extern jlib_decl _ATOM createLowerCaseAtom(const char *value, size32_t len)
+extern jlib_decl IAtom * createLowerCaseAtom(const char *value, size32_t len)
 {
     if (!value || !len)
         return NULL;
@@ -535,6 +577,8 @@ extern jlib_decl _ATOM createLowerCaseAtom(const char *value, size32_t len)
 
 extern jlib_decl void releaseAtoms()
 {
+    delete globalCaseAtomTable;
+    globalCaseAtomTable = NULL;
     delete globalAtomTable;
     globalAtomTable = NULL;
 }

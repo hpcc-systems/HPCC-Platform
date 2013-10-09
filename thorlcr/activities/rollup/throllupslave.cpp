@@ -150,7 +150,6 @@ class CDedupRollupBaseActivity : public CSlaveActivity, implements IStopInput
     Linked<IRowInterfaces> rowif;
 
 protected:
-    StringAttr id;
     bool eogNext, eos;
     bool global;
     bool groupOp;
@@ -167,10 +166,6 @@ public:
         rollup = _rollup;
         global = _global;
         groupOp = _groupOp;
-        StringBuffer tmp;
-        tmp.append(global?"GLOBAL":groupOp?"GROUP":"LOCAL");
-        tmp.append(rollup?"ROLLUP":"DEDUP");
-        id.set(tmp.str());
     }
     virtual void stopInput()
     {
@@ -306,7 +301,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDedupRollupBaseActivity::start();
-        dataLinkStart(id, container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -493,7 +488,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDedupRollupBaseActivity::start();
-        dataLinkStart(id, container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -586,7 +581,7 @@ public:
         input = inputs.item(0);
         eoi = false;
         startInput(input);
-        dataLinkStart("ROLLUPGROUP", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

@@ -262,6 +262,22 @@ ESPStruct TpServices
     ESParray<ESPstruct TpSashaServer> TpSashaServers;
 };
 
+ESPStruct TpClusterNameType
+{
+    string Name;
+    string Type;
+    bool   IsDefault;
+};
+
+ESPrequest TpListTargetClustersRequest
+{
+};
+
+ESPresponse [exceptions_inline] TpListTargetClustersResponse
+{
+    ESParray<ESPstruct TpClusterNameType>   TargetClusters;
+};
+
 //  ===========================================================================
 ESPStruct TpTargetCluster
 {
@@ -271,6 +287,7 @@ ESPStruct TpTargetCluster
 
     ESParray<ESPstruct TpCluster>   TpClusters;
     ESParray<ESPstruct TpEclServer> TpEclCCServers;
+    [min_ver("1.19")] ESParray<ESPstruct TpEclServer> TpEclServers;
     ESParray<ESPstruct TpEclAgent>  TpEclAgents;
     [min_ver("1.16")] ESParray<ESPstruct TpEclScheduler>  TpEclSchedulers;
 };
@@ -544,7 +561,7 @@ ESPresponse [exceptions_inline,encode(0)] TpThorStatusResponse
     int AutoRefresh;
 };
 
-ESPservice [noforms, version("1.18"), default_client_version("1.18"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [noforms, version("1.19"), default_client_version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;
@@ -582,6 +599,7 @@ ESPservice [noforms, version("1.18"), default_client_version("1.18"), exceptions
     ESPmethod [resp_xsl_default("/esp/xslt/tplog.xslt")] TpLogFile(TpLogFileRequest, TpLogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/tplogdisplay.xslt")] TpLogFileDisplay(TpLogFileRequest, TpLogFileResponse);
     ESPmethod TpGetComponentFile(TpGetComponentFileRequest, TpGetComponentFileResponse);
+    ESPmethod TpListTargetClusters(TpListTargetClustersRequest, TpListTargetClustersResponse);
 
     ESPmethod SystemLog(SystemLogRequest, SystemLogResponse);
 };

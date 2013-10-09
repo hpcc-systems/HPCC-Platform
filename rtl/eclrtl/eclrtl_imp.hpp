@@ -47,6 +47,10 @@ public:
     inline char * & refstr()            { clear(); return *(char * *)&ptr; }
     inline UChar * & refustr()          { clear(); return *(UChar * *)&ptr; }
 
+    inline void * & refexdata()         { return *(void * *)&ptr; }
+    inline char * & refexstr()          { return *(char * *)&ptr; }
+    inline UChar * & refexustr()        { return *(UChar * *)&ptr; }
+
     inline char * & refextendstr()      { return *(char * *)&ptr; }
 
     inline void setown(void * _ptr)     { rtlFree(ptr); ptr = _ptr; }

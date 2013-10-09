@@ -58,7 +58,10 @@ define([
         templateString: template,
         baseClass: "LFDetailsWidget",
         borderContainer: null,
-        tabContainer: null,
+
+        copyDialog: null,
+        renameDialog: null,
+        desprayDialog: null,
         summaryWidget: null,
         contentWidget: null,
         sourceWidget: null,
@@ -73,6 +76,9 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.copyDialog = registry.byId(this.id + "CopyDialog");
+            this.renameDialog = registry.byId(this.id + "RenameDialog");
+            this.desprayDialog = registry.byId(this.id + "DesprayDialog");
             this.summaryWidget = registry.byId(this.id + "_Summary");
             this.contentWidget = registry.byId(this.id + "_Content");
             this.sourceWidget = registry.byId(this.id + "_Source");
@@ -117,40 +123,37 @@ define([
             }
         },
         _onCopyOk: function (event) {
-            var context = this;
-            this.logicalFile.copy({
-                request: domForm.toObject(this.id + "CopyDialog")
-            }).then(function (response) {
-                context._handleResponse("CopyResponse.result", response);
-            });
-            registry.byId(this.id + "CopyDropDown").closeDropDown();
-        },
-        _onCopyCancel: function (event) {
-            registry.byId(this.id + "CopyDropDown").closeDropDown();
+            if (this.copyDialog.validate()) {
+                var context = this;
+                this.logicalFile.copy({
+                    request: domForm.toObject(this.id + "CopyDialog")
+                }).then(function (response) {
+                    context._handleResponse("CopyResponse.result", response);
+                });
+                registry.byId(this.id + "CopyDropDown").closeDropDown();
+            }
         },
         _onRenameOk: function (event) {
-            var context = this;
-            this.logicalFile.rename({
-                request: domForm.toObject(this.id + "RenameDialog")
-            }).then(function (response) {
-                context._handleResponse("RenameResponse.wuid", response);
-            });
-            registry.byId(this.id + "RenameDropDown").closeDropDown();
-        },
-        _onRenameCancel: function (event) {
-            registry.byId(this.id + "RenameDropDown").closeDropDown();
+            if (this.renameDialog.validate()) {
+                var context = this;
+                this.logicalFile.rename({
+                    request: domForm.toObject(this.id + "RenameDialog")
+                }).then(function (response) {
+                    context._handleResponse("RenameResponse.wuid", response);
+                });
+                registry.byId(this.id + "RenameDropDown").closeDropDown();
+            }
         },
         _onDesprayOk: function (event) {
-            var context = this;
-            this.logicalFile.despray({
-                request: domForm.toObject(this.id + "DesprayDialog")
-            }).then(function (response) {
-                context._handleResponse("DesprayResponse.wuid", response);
-            });
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
-        },
-        _onDesprayCancel: function (event) {
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
+            if (this.desprayDialog.validate()) {
+                var context = this;
+                this.logicalFile.despray({
+                    request: domForm.toObject(this.id + "DesprayDialog")
+                }).then(function (response) {
+                    context._handleResponse("DesprayResponse.wuid", response);
+                });
+                registry.byId(this.id + "DesprayDropDown").closeDropDown();
+            }
         },
 
         //  Implementation  ---
@@ -189,7 +192,7 @@ define([
                 if (currSel.id == this.summaryWidget.id) {
                 } else if (currSel.id == this.contentWidget.id) {
                     this.contentWidget.init({
-                        result: this.logicalFile.result
+                        LogicalName: this.logicalFile.Name
                     });
                 } else if (currSel.id == this.sourceWidget.id) {
                     this.sourceWidget.init({

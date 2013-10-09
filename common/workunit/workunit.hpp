@@ -626,6 +626,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual unsigned queryContingencyFor() const = 0;
     virtual IStringVal & getPersistName(IStringVal & val) const = 0;
     virtual unsigned queryPersistWfid() const = 0;
+    virtual int queryPersistCopies() const = 0;  // 0 - unmangled name,  < 0 - use default, > 0 - max number
     virtual unsigned queryScheduleCountRemaining() const = 0;
     virtual WFState queryState() const = 0;
     virtual unsigned queryRetriesRemaining() const = 0;
@@ -657,7 +658,7 @@ interface IWorkflowItem : extends IRuntimeWorkflowItem
     virtual void setSchedulePriority(unsigned priority) = 0;
     virtual void setScheduleCount(unsigned count) = 0;
     virtual void addDependency(unsigned wfid) = 0;
-    virtual void setPersistInfo(const char * name, unsigned wfid) = 0;
+    virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies) = 0;
     virtual void syncRuntimeData(const IConstWorkflowItem & other) = 0;
     virtual void setScheduledWfid(unsigned wfid) = 0;
     virtual void setCluster(const char * cluster) = 0;
@@ -1027,7 +1028,6 @@ interface IConstWorkUnitIterator : extends IScmIterator
     virtual IConstWorkUnit & query() = 0;
 };
 
-
 //! IWUTimers
 
 interface IWUTimers : extends IInterface
@@ -1078,6 +1078,7 @@ enum WUSortField
     WUSFbatchinputfile = 18,
     WUSFbatchoutputfile = 19,
     WUSFtotalthortime = 20,
+    WUSFwildwuid = 21,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,
@@ -1085,6 +1086,29 @@ enum WUSortField
     WUSFwild = 2048
 };
 
+enum WUQuerySortField
+{
+    WUQSFId = 1,
+    WUQSFname = 2,
+    WUQSFwuid = 3,
+    WUQSFdll = 4,
+    WUQSFmemoryLimit = 5,
+    WUQSFmemoryLimitHi = 6,
+    WUQSFtimeLimit = 7,
+    WUQSFtimeLimitHi = 8,
+    WUQSFwarnTimeLimit = 9,
+    WUQSFwarnTimeLimitHi = 10,
+    WUQSFpriority = 11,
+    WUQSFpriorityHi = 12,
+    WUQSFQuerySet = 13,
+    WUQSFterm = 0,
+    WUQSFreverse = 256,
+    WUQSFnocase = 512,
+    WUQSFnumeric = 1024,
+    WUQSFwild = 2048
+};
+
+typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 
 interface IWorkUnitFactory : extends IInterface
@@ -1105,6 +1129,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf) = 0;
     virtual void descheduleAllWorkUnits() = 0;
     virtual bool deleteWorkUnitEx(const char * wuid) = 0;
+    virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total) = 0;
 };
 
 
@@ -1243,6 +1268,7 @@ extern WORKUNIT_API void deleteQuerySetQuery(const char *querySetName, const cha
 extern WORKUNIT_API const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, IStringVal &id);
 extern WORKUNIT_API void removeQuerySetAliasesFromNamedQuery(const char *querySetName, const char * id);
 extern WORKUNIT_API void setQueryCommentForNamedQuery(const char *querySetName, const char *id, const char *comment);
+extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unresolved, IWorkUnitFactory &workunitFactory, IConstWorkUnit &cw, IPropertyTree *queryset);
 
 extern WORKUNIT_API void associateLocalFile(IWUQuery * query, WUFileType type, const char * name, const char * description, unsigned crc);
 

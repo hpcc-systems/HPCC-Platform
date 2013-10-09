@@ -1132,7 +1132,7 @@ private:
         bool eosold = !readOld();
         while(true)
         {
-            int cmp;
+            int cmp = -1;
             unsigned skipcount = 0;
             size32_t doc = (size32_t)-1;
             while (!eosold&&(skipcount < CKeyDiff::MAX_SKIP))
@@ -1390,7 +1390,7 @@ private:
         keydiff.readHeaderVersionInfo();
         StringBuffer versionError;
         if(!keydiff.compatibleVersions(versionError))
-            throw MakeStringException(0, "%s", versionError.str());
+            throw MakeStringExceptionDirect(0, versionError.str());
         keydiff.readHeaderFileInfo();
         if(!oldIndex.get())
             oldIndex.set(keydiff.queryHeader().queryOldIndex());

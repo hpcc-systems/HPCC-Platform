@@ -395,7 +395,7 @@ IHqlExpression * projectCreateSetDataset(IHqlExpression * expr)
         if (select->getOperator() == no_select)
             targetField.set(select->queryChild(1));
         else
-            targetField.setown(createField(valueAtom, select->getType(), NULL));
+            targetField.setown(createField(valueId, select->getType(), NULL));
         IHqlExpression * newRecord = createRecord(targetField);
         assigns.append(*createAssign(createSelectExpr(getSelf(newRecord), LINK(targetField)), LINK(select)));
         IHqlExpression * newTransform = createValue(no_newtransform, makeTransformType(LINK(newRecord->queryRecordType())), assigns);
@@ -435,7 +435,7 @@ IHqlExpression * mapInternalFunctionParameters(IHqlExpression * expr)
             case type_unicode:
             case type_utf8:
             case type_varunicode:
-                if (!expr->hasProperty(constAtom))
+                if (!expr->hasAttribute(constAtom))
                     return appendOwnedOperand(expr, createAttribute(constAtom));
                 break;
             }

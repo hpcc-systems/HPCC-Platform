@@ -48,11 +48,13 @@ static IHqlExpression * cacheMatchGroupOrderSortlist;
 static IHqlExpression * cached_omitted_Attribute;
 static IHqlExpression * cacheAnyAttribute;
 static IHqlExpression * cacheAnyOrderSortlist;
+static CHqlMetaProperty * nullMetaProperty;
+static CHqlMetaProperty * nullGroupedMetaProperty;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    _ATOM groupedOrderAtom = createAtom("{group-order}");
-    _ATOM anyOrderAtom = createAtom("{any}");
+    IAtom * groupedOrderAtom = createAtom("{group-order}");
+    IAtom * anyOrderAtom = createAtom("{any}");
     cacheGroupedElement = createAttribute(groupedOrderAtom);
     cacheUnknownAttribute = createAttribute(unknownAtom);
     cacheIndeterminateAttribute = createAttribute(indeterminateAtom);
@@ -62,10 +64,15 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     cacheIndeterminateSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheIndeterminateAttribute));
     cacheMatchGroupOrderSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheGroupedElement));
     cacheAnyOrderSortlist = createValue(no_sortlist, makeSortListType(NULL), LINK(cacheAnyAttribute));
+    nullMetaProperty = new CHqlMetaProperty;
+    nullGroupedMetaProperty = new CHqlMetaProperty;
+    nullGroupedMetaProperty->meta.setUnknownGrouping();
     return true;
 }
 MODULE_EXIT()
 {
+    nullGroupedMetaProperty->Release();
+    nullMetaProperty->Release();
     cached_omitted_Attribute->Release();
     cacheAnyOrderSortlist->Release();
     cacheMatchGroupOrderSortlist->Release();
@@ -253,7 +260,221 @@ IHqlExpression * getMatchGroupOrderSortlist() { return LINK(cacheMatchGroupOrder
 IHqlExpression * getUnknownSortlist() { return LINK(cacheUnknownSortlist); }
 IHqlExpression * queryAnyOrderSortlist() { return cacheAnyOrderSortlist; }
 IHqlExpression * queryAnyDistributionAttribute() { return cacheAnyAttribute; }
+CHqlMetaProperty * queryNullMetaProperty(bool isGrouped) { return isGrouped ? nullGroupedMetaProperty : nullMetaProperty; }
 
+bool hasKnownSortlist(IHqlExpression * sortlist)
+{
+    if (!sortlist)
+        return false;
+
+    unsigned max = sortlist->numChildren();
+    if (max == 0)
+        return false;
+
+    return (sortlist->queryChild(max-1)->queryName() != unknownAtom);
+}
+
+
+bool CHqlMetaInfo::appearsToBeSorted(bool isLocal, bool ignoreGrouping)
+{
+    if (isLocal)
+        return localUngroupedSortOrder != NULL;
+    if (!ignoreGrouping && grouping)
+        return groupSortOrder != NULL;
+    return globalSortOrder != NULL;
+}
+
+void CHqlMetaInfo::clearGrouping()
+{
+    if (grouping)
+    {
+        grouping.clear();
+        groupSortOrder.clear();
+    }
+}
+
+void CHqlMetaInfo::ensureAppearsSorted(bool isLocal, bool ignoreGrouping)
+{
+    if (!appearsToBeSorted(isLocal, false))
+    {
+        IHqlExpression * unknownOrder = queryUnknownSortlist();
+        if (isGrouped())
+            applyGroupSort(unknownOrder);
+        else if (isLocal)
+            applyLocalSort(unknownOrder);
+        else
+        {
+            globalSortOrder.set(unknownOrder);
+            localUngroupedSortOrder.set(unknownOrder);
+        }
+    }
+}
+
+bool CHqlMetaInfo::hasKnownSortGroupDistribution(bool isLocal) const
+{
+    if (!isLocal)
+    {
+        if (!distribution || (distribution->queryName() == unknownAtom))
+            return false;
+        if (!hasKnownSortlist(globalSortOrder))
+            return false;
+    }
+    else
+    {
+        if (!hasKnownSortlist(localUngroupedSortOrder))
+            return false;
+    }
+    if (!grouping)
+        return true;
+    if (grouping->queryName() == unknownAtom)
+        return false;
+    if (!hasKnownSortlist(groupSortOrder))
+        return false;
+    return true;
+}
+
+bool CHqlMetaInfo::hasUsefulInformation() const
+{
+    return (distribution && containsActiveDataset(distribution)) ||
+           (globalSortOrder && containsActiveDataset(globalSortOrder)) ||
+           (localUngroupedSortOrder && containsActiveDataset(localUngroupedSortOrder)) ||
+           (grouping && containsActiveDataset(grouping)) ||
+           (groupSortOrder && containsActiveDataset(groupSortOrder));
+}
+
+bool CHqlMetaInfo::matches(const CHqlMetaInfo & other) const
+{
+    return (distribution == other.distribution) &&
+           (globalSortOrder == other.globalSortOrder) &&
+           (localUngroupedSortOrder == other.localUngroupedSortOrder) &&
+           (grouping == other.grouping) &&
+           (groupSortOrder == other.groupSortOrder);
+}
+
+void CHqlMetaInfo::preserveGrouping(IHqlExpression * dataset)
+{
+    if (::isGrouped(dataset))
+        setUnknownGrouping();
+    else
+        grouping.clear();
+}
+
+void CHqlMetaInfo::removeAllAndUngroup(bool isLocal)
+{
+    if (!isLocal)
+        distribution.clear();
+    globalSortOrder.clear();
+    localUngroupedSortOrder.clear();
+    clearGrouping();
+}
+
+void CHqlMetaInfo::removeAllKeepGrouping()
+{
+    distribution.clear();
+    globalSortOrder.clear();
+    localUngroupedSortOrder.clear();
+    if (grouping)
+    {
+        grouping.setown(getUnknownSortlist());
+        groupSortOrder.clear();
+    }
+}
+
+void CHqlMetaInfo::removeAllSortOrders()
+{
+    globalSortOrder.clear();
+    localUngroupedSortOrder.clear();
+    groupSortOrder.clear();
+}
+
+void CHqlMetaInfo::removeDistribution()
+{
+    distribution.clear();
+}
+
+void CHqlMetaInfo::set(const CHqlMetaInfo & other)
+{
+    distribution.set(other.distribution);
+    globalSortOrder.set(other.globalSortOrder);
+    localUngroupedSortOrder.set(other.localUngroupedSortOrder);
+    grouping.set(other.grouping);
+    groupSortOrder.set(other.groupSortOrder);
+}
+
+void CHqlMetaInfo::setMatchesAny()
+{
+    distribution.set(queryAnyDistributionAttribute());
+    globalSortOrder.set(queryAnyOrderSortlist());
+    localUngroupedSortOrder.set(queryAnyOrderSortlist());
+}
+
+void CHqlMetaInfo::setUnknownDistribution()
+{
+    distribution.setown(getUnknownAttribute());
+}
+
+
+void CHqlMetaInfo::setUnknownGrouping()
+{
+    grouping.setown(getUnknownSortlist());
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class JoinEqualityMapper
+{
+public:
+    inline JoinEqualityMapper(IHqlExpression * joinExpr)
+    {
+        left = joinExpr->queryChild(0);
+        right = joinExpr->queryChild(1);
+        selSeq = querySelSeq(joinExpr);
+    }
+
+    IHqlExpression * mapEqualities(IHqlExpression * expr, IHqlExpression * cond)
+    {
+        if (cond->getOperator() == no_assertkeyed)
+            cond = cond->queryChild(0);
+
+        if (cond->getOperator() == no_and)
+        {
+            OwnedHqlExpr mapped = mapEqualities(expr, cond->queryChild(0));
+            return mapEqualities(mapped, cond->queryChild(1));
+        }
+        else if (cond->getOperator() == no_eq)
+        {
+            IHqlExpression * lhs = cond->queryChild(0);
+            IHqlExpression * rhs = cond->queryChild(1);
+            if (lhs->queryType() == rhs->queryType())
+            {
+                IHqlExpression * leftSelect = queryDatasetCursor(lhs);
+                IHqlExpression * rightSelect = queryDatasetCursor(rhs);
+                if (isLeft(leftSelect) && isRight(rightSelect))
+                    return replaceExpression(expr, rhs, lhs);
+                if (isRight(leftSelect) && isLeft(rightSelect))
+                    return replaceExpression(expr, lhs, rhs);
+            }
+        }
+        return LINK(expr);
+    }
+
+protected:
+    inline bool isMatch(IHqlExpression * expr, node_operator op, IHqlExpression * side)
+    {
+        return (expr->getOperator() == op) &&
+            (expr->queryRecord()->queryBody() == side->queryRecord()->queryBody()) &&
+            (expr->queryChild(1) == selSeq);
+    }
+    inline bool isLeft(IHqlExpression * expr) { return isMatch(expr, no_left, left); }
+    inline bool isRight(IHqlExpression * expr) { return isMatch(expr, no_right, right); }
+
+protected:
+    IHqlExpression * left;
+    IHqlExpression * right;
+    IHqlExpression * selSeq;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
 
 inline bool matchesGroupOrder(IHqlExpression * expr) { return expr == cacheMatchGroupOrderSortlist; }
 
@@ -483,23 +704,60 @@ bool isPersistDistribution(IHqlExpression * distribution)
     return isKnownDistribution(distribution) && (distribution->getOperator() == no_bxor);
 }
 
-bool isSortedDistribution(ITypeInfo * type)
+void extractMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
 {
-    return isSortedDistribution(queryDistribution(type));
+    CHqlMetaProperty * match = queryMetaProperty(expr);
+    meta.set(match->meta);
 }
 
-//What is the actual local sort order at the moment - ignoring any grouping.
-//?Rename quryLocalSortInfo to queryLocalNonGroupSortInfo????
-IHqlExpression * getLocalSortOrder(ITypeInfo * type)
+IHqlExpression * queryGrouping(IHqlExpression * expr)
 {
-    IHqlExpression * localOrder = queryLocalUngroupedSortOrder(type);
-    if (!isGrouped(type))
+    if (!expr->isDataset())
+        return NULL;
+    return queryMetaProperty(expr)->meta.grouping;
+}
+
+IHqlExpression * queryDistribution(IHqlExpression * expr)
+{
+    if (!expr->isDataset())
+        return NULL;
+    return queryMetaProperty(expr)->meta.distribution;
+}
+
+IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr)
+{
+    if (!expr->isDataset())
+        return NULL;
+    return queryMetaProperty(expr)->meta.globalSortOrder;
+}
+
+IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr)
+{
+    if (!expr->isDataset())
+        return NULL;
+    return queryMetaProperty(expr)->meta.localUngroupedSortOrder;
+}
+
+IHqlExpression * queryGroupSortOrder(IHqlExpression * expr)
+{
+    if (!expr->isDataset())
+        return NULL;
+    return queryMetaProperty(expr)->meta.groupSortOrder;
+}
+
+
+
+//What is the actual local sort order at the moment - ignoring any grouping.
+IHqlExpression * CHqlMetaInfo::getLocalSortOrder() const
+{
+    IHqlExpression * localOrder = localUngroupedSortOrder;
+    if (!isGrouped())
         return LINK(localOrder);
 
     if (!localOrder)
         return NULL;
 
-    IHqlExpression * groupOrder = queryGroupSortOrder(type);
+    IHqlExpression * groupOrder = groupSortOrder;
     if (matchesGroupOrder(localOrder))
         return LINK(groupOrder);
 
@@ -511,10 +769,15 @@ IHqlExpression * getLocalSortOrder(ITypeInfo * type)
             components.pop();
 
         if (groupOrder)
+        {
             unwindChildren(components, groupOrder);
+            if (hasUnknownComponent(components))
+                components.pop();
+        }
     }
     else
         components.pop();
+
     if (components.ordinality())
     {
         removeDuplicates(components);
@@ -525,17 +788,14 @@ IHqlExpression * getLocalSortOrder(ITypeInfo * type)
 
 inline IHqlExpression * getLocalSortOrder(IHqlExpression * expr)
 {
-    return getLocalSortOrder(expr->queryType());
-}
-
-inline IHqlExpression * getGlobalSortOrder(ITypeInfo * type)
-{
-    return LINK(queryGlobalSortOrder(type));
+    CHqlMetaProperty * metaProp = queryMetaProperty(expr);
+    return metaProp->meta.getLocalSortOrder();
 }
 
 inline IHqlExpression * getGlobalSortOrder(IHqlExpression * expr)
 {
-    return LINK(queryGlobalSortOrder(expr));
+    CHqlMetaProperty * metaProp = queryMetaProperty(expr);
+    return LINK(metaProp->meta.globalSortOrder);
 }
 //---------------------------------------------------------------------------------------------
 // Helper functions for handling field projection
@@ -588,6 +848,9 @@ extern HQL_API IHqlExpression * mapSortOrder(IHqlExpression * order, TableProjec
         newComponents.append(*mapped.getClear());
     }
     
+    if (newComponents.ordinality() == 0)
+        return NULL;
+
     HqlExprArray normalizedComponents;
     normalizeComponents(normalizedComponents, newComponents);
     //?return NULL if no elements??
@@ -624,15 +887,14 @@ extern HQL_API IHqlExpression * mapGroup(IHqlExpression * grouping, TableProject
 // They should be optimized to do the minimal work depending on whether the input is grouped.
 // any parameters should be mapped so they only refer to active tables
 
-ITypeInfo * getTypeUngroup(ITypeInfo * prev)
+void CHqlMetaInfo::removeGroup()
 {
-    if (!isGrouped(prev))
-        return LINK(prev);
-    IHqlExpression * distribution = queryDistribution(prev);
-    IHqlExpression * globalOrder = queryGlobalSortOrder(prev);
-    OwnedHqlExpr newLocalOrder = getLocalSortOrder(prev);
-    ITypeInfo * rowType = queryRowType(prev);
-    return makeTableType(LINK(rowType), LINK(distribution), LINK(globalOrder), newLocalOrder.getClear());
+    if (grouping)
+    {
+        localUngroupedSortOrder.setown(getLocalSortOrder());
+        grouping.clear();
+        groupSortOrder.clear();
+    }
 }
 
 
@@ -666,14 +928,13 @@ static bool groupByWithinSortOrder(IHqlExpression * groupBy, IHqlExpression * or
 }
 
 //NB: This does not handle ALL groups that is handled in createDataset()
-ITypeInfo * getTypeGrouped(ITypeInfo * prev, IHqlExpression * grouping, bool isLocal)
+void CHqlMetaInfo::applyGroupBy(IHqlExpression * groupBy, bool isLocal)
 {
-    OwnedITypeInfo prevUngrouped = getTypeUngroup(prev);
-    OwnedHqlExpr newGrouping = normalizeSortlist(grouping);
+    removeGroup();
 
-    IHqlExpression * distribution = isLocal ? queryDistribution(prevUngrouped) : NULL;
-    IHqlExpression * globalOrder = queryGlobalSortOrder(prevUngrouped);
-    IHqlExpression * localOrder = queryLocalUngroupedSortOrder(prevUngrouped);
+    OwnedHqlExpr newGrouping = normalizeSortlist(groupBy);
+
+    IHqlExpression * localOrder = localUngroupedSortOrder;
     OwnedHqlExpr newLocalOrder;
     OwnedHqlExpr newGroupOrder;
 
@@ -746,54 +1007,39 @@ ITypeInfo * getTypeGrouped(ITypeInfo * prev, IHqlExpression * grouping, bool isL
         }
     }
 
-    ITypeInfo * rowType = queryRowType(prevUngrouped);
-    ITypeInfo * tableType = makeTableType(LINK(rowType), LINK(distribution), LINK(globalOrder), newLocalOrder.getClear());
-    return makeGroupedTableType(tableType, newGrouping.getClear(), newGroupOrder.getClear());
+    if (!isLocal)
+        distribution.clear();
+    localUngroupedSortOrder.setown(newLocalOrder.getClear());
+    grouping.setown(newGrouping.getClear());
+    groupSortOrder.setown(newGroupOrder.getClear());
 }
 
-//NB: This does not handle ALL groups that is handled in createDataset()
-ITypeInfo * getTypeLoseDistributionKeepOrder(ITypeInfo * prev)
-{
-    OwnedITypeInfo prevUngrouped = getTypeUngroup(prev);
-
-    IHqlExpression * distribution = NULL;
-    IHqlExpression * globalOrder = queryGlobalSortOrder(prevUngrouped);
-
-    //If records are moved from one node to the next, the global order will be preserved, and the local order will
-    //only be valid if it matches the global order.
-
-    ITypeInfo * rowType = queryRowType(prevUngrouped);
-    return makeTableType(LINK(rowType), LINK(distribution), LINK(globalOrder), LINK(globalOrder));
-}
-
-ITypeInfo * getTypeGlobalSort(ITypeInfo * prev, IHqlExpression * sortOrder)
+void CHqlMetaInfo::applyGlobalSort(IHqlExpression * sortOrder)
 {
     OwnedHqlExpr newSortOrder = normalizeSortlist(sortOrder);
-    OwnedHqlExpr distribution = createExprAttribute(sortedAtom, LINK(newSortOrder));    //, createUniqueId());
-    ITypeInfo * rowType = queryRowType(prev);
-    return makeTableType(LINK(rowType), distribution.getClear(), LINK(newSortOrder), LINK(newSortOrder));
+    distribution.setown(createExprAttribute(sortedAtom, LINK(newSortOrder)));    //, createUniqueId());
+    globalSortOrder.set(newSortOrder);
+    localUngroupedSortOrder.set(newSortOrder);
 }
 
-ITypeInfo * getTypeLocalSort(ITypeInfo * prev, IHqlExpression * sortOrder)
+
+void CHqlMetaInfo::applyLocalSort(IHqlExpression * sortOrder)
 {
-    IHqlExpression * distribution = queryDistribution(prev);
-    IHqlExpression * globalSortOrder = queryGlobalSortOrder(prev);
-    OwnedHqlExpr localSortOrder = normalizeSortlist(sortOrder);
+    clearGrouping();
+    localUngroupedSortOrder.setown(normalizeSortlist(sortOrder));
     //The global sort order is maintained as the leading components that match.
-    OwnedHqlExpr newGlobalOrder = getIntersectingSortlist(globalSortOrder, localSortOrder, NULL);
-    ITypeInfo * rowType = queryRowType(prev);
-    return makeTableType(LINK(rowType), LINK(distribution), newGlobalOrder.getClear(), localSortOrder.getClear());
+    globalSortOrder.setown(getIntersectingSortlist(globalSortOrder, localUngroupedSortOrder, NULL));
 }
 
-ITypeInfo * getTypeGroupSort(ITypeInfo * prev, IHqlExpression * sortOrder)
+void CHqlMetaInfo::applyGroupSort(IHqlExpression * sortOrder)
 {
-    assertex(isGrouped(prev));
+    assertex(isGrouped());
     OwnedHqlExpr groupedOrder = normalizeSortlist(sortOrder);
-    if (groupedOrder == queryGroupSortOrder(prev))
-        return LINK(prev);
+//    if (groupedOrder == queryGroupSortOrder(prev))
+//        return LINK(prev);
 
-    IHqlExpression * globalOrder = queryGlobalSortOrder(prev);
-    IHqlExpression * localUngroupedOrder = queryLocalUngroupedSortOrder(prev);
+    IHqlExpression * globalOrder = globalSortOrder;
+    IHqlExpression * localUngroupedOrder = localUngroupedSortOrder;
     //Group sort => make sure we no longer track it as the localsort
     OwnedHqlExpr newLocalUngroupedOrder;
     if (localUngroupedOrder && !matchesGroupOrder(localUngroupedOrder))
@@ -811,64 +1057,67 @@ ITypeInfo * getTypeGroupSort(ITypeInfo * prev, IHqlExpression * sortOrder)
     }
 
     OwnedHqlExpr newGlobalOrder = getModifiedGlobalOrder(globalOrder, newLocalUngroupedOrder, groupedOrder);
-    ITypeInfo * prevTable = prev->queryChildType();
-    ITypeInfo * tableType;
-    if ((globalOrder != newGlobalOrder) || (localUngroupedOrder != newLocalUngroupedOrder))
-    {
-        ITypeInfo * rowType = queryRowType(prevTable);
-        tableType = makeTableType(LINK(rowType), LINK(queryDistribution(prev)), newGlobalOrder.getClear(), LINK(newLocalUngroupedOrder));
-    }
-    else
-        tableType = LINK(prevTable);
-
-    return makeGroupedTableType(tableType, LINK(queryGrouping(prev)), groupedOrder.getClear());
+    globalSortOrder.setown(newGlobalOrder.getClear());
+    localUngroupedSortOrder.setown(newLocalUngroupedOrder.getClear());
+    groupSortOrder.setown(groupedOrder.getClear());
 }
 
-ITypeInfo * getTypeDistribute(ITypeInfo * prev, IHqlExpression * distribution, IHqlExpression * optMergeOrder)
+
+void CHqlMetaInfo::removeActiveSort()
 {
-    OwnedHqlExpr newDistribution = normalizeDistribution(distribution);
-    OwnedHqlExpr order = optMergeOrder ? normalizeSortlist(optMergeOrder) : NULL;
-    ITypeInfo * rowType = queryRowType(prev);
-    //Theoretically a keyed distribute may create a global sort order if merging also specified.
-    return makeTableType(LINK(rowType), newDistribution.getClear(), NULL, order.getClear());
+    if (isGrouped())
+        applyGroupSort(NULL);
+    else
+        removeAllSortOrders();
 }
 
+void CHqlMetaInfo::applyDistribute(IHqlExpression * newDistribution, IHqlExpression * optMergeOrder)
+{
+    distribution.setown(normalizeDistribution(newDistribution));
+    localUngroupedSortOrder.setown(optMergeOrder ? normalizeSortlist(optMergeOrder) : NULL);
+    //Theoretically a keyed distribute may create a global sort order if merging also specified.
+}
 
 //Used when there is an alternative - either left or right.
 //As long as the identical cases fall out fairly well it is probably not worth spending lots of time
 //getting it very accurate.
-ITypeInfo * getTypeIntersection(ITypeInfo * leftType, ITypeInfo * rightType)
+void CHqlMetaInfo::getIntersection(const CHqlMetaInfo & rightMeta)
 {
-    if (leftType == rightType)
-        return LINK(leftType);
+    IHqlExpression * rightDist = rightMeta.distribution;
+    if ((distribution == rightDist) || (rightDist == queryAnyDistributionAttribute()))
+    {
+        //keep existing distribution
+    }
+    else if (distribution == queryAnyDistributionAttribute())
+        distribution.set(rightDist);
+    else if (distribution && rightDist)
+        distribution.set(queryUnknownAttribute());
+    else
+        distribution.clear();
 
-    IHqlExpression * leftDist = queryDistribution(leftType);
-    IHqlExpression * rightDist = queryDistribution(rightType);
-    OwnedHqlExpr newDistributeInfo;
-    if ((leftDist == rightDist) || (rightDist == queryAnyDistributionAttribute()))
-        newDistributeInfo.set(leftDist);
-    else if (leftDist == queryAnyDistributionAttribute())
-        newDistributeInfo.set(rightDist);
-    else if (leftDist && rightDist)
-        newDistributeInfo.set(queryUnknownAttribute());
+    globalSortOrder.setown(getIntersectingSortlist(globalSortOrder, rightMeta.globalSortOrder, NULL));
 
-    OwnedHqlExpr globalOrder = getIntersectingSortlist(queryGlobalSortOrder(leftType), queryGlobalSortOrder(rightType), NULL);
-    IHqlExpression * leftLocalOrder = queryLocalUngroupedSortOrder(leftType);
-    IHqlExpression * rightLocalOrder = queryLocalUngroupedSortOrder(rightType);
-    IHqlExpression * leftGrouping = queryGrouping(leftType);
-    IHqlExpression * rightGrouping = queryGrouping(rightType);
-    OwnedHqlExpr localOrder;
-    OwnedHqlExpr grouping = (leftGrouping || rightGrouping) ? getUnknownSortlist() : NULL;
+    IHqlExpression * leftLocalOrder = localUngroupedSortOrder;
+    IHqlExpression * rightLocalOrder = rightMeta.localUngroupedSortOrder;
+    IHqlExpression * leftGrouping = grouping;
+    IHqlExpression * rightGrouping = rightMeta.grouping;
+    if (leftGrouping == queryAnyOrderSortlist())
+        leftGrouping = rightGrouping;
+    else if (rightGrouping == queryAnyOrderSortlist())
+        rightGrouping = leftGrouping;
+
+    OwnedHqlExpr newLocalOrder;
+    OwnedHqlExpr newGrouping = (leftGrouping || rightGrouping) ? getUnknownSortlist() : NULL;
     if (leftGrouping == rightGrouping)
-        grouping.set(leftGrouping);
+        newGrouping.set(leftGrouping);
 
-    OwnedHqlExpr groupOrder;
+    OwnedHqlExpr newGroupSortOrder;
     if (leftLocalOrder == rightLocalOrder)
     {
-        localOrder.set(leftLocalOrder);
+        newLocalOrder.set(leftLocalOrder);
         if (leftGrouping == rightGrouping)
         {
-            groupOrder.setown(getIntersectingSortlist(queryGroupSortOrder(leftType), queryGroupSortOrder(rightType), NULL));
+            newGroupSortOrder.setown(getIntersectingSortlist(groupSortOrder, rightMeta.groupSortOrder, NULL));
         }
         else
         {
@@ -880,149 +1129,57 @@ ITypeInfo * getTypeIntersection(ITypeInfo * leftType, ITypeInfo * rightType)
         //intersect local order - not worth doing anything else
         if (!matchesGroupOrder(leftLocalOrder) && !matchesGroupOrder(rightLocalOrder))
         {
-            IHqlExpression * extraAttr = grouping ? queryUnknownAttribute() : NULL;
-            localOrder.setown(getIntersectingSortlist(leftLocalOrder, rightLocalOrder, extraAttr));
+            IHqlExpression * extraAttr = newGrouping ? queryUnknownAttribute() : NULL;
+            newLocalOrder.setown(getIntersectingSortlist(leftLocalOrder, rightLocalOrder, extraAttr));
         }
     }
 
-    ITypeInfo * rowType = queryRowType(leftType);
-    ITypeInfo * tableType = makeTableType(LINK(rowType), newDistributeInfo.getClear(), globalOrder.getClear(), localOrder.getClear());
-    if (!grouping)
-        return tableType;
-    return makeGroupedTableType(tableType, grouping.getClear(), groupOrder.getClear());
+    //MORE: This could be cleaned up
+    localUngroupedSortOrder.setown(newLocalOrder.getClear());
+    grouping.setown(newGrouping.getClear());
+    groupSortOrder.setown(newGroupSortOrder.getClear());
 }
-
 
 //Distribute is all or nothing
 //Global sort retains as main as significant
 //Local sort needs a trailing unknown marker if dataset is grouped
 //Grouping retains attributes in place of grouping elements
 //Group sort retains as much as possible.
-extern HQL_API ITypeInfo * getTypeProject(ITypeInfo * prev, IHqlExpression * newRecord, TableProjectMapper & mapper)
+
+void CHqlMetaInfo::applyProject(TableProjectMapper & mapper)
 {
-    IHqlExpression * distribution = queryDistribution(prev);
-    IHqlExpression * globalOrder = queryGlobalSortOrder(prev);
-    IHqlExpression * localOrder = queryLocalUngroupedSortOrder(prev);
-    IHqlExpression * grouping = queryGrouping(prev);
-    OwnedHqlExpr newDistribution = mapDistribution(distribution, mapper);
-    OwnedHqlExpr newGlobalOrder = mapSortOrder(globalOrder, mapper, false);
-    OwnedHqlExpr newLocalOrder = mapSortOrder(localOrder, mapper, (grouping != NULL));
-    OwnedHqlExpr newGrouping;
-    OwnedHqlExpr newGroupOrder;
+    distribution.setown(mapDistribution(distribution, mapper));
+    globalSortOrder.setown(mapSortOrder(globalSortOrder, mapper, false));
+    localUngroupedSortOrder.setown(mapSortOrder(localUngroupedSortOrder, mapper, (grouping != NULL)));
     if (grouping)
     {
-        newGrouping.setown(mapGroup(grouping, mapper));
-        newGroupOrder.setown(mapSortOrder(queryGroupSortOrder(prev), mapper, false));
+        grouping.setown(mapGroup(grouping, mapper));
+        groupSortOrder.setown(mapSortOrder(groupSortOrder, mapper, false));
     }
-
-    ITypeInfo * tableType = makeTableType(makeRowType(createRecordType(newRecord)), newDistribution.getClear(), newGlobalOrder.getClear(), newLocalOrder.getClear());
-    if (!grouping)
-        return tableType;
-    return makeGroupedTableType(tableType, newGrouping.getClear(), newGroupOrder.getClear());
 }
 
-
-// preserve grouping, but that's it.
-extern HQL_API ITypeInfo * getTypeCannotProject(ITypeInfo * prev, IHqlExpression * newRecord)
+void extractMetaFromMetaAttr(CHqlMetaInfo & meta, IHqlExpression * attr, unsigned firstChild)
 {
-    ITypeInfo * type = makeTableType(makeRowType(createRecordType(newRecord)), NULL, NULL, NULL);
-    IHqlExpression * grouping = queryGrouping(prev);
-    if (grouping)
-        type = makeGroupedTableType(type, getUnknownSortlist(), NULL);
-    return type;
+    meta.distribution.set(queryRemoveOmitted(attr->queryChild(firstChild+0)));
+    meta.globalSortOrder.set(queryRemoveOmitted(attr->queryChild(firstChild+1)));
+    meta.localUngroupedSortOrder.set(queryRemoveOmitted(attr->queryChild(firstChild+2)));
+    meta.grouping.set(queryRemoveOmitted(attr->queryChild(firstChild+3)));
+    meta.groupSortOrder.set(queryRemoveOmitted(attr->queryChild(firstChild+4)));
 }
 
-
-ITypeInfo * getTypeRemoveDistribution(ITypeInfo * prev)
+void CHqlMetaInfo::applySubSort(IHqlExpression * groupBy, IHqlExpression * sortOrder, bool isLocal)
 {
-    ITypeInfo * childType = prev->queryChildType();
-    if (isGrouped(prev))
-    {
-        OwnedITypeInfo newChild = getTypeRemoveDistribution(childType);
-        return replaceChildType(prev, newChild);
-    }
-
-    IHqlExpression * globalSort = queryGlobalSortOrder(prev);
-    OwnedHqlExpr localSort =  getLocalSortOrder(prev);
-    ITypeInfo * rowType = queryRowType(prev);
-    return makeTableType(LINK(rowType), NULL, LINK(globalSort), localSort.getClear());
+    applyGroupBy(groupBy, isLocal);
+    applyGroupSort(sortOrder);
+    removeGroup();
 }
-
-ITypeInfo * getTypeUnknownDistribution(ITypeInfo * prev)
-{
-    ITypeInfo * childType = prev->queryChildType();
-    if (isGrouped(prev))
-    {
-        OwnedITypeInfo newChild = getTypeUnknownDistribution(childType);
-        return replaceChildType(prev, newChild);
-    }
-
-    IHqlExpression * globalSort = queryGlobalSortOrder(prev);
-    OwnedHqlExpr localSort =  getLocalSortOrder(prev);
-    ITypeInfo * rowType = queryRowType(prev);
-    return makeTableType(LINK(rowType), getUnknownAttribute(), LINK(globalSort), localSort.getClear());
-}
-
-ITypeInfo * getTypeRemoveAllSortOrders(ITypeInfo * prev)
-{
-    IHqlExpression * grouping = queryGrouping(prev);
-    ITypeInfo * childType = prev->queryChildType();
-    if (grouping)
-    {
-        OwnedITypeInfo newChild = getTypeRemoveAllSortOrders(childType);
-        return makeGroupedTableType(newChild.getClear(), LINK(grouping), NULL);
-    }
-
-    IHqlExpression * distribution = queryDistribution(prev);
-    return makeTableType(LINK(childType), LINK(distribution), NULL, NULL);
-}
-
-
-ITypeInfo * getTypeRemoveActiveSort(ITypeInfo * prev)
-{
-    IHqlExpression * grouping = queryGrouping(prev);
-    if (grouping)
-        return getTypeGroupSort(prev, NULL);
-
-    IHqlExpression * distribution = queryDistribution(prev);
-    ITypeInfo * childType = prev->queryChildType();
-    return makeTableType(LINK(childType), LINK(distribution), NULL, NULL);
-}
-
-
-ITypeInfo * getTypeFromMeta(IHqlExpression * record, IHqlExpression * meta, unsigned firstChild)
-{
-    IHqlExpression * distribution = queryRemoveOmitted(meta->queryChild(firstChild+0));
-    IHqlExpression * globalSort = queryRemoveOmitted(meta->queryChild(firstChild+1));
-    IHqlExpression * localSort = queryRemoveOmitted(meta->queryChild(firstChild+2));
-    IHqlExpression * grouping = queryRemoveOmitted(meta->queryChild(firstChild+3));
-    IHqlExpression * groupSort = queryRemoveOmitted(meta->queryChild(firstChild+4));
-    ITypeInfo * recordType = createRecordType(record);
-    Owned<ITypeInfo> type = makeTableType(makeRowType(recordType), LINK(distribution), LINK(globalSort), LINK(localSort));
-    if (!grouping)
-        return type.getClear();
-
-    return makeGroupedTableType(type.getClear(), LINK(grouping), LINK(groupSort));
-}
-
-
-extern HQL_API ITypeInfo * getTypeSubSort(ITypeInfo * prevType, IHqlExpression * grouping, IHqlExpression * sortOrder, bool isLocal)
-{
-    Owned<ITypeInfo> groupedType = getTypeGrouped(prevType, grouping, isLocal);
-    Owned<ITypeInfo> sortedType = getTypeGroupSort(groupedType, sortOrder);
-    return getTypeUngroup(sortedType);
-}
-
 
 //---------------------------------------------------------------------------------------------
 
-bool appearsToBeSorted(ITypeInfo * type, bool isLocal, bool ignoreGrouping)
+bool appearsToBeSorted(IHqlExpression * expr, bool isLocal, bool ignoreGrouping)
 {
-    if (isLocal)
-        return queryLocalUngroupedSortOrder(type) != NULL;
-    if (!ignoreGrouping && isGrouped(type))
-        return queryGroupSortOrder(type) != NULL;
-    return queryGlobalSortOrder(type) != NULL;
+    CHqlMetaProperty * metaProp = queryMetaProperty(expr);
+    return metaProp->meta.appearsToBeSorted(isLocal, ignoreGrouping);
 }
 
 //---------------------------------------------------------------------------------------------
@@ -1111,7 +1268,7 @@ static bool includesFieldsOutsideGrouping(IHqlExpression * distribution, const H
     case no_constant:
         return false;
     case no_trim:
-        if (distribution->hasProperty(leftAtom) || distribution->hasProperty(allAtom))
+        if (distribution->hasAttribute(leftAtom) || distribution->hasAttribute(allAtom))
             return false;
         return includesFieldsOutsideGrouping(distribution->queryChild(0), groups);
     case no_attr:
@@ -1131,8 +1288,7 @@ static bool includesFieldsOutsideGrouping(IHqlExpression * distribution, const H
 
 bool isPartitionedForGroup(IHqlExpression * table, IHqlExpression *grouping, bool isGroupAll)
 {
-    ITypeInfo * type = table->queryType();
-    IHqlExpression * distribution = queryDistribution(type);
+    IHqlExpression * distribution = queryDistribution(table);
     if (!isKnownDistribution(distribution) || !distribution->isPure())
         return false;
 
@@ -1259,7 +1415,7 @@ bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLo
 
 
 //Elements in the exprarray have already been mapped;
-bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+bool isAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
 {
     HqlExprArray components;
     normalizeComponents(components, newSort);
@@ -1311,7 +1467,7 @@ static unsigned numElementsAlreadySorted(IHqlExpression * dataset, IHqlExpressio
 }
 
 //Elements in the exprarray have already been mapped;
-static unsigned numElementsAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+static unsigned numElementsAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
 {
     HqlExprArray components;
     normalizeComponents(components, newSort);
@@ -1325,7 +1481,7 @@ bool isWorthShuffling(IHqlExpression * dataset, IHqlExpression * order, bool isL
     return numElementsAlreadySorted(dataset, order, isLocal, ignoreGrouping) != 0;
 }
 
-bool isWorthShuffling(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+bool isWorthShuffling(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
 {
     //MORE: Should this look at the cardinality of the already-sorted fields, and not transform if below a certain threshold?
     return numElementsAlreadySorted(dataset, newSort, isLocal, ignoreGrouping) != 0;
@@ -1341,7 +1497,7 @@ IHqlExpression * convertSubSortToGroupedSort(IHqlExpression * expr)
     IHqlExpression * newOrder = expr->queryChild(1);
     IHqlExpression * grouping = expr->queryChild(2);
 
-    assertex(!isGrouped(dataset) || expr->hasProperty(globalAtom));
+    assertex(!isGrouped(dataset) || expr->hasAttribute(globalAtom));
     OwnedHqlExpr attr = isLocalActivity(expr) ? createLocalAttribute() : NULL;
     OwnedHqlExpr grouped = createDatasetF(no_group, LINK(dataset), LINK(grouping), LINK(attr), NULL);
 
@@ -1370,8 +1526,10 @@ static IHqlExpression * createSubSorted(IHqlExpression * dataset, IHqlExpression
     OwnedHqlExpr alreadySorted = createValueSafe(no_sortlist, makeSortListType(NULL), components, 0, sortedElements);
     OwnedHqlExpr newOrder = createValueSafe(no_sortlist, makeSortListType(NULL), components, sortedElements, components.ordinality());
 
+    const bool removeGrouping = ignoreGrouping && isGrouped(dataset);
     OwnedHqlExpr attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
-    OwnedHqlExpr subsort = createDatasetF(no_subsort, LINK(dataset), LINK(newOrder), LINK(alreadySorted), LINK(attr), NULL);
+    OwnedHqlExpr input = removeGrouping ? createDataset(no_group, LINK(dataset)) : LINK(dataset);
+    OwnedHqlExpr subsort = createDatasetF(no_subsort, LINK(input), LINK(newOrder), LINK(alreadySorted), LINK(attr), NULL);
     //Grouped subsorts never generated, global subsorts (if generated) get converted to a global group
     if (!isLocal && !alwaysLocal)
         subsort.setown(convertSubSortToGroupedSort(subsort));
@@ -1380,7 +1538,7 @@ static IHqlExpression * createSubSorted(IHqlExpression * dataset, IHqlExpression
     return subsort.getClear();
 }
 
-IHqlExpression * getSubSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
+IHqlExpression * getSubSort(IHqlExpression * dataset, const HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
 {
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return NULL;
@@ -1460,6 +1618,10 @@ bool matchDedupDistribution(IHqlExpression * distn, const HqlExprArray & equalit
     return !includesFieldsOutsideGrouping(distn, cloned);
 }
 
+bool matchesAnyDistribution(IHqlExpression * distn)
+{
+    return distn == queryAnyDistributionAttribute();
+}
 
 //---------------------------------------------------------------------------
 
@@ -1469,7 +1631,7 @@ bool matchDedupDistribution(IHqlExpression * distn, const HqlExprArray & equalit
  b) All references to fields from the dataset must match the join element
 */
 
-static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpression * distribute2, HqlExprArray & sort1, HqlExprArray & sort2)
+static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpression * distribute2, const HqlExprArray & sort1, const HqlExprArray & sort2)
 {
     unsigned match1 = sort1.find(*distribute1->queryBody());
     unsigned match2 = sort2.find(*distribute2->queryBody());
@@ -1506,6 +1668,73 @@ static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpressi
 }
 
 
+//Convert a function of fields referenced in oldSort, to fields referenced in newSort.
+IHqlExpression * createMatchingDistribution(IHqlExpression * expr, const HqlExprArray & oldSort, const HqlExprArray & newSort)
+{
+    unsigned match = oldSort.find(*expr->queryBody());
+    if (match != NotFound)
+        return LINK(&newSort.item(match));
+
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_hash:
+    case no_hash32:
+    case no_hash64:
+    case no_hashmd5:
+    case no_add:
+    case no_xor:
+    case no_bxor:
+    case no_sortlist:
+    case no_cast:
+    case no_implicitcast:
+    case no_negate:
+    case no_trim:
+        break;
+    case no_field:
+    case no_select:
+    case no_sortpartition:
+        return NULL;
+    case no_constant:
+        break;
+    case no_attr:
+    case no_attr_expr:
+        {
+            IAtom * name = expr->queryName();
+            if (name == internalAtom)
+            {
+                //HASH,internal - only valid if the types of the old and new sorts match exactly
+                ForEachItemIn(i, oldSort)
+                {
+                    if (oldSort.item(i).queryType() != newSort.item(i).queryType())
+                        return NULL;
+                }
+            }
+            else if (expr == cacheAnyAttribute)
+                return NULL;
+            break;
+        }
+    default:
+        return NULL;
+    }
+
+    unsigned max = expr->numChildren();
+    if (max == 0)
+        return LINK(expr);
+
+    HqlExprArray args;
+    args.ensure(max);
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * mapped = createMatchingDistribution(expr->queryChild(i), oldSort, newSort);
+        if (!mapped)
+            return NULL;
+        args.append(*mapped);
+    }
+    return expr->clone(args);
+}
+
+
 static IHqlExpression * queryColocalDataset(IHqlExpression * expr)
 {
     loop
@@ -1522,7 +1751,7 @@ static IHqlExpression * queryColocalDataset(IHqlExpression * expr)
 }
 
 //Check if the distribution functions are essentially identical, except for the places 
-bool isDistributedCoLocally(IHqlExpression * dataset1, IHqlExpression * dataset2, HqlExprArray & sort1, HqlExprArray & sort2)
+bool isDistributedCoLocally(IHqlExpression * dataset1, IHqlExpression * dataset2, const HqlExprArray & sort1, const HqlExprArray & sort2)
 {
     IHqlExpression * distribute1 = queryDistribution(dataset1);
     IHqlExpression * distribute2 = queryDistribution(dataset2);
@@ -1562,14 +1791,25 @@ inline IHqlExpression * ensureNonNull(IHqlExpression * expr)
     return LINK(cached_omitted_Attribute);
 }
 
+ITypeInfo * createDatasetType(ITypeInfo * recordType, bool isGrouped)
+{
+    ITypeInfo * rowType = makeRowType(LINK(recordType));
+    Owned<ITypeInfo> type = makeTableType(rowType);
+    if (isGrouped)
+        return makeGroupedTableType(type.getClear());
+    return type.getClear();
+}
+
 static IHqlExpression * createPreserveTableInfo(IHqlExpression * newTable, IHqlExpression * original, bool loseDistribution, IHqlExpression * persistName)
 {
-    ITypeInfo * type = original->queryType();
-    LinkedHqlExpr distribution = loseDistribution ? NULL : queryDistribution(type);
-    IHqlExpression * globalSort = queryGlobalSortOrder(type);
-    IHqlExpression * localSort = queryLocalUngroupedSortOrder(type);
-    IHqlExpression * grouping = queryGrouping(type);
-    IHqlExpression * groupSort = queryGroupSortOrder(type);
+    CHqlMetaInfo meta;
+    if (original->isDataset())
+        extractMeta(meta, original);
+    LinkedHqlExpr distribution = loseDistribution ? NULL : meta.distribution;
+    IHqlExpression * globalSort = meta.globalSortOrder;
+    IHqlExpression * localSort = meta.localUngroupedSortOrder;
+    IHqlExpression * grouping = meta.grouping;
+    IHqlExpression * groupSort = meta.groupSortOrder;
     if (persistName && isKnownDistribution(distribution))
     {
         if (!distribution->isAttribute())
@@ -1634,16 +1874,1501 @@ IHqlExpression * preserveTableInfo(IHqlExpression * newTable, IHqlExpression * o
     return optimizePreserveMeta(preserved);
 }
 
-bool hasUsefulMetaInformation(ITypeInfo * prev)
+//---------------------------------------------------------------------------------------------------------------------
+
+static void getMetaIntersection(CHqlMetaInfo & meta, IHqlExpression * other)
 {
-    IHqlExpression * distribution = queryDistribution(prev);
-    IHqlExpression * globalOrder = queryGlobalSortOrder(prev);
-    IHqlExpression * localOrder = queryLocalUngroupedSortOrder(prev);
-    IHqlExpression * grouping = queryGrouping(prev);
-    IHqlExpression * groupOrder = static_cast<IHqlExpression *>(prev->queryGroupSortInfo());
-    return (distribution && containsActiveDataset(distribution)) ||
-           (globalOrder && containsActiveDataset(globalOrder)) ||
-           (localOrder && containsActiveDataset(localOrder)) ||
-           (grouping && containsActiveDataset(grouping)) ||
-           (groupOrder && containsActiveDataset(groupOrder));
+    CHqlMetaProperty * otherMetaProp = queryMetaProperty(other);
+    meta.getIntersection(otherMetaProp->meta);
+}
+
+
+static void calculateProjectMeta(CHqlMetaInfo & meta, IHqlExpression * parent, IHqlExpression * transform, IHqlExpression * selSeq)
+{
+    OwnedHqlExpr leftSelect = createSelector(no_left, parent, selSeq);
+    TableProjectMapper mapper;
+    mapper.setMapping(transform, leftSelect);
+
+    extractMeta(meta, parent);
+    meta.applyProject(mapper);
+}
+
+CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr)
+{
+    node_operator op = expr->getOperator();
+
+    switch (op)
+    {
+    case no_field:
+    case no_selectnth:
+    case no_inlinetable:
+    case no_dataset_from_transform:
+    case no_xmlproject:
+    case no_temptable:
+    case no_id2blob:
+    case no_embedbody:
+    case no_httpcall:
+    case no_soapcall:
+    case no_newsoapcall:
+    case no_datasetfromrow:
+    case no_datasetfromdictionary:
+        return nullMetaProperty;
+    case no_rowsetindex:
+    case no_rowsetrange:
+    case no_translated:
+        return queryNullMetaProperty(isGrouped(expr->queryChild(0)));
+    case no_param:
+        return queryNullMetaProperty(isGrouped(expr));
+    case no_pipe:
+        return queryNullMetaProperty(expr->hasAttribute(groupAtom));
+    case no_alias_project:
+    case no_alias_scope:
+    case no_cachealias:
+    case no_cloned:
+    case no_globalscope:
+    case no_comma:
+    case no_filter:
+    case no_keyed:
+    case no_nofold:
+    case no_nohoist:
+    case no_section:
+    case no_sectioninput:
+    case no_sub:
+    case no_thor:
+    case no_nothor:
+    case no_compound_indexread:
+    case no_compound_diskread:
+    case no_compound_disknormalize:
+    case no_compound_diskaggregate:
+    case no_compound_diskcount:
+    case no_compound_diskgroupaggregate:
+    case no_compound_indexnormalize:
+    case no_compound_indexaggregate:
+    case no_compound_indexcount:
+    case no_compound_indexgroupaggregate:
+    case no_compound_childread:
+    case no_compound_childnormalize:
+    case no_compound_childaggregate:
+    case no_compound_childcount:
+    case no_compound_childgroupaggregate:
+    case no_compound_selectnew:
+    case no_compound_inline:
+    case no_metaactivity:
+    case no_split:
+    case no_spill:
+    case no_readspill:
+    case no_commonspill:
+    case no_writespill:
+    case no_throughaggregate:
+    case no_limit:
+    case no_catchds:
+    case no_keyedlimit:
+    case no_compound_fetch:
+    case no_preload:
+    case no_alias:
+    case no_catch:
+    case no_activerow:
+    case no_newrow:
+    case no_assert_ds:
+    case no_spillgraphresult:
+    case no_cluster:
+    case no_forcenolocal:
+    case no_thisnode:
+    case no_forcelocal:
+    case no_filtergroup:
+    case no_forcegraph:
+    case no_related:
+    case no_executewhen:
+    case no_outofline:
+    case no_fieldmap:
+    case no_owned_ds:
+    case no_dataset_alias:
+    case no_funcdef:
+        return queryMetaProperty(expr->queryChild(0));
+    case no_compound:
+    case no_select:
+    case no_mapto:
+        return queryMetaProperty(expr->queryChild(1));
+    case no_delayedselect:
+    case no_libraryselect:
+    case no_unboundselect:
+        return queryMetaProperty(expr->queryChild(2));
+    }
+    return NULL;
+}
+
+void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
+{
+    node_operator op = expr->getOperator();
+    IHqlExpression * dataset = expr->queryChild(0);
+
+    //Following need to be filled in ready for type creation at the end...
+    //gather all the type rules together so we don't get inconsistencies.
+    switch (op)
+    {
+    case no_field:
+    case no_selectnth:
+    case no_inlinetable:
+    case no_dataset_from_transform:
+    case no_xmlproject:
+    case no_temptable:
+    case no_id2blob:
+    case no_embedbody:
+    case no_httpcall:
+    case no_soapcall:
+    case no_newsoapcall:
+    case no_datasetfromrow:
+    case no_datasetfromdictionary:
+        break;
+    case no_rowsetindex:
+    case no_rowsetrange:
+    case no_translated:
+        if (isGrouped(expr->queryChild(0)))
+            meta.setUnknownGrouping();
+        break;
+    case no_param:
+        if (isGrouped(expr))
+            meta.setUnknownGrouping();
+        break;
+    case no_pipe:
+        if (expr->queryAttribute(groupAtom))
+            meta.setUnknownGrouping();
+        break;
+    case no_alias_project:
+    case no_alias_scope:
+    case no_cachealias:
+    case no_cloned:
+    case no_globalscope:
+    case no_comma:
+    case no_filter:
+    case no_keyed:
+    case no_nofold:
+    case no_nohoist:
+    case no_section:
+    case no_sectioninput:
+    case no_sub:
+    case no_thor:
+    case no_nothor:
+    case no_compound_indexread:
+    case no_compound_diskread:
+    case no_compound_disknormalize:
+    case no_compound_diskaggregate:
+    case no_compound_diskcount:
+    case no_compound_diskgroupaggregate:
+    case no_compound_indexnormalize:
+    case no_compound_indexaggregate:
+    case no_compound_indexcount:
+    case no_compound_indexgroupaggregate:
+    case no_compound_childread:
+    case no_compound_childnormalize:
+    case no_compound_childaggregate:
+    case no_compound_childcount:
+    case no_compound_childgroupaggregate:
+    case no_compound_selectnew:
+    case no_compound_inline:
+    case no_metaactivity:
+    case no_split:
+    case no_spill:
+    case no_readspill:
+    case no_commonspill:
+    case no_writespill:
+    case no_throughaggregate:
+    case no_limit:
+    case no_catchds:
+    case no_keyedlimit:
+    case no_compound_fetch:
+    case no_preload:
+    case no_alias:
+    case no_catch:
+    case no_activerow:
+    case no_newrow:
+    case no_assert_ds:
+    case no_spillgraphresult:
+    case no_cluster:
+    case no_forcenolocal:
+    case no_thisnode:
+    case no_forcelocal:
+    case no_filtergroup:
+    case no_forcegraph:
+    case no_related:
+    case no_executewhen:
+    case no_outofline:
+    case no_fieldmap:
+    case no_owned_ds:
+    case no_dataset_alias:
+    case no_funcdef:
+        extractMeta(meta, dataset);
+        break;
+    case no_compound:
+    case no_select:
+    case no_mapto:
+        extractMeta(meta, expr->queryChild(1));
+        break;
+    case no_delayedselect:
+    case no_libraryselect:
+    case no_unboundselect:
+        extractMeta(meta, expr->queryChild(2));
+        break;
+    case no_table:
+        {
+            IHqlExpression * grouping = expr->queryAttribute(groupedAtom);
+            if (grouping)
+                meta.grouping.set(queryUnknownSortlist());
+            break;
+        }
+    case no_null:
+    case no_fail:
+    case no_anon:
+    case no_pseudods:
+    case no_skip:
+    case no_all:
+    case no_workunit_dataset:
+    case no_getgraphresult:
+    case no_getgraphloopresult:
+    case no_getresult:
+    case no_rows:
+    case no_internalselect:
+    case no_purevirtual:
+    case no_libraryinput:
+        {
+            IHqlExpression * metadata = expr->queryAttribute(_metadata_Atom);
+            if (!metadata)
+            {
+                IHqlExpression * distributed = expr->queryAttribute(distributedAtom);
+                IHqlExpression * distribution = distributed ? distributed->queryChild(0) : NULL;
+                meta.distribution.set(distribution);
+
+                IHqlExpression * grouped = expr->queryAttribute(groupedAtom);
+                if (grouped)
+                {
+                    IHqlExpression * groupExpr = grouped->queryChild(0);
+                    assertex(!groupExpr || groupExpr->getOperator() == no_sortlist);
+                    if (!groupExpr)
+                        groupExpr = queryUnknownSortlist();
+                    meta.grouping.set(groupExpr);
+                }
+            }
+            else
+                extractMetaFromMetaAttr(meta, metadata, 0);
+
+            if ((op == no_null) || (op == no_fail))
+            {
+                meta.setMatchesAny();
+                if (meta.grouping)
+                    meta.grouping.set(queryAnyOrderSortlist());
+            }
+            break;
+        }
+    case no_combine:
+    case no_combinegroup:
+        {
+            calculateProjectMeta(meta, expr->queryChild(0), expr->queryChild(2), expr->queryAttribute(_selectorSequence_Atom));
+            //Not at all sure about this wierd case
+            break;
+        }
+    case no_process:
+        {
+            calculateProjectMeta(meta, expr->queryChild(0), expr->queryChild(2), expr->queryAttribute(_selectorSequence_Atom));
+            break;
+        }
+    case no_fetch:
+        {
+            //Currently fetch is assumed to preserve nothing (since I suspect thor doesn't)
+            break;
+        }
+    case no_denormalize:
+    case no_denormalizegroup:
+    case no_join:
+    case no_selfjoin:
+    case no_joincount:
+        {
+            IHqlExpression * transform = expr->queryChild(3);
+
+            //JOIN does not preserve sort order or grouping.
+            //It does preserve distribution if distribution fields are projected
+            bool isLookupJoin = expr->queryAttribute(lookupAtom) != NULL;
+            bool isAllJoin = expr->queryAttribute(allAtom) != NULL;
+            bool isHashJoin = expr->queryAttribute(hashAtom) != NULL;
+            bool isSmartJoin = expr->queryAttribute(smartAtom) != NULL;
+            bool isKeyedJoin = !isAllJoin && !isLookupJoin && !isSmartJoin && (expr->queryAttribute(keyedAtom) || isKey(expr->queryChild(1)));
+            bool isLocal = (expr->queryAttribute(localAtom) != NULL);
+            bool fo = expr->queryAttribute(fullonlyAtom) || expr->queryAttribute(fullouterAtom);
+            bool createDefaultLeft = fo || expr->queryAttribute(rightonlyAtom) || expr->queryAttribute(rightouterAtom);
+            bool createDefaultRight = fo || expr->queryAttribute(leftonlyAtom) || expr->queryAttribute(leftouterAtom);
+
+            OwnedHqlExpr leftSelect = createSelector(no_left, expr->queryChild(0), expr->queryAttribute(_selectorSequence_Atom));
+            if (isKeyedJoin || isAllJoin || isLookupJoin)
+            {
+                CHqlMetaInfo & parentMeta = queryMetaProperty(dataset)->meta;
+                //If default left hand records created, then can't preserve distn etc.
+                meta.set(parentMeta);
+                if (!createDefaultLeft)
+                {
+                    bool preservesOrder = !expr->queryAttribute(unorderedAtom);
+                    if (isKeyedJoin)
+                        preservesOrder = expr->queryAttribute(_ordered_Atom) != NULL;
+                    if (!preservesOrder)
+                        meta.removeAllSortOrders();
+
+                    LinkedHqlExpr mapTransform = transform;
+                    // If there is a join equality LEFT.x = RIGHT.x, and the transform contains a reference to RIGHT.x
+                    // substitute LEFT.x instead.
+                    // The modified transform is used for mapping the sort/grouping information
+                    // which means that information about sort orders are more likely to be preserved (for keyed joins).
+                    if (!createDefaultRight && ((op == no_join) || (op == no_selfjoin)))
+                    {
+                        //Only bother to modify the transform if something useful is going to be mapped in
+                        //the meta information - otherwise this can be expensive for no gain.
+                        if (meta.hasUsefulInformation())
+                        {
+                            JoinEqualityMapper mapper(expr);
+                            mapTransform.setown(mapper.mapEqualities(transform, expr->queryChild(2)));
+                        }
+                    }
+                    TableProjectMapper mapper;
+                    mapper.setMapping(mapTransform, leftSelect);
+                    meta.applyProject(mapper);
+
+                    //For no_denormalize information is only preserved if it is the same whether or not the transform was called.
+                    if (op == no_denormalize)
+                        meta.getIntersection(parentMeta);
+                }
+                else
+                    meta.removeAllKeepGrouping();
+            }
+            else if (isLocal)
+            {
+                CHqlMetaInfo ungroupedMeta;
+                CHqlMetaInfo parentMeta = queryMetaProperty(dataset)->meta;
+                ungroupedMeta.set(parentMeta);
+                ungroupedMeta.removeGroup();
+
+                //local operation so try and preserve the current distribution, no clue about the following sort order,
+                //and result is never grouped.
+                if (expr->queryAttribute(_lightweight_Atom) && !createDefaultLeft)
+                {
+                    //Implementation detail: lightweight joins preserve the lhs sort order
+                    //Can be very useful for converting subsequent joins to lightweight joins.
+                    TableProjectMapper mapper;
+                    mapper.setMapping(transform, leftSelect);
+
+                    meta.set(ungroupedMeta);
+                    if (expr->hasAttribute(unorderedAtom))
+                        meta.removeAllSortOrders();
+                    meta.applyProject(mapper);
+                }
+                else
+                {
+                    IHqlExpression * leftDistributeInfo = queryDistribution(expr->queryChild(0));
+                    IHqlExpression * rightDistributeInfo = queryDistribution(expr->queryChild(1));
+
+                    IHqlExpression * newDistributeInfo = NULL;
+                    if (isKnownDistribution(leftDistributeInfo) || isKnownDistribution(rightDistributeInfo))
+                    {
+                        TableProjectMapper mapper;
+                        mapper.setMapping(transform, NULL);
+
+                        if (isKnownDistribution(leftDistributeInfo) && !createDefaultLeft)
+                            newDistributeInfo = mapJoinDistribution(mapper, leftDistributeInfo, leftSelect);
+                        if (!newDistributeInfo && isKnownDistribution(rightDistributeInfo) && !createDefaultRight)
+                        {
+                            OwnedHqlExpr rightSelect = createSelector(no_right, expr->queryChild(1), expr->queryAttribute(_selectorSequence_Atom));
+                            newDistributeInfo = mapJoinDistribution(mapper, rightDistributeInfo, rightSelect);
+                        }
+                    }
+                    if (!newDistributeInfo)
+                        newDistributeInfo = getUnknownAttribute();
+                    meta.distribution.setown(newDistributeInfo);
+                }
+
+                //For no_denormalize information is only preserved if it is the same whether or not the transform was called.
+                if (op == no_denormalize)
+                    meta.getIntersection(ungroupedMeta);
+            }
+            else if (isHashJoin)
+            {
+                meta.distribution.setown(getUnknownAttribute());
+            }
+            else
+            {
+                //Nothing known
+            }
+            break;
+        }
+    case no_dedup:
+        {
+            extractMeta(meta, dataset);
+            bool isLocal = expr->hasAttribute(localAtom);
+            bool hasAll = expr->hasAttribute(hashAtom) || expr->hasAttribute(allAtom);
+
+            if (!meta.isGrouped())
+            {
+                //dedup,all kills the sort order, and global removes the distribution
+                if (hasAll)
+                {
+                    meta.removeAllAndUngroup(isLocal);
+                }
+                else if (!isLocal)
+                    meta.removeDistribution();
+            }
+            else
+            {
+                //Some implementations of Dedup all within a group can kill the group sort order
+                if (hasAll)
+                    meta.removeActiveSort();
+            }
+            break;
+        }
+    case no_group:
+    case no_grouped:
+    case no_assertgrouped:
+        {
+            extractMeta(meta, dataset);
+            IHqlExpression * grouping = queryRealChild(expr, 1);
+            if (grouping)
+            {
+                OwnedHqlExpr mappedGrouping = replaceSelector(grouping, dataset, queryActiveTableSelector());
+                bool isLocal = expr->queryAttribute(localAtom) != NULL;
+                if (expr->queryAttribute(allAtom))
+                {
+                    //group,all destroys any previous sort order, may destroy distribution.
+                    meta.removeAllAndUngroup(isLocal);
+                }
+                meta.applyGroupBy(mappedGrouping, isLocal);
+            }
+            else
+                meta.removeGroup();
+            break;
+        }
+    case no_distribute:
+    case no_distributed:
+    case no_assertdistributed:
+        {
+            if (expr->queryAttribute(skewAtom))
+            {
+                meta.setUnknownDistribution();
+            }
+            else
+            {
+                OwnedHqlExpr mappedDistributeInfo = replaceSelector(expr->queryChild(1), dataset, queryActiveTableSelector());
+                IHqlExpression * sorted = expr->queryAttribute(mergeAtom);
+                if (sorted)
+                {
+                    OwnedHqlExpr mappedSorted = replaceSelector(sorted->queryChild(0), dataset, queryActiveTableSelector());
+                    meta.applyDistribute(mappedDistributeInfo, mappedSorted);
+                }
+                else
+                    meta.applyDistribute(mappedDistributeInfo, NULL);
+            }
+            break;
+        }
+    case no_preservemeta:
+        {
+            meta.distribution.set(queryRemoveOmitted(expr->queryChild(1)));
+            meta.globalSortOrder.set(queryRemoveOmitted(expr->queryChild(2)));
+            meta.localUngroupedSortOrder.set(queryRemoveOmitted(expr->queryChild(3)));
+            meta.grouping.set(queryRemoveOmitted(expr->queryChild(4)));
+            meta.groupSortOrder.set(queryRemoveOmitted(expr->queryChild(5)));
+            break;
+        }
+    case no_keyeddistribute:
+        {
+            //destroy grouping and sort order, sets new distribution info
+            //to be usable this needs to really save a reference to the actual index used.
+            OwnedHqlExpr newDistribution = createAttribute(keyedAtom, replaceSelector(expr->queryChild(1), dataset, queryActiveTableSelector()));
+            meta.applyDistribute(newDistribution, NULL);
+            break;
+        }
+    case no_subsort:
+        {
+            bool isLocal = expr->queryAttribute(localAtom) != NULL;
+            OwnedHqlExpr normalizedSortOrder = replaceSelector(expr->queryChild(1), dataset, queryActiveTableSelector());
+            OwnedHqlExpr mappedGrouping = replaceSelector(expr->queryChild(2), dataset, queryActiveTableSelector());
+            extractMeta(meta, dataset);
+            meta.applySubSort(mappedGrouping, normalizedSortOrder, isLocal);
+            break;
+        }
+    case no_cosort:
+    case no_sort:
+    case no_sorted:
+    case no_assertsorted:
+    case no_topn:
+    case no_stepped:            // stepped implies the sort order matches the stepped criteria
+        {
+            OwnedHqlExpr normalizedSortOrder;
+            bool isLocal = expr->hasAttribute(localAtom);
+            bool hasGlobal = expr->hasAttribute(globalAtom);
+            IHqlExpression * sortOrder = queryRealChild(expr, 1);
+            if (sortOrder)
+                normalizedSortOrder.setown(replaceSelector(sortOrder, dataset, queryActiveTableSelector()));
+
+            if (!isLocal && (hasGlobal || !isGrouped(dataset)))
+            {
+                meta.applyGlobalSort(normalizedSortOrder);
+                if ((op == no_topn) || (op == no_sorted))
+                    meta.removeDistribution();
+            }
+            else
+            {
+                extractMeta(meta, dataset);
+                if (isLocal || expr->queryAttribute(globalAtom))
+                    meta.removeGroup();
+                if (meta.isGrouped())
+                    meta.applyGroupSort(normalizedSortOrder);
+                else if (isLocal)
+                    meta.applyLocalSort(normalizedSortOrder);
+                else
+                    throwUnexpected(); // should have been handled by the global branch aboce
+            }
+            break;
+        }
+    case no_iterate:
+    case no_transformebcdic:
+    case no_transformascii:
+    case no_hqlproject:
+    case no_normalize:
+    case no_rollup:
+    case no_newparse:
+    case no_newxmlparse:
+    case no_rollupgroup:
+        {
+            //These may lose the sort order because they may modify the sort fields or change the
+            //projected fields.  Grouping also translated, but remains even if no mapping.
+            TableProjectMapper mapper;
+            IHqlExpression * transform;
+            bool globalActivityTransfersRows = false;
+            OwnedHqlExpr leftSelect = createSelector(no_left, dataset, expr->queryAttribute(_selectorSequence_Atom));
+            switch (op)
+            {
+            case no_rollup:
+                transform = expr->queryChild(2);
+                globalActivityTransfersRows = true;
+                mapper.setMapping(transform, leftSelect);
+                break;
+            case no_normalize:
+                transform = expr->queryChild(2);
+                mapper.setMapping(transform, leftSelect);
+                break;
+            case no_newxmlparse:
+                transform = expr->queryChild(3);
+                mapper.setMapping(transform, leftSelect);
+                break;
+            case no_newparse:
+                transform = expr->queryChild(4);
+                mapper.setMapping(transform, leftSelect);
+                break;
+            case no_iterate:
+                {
+                    OwnedHqlExpr rightSelect = createSelector(no_right, dataset, expr->queryAttribute(_selectorSequence_Atom));
+                    transform = expr->queryChild(1);
+                    globalActivityTransfersRows = true;
+                    mapper.setMapping(transform, rightSelect);          // only if keep from right will it be preserved.
+                    break;
+                }
+            case no_transformebcdic:
+            case no_transformascii:
+            case no_hqlproject:
+            case no_rollupgroup:
+                transform = expr->queryChild(1);
+                mapper.setMapping(transform, leftSelect);
+                break;
+            default:
+                assertex(!"Missing entry...");
+                break;
+            }
+
+            extractMeta(meta, dataset);
+            if (globalActivityTransfersRows && !expr->queryAttribute(localAtom) && !meta.isGrouped())
+                meta.removeDistribution();
+            if (op == no_rollupgroup)
+                meta.removeGroup();
+
+            meta.applyProject(mapper);
+            //Tag a count project as sorted in some way, we could spot which field (if any) was initialised with it.
+            if ((op == no_hqlproject) && expr->hasAttribute(_countProject_Atom))
+            {
+                bool isLocal = expr->hasAttribute(localAtom);
+                meta.ensureAppearsSorted(isLocal, false);
+            }
+            break;
+        }
+    case no_keyindex:
+    case no_newkeyindex:
+        {
+            if (expr->queryAttribute(sortedAtom))
+            {
+                IHqlExpression * record = expr->queryChild(1);
+                HqlExprArray sortExprs;
+                if (expr->queryAttribute(sort_KeyedAtom))
+                {
+                    IHqlExpression * payloadAttr = expr->queryAttribute(_payload_Atom);
+                    unsigned payloadCount = payloadAttr ? (unsigned)getIntValue(payloadAttr->queryChild(0), 1) : 1;
+                    unsigned payloadIndex = firstPayloadField(record, payloadCount);
+                    unwindRecordAsSelects(sortExprs, record, queryActiveTableSelector(), payloadIndex);
+                }
+                else
+                    unwindRecordAsSelects(sortExprs, record, queryActiveTableSelector());
+
+                OwnedHqlExpr sortOrder = createSortList(sortExprs);
+                if (expr->queryAttribute(noRootAtom))
+                    meta.applyLocalSort(sortOrder);
+                else
+                    meta.applyGlobalSort(sortOrder);
+            }
+            break;
+        }
+    case no_soapcall_ds:
+    case no_newsoapcall_ds:
+        meta.preserveGrouping(dataset);
+        break;
+    case no_parse:
+    case no_xmlparse:
+        {
+            //Assume we can't work out anything about the sort order/grouping/distribution.
+            //Not strictly true, but it will do for the moment.
+            meta.preserveGrouping(dataset);
+            break;
+        }
+    case no_selectfields:
+    case no_aggregate:
+    case no_newaggregate:
+    case no_newusertable:
+    case no_usertable:
+        {
+            IHqlExpression * record = expr->queryChild(1);
+            if (record->getOperator() == no_null)
+            {
+                extractMeta(meta, dataset);
+                break;
+            }
+
+            TableProjectMapper mapper;
+            record = record->queryRecord();
+
+            IHqlExpression * grouping = NULL;
+            IHqlExpression * mapping = NULL;
+            LinkedHqlExpr selector = dataset;
+            switch (op)
+            {
+            case no_usertable:
+            case no_selectfields:
+                mapping = record;
+                grouping = expr->queryChild(2);
+                break;
+            case no_aggregate:
+                selector.setown(createSelector(no_left, dataset, expr->queryAttribute(_selectorSequence_Atom)));
+                if (!expr->hasAttribute(mergeTransformAtom))
+                    mapping = expr->queryChild(2);
+                grouping = expr->queryChild(3);
+                break;
+            case no_newaggregate:
+            case no_newusertable:
+                mapping = expr->queryChild(2);
+                grouping = expr->queryChild(3);
+                break;
+            }
+
+            if (!mapping)
+                mapper.setUnknownMapping();
+            else
+                mapper.setMapping(mapping, selector);
+
+            if (grouping && grouping->isAttribute())
+                grouping = NULL;
+
+            extractMeta(meta, dataset);
+            if (grouping)
+            {
+                if (expr->hasAttribute(groupedAtom))
+                {
+                    //A grouped hash aggregate - the sort order within the groups will be lost.
+                    meta.removeActiveSort();
+                }
+                else
+                {
+                    //grouping causes the sort order (and distribution) to be lost - because it might be done by a hash aggregate.
+                    meta.removeAllSortOrders();
+                    if (!expr->queryAttribute(localAtom))
+                        meta.setUnknownDistribution();      // will be distributed by some function of the grouping fields
+
+                    //Aggregation removes grouping, unless explicitly marked as a grouped operation
+                    meta.removeGroup();
+                }
+            }
+            else
+            {
+                //Aggregation removes grouping
+                if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()) || expr->hasAttribute(aggregateAtom))
+                    meta.removeGroup();
+            }
+            //Now map any fields that we can.
+            meta.applyProject(mapper);
+            break;
+        }
+    case no_nonempty:
+        {
+            //We can take the intersection of the input types for non empty since only one is read.
+            extractMeta(meta, dataset);
+            ForEachChildFrom(i, expr, 1)
+            {
+                IHqlExpression * cur = expr->queryChild(i);
+                if (!cur->isAttribute())
+                    getMetaIntersection(meta, cur);
+            }
+            break;
+        }
+    case no_addfiles:
+    case no_regroup:
+    case no_cogroup:
+        {
+            // Note Concatenation destroys sort order
+            // If all the source files have the same distribution then preserve it, else just mark as distributed...
+            bool sameDistribution = true;
+            bool allInputsIdentical = true;
+            IHqlExpression * distributeInfo = queryDistribution(dataset);
+            bool allGrouped = isGrouped(dataset);
+            ForEachChildFrom(i, expr, 1)
+            {
+                IHqlExpression * cur = expr->queryChild(i);
+                if (!cur->isAttribute())
+                {
+                    if (cur != dataset)
+                        allInputsIdentical = false;
+                    IHqlExpression * curDist = queryDistribution(cur);
+                    if (!curDist)
+                        distributeInfo = NULL;
+                    else if (curDist != distributeInfo)
+                        sameDistribution = false;
+
+                    if (!isGrouped(cur))
+                        allGrouped = false;
+                }
+            }
+
+            IHqlExpression * newDistribution = NULL;
+            if (distributeInfo)
+            {
+                //sort distributions are not identical - except in the unusual case where
+                //the inputs are identical (e.g., x + x).  Can change if uids get created for sorts.
+                if (sameDistribution && (!isSortedDistribution(distributeInfo) || allInputsIdentical))
+                    newDistribution = LINK(distributeInfo);
+                else
+                    newDistribution = getUnknownAttribute();
+            }
+
+            meta.distribution.setown(newDistribution);
+            if (allGrouped || (op == no_cogroup))
+                meta.setUnknownGrouping();
+            break;
+        }
+    case no_chooseds:
+    case no_datasetlist:
+    case no_case:
+    case no_map:
+        {
+            //Activities that pick one of the inputs => the meta is the intersection
+            unsigned firstDataset = ((op == no_chooseds) || (op == no_case)) ? 1 : 0;
+            ForEachChildFrom(i, expr, firstDataset)
+            {
+                IHqlExpression * cur = expr->queryChild(i);
+                if (i == firstDataset)
+                    extractMeta(meta, cur);
+                else
+                    getMetaIntersection(meta, cur);
+            }
+            break;
+        }
+    case no_normalizegroup:
+        {
+            //Not very nice - it is hard to track anything through a group normalize.
+            if (queryDistribution(dataset))
+                meta.setUnknownDistribution();
+            meta.preserveGrouping(dataset);
+            break;
+        }
+    case no_if:
+        {
+            IHqlExpression * left = expr->queryChild(1);
+            IHqlExpression * right = expr->queryChild(2);
+            if (left->getOperator() == no_null)
+                extractMeta(meta, right);
+            else if (right->getOperator() == no_null)
+                extractMeta(meta, left);
+            else
+            {
+                extractMeta(meta, left);
+                getMetaIntersection(meta, right);
+            }
+            break;
+        }
+    case no_merge:
+        {
+            HqlExprArray components;
+            IHqlExpression * order= expr->queryAttribute(sortedAtom);       // already uses no_activetable to refer to dataset
+            assertex(order);
+            unwindChildren(components, order);
+            OwnedHqlExpr sortlist = createSortList(components);
+            if (expr->queryAttribute(localAtom))
+            {
+                extractMeta(meta, dataset);
+                meta.applyLocalSort(sortlist);
+            }
+            else
+            {
+                meta.globalSortOrder.set(sortlist);
+                meta.localUngroupedSortOrder.set(sortlist);
+            }
+            break;
+        }
+    case no_mergejoin:
+    case no_nwayjoin:
+    case no_nwaymerge:
+        {
+            IHqlExpression * order = NULL;
+            switch (op)
+            {
+            case no_mergejoin:
+                order = expr->queryChild(2);
+                break;
+            case no_nwayjoin:
+                order = expr->queryChild(3);
+                break;
+            case no_nwaymerge:
+                order = expr->queryChild(1);
+                break;
+            }
+            assertex(order);
+            IHqlExpression * selSeq = expr->queryAttribute(_selectorSequence_Atom);
+            OwnedHqlExpr selector = createSelector(no_left, expr->queryChild(0), selSeq);
+            OwnedHqlExpr normalizedOrder = replaceSelector(order, selector, queryActiveTableSelector());
+            HqlExprArray components;
+            unwindChildren(components, normalizedOrder);
+            OwnedHqlExpr sortlist = createSortList(components);
+            //These are all currently implemented as local activities, need to change following if no longer true
+            extractMeta(meta, expr->queryChild(0));
+            meta.applyLocalSort(sortlist);
+            break;
+        }
+    case no_choosen:
+    case no_choosesets:
+    case no_enth:
+    case no_sample:
+        //grouped preserves everything
+        //otherwise it preserves distribution, global and local order (no data is transferred even for global), but not the grouping.
+        if (expr->queryAttribute(groupedAtom))
+        {
+            extractMeta(meta, dataset);
+        }
+        else
+        {
+            extractMeta(meta, dataset);
+            meta.removeGroup();
+        }
+        break;
+    case no_allnodes:
+        {
+            IHqlExpression * merge = expr->queryAttribute(mergeAtom);
+            if (merge)
+            {
+                //more - sort order defined
+            }
+            break;
+        }
+    case no_colon:
+        //Persist shouldn't preserve the distribution, since can't guarantee done on same width cluster.
+        if (queryOperatorInList(no_persist, expr->queryChild(1)))
+        {
+            extractMeta(meta, dataset);
+            meta.setUnknownDistribution();
+            if (isGrouped(dataset))
+                meta.setUnknownGrouping();
+        }
+        else if (queryOperatorInList(no_stored, expr->queryChild(1)))
+        {
+            meta.preserveGrouping(dataset);
+        }
+        else
+            extractMeta(meta, dataset);
+        break;
+    case no_loop:
+        {
+            IHqlExpression * body = expr->queryChild(4);
+            extractMeta(meta, dataset);
+            getMetaIntersection(meta, body->queryChild(0));
+            break;
+        }
+    case no_graphloop:
+        {
+            IHqlExpression * body = expr->queryChild(2);
+            extractMeta(meta, dataset);
+            getMetaIntersection(meta, body->queryChild(0));
+            break;
+        }
+    case no_serialize:
+        {
+            meta.preserveGrouping(dataset);
+            break;
+        }
+    case no_deserialize:
+        {
+            meta.preserveGrouping(dataset);
+            break;
+        }
+    case no_call:
+        //MORE: ?
+        if (isGrouped(expr))
+            meta.setUnknownGrouping();
+        break;
+    case no_externalcall:
+        if (isGrouped(expr))
+            meta.setUnknownGrouping();
+        //No support for grouping?
+        break;
+    default:
+        if (expr->isDataset())
+            UNIMPLEMENTED_XY("Type meta for dataset operator", getOpString(op));
+        break;
+    }
+
+    assertex(isGrouped(expr) == (meta.grouping != NULL));
+#ifdef _DEBUG
+    assertex(!meta.grouping || meta.grouping->getOperator() == no_sortlist);
+    assertex(!meta.globalSortOrder || meta.globalSortOrder->getOperator() == no_sortlist);
+#endif
+
+}
+
+ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
+{
+    IHqlExpression * dataset = NULL;
+    ITypeInfo * datasetType = NULL;
+    ITypeInfo * childType = NULL;
+    ITypeInfo * recordType = NULL;
+
+    switch (op)
+    {
+    case no_activetable:
+        throwUnexpected();
+    case no_table:
+    case no_temptable:
+    case no_inlinetable:
+    case no_xmlproject:
+    case no_null:
+    case no_anon:
+    case no_pseudods:
+    case no_all:
+    case no_workunit_dataset:
+    case no_getgraphresult:
+    case no_getgraphloopresult:
+    case no_fail:
+    case no_skip:
+    case no_datasetfromrow:
+    case no_datasetfromdictionary:
+    case no_if:
+    case no_translated:
+    case no_rows:
+        break;
+    case no_mergejoin:
+    case no_nwayjoin:
+    case no_nwaymerge:
+        datasetType = parms.item(0).queryType()->queryChildType();
+        break;
+    case no_chooseds:
+    case no_compound:
+    case no_select:
+        dataset = &parms.item(1);
+        break;
+    default:
+        dataset = &parms.item(0);
+        break;
+    }
+
+    if (dataset)
+        datasetType = dataset->queryType();
+
+    if (datasetType)
+    {
+        childType = datasetType->queryChildType();
+        ITypeInfo * rowType = NULL;
+        switch (datasetType->getTypeCode())
+        {
+        case type_groupedtable:
+            rowType = childType->queryChildType();
+            break;
+        case type_row:
+            rowType = datasetType;
+            break;
+        case type_record:
+            recordType = datasetType;
+            break;
+        default:
+            rowType = childType;
+            break;
+        }
+        if (rowType)
+            recordType = rowType->queryChildType();
+    }
+
+    //Following need to be filled in ready for type creation at the end...
+    //gather all the type rules together so we don't get inconsistencies.
+    Owned<ITypeInfo> type;
+    Owned<ITypeInfo> newRecordType;
+    unsigned recordArg = NotFound;
+    bool linkCounted = false;
+    bool streamed = false;
+    bool nowGrouped = false;
+    switch (op)
+    {
+    case no_table:
+        {
+            assertex(parms.isItem(1));
+            Linked<IHqlExpression> recorddef = &parms.item(1);
+            newRecordType.setown(createRecordType(recorddef));
+            nowGrouped = hasAttribute(groupedAtom, parms);
+            break;
+        }
+    case no_null:
+    case no_fail:
+    case no_anon:
+    case no_pseudods:
+    case no_skip:
+    case no_all:
+    case no_workunit_dataset:
+    case no_getgraphresult:
+    case no_getgraphloopresult:
+    case no_getresult:
+    case no_rows:
+    case no_internalselect:
+    case no_delayedselect:
+    case no_unboundselect:
+    case no_libraryselect:
+    case no_purevirtual:
+    case no_libraryinput:
+        {
+            IHqlExpression * record = parms.item(0).queryRecord();
+            recordArg = 0;
+            nowGrouped = hasAttribute(groupedAtom, parms);
+            linkCounted = (hasAttribute(_linkCounted_Atom, parms) || recordRequiresLinkCount(record));
+            break;
+        }
+    case no_translated:
+        type.setown(parms.item(0).getType());
+        assertex(parms.ordinality()>1);     // should have a count or a length
+        break;
+    case no_inlinetable:
+    case no_dataset_from_transform:
+    case no_xmlproject:
+    case no_temptable:
+    case no_id2blob:
+    case no_embedbody:
+        newRecordType.setown(createRecordType(&parms.item(1)));
+        linkCounted = hasAttribute(_linkCounted_Atom, parms);
+        streamed = hasAttribute(streamedAtom, parms);
+        break;
+    case no_pipe:
+        {
+            nowGrouped=hasAttribute(groupAtom, parms);
+            if (parms.isItem(2) && (parms.item(2).getOperator() == no_record))
+                newRecordType.setown(createRecordType(&parms.item(2)));
+            else
+                newRecordType.set(recordType);
+            break;
+        }
+
+//Records providing the format, can hopefully combine with the transforms soon.
+    case no_keyindex:
+    case no_newkeyindex:
+        {
+            recordArg = 1;
+            break;
+        }
+    case no_selectfields:
+    case no_aggregate:
+    case no_newaggregate:
+    case no_newusertable:
+    case no_usertable:
+        {
+            IHqlExpression * record = &parms.item(1);
+            if (record->getOperator() == no_null)
+            {
+                type.set(datasetType);
+                break;
+            }
+
+            IHqlExpression * grouping = NULL;
+            IHqlExpression * mapping = NULL;
+            switch (op)
+            {
+            case no_usertable:
+            case no_selectfields:
+                mapping = record;
+                if (parms.isItem(2))
+                    grouping = &parms.item(2);
+                break;
+            case no_aggregate:
+                if (!hasAttribute(mergeTransformAtom, parms))
+                    mapping = &parms.item(2);
+                if (parms.isItem(3))
+                    grouping = &parms.item(3);
+                break;
+            case no_newaggregate:
+            case no_newusertable:
+                mapping = &parms.item(2);
+                if (parms.isItem(3))
+                    grouping = &parms.item(3);
+                break;
+            }
+
+            recordArg = 1;
+            if (grouping && grouping->isAttribute())
+                grouping = NULL;
+
+            if (grouping)
+            {
+                if (hasAttribute(groupedAtom, parms))
+                {
+                    nowGrouped = isGrouped(datasetType);
+                }
+                else
+                {
+                    nowGrouped = false;
+                }
+            }
+            else
+            {
+                //Aggregation removes grouping
+                if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()) || hasAttribute(aggregateAtom, parms))
+                    nowGrouped=false;
+                else
+                    nowGrouped = isGrouped(datasetType);
+            }
+            break;
+        }
+    case no_httpcall:
+    case no_soapcall:
+        recordArg = 3;
+        break;
+    case no_newsoapcall:
+        recordArg = 4;
+        break;
+    case no_soapcall_ds:
+        recordArg = 4;
+        nowGrouped = isGrouped(datasetType);
+        break;
+    case no_newsoapcall_ds:
+        recordArg = 5;
+        nowGrouped = isGrouped(datasetType);
+        break;
+    case no_parse:
+        recordArg = 3;
+        nowGrouped = isGrouped(datasetType);
+        break;
+    case no_xmlparse:
+        recordArg = 2;
+        nowGrouped = isGrouped(datasetType);
+        break;
+//Transforms providing the format, can hopefully combine with the transforms soon.
+    case no_iterate:
+    case no_transformebcdic:
+    case no_transformascii:
+    case no_hqlproject:
+        recordArg = 1;
+        nowGrouped = isGrouped(datasetType);
+        break;
+    case no_rollupgroup:
+        recordArg = 1;
+        break;
+    case no_combine:
+    case no_combinegroup:
+    case no_process:
+    case no_normalize:
+    case no_rollup:
+        recordArg = 2;
+        nowGrouped = isGrouped(datasetType);
+        break;
+    case no_denormalize:
+    case no_denormalizegroup:
+    case no_join:
+    case no_selfjoin:
+    case no_joincount:
+        {
+            bool isLookupJoin = queryAttribute(lookupAtom, parms) != NULL;
+            bool isSmartJoin = queryAttribute(smartAtom, parms) != NULL;
+            bool isAllJoin = queryAttribute(allAtom, parms) != NULL;
+            bool isKeyedJoin = !isAllJoin && !isLookupJoin && !isSmartJoin && (queryAttribute(keyedAtom, parms) || isKey(&parms.item(1)));
+
+            recordArg = 3;
+            if (isKeyedJoin || isAllJoin || isLookupJoin)
+                nowGrouped = isGrouped(datasetType);
+            else
+                nowGrouped = false;
+            break;
+        }
+    case no_newxmlparse:
+        recordArg = 3;
+        nowGrouped = isGrouped(datasetType);
+        break;
+    case no_fetch:
+        recordArg = 3;
+        nowGrouped = false; // Is this really correct?
+        break;
+    case no_newparse:
+        recordArg = 4;
+        nowGrouped = isGrouped(datasetType);
+        break;
+    case no_addfiles:
+    case no_regroup:
+    case no_cogroup:
+    case no_chooseds:
+        {
+            unsigned max = parms.ordinality();
+            bool allGrouped = isGrouped(datasetType);
+            unsigned firstDataset = (op == no_chooseds) ? 1 : 0;
+            for (unsigned i=firstDataset+1; i < max; i++)
+            {
+                IHqlExpression & cur = parms.item(i);
+                if (!cur.isAttribute() && !isGrouped(&cur))
+                    allGrouped = false;
+            }
+
+            newRecordType.set(recordType);
+            nowGrouped = (allGrouped || (op == no_cogroup));
+            break;
+        }
+    case no_normalizegroup:
+        {
+            //Not very nice - it is hard to track anything through a group normalize.
+            recordArg = 1;
+            nowGrouped = isGrouped(dataset);
+            break;
+        }
+    case no_if:
+        {
+            recordArg = 1;
+            IHqlExpression * left = &parms.item(1);
+            IHqlExpression * right = &parms.item(2);
+            if (isNull(left))
+                nowGrouped = isGrouped(right);
+            else if (isNull(right))
+                nowGrouped = isGrouped(left);
+            else
+                nowGrouped = isGrouped(left) || isGrouped(right);
+            break;
+        }
+    case no_case:
+    case no_mapto:
+        //following is wrong, but they get removed pretty quickly so I don't really care
+        type.set(parms.item(1).queryType());
+        break;
+    case no_map:
+        //following is wrong, but they get removed pretty quickly so I don't really care
+        type.set(parms.item(0).queryType());
+        break;
+    case no_merge:
+        newRecordType.set(recordType);
+        nowGrouped = false;
+        break;
+    case no_mergejoin:
+    case no_nwayjoin:
+    case no_nwaymerge:
+        newRecordType.set(recordType);
+        nowGrouped = false;
+        break;
+    case no_choosen:
+    case no_choosesets:
+    case no_enth:
+    case no_sample:
+        newRecordType.set(recordType);
+        if (hasAttribute(groupedAtom, parms))
+            nowGrouped = isGrouped(dataset);
+        break;
+    case no_allnodes:
+        newRecordType.set(recordType);
+        //grouped not currently supported - ensure this is consistent with the meta.
+        break;
+    case no_colon:
+    case no_alias_project:
+    case no_alias_scope:
+    case no_cachealias:
+    case no_cloned:
+    case no_globalscope:
+    case no_comma:
+    case no_compound:
+    case no_filter:
+    case no_keyed:
+    case no_nofold:
+    case no_nohoist:
+    case no_section:
+    case no_sectioninput:
+    case no_sub:
+    case no_thor:
+    case no_nothor:
+    case no_compound_indexread:
+    case no_compound_diskread:
+    case no_compound_disknormalize:
+    case no_compound_diskaggregate:
+    case no_compound_diskcount:
+    case no_compound_diskgroupaggregate:
+    case no_compound_indexnormalize:
+    case no_compound_indexaggregate:
+    case no_compound_indexcount:
+    case no_compound_indexgroupaggregate:
+    case no_compound_childread:
+    case no_compound_childnormalize:
+    case no_compound_childaggregate:
+    case no_compound_childcount:
+    case no_compound_childgroupaggregate:
+    case no_compound_selectnew:
+    case no_compound_inline:
+    case no_field:
+    case no_metaactivity:
+    case no_split:
+    case no_spill:
+    case no_readspill:
+    case no_commonspill:
+    case no_writespill:
+    case no_throughaggregate:
+    case no_limit:
+    case no_catchds:
+    case no_keyedlimit:
+    case no_compound_fetch:
+    case no_preload:
+    case no_alias:
+    case no_catch:
+    case no_activerow:
+    case no_newrow:
+    case no_assert_ds:
+    case no_spillgraphresult:
+    case no_cluster:
+    case no_forcenolocal:
+    case no_thisnode:
+    case no_forcelocal:
+    case no_filtergroup:
+    case no_forcegraph:
+    case no_related:
+    case no_executewhen:
+    case no_outofline:
+    case no_fieldmap:
+    case no_owned_ds:
+    case no_dataset_alias:
+    case no_dedup:
+    case no_assertgrouped:
+    case no_preservemeta:
+    case no_keyeddistribute:
+    case no_subsort:
+    case no_select:
+        type.setown(dataset->getType());
+        break;
+    case no_distribute:
+    case no_distributed:
+    case no_assertdistributed:
+        newRecordType.set(recordType);
+        break;
+    case no_cosort:
+    case no_sort:
+    case no_sorted:
+    case no_assertsorted:
+    case no_topn:
+    case no_stepped:            // stepped implies the sort order matches the stepped criteria
+    case no_nonempty:
+        newRecordType.set(recordType);
+        if (!hasAttribute(localAtom, parms) && !hasAttribute(globalAtom, parms))
+            nowGrouped = isGrouped(dataset);
+        break;
+    case no_group:
+    case no_grouped:
+        newRecordType.set(recordType);
+        nowGrouped = (parms.isItem(1) && !parms.item(1).isAttribute());
+        break;
+    case no_loop:
+        {
+            newRecordType.set(recordType);
+            IHqlExpression & body = parms.item(4);
+            nowGrouped = isGrouped(dataset) || isGrouped(body.queryChild(0));
+            break;
+        }
+    case no_graphloop:
+        {
+            newRecordType.set(recordType);
+            IHqlExpression & body = parms.item(2);
+            nowGrouped = isGrouped(dataset) || isGrouped(body.queryChild(0));
+            break;
+        }
+    case no_serialize:
+        {
+            assertex(parms.ordinality() >= 2);
+            IHqlExpression & form = parms.item(1);
+            assertex(form.isAttribute());
+            type.setown(getSerializedForm(datasetType, form.queryName()));
+            break;
+        }
+    case no_deserialize:
+        {
+            assertex(parms.ordinality() >= 3);
+            IHqlExpression & record = parms.item(1);
+            IHqlExpression & form = parms.item(2);
+            assertex(form.isAttribute());
+            ITypeInfo * recordType = record.queryType();
+            OwnedITypeInfo rowType = makeRowType(LINK(recordType));
+            assertex(record.getOperator() == no_record);
+            if (isGrouped(datasetType))
+            {
+                ITypeInfo * childType = datasetType->queryChildType();
+                OwnedITypeInfo newChildType = replaceChildType(childType, rowType);
+                type.setown(replaceChildType(datasetType, newChildType));
+            }
+            else
+                type.setown(replaceChildType(datasetType, rowType));
+
+            //MORE: The distribution etc. won't be correct....
+            type.setown(setLinkCountedAttr(type, true));
+
+#ifdef _DEBUG
+            OwnedITypeInfo serializedType = getSerializedForm(type, form.queryName());
+            assertex(recordTypesMatch(serializedType, datasetType));
+#endif
+            break;
+        }
+    case no_rowsetindex:
+    case no_rowsetrange:
+        type.set(childType);
+        break;
+    case no_datasetfromrow:
+    case no_datasetfromdictionary:
+        recordArg = 0;
+        break;
+    default:
+        UNIMPLEMENTED_XY("Type calculation for dataset operator", getOpString(op));
+        break;
+    }
+
+    if (!type)
+    {
+        if (!newRecordType)
+        {
+            assertex(recordArg != NotFound);
+            IHqlExpression * record = parms.item(recordArg).queryRecord();
+            newRecordType.setown(createRecordType(record));
+        }
+
+        type.setown(createDatasetType(newRecordType, nowGrouped));
+        if (linkCounted)
+            type.setown(setLinkCountedAttr(type, true));
+        if (streamed)
+            type.setown(setStreamedAttr(type, true));
+    }
+
+    return type.getClear();
+}
+
+extern HQL_API bool hasSameSortGroupDistribution(IHqlExpression * expr, IHqlExpression * other)
+{
+    CHqlMetaInfo & left = queryMetaProperty(expr)->meta;
+    CHqlMetaInfo & right = queryMetaProperty(other)->meta;
+    return left.matches(right);
+}
+
+extern HQL_API bool hasKnownSortGroupDistribution(IHqlExpression * expr, bool isLocal)
+{
+    return queryMetaProperty(expr)->meta.hasKnownSortGroupDistribution(isLocal);
 }

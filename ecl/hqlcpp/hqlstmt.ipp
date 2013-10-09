@@ -19,19 +19,6 @@
 
 #include "hqlstmt.hpp"
 
-//Sometimes the number of definitions can get very very large.  
-//To help with that situation the following option creates an array of "hashes" of the definitions
-//It uses more memory, but has much better cache locality than accessing a member of the definition
-
-#define CACHE_DEFINITION_HASHES
-inline unsigned getSearchHash(IHqlExpression * search)
-{
-    unsigned hash = search->getHash();
-    return (unsigned short)((hash >> 16) | hash);
-}
-//typedef UnsignedArray DefinitionHashArray;
-typedef UnsignedShortArray DefinitionHashArray;
-
 //---------------------------------------------------------------------------
 
 class HqlStmts;
@@ -82,6 +69,41 @@ protected:
 
 typedef IArrayOf<HqlStmt> HqlStmtArray;
 
+//The elements are kept in the hash table, but not linked - they are owned by an associated array.
+class HQLCPP_API AssociationCache : public SuperHashTableOf<HqlExprAssociation, IHqlExpression>
+{
+public:
+    AssociationCache() {}
+    ~AssociationCache() { releaseAll(); }
+
+    IMPLEMENT_SUPERHASHTABLEOF_REF_FIND(HqlExprAssociation, IHqlExpression);
+
+    virtual void onAdd(void *et) { }
+    virtual void onRemove(void *et) { }
+    virtual unsigned getHashFromElement(const void *et) const
+    {
+        const HqlExprAssociation * elem = reinterpret_cast<const HqlExprAssociation *>(et);
+        return elem->represents->getHash();
+    }
+    virtual unsigned getHashFromFindParam(const void *fp) const
+    {
+        const IHqlExpression * expr = (const IHqlExpression *)fp;
+        return expr->getHash();
+    }
+    virtual const void *getFindParam(const void *et) const
+    {
+        const HqlExprAssociation * elem = reinterpret_cast<const HqlExprAssociation *>(et);
+        return elem->represents;
+    }
+    virtual bool matchesFindParam(const void *et, const void *fp, unsigned) const
+    {
+        const IHqlExpression * expr = (const IHqlExpression *)fp;
+        const HqlExprAssociation * elem = reinterpret_cast<const HqlExprAssociation *>(et);
+        return expr == elem->represents;
+    }
+};
+
+
 class HQLCPP_API HqlStmts : public IArrayOf<HqlStmt>
 {
     friend class BuildCtx;
@@ -95,27 +117,14 @@ public:
     HqlStmt *                       queryStmt() { return owner; };
 
     void appendOwn(HqlExprAssociation & next);
-
-    inline bool zap(HqlExprAssociation & next)
-    {
-        unsigned match = defs.find(next);
-        if (match == NotFound)
-            return false;
-        defs.remove(match);
-#ifdef CACHE_DEFINITION_HASHES
-        exprHashes.remove(match);
-#endif
-        return true;
-    }
+    bool zap(HqlExprAssociation & next);
 
 protected:
     HqlStmt *                       owner;
     CIArrayOf<HqlExprAssociation>   defs;
     // A bit mask of which types of associations this contains.  Don't worry about false positives.
     unsigned                        associationMask;
-#ifdef CACHE_DEFINITION_HASHES
-    DefinitionHashArray             exprHashes;
-#endif
+    AssociationCache                exprAssociationCache;
 };
 
 

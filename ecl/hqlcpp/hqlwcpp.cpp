@@ -587,10 +587,10 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     IHqlExpression *body = funcdef->queryChild(0);
     IHqlExpression *formals = funcdef->queryChild(1);
 
-    if (body->hasProperty(includeAtom) || body->hasProperty(ctxmethodAtom) || body->hasProperty(gctxmethodAtom) || body->hasProperty(methodAtom) || body->hasProperty(sysAtom) || body->hasProperty(omethodAtom))
+    if (body->hasAttribute(includeAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(gctxmethodAtom) || body->hasAttribute(methodAtom) || body->hasAttribute(sysAtom) || body->hasAttribute(omethodAtom))
         return false;
 
-    IHqlExpression *proto = body->queryProperty(prototypeAtom);
+    IHqlExpression *proto = body->queryAttribute(prototypeAtom);
     if (proto)
     {
         StringBuffer s;
@@ -599,15 +599,15 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
         return true;
     }
     enum { ServiceApi, RtlApi, FastApi, CApi, CppApi, LocalApi } api = ServiceApi;
-    bool isVirtual = funcdef->hasProperty(virtualAtom);
-    bool isLocal = body->hasProperty(localAtom);
-    if (body->hasProperty(eclrtlAtom))
+    bool isVirtual = funcdef->hasAttribute(virtualAtom);
+    bool isLocal = body->hasAttribute(localAtom);
+    if (body->hasAttribute(eclrtlAtom))
         api = RtlApi;
-    else if (body->hasProperty(fastAtom))
+    else if (body->hasAttribute(fastAtom))
         api = FastApi;
-    else if (body->hasProperty(cAtom))
+    else if (body->hasAttribute(cAtom))
         api = CApi;
-    else if (body->hasProperty(cppAtom))
+    else if (body->hasAttribute(cppAtom))
         api = CppApi;
     else if (isLocal || isVirtual)
         api = LocalApi;
@@ -656,17 +656,17 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
 
     bool firstParam = true;
     out.append('(');
-    if (body->hasProperty(contextAtom))
+    if (body->hasAttribute(contextAtom))
     {
         out.append("ICodeContext * ctx");
         firstParam = false;
     }
-    else if (body->hasProperty(globalContextAtom) )
+    else if (body->hasAttribute(globalContextAtom) )
     {
         out.append("IGlobalCodeContext * gctx");
         firstParam = false;
     }
-    else if (body->hasProperty(userMatchFunctionAtom))
+    else if (body->hasAttribute(userMatchFunctionAtom))
     {
         out.append("IMatchWalker * results");
         firstParam = false;
@@ -786,7 +786,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     ITypeInfo *paramType = param->queryType();
     
     //Case is significant if these parameters are use for BEGINC++ sections
-    _ATOM paramName = param->queryName();
+    IAtom * paramName = param->queryName();
     StringBuffer paramNameText;
     paramNameText.append(paramName).toLowerCase();
 
@@ -832,7 +832,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
         }
         break;
     case type_set:
-        if (!queryProperty(paramType, oldSetFormatAtom))
+        if (!queryAttribute(paramType, oldSetFormatAtom))
         {
             out.append("bool");
             if (paramName)
@@ -873,7 +873,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
             out.append(" &");
         break;
     case type_set:
-        if (!queryProperty(paramType, oldSetFormatAtom))
+        if (!queryAttribute(paramType, oldSetFormatAtom))
         {
             if (isConst)
                 out.append("const ");
@@ -1115,38 +1115,38 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 unsigned firstArg = 0;
                 unsigned numArgs = expr->numChildren();
 
-                if (props->hasProperty(ctxmethodAtom))
+                if (props->hasAttribute(ctxmethodAtom))
                 {
                     out.append("ctx->");
                 }
-                else if (props->hasProperty(gctxmethodAtom))
+                else if (props->hasAttribute(gctxmethodAtom))
                 {
                     out.append("gctx->");
                 }
-                else if (props->hasProperty(methodAtom))
+                else if (props->hasAttribute(methodAtom))
                 {
                     generateExprCpp(expr->queryChild(firstArg)).append("->");
                     ++firstArg;
                 }
-                else if (props->hasProperty(omethodAtom))
+                else if (props->hasAttribute(omethodAtom))
                 {
                     generateExprCpp(expr->queryChild(firstArg)).append(".");
                     ++firstArg;
                 }
-                if (props->hasProperty(namespaceAtom))
+                if (props->hasAttribute(namespaceAtom))
                 {
                     getProperty(props, namespaceAtom, out);
                     out.append("::");
                 }
                 getProperty(props, entrypointAtom, out);
                 out.append('(');
-                if (props->hasProperty(contextAtom))
+                if (props->hasAttribute(contextAtom))
                 {
                     out.append("ctx");
                     if (numArgs)
                         out.append(',');
                 }
-                else if (props->hasProperty(globalContextAtom))
+                else if (props->hasAttribute(globalContextAtom))
                 {
                     out.append("gctx");
                     if (numArgs)
@@ -1237,6 +1237,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 generateChildExpr(expr, 0);
                 if (hasWrapperModifier(child->queryType()))
                 {
+                    bool extend = expr->hasAttribute(extendAtom);
                     out.append(".");
                     ITypeInfo * type = expr->queryType();
                     switch (type->getTypeCode())
@@ -1245,18 +1246,26 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                     case type_varstring:
                     case type_qstring:
                     case type_utf8:
-                        out.append("refstr()");
+                        if (extend)
+                            out.append("refexstr()");
+                        else
+                            out.append("refstr()");
                         break;
                     case type_data:
-                        out.append("refdata()");
+                        if (extend)
+                            out.append("refexdata()");
+                        else
+                            out.append("refdata()");
                         break;
                     case type_row:
+                        assertex(!extend);
                         out.append("getbytes()");
                         break;
                     case type_set:
                     case type_dictionary:
                     case type_table:
                     case type_groupedtable:
+                        assertex(!extend);
                         if (hasLinkCountedModifier(type))
                             out.append("refrows()");
                         else
@@ -1264,7 +1273,10 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                         break;
                     case type_unicode:
                     case type_varunicode:
-                        out.append("refustr()");
+                        if (extend)
+                            out.append("refexustr()");
+                        else
+                            out.append("refustr()");
                         break;
                     }
                 }
@@ -1350,7 +1362,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
             {
                 IHqlExpression * body = expr->queryChild(0);
                 assertex(body->getOperator() == no_external);
-                IHqlExpression * entrypoint = queryPropertyChild(body, entrypointAtom, 0);
+                IHqlExpression * entrypoint = queryAttributeChild(body, entrypointAtom, 0);
                 getStringValue(out, entrypoint);
                 break;
             }
@@ -2082,7 +2094,7 @@ void HqlCppWriter::setOutput(IFile * _targetFile, IIOStream * _target)
     out.ensureCapacity(FILE_CHUNK_SIZE + 2 * REASONABLE_LINE_LIMIT);
 }
 
-void HqlCppSectionWriter::generateSection(unsigned delta, _ATOM section, unsigned pass)
+void HqlCppSectionWriter::generateSection(unsigned delta, IAtom * section, unsigned pass)
 {
     HqlStmts * match = instance.querySection(section);
     if (match)

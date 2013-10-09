@@ -110,13 +110,13 @@ public:
     {
         ctx->restoreCluster();
     }
-    virtual void startPersist(const char * name)
+    virtual IRemoteConnection *startPersist(const char * name)
     {
-        ctx->startPersist(name);
+        return ctx->startPersist(name);
     }
-    virtual void finishPersist()
+    virtual void finishPersist(IRemoteConnection *persistLock)
     {
-        ctx->finishPersist();
+        ctx->finishPersist(persistLock);
     }
     virtual bool queryResolveFilesLocally()
     {
@@ -150,9 +150,9 @@ public:
     {
         ctx->clearPersist(logicalName);
     }
-    virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
     {
-        ctx->updatePersist(logicalName, eclCRC, allCRC);
+        ctx->updatePersist(persistLock, logicalName, eclCRC, allCRC);
     }
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC)
     {
@@ -279,7 +279,10 @@ private:
 
 public:
     EclAgentWorkflowMachine(EclAgent & _agent);
-    void returnPersistVersion(char const * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { persist.setown(new PersistVersion(logicalName, eclCRC, allCRC, isFile)); }
+    void returnPersistVersion(char const * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+    {
+        persist.setown(new PersistVersion(logicalName, eclCRC, allCRC, isFile));
+    }
 
 protected:
     virtual void begin();
@@ -303,6 +306,7 @@ private:
     Owned<IWorkflowScheduleConnection> wfconn;
     Owned<PersistVersion> persist;
     bool persistsPrelocked;
+    MapStringToMyClass<IRemoteConnection> persistCache;
 };
 
 class EclAgentQueryLibrary : public CInterface
@@ -363,13 +367,12 @@ private:
     bool isRemoteWorkunit;
     bool resolveFilesLocally;
     bool writeResultsToStdout;
+    Owned<IUserDescriptor> standAloneUDesc;
     outputFmts outputFmt;
     unsigned __int64 stopAfter;
     CriticalSection wusect;
     StringArray tempFiles;
     CriticalSection tfsect;
-    Owned<IRemoteConnection> persistLock;
-    MapStringToMyClass<IRemoteConnection> persistCache;
     Array persistReadLocks;
 
     Owned<ILoadedDllEntry> dll;
@@ -389,6 +392,7 @@ private:
     ILogMsgHandler *logMsgHandler;
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
+    int retcode;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -399,10 +403,10 @@ private:
 
     void processXmlParams(const IPropertyTree *params);
     bool checkPersistUptoDate(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer & errText);
-    bool isPersistUptoDate(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
-    bool changePersistLockMode(unsigned mode, const char * name, bool repeat);
+    bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
+    bool changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat);
     bool expandLogicalName(StringBuffer & fullname, const char * logicalName);
-    void getPersistReadLock(const char * logicalName);
+    IRemoteConnection *getPersistReadLock(const char * logicalName);
     void doSimpleResult(type_t type, int size, char * buffer, int sequence);
     IWUResult *updateResult(const char *name, unsigned sequence);
     IConstWUResult *getResult(const char *name, unsigned sequence);
@@ -454,7 +458,7 @@ public:
     void setDebugPaused();
     void setDebugRunning();
     void setBlockedOnPersist(const char * logicalName);
-    void setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkunit, bool _resolveFilesLocally, bool _writeResultsToStdout, outputFmts _outputFmt);
+    void setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkunit, bool _resolveFilesLocally, bool _writeResultsToStdout, outputFmts _outputFmt, IUserDescriptor *_standAloneUDesc);
     inline bool needToLockWorkunit() { return !isStandAloneExe; }           //If standalone exe then either no dali, or a unique remote workunit.
 
     virtual void setResultInt(const char * stepname, unsigned sequence, __int64);
@@ -492,6 +496,8 @@ public:
     virtual char *getGroupName();
     virtual char *queryIndexMetaData(char const * lfn, char const * xpath);
     virtual void  abort();
+    virtual int getRetcode();
+    virtual void setRetcode(int code);
 
     virtual bool fileExists(const char * filename);
     virtual char * getExpandLogicalName(const char * logicalName);
@@ -501,12 +507,10 @@ public:
     virtual IUserDescriptor *queryUserDescriptor();
     virtual void selectCluster(const char * cluster);
     virtual void restoreCluster();
-    virtual void startPersist(const char * name);
-    virtual void cachePersist(const char * name);
-    virtual void decachePersist(const char * name);
-    virtual void finishPersist();
+    virtual IRemoteConnection *startPersist(const char * name);
+    virtual void finishPersist(IRemoteConnection *persistLock);
     virtual void clearPersist(const char * logicalName);
-    virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC);
     virtual bool queryResolveFilesLocally() { return resolveFilesLocally; }
     virtual bool queryRemoteWorkunit() { return isRemoteWorkunit; }
@@ -521,7 +525,10 @@ public:
 
 //New workflow interface
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
-    virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { if(workflow) workflow->returnPersistVersion(logicalName, eclCRC, allCRC, isFile); }
+    virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+    {
+        if(workflow) workflow->returnPersistVersion(logicalName, eclCRC, allCRC, isFile);
+    }
 
     virtual void fail(int code, char const * str); 
     void failv(int code, char const * fmt, ...) __attribute__((format(printf, 3, 4)));
@@ -609,7 +616,7 @@ public:
     }
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
-        return allocatorMetaCache->ensure(meta, activityId);
+        return allocatorMetaCache->ensure(meta, activityId, roxiemem::RHFnone);
     }
     virtual const char *cloneVString(const char *str) const
     {
@@ -633,9 +640,9 @@ public:
     virtual void updateWULogfile();
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id) const
+    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
-        return createRoxieRowAllocator(*rowManager, meta, activityId, id, roxiemem::RHFnone);
+        return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
     }
 };
 

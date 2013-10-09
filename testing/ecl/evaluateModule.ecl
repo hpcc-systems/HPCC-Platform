@@ -10,4 +10,4 @@ t := MODULE
 END;
 
 EVALUATE(t);
-EVALUATE(t, c);
+EVALUATE(t, C);
