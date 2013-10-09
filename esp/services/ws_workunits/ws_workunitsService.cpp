@@ -695,11 +695,11 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/AWUsCacheMinutes", process, service);
     cfg->getPropInt(xpath.str(), awusCacheMinutes);
 
-    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@netAddress", process, service);
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@netAddress", process, service);
     if (cfg->hasProp(xpath.str()))
     {
         sashaServerIp.set(cfg->queryProp(xpath.str()));
-        xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@port", process, service);
+        xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/serverForArchivedECLWU/@port", process, service);
         sashaServerPort = cfg->getPropInt(xpath.str(), DEFAULT_SASHA_PORT);
     }
 
@@ -990,7 +990,7 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
             params->setProp("Protect", streq(sAction.str(), "protect"));
         if (*action==ActionChangeState && streq(sAction.str(), "settofailed"))
             params->setProp("State",4);
-        if (*action==ActionRestore)
+        if ((*action==ActionRestore) && !sashaServerIp.isEmpty())
         {
             params->setProp("sashaServerIP", sashaServerIp.get());
             params->setProp("sashaServerPort", sashaServerPort);
