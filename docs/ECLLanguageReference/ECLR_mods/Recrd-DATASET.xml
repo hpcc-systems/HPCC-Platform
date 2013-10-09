@@ -282,8 +282,8 @@
         <row>
           <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
-          <entry>Optional. Specifies records are created on the node upon
-          which the activity is performed. </entry>
+          <entry>Optional. Specifies records are created on every node.
+          </entry>
         </row>
       </tbody>
     </tgroup>
@@ -1439,13 +1439,14 @@ OUTPUT(ds);         </programlisting>
     determines the structure. The integer COUNTER can be used to number each
     iteration of the <emphasis>transform</emphasis> function.</para>
 
-    <para>LOCAL executes separately and independently on each node. </para>
+    <para>LOCAL executes separately and independently on each node.</para>
 
     <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>IMPORT STD;
 msg(UNSIGNED c) := 'Rec ' + (STRING)c + ' on node ' + (STRING)(STD.system.Thorlib.Node()+1);
 
+// DISTRIBUTED example
 DS := DATASET(CLUSTERSIZE * 2,
               TRANSFORM({STRING line}, 
                         SELF.line := msg(COUNTER)), 
@@ -1460,14 +1461,17 @@ DS;
    Rec 6 on node 3 
 */
 
-DS2 := DATASET(CLUSTERSIZE * 2,
+// LOCAL example
+
+DS2 := DATASET(2,
               TRANSFORM({STRING line},
                         SELF.line := msg(COUNTER)),
               LOCAL);
 DS2;
 
-/* creates CLUSTERSIZE * 2 records on each node
-   instead of two records on each node
+/* creates 2 records on each node
+An alternative (and clearer) way to do
+what the previous example did using DISTRIBUTED
 */</programlisting>
 
     <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
