@@ -431,7 +431,7 @@ interface IDistributedFileDirectory: extends IInterface
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
 
-    virtual IDistributedFile *lookup(   const CDfsLogicalFileName &logicalname,
+    virtual IDistributedFile *lookup(   CDfsLogicalFileName &logicalname,
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
                                         bool hold = false,
@@ -652,7 +652,7 @@ extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, St
 
 extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user);
 
-extern da_decl const char *normalizeLFN(const char *s, StringBuffer &normalized, IUserDescriptor *user);
+extern da_decl const char *normalizeLFN(const char *s, StringBuffer &normalized);
 
 extern da_decl IDFAttributesIterator *createSubFileFilter(IDFAttributesIterator *_iter,IUserDescriptor* _user, bool includesub, unsigned timems=INFINITE); // takes ownership of iter
 

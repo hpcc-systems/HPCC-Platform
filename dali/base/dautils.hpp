@@ -59,11 +59,12 @@ class da_decl CDfsLogicalFileName
     CMultiDLFN *multi;   // for temp superfile
     bool external;
     bool allowospath;
-    IUserDescriptor *udesc;
+
 public:
     CDfsLogicalFileName();
     ~CDfsLogicalFileName();
 
+    CDfsLogicalFileName & operator = (CDfsLogicalFileName const &from);
     void set(const char *lfn);
     void set(const CDfsLogicalFileName &lfn);
     bool setValidate(const char *lfn,bool removeforeign=false); // checks for invalid chars
@@ -71,7 +72,6 @@ public:
     bool setFromMask(const char *partmask,const char *rootdir=NULL);
     void clear();
     bool isSet() const;
-    void setUserDescriptor(IUserDescriptor *_udesc) { udesc = _udesc; }
     /*
      * Foreign files are distributed files whose meta data is stored on a foreign
      * Dali Server, so their names are resolved externally.
@@ -133,6 +133,9 @@ public:
     const void resolveWild();  // only for multi
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
+    bool isExpanded() const;
+    void expand(IUserDescriptor *user);
+    void normalizeName(const char * name, StringAttr &res);
 };
 
 // abstract class, define getCmdText to return tracing text of commands
