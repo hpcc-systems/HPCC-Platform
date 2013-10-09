@@ -30,23 +30,24 @@ installConfs ()
     printf "Installing %-44s ..." "${fileName}"
 
     if [ ! -e ${configPath}/${fileName} ]; then
-        # Always install new files without comment
+        # Always install configuration file if there is no working configuration file on system
         cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
         cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/rpmnew/${fileName}
         log_success_msg
-    elif [ -e ${configPath}/rpmnew/${fileName} ] && ! `diff -q ${configPath}/rpmnew/${fileName} ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} >/dev/null` ; then
-        # There are changes in the default config since last installed
-        if ! `diff -q ${configPath}/rpmnew/${fileName} ${configPath}/${fileName} >/dev/null` ; then
-            # User has made their own changes too, so don't overwrite
-            log_failure_msg "Not overwriting modified configuration file ${fileName}"
+    elif [ -e ${configPath}/rpmnew/${fileName} ] && ! `diff -q ${configPath}/rpmnew/${fileName} ${configPath}/${fileName} >/dev/null` ; then
+        # user has modified working configuration file so do not overwrite
+        if ! `diff -q ${configPath}/rpmnew/${fileName}  ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} >/dev/null` ; then
+            log_failure_msg "Not overwriting modified configuration file ${fileName}. Default configuration file ${fileName} has changed since previous installation. Some features may not be available.  Please refer to the installation documentation."
         else
-            # User has NOT made their own changes - ok to update
-            cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
-            cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/rpmnew/${fileName}
-            log_success_msg "Updated configuration file ${fileName}"
+            log_failure_msg "Not overwriting modified configuration file ${fileName}"
         fi
+    elif [ -e ${configPath}/rpmnew/${fileName} ] &&  `diff -q ${configPath}/rpmnew/${fileName} ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} >/dev/null` ; then
+        # The previous installed configuration file does not differ from the configuration file in this package
+        log_success_msg "No changes to configuration file ${fileName} in this package versus previously installed version of ${fileName}"
     else
-        log_success_msg "No changes to configuration file ${fileName}"
+        cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
+        cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/rpmnew/${fileName}
+        log_success_msg "Updated configuration file ${fileName}"
     fi
 }
 
