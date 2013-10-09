@@ -1283,6 +1283,7 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
     [min_ver("1.46")] bool IsLibrary;
     [min_ver("1.46")] string Priority;
     [min_ver("1.46")] string WUSnapShot; //Label
+    [min_ver("1.46")] string CompileTime;
     [min_ver("1.46")] ESParray<string> LibrariesUsed;
     [min_ver("1.46")] int CountGraphs;
     [min_ver("1.46")] ESParray<string> GraphIds;
