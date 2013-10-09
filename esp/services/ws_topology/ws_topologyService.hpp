@@ -87,6 +87,8 @@ private:
     bool                                m_bDiskThresholdIsPercentage;
     bool                                m_bEncapsulatedSystem;
     bool                                m_enableSNMP;
+    StringAttr                          defaultTargetClusterName;
+    StringAttr                          defaultTargetClusterPrefix;
 
     void getThorXml(const char *cluster,StringBuffer& strBuff);
     void getThorLog(const char *cluster,MemoryBuffer& returnbuff);
@@ -116,6 +118,8 @@ public:
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
 
     bool onTpClusterQuery(IEspContext &context, IEspTpClusterQueryRequest &req, IEspTpClusterQueryResponse &resp);
+
+    bool onTpListTargetClusters(IEspContext &context, IEspTpListTargetClustersRequest &req, IEspTpListTargetClustersResponse &resp);
 
     bool onTpTargetClusterQuery(IEspContext &context, IEspTpTargetClusterQueryRequest &req, IEspTpTargetClusterQueryResponse &resp);
 

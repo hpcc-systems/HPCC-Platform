@@ -74,6 +74,15 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
     xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/PreflightProcessFilter", process, service);
     cfg->getProp(xpath.str(), m_preflightProcessFilter);
 
+    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/DefaultTargetCluster/@name", process, service);
+    if (cfg->hasProp(xpath.str()))
+    {
+        defaultTargetClusterName.set(cfg->queryProp(xpath.str()));
+        xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/DefaultTargetCluster/@prefix", process, service);
+        if (cfg->hasProp(xpath.str()))
+            defaultTargetClusterPrefix.set(cfg->queryProp(xpath.str()));
+    }
+
     m_enableSNMP = false;
 }
 
@@ -947,6 +956,100 @@ bool CWsTopologyEx::onTpClusterQuery(IEspContext &context, IEspTpClusterQueryReq
     }
     catch(IException* e)
     {   
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return false;
+}
+
+bool CWsTopologyEx::onTpListTargetClusters(IEspContext &context, IEspTpListTargetClustersRequest &req, IEspTpListTargetClustersResponse &resp)
+{
+    try
+    {
+        if (!context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, false))
+            throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
+
+        //another client (like configenv) may have updated the constant environment so reload it
+        m_envFactory->validateCache();
+
+        Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+        if (!conn)
+            return false;
+
+        bool foundDefault = false;
+        bool hasHThor = false;
+        bool hasThor = false;
+        const char* defaultClusterName = defaultTargetClusterName.get();
+        const char* defaultClusterPrefix = defaultTargetClusterPrefix.get();
+        IArrayOf<IEspTpClusterNameType> clusters;
+        Owned<IPropertyTreeIterator> targets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+        ForEach(*targets)
+        {
+            IPropertyTree &target = targets->query();
+            const char* name = target.queryProp("@name");
+            const char* prefix = target.queryProp("@prefix");
+            if (!name || !*name || !prefix || !*prefix)
+                continue;//invalid entry
+
+            Owned<IEspTpClusterNameType> tc = new CTpClusterNameType("", "");
+            tc->setName(name);
+            tc->setType(prefix);
+
+            if (defaultClusterName && defaultClusterPrefix && strieq(defaultClusterName, name) &&
+                strieq(defaultClusterPrefix, prefix))
+            {
+                foundDefault = true;
+                tc->setIsDefault(true);
+            }
+
+            if (!foundDefault && !hasHThor)
+            {
+                ClusterType targetClusterType = HThorCluster;
+                getClusterType(prefix, targetClusterType);
+                if (targetClusterType == HThorCluster)
+                        hasHThor = true;
+                else if (targetClusterType == ThorLCRCluster)
+                        hasThor = true;
+            }
+
+            clusters.append(*tc.getLink());
+        }
+        if (!foundDefault)
+        {  //No default target is specified or the default target does not match with any. Use the
+            //following rules to decide a default target: if an hthor is found, it will be the 'default';
+            //if no hthor, the first thor cluster will be the 'default';
+            //If no hthor and no thor, the first roxie cluster will be the 'default'.
+            ForEachItemIn(i, clusters)
+            {
+                IEspTpClusterNameType& tc = clusters.item(i);
+                if (hasHThor)
+                {
+                    ClusterType targetClusterType = HThorCluster;
+                    if (HThorCluster == getClusterType(tc.getType(), targetClusterType))
+                    {
+                        tc.setIsDefault(true);
+                        break;
+                    }
+                }
+                else if (hasThor)
+                {
+                    ClusterType targetClusterType = HThorCluster;
+                    if (ThorLCRCluster == getClusterType(tc.getType(), targetClusterType))
+                    {
+                        tc.setIsDefault(true);
+                        break;
+                    }
+                }
+                else
+                {
+                    tc.setIsDefault(true);
+                    break;
+                }
+            }
+        }
+        resp.setTargetClusters(clusters);
+    }
+    catch(IException* e)
+    {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
     return false;
