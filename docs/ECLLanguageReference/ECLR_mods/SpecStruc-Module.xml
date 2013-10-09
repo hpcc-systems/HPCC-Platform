@@ -16,8 +16,10 @@
     </indexterm> ]</emphasis><emphasis role="bold"> [, LIBRARY<indexterm>
       <primary>LIBRARY</primary>
     </indexterm>(</emphasis><emphasis>interface</emphasis><emphasis
-  role="bold">) ]</emphasis><emphasis role="bold">
-  </emphasis><emphasis></emphasis></para>
+  role="bold">) ]</emphasis><emphasis role="bold"> <emphasis role="bold">[,
+  FORWARD<indexterm>
+      <primary>FORWARD</primary>
+    </indexterm> ]</emphasis></emphasis><emphasis></emphasis></para>
 
   <para><emphasis>members;</emphasis></para>
 
@@ -89,6 +91,19 @@
             </indexterm>. The <emphasis>parameters</emphasis> passed to the
           MODULE must exactly match the parameters passed to the specified
           <emphasis>interface</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">FORWARD</emphasis></entry>
+
+          <entry>Optional. Delays processing of definitions until they are
+          used. Adding <emphasis role="bold">,FORWARD</emphasis> to a MODULE
+          delays processing of definitions within the module until they are
+          used. This has two main effects: It prevents pulling in dependencies
+          for definitions that are never used and it allows earlier
+          definitions to refer to later definitions. <emphasis
+          role="bold">Note: Circular references are still
+          illegal.</emphasis></entry>
         </row>
       </tbody>
     </tgroup>
@@ -314,7 +329,17 @@ Mod3 := MODULE(Mod1) //a fully concete instance
   EXPORT func(INTEGER sc) := val + sc; //overrides inherited func
 END;
 OUTPUT(Mod2.func(5)); //result is 15
-OUTPUT(Mod3.func(5)); //result is 6</programlisting>
+OUTPUT(Mod3.func(5)); //result is 6
+
+//FORWARD example
+EXPORT MyModule := MODULE, FORWARD
+  EXPORT INTEGER foo := bar;
+  EXPORT INTEGER bar := 42;
+END;
+
+MyModule.foo;
+
+</programlisting>
 
     <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
     Structure</link>, <link linkend="Attribute_Visibility">Definition
