@@ -262,6 +262,22 @@ ESPStruct TpServices
     ESParray<ESPstruct TpSashaServer> TpSashaServers;
 };
 
+ESPStruct TpClusterNameType
+{
+    string Name;
+    string Type;
+    bool   IsDefault;
+};
+
+ESPrequest TpListTargetClustersRequest
+{
+};
+
+ESPresponse [exceptions_inline] TpListTargetClustersResponse
+{
+    ESParray<ESPstruct TpClusterNameType>   TargetClusters;
+};
+
 //  ===========================================================================
 ESPStruct TpTargetCluster
 {
@@ -583,6 +599,7 @@ ESPservice [noforms, version("1.19"), default_client_version("1.19"), exceptions
     ESPmethod [resp_xsl_default("/esp/xslt/tplog.xslt")] TpLogFile(TpLogFileRequest, TpLogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/tplogdisplay.xslt")] TpLogFileDisplay(TpLogFileRequest, TpLogFileResponse);
     ESPmethod TpGetComponentFile(TpGetComponentFileRequest, TpGetComponentFileResponse);
+    ESPmethod TpListTargetClusters(TpListTargetClustersRequest, TpListTargetClustersResponse);
 
     ESPmethod SystemLog(SystemLogRequest, SystemLogResponse);
 };
