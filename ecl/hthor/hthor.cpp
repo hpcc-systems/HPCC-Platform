@@ -935,6 +935,9 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
     desc->queryProperties().setProp("@format","utf8n");
     desc->queryProperties().setProp("@rowTag",rowTag.str());
     desc->queryProperties().setProp("@kind", "xml");
+    const char *recordECL = helper.queryRecordECL();
+    if (recordECL && *recordECL)
+        desc->queryProperties().setProp("ECL", recordECL);
 }
 
 //=====================================================================================================
