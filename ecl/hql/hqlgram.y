@@ -10147,6 +10147,15 @@ JoinFlag
                             $$.setExpr(createAttribute(unorderedAtom));
                             $$.setPosition($1);
                         }
+    | GROUP '(' startSortOrder heterogeneous_expr_list ')' endSortOrder
+                        {
+                            HqlExprArray args;
+                            $4.unwindCommaList(args);
+                            OwnedHqlExpr sortlist = createSortList(args);
+                            OwnedHqlExpr groupAttr = createExprAttribute(groupAtom, sortlist.getClear());
+                            OwnedHqlExpr impliedAttr = createComma(createAttribute(lookupAtom), createAttribute(manyAtom));
+                            $$.setExpr(createComma(groupAttr.getClear(), impliedAttr.getClear()), $1);
+                        }
     ;
 
 

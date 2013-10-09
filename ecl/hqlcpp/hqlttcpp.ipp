@@ -196,6 +196,7 @@ protected:
     IHqlExpression * normalizeDedup(IHqlExpression * expr);
 //  IHqlExpression * normalizeIndexBuild(IHqlExpression * expr);
     IHqlExpression * normalizeGroup(IHqlExpression * expr);
+    IHqlExpression * normalizeJoinAndGroup(IHqlExpression * expr);
     IHqlExpression * normalizeJoinOrDenormalize(IHqlExpression * expr);
     IHqlExpression * normalizeTableToAggregate(IHqlExpression * expr, bool canOptimizeCasts);
     IHqlExpression * normalizeTableGrouping(IHqlExpression * expr);
