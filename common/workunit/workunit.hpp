@@ -1078,6 +1078,7 @@ enum WUSortField
     WUSFbatchinputfile = 18,
     WUSFbatchoutputfile = 19,
     WUSFtotalthortime = 20,
+    WUSFwildwuid = 21,
     WUSFterm = 0,
     WUSFreverse = 256,
     WUSFnocase = 512,
