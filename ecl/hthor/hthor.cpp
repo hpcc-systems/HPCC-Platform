@@ -7889,7 +7889,7 @@ void CHThorDiskReadBaseActivity::close()
     if(ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
-        if(dFile&&persistent) 
+        if(dFile)
             dFile->setAccessed();
         ldFile.clear();
     }
