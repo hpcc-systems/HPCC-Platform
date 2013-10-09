@@ -96,6 +96,11 @@ protected:
         return (node) ? node->hasProp(xpath) : false;
     }
 
+    virtual const char *queryId() const
+    {
+        return (node) ? node->queryProp("@id") : NULL;
+    }
+
     virtual bool getSysFieldTranslationEnabled() const {return false;}
     virtual bool getEnableFieldTranslation() const
     {
@@ -234,20 +239,27 @@ public:
         return NULL;
     }
 
-    bool hasSuperFile(const char *superFileName) const
+    const char *locateSuperFile(const char *superFileName) const
     {
         if (!superFileName || !*superFileName || !TYPE::node)
-            return false;
+            return NULL;
 
         StringBuffer xpath;
         if (TYPE::hasProp(TYPE::makeSuperFileXPath(xpath, superFileName)))
-            return true;
+            return TYPE::queryId();
         ForEachItemIn(idx, bases)
         {
             if (bases.item(idx).hasProp(xpath))
-                return true;
+                return bases.item(idx).queryId();
         }
 
+        return NULL;
+    }
+
+    bool hasSuperFile(const char *superFileName) const
+    {
+        if (locateSuperFile(superFileName))
+            return true;
         return false;
     }
 
@@ -452,13 +464,49 @@ public:
             {
                 Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL);
                 Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"), false);
+
+                StringArray libnames, unresolvedLibs;
+                gatherLibraryNames(libnames, unresolvedLibs, *wufactory, *cw, qs);
+
+                PointerIArrayOf<IHpccPackage> libraries;
+                ForEachItemIn(libitem, libnames)
+                {
+                    const char *libname = libnames.item(libitem);
+                    const IHpccPackage *libpkg = matchPackage(libname);
+                    if (libpkg)
+                        libraries.append(LINK(const_cast<IHpccPackage*>(libpkg)));
+                    else
+                        unmatchedQueries.append(libname);
+                }
+
                 filelist->addFilesFromQuery(cw, this, queryid);
                 Owned<IReferencedFileIterator> refFiles = filelist->getFiles();
                 ForEach(*refFiles)
                 {
                     IReferencedFile &rf = refFiles->query();
-                    if (rf.getFlags() & RefFileInPackage)
+                    unsigned flags = rf.getFlags();
+                    if (flags & RefFileInPackage)
+                    {
+                        if (flags & RefFileSuper)
+                        {
+                            const char *pkgid = rf.queryPackageId();
+                            if (!pkgid || !*pkgid)
+                                continue;
+                            ForEachItemIn(libPkgItem, libraries)
+                            {
+                                IHpccPackage *libpkg = libraries.item(libPkgItem);
+                                const char *libpkgid = libpkg->locateSuperFile(rf.getLogicalName());
+                                if (libpkgid && !strieq(libpkgid, pkgid))
+                                {
+                                    VStringBuffer msg("For query %s SuperFile %s defined in package %s redefined for library %s in package %s", 
+                                        queryid, rf.getLogicalName(), pkgid, libpkg->queryId(), libpkgid);
+                                    warn.append(msg.str());
+                                }
+                            }
+                        }
+
                         continue;
+                    }
                     VStringBuffer fullname("%s/%s", queryid, rf.getLogicalName());
                     unmatchedFiles.append(fullname);
                 }
