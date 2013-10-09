@@ -42,6 +42,7 @@ interface IReferencedFile : extends IInterface
     virtual const char *getLogicalName() const =0;
     virtual unsigned getFlags() const =0;
     virtual const SocketEndpoint &getForeignIP(SocketEndpoint &ep) const =0;
+    virtual const char *queryPackageId() const =0;
 };
 
 interface IReferencedFileIterator : extends IIteratorOf<IReferencedFile> { };

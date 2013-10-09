@@ -34,10 +34,13 @@ interface IHpccPackage : extends IInterface
 {
     virtual ISimpleSuperFileEnquiry *resolveSuperFile(const char *superFileName) const = 0;
     virtual bool hasSuperFile(const char *superFileName) const = 0;
+    virtual const char *locateSuperFile(const char *superFileName) const = 0;
+
     virtual const char *queryEnv(const char *varname) const = 0;
     virtual bool getEnableFieldTranslation() const = 0;
     virtual const IPropertyTree *queryTree() const = 0;
     virtual hash64_t queryHash() const = 0;
+    virtual const char *queryId() const = 0;
 };
 
 interface IHpccPackageMap : extends IInterface
