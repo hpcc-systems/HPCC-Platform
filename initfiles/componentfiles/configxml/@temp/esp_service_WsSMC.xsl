@@ -174,6 +174,11 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:if test="string(@allowNewRoxieOnDemandQuery) != ''">
                 <AllowNewRoxieOnDemandQuery><xsl:value-of select="@allowNewRoxieOnDemandQuery"/></AllowNewRoxieOnDemandQuery>
             </xsl:if>
+            <xsl:if test="string(@defaultTargetCluster) != ''">
+                      <xsl:variable name="targetClusterName" select="@defaultTargetCluster"/>
+                      <xsl:variable name="targetClusterPrefix" select="/Environment/Software/Topology/Cluster[@name=$targetClusterName]/@prefix"/>
+                      <DefaultTargetCluster  name="{$targetClusterName}" prefix="{$targetClusterPrefix}"/>
+            </xsl:if>
             <xsl:if test="string(@enableSystemUseRewrite) != ''">
                 <SystemUseRewrite><xsl:value-of select="@enableSystemUseRewrite"/></SystemUseRewrite>
             </xsl:if>

@@ -90,6 +90,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="defaultTargetCluster" type="topologyClusterType" use="optional">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Default target for published queries</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="disableUppercaseTranslation" type="xs:boolean" use="optional" default="false">
                 <xs:annotation>
                     <xs:appinfo>
