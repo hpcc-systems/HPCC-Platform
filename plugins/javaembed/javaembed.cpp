@@ -99,7 +99,7 @@ public:
         }
         newPath.append(".");
         optionStrings.append(newPath);
-        
+
         if (conf && conf->hasProp("jvmlibpath"))
         {
             StringBuffer libPath;
@@ -107,7 +107,7 @@ public:
             conf->getProp("jvmlibpath", libPath);
             optionStrings.append(libPath);
         }
-        
+
         if (conf && conf->hasProp("jvmoptions"))
         {
             optionStrings.appendList(conf->queryProp("jvmoptions"), ENVSEPSTR);
@@ -133,7 +133,7 @@ public:
         int createResult = JNI_CreateJavaVM(&javaVM, (void**)&env, &vm_args);
 
         delete [] options;
-        
+
         if (createResult != 0)
             throw MakeStringException(0, "javaembed: Unable to initialize JVM (%d)",createResult);
     }
@@ -220,7 +220,7 @@ public:
     {
         if (javaClass)
             JNIenv->DeleteGlobalRef(javaClass);
-        
+
         // According to the Java VM 1.7 docs, "A native thread attached to
         // the VM must call DetachCurrentThread() to detach itself before
         // exiting."
@@ -309,6 +309,8 @@ public:
         case 'L':
             {
                 // Result should be of class 'Number'
+                if (!result.l)
+                    return 0;
                 jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "longValue", "()J");
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
@@ -327,6 +329,8 @@ public:
         case 'L':
             {
                 // Result should be of class 'Number'
+                if (!result.l)
+                    return 0;
                 jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "doubleValue", "()D");
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
@@ -344,6 +348,8 @@ public:
         case 'L':
             {
                 // Result should be of class 'Boolean'
+                if (!result.l)
+                    return false;
                 jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "booleanValue", "()Z");
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
@@ -358,9 +364,10 @@ public:
         if (strcmp(returnType, "[B")!=0)
             throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         jbyteArray array = (jbyteArray) result.l;
-        __len = JNIenv->GetArrayLength(array);
-        __result = rtlMalloc(__len);
-        JNIenv->GetByteArrayRegion(array, 0, __len, (jbyte *) __result);
+        __len = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
+        __result = (__len > 0 ? rtlMalloc(__len) : NULL);
+        if (__result)
+            JNIenv->GetByteArrayRegion(array, 0, __len, (jbyte *) __result);
     }
     inline void getStringResult(jvalue &result, size32_t &__len, char * &__result)
     {
@@ -372,11 +379,19 @@ public:
         case 'L':
         {
             jstring sresult = (jstring) result.l;
-            size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
-            const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
-            size32_t chars = rtlUtf8Length(size, text);
-            rtlUtf8ToStrX(__len, __result, chars, text);
-            JNIenv->ReleaseStringUTFChars(sresult, text);
+            if (sresult)
+            {
+                size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
+                const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
+                size32_t chars = rtlUtf8Length(size, text);
+                rtlUtf8ToStrX(__len, __result, chars, text);
+                JNIenv->ReleaseStringUTFChars(sresult, text);
+            }
+            else
+            {
+                __len = 0;
+                __result = NULL;
+            }
             break;
         }
         default:
@@ -393,10 +408,18 @@ public:
         case 'L':
         {
             jstring sresult = (jstring) result.l;
-            size_t size = JNIenv->GetStringUTFLength(sresult); // Returns length in bytes (not chars)
-            const char * text =  JNIenv->GetStringUTFChars(sresult, NULL);
-            rtlUtf8ToUtf8X(__chars, __result, rtlUtf8Length(size, text), text);
-            JNIenv->ReleaseStringUTFChars(sresult, text);
+            if (sresult)
+            {
+                size_t size = JNIenv->GetStringUTFLength(sresult); // Returns length in bytes (not chars)
+                const char * text =  JNIenv->GetStringUTFChars(sresult, NULL);
+                rtlUtf8ToUtf8X(__chars, __result, rtlUtf8Length(size, text), text);
+                JNIenv->ReleaseStringUTFChars(sresult, text);
+            }
+            else
+            {
+                __chars = 0;
+                __result = NULL;
+            }
             break;
         }
         default:
@@ -413,11 +436,19 @@ public:
         case 'L':
         {
             jstring sresult = (jstring) result.l;
-            size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
-            const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
-            size32_t chars = rtlUtf8Length(size, text);
-            rtlUtf8ToUnicodeX(__chars, __result, chars, text);
-            JNIenv->ReleaseStringUTFChars(sresult, text);
+            if (sresult)
+            {
+                size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
+                const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
+                size32_t chars = rtlUtf8Length(size, text);
+                rtlUtf8ToUnicodeX(__chars, __result, chars, text);
+                JNIenv->ReleaseStringUTFChars(sresult, text);
+            }
+            else
+            {
+                __chars = 0;
+                __result = NULL;
+            }
             break;
         }
         default:
@@ -430,127 +461,131 @@ public:
             throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result (array expected)");
         type_t elemType = (type_t) _elemType;
         jarray array = (jarray) result.l;
-        int numResults = JNIenv->GetArrayLength(array);
+        int numResults = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
         rtlRowBuilder out;
         byte *outData = NULL;
         size32_t outBytes = 0;
-        if (elemSize != UNKNOWN_LENGTH)
+        if (numResults > 0)
         {
-            out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
-            outData = out.getbytes();
-        }
-        switch(returnType.get()[1])
-        {
-        case 'Z':
-            checkType(type_boolean, sizeof(jboolean), elemType, elemSize);
-            JNIenv->GetBooleanArrayRegion((jbooleanArray) array, 0, numResults, (jboolean *) outData);
-            break;
-        case 'B':
-            checkType(type_int, sizeof(jbyte), elemType, elemSize);
-            JNIenv->GetByteArrayRegion((jbyteArray) array, 0, numResults, (jbyte *) outData);
-            break;
-        case 'C':
-            // we COULD map to a set of string1, but is there any point?
-            throw MakeStringException(0, "javaembed: Return type mismatch (char[] not supported)");
-            break;
-        case 'S':
-            checkType(type_int, sizeof(jshort), elemType, elemSize);
-            JNIenv->GetShortArrayRegion((jshortArray) array, 0, numResults, (jshort *) outData);
-            break;
-        case 'I':
-            checkType(type_int, sizeof(jint), elemType, elemSize);
-            JNIenv->GetIntArrayRegion((jintArray) array, 0, numResults, (jint *) outData);
-            break;
-        case 'J':
-            checkType(type_int, sizeof(jlong), elemType, elemSize);
-            JNIenv->GetLongArrayRegion((jlongArray) array, 0, numResults, (jlong *) outData);
-            break;
-        case 'F':
-            checkType(type_real, sizeof(jfloat), elemType, elemSize);
-            JNIenv->GetFloatArrayRegion((jfloatArray) array, 0, numResults, (jfloat *) outData);
-            break;
-        case 'D':
-            checkType(type_real, sizeof(jdouble), elemType, elemSize);
-            JNIenv->GetDoubleArrayRegion((jdoubleArray) array, 0, numResults, (jdouble *) outData);
-            break;
-        case 'L':
-            if (strcmp(returnType, "[Ljava/lang/String;") == 0)
+            if (elemSize != UNKNOWN_LENGTH)
             {
-                for (int i = 0; i < numResults; i++)
+                out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
+                outData = out.getbytes();
+            }
+            switch(returnType.get()[1])
+            {
+            case 'Z':
+                checkType(type_boolean, sizeof(jboolean), elemType, elemSize);
+                JNIenv->GetBooleanArrayRegion((jbooleanArray) array, 0, numResults, (jboolean *) outData);
+                break;
+            case 'B':
+                checkType(type_int, sizeof(jbyte), elemType, elemSize);
+                JNIenv->GetByteArrayRegion((jbyteArray) array, 0, numResults, (jbyte *) outData);
+                break;
+            case 'C':
+                // we COULD map to a set of string1, but is there any point?
+                throw MakeStringException(0, "javaembed: Return type mismatch (char[] not supported)");
+                break;
+            case 'S':
+                checkType(type_int, sizeof(jshort), elemType, elemSize);
+                JNIenv->GetShortArrayRegion((jshortArray) array, 0, numResults, (jshort *) outData);
+                break;
+            case 'I':
+                checkType(type_int, sizeof(jint), elemType, elemSize);
+                JNIenv->GetIntArrayRegion((jintArray) array, 0, numResults, (jint *) outData);
+                break;
+            case 'J':
+                checkType(type_int, sizeof(jlong), elemType, elemSize);
+                JNIenv->GetLongArrayRegion((jlongArray) array, 0, numResults, (jlong *) outData);
+                break;
+            case 'F':
+                checkType(type_real, sizeof(jfloat), elemType, elemSize);
+                JNIenv->GetFloatArrayRegion((jfloatArray) array, 0, numResults, (jfloat *) outData);
+                break;
+            case 'D':
+                checkType(type_real, sizeof(jdouble), elemType, elemSize);
+                JNIenv->GetDoubleArrayRegion((jdoubleArray) array, 0, numResults, (jdouble *) outData);
+                break;
+            case 'L':
+                if (strcmp(returnType, "[Ljava/lang/String;") == 0)
                 {
-                    jstring elem = (jstring) JNIenv->GetObjectArrayElement((jobjectArray) array, i);
-                    size_t lenBytes = JNIenv->GetStringUTFLength(elem);  // in bytes
-                    const char *text =  JNIenv->GetStringUTFChars(elem, NULL);
+                    for (int i = 0; i < numResults; i++)
+                    {
+                        jstring elem = (jstring) JNIenv->GetObjectArrayElement((jobjectArray) array, i);
+                        size_t lenBytes = JNIenv->GetStringUTFLength(elem);  // in bytes
+                        const char *text =  JNIenv->GetStringUTFChars(elem, NULL);
 
-                    switch (elemType)
-                    {
-                    case type_string:
-                        if (elemSize == UNKNOWN_LENGTH)
+                        switch (elemType)
                         {
-                            out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
-                            outData = out.getbytes() + outBytes;
-                            * (size32_t *) outData = lenBytes;
-                            rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
-                            outBytes += lenBytes + sizeof(size32_t);
-                        }
-                        else
-                            rtlStrToStr(elemSize, outData, lenBytes, text);
-                        break;
-                    case type_varstring:
-                        if (elemSize == UNKNOWN_LENGTH)
-                        {
-                            out.ensureAvailable(outBytes + lenBytes + 1);
-                            outData = out.getbytes() + outBytes;
-                            rtlStrToVStr(0, outData, lenBytes, text);
-                            outBytes += lenBytes + 1;
-                        }
-                        else
-                            rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
-                        break;
-                    case type_utf8:
-                    case type_unicode:
-                    {
-                        size32_t numchars = rtlUtf8Length(lenBytes, text);
-                        if (elemType == type_utf8)
-                        {
-                            assertex (elemSize == UNKNOWN_LENGTH);
-                            out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
-                            outData = out.getbytes() + outBytes;
-                            * (size32_t *) outData = numchars;
-                            rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
-                            outBytes += lenBytes + sizeof(size32_t);
-                        }
-                        else
-                        {
+                        case type_string:
                             if (elemSize == UNKNOWN_LENGTH)
                             {
-                                // You can't assume that number of chars in utf8 matches number in unicode16 ...
-                                size32_t numchars16;
-                                rtlDataAttr unicode16;
-                                rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
-                                out.ensureAvailable(outBytes + numchars16*sizeof(UChar) + sizeof(size32_t));
+                                out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
                                 outData = out.getbytes() + outBytes;
-                                * (size32_t *) outData = numchars16;
-                                rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
-                                outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
+                                * (size32_t *) outData = lenBytes;
+                                rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                                outBytes += lenBytes + sizeof(size32_t);
                             }
                             else
-                                rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
+                                rtlStrToStr(elemSize, outData, lenBytes, text);
+                            break;
+                        case type_varstring:
+                            if (elemSize == UNKNOWN_LENGTH)
+                            {
+                                out.ensureAvailable(outBytes + lenBytes + 1);
+                                outData = out.getbytes() + outBytes;
+                                rtlStrToVStr(0, outData, lenBytes, text);
+                                outBytes += lenBytes + 1;
+                            }
+                            else
+                                rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
+                            break;
+                        case type_utf8:
+                        case type_unicode:
+                        {
+                            size32_t numchars = rtlUtf8Length(lenBytes, text);
+                            if (elemType == type_utf8)
+                            {
+                                assertex (elemSize == UNKNOWN_LENGTH);
+                                out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                                outData = out.getbytes() + outBytes;
+                                * (size32_t *) outData = numchars;
+                                rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                                outBytes += lenBytes + sizeof(size32_t);
+                            }
+                            else
+                            {
+                                if (elemSize == UNKNOWN_LENGTH)
+                                {
+                                    // You can't assume that number of chars in utf8 matches number in unicode16 ...
+                                    size32_t numchars16;
+                                    rtlDataAttr unicode16;
+                                    rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+                                    out.ensureAvailable(outBytes + numchars16*sizeof(UChar) + sizeof(size32_t));
+                                    outData = out.getbytes() + outBytes;
+                                    * (size32_t *) outData = numchars16;
+                                    rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
+                                    outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
+                                }
+                                else
+                                    rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    default:
+                        default:
+                            JNIenv->ReleaseStringUTFChars(elem, text);
+                            throw MakeStringException(0, "javaembed: Return type mismatch (ECL string type expected)");
+                        }
                         JNIenv->ReleaseStringUTFChars(elem, text);
-                        throw MakeStringException(0, "javaembed: Return type mismatch (ECL string type expected)");
+                        JNIenv->DeleteLocalRef(elem);
+                        if (elemSize != UNKNOWN_LENGTH)
+                            outData += elemSize;
                     }
-                    JNIenv->ReleaseStringUTFChars(elem, text);
-                    if (elemSize != UNKNOWN_LENGTH)
-                        outData += elemSize;
                 }
+                else
+                    throw MakeStringException(0, "javaembed: Return type mismatch (%s[] not supported)", returnType.get()+2);
+                break;
             }
-            else
-                throw MakeStringException(0, "javaembed: Return type mismatch (%s[] not supported)", returnType.get()+2);
-            break;
         }
         __isAllResult = false;
         __resultBytes = elemSize == UNKNOWN_LENGTH ? outBytes : elemSize * numResults;
@@ -580,7 +615,7 @@ public:
     {
         argcount = 0;
         argsig = NULL;
-        
+
         // Create a new frame for local references and increase the capacity
         // of those references to 64 (default is 16)
         sharedCtx->JNIenv->PushLocalFrame(64);
@@ -921,6 +956,7 @@ public:
                     sharedCtx->checkException();
                     inData += thisSize;
                     sharedCtx->JNIenv->SetObjectArrayElement((jobjectArray) v.l, idx, thisElem);
+                    sharedCtx->JNIenv->DeleteLocalRef(thisElem);
                     idx++;
                 }
             }
