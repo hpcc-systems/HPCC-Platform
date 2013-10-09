@@ -2332,8 +2332,9 @@ public:
             }
         };
         Owned<ISortedElementsTreeFilter> sc = new CScopeChecker(secmgr,secuser);
-        StringBuffer query("*");
+        StringBuffer query;
         StringBuffer so;
+        StringAttr namefilter("*");
         StringAttr namefilterlo;
         StringAttr namefilterhi;
         if (filters) {
@@ -2345,6 +2346,8 @@ public:
                     namefilterlo.set(fv);
                 else if (subfmt==WUSFwuidhigh) 
                     namefilterhi.set(fv);
+                else if (subfmt==WUSFwildwuid)
+                    namefilter.set(fv);
                 else {
                     query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
                     if (fmt&WUSFnocase)
@@ -2356,6 +2359,7 @@ public:
                 fv = fv + strlen(fv)+1;
             }
         }
+        query.insert(0, namefilter.get());
         if (sortorder) {
             for (unsigned i=0;sortorder[i]!=WUSFterm;i++) {
                 if (so.length())
