@@ -203,7 +203,7 @@ void getSashaNode(SocketEndpoint &ep)
     IPropertyTree *root = econn->queryRoot();
     if (!root)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Cannot get environment information.");
-    IPropertyTree *pt = root->queryPropTree("Software/SashaServerProcess/Instance[1]");
+    IPropertyTree *pt = root->queryPropTree("Software/SashaServerProcess[1]/Instance[1]");
     if (!pt)
         throw MakeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Archive Server not found.");
     ep.set(pt->queryProp("@netAddress"), pt->getPropInt("@port",DEFAULT_SASHA_PORT));

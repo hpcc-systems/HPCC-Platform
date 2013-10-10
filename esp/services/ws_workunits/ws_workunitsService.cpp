@@ -485,7 +485,10 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
                 case ActionRestore:
                 {
                     SocketEndpoint ep;
-                    getSashaNode(ep);
+                    if (params->hasProp("sashaServerIP"))
+                        ep.set(params->queryProp("sashaServerIP"), params->getPropInt("sashaServerPort"));
+                    else
+                        getSashaNode(ep);
 
                     Owned<ISashaCommand> cmd = createSashaCommand();
                     cmd->setAction(SCA_RESTORE);
@@ -691,6 +694,14 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     awusCacheMinutes = AWUS_CACHE_MIN_DEFAULT;
     VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/AWUsCacheMinutes", process, service);
     cfg->getPropInt(xpath.str(), awusCacheMinutes);
+
+    xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ServerForArchivedECLWU/@netAddress", process, service);
+    if (cfg->hasProp(xpath.str()))
+    {
+        sashaServerIp.set(cfg->queryProp(xpath.str()));
+        xpath.clear().appendf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ServerForArchivedECLWU/@port", process, service);
+        sashaServerPort = cfg->getPropInt(xpath.str(), DEFAULT_SASHA_PORT);
+    }
 
     directories.set(cfg->queryPropTree("Software/Directories"));
 
@@ -979,6 +990,11 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
             params->setProp("Protect", streq(sAction.str(), "protect"));
         if (*action==ActionChangeState && streq(sAction.str(), "settofailed"))
             params->setProp("State",4);
+        if (*action==ActionRestore)
+        {
+            params->setProp("sashaServerIP", sashaServerIp.get());
+            params->setProp("sashaServerPort", sashaServerPort);
+        }
 
         IArrayOf<IConstWUActionResult> results;
         if (doAction(context, req.getWuids(), *action, params, &results) && *action!=ActionDelete && checkRedirect(context))
@@ -1684,26 +1700,18 @@ bool getWsWuInfoFromSasha(IEspContext &context, SocketEndpoint &ep, const char* 
 
 #define     WUDETAILS_REFRESH_MINS 1
 
-void getArchivedWUInfo(IEspContext &context, const char *wuid, IEspWUInfoResponse &resp)
+void getArchivedWUInfo(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort, const char *wuid, IEspWUInfoResponse &resp)
 {
-    Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
-
-    Owned<IPropertyTree> root = &constEnv->getPTree();
-    if (!root)
-        throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment info");
-    Owned<IPropertyTreeIterator> instances = root->getElements("Software/SashaServerProcess/Instance");
-
-    ForEach(*instances)
+    SocketEndpoint ep;
+    if (sashaServerIP && *sashaServerIP)
+        ep.set(sashaServerIP, sashaServerPort);
+    else
+        getSashaNode(ep);
+    if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
     {
-        IPropertyTree &instance = instances->query();
-        SocketEndpoint ep(instance.queryProp("@netAddress"), instance.getPropInt("@port", 8877));
-        if (getWsWuInfoFromSasha(context, ep, wuid, &resp.updateWorkunit()))
-        {
-            resp.setAutoRefresh(WUDETAILS_REFRESH_MINS);
-            resp.setCanCompile(false);
-            return;
-        }
+        resp.setAutoRefresh(WUDETAILS_REFRESH_MINS);
+        resp.setCanCompile(false);
+        return;
     }
 
     throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT, "Cannot find workunit %s.", wuid);
@@ -1721,7 +1729,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
         checkAndTrimWorkunit("WUInfo", wuid);
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
-            getArchivedWUInfo(context, wuid.str(), resp);
+            getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
         else
         {
             try
@@ -1769,7 +1777,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             {
                 if (e->errorCode() != ECLWATCH_CANNOT_OPEN_WORKUNIT)
                     throw e;
-                getArchivedWUInfo(context, wuid.str(), resp);
+                getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
                 e->Release();
             }
 
@@ -2146,7 +2154,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     return;
 }
 
-void doWUQueryFromArchive(IEspContext &context, ArchivedWuCache &archivedWuCache, int cacheTime, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
+void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort,
+       ArchivedWuCache &archivedWuCache, int cacheTime, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
     SecAccessFlags accessOwn;
     SecAccessFlags accessOthers;
@@ -2161,7 +2170,10 @@ void doWUQueryFromArchive(IEspContext &context, ArchivedWuCache &archivedWuCache
     bool hasNextPage = true;
 
     SocketEndpoint ep;
-    getSashaNode(ep);
+    if (sashaServerIP && *sashaServerIP)
+        ep.set(sashaServerIP, sashaServerPort);
+    else
+        getSashaNode(ep);
 
     Owned<INode> sashaserver = createINode(ep);
 
@@ -2385,7 +2397,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
         const char* wuid = wuidStr.trim().str();
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
-            doWUQueryFromArchive(context, *archivedWuCache, awusCacheMinutes, req, resp);
+            doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
         else if(notEmpty(wuid) && looksLikeAWuid(wuid))
             doWUQueryBySingleWuid(context, wuid, resp);
         else if (notEmpty(req.getECL()) || notEmpty(req.getApplicationName()) || notEmpty(req.getApplicationKey()) || notEmpty(req.getApplicationData()))
