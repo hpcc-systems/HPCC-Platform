@@ -11539,7 +11539,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     JoinSortInfo joinInfo;
     joinInfo.findJoinSortOrders(expr, slidingAllowed);
 
-    if (atmostAttr && !joinInfo.conditionAllEqualities)
+    if (atmostAttr && joinInfo.hasHardRightNonEquality())
     {
         if (isAllJoin)
             allowAllToLookupConvert = false;
