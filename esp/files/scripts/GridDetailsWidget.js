@@ -48,11 +48,14 @@ define([
         idProperty: "Change Me",
 
         store: null,
+        toolbar: null,
+        gridTab: null,
         grid: null,
         contextMenu: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.toolbar = registry.byId(this.id + "Toolbar");
             this.gridTab = registry.byId(this.id + "_Grid");
         },
 

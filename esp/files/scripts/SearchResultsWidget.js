@@ -18,8 +18,11 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/on",
+    "dojo/promise/all",
 
     "dijit/form/Button",
+
+    "dojox/widget/Standby",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -38,8 +41,9 @@ define([
     "hpcc/SFDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, arrayUtil, on,
+], function (declare, lang, arrayUtil, on, all,
                 Button,
+                Standby,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, WsWorkunits, FileSpray, WsDfu, WUDetailsWidget, DFUWUDetailsWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
     return declare("SearchResultsWidget", [GridDetailsWidget], {
@@ -98,6 +102,11 @@ define([
                     context._onRowDblClick(row);
                 }
             });
+
+            this.standby = new Standby({ target: domID });
+            document.body.appendChild(this.standby.domNode);
+            this.standby.startup();
+
             return retVal;
         },
 
@@ -239,39 +248,46 @@ define([
             this.store.setData([]);
             this.grid.refresh();
             if (this.searchText) {
+                this.standby.show();
                 var context = this;
                 //  ECL WU  ---
-                WsWorkunits.WUQuery({ request: { Wuid: this.searchText }, suppressExceptionToaster: true }).then(function (response) {
-                    context.loadWUQueryResponse("Wuid", response);
-                });
-                WsWorkunits.WUQuery({ request: { Jobname: "*" + this.searchText + "*" } }).then(function (response) {
-                    context.loadWUQueryResponse("Job Name", response);
-                });
-                WsWorkunits.WUQuery({ request: { Owner: this.searchText } }).then(function (response) {
-                    context.loadWUQueryResponse("Owner", response);
-                });
-                WsWorkunits.WUQuery({ request: { ECL: this.searchText } }).then(function (response) {
-                    context.loadWUQueryResponse("ECL", response);
-                });
-                //  DFU WU  ---
-                FileSpray.GetDFUWorkunit({ request: { wuid: this.searchText }, suppressExceptionToaster: true }).then(function (response) {
-                    context.loadGetDFUWorkunitResponse("Wuid", response);
-                });
-                FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + this.searchText + "*" } }).then(function (response) {
-                    context.loadGetDFUWorkunitsResponse("Job Name", response);
-                });
-                FileSpray.GetDFUWorkunits({ request: { Owner: this.searchText } }).then(function (response) {
-                    context.loadGetDFUWorkunitsResponse("Owner", response);
-                });
-                //  Logical Files  ---
-                WsDfu.DFUQuery({ request: { LogicalName: "*" + this.searchText + "*" } }).then(function (response) {
-                    context.loadDFUQueryResponse("Logical Name", response);
-                });
-                WsDfu.DFUQuery({ request: { Description: "*" + this.searchText + "*" } }).then(function (response) {
-                    context.loadDFUQueryResponse("Description", response);
-                });
-                WsDfu.DFUQuery({ request: { Owner: this.searchText } }).then(function (response) {
-                    context.loadDFUQueryResponse("Owner", response);
+                all([
+                    WsWorkunits.WUQuery({ request: { Wuid: this.searchText }, suppressExceptionToaster: true }).then(function (response) {
+                        context.loadWUQueryResponse("Wuid", response);
+                    }),
+                    WsWorkunits.WUQuery({ request: { Jobname: "*" + this.searchText + "*" } }).then(function (response) {
+                        context.loadWUQueryResponse("Job Name", response);
+                    }),
+                    WsWorkunits.WUQuery({ request: { Owner: this.searchText } }).then(function (response) {
+                        context.loadWUQueryResponse("Owner", response);
+                    }),
+                    WsWorkunits.WUQuery({ request: { ECL: this.searchText } }).then(function (response) {
+                        context.loadWUQueryResponse("ECL", response);
+                    }),
+                    //  DFU WU  ---
+                    FileSpray.GetDFUWorkunit({ request: { wuid: this.searchText }, suppressExceptionToaster: true }).then(function (response) {
+                        context.loadGetDFUWorkunitResponse("Wuid", response);
+                    }),
+                    FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + this.searchText + "*" } }).then(function (response) {
+                        context.loadGetDFUWorkunitsResponse("Job Name", response);
+                    }),
+                    FileSpray.GetDFUWorkunits({ request: { Owner: this.searchText } }).then(function (response) {
+                        context.loadGetDFUWorkunitsResponse("Owner", response);
+                    }),
+                    //  Logical Files  ---
+                    WsDfu.DFUQuery({ request: { LogicalName: "*" + this.searchText + "*" } }).then(function (response) {
+                        context.loadDFUQueryResponse("Logical Name", response);
+                    }),
+                    WsDfu.DFUQuery({ request: { Description: "*" + this.searchText + "*" } }).then(function (response) {
+                        context.loadDFUQueryResponse("Description", response);
+                    }),
+                    WsDfu.DFUQuery({ request: { Owner: this.searchText } }).then(function (response) {
+                        context.loadDFUQueryResponse("Owner", response);
+                    })
+                ]).then(function (results) {
+                    context.standby.hide();
+                }, function (error) {
+                    context.standby.hide();
                 });
             }
         },
