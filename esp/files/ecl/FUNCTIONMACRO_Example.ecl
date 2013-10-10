@@ -3,7 +3,7 @@
   c2 := COUNT(infile);
   RETURN DATASET([{'Total Records',c2},
                   {'Recs=' + #TEXT(compareval),c1},
-                  {'Population Pct',(INTEGER)(((c2-c1)/c2)* 100.0)}],
+                  {'Population Pct',(INTEGER)(c1/c2 * 100.0)}],
                  {STRING15 valuetype,INTEGER val});
 ENDMACRO;
 
