@@ -119,6 +119,8 @@ private:
     StringAttr daliServers;
     Owned<DataCache> dataCache;
     Owned<ArchivedWuCache> archivedWuCache;
+    StringAttr sashaServerIp;
+    unsigned short sashaServerPort;
     BoolHash validClusters;
     CriticalSection crit;
     WUSchedule m_sched;
