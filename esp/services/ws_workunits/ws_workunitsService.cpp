@@ -3887,3 +3887,131 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     }
     return true;
 }
+
+void CWsWorkunitsEx::addProcess(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, MemoryBuffer &mb)
+{
+    IPropertyTreeIterator& proc = cwu->getProcesses(process, NULL);
+    ForEach (proc)
+    {
+        StringBuffer logName;
+        proc.query().getProp("@log",logName);
+        if (!logName.length())
+            continue;
+        StringBuffer pid;
+        pid.appendf("%d",proc.query().getPropInt("@pid"));
+        mb.clear();
+        if (0 == stricmp(process, "EclAgent"))
+            winfo.getWorkunitEclAgentLog(logName.str(), pid.str(), mb);
+        else if (0 == stricmp(process, "Thor"))
+            winfo.getWorkunitThorLog(logName.str(), mb);
+        else
+            return;
+
+        zipper->addContentToZIP(mb.length(), mb.bufferBase(), (char*)logName.str(), true);
+    }
+}
+
+
+bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest &req, IEspWUReportBugResponse &resp)
+{
+    try
+    {
+#ifndef _USE_ZLIB
+        throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"The data cannot be compressed.");
+#else
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cwu = factory->openWorkUnit(req.getWUID(), false);
+        if(!cwu.get())
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit %s.", req.getWUID());
+
+        //Create output report file
+        StringBuffer zipFile;
+        StringBuffer userName;
+        if (context.queryUser())
+            userName.append(context.queryUser()->getName());
+        zipFile.append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".zip");
+        SCMStringBuffer temp;
+        StringBuffer sb;
+        sb.append("Workunit:     ").append(cwu->getWuid(temp)).append("\r\n");
+        sb.append("User:         ").append(cwu->getUser(temp).str()).append("\r\n");
+        sb.append("Build Version:").append(req.getBuildVersion()).append("\r\n");
+        sb.append("Cluster:      ").append(cwu->getClusterName(temp).str()).append("\r\n");
+        if (req.getESPIPAddress())
+            sb.append("ESP:          ").append(req.getESPIPAddress()).append("\r\n");
+        if (req.getThorIPAddress())
+            sb.append("Thor:         ").append(req.getThorIPAddress()).append("\r\n");
+        sb.append("Exceptions:   ");
+        if (0 == cwu->getExceptionCount())
+            sb.append("None\r\n");
+        else
+        {
+            sb.append("\r\n");
+            Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
+            ForEach(*exceptions)
+            {
+                sb.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+            }
+        }
+        sb.append("Problem:      ").append(req.getProblemDescription()).append("\r\n\r\n");
+        sb.append("What Changed: ").append(req.getWhatChanged()).append("\r\n\r\n");
+        sb.append("Timing:       ").append(req.getWhereSlow()).append("\r\n\r\n");
+
+        //Zip all files together
+        {
+            IZZIPor* zipper = createZZIPor();
+#ifdef _DEBUG
+            zipper->setTraceLevel(100);
+#endif
+            StringBuffer fs;
+            //add report file to ZIP
+            fs.append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".txt");
+            zipper->addContentToZIP(sb.length(), (void*)sb.str(), (char*)fs.str(), false);
+
+            //add ECL query/archive to zip
+            Owned<IConstWUQuery> query = cwu->getQuery();
+            StringBuffer ecl;//String buffers containing file contents must persist until ziptofile is called !
+            if(query)
+            {
+                query->getQueryText(temp);
+                if (temp.length())
+                {
+                    fs.clear().append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".");
+                    fs.append(isArchiveQuery(temp.str()) ? "archive" : "ecl");
+                    ecl.append(temp.str());
+                    zipper->addContentToZIP(ecl.length(), (void*)ecl.str(), (char*)fs.str(), true);
+                }
+            }
+
+            //Add logfiles to ZIP
+            WsWuInfo winfo(context, cwu);
+            MemoryBuffer eclagentLogMB;
+            MemoryBuffer thorLogMB;
+            addProcess(zipper, cwu, winfo, "EclAgent", eclagentLogMB);
+            addProcess(zipper, cwu, winfo, "Thor", thorLogMB);
+
+            //Write out ZIP file
+            zipper->zipToFile(zipFile.str());
+        }
+
+        //Download ZIP file to user
+        Owned<IFile> f = createIFile(zipFile.str());
+        Owned<IFileIO> io = f->open(IFOread);
+        MemoryBuffer mb;
+        void * data = mb.reserve((unsigned)io->size());
+        size32_t read = io->read(0, (unsigned)io->size(), data);
+        mb.setLength(read);
+        resp.setThefile(mb);
+        resp.setThefile_mimetype(HTTP_TYPE_OCTET_STREAM);
+        StringBuffer headerStr("attachment;filename=");
+        headerStr.append(zipFile.str());
+        context.addCustomerHeader("Content-disposition", headerStr.str());
+        io->close();
+        f->remove();
+#endif
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
