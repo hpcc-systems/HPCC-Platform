@@ -444,7 +444,7 @@ void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
                 HqlExprArray args;
                 unwindChildren(args, &cur);
                 //MORE: Any default will now have the wrong type => remove it for the moment (ideally it would be projected)
-                removeProperty(args, defaultAtom);
+                removeAttribute(args, defaultAtom);
                 OwnedHqlExpr newField = createField(cur.queryId(), makeRowType(newRecord->getType()), args);
                 recordFields.append(*newField.getClear());
             }
@@ -2939,7 +2939,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
             {
                 IHqlExpression * newTransform = complexExtra->outputFields.createFilteredTransform(onFail->queryChild(0), NULL);
                 IHqlExpression * newOnFail = createExprAttribute(onFailAtom, newTransform);
-                transformed.setown(replaceOwnedProperty(transformed, newOnFail));
+                transformed.setown(replaceOwnedAttribute(transformed, newOnFail));
             }
             if (complexExtra->insertProject)
             {

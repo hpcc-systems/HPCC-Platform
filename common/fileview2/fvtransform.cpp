@@ -344,10 +344,10 @@ void * ViewTransformerRegistry::resolveExternal(IHqlExpression * funcdef)
 
     StringBuffer entry;
     StringBuffer lib;
-    getProperty(body, entrypointAtom, entry);
-    getProperty(body, libraryAtom, lib);
+    getAttribute(body, entrypointAtom, entry);
+    getAttribute(body, libraryAtom, lib);
     if (!lib.length())
-        getProperty(body, pluginAtom, lib);
+        getAttribute(body, pluginAtom, lib);
 
     ensureFileExtension(lib, SharedObjectExtension);
 
@@ -367,10 +367,10 @@ ViewFieldTransformer * ViewTransformerRegistry::createTransformer(IHqlExpression
 
     StringBuffer entry;
     StringBuffer lib;
-    getProperty(body, entrypointAtom, entry);
-    getProperty(body, libraryAtom, lib);
+    getAttribute(body, entrypointAtom, entry);
+    getAttribute(body, libraryAtom, lib);
     if (!lib.length())
-        getProperty(body, pluginAtom, lib);
+        getAttribute(body, pluginAtom, lib);
     if ((entry.length() == 0) || (lib.length() == 0))
         return NULL;
 

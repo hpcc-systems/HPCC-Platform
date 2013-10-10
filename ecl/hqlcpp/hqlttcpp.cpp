@@ -1906,7 +1906,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
         HqlExprArray  buildArgs;
         buildArgs.append(*cloneInheritedAnnotations(expr, dedup));
         unwindChildren(buildArgs, expr, 1);
-        removeProperty(buildArgs, dedupAtom);
+        removeAttribute(buildArgs, dedupAtom);
         return expr->clone(buildArgs);
     }
 
@@ -2015,7 +2015,7 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
 /*
     //Has a minor impact on unnecessary local attributes
     if (!translator.targetThor() && transformed->hasAttribute(localAtom) && localChangesActivityAction(transformed))
-        return removeProperty(transformed, localAtom);
+        return removeAttribute(transformed, localAtom);
 */
     return transformed.getClear();
 }
@@ -2039,7 +2039,7 @@ static IHqlExpression * convertDedupToGroupedDedup(IHqlExpression * expr, IHqlEx
     HqlExprArray dedupArgs;
     dedupArgs.append(*LINK(group));
     unwindChildren(dedupArgs, expr, 1);
-    removeProperty(dedupArgs, localAtom); //(since now a grouped dedup)
+    removeAttribute(dedupArgs, localAtom); //(since now a grouped dedup)
     OwnedHqlExpr ungroup = createDataset(no_group, expr->clone(dedupArgs), NULL);
     return cloneInheritedAnnotations(expr, ungroup);
 }
@@ -2114,8 +2114,8 @@ IHqlExpression * ThorHqlTransformer::normalizeDedup(IHqlExpression * expr)
             bool alreadySorted = isSortedForGroup(dataset, groupOrder, checkLocal);
             if (alreadySorted)
             {
-                OwnedHqlExpr noHash = removeProperty(expr, hashAtom);
-                OwnedHqlExpr noAll = removeProperty(noHash, allAtom);
+                OwnedHqlExpr noHash = removeAttribute(expr, hashAtom);
+                OwnedHqlExpr noAll = removeAttribute(noHash, allAtom);
                 if (isLocal)
                     return noAll.getClear();
                 return convertDedupToGroupedDedup(noAll, groupOrder, checkLocal && !isLocal);
@@ -2135,7 +2135,7 @@ IHqlExpression * ThorHqlTransformer::normalizeDedup(IHqlExpression * expr)
                 HqlExprArray dedupArgs;
                 dedupArgs.append(*ensureSortedForGroup(dataset, groupOrder, true, false, options.implicitGroupSubSort));
                 unwindChildren(dedupArgs, expr, 1);
-                removeProperty(dedupArgs, allAtom);
+                removeAttribute(dedupArgs, allAtom);
                 return expr->clone(dedupArgs);
             }
             else
@@ -2339,7 +2339,7 @@ IHqlExpression * ThorHqlTransformer::normalizeGroup(IHqlExpression * expr)
     //The the data could be globally sorted, but not distributed, and this is likely to be more efficient than redistributing...
     OwnedHqlExpr sorted = ensureSortedForGroup(dataset, sortlist, hasLocal, !translator.targetThor(), options.implicitGroupSubSort);
     if (sorted == dataset)
-        return removeProperty(expr, allAtom);
+        return removeAttribute(expr, allAtom);
     sorted.setown(cloneInheritedAnnotations(expr, sorted));
     sorted.setown(inheritAttribute(sorted, expr, skewAtom));
     sorted.setown(inheritAttribute(sorted, expr, thresholdAtom));
@@ -2391,7 +2391,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
     if (newsort)
     {
         OwnedHqlExpr newGroup = createExprAttribute(groupAtom, newsort.getClear());
-        return replaceOwnedProperty(expr, newGroup.getClear());
+        return replaceOwnedAttribute(expr, newGroup.getClear());
     }
 
     HqlExprArray inputs;
@@ -2662,7 +2662,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinAndGroup(IHqlExpression * expr
     joinArgs.append(*LINK(newLeft));
     joinArgs.append(*LINK(newRight));
     unwindChildren(joinArgs, expr, 2);
-    removeProperty(joinArgs, groupAtom);
+    removeAttribute(joinArgs, groupAtom);
     if (!hasLocal && !alwaysLocal)
         joinArgs.append(*createLocalAttribute());
     OwnedHqlExpr newJoin = expr->clone(joinArgs);
@@ -2716,7 +2716,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     {
         HqlExprArray args;
         unwindChildren(args, expr);
-        removeProperty(args, hashAtom);
+        removeAttribute(args, hashAtom);
         return expr->clone(args);
     }
 
@@ -2967,7 +2967,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             HqlExprArray args;
             args.append(*LINK(distribute));
             unwindChildren(args, expr, 1);
-            removeProperty(args, hashAtom);
+            removeAttribute(args, hashAtom);
             args.append(*createLocalAttribute());
             return expr->clone(args);
         }
@@ -2979,7 +2979,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         args.append(*createDistributedInput(leftDs, joinInfo.queryLeftReq(), false));
         args.append(*createDistributedInput(rightDs, joinInfo.queryRightReq(), false));
         unwindChildren(args, expr, 2);
-        removeProperty(args, hashAtom);
+        removeAttribute(args, hashAtom);
         args.append(*createLocalAttribute());
         return expr->clone(args);
     }
@@ -3049,7 +3049,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSelect(IHqlExpression * expr)
     HqlExprArray selectArgs;
     unwindChildren(selectArgs, expr);
     selectArgs.replace(*createSelector(no_left, ds, selSeq), 0);
-    removeProperty(selectArgs, newAtom);
+    removeAttribute(selectArgs, newAtom);
     args.append(*expr->clone(selectArgs));
 
     //Create a transform self := right;
@@ -3393,7 +3393,7 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
     IHqlExpression * groupBy = expr->queryChild(3);
 
     //If locally distributed then don't do anything
-    OwnedHqlExpr noMerge = removeProperty(expr, mergeAtom);
+    OwnedHqlExpr noMerge = removeAttribute(expr, mergeAtom);
     if (!translator.targetThor() || expr->hasAttribute(localAtom) || isPartitionedForGroup(dataset, groupBy, true))
         return noMerge.getClear();
 
@@ -3406,8 +3406,8 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
 
     HqlExprArray localAggregateArgs;
     unwindChildren(localAggregateArgs, aggregate);
-    removeProperty(localAggregateArgs, hashAtom);
-    removeProperty(localAggregateArgs, mergeAtom);
+    removeAttribute(localAggregateArgs, hashAtom);
+    removeAttribute(localAggregateArgs, mergeAtom);
     localAggregateArgs.append(*createLocalAttribute());
     localAggregateArgs.append(*createAttribute(sortedAtom));
 
@@ -3525,8 +3525,8 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
 
     HqlExprArray aggregateAttrs;
     unwindAttributes(aggregateAttrs, expr);
-    removeProperty(aggregateAttrs, aggregateAtom);
-    removeProperty(aggregateAttrs, fewAtom);
+    removeAttribute(aggregateAttrs, aggregateAtom);
+    removeAttribute(aggregateAttrs, fewAtom);
     if (!expr->hasAttribute(localAtom) && newGroupBy && !isGrouped(dataset) && isPartitionedForGroup(dataset, newGroupBy, true))
         aggregateAttrs.append(*createLocalAttribute());
 
@@ -3572,7 +3572,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
         }
 
         if (useHashAggregate && group->isConstant() && !translator.targetThor())
-            return removeProperty(expr, fewAtom);
+            return removeAttribute(expr, fewAtom);
 
         if (!expr->hasAttribute(manyAtom) && !expr->hasAttribute(sortedAtom))
         {
@@ -8820,7 +8820,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
                 if (expr->hasAttribute(embeddedAtom))
                 {
                     OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
-                    return removeProperty(transformed, embeddedAtom);
+                    return removeAttribute(transformed, embeddedAtom);
                 }
                 if (implicitLinkedChildRows && !expr->hasAttribute(_linkCounted_Atom))
                 {
@@ -9395,7 +9395,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             if (!sorted || queryAttribute(_implicitSorted_Atom, children))
             {
                 IHqlExpression * dataset = &children.item(0);
-                removeProperty(children, _implicitSorted_Atom);
+                removeAttribute(children, _implicitSorted_Atom);
 
                 if (sorted)
                     children.zap(*sorted);

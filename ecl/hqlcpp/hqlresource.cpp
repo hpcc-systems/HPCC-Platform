@@ -534,7 +534,7 @@ IHqlExpression * CResourceOptions::createSpillName(bool isGraphResult)
 
 IHqlExpression * appendUniqueAttr(IHqlExpression * expr)
 {
-    return replaceOwnedProperty(expr, createUniqueId());
+    return replaceOwnedAttribute(expr, createUniqueId());
 }
 
 
@@ -983,7 +983,7 @@ unsigned ChildDependentArray::findOriginal(IHqlExpression * expr)
 }
 //---------------------------------------------------------------------------
 
-static void appendCloneProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
+static void appendCloneAttribute(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
 {
     IHqlExpression * prop = expr->queryAttribute(name);
     if (prop)
@@ -1051,9 +1051,9 @@ void ResourcerInfo::addSpillFlags(HqlExprArray & args, bool isRead)
     if (outputToUseForSpill)
     {
         assertex(isRead);
-        appendCloneProperty(args, outputToUseForSpill, __compressed__Atom);
-        appendCloneProperty(args, outputToUseForSpill, jobTempAtom);
-        appendCloneProperty(args, outputToUseForSpill, _spill_Atom);
+        appendCloneAttribute(args, outputToUseForSpill, __compressed__Atom);
+        appendCloneAttribute(args, outputToUseForSpill, jobTempAtom);
+        appendCloneAttribute(args, outputToUseForSpill, _spill_Atom);
     }
     else
     {
@@ -5181,7 +5181,7 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
                 return transform(input);
             OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
             if (transformed->hasAttribute(balancedAtom) && isUnbalanced(expr))
-                return removeProperty(transformed, balancedAtom);
+                return removeAttribute(transformed, balancedAtom);
             return transformed.getClear();
         }
     case no_writespill:

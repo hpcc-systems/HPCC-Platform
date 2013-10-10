@@ -282,7 +282,7 @@ IHqlExpression * CTreeOptimizer::swapNodeWithChild(IHqlExpression * parent)
 IHqlExpression * CTreeOptimizer::forceSwapNodeWithChild(IHqlExpression * parent)
 {
     OwnedHqlExpr swapped = swapNodeWithChild(parent);
-    return replaceOwnedProperty(swapped, getNoHoistAttr());
+    return replaceOwnedAttribute(swapped, getNoHoistAttr());
 }
 
 IHqlExpression * CTreeOptimizer::getNoHoistAttr()
@@ -2151,7 +2151,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
         {
             IHqlExpression * counterAttr = transformed->queryAttribute(_countProject_Atom);
             if (counterAttr && !transformContainsCounter(transformed->queryChild(1), counterAttr->queryChild(0)))
-                return removeProperty(transformed, _countProject_Atom);
+                return removeAttribute(transformed, _countProject_Atom);
             //fallthrough
         }
     case no_newusertable:
@@ -2534,7 +2534,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             DBGLOG("Optimizer: Convert %s(,1) into PROJECT", queryNode0Text(transformed));
             unwindChildren(args, transformed, 3);
             //This is not a count project.. so remove the attribute.
-            removeProperty(args, _countProject_Atom);
+            removeAttribute(args, _countProject_Atom);
             return createDataset(no_hqlproject, args);
         }
         break;
@@ -2854,7 +2854,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     OwnedHqlExpr skip = createValue(no_skip, makeVoidType(), getInverse(skipFilter));
                     OwnedHqlExpr newTransform = appendOwnedOperand(limitTransform, skip.getClear());
                     OwnedHqlExpr newOnFail = createExprAttribute(onFailAtom, newTransform.getClear());
-                    return replaceOwnedProperty(ret, newOnFail.getClear());
+                    return replaceOwnedAttribute(ret, newOnFail.getClear());
                 }
             case no_if:
                 return swapIntoIf(transformed);
@@ -3276,7 +3276,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     if (!monitor.isComplex())
                     {
                         DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
-                        removeProperty(args, _internal_Atom);
+                        removeAttribute(args, _internal_Atom);
                         noteUnused(child);
                         return transformed->clone(args);
                     }

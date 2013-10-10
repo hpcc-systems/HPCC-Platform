@@ -1453,7 +1453,7 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
             if (dsOp == no_activetable)
             {
                 children.replace(*LINK(ds.queryChild(0)), 0);
-                removeProperty(children, newAtom);
+                removeAttribute(children, newAtom);
             }
             else if (!expr->hasAttribute(newAtom))
             {
@@ -1466,7 +1466,7 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
             if (children.ordinality() > 2)
             {
                 if (isAlwaysActiveRow(&ds) || ((dsOp == no_select) && ds.isDatarow()))
-                    removeProperty(children, newAtom);
+                    removeAttribute(children, newAtom);
             }
         }
         else
@@ -2942,7 +2942,7 @@ IHqlExpression * MergingHqlTransformer::createTransformed(IHqlExpression * expr)
             if (!same)
             {
                 if ((children.ordinality() > 2) && isAlwaysActiveRow(child))
-                    removeProperty(children, newAtom);
+                    removeAttribute(children, newAtom);
                 return expr->clone(children);
             }
             return LINK(expr);
@@ -3992,7 +3992,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
                 if (transformedDs->getOperator() == no_activetable)
                 {
                     children.replace(*LINK(transformedDs->queryChild(0)), 0);
-                    removeProperty(children, newAtom);
+                    removeAttribute(children, newAtom);
                 }
             }
             else
