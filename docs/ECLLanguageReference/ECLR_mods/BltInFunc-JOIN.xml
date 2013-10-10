@@ -585,8 +585,8 @@
     "half-keyed" and "full-keyed" JOINs (see the Keyed Join discussion
     below).</para>
 
-    <para>Use the SMART when the right side dataset is likely to be small
-    enough to fit in memory , but is not guaranteed to fit.</para>
+    <para>Use SMART when the right side dataset is likely to be small
+    enough to fit in memory, but is not guaranteed to fit.</para>
   </sect2>
 
   <sect2 id="Keyed_Joins">
