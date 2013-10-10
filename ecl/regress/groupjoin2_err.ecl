@@ -25,7 +25,8 @@ outRec makeOut(namesRec l, namesRec r) := TRANSFORM
     SELF.rname := r.name;
 END;
 
- // This syntax would be preferrable, but requires a new parser to allow the dynamic scoping of the names
+// Error: The expressions referred to in the GROUP are members of LEFT, not the output of the transform.
+// This syntax might be preferrable, but would require a new parser to allow the dynamic scoping of the names
 j := JOIN(nameDataset, nameDataset, LEFT.addr = RIGHT.addr AND LEFT.name != RIGHT.name, makeOut(LEFT, RIGHT), GROUP(lname, rname));
 
 r := TABLE(j, { lname, rname, unsigned cnt := COUNT(GROUP) });

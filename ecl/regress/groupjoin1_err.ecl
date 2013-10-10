@@ -25,6 +25,8 @@ outRec makeOut(namesRec l, namesRec r) := TRANSFORM
     SELF.rname := r.name;
 END;
 
+//Error: RIGHT.name isn't legal becuase you can only group on fields from LEFT
+//Error: LEFT.addr isn't legal because it isn't projected into the output
 j := JOIN(nameDataset, nameDataset, LEFT.addr = RIGHT.addr AND LEFT.name != RIGHT.name, makeOut(LEFT, RIGHT), GROUP(LEFT.name, RIGHT.name, LEFT.addr));
 
 r := TABLE(j, { lname, rname, unsigned cnt := COUNT(GROUP) });
