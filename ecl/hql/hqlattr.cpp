@@ -802,7 +802,7 @@ public:
                 if (expr->hasAttribute(_linkCounted_Atom))
                 {
                     OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
-                    return removeProperty(transformed, _linkCounted_Atom);
+                    return removeAttribute(transformed, _linkCounted_Atom);
                 }
                 break;
             }
@@ -3527,7 +3527,7 @@ IHqlExpression * queryLocationIndependent(IHqlExpression * expr)
 }
 
 
-static void clonePropertyAsModifier(Owned<ITypeInfo> & type, IHqlExpression * donor, IAtom * attr)
+static void cloneAttributeAsModifier(Owned<ITypeInfo> & type, IHqlExpression * donor, IAtom * attr)
 {
     if (queryAttribute(type, attr))
         return;
@@ -3556,13 +3556,13 @@ ITypeInfo * preserveTypeQualifiers(ITypeInfo * ownedType, IHqlExpression * donor
     }
 
     OwnedITypeInfo type = ownedType;
-    clonePropertyAsModifier(type, field, maxLengthAtom);
-    clonePropertyAsModifier(type, field, maxSizeAtom);
-    clonePropertyAsModifier(type, field, maxCountAtom);
+    cloneAttributeAsModifier(type, field, maxLengthAtom);
+    cloneAttributeAsModifier(type, field, maxSizeAtom);
+    cloneAttributeAsModifier(type, field, maxCountAtom);
     return type.getClear();
 }
 
-static bool cloneModifierAsProperty(HqlExprArray & args, ITypeInfo * donor, IAtom * attr)
+static bool cloneModifierAsAttribute(HqlExprArray & args, ITypeInfo * donor, IAtom * attr)
 {
     IHqlExpression * match = queryAttribute(donor, attr);
     if (!match)
@@ -3577,9 +3577,9 @@ static bool cloneModifierAsProperty(HqlExprArray & args, ITypeInfo * donor, IAto
 bool preserveTypeQualifiers(HqlExprArray & args, ITypeInfo * donor)
 {
     bool same = true;
-    same = cloneModifierAsProperty(args, donor, maxLengthAtom) && same;
-    same = cloneModifierAsProperty(args, donor, maxSizeAtom) && same;
-    same = cloneModifierAsProperty(args, donor, maxCountAtom) && same;
+    same = cloneModifierAsAttribute(args, donor, maxLengthAtom) && same;
+    same = cloneModifierAsAttribute(args, donor, maxSizeAtom) && same;
+    same = cloneModifierAsAttribute(args, donor, maxCountAtom) && same;
     return same;
 }
 

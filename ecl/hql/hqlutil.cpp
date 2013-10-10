@@ -4533,20 +4533,20 @@ IHqlExpression * removeChildOp(IHqlExpression * expr, node_operator op)
     return expr->clone(args);
 }
 
-IHqlExpression * removeProperty(IHqlExpression * expr, IAtom * attr)
+IHqlExpression * removeAttribute(IHqlExpression * expr, IAtom * attr)
 {
     HqlExprArray args;
     unwindChildren(args, expr);
-    if (removeProperty(args, attr))
+    if (removeAttribute(args, attr))
         return expr->clone(args);
     return LINK(expr);
 }
 
-IHqlExpression * replaceOwnedProperty(IHqlExpression * expr, IHqlExpression * ownedOperand)
+IHqlExpression * replaceOwnedAttribute(IHqlExpression * expr, IHqlExpression * ownedOperand)
 {
     HqlExprArray args;
     unwindChildren(args, expr);
-    removeProperty(args, ownedOperand->queryName());
+    removeAttribute(args, ownedOperand->queryName());
     args.append(*ownedOperand);
     return expr->clone(args);
 }
@@ -4559,7 +4559,7 @@ IHqlExpression * appendLocalAttribute(IHqlExpression * expr)
 
 IHqlExpression * removeLocalAttribute(IHqlExpression * expr)
 {
-    return removeProperty(expr, localAtom);
+    return removeAttribute(expr, localAtom);
 }
 
 bool hasOperand(IHqlExpression * expr, IHqlExpression * child)
@@ -5029,11 +5029,11 @@ IHqlExpression * removeVirtualFields(IHqlExpression * record)
     return record->clone(args);
 }
 
-static HqlTransformerInfo fieldPropertyRemoverInfo("FieldPropertyRemover");
-class FieldPropertyRemover : public NewHqlTransformer
+static HqlTransformerInfo fieldPropertyRemoverInfo("FieldAttributeRemover");
+class FieldAttributeRemover : public NewHqlTransformer
 {
 public:
-    FieldPropertyRemover(IAtom * _name) : NewHqlTransformer(fieldPropertyRemoverInfo), name(_name) {}
+    FieldAttributeRemover(IAtom * _name) : NewHqlTransformer(fieldPropertyRemoverInfo), name(_name) {}
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)
     {
@@ -5049,7 +5049,7 @@ public:
             {
                 OwnedHqlExpr transformed = transformField(expr);
                 while (transformed->hasAttribute(name))
-                    transformed.setown(removeProperty(transformed, name));
+                    transformed.setown(removeAttribute(transformed, name));
                 return transformed.getClear();
             }
 
@@ -5062,9 +5062,9 @@ private:
     IAtom * name;
 };
 
-IHqlExpression * removePropertyFromFields(IHqlExpression * expr, IAtom * name)
+IHqlExpression * removeAttributeFromFields(IHqlExpression * expr, IAtom * name)
 {
-    FieldPropertyRemover remover(name);
+    FieldAttributeRemover remover(name);
     return remover.transformRoot(expr);
 }
 
@@ -6445,7 +6445,7 @@ void WarningProcessor::addGlobalOnWarning(IHqlExpression * setMetaExpr)
 
 void WarningProcessor::processMetaAnnotation(IHqlExpression * expr)
 {
-    gatherMetaProperties(localOnWarnings, onWarningAtom, expr);
+    gatherMetaAttributes(localOnWarnings, onWarningAtom, expr);
 }
 
 void WarningProcessor::processWarningAnnotation(IHqlExpression * expr)
@@ -6825,7 +6825,7 @@ public:
             api = LocalApi;
 
         StringBuffer entrypoint;
-        getProperty(body, entrypointAtom, entrypoint);
+        getAttribute(body, entrypointAtom, entrypoint);
         if (entrypoint.length() == 0)
             return false;
 
@@ -7055,7 +7055,7 @@ public:
             api = LocalApi;
 
         StringBuffer entrypoint;
-        getProperty(body, entrypointAtom, entrypoint);
+        getAttribute(body, entrypointAtom, entrypoint);
         if (entrypoint.length() == 0)
             return false;
 

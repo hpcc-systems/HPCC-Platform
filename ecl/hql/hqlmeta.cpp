@@ -1505,7 +1505,7 @@ IHqlExpression * convertSubSortToGroupedSort(IHqlExpression * expr)
     args.append(*grouped.getClear());
     args.append(*LINK(newOrder));
     unwindChildren(args, expr, 3);
-    removeProperty(args, localAtom);
+    removeAttribute(args, localAtom);
     OwnedHqlExpr sorted = createDataset(no_sort, args);
     return createDataset(no_group, sorted.getClear());
 }

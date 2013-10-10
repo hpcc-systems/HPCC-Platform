@@ -576,7 +576,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef)
 {
     IHqlExpression *body = funcdef->queryChild(0);
     StringBuffer name;
-    getProperty(body, entrypointAtom, name);
+    getAttribute(body, entrypointAtom, name);
     if (!name.length())
         name.append(funcdef->queryName());
     return generateFunctionPrototype(funcdef, name);
@@ -995,7 +995,7 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
     //      if (hasConstModifier(retType))
     //          params.append("const ");
             params.append("byte * * & __result");
-            if (hasNonNullRecord(retType) && getBoolProperty(attrs, allocatorAtom, true))
+            if (hasNonNullRecord(retType) && getBoolAttribute(attrs, allocatorAtom, true))
                 params.append(", IEngineRowAllocator * _resultAllocator");
         }
         else
@@ -1010,7 +1010,7 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
     case type_set:
         {
             out.append("void");
-            if (!getBoolProperty(attrs, oldSetFormatAtom))
+            if (!getBoolAttribute(attrs, oldSetFormatAtom))
             {
                 params.append("bool & __isAllResult,");
                 params.append("size32_t & __lenResult,");
@@ -1135,10 +1135,10 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 }
                 if (props->hasAttribute(namespaceAtom))
                 {
-                    getProperty(props, namespaceAtom, out);
+                    getAttribute(props, namespaceAtom, out);
                     out.append("::");
                 }
-                getProperty(props, entrypointAtom, out);
+                getAttribute(props, entrypointAtom, out);
                 out.append('(');
                 if (props->hasAttribute(contextAtom))
                 {

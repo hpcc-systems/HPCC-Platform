@@ -468,7 +468,7 @@ extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, IIdAtom * ne
 }
 
 
-extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpression * annotation)
+extern HQL_API IHqlExpression * queryAnnotationAttribute(IAtom * search, IHqlExpression * annotation)
 {
     unsigned i=0;
     IHqlExpression * cur;
@@ -480,7 +480,7 @@ extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpr
     return NULL;
 }
 
-extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression * expr)
+extern HQL_API IHqlExpression * queryMetaAttribute(IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -489,7 +489,7 @@ extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression
             return NULL;
         if (kind == annotate_meta)
         {
-            IHqlExpression * cur = queryAnnotationProperty(search, expr);
+            IHqlExpression * cur = queryAnnotationAttribute(search, expr);
             if (cur)
                 return cur;
         }
@@ -497,7 +497,7 @@ extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression
     }
 }
 
-extern HQL_API void gatherMetaProperties(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
+extern HQL_API void gatherMetaAttributes(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -521,7 +521,7 @@ extern HQL_API void gatherMetaProperties(HqlExprArray & matches, IAtom * search,
     }
 }
 
-extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, IAtom * search, IHqlExpression * expr)
+extern HQL_API void gatherMetaAttributes(HqlExprCopyArray & matches, IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -4091,7 +4091,7 @@ IHqlScope * closeScope(IHqlScope * scope)
     return expr->closeExpr()->queryScope();
 }
 
-bool getProperty(IHqlExpression * expr, IAtom * propname, StringBuffer &ret)
+bool getAttribute(IHqlExpression * expr, IAtom * propname, StringBuffer &ret)
 {
     IHqlExpression* match = expr->queryAttribute(propname);
     if (match)
@@ -4467,7 +4467,7 @@ IHqlExpression * CHqlExpression::calcNormalizedSelector() const
         HqlExprArray args;
         appendArray(args, operands);
         args.replace(*LINK(normalizedLeft), 0);
-        removeProperty(args, newAtom);
+        removeAttribute(args, newAtom);
         return doCreateSelectExpr(args);
     }
     return NULL;
@@ -11458,7 +11458,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_select:
         //This can occur in very unusual situations...
         if ((parms.ordinality() > 2) && isAlwaysActiveRow(&parms.item(0)))
-            removeProperty(parms, newAtom);
+            removeAttribute(parms, newAtom);
         break;
     case no_denormalize:
         {
@@ -13617,7 +13617,7 @@ public:
             {
                 if (expr->hasAttribute(virtualAtom))
                 {
-                    OwnedHqlExpr cleaned = removeProperty(expr, virtualAtom);
+                    OwnedHqlExpr cleaned = removeAttribute(expr, virtualAtom);
                     return QuickHqlTransformer::createTransformed(cleaned);
                 }
                 break;
@@ -13673,7 +13673,7 @@ static bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur,
             {
                 HqlExprArray args;
                 unwindChildren(args, cur);
-                removeProperty(args, virtualAtom);
+                removeAttribute(args, virtualAtom);
                 newField.setown(createField(cur->queryId(), targetType.getLink(), args));
             }
             fields.append(*LINK(newField));
@@ -14265,7 +14265,7 @@ void unwindRecordAsSelects(HqlExprArray & children, IHqlExpression * record, IHq
 }
 
 
-void unwindProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
+void unwindAttribute(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
 {
     IHqlExpression * attr = expr->queryAttribute(name);
     if (attr)
@@ -14746,7 +14746,7 @@ IHqlExpression * createNullDictionary()
     return createDictionary(no_null, LINK(queryNullRecord()));
 }
 
-bool removeProperty(HqlExprArray & args, IAtom * name)
+bool removeAttribute(HqlExprArray & args, IAtom * name)
 {
     bool removed = false;
     ForEachItemInRev(idx, args)
@@ -14761,7 +14761,7 @@ bool removeProperty(HqlExprArray & args, IAtom * name)
     return removed;
 }
 
-void removeProperties(HqlExprArray & args)
+void removeAttributes(HqlExprArray & args)
 {
     ForEachItemInRev(idx, args)
     {
@@ -14911,7 +14911,7 @@ IHqlExpression * queryNewSelectAttrExpr()
 }
 
 //Follow inheritance structure when getting property value.
-IHqlExpression * queryRecordProperty(IHqlExpression * record, IAtom * name)
+IHqlExpression * queryRecordAttribute(IHqlExpression * record, IAtom * name)
 {
     IHqlExpression * match = record->queryAttribute(name);
     if (match)
@@ -14922,7 +14922,7 @@ IHqlExpression * queryRecordProperty(IHqlExpression * record, IAtom * name)
         switch (cur->getOperator())
         {
         case no_record:
-            return queryRecordProperty(cur, name);
+            return queryRecordAttribute(cur, name);
         case no_field:
         case no_ifblock:
             return NULL;
@@ -15079,8 +15079,8 @@ bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right)
 
 bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right)
 {
-    OwnedHqlExpr simpleLeft = removeProperty(left->queryRecord(), _payload_Atom);
-    OwnedHqlExpr simpleRight = removeProperty(right->queryRecord(), _payload_Atom);
+    OwnedHqlExpr simpleLeft = removeAttribute(left->queryRecord(), _payload_Atom);
+    OwnedHqlExpr simpleRight = removeAttribute(right->queryRecord(), _payload_Atom);
     return recordTypesMatch(simpleLeft->queryType(), simpleRight->queryType());
 }
 
@@ -15275,7 +15275,7 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
 }
 
 
-bool getBoolProperty(IHqlExpression * expr, IAtom * name, bool dft)
+bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft)
 {
     if (!expr)
         return dft;

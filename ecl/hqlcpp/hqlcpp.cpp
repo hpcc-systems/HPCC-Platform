@@ -1203,9 +1203,9 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
 
     IHqlExpression * funcDef = func->queryChild(0);
     StringBuffer libname, init, include;
-    getProperty(funcDef, libraryAtom, libname);
-    getProperty(funcDef, initfunctionAtom, init);
-    getProperty(funcDef, includeAtom, include);
+    getAttribute(funcDef, libraryAtom, libname);
+    getAttribute(funcDef, initfunctionAtom, init);
+    getAttribute(funcDef, includeAtom, include);
     if (init.length())
     {
         BuildCtx ctx(*this, initAtom);
@@ -5750,7 +5750,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             if (curTarget->length)
                 args.append(*LINK(curTarget->length));
             args.append(*createValue(no_reference, curTarget->expr->getType(), LINK(curTarget->expr)));
-            if (hasLinkCountedModifier(retType) && hasNonNullRecord(retType) && getBoolProperty(external, allocatorAtom, true))
+            if (hasLinkCountedModifier(retType) && hasNonNullRecord(retType) && getBoolAttribute(external, allocatorAtom, true))
                 args.append(*createRowAllocator(ctx, ::queryRecord(retType)));
 
             localBound.setFromTarget(*curTarget);
@@ -11135,7 +11135,7 @@ void HqlCppTranslator::expandFunctions(bool expandInline)
         {
             IHqlExpression & cur = (IHqlExpression &)code->helpers.item(idx);
             StringBuffer init;
-            if (getProperty(cur.queryChild(0), initfunctionAtom, init))
+            if (getAttribute(cur.queryChild(0), initfunctionAtom, init))
             {
                 StringBuffer initproto("extern \"C\" void SERVICE_API ");
                 initproto.append(init).append("(const char *);");

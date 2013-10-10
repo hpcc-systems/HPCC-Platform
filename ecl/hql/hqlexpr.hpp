@@ -1473,9 +1473,9 @@ inline IHqlExpression * queryNamedSymbol(IHqlExpression * expr) { return queryAn
 inline bool hasNamedSymbol(IHqlExpression * expr) { return hasAnnotation(expr, annotate_symbol); }
 inline bool hasAttribute(IAtom * search, const HqlExprArray & exprs) { return queryAttribute(search, exprs) != NULL; }
 
-extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpression * annotation);
-extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression * expr);
-extern HQL_API void gatherMetaProperties(HqlExprArray & matches, IAtom * search, IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryAnnotationAttribute(IAtom * search, IHqlExpression * annotation);
+extern HQL_API IHqlExpression * queryMetaAttribute(IAtom * search, IHqlExpression * expr);
+extern HQL_API void gatherMetaAttributes(HqlExprArray & matches, IAtom * search, IHqlExpression * expr);
 extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, IAtom * search, IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr);
@@ -1515,7 +1515,7 @@ extern HQL_API void unwindCopyList(HqlExprCopyArray &dst, IHqlExpression * expr,
 extern HQL_API void unwindCommaCompound(HqlExprArray & target, IHqlExpression * expr);
 extern HQL_API void unwindRecordAsSelects(HqlExprArray & children, IHqlExpression * record, IHqlExpression * ds, unsigned max = (unsigned)-1);
 extern HQL_API unsigned unwoundCount(IHqlExpression * expr, node_operator op);
-extern HQL_API void unwindProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name);
+extern HQL_API void unwindAttribute(HqlExprArray & args, IHqlExpression * expr, IAtom * name);
 extern HQL_API IHqlExpression * queryChildOperator(node_operator op, IHqlExpression * expr);
 extern HQL_API IHqlExpression * createSelector(node_operator op, IHqlExpression * ds, IHqlExpression * seq);
 extern HQL_API IHqlExpression * createUniqueId();
@@ -1548,8 +1548,8 @@ extern HQL_API IHqlExpression * getActiveTableSelector();
 extern HQL_API IHqlExpression * queryActiveTableSelector();
 extern HQL_API IHqlExpression * getSelf(IHqlExpression * ds);
 extern HQL_API IHqlExpression * querySelfReference();
-extern HQL_API bool removeProperty(HqlExprArray & args, IAtom * name);
-extern HQL_API void removeProperties(HqlExprArray & args);
+extern HQL_API bool removeAttribute(HqlExprArray & args, IAtom * name);
+extern HQL_API void removeAttributes(HqlExprArray & args);
 
 extern HQL_API bool isChildRelationOf(IHqlExpression * child, IHqlExpression * other);
 extern HQL_API IHqlExpression * queryRecord(ITypeInfo * type);
@@ -1604,7 +1604,7 @@ extern HQL_API IHqlExpression * querySelectorDataset(IHqlExpression * select, bo
 extern HQL_API IHqlExpression * replaceSelectorDataset(IHqlExpression * expr, IHqlExpression * newDataset);
 extern HQL_API IHqlExpression * querySkipDatasetMeta(IHqlExpression * dataset);
 extern HQL_API bool isNewSelector(IHqlExpression * expr);
-extern HQL_API IHqlExpression * queryRecordProperty(IHqlExpression * record, IAtom * name);
+extern HQL_API IHqlExpression * queryRecordAttribute(IHqlExpression * record, IAtom * name);
 extern HQL_API bool isExported(IHqlExpression * expr);
 extern HQL_API bool isShared(IHqlExpression * expr);
 extern HQL_API bool isImport(IHqlExpression * expr);
@@ -1616,7 +1616,7 @@ extern HQL_API bool isPublicSymbol(IHqlExpression * expr);
 extern HQL_API ITypeInfo * getSumAggType(IHqlExpression * arg);
 extern HQL_API ITypeInfo * getSumAggType(ITypeInfo * argType);
 
-extern HQL_API bool getProperty(IHqlExpression * expr, IAtom * propName, StringBuffer & ret);
+extern HQL_API bool getAttribute(IHqlExpression * expr, IAtom * propName, StringBuffer & ret);
 
 extern HQL_API bool filterIsKeyed(IHqlExpression * expr);
 extern HQL_API bool filterIsUnkeyed(IHqlExpression * expr);
@@ -1854,7 +1854,7 @@ void addForwardDefinition(IHqlScope * scope, IIdAtom * symbolName, IIdAtom * mod
 extern HQL_API IPropertyTree * createAttributeArchive();
 extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContext & ctx);
 extern HQL_API void ensureSymbolsDefined(IHqlScope * scope, HqlLookupContext & ctx);
-extern HQL_API bool getBoolProperty(IHqlExpression * expr, IAtom * name, bool dft=false);
+extern HQL_API bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft=false);
 
 extern HQL_API void setLegacyEclSemantics(bool _value);
 extern HQL_API bool queryLegacyEclSemantics();
