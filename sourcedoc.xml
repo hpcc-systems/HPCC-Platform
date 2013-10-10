@@ -241,27 +241,42 @@
                     the HPCC platform up and running to execute them.
                 </para>
                 <para>
-                    In order for the regression suite to work, there are perl modules that need to be installed as well.  The easiest method is via cpan.
-                    The list of perl modules:
+                    In order for the regression suite to work, there are perl modules that need to be installed as well.
+                    The most efficient method for their installation is to use cpanm.  This itself can be installed using the command line below
+                    and following the prompted setup instructions. In most cases the suggested defaults are applicable.
 
-                    Config::Simple        (Required)
-                    Cwd                   (Required)
-                    Exporter              (Required)
-                    File::Compare         (Required)
-                    File::Copy            (Required)
-                    File::Path            (Required)
-                    File::Spec::Functions (Required)
-                    Getopt::Long          (Required)
-                    IPC::Run              (Required)
-                    Pod::Usage            (Required)
-                    POSIX                 (Required - However, this is typically installed by default)
-                    Text::Diff            (Required by the Diff and DiffFull report types)
-                    HTML::Entities        (Required by the HTML report type)
-                    Text::Diff::HTML      (Required by the HTML report type)
-                    Template              (Required by the HTML report type)
-                    Term::Prompt          (Required if you do not specify a password in the configuration file)
-                    Sys::Hostname         (Recommended: if available, and it can find the hostname, the hostname will be logged)
-                    Text::Wrap            (Optional: if available, makes output of -listreports neater)
+                    <programlisting>
+                    sudo cpan App:cpanminus
+                    </programlisting>
+
+                    Then install the following list of perl modules:
+
+                    <programlisting>
+                    sudo cpanm Config::Simple        (Required)
+                    sudo cpanm Cwd                   (Required)
+                    sudo cpanm Exporter              (Required)
+                    sudo cpanm File::Compare         (Required)
+                    sudo cpanm File::Copy            (Required)
+                    sudo cpanm File::Path            (Required)
+                    sudo cpanm File::Spec::Functions (Required)
+                    sudo cpanm Getopt::Long          (Required)
+                    sudo cpanm IPC::Run              (Required)
+                    sudo cpanm Pod::Usage            (Required)
+                    sudo cpanm POSIX                 (Required - However, this is typically
+                                                                         installed by default)
+                    sudo cpanm Text::Diff            (Required by the Diff and DiffFull
+                                                                                 report types)
+                    sudo cpanm HTML::Entities        (Required by the HTML report type)
+                    sudo cpanm Text::Diff::HTML      (Required by the HTML report type)
+                    sudo cpanm Template              (Required by the HTML report type)
+                    sudo cpanm Term::Prompt          (Required if you do not specify a
+                                                           password in the configuration file)
+                    sudo cpanm Sys::Hostname         (Recommended: if available, and it can
+                                                      find the hostname, the hostname will be
+                                                                                       logged)
+                    sudo cpanm Text::Wrap            (Optional: if available, makes output of
+                                                                          -listreports neater)
+                    </programlisting>
                 </para>
                 <para>
                     Step 1: Configure your regression suites. This need only be done once.
