@@ -812,7 +812,8 @@ static void *uncompress(const void *src, size32_t &sz)
         assertex(sz);
         expander = createLZWExpander();
         src = ((const char *)src) + sizeof(size32_t);
-        void *uncompressedValue = malloc(sz); assertex(uncompressedValue);
+        uncompressedValue = malloc(sz);
+        assertex(uncompressedValue);
         expander->init(src);
         expander->expand(uncompressedValue);
         expander->Release();
