@@ -3050,7 +3050,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
         newdef.append(exports);
         lookupSymbolName(expr, name);
 
-        bool wasFunctionDefined = funcdef && isFunctionDefined(expr) && !inType;
+        bool wasFunctionDefined = funcdef && isFunctionDefined(funcdef) && !inType;
         //Add the export name before the body is processed to prevent clashing names (e.g., badrecord2.xhql)
         if (exports.length())
             m_export_names.append(*new StringBufferItem(name));
@@ -3061,10 +3061,11 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
             {
                 if(!expr->queryTransformExtra())
                 {
-                    IHqlExpression * extra = createId(createIdAtom(name.str()));
-                    expr->setTransformExtra(extra); // LINKs !
-                    extra->Release();
+                    OwnedHqlExpr extra = createId(createIdAtom(name.str()));
+                    expr->setTransformExtra(extra);
                     addVisited(expr);
+                    addVisited(funcdef);
+                    funcdef->setTransformExtra(extra);
                 }       
 
                 doFunctionDefinition(newdef, funcdef, name.str(), inType);
