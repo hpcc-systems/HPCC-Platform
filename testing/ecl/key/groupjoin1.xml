@@ -1,0 +1,10 @@
+<Dataset name='Result 1'>
+ <Row><lname>Bloggs</lname><rname>Jones</rname><cnt>1</cnt></Row>
+ <Row><lname>Jones</lname><rname>Bloggs</rname><cnt>1</cnt></Row>
+ <Row><lname>Jones</lname><rname>Smith</rname><cnt>2</cnt></Row>
+ <Row><lname>Smith</lname><rname>Jones</rname><cnt>2</cnt></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><lname>Jones</lname><rname>Smith</rname><cnt>2</cnt></Row>
+ <Row><lname>Smith</lname><rname>Jones</rname><cnt>2</cnt></Row>
+</Dataset>
