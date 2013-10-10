@@ -421,6 +421,7 @@
 #define HQLERR_CannotAccessShared   2390
 #define ERR_PluginNoScripting       2391
 #define ERR_ZERO_SIZE_VIRTUAL       2392
+#define ERR_BAD_JOINGROUP_FIELD     2393
 
 #define ERR_ASSERTION_FAILS         100000
 

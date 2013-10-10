@@ -2235,6 +2235,12 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                 }
                 else
                     meta.removeAllKeepGrouping();
+
+                //The grouping fields could be mapped using the transform to provide more information, but it is
+                //unlikely to provide scope for other optimizations, and it will soon be replaced with the expanded
+                //implementation which will track map the information.
+                if (expr->queryAttribute(groupAtom))
+                    meta.setUnknownGrouping();
             }
             else if (isLocal)
             {
@@ -3098,7 +3104,9 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
             bool isKeyedJoin = !isAllJoin && !isLookupJoin && !isSmartJoin && (queryAttribute(keyedAtom, parms) || isKey(&parms.item(1)));
 
             recordArg = 3;
-            if (isKeyedJoin || isAllJoin || isLookupJoin)
+            if (queryAttribute(groupAtom, parms))
+                nowGrouped = true;
+            else if (isKeyedJoin || isAllJoin || isLookupJoin)
                 nowGrouped = isGrouped(datasetType);
             else
                 nowGrouped = false;
