@@ -26,6 +26,8 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
+#define REMOVE_FILE_SDS_CONNECT_TIMEOUT (1000*15)  // 15 seconds
+
 LogicFileWrapper::LogicFileWrapper()
 {
 
@@ -77,7 +79,7 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
             }
         }
 
-        if (!fdir.removeEntry(cname.str(), udesc))
+        if (!fdir.removeEntry(cname.str(), udesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true))
             returnStr.appendf("<Message><Value>Failed to delete %s</Value></Message>", cname.str());
         else
         {

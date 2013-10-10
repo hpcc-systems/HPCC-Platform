@@ -1181,8 +1181,11 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                         superFileNames.append(filename);
                     }
                 }
-                if (!fdir.removeEntry(filename, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT))
+                if (!fdir.removeEntry(filename, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true))
+                {
+                    filesCannotBeDeleted.append(filename);//Add the file to the 'CannotBeDeleted' list for future use
                     returnStr.appendf("<Message><Value>Failed to delete %s</Value></Message>", filename);
+                }
                 else
                 {
                     PROGLOG("Deleted Logical File: %s by: %s\n",filename, username.str());
