@@ -2687,9 +2687,9 @@ static int comparePersistAccess(IInterface **_a, IInterface **_b)
     const char *accessedB = b->queryProp("@accessed");
     if (accessedA && accessedB)
         return strcmp(accessedB, accessedA);
-    else if (accessedA)
-        return -1;
     else if (accessedB)
+        return -1;
+    else if (accessedA)
         return 1;
     else
         return 0;
@@ -2704,7 +2704,7 @@ void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
     const char *tail = strrchr(logicalName, '_');     // Locate the trailing double-underbar
     assertex(tail);
     StringBuffer head(tail-logicalName+1, logicalName);
-    head.append('*');
+    head.append("p*");                                  // Multi-mode persist names end with __pNNNNNNN
     loop  // Until we manage to delete without things changing beneath us...
     {
         IArrayOf<IPropertyTree> persists;
@@ -2721,14 +2721,14 @@ void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
                 tail = strrchr(name, '_');     // Locate the trailing double-underbar
                 assertex(tail);
                 tail++;
-                bool allDigits = true;
-                while (*tail)
+                bool crcSuffix = (*tail++=='p');
+                while (crcSuffix && *tail)
                 {
                     if (!isdigit(*tail))
-                        allDigits = false;
+                        crcSuffix = false;
                     tail++;
                 }
-                if (allDigits)
+                if (crcSuffix)
                     persists.append(*LINK(&pt));
             }
         }
@@ -2748,6 +2748,8 @@ void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
                     persistLock.setown(getPersistReadLock(goer));
                 }
                 Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
+                if (!f)
+                    continue; // Persist has been deleted since last checked - repeat the whole process
                 const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
                 if (oldAccessTime && newAccessTime && !streq(oldAccessTime, newAccessTime))
                     continue; // Persist has been accessed since last checked - repeat the whole process

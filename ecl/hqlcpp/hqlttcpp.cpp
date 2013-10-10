@@ -4900,7 +4900,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         {
             StringBuffer s;
             getStringValue(s, storedName);
-            s.append("__");
+            s.append("__p");
             getStringValue(s, codehash);
             storedName.setown(createConstant(s.str()));
         }
