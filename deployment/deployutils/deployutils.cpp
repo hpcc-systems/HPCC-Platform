@@ -871,6 +871,12 @@ public:
               LoadComboBox("Software/LDAPServerProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
               extraInfo = strBuf.str();
             }
+            else if (strcmp(type, "sashaServerType")==0)
+            {
+              nCtrlType = 4;//LVC_COMBO;
+              LoadComboBox("Software/SashaServerProcess", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              extraInfo = strBuf.str();
+            }
             else if (strcmp(type, "accurintServerType")==0)
             {
               nCtrlType = 4;//LVC_COMBO;
