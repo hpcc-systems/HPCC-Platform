@@ -491,6 +491,10 @@ define([
             });
         },
 
+        isNumber: function(n) {
+            return !isNaN(parseFloat(n)) && isFinite(n);
+        },
+
         loadSubgraphs: function () {
             var subgraphs = this.main.getSubgraphsWithProperties();
 
@@ -499,6 +503,9 @@ define([
                 for (var key in subgraphs[i]) {
                     if (key != "id" && key.substring(0, 1) != "_") {
                         layoutMap[key] = true;
+                    }
+                    if (this.isNumber(subgraphs[i][key])) {
+                        subgraphs[i][key] = parseFloat(subgraphs[i][key]);
                     }
                 }
             }
@@ -524,6 +531,9 @@ define([
                 for (var key in vertices[i]) {
                     if (key != "id" && key != "ecl" && key != "label" && key.substring(0, 1) != "_") {
                         layoutMap[key] = true;
+                    }
+                    if (this.isNumber(vertices[i][key])) {
+                        vertices[i][key] = parseFloat(vertices[i][key]);
                     }
                 }
             }
@@ -551,6 +561,9 @@ define([
                 for (var key in edges[i]) {
                     if (key != "id" && key.substring(0, 1) != "_") {
                         layoutMap[key] = true;
+                    }
+                    if (this.isNumber(edges[i][key])) {
+                        edges[i][key] = parseFloat(edges[i][key]);
                     }
                 }
             }
