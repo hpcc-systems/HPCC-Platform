@@ -635,7 +635,10 @@ void CHThorDiskWriteActivity::publish()
     if (encrypted)
         properties.setPropBool("@encrypted", true);
     if (blockcompressed)
+    {
+        properties.setPropInt64("@compressedSize", fileSize);
         properties.setPropBool("@blockCompressed", true);
+    }
     if (helper.getFlags() & TDWpersist)
         properties.setPropBool("@persistent", true);
     if (grouped)
