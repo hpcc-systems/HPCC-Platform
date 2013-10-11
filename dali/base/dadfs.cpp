@@ -7978,7 +7978,6 @@ class CFileScanFilter : public CInterface
 {
     DFUQueryFileType fileType;
     bool hasFilter;//This flag is set to true if at least one of the following filters is set.
-    bool notInSuperfile;
     StringAttr wildName;
     StringAttr description;
     StringAttr owner;
@@ -8040,7 +8039,6 @@ class CFileScanFilter : public CInterface
     {
         fileType = DFUQFTall;
         hasFilter = false;
-        notInSuperfile = false;
         fileSize = 0;
         fileSizeHigh = -1;
         wildName.clear();
@@ -8080,9 +8078,9 @@ class CFileScanFilter : public CInterface
     }
     bool matchFileScanFilter(const char* name, IPropertyTree &file)
     {
-        if (!hasFilter)
+        if (!hasFilter && !isNotInSuper())
             return true;
-        if (notInSuperfile && file.queryPropTree("SuperOwner"))
+        if (isNotInSuper() && file.queryPropTree("SuperOwner"))
             return false;
         if (!doWildMatch(wildName.get(), name))
             return false;
@@ -8110,7 +8108,7 @@ class CFileScanFilter : public CInterface
         }
         if (clusters.length())
         {
-            char* clusterNames=(char*)file.queryProp("@group");
+            const char* clusterNames=file.queryProp("@group");
             if (!clusterNames || !*clusterNames)
                 return false;
             bool foundCluster = false;
@@ -8137,9 +8135,8 @@ class CFileScanFilter : public CInterface
     void setFileType(DFUQueryFileType _fileType)
     {
         fileType = _fileType;
-        if (fileType == DFUQFTnotinsuperfile)
-            setNotInSuperfileFilter();
     }
+    bool isNotInSuper() { return DFUQFTnotinsuperfile == fileType; }
     const char* getNameFilter() { return wildName.get(); }
     void setNameFilter(const char* _wildName)
     {
@@ -8148,11 +8145,6 @@ class CFileScanFilter : public CInterface
         wildName.set(_wildName);
         if (!streq(_wildName, "*"))
             hasFilter = true;
-    }
-    void setNotInSuperfileFilter()
-    {
-        hasFilter = true;
-        notInSuperfile = true;
     }
     void setDescriptionFilter(const char* _description)
     {
