@@ -955,6 +955,12 @@ public:
               LoadComboBox(pAppInfo->queryProp(TAG_NAME), bAddBlank, m_pEnv, m_pEnv, strBuf);
               extraInfo = strBuf.str();
             }
+            else if (strcmp(type, "topologyClusterType")==0)
+            {
+              nCtrlType = 4;//LVC_COMBO;
+              LoadComboBox("Software/Topology/Cluster", bAddBlank, m_pEnv, m_pEnv, strBuf);
+              extraInfo = strBuf.str();
+            }
             else if (strcmp(type, "xpathType")==0)
             {
               const char* xpath1 = pAppInfo->queryProp("xpath");

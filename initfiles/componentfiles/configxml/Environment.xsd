@@ -1359,4 +1359,7 @@
     <xs:simpleType name="sashaServerType">
         <xs:restriction base="xs:string"/>
     </xs:simpleType>
+    <xs:simpleType name="topologyClusterType">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
 </xs:schema>
