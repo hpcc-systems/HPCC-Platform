@@ -2062,6 +2062,8 @@ class CDistributedFilePart: public CInterface, implements IDistributedFilePart
     StringAttr overridename;    // may or not be relative to directory
     bool            dirty;      // whether needs updating in tree 
 
+    offset_t getSize(bool checkCompressed);
+
 public:
 
     virtual void Link(void) const;
@@ -2074,7 +2076,7 @@ public:
     void unlockProperties(DFTransactionState state);
     bool isHost(unsigned copy);
     offset_t getFileSize(bool allowphysical,bool forcephysical);
-    offset_t getDiskSize();
+    offset_t getDiskSize(bool allowphysical,bool forcephysical);
     bool getModifiedTime(bool allowphysical,bool forcephysical,CDateTime &dt);
     bool getCrc(unsigned &crc); 
     unsigned getPhysicalCrc();  
@@ -4092,13 +4094,41 @@ public:
     __int64 getFileSize(bool allowphysical,bool forcephysical)
     {
         __int64 ret = (__int64)(forcephysical?-1:queryAttributes().getPropInt64("@size",-1));
-        if (ret==-1) {
+        if (ret==-1)
+        {
             ret = 0;
             unsigned n = numParts();
-            for (unsigned i=0;i<n;i++) {
+            for (unsigned i=0;i<n;i++)
+            {
                 Owned<IDistributedFilePart> part = getPart(i);
                 __int64 ps = part->getFileSize(allowphysical,forcephysical);
-                if (ps == -1) {
+                if (ps == -1)
+                {
+                    ret = ps;
+                    break;
+                }
+                ret += ps;
+            }
+        }
+        return ret;
+    }
+
+    __int64 getDiskSize(bool allowphysical,bool forcephysical)
+    {
+        if (!isCompressed(NULL))
+            return getFileSize(allowphysical, forcephysical);
+
+        __int64 ret = (__int64)(forcephysical?-1:queryAttributes().getPropInt64("@compressedSize",-1));
+        if (ret==-1)
+        {
+            ret = 0;
+            unsigned n = numParts();
+            for (unsigned i=0;i<n;i++)
+            {
+                Owned<IDistributedFilePart> part = getPart(i);
+                __int64 ps = part->getDiskSize(allowphysical,forcephysical);
+                if (ps == -1)
+                {
                     ret = ps;
                     break;
                 }
@@ -5210,14 +5240,34 @@ public:
     __int64 getFileSize(bool allowphysical,bool forcephysical)
     {
         __int64 ret = (__int64)(forcephysical?-1:queryAttributes().getPropInt64("@size",-1));
-        if (ret==-1) {
+        if (ret==-1)
+        {
             ret = 0;
-            ForEachItemIn(i,subfiles) {
+            ForEachItemIn(i,subfiles)
+            {
                 __int64 ps = subfiles.item(i).getFileSize(allowphysical,forcephysical);
-                if (ps == -1) {
-                    ret = ps;
-                    break;
-                }
+                if (ps == -1)
+                    return -1; // i.e. if cannot determine size of any part, total is unknown
+                ret += ps;
+            }
+        }
+        return ret;
+    }
+
+    __int64 getDiskSize(bool allowphysical,bool forcephysical)
+    {
+        if (!isCompressed(NULL))
+            return getFileSize(allowphysical, forcephysical);
+
+        __int64 ret = (__int64)(forcephysical?-1:queryAttributes().getPropInt64("@compressedSize",-1));
+        if (ret==-1)
+        {
+            ret = 0;
+            ForEachItemIn(i,subfiles)
+            {
+                __int64 ps = subfiles.item(i).getDiskSize(allowphysical,forcephysical);
+                if (ps == -1)
+                    return -1; // i.e. if cannot determine size of any part, total is unknown
                 ret += ps;
             }
         }
@@ -5453,6 +5503,7 @@ public:
             return;
         }
         root->removeProp("Attr/@size");
+        root->removeProp("Attr/@compressedSize");
         root->removeProp("Attr/@checkSum");
         root->removeProp("Attr/@recordCount");  // recordCount not currently supported by superfiles
         root->removeProp("Attr/@formatCrc");    // formatCrc set if all consistant
@@ -5461,6 +5512,12 @@ public:
         __int64 fs = getFileSize(false,false);
         if (fs!=-1)
             root->setPropInt64("Attr/@size",fs);
+        if (isCompressed(NULL))
+        {
+            fs = getDiskSize(false,false);
+            if (fs!=-1)
+                root->setPropInt64("Attr/@compressedSize",fs);
+        }
         unsigned checkSum;
         if (getFileCheckSum(checkSum))
             root->setPropInt64("Attr/@checkSum", checkSum);
@@ -5979,6 +6036,42 @@ bool CDistributedFilePart::Release(void) const
     return CInterface::Release(); 
 }
 
+offset_t CDistributedFilePart::getSize(bool checkCompressed)
+{
+    offset_t ret = (offset_t)-1;
+    StringBuffer firstname;
+    bool compressed = ::isCompressed(parent.queryAttributes());
+    unsigned nc=parent.numCopies(partIndex);
+    for (unsigned copy=0;copy<nc;copy++)
+    {
+        RemoteFilename rfn;
+        try
+        {
+            Owned<IFile> partfile = createIFile(getFilename(rfn,copy));
+            if (checkCompressed && compressed)
+            {
+                Owned<ICompressedFileIO> compressedIO = createCompressedFileReader(partfile);
+                if (compressedIO)
+                    ret = compressedIO->size();
+            }
+            else
+                ret = partfile->size();
+            if (ret!=(offset_t)-1)
+                return ret;
+        }
+        catch (IException *e)
+        {
+            StringBuffer s("CDistributedFilePart::getSize ");
+            rfn.getRemotePath(s);
+            EXCLOG(e, s.str());
+            e->Release();
+        }
+        if (copy==0)
+            rfn.getRemotePath(firstname);
+    }
+    throw new CDFS_Exception(DFSERR_CannotFindPartFileSize,firstname.str());;
+}
+
 StringBuffer & CDistributedFilePart::getPartName(StringBuffer &partname)
 {
     if (!overridename.isEmpty()) {
@@ -6155,69 +6248,21 @@ void CDistributedFilePart::unlockProperties(DFTransactionState state=TAS_NONE)
 offset_t CDistributedFilePart::getFileSize(bool allowphysical,bool forcephysical)
 {
     offset_t ret = (offset_t)((forcephysical&&allowphysical)?-1:queryAttributes().getPropInt64("@size", -1));
-    if (allowphysical&&(ret==(offset_t)-1)) {
-        StringBuffer firstname;
-        bool compressed = ::isCompressed(parent.queryAttributes());
-        unsigned nc=parent.numCopies(partIndex);
-        for (unsigned copy=0;copy<nc;copy++) {
-            RemoteFilename rfn;
-            try {
-                Owned<IFile> partfile = createIFile(getFilename(rfn,copy));
-                if (compressed)
-                {
-                    Owned<ICompressedFileIO> compressedIO = createCompressedFileReader(partfile);
-                    if (compressedIO)
-                        ret = compressedIO->size();
-                }
-                else
-                    ret = partfile->size();
-                if (ret!=(offset_t)-1)
-                    return ret;
-            }
-            catch (IException *e)
-            {
-                StringBuffer s("CDistributedFilePart::getFileSize ");
-                rfn.getRemotePath(s);
-                EXCLOG(e, s.str());
-                e->Release();
-            }
-            if (copy==0)
-                rfn.getRemotePath(firstname);
-        }
-        IDFS_Exception *e = new CDFS_Exception(DFSERR_CannotFindPartFileSize,firstname.str());;
-        throw e;
-    }
+    if (allowphysical&&(ret==(offset_t)-1))
+        ret = getSize(true);
     return ret;
 }
 
-offset_t CDistributedFilePart::getDiskSize()
+offset_t CDistributedFilePart::getDiskSize(bool allowphysical,bool forcephysical)
 {
-    // gets size on disk
     if (!::isCompressed(parent.queryAttributes()))
-        return getFileSize(true,false);
-    StringBuffer firstname;
-    unsigned nc=parent.numCopies(partIndex);
-    for (unsigned copy=0;copy<nc;copy++) {
-        RemoteFilename rfn;
-        try {
-            Owned<IFile> partfile = createIFile(getFilename(rfn,copy));
-                offset_t ret = partfile->size();
-            if (ret!=(offset_t)-1)
-                return ret;
-        }
-        catch (IException *e)
-        {
-            StringBuffer s("CDistributedFilePart::getFileSize ");
-            rfn.getRemotePath(s);
-            EXCLOG(e, s.str());
-            e->Release();
-        }
-        if (copy==0)
-            rfn.getRemotePath(firstname);
-    }
-    IDFS_Exception *e = new CDFS_Exception(DFSERR_CannotFindPartFileSize,firstname.str());;
-    throw e;
-    return 0;
+        return getFileSize(allowphysical, forcephysical);
+
+    if (forcephysical && allowphysical)
+        return getSize(false); // i.e. only if force, because all compressed should have @compressedSize attribute
+
+    // NB: compressSize is disk size
+    return queryAttributes().getPropInt64("@compressedSize", -1);
 }
 
 bool CDistributedFilePart::getModifiedTime(bool allowphysical,bool forcephysical, CDateTime &dt)

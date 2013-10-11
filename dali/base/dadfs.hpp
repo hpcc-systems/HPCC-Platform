@@ -144,8 +144,8 @@ interface IDistributedFilePart: implements IInterface
 
     virtual bool isHost(unsigned copy=0) = 0;                                   // file is located on this machine
 
-    virtual offset_t getFileSize(bool allowphysical,bool forcephysical)=0;                  // gets the part filesize (NB this will be the *expanded* size)
-    virtual offset_t getDiskSize()=0;                                                       // gets the part size on disk (NB this will be the compressed size)
+    virtual offset_t getFileSize(bool allowphysical,bool forcephysical)=0; // gets the part filesize (NB this will be the *expanded* size)
+    virtual offset_t getDiskSize(bool allowphysical,bool forcephysical)=0; // gets the part size on disk (NB this will be the compressed size)
     virtual bool    getModifiedTime(bool allowphysical,bool forcephysical,CDateTime &dt)=0; // gets the part date time
 
     virtual bool getCrc(unsigned &crc) = 0;             // block compressed returns false (not ~0)
@@ -238,6 +238,7 @@ interface IDistributedFile: extends IInterface
 
 
     virtual __int64 getFileSize(bool allowphysical,bool forcephysical)=0;       // gets the total file size (forcephysical doesn't use cached value)
+    virtual __int64 getDiskSize(bool allowphysical,bool forcephysical)=0;       // gets the part size on disk (NB this will be the compressed size)
     virtual bool getFileCheckSum(unsigned &checksum)=0;                         // gets a single checksum for the logical file, based on the part crc's
     virtual unsigned getPositionPart(offset_t pos,offset_t &base)=0;            // get the part for a given position and the base offset of that part
 
