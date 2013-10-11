@@ -594,10 +594,10 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     StringBuffer entry;
     StringBuffer mangledEntry;
     StringBuffer lib;
-    getProperty(body, entrypointAtom, entry);
-    getProperty(body, libraryAtom, lib);
+    getAttribute(body, entrypointAtom, entry);
+    getAttribute(body, libraryAtom, lib);
     if (!lib.length())
-        getProperty(body, pluginAtom, lib);
+        getAttribute(body, pluginAtom, lib);
     if(entry.length() == 0)
     {
         if (foldOptions & HFOthrowerror)
@@ -4430,7 +4430,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             unwindChildren(args, expr, 1); // (count, trans)
             if (newTransform)
                 args.replace(*newTransform.getClear(), 1);
-            removeProperty(args, _selectorSequence_Atom);
+            removeAttribute(args, _selectorSequence_Atom);
 
             return createDataset(no_dataset_from_transform, args);
         }
@@ -4825,7 +4825,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             //Could have removed whether or not somethin needs to be a count project
             IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
             if (counter && !transformContainsCounter(expr->queryChild(1), counter))
-                return removeProperty(expr, _countProject_Atom);
+                return removeAttribute(expr, _countProject_Atom);
         }
         break;
     case no_temptable:
@@ -5115,7 +5115,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                 if (atmost)
                 {
                     if (matchesBoolean(updatedCond, false))
-                        updated.setown(removeProperty(updated, atmostAtom));
+                        updated.setown(removeAttribute(updated, atmostAtom));
                     else
                     {
                         //KEYED joins support ATMOST and RIGHT.xxx = value
@@ -5124,7 +5124,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                             HqlExprArray args;
                             unwindChildren(args, updated);
                             args.replace(*LINK(oldCond), 2);
-                            removeProperty(args, atmostAtom);
+                            removeAttribute(args, atmostAtom);
                             args.append(*LINK(atmost));
                             updated.setown(updated->clone(args));
                         }
@@ -5168,7 +5168,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                 IHqlExpression * sorted = expr->queryAttribute(sortedAtom);
                 assertex(sorted);
                 OwnedHqlExpr newSorted = percolateConstants(mapping, sorted, child, no_activetable);
-                updated.setown(replaceOwnedProperty(updated, newSorted.getClear()));
+                updated.setown(replaceOwnedAttribute(updated, newSorted.getClear()));
             }
             break;
         }

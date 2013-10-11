@@ -6778,7 +6778,7 @@ void HqlGram::processUpdateAttr(attribute & attr)
 
     if (expr->queryAttribute(updateAtom))
     {
-        removeProperty(args, updateAtom);
+        removeAttribute(args, updateAtom);
         args.append(*createAttribute(updateAtom, createConstant((__int64)getExpressionCRC(expr))));
     }
     else
@@ -7222,8 +7222,8 @@ IHqlExpression * HqlGram::createIndexFromRecord(IHqlExpression * record, IHqlExp
 
 void HqlGram::inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record)
 {
-    IHqlExpression * maxLength = queryRecordProperty(dataset->queryRecord(), maxLengthAtom);
-    if (maxLength && !queryRecordProperty(record, maxLengthAtom))
+    IHqlExpression * maxLength = queryRecordAttribute(dataset->queryRecord(), maxLengthAtom);
+    if (maxLength && !queryRecordAttribute(record, maxLengthAtom))
     {
         HqlExprArray fields;
         unwindChildren(fields, record);
@@ -8024,7 +8024,7 @@ void HqlGram::extractIndexRecordAndExtra(SharedHqlExpr & record, SharedHqlExpr &
     if (payload)
     {
         extra.setown(createComma(extra.getClear(), LINK(payload)));
-        record.setown(removeProperty(record, _payload_Atom));
+        record.setown(removeAttribute(record, _payload_Atom));
     }
 }
 

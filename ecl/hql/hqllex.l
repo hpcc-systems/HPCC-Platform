@@ -94,7 +94,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         return UNKNOWN_ID;
     }
 
-    IHqlExpression * deprecated = queryMetaProperty(deprecatedAtom, expr);
+    IHqlExpression * deprecated = queryMetaAttribute(deprecatedAtom, expr);
     if (deprecated)
     {
         IHqlExpression * alternative = deprecated->queryChild(0);

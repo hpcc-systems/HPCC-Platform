@@ -311,7 +311,7 @@ public:
                     }
                     //remove the parameter from the internal attribute from the module that is being called.
                     //so save in subsequent translation
-                    OwnedHqlExpr newModuleExpr = replaceOwnedProperty(moduleExpr, createAttribute(internalAtom));
+                    OwnedHqlExpr newModuleExpr = replaceOwnedAttribute(moduleExpr, createAttribute(internalAtom));
                     OwnedHqlExpr newScopeFunc = replaceChild(scopeFunc, 0, newModuleExpr);
                     HqlExprArray instanceArgs;
                     unwindChildren(instanceArgs, expr);
