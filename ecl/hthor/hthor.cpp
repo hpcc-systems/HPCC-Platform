@@ -674,7 +674,7 @@ void CHThorDiskWriteActivity::publish()
         throw MakeStringException(99, "Cannot publish %s, invalid logical name", lfn.str());
     if (!logicalName.isExternal()) { // no need to publish externals
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
-        if((helper.getFlags() & TDWpersist) && file->getModificationTime(modifiedTime))
+        if(file->getModificationTime(modifiedTime))
             file->setAccessedTime(modifiedTime);
         file->attach(logicalName.get(), agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(file, "HThor", "CREATED");
@@ -7889,7 +7889,7 @@ void CHThorDiskReadBaseActivity::close()
     if(ldFile)
     {
         IDistributedFile * dFile = ldFile->queryDistributedFile();
-        if(dFile&&persistent) 
+        if(dFile)
             dFile->setAccessed();
         ldFile.clear();
     }

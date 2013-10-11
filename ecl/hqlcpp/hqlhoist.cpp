@@ -65,7 +65,7 @@ protected:
         if (transformed->getOperator() == no_getgraphresult)
         {
             if (hasOperand(transformed, graph))
-                return removeProperty(transformed, externalAtom);
+                return removeAttribute(transformed, externalAtom);
         }
         return transformed.getClear();
     }

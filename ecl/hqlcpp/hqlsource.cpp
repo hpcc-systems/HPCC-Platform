@@ -547,7 +547,7 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
     HqlExprArray args;
     unwindChildren(args, tableExpr);
     args.replace(*diskRecord, 1);
-    removeProperty(args, _payload_Atom);
+    removeAttribute(args, _payload_Atom);
     args.append(*createAttribute(_payload_Atom, createConstant(payload-1)));
     args.append(*createAttribute(_original_Atom, LINK(tableExpr)));
 
@@ -3777,7 +3777,7 @@ static void createExpanded(HqlExprArray & fields, IHqlExpression * expr)
                     HqlExprArray attrs;
                     unwindChildren(attrs, expr);
                     //MORE: Any default will now have the wrong type => remove it for the moment (ideally it would be projected)
-                    removeProperty(attrs, defaultAtom);
+                    removeAttribute(attrs, defaultAtom);
                     fields.append(*createField(expr->queryId(), LINK(expandedType), attrs));
                 }
             }

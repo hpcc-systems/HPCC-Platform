@@ -6778,7 +6778,7 @@ void HqlGram::processUpdateAttr(attribute & attr)
 
     if (expr->queryAttribute(updateAtom))
     {
-        removeProperty(args, updateAtom);
+        removeAttribute(args, updateAtom);
         args.append(*createAttribute(updateAtom, createConstant((__int64)getExpressionCRC(expr))));
     }
     else
@@ -7222,8 +7222,8 @@ IHqlExpression * HqlGram::createIndexFromRecord(IHqlExpression * record, IHqlExp
 
 void HqlGram::inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record)
 {
-    IHqlExpression * maxLength = queryRecordProperty(dataset->queryRecord(), maxLengthAtom);
-    if (maxLength && !queryRecordProperty(record, maxLengthAtom))
+    IHqlExpression * maxLength = queryRecordAttribute(dataset->queryRecord(), maxLengthAtom);
+    if (maxLength && !queryRecordAttribute(record, maxLengthAtom))
     {
         HqlExprArray fields;
         unwindChildren(fields, record);
@@ -7735,7 +7735,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
         if (keep && !isMany)
             reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support KEEP", joinText);
         if (join->hasAttribute(atmostAtom) && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support ATMOST", joinText);
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Non-Many %s joins do not support ATMOST", joinText);
         if (rowLimit && !isMany)
             reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support LIMIT (they can only match 1 entry)", joinText);
         if (isKey(join->queryChild(1)))
@@ -7790,6 +7790,37 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
             reportWarning(ERR_BAD_JOINFLAG, err.pos, "Filtered RIGHT prevents a keyed join being used.  Consider including the filter in the join condition.");
     }
 
+    IHqlExpression * group = join->queryAttribute(groupAtom);
+    if (group)
+    {
+        //Check that each of the fields mentioned in the group are projected into the output.
+        OwnedHqlExpr left = createSelector(no_left, join->queryChild(0), querySelSeq(join));
+        OwnedHqlExpr right = createSelector(no_right, join->queryChild(1), querySelSeq(join));
+        NewProjectMapper2 mapper;
+        mapper.setMapping(join->queryChild(3));
+        IHqlExpression * sortlist = group->queryChild(0);
+        ForEachChild(i, sortlist)
+        {
+            IHqlExpression * cur = sortlist->queryChild(i);
+            if (cur->usesSelector(right))
+            {
+                StringBuffer s;
+                getExprECL(cur, s);
+                reportError(ERR_BAD_JOINGROUP_FIELD, err, "GROUP expression '%s' cannot include fields from RIGHT", s.str());
+            }
+            else
+            {
+                bool matchedAll = true;
+                OwnedHqlExpr mapped = mapper.collapseFields(cur, left, queryActiveTableSelector(), left, &matchedAll);
+                if (!matchedAll)
+                {
+                    StringBuffer s;
+                    getExprECL(cur, s);
+                    reportError(ERR_BAD_JOINGROUP_FIELD, err, "GROUP expression '%s' is not included in the JOIN output", s.str());
+                }
+            }
+        }
+    }
 }
 
 
@@ -7993,7 +8024,7 @@ void HqlGram::extractIndexRecordAndExtra(SharedHqlExpr & record, SharedHqlExpr &
     if (payload)
     {
         extra.setown(createComma(extra.getClear(), LINK(payload)));
-        record.setown(removeProperty(record, _payload_Atom));
+        record.setown(removeAttribute(record, _payload_Atom));
     }
 }
 

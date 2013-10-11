@@ -71,7 +71,7 @@ class ReferencedFile : public CInterface, implements IReferencedFile
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, bool isSubFile=false, unsigned _flags=0) : flags(_flags)
+    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, bool isSubFile, unsigned _flags, const char *_pkgid) : flags(_flags), pkgid(_pkgid)
     {
         logicalName.set(skipForeign(lfn, &daliip)).toLowerCase();
         if (daliip.length())
@@ -108,9 +108,11 @@ public:
     }
     virtual void cloneInfo(IDFUhelper *helper, IUserDescriptor *user, INode *remote, const char *dstCluster, const char *srcCluster, bool overwrite=false, bool cloneForeign=false);
     void cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *user, INode *remote, bool overwrite);
+    virtual const char *queryPackageId() const {return pkgid.get();}
 
 public:
     StringBuffer logicalName;
+    StringAttr pkgid;
     StringBuffer daliip;
     StringAttr fileSrcCluster;
     unsigned flags;
@@ -129,7 +131,7 @@ public:
         }
     }
 
-    void ensureFile(const char *ln, unsigned flags, const char *daliip=NULL, const char *srcCluster=NULL);
+    void ensureFile(const char *ln, unsigned flags, const char *pkgid, const char *daliip=NULL, const char *srcCluster=NULL);
 
     virtual void addFile(const char *ln, const char *daliip=NULL, const char *srcCluster=NULL);
     virtual void addFiles(StringArray &files);
@@ -400,9 +402,9 @@ public:
     Owned<HashIterator> iter;
 };
 
-void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *daliip, const char *srcCluster)
+void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, const char *daliip, const char *srcCluster)
 {
-    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, false, flags);
+    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, false, flags, pkgid);
     if (!file->logicalName.length())
         return;
     ReferencedFile *existing = map.getValue(file->getLogicalName());
@@ -417,7 +419,7 @@ void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *
 
 void ReferencedFileList::addFile(const char *ln, const char *daliip, const char *srcCluster)
 {
-    ensureFile(ln, 0, daliip, srcCluster);
+    ensureFile(ln, 0, NULL, daliip, srcCluster);
 }
 
 void ReferencedFileList::addFiles(StringArray &files)
@@ -487,22 +489,28 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
                 node.getPropBool("att[@name='_isTransformSpill']/@value"))
                 continue;
             unsigned flags = 0;
-            if (pkg && pkg->hasSuperFile(logicalName))
+            if (pkg)
             {
-                flags |= (RefFileSuper | RefFileInPackage);
-                Owned<ISimpleSuperFileEnquiry> ssfe = pkg->resolveSuperFile(logicalName);
-                if (ssfe && ssfe->numSubFiles()>0)
+                const char *pkgid = pkg->locateSuperFile(logicalName);
+                if (pkgid)
                 {
-                    unsigned count = ssfe->numSubFiles();
-                    while (count--)
+                    flags |= (RefFileSuper | RefFileInPackage);
+                    Owned<ISimpleSuperFileEnquiry> ssfe = pkg->resolveSuperFile(logicalName);
+                    if (ssfe && ssfe->numSubFiles()>0)
                     {
-                        StringBuffer subfile;
-                        ssfe->getSubFileName(count, subfile);
-                        ensureFile(subfile, RefSubFile | RefFileInPackage);
+                        unsigned count = ssfe->numSubFiles();
+                        while (count--)
+                        {
+                            StringBuffer subfile;
+                            ssfe->getSubFileName(count, subfile);
+                            ensureFile(subfile, RefSubFile | RefFileInPackage, NULL);
+                        }
                     }
                 }
+                ensureFile(logicalName, flags, pkgid);
             }
-            ensureFile(logicalName, flags);
+            else
+                ensureFile(logicalName, flags, NULL);
         }
     }
 }
@@ -525,7 +533,7 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalF
     StringArray childSubFiles;
     ForEachItemIn(i, subfiles)
     {
-        Owned<ReferencedFile> file = new ReferencedFile(subfiles.item(i), NULL, NULL, true);
+        Owned<ReferencedFile> file = new ReferencedFile(subfiles.item(i), NULL, NULL, true, 0, NULL);
         if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
         {
             file->resolve(process.get(), srcCluster, user, remote, checkLocalFirst, &childSubFiles, resolveForeign);

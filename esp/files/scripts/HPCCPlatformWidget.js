@@ -55,6 +55,7 @@ define([
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",
+        BuildVer: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -71,6 +72,44 @@ define([
             this.inherited(arguments);
         },
 
+        //  Implementation  ---
+        init: function (params) {
+             if (this.inherited(arguments))
+                return;
+
+            var context = this;
+            WsAccount.MyAccount({
+            }).then(function (response) {
+                if (lang.exists("MyAccountResponse.username", response)) {
+                    dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
+                }
+            });
+
+            WsSMC.Activity({
+            }).then(function (response) {
+                if (lang.exists("ActivityResponse.Build", response)) {
+                    context.BuildVer = response.ActivityResponse.Build;
+                    context.BuildVer = context.BuildVer.substring(0, context.BuildVer.indexOf("["));
+                    context.BuildVer = context.BuildVer.replace("community_","");
+                }
+            });
+
+            this.createStackControllerTooltip(this.id + "_ECL", "ECL");
+            this.createStackControllerTooltip(this.id + "_Files", "Files");
+            this.createStackControllerTooltip(this.id + "_Queries", "Published Queries");
+            this.createStackControllerTooltip(this.id + "_OPS", "Operations");
+            this.initTab();
+        },
+
+        initTab: function () {
+            var currSel = this.getSelectedChild();
+            if (currSel && !currSel.initalized) {
+                if (currSel.init) {
+                    currSel.init({});
+                }
+            }
+        },
+
         getTitle: function () {
             return "HPCC Platform";
         },
@@ -84,6 +123,12 @@ define([
 
         _onOpenLegacy: function (evt) {
             var win = window.open("\\", "_blank");
+            win.focus();
+        },
+
+        _onOpenReleaseNotes: function (evt) {
+            //this.BuildVer = BuildVer
+            var win = window.open("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.BuildVer, "_blank");
             win.focus();
         },
 
@@ -115,35 +160,6 @@ define([
                 showDelay: 1,
                 position: ["below"]
             });
-        },
-
-        //  Implementation  ---
-        init: function (params) {
-             if (this.inherited(arguments))
-                return;
-
-            var context = this;
-            WsAccount.MyAccount({
-            }).then(function (response) {
-                if (lang.exists("MyAccountResponse.username", response)) {
-                    dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
-                }
-            });
-
-            this.createStackControllerTooltip(this.id + "_ECL", "ECL");
-            this.createStackControllerTooltip(this.id + "_Files", "Files");
-            this.createStackControllerTooltip(this.id + "_Queries", "Published Queries");
-            this.createStackControllerTooltip(this.id + "_OPS", "Operations");
-            this.initTab();
-        },
-
-        initTab: function () {
-            var currSel = this.getSelectedChild();
-            if (currSel && !currSel.initalized) {
-                if (currSel.init) {
-                    currSel.init({});
-                }
-            }
         }
     });
 });

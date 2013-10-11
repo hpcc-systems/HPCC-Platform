@@ -921,7 +921,7 @@ public:
     bool existsPhysical(const char *_logicalname,IUserDescriptor *user);
 
     void addEntry(CDfsLogicalFileName &lfn,IPropertyTree *root,bool superfile, bool ignoreexists);
-    bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, unsigned timeoutms=INFINITE);
+    bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, unsigned timeoutms=INFINITE, bool throwException=false);
     void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction);
     void removeEmptyScope(const char *name);
 
@@ -7544,7 +7544,7 @@ void CDistributedFileDirectory::removeSuperFile(const char *_logicalname, bool d
     localtrans->autoCommit();
 }
 
-bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction, unsigned timeoutms)
+bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction, unsigned timeoutms, bool throwException)
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(name);
@@ -7573,6 +7573,9 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
         StringBuffer msg;
         e->errorMessage(msg);
         ERRLOG("Error while deleting %s: %s", logicalname.get(), msg.str());
+        if (throwException)
+            throw;
+
         e->Release();
         return false;
     }

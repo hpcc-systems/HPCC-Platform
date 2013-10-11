@@ -1709,7 +1709,7 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     bool removeXpath = dataset->hasAttribute(noXpathAtom) || (op == no_output && translator.queryOptions().removeXpathFromOutput);
     LinkedHqlExpr record = queryRecord(outputDataset);
     if (removeXpath)
-        record.setown(removePropertyFromFields(record, xpathAtom));
+        record.setown(removeAttributeFromFields(record, xpathAtom));
     meta.setMeta(translator, record, ::isGrouped(outputDataset));
 
     activityId = translator.nextActivityId();
@@ -5861,13 +5861,13 @@ SourceFieldUsage * HqlCppTranslator::querySourceFieldUsage(IHqlExpression * expr
     if (expr->hasAttribute(_spill_Atom) || expr->hasAttribute(jobTempAtom))
         return NULL;
 
-    OwnedHqlExpr normalized = removeProperty(expr, _uid_Atom);
+    OwnedHqlExpr normalized = removeAttribute(expr, _uid_Atom);
     IHqlExpression * original = normalized->queryAttribute(_original_Atom);
     if (original)
     {
-        OwnedHqlExpr normalTable = removeProperty(original->queryChild(0), _uid_Atom);
+        OwnedHqlExpr normalTable = removeAttribute(original->queryChild(0), _uid_Atom);
         OwnedHqlExpr normalOriginal = replaceChild(original, 0, normalTable);
-        normalized.setown(replaceOwnedProperty(normalized, normalOriginal.getClear()));
+        normalized.setown(replaceOwnedAttribute(normalized, normalOriginal.getClear()));
     }
 
     ForEachItemIn(i, trackedSources)
@@ -9963,7 +9963,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     // virtual unsigned getKeyedSize()
     HqlExprArray fields;
     unwindChildren(fields, record);
-    removeProperties(fields);
+    removeAttributes(fields);
     fields.popn(numPayloadFields(expr));
     OwnedHqlExpr keyedRecord = createRecord(fields); // must be fixed length => no maxlength
     if (expr->hasAttribute(_payload_Atom))
@@ -11539,7 +11539,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     JoinSortInfo joinInfo;
     joinInfo.findJoinSortOrders(expr, slidingAllowed);
 
-    if (atmostAttr && !joinInfo.conditionAllEqualities)
+    if (atmostAttr && joinInfo.hasHardRightNonEquality())
     {
         if (isAllJoin)
             allowAllToLookupConvert = false;
@@ -15867,7 +15867,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCase(BuildCtx & ctx, IHqlExpre
 void HqlCppTranslator::buildSkewThresholdMembers(BuildCtx & ctx, IHqlExpression * expr)
 {
     StringBuffer s, temp;
-    if (getProperty(expr, thresholdAtom, temp.clear()))
+    if (getAttribute(expr, thresholdAtom, temp.clear()))
     {
         s.clear().append("virtual unsigned __int64 getThreshold() { return ").append(temp).append("; }");
         ctx.addQuoted(s);

@@ -2827,7 +2827,7 @@ bool HqlCppTranslator::doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression 
 
     BuildCtx declareCtx(*code, literalAtom);
     //Remove unique id when checking for constant datasets already generated
-    OwnedHqlExpr exprKey = removeProperty(expr, _uid_Atom);
+    OwnedHqlExpr exprKey = removeAttribute(expr, _uid_Atom);
     if (declareCtx.getMatchExpr(exprKey, tgt))
         return true;
 
@@ -3019,7 +3019,7 @@ bool HqlCppTranslator::doBuildDictionaryInlineTable(BuildCtx & ctx, IHqlExpressi
 
     BuildCtx declareCtx(*code, literalAtom);
     //Remove unique id when checking for constant datasets already generated
-    OwnedHqlExpr exprNoUnique = removeProperty(dataset, _uid_Atom);
+    OwnedHqlExpr exprNoUnique = removeAttribute(dataset, _uid_Atom);
     OwnedHqlExpr exprKey = createAttribute(dictionaryAtom, exprNoUnique.getClear());
     if (declareCtx.getMatchExpr(exprKey, tgt))
         return true;
