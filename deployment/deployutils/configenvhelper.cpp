@@ -20,6 +20,7 @@
 #include "configenvhelper.hpp"
 #include "deployutils.hpp"
 #include "build-config.h"
+#include "confighelper.hpp"
 
 bool CConfigEnvHelper::handleRoxieOperation(const char* cmd, const char* xmlStr)
 {
@@ -685,12 +686,12 @@ void CConfigEnvHelper::addComponent(const char* pszBuildSet, StringBuffer& sbNew
     // NOTE - we are assuming buildSet is unique in a build.
     StringBuffer xPath, value;
     xPath.appendf("./Programs/Build/BuildSet[@name=\"%s\"]", pszBuildSet);
-    Owned<IPropertyTreeIterator> buildSet = m_pRoot->getElements(xPath.str());
+    Owned<IPropertyTreeIterator> buildSet = CConfigHelper::getInstance()->getBuildSetTree()->getElements(xPath.str());
     buildSet->first();
     IPropertyTree* pBuildSet = &buildSet->query();
     const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
     const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
-    const char* buildName = m_pRoot->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
+    const char* buildName = CConfigHelper::getInstance()->getBuildSetTree()->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
     if (!processName) //support non-generic components as well
       processName = buildSetName;
 
