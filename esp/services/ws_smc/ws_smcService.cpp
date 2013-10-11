@@ -176,8 +176,14 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
             stateStr.appendf("%s [on %s]", state.str(), location);
         else
             stateStr.set(state.str());
-        setState(stateStr.str());
         setStateID(wu->getState());
+        if ((version > 1.00) && (wu->getState() == WUStateBlocked))
+        {
+            SCMStringBuffer stateEx;
+            setExtra(wu->getStateEx(stateEx).str());
+            stateStr.appendf(" %s", stateEx.str());
+        }
+        setState(stateStr.str());
         if ((version > 1.09) && (wu->getState() == WUStateFailed))
             setWarning("The job will ultimately not complete. Please check ECLAgent.");
 
@@ -1002,11 +1008,14 @@ void CWsSMCEx::readRunningWUsOnECLAgent(IEspContext& context, IPropertyTreeItera
             createActiveWorkUnit(wu, context, wuid, instance.str(), 0, "ECLagent", "ECLagent", instance.str(), targetCluster.clusterName.str());
             if (wu->getStateID() != WUStateRunning)
             {
-                aws.append(*wu.getLink());
-                targetCluster.agentQueue.countQueuedJobs++;
-                continue;
+                const char *extra = wu->getExtra();
+                if (wu->getStateID() != WUStateBlocked || !extra || !*extra)  // Blocked on persist treated as running here
+                {
+                    aws.append(*wu.getLink());
+                    targetCluster.agentQueue.countQueuedJobs++;
+                    continue;
+                }
             }
-
             targetCluster.agentQueue.countRunningJobs++;
 
             if (serverStatusNode.getPropInt("@memoryBlocked ", 0) != 0)
