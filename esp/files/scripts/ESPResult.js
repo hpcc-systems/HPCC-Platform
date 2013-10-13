@@ -451,6 +451,23 @@ define([
             return this.store;
         },
 
+        fetchContent: function () {
+            var deferred = new Deferred()
+            var context = this;
+            this.store.query({
+                Start: 0,
+                Count: 1
+            }).total.then(function(total) {
+                context.store.query({
+                    Start: 0,
+                    Count: total
+                }).then(function(results) {
+                    deferred.resolve(results);
+                });
+            });
+            return deferred.promise;
+        },
+
         getObjectStore: function () {
             return new ObjectStore({
                 objectStore: this.store
