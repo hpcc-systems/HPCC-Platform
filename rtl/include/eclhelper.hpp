@@ -1075,6 +1075,7 @@ enum
     TDWnewcompress      = 0x20000,      // new compressed format - only specified on output
     TDWnooverwrite      = 0x40000,
     TDWupdatecrc        = 0x80000,      // has format crc
+    TDWexpires          = 0x100000,
 };
 
 //flags for thor index read
@@ -1114,6 +1115,7 @@ enum
     TIWnooverwrite      = 0x0200,
     TIWupdatecrc        = 0x0400,
     TIWhaswidth         = 0x0800,
+    TIWexpires          = 0x1000,
 };
 
 //flags for thor dataset/temp tables
@@ -1854,6 +1856,7 @@ enum
     KDPtransform            = 0x0002,
     KDPvaroutputname        = 0x0004,
     KDPnooverwrite          = 0x0008,
+    KDPexpires              = 0x0010,
 };
 
 struct IHThorKeyDiffArg : public IHThorArg

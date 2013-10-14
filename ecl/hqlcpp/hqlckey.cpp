@@ -1604,6 +1604,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyDiff(BuildCtx & ctx, IHqlEx
         flags.append("|KDPnooverwrite");
     if (!output->isConstant())
         flags.append("|KDPvaroutputname");
+    if (expr->hasAttribute(expireAtom))
+        flags.append("|KDPexpires");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
@@ -1649,6 +1651,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlE
         flags.append("|KDPnooverwrite");
     if (!output->isConstant())
         flags.append("|KDPvaroutputname");
+    if (expr->hasAttribute(expireAtom))
+        flags.append("|KDPexpires");
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
