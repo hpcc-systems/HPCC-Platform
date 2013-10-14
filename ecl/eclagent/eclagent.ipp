@@ -36,7 +36,7 @@
 
 #define MAX_EDGEDATA_LENGTH 30000
 #define MAX_HEX_SIZE 500
-
+#define DEFAULT_PERSIST_COPIES (-1)
 
 class EclGraph;
 typedef unsigned __int64 graphid_t;
@@ -512,6 +512,7 @@ public:
     virtual void clearPersist(const char * logicalName);
     virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC);
+    virtual void deleteLRUPersists(const char * logicalName, int keep);
     virtual bool queryResolveFilesLocally() { return resolveFilesLocally; }
     virtual bool queryRemoteWorkunit() { return isRemoteWorkunit; }
     virtual bool queryWriteResultsToStdout() { return writeResultsToStdout; }
