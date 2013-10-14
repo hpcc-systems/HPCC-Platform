@@ -34,6 +34,9 @@
 #define DEFAULT_XREF_INTERVAL       48 // hours
 #define DEFAULT_EXPIRY_INTERVAL     24 // hours
 
+#define DEFAULT_EXPIRYDAYS 14
+#define DEFAULT_PERSISTEXPIRYDAYS 7
+
 
 #define LOGPFX "XREF: "
 #define LOGPFX2 "FILEEXPIRY: "
@@ -2289,25 +2292,42 @@ public:
         if (stopped)
             return;
         PROGLOG(LOGPFX2 "Started");
+        unsigned defaultExpireDays = serverConfig->getPropInt("DfuExpiry/@expiryDefault", DEFAULT_EXPIRYDAYS);
+        unsigned defaultPersistExpireDays = serverConfig->getPropInt("DfuExpiry/@persistExpiryDefault", DEFAULT_PERSISTEXPIRYDAYS);
         StringArray expirylist;
         Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator("*",UNKNOWN_USER,true,false);//MORE:Pass IUserDescriptor
-        ForEach(*iter) {
+        ForEach(*iter)
+        {
             IPropertyTree &attr=iter->query();
-            const char * expires = attr.queryProp("@expires");
-            if (expires&&*expires) {
+            if (attr.hasProp("@expireDays"))
+            {
+                unsigned expireDays = attr.getPropInt("@expireDays");
                 const char * name = attr.queryProp("@name");
-                if (name&&*name) {
+                const char *lastAccessed = attr.queryProp("@accessed");
+                if (lastAccessed && name&&*name)
+                {
+                    if (0 == expireDays)
+                    {
+                        bool isPersist = attr.queryProp("@persist");
+                        expireDays = isPersist ? defaultPersistExpireDays : defaultExpireDays;
+                    }
                     CDateTime now;
                     now.setNow();
-                    CDateTime expwhen;
-                    try {
-                        expwhen.setString(expires);
-                        if (!expwhen.isNull()&&(now.compare(expwhen,false)>0)) {
+                    CDateTime expires;
+                    try
+                    {
+                        expires.setString(lastAccessed);
+                        expires.adjustTime(60*24*expireDays);
+                        if (now.compare(expires,false)>0)
+                        {
                             expirylist.append(name);
-                            PROGLOG(LOGPFX2 "%s expired on %s",name,expires);
+                            StringBuffer expiresStr;
+                            expires.getString(expiresStr);
+                            PROGLOG(LOGPFX2 "%s expired on %s", name, expiresStr.str());
                         }
                     }
-                    catch (IException *e) {
+                    catch (IException *e)
+                    {
                         StringBuffer s;
                         EXCLOG(e, LOGPFX2 "setdate");
                         e->Release();
@@ -2316,15 +2336,18 @@ public:
             }
         }
         iter.clear();
-        ForEachItemIn(i,expirylist) {
+        ForEachItemIn(i,expirylist)
+        {
             if (stopped)
                 break;
             const char *lfn = expirylist.item(i);
             PROGLOG(LOGPFX2 "Deleting %s",lfn);
-            try {
+            try
+            {
                 queryDistributedFileDirectory().removeEntry(lfn,UNKNOWN_USER);//MORE:Pass IUserDescriptor
             }
-            catch (IException *e) { // may want to just detach if fails
+            catch (IException *e) // may want to just detach if fails
+            {
                 StringBuffer s;
                 EXCLOG(e, LOGPFX2 "remove");
                 e->Release();

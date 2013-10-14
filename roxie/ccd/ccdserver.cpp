@@ -10841,7 +10841,8 @@ public:
             fileProps.setProp("@workunit", workUnit->getWuid(wuid).str());
             fileProps.setProp("@job", workUnit->getJobName(job).str());
         }
-        setExpiryTime(fileProps, helper.getExpiryDays());
+        if (flags & TDWexpires)
+            setExpiryTime(fileProps, helper.getExpiryDays());
         if (flags & TDWupdate)
         {
             unsigned eclCRC;
@@ -11372,7 +11373,8 @@ public:
         if(rececl && *rececl)
             properties.setProp("ECL", rececl);
 
-        setExpiryTime(properties, helper.getExpiryDays());
+        if (helper.getFlags() & TIWexpires)
+            setExpiryTime(properties, helper.getExpiryDays());
         if (helper.getFlags() & TIWupdate)
         {
             unsigned eclCRC;
