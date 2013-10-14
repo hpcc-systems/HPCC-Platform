@@ -66,7 +66,6 @@
 
 #define MAX_ROWS_OUTPUT_TO_SDS              1000
 #define MAX_SAFE_RECORD_SIZE                10000000
-#define DEFAULT_EXPIRY_PERIOD               7
 #define MAX_GRAPH_ECL_LENGTH                1000
 #define MAX_ROW_VALUE_TEXT_LEN              10
 
@@ -9485,7 +9484,7 @@ void HqlCppTranslator::buildExpiryHelper(BuildCtx & ctx, IHqlExpression * expire
     {
         LinkedHqlExpr num = expireAttr->queryChild(0);
         if (!num)
-            num.setown(getSizetConstant(DEFAULT_EXPIRY_PERIOD));
+            num.setown(getSizetConstant(options.defaultExpiry));
         doBuildUnsignedFunction(ctx, "getExpiryDays", num);
     }
 }
@@ -9942,6 +9941,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     if (updateAttr)                       flags.append("|TIWupdatecrc");
     if (updateAttr && !updateAttr->queryAttribute(alwaysAtom)) flags.append("|TIWupdate");
     if (!hasTLK && !singlePart)           flags.append("|TIWlocal");
+    if (expr->hasAttribute(expireAtom))   flags.append("|TIWexpires");
+
     if (compressAttr)
     {
         if (compressAttr->hasAttribute(rowAtom))   flags.append("|TIWrowcompress");
@@ -10094,7 +10095,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     IHqlExpression * program  = queryRealChild(expr, 2);
     IHqlExpression * csvAttr = expr->queryAttribute(csvAtom);
     IHqlExpression * xmlAttr = expr->queryAttribute(xmlAtom);
-    IHqlExpression * expireAttr = expr->queryAttribute(expireAtom);
+    LinkedHqlExpr expireAttr = expr->queryAttribute(expireAtom);
     IHqlExpression * seq = querySequence(expr);
 
     IHqlExpression *pipe = NULL;
@@ -10239,6 +10240,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
                 getNameCtx.addReturn(queryQuotedNullExpr());
             }
 
+            //Expire if explicit, or if a persisted output, and persists default to expiring
+            bool expires = expireAttr || (expr->hasAttribute(_workflowPersist_Atom) && options.expirePersists);
+            if (expires && !expireAttr && options.defaultPersistExpiry)
+                expireAttr.setown(createExprAttribute(expireAtom, getSizetConstant(options.defaultPersistExpiry)));
+
             //virtual unsigned getFlags() = 0;
             IHqlExpression * updateAttr = expr->queryAttribute(updateAtom);
             StringBuffer s;
@@ -10260,6 +10266,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (expr->hasAttribute(jobTempAtom)) flags.append("|TDXjobtemp");
             if (updateAttr) flags.append("|TDWupdatecrc");
             if (updateAttr && !updateAttr->queryAttribute(alwaysAtom)) flags.append("|TDWupdate");
+            if (expires) flags.append("|TDWexpires");
 
             if (flags.length())
                 doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
