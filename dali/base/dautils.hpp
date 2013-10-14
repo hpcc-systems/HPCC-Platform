@@ -283,7 +283,8 @@ extern da_decl IRemoteConnection *getElementsPaged(IElementsPager *elementsPager
                                      const char *owner,
                                      __int64 *hint,                         // if non null points to in/out cache hint
                                      IArrayOf<IPropertyTree> &results,
-                                     unsigned *total); // total possible filtered matches, i.e. irrespective of startoffset and pagesize
+                                     unsigned *total,
+                                     bool checkConn = true); // total possible filtered matches, i.e. irrespective of startoffset and pagesize
 
 extern da_decl void clearPagedElementsCache();
 

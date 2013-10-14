@@ -54,6 +54,7 @@ ESPStruct DFULogicalFile
     [min_ver("1.03")] bool BrowseData;
     [min_ver("1.14")] bool IsKeyFile;
     [min_ver("1.22")] bool IsCompressed;
+    [min_ver("1.22")] string ContentType;
     [min_ver("1.22")] int64 CompressedFileSize;
 };
 
@@ -124,10 +125,7 @@ ESPStruct DFUSpaceItem
     string SmallestSize;
 };
 
-ESPrequest 
-[
-]
-DFUQueryRequest
+ESPrequest [nil_remove] DFUQueryRequest
 {
     string Prefix;
     string ClusterName;
@@ -149,6 +147,7 @@ DFUQueryRequest
     bool Descending(false);
 
     bool OneLevelDirFileReturn(false);
+    [min_ver("1.22")] int64 CacheHint;
 };
 
 ESPresponse 
@@ -185,6 +184,7 @@ DFUQueryResponse
     string BasicQuery;
     string ParametersForPaging;
     string Filters;
+    [min_ver("1.22")] int64 CacheHint;
 };
 
 ESPrequest 

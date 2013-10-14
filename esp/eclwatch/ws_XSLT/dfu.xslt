@@ -42,6 +42,7 @@
     <xsl:variable name="filters" select="/DFUQueryResponse/Filters"/>
     <xsl:variable name="parametersforpaging" select="/DFUQueryResponse/ParametersForPaging"/>
     <xsl:variable name="basicquery" select="/DFUQueryResponse/BasicQuery"/>
+    <xsl:variable name="cachehint" select="/DFUQueryResponse/CacheHint"/>
 
     <xsl:template match="/DFUQueryResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -74,8 +75,7 @@
                     var pageSize = '<xsl:value-of select="$pagesize"/>';;
                     var sortBy = '<xsl:value-of select="$sortby"/>';;
                     var descending = '<xsl:value-of select="$descending"/>';;
-                    //var firstN = '<xsl:value-of select="$firstn"/>';;
-                    //var firstNType = '<xsl:value-of select="$firstntype"/>';;
+                    var cacheHint='<xsl:value-of select="$cachehint"/>';
 
             var oMenu;
 
@@ -390,7 +390,7 @@
                           
                             function headerClicked(headername, descending)
                             {
-                                document.location.href='/WsDfu/DFUQuery?'+currentFilters+'&Sortby='+headername+'&Descending='+descending;
+                                document.location.href='/WsDfu/DFUQuery?'+currentFilters.replace(/\&amp;/g,'&')+'&Sortby='+headername+'&Descending='+descending;
                             }                
                             
                             function onLoad()
@@ -412,9 +412,9 @@
                                 var size = pageEndAt - startFrom + 1;
 
                                 if (basicQuery.length > 0)
-                                    document.location.href = '/WsDfu/DFUQuery?PageSize='+size+'&'+basicQuery+'&PageStartFrom='+startFrom;
+                                    document.location.href = '/WsDfu/DFUQuery?PageSize='+size+'&'+basicQuery.replace(/\&amp;/g,'&')+'&PageStartFrom='+startFrom + '&CacheHint=' + cacheHint;
                                 else
-                                    document.location.href = '/WsDfu/DFUQuery?PageStartFrom='+startFrom+'&PageSize='+size;
+                                    document.location.href = '/WsDfu/DFUQuery?PageStartFrom='+startFrom+'&PageSize='+size + '&CacheHint=' + cacheHint;
 
                                 return false;
                             }
@@ -460,11 +460,11 @@
         <form id="listitems" action="/WsDFU/DFUArrayAction" method="post">
             <xsl:choose>
                 <xsl:when test="$basicquery!=''">
-          <input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery?PageSize={$pagesize}&amp;{$basicquery}&amp;PageStartFrom={/DFUQueryResponse/PageStartFrom}">&#160;</input> 
+          <input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery?PageSize={$pagesize}&amp;{$basicquery}&amp;PageStartFrom={/DFUQueryResponse/PageStartFrom}&amp;CacheHint={$cachehint}">&#160;</input>
                     <!--input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery{$pagesize}&amp;{/DFUQueryResponse/PageStartFrom}"/-->
                 </xsl:when>
                 <xsl:otherwise>
-                    <input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery?PageSize={$pagesize}&amp;PageStartFrom={/DFUQueryResponse/PageStartFrom}">&#160;</input>
+                    <input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery?PageSize={$pagesize}&amp;PageStartFrom={/DFUQueryResponse/PageStartFrom}&amp;CacheHint={$cachehint}">&#160;</input>
           <!--input type="hidden" id="BackToPage" name="BackToPage" value="/WsDfu/DFUQuery{$pagesize}&amp;{/DFUQueryResponse/PageStartFrom}"/-->
                 </xsl:otherwise>
             </xsl:choose>
@@ -519,14 +519,14 @@
                        </xsl:otherwise>
                    </xsl:choose>
                    <xsl:choose>
-                       <xsl:when test="$sortby='Size' and $descending &lt; 1">
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Size', 1)">Size<img src="/esp/files/img/upsimple.png" width="10" height="10"></img></th>
+                       <xsl:when test="$sortby='FileSize' and $descending &lt; 1">
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('FileSize', 1)">Size<img src="/esp/files/img/upsimple.png" width="10" height="10"></img></th>
                        </xsl:when>
-                       <xsl:when test="$sortby='Size'">
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Size', 0)">Size<img src="/esp/files/img/downsimple.png" width="10" height="10"></img></th>
+                       <xsl:when test="$sortby='FileSize'">
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('FileSize', 0)">Size<img src="/esp/files/img/downsimple.png" width="10" height="10"></img></th>
                        </xsl:when>
                        <xsl:otherwise>
-                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('Size', 1)">Size</th>
+                          <th align="center" style="cursor:pointer" onmouseover="bgColor='#FFFFFF'" onmouseout="bgColor='#CCCCCC'" onclick="headerClicked('FileSize', 1)">Size</th>
                        </xsl:otherwise>
                    </xsl:choose>
                    <xsl:choose>
@@ -593,12 +593,12 @@
       <table>
             <tr>
             <xsl:if test="$prevpagefrom &gt; 0">
-                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}')">First</a></td>
-                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$prevpagefrom}')">Prev</a></td>
+                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;CacheHint={$cachehint}')">First</a></td>
+                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$prevpagefrom}&amp;CacheHint={$cachehint}')">Prev</a></td>
             </xsl:if>
             <xsl:if test="$nextpagefrom &gt; 0">
-                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$nextpagefrom}')">Next</a></td>
-                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$lastpagefrom}')">Last</a></td>
+                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$nextpagefrom}&amp;CacheHint={$cachehint}')">Next</a></td>
+                <td><a href="javascript:go('/WsDfu/DFUQuery?{$parametersforpaging}&amp;PageStartFrom={$lastpagefrom}&amp;CacheHint={$cachehint}')">Last</a></td>
             </xsl:if>
             </tr>
       </table>  
@@ -655,12 +655,12 @@
           <img id="mn{position()}" class="menu1" src="/esp/files/img/menu1.png" onclick="{$popup}"></img>
       </td>
             <td>
-              <xsl:if test="isZipfile=1">
+              <xsl:if test="IsCompressed=1">
                 <img border="0" src="/esp/files/img/zip.gif" title="Compressed" width="16" height="16"/>
               </xsl:if>
             </td>
             <td>
-              <xsl:if test="IsKeyFile=1">
+              <xsl:if test="ContentType='key'">
                 <img border="0" src="/esp/files/img/keyfile.png" title="Indexed" width="16" height="16"/>
               </xsl:if>
             </td>
