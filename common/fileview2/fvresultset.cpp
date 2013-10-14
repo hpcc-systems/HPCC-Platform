@@ -589,7 +589,7 @@ ITypeInfo * containsSingleSimpleFieldBlankXPath(IResultSetMetaData * meta)
 
 void fvSplitXPath(const char *xpath, StringBuffer &s, const char *&name, const char **childname=NULL)
 {
-    if (!xpath || !*xpath)
+    if (!xpath)
         return;
     const char * slash = strchr(xpath, '/');
     if (!slash)
@@ -628,7 +628,7 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
         case FVFFbeginrecord:
             if (useXPath)
                 fvSplitXPath(meta->queryXPath(idx), xname, name);
-            builder.beginRecord(name);
+            builder.beginRecord(name, meta->mixedContent(idx), NULL);
             break;
         case FVFFendrecord:
             if (useXPath)
@@ -643,9 +643,10 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
                 ITypeInfo * singleFieldType = (useXPath && name && *name && childname && *childname) ? containsSingleSimpleFieldBlankXPath(column.childMeta.get()) : NULL;
                 if (!singleFieldType || !builder.addSingleFieldDataset(name, childname, *singleFieldType))
                 {
-                    if (builder.beginDataset(name, childname))
+                    const CResultSetMetaData *childMeta = static_cast<const CResultSetMetaData *>(column.childMeta.get());
+                    if (builder.beginDataset(name, childname, childMeta->meta->mixedContent(), NULL))
                     {
-                        static_cast<const CResultSetMetaData *>(column.childMeta.get())->getXmlSchema(builder, useXPath);
+                        childMeta->getXmlSchema(builder, useXPath);
                     }
                     builder.endDataset(name, childname);
                 }

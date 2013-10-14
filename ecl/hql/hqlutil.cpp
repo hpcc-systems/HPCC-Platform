@@ -7473,7 +7473,9 @@ public:
     {
     }
 
-    void build(IHqlExpression * record) const;
+    void build(IHqlExpression * record, bool &hasMixedContent) const;
+    void build(IHqlExpression * record) const {bool mixed; build(record, mixed);}
+
 
 protected:
     void extractName(StringBuffer & name, StringBuffer * itemName, StringBuffer * valueName, IHqlExpression * field, const char * defaultItemName) const;
@@ -7485,7 +7487,7 @@ protected:
 
 
 
-void EclXmlSchemaBuilder::build(IHqlExpression * record) const
+void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) const
 {
     StringBuffer name, childName;
     ForEachChild(i, record)
@@ -7502,15 +7504,22 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record) const
                 case type_row:
                     {
                         extractName(name.clear(), NULL, NULL, cur, NULL);
-                        builder.beginRecord(name);
-                        build(cur->queryRecord());
+                        unsigned updateMixed=0;
+                        builder.beginRecord(name, false, &updateMixed);
+                        bool mixed = false;
+                        build(cur->queryRecord(), (name.length()) ? mixed : hasMixedContent);
+                        if (mixed)
+                            builder.updateMixedRecord(updateMixed, true);
                         builder.endRecord(name);
                         break;
                     }
                 case type_set:
                     {
                         extractName(name.clear(), &childName.clear(), NULL, cur, "Item");
-                        builder.addSetField(name, childName, *type);
+                        if (name.length())
+                            builder.addSetField(name, childName, *type);
+                        else
+                            hasMixedContent = true;
                         break;
                     }
                 case type_dictionary:
@@ -7521,8 +7530,14 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record) const
                         ITypeInfo * singleFieldType = (useXPath && name.length() && childName.length()) ? containsSingleSimpleFieldBlankXPath(cur->queryRecord()) : NULL;
                         if (!singleFieldType || !builder.addSingleFieldDataset(name, childName, *singleFieldType))
                         {
-                            if (builder.beginDataset(name, childName))
-                                build(cur->queryRecord());
+                            unsigned updateMixed = 0;
+                            bool mixed = false;
+                            if (builder.beginDataset(name, childName, false, &updateMixed))
+                            {
+                                build(cur->queryRecord(), (name.length()) ? mixed : hasMixedContent);
+                                if (mixed)
+                                    builder.updateMixedRecord(updateMixed, true);
+                            }
                             builder.endDataset(name, childName);
                         }
                         break;
@@ -7531,18 +7546,21 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record) const
                     type = queryAlienType(type)->queryLogicalType();
                 default:
                     extractName(name.clear(), NULL, NULL, cur, NULL);
-                    builder.addField(name, *type);
+                    if (name.length())
+                        builder.addField(name, *type);
+                    else
+                        hasMixedContent = true;
                     break;
                 }
                 break;
             }
         case no_ifblock:
             builder.beginIfBlock();
-            build(cur->queryChild(1));
+            build(cur->queryChild(1), hasMixedContent);
             builder.endIfBlock();
             break;
         case no_record:
-            build(cur);
+            build(cur, hasMixedContent);
             break;
         }
     }
