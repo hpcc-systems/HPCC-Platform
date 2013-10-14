@@ -18,14 +18,20 @@
                             <div id="${id}SprayFixedDialog" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                                 <h2>Source</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <input id="${id}SprayFixedRecordLength" title="Record&nbsp;Length:" style="width: 95%;" name="sourceRecordSize" colspan="2" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <select id="${id}SpraySourceSelect" title="Spray&nbsp;Source&nbsp;Type:" name="sourceFormat" data-dojo-type="dijit/form/Select">
+                                        <option value="Fixed" selected="true">Fixed</option>
+                                        <option value="Recfmv">Recfmv</option>
+                                        <option value="Recfmvb">Recfmvb</option>
+                                        <option value="Variable">Variable</option>
+                                    </select>
+                                    <input id="${id}SprayFixedRecordLength" title="Record&nbsp;Length:" style="width: 95%;" name="sourceRecordSize" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
                                 </div>
                                 <h2>Destination</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
                                     <input id="${id}SprayFixedDestination" title="Group:" style="width: 95%;" name="destGroup" colspan="2" data-dojo-type="TargetSelectWidget" />
-                                    <input title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
-                                    <input title="Mask:" style="width: 95%;" colspan="2" data-dojo-props="trim: true, readonly: true"  data-dojo-type="dijit.form.TextBox" />
-                                    <input title="Prefix:" style="width: 95%;" name="prefix" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}SprayFixedDestinationLabel" title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}SprayFixedDestinationMask" title="Mask:" style="width: 95%;" colspan="2" data-dojo-props="trim: true, readonly: true"  data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}SprayFixedDestinationPrefix" title="Prefix:" style="width: 95%;" name="prefix" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                 </div>
                                 <h2>Options</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
