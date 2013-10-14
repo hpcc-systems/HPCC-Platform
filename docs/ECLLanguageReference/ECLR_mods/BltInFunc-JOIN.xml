@@ -304,8 +304,8 @@
           <row>
             <entry><emphasis role="bold">SMART</emphasis></entry>
 
-            <entry>Specifies to use an in-memory lookup only when
-            possible.</entry>
+            <entry>Specifies to use an in-memory lookup when
+            possible, but use a distributed join if the right dataset is large.</entry>
           </row>
 
           <row>
