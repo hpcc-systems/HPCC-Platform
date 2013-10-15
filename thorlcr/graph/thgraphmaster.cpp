@@ -1115,7 +1115,7 @@ public:
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)
     {
         unsigned checkSum = 0;
-        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(job, name, false, true);
+        Owned<IDistributedFile> iDfsFile = queryThorFileManager().lookup(job, name, false, true, false); // NB: do not update accessed
         if (iDfsFile.get())
         {
             if (iDfsFile->getFileCheckSum(checkSum))

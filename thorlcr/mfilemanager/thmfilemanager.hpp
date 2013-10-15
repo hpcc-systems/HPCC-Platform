@@ -45,7 +45,7 @@ interface IDistributedFile;
 interface IThorFileManager : extends IInterface
 {
     virtual void noteFileRead(CJobBase &job, IDistributedFile *file, bool extended=false) = 0;
-    virtual IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false) = 0;
+    virtual IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false, bool updateAccessed=true) = 0;
     virtual IFileDescriptor *create(CJobBase &job, const char *logicalName, StringArray &groupNames, IArrayOf<IGroup> &groups, bool overwriteok, unsigned helperFlags=0, bool nonLocalIndex=false, unsigned restrictedWidth=0) = 0;
     virtual void publish(CJobBase &job, const char *logicalName, bool mangle, IFileDescriptor &file, Owned<IDistributedFile> *publishedFile=NULL, unsigned partOffset=0, bool createMissingParts=true) = 0;
     virtual void clearCacheEntry(const char *name) = 0;
@@ -54,7 +54,6 @@ interface IThorFileManager : extends IInterface
     virtual StringBuffer &getPhysicalName(CJobBase &job, const char *logicalName, unsigned partno, StringBuffer &res) = 0;
     virtual StringBuffer &getPublishPhysicalName(CJobBase &job, const char *logicalName, unsigned partno, StringBuffer &res) = 0;
     virtual unsigned __int64 getFileOffset(CJobBase &job, const char *logicalName, unsigned partno) = 0;
-    virtual void updateAccessTime(CJobBase &job, const char *logicalName) = 0;
     virtual bool scanLogicalFiles(CJobBase &job, const char *_pattern, StringArray &results) = 0;
 };
 

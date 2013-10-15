@@ -254,7 +254,7 @@ public:
         LOG(daliAuditLogCat,"%s",outs.str());
     }
 
-    IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false)
+    IDistributedFile *lookup(CJobBase &job, const char *logicalName, bool temporary=false, bool optional=false, bool reportOptional=false, bool updateAccessed=true)
     {
         StringBuffer scopedName;
         bool paused = false;
@@ -299,6 +299,8 @@ public:
             }
             return NULL;
         }
+        if (updateAccessed)
+            file->setAccessed();
         return LINK(file);
     }
 
@@ -599,16 +601,6 @@ public:
         Owned<IDistributedFilePart> part = file->getPart(partno);
         return part->queryAttributes().getPropInt64("@offset");;
     }
-
-    void updateAccessTime(CJobBase &job, const char *logicalName)
-    {
-        StringBuffer scoped;
-        addScope(job, logicalName, scoped);
-        Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(scoped.str(), job.queryUserDescriptor());
-        if (f)
-            f->setAccessed();
-    }
-
     virtual bool scanLogicalFiles(CJobBase &job, const char *_pattern, StringArray &results)
     {
         if (strcspn(_pattern, "*?") == strlen(_pattern))
