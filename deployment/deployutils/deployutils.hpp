@@ -60,6 +60,7 @@ extern DEPLOYUTILS_API IPropertyTree* generateTreeFromXsd(const IPropertyTree* p
 extern DEPLOYUTILS_API bool checkComponentReferences(const IPropertyTree* pEnv, IPropertyTree* pCompNode, const char* compName, StringBuffer& sMsg, const char* szNewName=NULL);
 extern DEPLOYUTILS_API bool generateHeaderForComponent(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName);
 extern DEPLOYUTILS_API const char* getUniqueName(const IPropertyTree* pEnv, StringBuffer& sName, const char* xpath, const char* category);
+extern DEPLOYUTILS_API const char* getUniqueName2(const IPropertyTree* pEnv, StringBuffer& sName, const char* processName, const char* keyAttrib);
 extern DEPLOYUTILS_API void getTabNameArray(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName, StringArray& strArray);
 extern DEPLOYUTILS_API void getDefnPropTree(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName, IPropertyTree* pDefTree, StringBuffer xpath);
 extern DEPLOYUTILS_API void getDefnString(const IPropertyTree* pEnv, IPropertyTree* pSchema, const char* compName, StringBuffer& compDefn, StringBuffer& viewChildNodes, StringBuffer& multiRowNodes);

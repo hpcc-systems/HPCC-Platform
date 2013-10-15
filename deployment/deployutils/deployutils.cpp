@@ -2811,6 +2811,49 @@ const char* getUniqueName(const IPropertyTree* pEnv, StringBuffer& sName, const 
   return sName.str();
 }
 
+
+const char* getUniqueName2(const IPropertyTree* pEnv, StringBuffer& sName, const char* processName, const char* keyAttrib)
+{
+  //if the name ends in _N (where N is a number) then ignore _N to avoid duplicating
+  //number suffix as in _N_M
+  //
+  StringBuffer sPrefix = sName;
+  const char* pdx = strrchr(sName.str(), '_');
+  if (pdx)
+  {
+    StringBuffer num(sName);
+    char* pszNum = num.detach();
+
+    char *token;
+    j_strtok_r(pszNum, "_", &token);
+
+    if (strspn(token, "0123456789") == strlen(token))
+    {
+      sName.remove(pdx - sName.str(), sName.length() - (pdx - sName.str()));
+      sPrefix.clear().append(sName);
+    }
+    else
+    {
+      int len = sPrefix.length();
+      if (len > 0 && endsWith(sPrefix.str(), "_")) //ends with '_'
+        sPrefix = sPrefix.remove(sPrefix.length() - 1, 1); //lose it
+    }
+  }
+
+  StringBuffer xpath;
+  xpath.appendf("./%s[%s='%s']", processName, keyAttrib, sName.str());
+  int iIdx = 2;
+
+  while (pEnv->queryPropTree(xpath))
+  {
+    sName.clear().appendf("%s_", sPrefix.str()).append(iIdx);
+    xpath.clear().appendf("./%s[%s='%s']", processName, keyAttrib, sName.str());
+    iIdx++;
+  }
+
+  return sName.str();
+}
+
 void getCommonDir(const IPropertyTree* pEnv, const char* catType, const char* buildSetName, const char* compName, StringBuffer& sbVal)
 {
   const IPropertyTree* pEnvDirs = pEnv->queryPropTree("Software/Directories");
