@@ -381,16 +381,16 @@
               <entry><emphasis role="bold">EXPIRE</emphasis></entry>
 
               <entry>Optional. Specifies the file is a temporary file that may
-              be automatically deleted after the specified number of
-              days.</entry>
+              be automatically deleted after the specified number of days
+              since the file was read.</entry>
             </row>
 
             <row>
               <entry><emphasis>days</emphasis></entry>
 
-              <entry>Optional. The number of days after which the file may be
-              automatically deleted. If omitted, the default is seven
-              (7).</entry>
+              <entry>Optional. The number of days from last file read after
+              which the file may be automatically deleted. If omitted, the
+              default is seven (7).</entry>
             </row>
           </tbody>
         </tgroup>
