@@ -63,18 +63,24 @@ define([
                 if (lang.exists("WUPublishWorkunitResponse", response)) {
                     if (response.WUPublishWorkunitResponse.ErrorMesssage) {
                         dojo.publish("hpcc/brToaster", {
-                            message: "<h4>Publish " + response.WUPublishWorkunitResponse.Wuid + "</h4>" + "<p>" + response.WUPublishWorkunitResponse.ErrorMesssage + "</p>",
-                            type: "error",
-                            duration: -1
+                            Severity: "Error",
+                            Source: service + "." + action,
+                            Exceptions: response.Exceptions
                         });
                     } else {
                         dojo.publish("hpcc/brToaster", {
-                            message: "<h4>Publish " + response.WUPublishWorkunitResponse.Wuid + "</h4>" + "<p><ul>" +
-                                "<li>Query ID:  " + response.WUPublishWorkunitResponse.QueryId + "</li>" +
-                                "<li>Query Name:  " + response.WUPublishWorkunitResponse.QueryName + "</li>" +
-                                "<li>Query Set:  " + response.WUPublishWorkunitResponse.QuerySet + "</li>" +
-                                "</ul></p>",
-                            type: "message"
+                            Severity: "Error",
+                            Source: "WsWorkunits.WUPublishWorkunit",
+                            Exceptions: [{
+                                Source: "Query ID",
+                                Message: response.WUPublishWorkunitResponse.QueryId
+                            }, {
+                                Source: "Query Name",
+                                Message: response.WUPublishWorkunitResponse.QueryName
+                            }, {
+                                Source: "Query Set",
+                                Message: response.WUPublishWorkunitResponse.QuerySet
+                            }]
                         });
                     }
                 }
@@ -157,9 +163,9 @@ define([
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
                             if (item.Result.indexOf("Failed:") === 0) {
                                 dojo.publish("hpcc/brToaster", {
-                                    message: "<h4>" + item.Action + " " + item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
-                                    type: "error",
-                                    duration: -1
+                                    Severity: "Error",
+                                    Source: "WsWorkunits.WUAction",
+                                    Exceptions: [{Source: item.Action + " " + item.Wuid, Message: item.Result}]
                                 });
                             }
                         });
