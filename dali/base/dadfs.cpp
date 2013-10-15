@@ -4270,17 +4270,28 @@ public:
 
     virtual void setAccessedTime(const CDateTime &dt)       
     {
-        if (logicalName.isForeign()) {
+        if (logicalName.isForeign())
             parent->setFileAccessed(logicalName,udesc,dt);
-        }
-        else {
-            DistributedFilePropertyLock lock(this);
+        else
+        {
+            CFileConnectLock fconnattrlock(true);
+            bool performedLock = false;
+            if (conn && !proplockcount) // NB: If locked, already have exclusive access to file
+            {
+                DfsXmlBranchKind bkind;
+                if (!fconnattrlock.initany("CDistributedFile::setAccessedTime", logicalName, bkind, true, false, false, defaultTimeout))
+                    return; // timeout will raise exception
+                performedLock = true;
+            }
             if (dt.isNull())
                 queryAttributes().removeProp("@accessed");
-            else {
+            else
+            {
                 StringBuffer str;
                 queryAttributes().setProp("@accessed",dt.getString(str).str());
             }
+            if (performedLock)
+                conn->commit();
         }
     }
 

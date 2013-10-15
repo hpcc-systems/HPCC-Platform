@@ -40,10 +40,7 @@ public:
         local = false;
         width = 0;
     }
-    ~CKeyPatchMaster()
-    {
-    }
-    void init()
+    virtual void init()
     {
         helper = (IHThorKeyPatchArg *)queryHelper();
 
@@ -57,6 +54,9 @@ public:
         if (originalIndexFile->querySuperFile() || patchFile->querySuperFile())
             throw MakeActivityException(this, 0, "Patching super files not supported");
         
+        queryThorFileManager().noteFileRead(container.queryJob(), originalIndexFile);
+        queryThorFileManager().noteFileRead(container.queryJob(), patchFile);
+
         width = originalIndexFile->numParts();
 
         originalDesc.setown(originalIndexFile->getFileDescriptor());
@@ -78,7 +78,7 @@ public:
         if (!local)
             newIndexDesc->queryPart(newIndexDesc->numParts()-1)->queryProperties().setProp("@kind", "topLevelKey");
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         if (slave < width) // if false - due to mismatch width fitting - fill in with a blank entry
         {
@@ -107,7 +107,7 @@ public:
         else
             dst.append(false); // no part
     }
-    void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
+    virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
     {
         if (mb.length()) // if 0 implies aborted out from this slave.
         {
@@ -134,7 +134,7 @@ public:
             }
         }
     }
-    void done()
+    virtual void done()
     {
         StringBuffer scopedName;
         OwnedRoxieString outputName(helper->getOutputName());
@@ -163,6 +163,8 @@ public:
 
         container.queryTempHandler()->registerFile(outputName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
         queryThorFileManager().publish(container.queryJob(), outputName, false, *newIndexDesc);
+        originalIndexFile->setAccessed();
+        patchFile->setAccessed();
     }
     void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {

@@ -192,7 +192,7 @@ public:
         inputProgress.setown(new ProgressInfo);
         reInit = 0 != (indexBaseHelper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }
-    void init()
+    virtual void init()
     {
         nofilter = false;
         OwnedRoxieString indexName(indexBaseHelper->getFileName());
@@ -227,7 +227,7 @@ public:
             }
         }
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         OwnedRoxieString indexName(indexBaseHelper->getFileName());
         dst.append(indexName);
@@ -254,7 +254,7 @@ public:
         if (partNumbers.ordinality())
             fileDesc->serializeParts(dst, partNumbers);
     }
-    void deserializeStats(unsigned node, MemoryBuffer &mb)
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
         CMasterActivity::deserializeStats(node, mb);
         rowcount_t progress;
@@ -267,7 +267,7 @@ public:
             progressInfoArr.item(p).set(node, st);
         }
     }
-    void getXGMML(unsigned idx, IPropertyTree *edge)
+    virtual void getXGMML(unsigned idx, IPropertyTree *edge)
     {
         CMasterActivity::getXGMML(idx, edge);
         StringBuffer label;
@@ -287,10 +287,16 @@ public:
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, mpTag);
     }
-    void kill()
+    virtual void kill()
     {
         CMasterActivity::kill();
         index.clear();
+    }
+    virtual void done()
+    {
+        CMasterActivity::done();
+        if (index)
+            index->setAccessed();
     }
 };
 
@@ -324,7 +330,7 @@ public:
     {
         helper = (IHThorIndexReadArg *)queryHelper();
     }
-    void init()
+    virtual void init()
     {
         CIndexReadBase::init();
         if (!container.queryLocalOrGrouped())
@@ -333,7 +339,7 @@ public:
                 limit = (rowcount_t)helper->getKeyedLimit();
         }
     }
-    void process()
+    virtual void process()
     {
         if (limit != RCMAX)
             processKeyedLimit();
