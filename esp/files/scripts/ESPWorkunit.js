@@ -18,6 +18,7 @@ define([
     "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/_base/Deferred",
+    "dojo/promise/all",
     "dojo/data/ObjectStore",
     "dojo/store/util/QueryResults",
     "dojo/store/Observable",
@@ -27,7 +28,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable,
+], function (declare, arrayUtil, lang, Deferred, all, ObjectStore, QueryResults, Observable,
     WsWorkunits, WsTopology, ESPUtil, ESPRequest, ESPResult) {
 
     var _workunits = {};
@@ -529,6 +530,24 @@ define([
             this.getInfo({
                 onGetResults: onFetchResults
             });
+        },
+        fetchNamedResults: function (resultNames) {
+            var deferred = new Deferred()
+            var context = this;
+            this.fetchResults(function (results) {
+                var resultContents = [];
+                arrayUtil.forEach(resultNames, function (item, idx) {
+                    resultContents.push(context.namedResults[item].fetchContent());
+                });
+                all(resultContents).then(function (resultContents) {
+                    var results = [];
+                    arrayUtil.forEach(resultContents, function (item, idx) {
+                        results[resultNames[idx]] = item;
+                    });
+                    deferred.resolve(results);
+                });
+            });
+            return deferred.promise;
         },
         fetchSequenceResults: function (onFetchSequenceResults) {
             if (this.sequenceResults && this.sequenceResults.length) {
