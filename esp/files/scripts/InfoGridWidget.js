@@ -18,13 +18,18 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/array",
+    "dojo/dom",
+    "dojo/dom-construct",
     "dojo/dom-class",
     "dojo/store/Memory",
     "dojo/store/Observable",
+    "dojo/topic",
 
     "dijit/registry",
 
     "dojox/data/AndOrReadStore",
+    "dojox/gfx",
+    "dojox/html/entities",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -42,9 +47,9 @@ define([
     "dijit/layout/ContentPane",
     "dijit/form/CheckBox"
 ],
-    function (declare, lang, arrayUtil, domClass, Memory, Observable,
+    function (declare, lang, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic,
             registry, 
-            AndOrReadStore,
+            AndOrReadStore, gfx, entities,
             OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
             _Widget, ESPUtil, ESPWorkunit,
             template) {
@@ -71,6 +76,7 @@ define([
                 this.errorsCheck = registry.byId(this.id + "Errors");
                 this.warningsCheck = registry.byId(this.id + "Warnings");
                 this.infoCheck = registry.byId(this.id + "Info");
+                this.errWarnMenuItem = registry.byId("stubErrWarn");
             },
 
             startup: function (args) {
@@ -100,7 +106,7 @@ define([
                                 node.innerText = value;
                             }
                         }, 
-                        Source: { label: "Source", field: "", width: 72, sortable: false },
+                        Source: { label: "Source", field: "", width: 144, sortable: false },
                         Code: { label: "Code", field: "", width: 45, sortable: false },
                         Message: { label: "Message", field: "", sortable: false },
                         Column: { label: "Col", field: "", width: 36, sortable: false },
@@ -117,6 +123,31 @@ define([
                     context.onErrorClick(line, col);
                 });
                 this.infoGrid.startup();
+
+                if (this.errWarn) {
+                    this.infoData = [];
+                    topic.subscribe("hpcc/brToaster", function (topic) {
+                        context.loadTopic(topic);
+                    });
+
+                    var target = dom.byId("stubMore");
+                    if (target) {
+                        var newTarget = domConstruct.create("div", {
+                            style: {
+                                position: "relative",
+                                top: "16px",
+                                left: "12px"
+                            }
+                        }, target.firstChild);
+                        var surface = gfx.createSurface(newTarget, 16, 16);
+                        this.errWarnCount = surface.createText({ x: 8, y: 12, align: "middle", text: "" })
+                                    .setFill([255, 255, 255, 1])
+                        ;
+                        this.errWarnCount.setFont({
+                            size: "12px"
+                        });
+                    }
+                }
             },
 
             resize: function (args) {
@@ -165,17 +196,19 @@ define([
                 if (params.onErrorClick) {
                     this.onErrorClick = params.onErrorClick;
                 }
-                
-                this.wu = ESPWorkunit.Get(params.Wuid);
 
-                var context = this;
-                this.wu.monitor(function () {
-                    context.wu.getInfo({
-                        onGetWUExceptions: function (exceptions) {
-                            context.loadExceptions(exceptions);
-                        }
+                if (params.Wuid) {
+                    this.wu = ESPWorkunit.Get(params.Wuid);
+
+                    var context = this;
+                    this.wu.monitor(function () {
+                        context.wu.getInfo({
+                            onGetWUExceptions: function (exceptions) {
+                                context.loadExceptions(exceptions);
+                            }
+                        });
                     });
-                });
+                }
             },
 
             refreshFilter: function (graphName) {
@@ -199,6 +232,7 @@ define([
                                 data.push(item);
                             }
                             break;
+                        case "Message":
                         case "Info":
                             if (infoChecked) {
                                 data.push(item);
@@ -238,6 +272,26 @@ define([
                 });
                 this.infoData = exceptions;
                 this.refreshFilter();
+            },
+
+            loadTopic: function (topic) {
+                if (lang.exists("Exceptions", topic)) {
+                    var context = this;
+                    arrayUtil.forEach(topic.Exceptions, function (item, idx) {
+                        context.infoData.unshift(lang.mixin({
+                            Severity: topic.Severity,
+                            Source: topic.Source
+                        }, item));
+                    });
+                }
+
+                this.refreshFilter();
+                if (this.errWarnCount) {
+                    this.errWarnCount.rawNode.textContent = this.infoData.length;
+                    if (this.errWarnMenuItem) {
+                        this.errWarnMenuItem.set("label", "Error/Warnings (" + this.infoData.length + ")");
+                    }
+                }
             }
         });
     });

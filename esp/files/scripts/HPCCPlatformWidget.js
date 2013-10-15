@@ -17,6 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/dom",
+    "dojo/dom-style",
 
     "dijit/registry",
     "dijit/Tooltip",
@@ -48,7 +49,7 @@ define([
     "hpcc/HPCCPlatformRoxieWidget",
     "hpcc/HPCCPlatformOpsWidget"
 
-], function (declare, lang, dom,
+], function (declare, lang, dom, domStyle,
                 registry, Tooltip,
                 _TabContainerWidget, ESPRequest, WsAccount, WsSMC, GraphWidget,
                 template) {
@@ -64,12 +65,16 @@ define([
             this.searchPage = registry.byId(this.id + "_Main" + "_Search");
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
+            this.errWarnPage = registry.byId(this.id + "_ErrWarn");
             this.mainStackContainer = registry.byId(this.mainPage.id + "TabContainer");
             this.searchPage = registry.byId(this.id + "_Main" + "_Search");
         },
 
         startup: function (args) {
             this.inherited(arguments);
+            domStyle.set(dom.byId(this.id + "StackController_stub_ErrWarn").parentNode.parentNode, {
+                visibility: "hidden"
+            });
         },
 
         //  Implementation  ---
@@ -130,6 +135,10 @@ define([
             //this.BuildVer = BuildVer
             var win = window.open("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.BuildVer, "_blank");
             win.focus();
+        },
+
+        _onOpenErrWarn: function (evt) {
+            this.stackContainer.selectChild(this.errWarnPage);
         },
 
         _onAboutLoaded: false,
