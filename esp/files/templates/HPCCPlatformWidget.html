@@ -21,6 +21,7 @@
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">About</div>
                         <div id="${id}ReleaseNotes" data-dojo-attach-event="onClick:_onOpenReleaseNotes" data-dojo-type="dijit.MenuItem">Release Notes</div>
+                        <div id="${id}ErrWarn" data-dojo-attach-event="onClick:_onOpenErrWarn" data-dojo-type="dijit.MenuItem">Error/Warnings</div>
                     </div>
                 </div>
             </div>
@@ -30,11 +31,15 @@
             </div>
             <div id="${id}_ECL" data-dojo-props="iconClass: 'iconWu', showLabel: false" data-dojo-type="HPCCPlatformECLWidget">
             </div>
-            <div id="${id}_Files" data-dojo-props="iconClass: 'iconLandingZone'" data-dojo-type="HPCCPlatformFilesWidget">
+            <div id="${id}_Files" data-dojo-props="iconClass: 'iconLandingZone', showLabel: false" data-dojo-type="HPCCPlatformFilesWidget">
             </div>
-            <div id="${id}_Queries" data-dojo-props="iconClass: 'iconTargets'" data-dojo-type="HPCCPlatformRoxieWidget">
+            <div id="${id}_Queries" data-dojo-props="iconClass: 'iconTargets', showLabel: false" data-dojo-type="HPCCPlatformRoxieWidget">
             </div>
-            <div id="${id}_OPS" data-dojo-props="iconClass: 'iconOperations'" data-dojo-type="HPCCPlatformOpsWidget">
+            <div id="${id}_OPS" data-dojo-props="iconClass: 'iconOperations', showLabel: false" data-dojo-type="HPCCPlatformOpsWidget">
+            </div>
+            <div id="${id}_ErrWarn" data-dojo-props="showLabel: false" data-dojo-type="dijit.layout.TabContainer">
+                <div id="${id}ErrWarnGrid" data-dojo-props="title: 'Error/Warning(s)', errWarn: true" data-dojo-type="InfoGridWidget">
+                </div>
             </div>
         </div>
     </div>

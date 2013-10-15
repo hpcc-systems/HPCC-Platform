@@ -322,14 +322,15 @@ define([
                     var resultMessage = response.DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult[0].Result;
                     if (resultMessage.indexOf("Success") === 0) {
                         dojo.publish("hpcc/brToaster", {
-                            message: "<h4>Delete " + resultID + "</h4>" + "<p>" + resultMessage + "</p>",
-                            type: "message"
+                            Severity: "Message",
+                            Source: "FileSpray.DeleteDropZoneFiles",
+                            Exceptions: [{ Source: "Delete " + resultID, Message: resultMessage }]
                         });
                     } else {
                         dojo.publish("hpcc/brToaster", {
-                            message: "<h4>Delete " + resultID + "</h4>" + "<p>" + resultMessage + "</p>",
-                            type: "error",
-                            duration: -1
+                            Severity: "Error",
+                            Source: "FileSpray.DeleteDropZoneFiles",
+                            Exceptions: [{ Source: "Delete " + resultID, Message: resultMessage }]
                         });
                     }
                 }

@@ -15,6 +15,7 @@
 ############################################################################## */
 define([
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/_base/fx",
     "dojo/_base/window",
     "dojo/dom",
@@ -24,10 +25,11 @@ define([
     "dojo/topic",
     "dojo/ready",
 
+    "dojox/html/entities",
     "dojox/widget/Toaster",
     "dojox/widget/Standby"
-], function (lang, fx, baseWindow, dom, domStyle, domGeometry, ioQuery, topic, ready,
-        Toaster, Standby) {
+], function (lang, arrayUtil, fx, baseWindow, dom, domStyle, domGeometry, ioQuery, topic, ready,
+        entities, Toaster, Standby) {
 
     var initUi = function () {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
@@ -95,8 +97,26 @@ define([
                 });
                 var myToaster = new Toaster({
                     id: 'hpcc_toaster',
-                    positionDirection: 'br-left',
-                    messageTopic: 'hpcc/brToaster'
+                    positionDirection: 'br-left'
+                });
+                topic.subscribe("hpcc/brToaster", function (topic) {
+                    if (lang.exists("Exceptions", topic)) {
+                        var context = this;
+                        arrayUtil.forEach(topic.Exceptions, function (_item, idx) {
+                            var item = lang.mixin({
+                                Severity: topic.Severity,
+                                Source: topic.Source
+                            }, _item);
+
+                            if ((item.Source === "WsWorkunits.WUInfo" && item.Code === 20080) ||
+                                (item.Source === "WsWorkunits.WUQuery" && item.Code === 20081)) {
+                            } else {
+                                var message = "<h4>" + entities.encode(item.Source) + "</h4><p>" + entities.encode(item.Message) + "</p>";
+                                myToaster.setContent(message, item.Severity, item.Severity === "Error" ? -1 : null);
+                                myToaster.show();
+                            }
+                        });
+                    }
                 });
 
                 if (widget) {
