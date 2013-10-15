@@ -266,13 +266,14 @@ define([
         doDelete: function () {
             return this._action("Delete");
         },
-        publish: function (jobName) {
+        publish: function (jobName, remoteDali) {
             this._assertHasWuid();
             var context = this;
             WsWorkunits.WUPublishWorkunit({
                 request: {
                     Wuid: this.Wuid,
                     JobName: jobName,
+                    RemoteDali: remoteDali,
                     Activate: 1,
                     UpdateWorkUnitName: 1,
                     Wait: 5000
