@@ -536,7 +536,7 @@ protected:
     bool                      isRootAction;
     bool                      isRoxie;
     bool                      expandPersistInputDependencies;
-    bool                      multiplePersistInstances;
+    int                       multiplePersistInstances;
     UnsignedArray             cumulativeDependencies;
     UnsignedArray             emptyDependencies;
     UnsignedArray             storedWfids;

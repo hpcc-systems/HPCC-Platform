@@ -142,7 +142,7 @@ public:
     }
 
     void extractGlobal(IHqlExpression * global, ClusterType platform);
-    void extractStoredInfo(IHqlExpression * expr, IHqlExpression * codehash, bool isRoxie, bool multiplePersistInstances);
+    void extractStoredInfo(IHqlExpression * expr, IHqlExpression * codehash, bool isRoxie, int multiplePersistInstances);
     void checkFew(HqlCppTranslator & translator);
     void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * getStoredKey();
@@ -4952,7 +4952,7 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType pla
     persistOp = no_global;
 }
 
-void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpression * _codehash, bool isRoxie, bool multiplePersistInstances)
+void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpression * _codehash, bool isRoxie, int multiplePersistInstances)
 {
     node_operator op = expr->getOperator();
     few = expr->hasAttribute(fewAtom) || (isRoxie) || (value->isDictionary() && !expr->hasAttribute(manyAtom));
@@ -4983,7 +4983,7 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         setCluster(queryRealChild(expr, 1));
         few = expr->hasAttribute(fewAtom);       // PERSISTs need a consistent format.
         extraOutputAttr.setown(createComma(LINK(expr->queryAttribute(expireAtom)), LINK(expr->queryAttribute(clusterAtom))));
-        numPersistInstances = multiplePersistInstances ? -1 : 0;
+        numPersistInstances = multiplePersistInstances;
         if (expr->hasAttribute(multipleAtom))
             numPersistInstances = (int)getIntValue(queryAttributeChild(expr, multipleAtom, 0), -1);
         else if (expr->hasAttribute(singleAtom))
@@ -5396,13 +5396,14 @@ static HqlTransformerInfo workflowTransformerInfo("WorkflowTransformer");
 WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _translator)
 : NewHqlTransformer(workflowTransformerInfo), wu(_wu), translator(_translator), wfidCount(0)
 {
+    const HqlCppOptions & options = translator.queryOptions();
     trivialStoredWfid = 0;
     nextInternalFunctionId = 0;
     onceWfid = 0;
-    combineAllStored = translator.queryOptions().combineAllStored;
-    combineTrivialStored = translator.queryOptions().combineTrivialStored;
-    expandPersistInputDependencies = translator.queryOptions().expandPersistInputDependencies;
-    multiplePersistInstances = translator.queryOptions().multiplePersistInstances;
+    combineAllStored = options.combineAllStored;
+    combineTrivialStored = options.combineTrivialStored;
+    expandPersistInputDependencies = options.expandPersistInputDependencies;
+    multiplePersistInstances = options.multiplePersistInstances ? options.defaultNumPersistInstances : 0;
     isRootAction = true;
     isRoxie = (translator.getTargetClusterType() == RoxieCluster);
     workflowOut = NULL;
