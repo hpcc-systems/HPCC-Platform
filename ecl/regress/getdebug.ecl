@@ -16,7 +16,8 @@
 ############################################################################## */
 
 output(__STAND_ALONE__);
-output(__DEBUG__('targetClusterType')); // unfortunately this is the one setting that is updated too late.
+output(__PLATFORM__);
+output(__DEBUG__('targetClusterType'));
 output(__DEBUG__('myDebugSetting'));
 output(__DEBUG__('myDebugSetting', boolean));
 output(__DEBUG__('myDebugSetting', unsigned));
