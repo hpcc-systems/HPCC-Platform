@@ -560,6 +560,7 @@ struct HqlCppOptions
     unsigned            subgraphToRegeneate;
     unsigned            defaultPersistExpiry;
     unsigned            defaultExpiry;
+    int                 defaultNumPersistInstances;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
     bool                peephole;
