@@ -8856,6 +8856,8 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
     IPropertyTree * node = createPTree("node");
     if (activeSubgraph)
     {
+        if (!graphTag)
+            graphTag = activeSubgraph->graphTag;
         node = activeSubgraph->tree->addPropTree("node", node);
         if (activeSubgraph->graphTag == graphTag)
             graphId = activeSubgraph->graphId;
@@ -9136,7 +9138,7 @@ void HqlCppTranslator::doBuildThorGraph(BuildCtx & ctx, IHqlExpression * expr)
         beginGraph();
 
         unsigned id = 0;
-        OwnedHqlExpr graphTag = NULL;//WIP:createAttribute(graphAtom, createConstant((__int64)id));
+        OwnedHqlExpr graphTag = createAttribute(graphAtom, createUniqueId());
         OwnedHqlExpr resourced = getResourcedGraph(expr->queryChild(0), graphTag);
         if (resourced)
         {
@@ -9144,12 +9146,8 @@ void HqlCppTranslator::doBuildThorGraph(BuildCtx & ctx, IHqlExpression * expr)
             BuildCtx graphctx(ctx);
             graphctx.addGroup();
 
-            Owned<SubGraphInfo> graphInfo;
-            if (graphTag)
-            {
-                graphInfo.setown(new SubGraphInfo(activeGraph->xgmml, 0, 0, graphTag, SubGraphRoot));
-                graphctx.associate(*graphInfo);
-            }
+            Owned<SubGraphInfo> graphInfo = new SubGraphInfo(activeGraph->xgmml, 0, 0, graphTag, SubGraphRoot);
+            graphctx.associate(*graphInfo);
 
             activeGraphCtx = &graphctx;
             buildStmt(graphctx, resourced);
