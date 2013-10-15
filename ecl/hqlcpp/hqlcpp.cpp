@@ -1458,7 +1458,7 @@ void HqlCppTranslator::cacheOptions()
 
     struct DebugOption 
     {
-        typedef enum { typeByte, typeUnsigned, typeBool } OptionType;
+        typedef enum { typeByte, typeUnsigned, typeSigned, typeBool } OptionType;
 
         DebugOption (bool & _option, const char * name, bool defaultValue) : option(&_option), optName(name)
         { 
@@ -1474,7 +1474,12 @@ void HqlCppTranslator::cacheOptions()
         { 
             _option = defaultValue;
             type = typeUnsigned;
-        };
+        }
+        DebugOption (int & _option, const char * name, unsigned defaultValue) : option(&_option), optName(name)
+        {
+            _option = defaultValue;
+            type = typeSigned;
+        }
 
         void setValue(const char * val)
         {
@@ -1490,6 +1495,12 @@ void HqlCppTranslator::cacheOptions()
                 {
                     unsigned * u = (unsigned*)option;
                     *u = (unsigned)atoi(val);
+                    break;
+                }
+            case typeSigned:
+                {
+                    signed * u = (signed*)option;
+                    *u = (signed)atoi(val);
                     break;
                 }
             case typeByte:
@@ -1713,6 +1724,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeParentAccess,"optimizeParentAccess",false),
         DebugOption(options.expandPersistInputDependencies,"expandPersistInputDependencies",true),
         DebugOption(options.multiplePersistInstances,"multiplePersistInstances",true),
+        DebugOption(options.defaultNumPersistInstances,"defaultNumPersistInstances",-1),
     };
 
     //get options values from workunit
