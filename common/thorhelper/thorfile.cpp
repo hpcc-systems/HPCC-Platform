@@ -32,15 +32,7 @@ namespace thorfile {
 
 void setExpiryTime(IPropertyTree & properties, unsigned expireDays)
 {
-    if (expireDays)
-    {
-        CDateTime expireTime;
-        StringBuffer expireTimeText;
-        expireTime.setNow();
-        expireTime.adjustTime(expireDays * 24 * 60);
-        expireTime.getString(expireTimeText, false);
-        properties.setProp("@expires", expireTimeText.str());
-    }
+    properties.setPropInt("@expireDays", expireDays);
 }
 
 

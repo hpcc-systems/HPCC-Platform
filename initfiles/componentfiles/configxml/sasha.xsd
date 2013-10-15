@@ -451,6 +451,20 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="PersistExpiryDefault" type="xs:nonNegativeInteger" use="optional" default="7">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Default number of days to delete unused persist files</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="ExpiryDefault" type="xs:nonNegativeInteger" use="optional" default="14">
+            <xs:annotation>
+                <xs:appinfo>
+                    <tooltip>Default number of days to delete unused standard files that are flagged with EXPIRY</tooltip>
+                </xs:appinfo>
+            </xs:annotation>
+        </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="ThorQMon">
         <xs:attribute name="thorQMonQueues" type="xs:string" use="optional" default="*">
