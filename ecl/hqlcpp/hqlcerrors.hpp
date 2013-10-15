@@ -253,6 +253,7 @@
 #define HQLWRN_AmbiguousRollupCondition         4541
 #define HQLWRN_AmbiguousRollupNoGroup           4542
 #define HQLWRN_GlobalActionDependendOnScope     4543
+#define HQLWRN_NoThorContextDependent           4544
 
 //Temporary errors
 #define HQLERR_OrderOnVarlengthStrings          4601
@@ -504,7 +505,7 @@
 #define HQLWRN_CsvMaxLengthMismatch_Text        "CSV read: Max length of record (%d) exceeds the max length (%d) specified on the csv attribute"
 #define HQLWRN_KeyedFoldedToGap_Text            "KEYED(%s) follows component %s which is always matched in the key%s"
 #define HQLWRN_FoldRemoveKeyed_Text             "The key condition for field (%s) on key%s is always true"
-#define HQLWRN_GlobalDoesntSeemToBe_Text        "Expression%s marked as global seems to be context dependent"
+#define HQLWRN_GlobalDoesntSeemToBe_Text        "Global expression%s appears to access a parent dataset - this may cause a dataset not active error"
 #define HQLWRN_GroupedJoinIsLookupJoin_Text     "JOIN(,GROUPED) is implemented as a MANY LOOKUP join.  This may be inefficient in thor."
 #define HQLWRN_ImplicitJoinLimit_Text           "Implicit LIMIT(%d) added to keyed join%s"
 #define HQLWRN_ImplicitReadLimit_Text           "Neither LIMIT() nor CHOOSEN() supplied for index read on %s"
@@ -527,6 +528,7 @@
 #define HQLWRN_AmbiguousRollupCondition_Text    "ROLLUP condition on '%s' is also modified in the transform"
 #define HQLWRN_AmbiguousRollupNoGroup_Text      "ROLLUP condition - no fields are preserved in the transform - not converted to GROUPed ROLLUP"
 #define HQLWRN_GlobalActionDependendOnScope_Text "Global action appears to be context dependent - this may cause a dataset not active error"
+#define HQLWRN_NoThorContextDependent_Text      "NOTHOR expression%s appears to access a parent dataset - this may cause a dataset not active error"
 
 #define HQLERR_OrderOnVarlengthStrings_Text     "Rank/Ranked not supported on variable length strings"
 #define HQLERR_DistributionNoSequence_Text      "DISTRIBUTION() only supported at the outer level"
