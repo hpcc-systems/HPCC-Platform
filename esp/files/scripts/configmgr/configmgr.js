@@ -2428,6 +2428,16 @@ function onMenuItemClickDelete(p_sType, p_aArgs, p_oValue) {
     top.document.startWait(document);
     var compName = top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name');
     var xmlStr = roxieSelectionToXML(this.parent.dt, "RoxieFarm", selRows, compName);
+    var cmd = "";
+
+    if (top.document.RightTabView.get("activeTab")._configs.label.value == "Servers" && selRows[0] == top.document.RightTabView.get("activeTab").dt._sFirstTrId)
+    {
+        cmd = 'Cmd=DeleteRoxieServers&XmlArgs='
+    }
+    else
+    {
+        cmd = 'Cmd=DeleteRoxieFarm&XmlArgs=';
+    }
 
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleRoxieOperation', {
       success: function(o) {
@@ -2442,7 +2452,7 @@ function onMenuItemClickDelete(p_sType, p_aArgs, p_oValue) {
       },
       scope: this
     },
-      top.document.navDT.getFileName(true) + 'Cmd=DeleteRoxieFarm&XmlArgs=' + xmlStr);
+    top.document.navDT.getFileName(true) + cmd + xmlStr);
   }
 }
 
