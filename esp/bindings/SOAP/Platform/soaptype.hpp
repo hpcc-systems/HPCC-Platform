@@ -431,14 +431,10 @@ class CSoapPrimitiveField : public CSoapFieldBase
 {
 protected:
     cpptype m_value;
-    //FieldValue m_value;
     bool m_isNil;
     nilBehavior m_nilBH;
-    bool m_allowHttpNil;
-    
+
 public:
-    //CSoapPrimitiveField(nilBehavior nb=nilIgnore, bool httpNil=true) : m_isNil(true), m_value(0), m_nilBH(nb), m_allowHttpNil(httpNil){}
-    //CSoapPrimitiveField(inittype val, nilBehavior nb=nilIgnore, bool httpNil=true) : m_value(val), m_isNil(false), m_nilBH(nb), m_allowHttpNil(httpNil){}
     CSoapPrimitiveField(const char* name, ISoapType* type) 
         : CSoapFieldBase(name, type), m_nilBH(nilIgnore), m_isNil(true), m_value(0)
     { }
@@ -514,7 +510,7 @@ public:
         path.append(tagname);
         
         const char *pval=params.queryProp(path.str());
-        m_isNil=m_allowHttpNil && (!pval || !*pval);
+        m_isNil= !pval || !*pval;
         esp_convert(pval, m_value);
     }
     
