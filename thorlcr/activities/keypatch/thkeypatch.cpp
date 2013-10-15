@@ -148,7 +148,8 @@ public:
 
         IPropertyTree &props = newIndexDesc->queryProperties();
         props.setProp("@kind", "key");
-        setExpiryTime(props, helper->getExpiryDays());
+        if (0 != (helper->getFlags() & KDPexpires))
+            setExpiryTime(props, helper->getExpiryDays());
 
         // Fill in some logical file properties here
         IPropertyTree &originalProps = originalDesc->queryProperties();;

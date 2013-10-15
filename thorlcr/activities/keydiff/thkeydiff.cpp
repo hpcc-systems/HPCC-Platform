@@ -159,7 +159,8 @@ public:
         wu.clear();
 
         IPropertyTree &patchProps = patchDesc->queryProperties();
-        setExpiryTime(patchProps, helper->getExpiryDays());
+        if (0 != (helper->getFlags() & KDPexpires))
+            setExpiryTime(patchProps, helper->getExpiryDays());
         IPropertyTree &originalProps = originalDesc->queryProperties();;
         if (originalProps.queryProp("ECL"))
             patchProps.setProp("ECL", originalProps.queryProp("ECL"));

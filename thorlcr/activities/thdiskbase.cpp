@@ -157,7 +157,8 @@ void CWriteMasterBase::publish()
     props.setPropInt64("@recordCount", recordsProcessed);
     if (0 == (diskHelperBase->getFlags() & TDXtemporary) || container.queryJob().queryUseCheckpoints())
     {
-        setExpiryTime(props, diskHelperBase->getExpiryDays());
+        if (0 != (diskHelperBase->getFlags() & TDWexpires))
+            setExpiryTime(props, diskHelperBase->getExpiryDays());
         if (TDWupdate & diskHelperBase->getFlags())
         {
             unsigned eclCRC;

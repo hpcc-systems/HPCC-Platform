@@ -657,7 +657,8 @@ void CHThorDiskWriteActivity::publish()
     properties.setProp("@job", agent.queryWorkUnit()->getJobName(info).str());
     setFormat(desc);
 
-    setExpiryTime(properties, helper.getExpiryDays());
+    if (helper.getFlags() & TDWexpires)
+        setExpiryTime(properties, helper.getExpiryDays());
     if (helper.getFlags() & TDWupdate)
     {
         unsigned eclCRC;
@@ -1175,7 +1176,8 @@ void CHThorIndexWriteActivity::execute()
         properties.setProp("ECL", rececl);
     
 
-    setExpiryTime(properties, helper.getExpiryDays());
+    if (helper.getFlags() & TIWexpires)
+        setExpiryTime(properties, helper.getExpiryDays());
     if (helper.getFlags() & TIWupdate)
     {
         unsigned eclCRC;

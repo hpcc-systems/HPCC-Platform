@@ -1300,11 +1300,25 @@ static void listexpires(const char * lfnmask, IUserDescriptor *user)
     IDFAttributesIterator *iter = queryDistributedFileDirectory().getDFAttributesIterator(lfnmask,user,true,false);
     ForEach(*iter) {
         IPropertyTree &attr=iter->query();
-        const char * expires = attr.queryProp("@expires");
-        if (expires&&*expires) {
-            const char * name = attr.queryProp("@name");
-            if (name&&*name) {
-                OUTLOG("%s expires on %s",name,expires);
+        if (attr.hasProp("@expireDays"))
+        {
+            unsigned expireDays = attr.getPropInt("@expireDays");
+            const char *name = attr.queryProp("@name");
+            const char *lastAccessed = attr.queryProp("@accessed");
+            if (lastAccessed && name&&*name) // NB: all files that have expireDays should have lastAccessed also
+            {
+                StringBuffer days;
+                if (0 == expireDays)
+                    days.append("the sasha default number of days");
+                else
+                {
+                    days.append(expireDays);
+                    if (expireDays>1)
+                        days.append(" days");
+                    else
+                        days.append(" day");
+                }
+                OUTLOG("%s, last accessed = %s, set to expire %s after last accessed", name, lastAccessed, days.str());
             }
         }
     }
