@@ -99,6 +99,7 @@ define([
             this.landingZonesTab = registry.byId(this.id + "_LandingZones");
             this.uploader = registry.byId(this.id + "Upload");
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
+            this.spraySourceSelect = registry.byId(this.id + "SpraySourceSelect");
             this.sprayFixedDestinationSelect = registry.byId(this.id + "SprayFixedDestination");
             this.sprayVariableDestinationSelect = registry.byId(this.id + "SprayVariableDestination");
             this.sprayXmlDestinationSelect = registry.byId(this.id + "SprayXmlDestinationSelect");
@@ -300,6 +301,17 @@ define([
             });
             this.dropZoneSelect.init({
                 DropZones: true
+            });
+            var context = this;
+            this.spraySourceSelect.set("value", "Fixed");
+            this.spraySourceSelect.on("change", function (evt) {
+                var source = this.get("value");
+                if(source == "Fixed"){
+                    registry.byId(context.id + "SprayFixedRecordLength").set('readOnly', false);
+                }else{
+                    registry.byId(context.id + "SprayFixedRecordLength").set('readOnly', true);
+                    registry.byId(context.id + "SprayFixedRecordLength").set('value', "");
+                }
             });
         },
 
