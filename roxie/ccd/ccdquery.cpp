@@ -1342,7 +1342,7 @@ public:
     virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) const
     {
         checkSuspended();
-        return createRoxieServerContext(context, this, client, mlFmt, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _xmlReadFlags);
+        return createRoxieServerContext(context, this, client, mlFmt==MarkupFmt_XML, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _xmlReadFlags);
     }
 
     virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const
