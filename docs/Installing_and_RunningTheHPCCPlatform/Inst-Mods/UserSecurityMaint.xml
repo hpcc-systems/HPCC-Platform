@@ -1460,6 +1460,27 @@
             </tbody>
           </tgroup>
         </informaltable></para>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="../../images/tip.jpg" /></entry>
+
+              <entry><para>On a large system, we suggest limiting the number
+              of users who can Generate XREF reports by setting DfuXrefAccess
+              access to FULL for only those users.</para><para>
+              </para></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
     </sect3>
 
     <sect3>
@@ -1574,7 +1595,7 @@
 
     <programlisting>DFS Exception: 3 Lookup access denied for scope &lt;filepath&gt;</programlisting>
 
-    <para> (where &lt;filepath&gt; is the full logical file scope path)</para>
+    <para>(where &lt;filepath&gt; is the full logical file scope path)</para>
 
     <sect3>
       <title>File scope feature permissions</title>
@@ -1637,13 +1658,13 @@
     </sect3>
 
     <sect3 id="permissions_cache">
-      <title>Permission Caching </title>
+      <title>Permission Caching</title>
 
       <para>When you change a permission in ECL Watch, the settings are cached
       in the ESP server and stored in the Dali server. The information in the
       cache is updated at a configurable interval. This value can be set in
       the Configuration Manager under the LDAP Server settings Attributes tab.
-      The default cacheTimeout is 5 minutes. </para>
+      The default cacheTimeout is 5 minutes.</para>
 
       <para>When you want a permission change to take effect immediately, you
       can clear the cache and force Dali to update the permission settings by
