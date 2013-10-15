@@ -10366,6 +10366,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case PERSIST: msg.append("PERSIST"); break;
     case PHYSICALFILENAME: msg.append("PHYSICALFILENAME"); break;
     case PIPE: msg.append("PIPE"); break;
+    case __PLATFORM__: msg.append("__PLATFORM__"); break;
     case POWER: msg.append("POWER"); break;
     case PREFETCH: msg.append("PREFETCH"); break;
     case PRELOAD: msg.append("PRELOAD"); break;

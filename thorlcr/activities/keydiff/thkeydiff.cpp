@@ -41,10 +41,7 @@ public:
         width = 0;
         copyTlk = globals->getPropBool("@diffCopyTlk", true); // because tlk can have meta data and diff/patch does not support
     }
-    ~CKeyDiffMaster()
-    {
-    }
-    void init()
+    virtual void init()
     {
         helper = (IHThorKeyDiffArg *)queryHelper();
         OwnedRoxieString origName(helper->getOriginalName());
@@ -78,7 +75,7 @@ public:
         patchDesc.setown(queryThorFileManager().create(container.queryJob(), outputName, clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));
         patchDesc->queryProperties().setProp("@kind", "keydiff");
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         if (slave < width) // if false - due to mismatch width fitting - fill in with a blank entry
         {
@@ -107,7 +104,7 @@ public:
         else
             dst.append(false); // no part
     }
-    void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
+    virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
     {
         if (mb.length()) // if 0 implies aborted out from this slave.
         {
@@ -149,7 +146,7 @@ public:
             }
         }
     }
-    void done()
+    virtual void done()
     {
         StringBuffer scopedName;
         OwnedRoxieString outputName(helper->getOutputName());
@@ -162,7 +159,8 @@ public:
         wu.clear();
 
         IPropertyTree &patchProps = patchDesc->queryProperties();
-        setExpiryTime(patchProps, helper->getExpiryDays());
+        if (0 != (helper->getFlags() & KDPexpires))
+            setExpiryTime(patchProps, helper->getExpiryDays());
         IPropertyTree &originalProps = originalDesc->queryProperties();;
         if (originalProps.queryProp("ECL"))
             patchProps.setProp("ECL", originalProps.queryProp("ECL"));
@@ -199,8 +197,10 @@ public:
         index->setProp("@name", originalIndexFile->queryLogicalName());
         if (originalIndexFile->getFileCheckSum(checkSum))
             index->setPropInt64("@checkSum", checkSum);
+        originalIndexFile->setAccessed();
+        newIndexFile->setAccessed();
     }
-    void preStart(size32_t parentExtractSz, const byte *parentExtract)
+    virtual void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
         CMasterActivity::preStart(parentExtractSz, parentExtract);
         IHThorKeyDiffArg *helper = (IHThorKeyDiffArg *) queryHelper();
@@ -213,7 +213,7 @@ public:
                 throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
         }
     }
-    void kill()
+    virtual void kill()
     {
         CMasterActivity::kill();
         originalIndexFile.clear();

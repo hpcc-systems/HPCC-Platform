@@ -250,7 +250,8 @@ public:
             IPropertyTree &props = fileDesc->queryProperties();
             props.setPropInt64("@recordCount", recordsProcessed);
             props.setProp("@kind", "key");
-            setExpiryTime(props, helper->getExpiryDays());
+            if (0 != (helper->getFlags() & TIWexpires))
+                setExpiryTime(props, helper->getExpiryDays());
             if (TIWupdate & helper->getFlags())
             {
                 unsigned eclCRC;

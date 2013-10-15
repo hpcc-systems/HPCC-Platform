@@ -69,6 +69,7 @@
 #define XML_TAG_PLUGINREF              "PluginRef"
 #define XML_TAG_ROXIE_FARM             "RoxieFarmProcess"
 #define XML_TAG_ROXIE_SERVER           "RoxieServerProcess"
+#define XML_TAG_ROXIE_SERVER_PROCESSS  XML_TAG_ROXIE_SERVER
 #define XML_TAG_ROXIE_SLAVE            "RoxieSlaveProcess"
 #define XML_TAG_ROXIE_ONLY_SLAVE       "RoxieSlave"
 #define XML_TAG_ROXIE_CHANNEL          "RoxieChannel"

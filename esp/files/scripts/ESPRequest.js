@@ -117,24 +117,11 @@ define([
                 if (!params.suppressExceptionToaster && handleAs == "json") {
                     var deletedWorkunit = false; //  Deleted WU
                     if (lang.exists("Exceptions.Source", response)) {
-                        var message = "<h3>" + response.Exceptions.Source + "</h3>";
-                        if (lang.exists("Exceptions.Exception", response)) {
-                            exceptions = response.Exceptions.Exception;
-                            for (var i = 0; i < response.Exceptions.Exception.length; ++i) {
-                                if ((service === "WsWorkunits" && action === "WUInfo" && response.Exceptions.Exception[i].Code === 20080) ||
-                                    (service === "WsWorkunits" && action === "WUQuery" && response.Exceptions.Exception[i].Code === 20081)) {
-                                    deletedWorkunit = true;
-                                }
-                                message += "<p>" + response.Exceptions.Exception[i].Message + "</p>";
-                            }
-                        }
-                        if (!deletedWorkunit) {
-                            dojo.publish("hpcc/brToaster", {
-                                message: message,
-                                type: "error",
-                                duration: -1
-                            });
-                        }
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Error",
+                            Source: service + "." + action,
+                            Exceptions: response.Exceptions
+                        });
                     }
                 }
                 dojo.publish("hpcc/standbyBackgroundHide");
@@ -150,9 +137,9 @@ define([
                 }
 
                 dojo.publish("hpcc/brToaster", {
-                    message: message,
-                    type: "error",
-                    duration: -1
+                    Severity: "Error",
+                    Source: service + "." + action,
+                    Exceptions: [{ Message: message }]
                 });
                 dojo.publish("hpcc/standbyBackgroundHide");
                 return error;

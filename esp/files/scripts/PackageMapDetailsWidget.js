@@ -129,21 +129,12 @@ define([
             domAttr.set(this.id + "StateIdImage", "title", this.active? "Active":"Not active");
         },
 
-        showErrorMessage: function (message) {
-            dojo.publish("hpcc/brToaster", {
-                message: message,
-                type: "error",
-                duration: -1
-            });
-        },
-
         showErrors: function (errMsg, errStack) {
-            var message = "Unknown Error";
-            if (errMsg != '')
-                message = "<h3>" + errMsg + "</h3>";
-            if (errStack != '')
-                message += "<p>" + errStack + "</p>";
-            this.showErrorMessage(message);
+            dojo.publish("hpcc/brToaster", {
+                Severity: "Error",
+                Source: errMsg,
+                Exceptions: [{ Message: errStack }]
+            });
         },
 
         _onActivate: function (event) {

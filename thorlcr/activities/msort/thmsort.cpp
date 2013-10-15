@@ -138,8 +138,8 @@ protected:
         }
         StringBuffer cosortfilenames;
         OwnedRoxieString cosortlogname(helper->getSortedFilename());
-        if (cosortlogname&&*cosortlogname) {
-
+        if (cosortlogname&&*cosortlogname)
+        {
             coSortFile.setown(queryThorFileManager().lookup(container.queryJob(), cosortlogname));
             Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
             queryThorFileManager().noteFileRead(container.queryJob(), coSortFile);
@@ -157,9 +157,11 @@ protected:
 
         Owned<IRowInterfaces> rowif = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryActivityId(),queryCodeContext());
         Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryActivityId(),queryCodeContext());
-        try {   
+        try
+        {
             imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.toCharArray(),auxrowif);
-            if (barrier->wait(false)) { // local sort complete
+            if (barrier->wait(false)) // local sort complete
+            {
                 size32_t maxdeviance = getOptUInt(THOROPT_SORT_MAX_DEVIANCE, 10*1024*1024);
                 try
                 {
@@ -193,6 +195,8 @@ protected:
     {
         ActPrintLog("done");
         CMasterActivity::done();
+        if (coSortFile)
+            coSortFile->setAccessed();
         ActPrintLog("done exit");
     }
 };

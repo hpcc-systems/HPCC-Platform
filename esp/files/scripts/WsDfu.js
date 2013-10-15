@@ -45,9 +45,9 @@ define([
                 load: function (response) {
                     if (lang.exists("DFUArrayActionResponse.DFUArrayActionResult", response)) {
                         dojo.publish("hpcc/brToaster", {
-                            message: response.DFUArrayActionResponse.DFUArrayActionResult,
-                            type: "error",
-                            duration: -1
+                            Severity: "Error",
+                            Source: "WsDfu.DFUArrayAction",
+                            Exceptions: [{ Message: response.DFUArrayActionResponse.DFUArrayActionResult }]
                         });
                     }
 
@@ -77,9 +77,9 @@ define([
                 load: function (response) {
                     if (lang.exists("SuperfileActionResponse", response)) {
                         dojo.publish("hpcc/brToaster", {
-                            message: response.AddtoSuperfileResponse.Subfiles,
-                            type: "error",
-                            duration: -1
+                            Severity: "Error",
+                            Source: "WsDfu.SuperfileAction",
+                            Exceptions: [{ Message: response.AddtoSuperfileResponse.Subfiles }]
                         });
                     }
 
@@ -108,9 +108,9 @@ define([
                 load: function (response) {
                     if (lang.exists("AddtoSuperfileResponse.Subfiles", response)) {
                         dojo.publish("hpcc/brToaster", {
-                            message: response.AddtoSuperfileResponse.Subfiles,
-                            type: "error",
-                            duration: -1
+                            Severity: "Error",
+                            Source: "WsDfu.AddtoSuperfile",
+                            Exceptions: [{ Message: response.AddtoSuperfileResponse.Subfiles }]
                         });
                     }
 

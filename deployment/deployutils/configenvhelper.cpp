@@ -27,6 +27,8 @@ bool CConfigEnvHelper::handleRoxieOperation(const char* cmd, const char* xmlStr)
   if (!strcmp(cmd, "AddRoxieFarm"))
     retVal = this->addRoxieServers(xmlStr);
   else if (!strcmp(cmd, "DeleteRoxieFarm"))
+    retVal = this->deleteRoxiePorts(xmlStr);
+  else if (!strcmp(cmd, "DeleteRoxieServers"))
     retVal = this->deleteRoxieServers(xmlStr);
   else if (!strcmp(cmd, "RoxieSlaveConfig"))
     retVal = this->handleRoxieSlaveConfig(xmlStr);
@@ -563,6 +565,27 @@ IPropertyTree* CConfigEnvHelper::findLegacyServer(IPropertyTree* pRoxieCluster, 
 }
 
 bool CConfigEnvHelper::deleteRoxieServers(const char* xmlArg)
+{
+    Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
+    const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");
+
+    StringBuffer xpath;
+    xpath.clear().appendf("Software/RoxieCluster[@name='%s']", pszRoxieCluster);
+
+    IPropertyTree* pRoxieCluster = m_pRoot->queryPropTree(xpath.str());
+
+    if (pRoxieCluster == NULL)
+        return false;
+
+    IPropertyTree* pChild = NULL;
+
+    while ((pChild = pRoxieCluster->queryPropTree( XML_TAG_ROXIE_SERVER_PROCESSS"[1]")) != NULL)
+        pRoxieCluster->removeTree( pChild );
+
+    return true;
+}
+
+bool CConfigEnvHelper::deleteRoxiePorts(const char* xmlArg)
 {
   Owned<IPropertyTree> pSrcTree = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<RoxieData/>");
   const char* pszRoxieCluster = pSrcTree->queryProp("@roxieName");

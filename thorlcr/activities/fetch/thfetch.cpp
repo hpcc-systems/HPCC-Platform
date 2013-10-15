@@ -93,6 +93,12 @@ public:
         if (!container.queryLocalOrGrouped())
             dst.append((int)mpTag);
     }
+    virtual void done()
+    {
+        CMasterActivity::done();
+        if (fetchFile)
+            fetchFile->setAccessed();
+    }
 };
 
 class CCsvFetchActivityMaster : public CFetchActivityMaster

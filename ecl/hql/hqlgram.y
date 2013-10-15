@@ -342,6 +342,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   PERSIST
   PHYSICALFILENAME
   PIPE
+  __PLATFORM__
   POWER
   PREFETCH
   PRELOAD
@@ -6476,6 +6477,11 @@ primexpr1
     | __DEBUG__ '(' stringConstExpr ',' simpleType ')'
                         {
                             $$.setExpr(createValue(no_debug_option_value, $5.getType(), $3.getExpr()), $1);
+                        }
+    | __PLATFORM__
+                        {
+                            OwnedHqlExpr option = createConstant("targetClusterType");
+                            $$.setExpr(createValue(no_debug_option_value, makeStringType(UNKNOWN_LENGTH, NULL), option.getClear()), $1);
                         }
     ;
 
