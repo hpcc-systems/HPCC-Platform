@@ -60,6 +60,7 @@ private:
     void deleteFarm(IPropertyTree* pRoxieCluster, const char* pszFarm);
     void deleteServer(IPropertyTree* pRoxieCluster, const char* pszFarm, const char* pszServer);
     bool deleteRoxieServers(const char* xmlArg);
+    bool deleteRoxiePorts(const char* xmlArg);
     bool EnsureInRange(const char* psz, UINT low, UINT high, const char* caption);
     bool handleRoxieSlaveConfig(const char* params);
     bool handleReplaceRoxieServer(const char* xmlArg);
