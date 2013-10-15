@@ -7352,7 +7352,10 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                         if (symbol)
                             s.append(" in ").append(symbol->queryName());
                     }
-                    translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
+                    if (op == no_nothor)
+                        translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
+                    else
+                        translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
                 }
                 if (value->getOperator() == no_createset)
                 {
