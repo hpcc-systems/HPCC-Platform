@@ -657,9 +657,8 @@ END;</programlisting>
             }</emphasis></entry>
 
             <entry>Specifies the logical file name of the distributed file.
-            This must be a STRING field and must be the last field, because it
-            only truly exists when the file is loaded into memory from disk
-            (hence, the “virtual”).</entry>
+            This must be a STRING field. If reading from a superfile, the
+            value is the current logical file within the superfile.</entry>
           </row>
 
           <row>
