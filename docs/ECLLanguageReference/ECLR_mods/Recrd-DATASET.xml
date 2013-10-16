@@ -59,7 +59,8 @@
   </emphasis><emphasis role="bold">)</emphasis></para>
 
   <para><emphasis role="bold">DATASET(</emphasis><emphasis> count, transform
-  </emphasis><emphasis role="bold"> [, DISTRIBUTED ] )</emphasis></para>
+  </emphasis><emphasis role="bold"> [, DISTRIBUTED | LOCAL ]
+  )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -276,6 +277,13 @@
           <entry>Optional. Specifies distributing the created records across
           all nodes of the cluster. If omitted, all records are created on
           node 1.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LOCAL</emphasis></entry>
+
+          <entry>Optional. Specifies records are created on every
+          node.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -1423,19 +1431,23 @@ OUTPUT(ds);         </programlisting>
     <title>DATASET from TRANSFORM</title>
 
     <para><emphasis role="bold">DATASET(</emphasis><emphasis> count, transform
-    </emphasis><emphasis role="bold"> [, DISTRIBUTED ] )</emphasis></para>
+    </emphasis><emphasis role="bold"> [, DISTRIBUTED | LOCAL ]
+    )</emphasis></para>
 
     <para>This form uses the<emphasis> transform </emphasis> to create the
     records. The result type of the <emphasis>transform</emphasis> function
     determines the structure. The integer COUNTER can be used to number each
     iteration of the <emphasis>transform</emphasis> function.</para>
 
+    <para>LOCAL executes separately and independently on each node.</para>
+
     <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>IMPORT STD;
 msg(UNSIGNED c) := 'Rec ' + (STRING)c + ' on node ' + (STRING)(STD.system.Thorlib.Node()+1);
 
-DS := DATASET(CLUSTERSIZE * 2, 
+// DISTRIBUTED example
+DS := DATASET(CLUSTERSIZE * 2,
               TRANSFORM({STRING line}, 
                         SELF.line := msg(COUNTER)), 
               DISTRIBUTED);
@@ -1447,6 +1459,24 @@ DS;
    Rec 4 on node 2
    Rec 5 on node 3
    Rec 6 on node 3 
+*/
+
+// LOCAL example
+
+DS2 := DATASET(2,
+              TRANSFORM({STRING line},
+                        SELF.line := msg(COUNTER)),
+              LOCAL);
+DS2;
+
+/* An alternative (and clearer) way
+creates a result like this:
+   Rec 1 on node 1
+   Rec 2 on node 1
+   Rec 1 on node 2
+   Rec 2 on node 2
+   Rec 1 on node 3
+   Rec 2 on node 3
 */</programlisting>
 
     <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
