@@ -1437,6 +1437,21 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             streamJobQueueListResponse(*ctx, cluster, startDate, endDate, response, xls.str());
             return 0;
         }
+        else if(!strnicmp(path.str(), "/WsWorkunits/wures/", 19))
+        {
+            const char *pos = path.str();
+            StringBuffer wuid;
+            nextPathNode(pos, wuid, 2);
+            Owned<IWuWebView> web = createWuWebView(wuid, wuid, getCFD(), true);
+            MemoryBuffer mb;
+            StringAttr mimetype(mimeTypeFromFileExt(strrchr(pos, '.')));
+            web->getResourceByPath(pos, mb);
+            response->setContent(mb.length(), mb.toByteArray());
+            response->setContentType(mimetype.get());
+            response->setStatus(HTTP_STATUS_OK);
+            response->send();
+            return 0;
+        }
     }
     catch(IException* e)
     {
