@@ -210,7 +210,6 @@ define([
 
         _onSprayFixed: function (event) {
             if (this.sprayFixedDialog.validate()) {
-                var context = this;
                 var selections = this.landingZonesGrid.getSelected();
                 var context = this;
                 arrayUtil.forEach(selections, function (item, idx) {
@@ -232,7 +231,6 @@ define([
 
         _onSprayVariable: function(event) {
             if (this.sprayVariableDialog.validate()) {
-                var context = this;
                 var selections = this.landingZonesGrid.getSelected();
                 var context = this;
                 arrayUtil.forEach(selections, function (item, idx) {
@@ -253,7 +251,6 @@ define([
 
         _onSprayXml: function(event) {
             if (this.sprayXmlDialog.validate()) {
-                var context = this;
                 var selections = this.landingZonesGrid.getSelected();
                 var context = this;
                 arrayUtil.forEach(selections, function (item, idx) {
@@ -289,7 +286,6 @@ define([
 
             this.initLandingZonesGrid();
             this.selectChild(this.landingZonesTab, true);
-            var context = this;
             this.sprayFixedDestinationSelect.init({
                 Groups: true
             });
