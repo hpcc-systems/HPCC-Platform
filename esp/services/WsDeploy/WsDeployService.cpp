@@ -4950,6 +4950,7 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
   pTopParams->loadProps(decodedParams.str());
 
   StringBuffer buf("Software/Topology");
+  StringBuffer subPath;
 
   for (int i = 3; i >= 0; i--)
   {
@@ -4981,7 +4982,10 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
         buf.append("/").append(sbCl);
       }
       else if (strstr(sbName, XML_TAG_THORCLUSTER) == sbName)
+      {
+        subPath.set(buf);
         buf.append("/ThorCluster");
+      }
       else if (strstr(sbName, XML_TAG_ROXIECLUSTER) == sbName)
         buf.append("/RoxieCluster");
       else if (buf.str()[buf.length() - 1] != ']')
@@ -5014,9 +5018,15 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
       !strcmp(sbNewType.str(), XML_TAG_ECLSERVERPROCESS) ||
       !strcmp(sbNewType.str(), XML_TAG_ECLAGENTPROCESS) ||
       !strcmp(sbNewType.str(), XML_TAG_ECLSCHEDULERPROCESS) ||
-      !strcmp(sbNewType.str(), XML_TAG_THORCLUSTER) ||
       !strcmp(sbNewType.str(), XML_TAG_ROXIECLUSTER))
       pNode->addProp(XML_ATTR_PROCESS, "");
+    else if (!strcmp(sbNewType.str(), XML_TAG_THORCLUSTER))
+    {
+      StringBuffer strName("thor");
+      strName.set(getUniqueName2(pEnvRoot->queryPropTree(buf.str()), strName, "ThorCluster", XML_ATTR_PROCESS));
+
+      pNode->addProp(XML_ATTR_PROCESS, strName.str());
+    }
     else if (!strcmp(sbNewType.str(), XML_TAG_CLUSTER))
     {
       pNode->addProp(XML_ATTR_NAME, "");
@@ -5031,22 +5041,40 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
   }
   else if (!strcmp(operation, "Delete"))
   {
-    String sParent(buf.str());
-    StringBuffer sbParent(XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY);
-    int idx = sParent.lastIndexOf('/');
-
-    if (idx > 0)
+    if (!strcmp(compType, XML_TAG_THORCLUSTER))
     {
-      String* tmpstr = sParent.substring(0, idx);
-      sbParent.clear().append(*tmpstr);
-      delete tmpstr;
-    }
+        StringBuffer xpath("./"XML_TAG_THORCLUSTER);
+        xpath.appendf("[%s=\"%s\"]", XML_ATTR_PROCESS, name);
 
-    IPropertyTree* pTopology = pEnvRoot->queryPropTree(sbParent);
-    IPropertyTree* pDel = pEnvRoot->queryPropTree(buf.str());
-    
-    if (pTopology && pDel)
-      pTopology->removeTree(pDel);
+        IPropertyTree *pParent = pEnvRoot->queryPropTree(subPath.str());
+
+        if (pParent)
+        {
+            IPropertyTree* pDel = pParent->queryPropTree(xpath.str());
+
+            if (pDel)
+              pParent->removeTree(pDel);
+        }
+    }
+    else
+    {
+        String sParent(buf.str());
+        StringBuffer sbParent(XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY);
+        int idx = sParent.lastIndexOf('/');
+
+        if (idx > 0)
+        {
+          String* tmpstr = sParent.substring(0, idx);
+          sbParent.clear().append(*tmpstr);
+          delete tmpstr;
+        }
+
+        IPropertyTree* pTopology = pEnvRoot->queryPropTree(sbParent);
+        IPropertyTree* pDel = pEnvRoot->queryPropTree(buf.str());
+
+        if (pTopology && pDel)
+          pTopology->removeTree(pDel);
+    }
     resp.setStatus("true");
   }
 
