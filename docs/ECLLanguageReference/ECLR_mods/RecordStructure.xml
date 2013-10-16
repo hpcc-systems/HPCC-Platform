@@ -548,6 +548,14 @@ END;</programlisting>
           <row>
             <entry></entry>
 
+            <entry><emphasis role="bold"> { VIRTUAL<indexterm>
+                <primary>Virtual logicalfilename</primary>
+              </indexterm>( logicalfilename ) }</emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
             <entry><emphasis role="bold"> { BLOB<indexterm>
                 <primary>BLOB in INDEX</primary>
               </indexterm> }</emphasis></entry>
@@ -642,6 +650,15 @@ END;</programlisting>
             field and must be the last field, because it only truly exists
             when the file is loaded into memory from disk (hence, the
             “virtual”).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">{ VIRTUAL( logicalfilename )
+            }</emphasis></entry>
+
+            <entry>Specifies the logical file name of the distributed file.
+            This must be a STRING field. If reading from a superfile, the
+            value is the current logical file within the superfile.</entry>
           </row>
 
           <row>
