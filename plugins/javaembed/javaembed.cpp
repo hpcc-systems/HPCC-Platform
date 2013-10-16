@@ -215,6 +215,7 @@ public:
         assertex(res >= 0);
         javaClass = NULL;
         javaMethodID = NULL;
+        contextClassLoaderChecked = false;
     }
     ~JavaThreadContext()
     {
@@ -229,9 +230,9 @@ public:
 
     void checkException()
     {
-        jthrowable exception = JNIenv->ExceptionOccurred();
-        if (exception)
+        if (JNIenv->ExceptionCheck())
         {
+            jthrowable exception = JNIenv->ExceptionOccurred();
             JNIenv->ExceptionClear();
             jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
             jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
@@ -242,6 +243,56 @@ public:
             rtlFail(0, message.str());
         }
     }
+    
+    inline void ensureContextClassLoaderAvailable ()
+    {
+        // JVMs that are created by native threads have a context class loader set to the
+        // bootstrap class loader, which is not very useful because the bootstrap class
+        // loader is interested only in getting the JVM up to speed.  In particular,
+        // the classpath is ignored.  The idea here is to set, if needed, the context
+        // class loader to another loader that does recognize classpath.  What follows
+        // is the equivalent of the following Java code:
+        //
+        // if (Thread.currentThread().getContextClassLoader == NULL)
+        //     Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+        
+        if (!contextClassLoaderChecked)
+        {
+            JNIenv->ExceptionClear();
+            // Get the current context class loader
+            jclass javaLangThreadClass = JNIenv->FindClass("java/lang/Thread");
+            checkException();
+            jmethodID currentThreadMethod = JNIenv->GetStaticMethodID(javaLangThreadClass, "currentThread", "()Ljava/lang/Thread;");
+            checkException();
+            jobject threadObj = JNIenv->CallStaticObjectMethod(javaLangThreadClass, currentThreadMethod);
+            checkException();
+            jmethodID getContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "getContextClassLoader", "()Ljava/lang/ClassLoader;");
+            checkException();
+            jobject contextClassLoaderObj = JNIenv->CallObjectMethod(threadObj, getContextClassLoaderMethod);
+            checkException();
+            
+            if (!contextClassLoaderObj)
+            {
+                // No context class loader, so use the system class loader (hopefully it's present)
+                jclass javaLangClassLoaderClass = JNIenv->FindClass("java/lang/ClassLoader");
+                checkException();
+                jmethodID getSystemClassLoaderMethod = JNIenv->GetStaticMethodID(javaLangClassLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+                checkException();
+                jobject systemClassLoaderObj = JNIenv->CallStaticObjectMethod(javaLangClassLoaderClass, getSystemClassLoaderMethod);
+                checkException();
+                
+                if (systemClassLoaderObj)
+                {
+                    jmethodID setContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "setContextClassLoader", "(Ljava/lang/ClassLoader;)V");
+                    checkException();
+                    JNIenv->CallObjectMethod(threadObj, setContextClassLoaderMethod, systemClassLoaderObj);
+                    checkException();
+                }
+            }
+            
+            contextClassLoaderChecked = true;
+        }
+    }
 
     inline void importFunction(size32_t lenChars, const char *utf)
     {
@@ -250,6 +301,11 @@ public:
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
             prevtext.clear();
+            
+            // Make sure there is a context class loader available; we need to
+            // do this before calling FindClass() on the class we need
+            ensureContextClassLoaderAvailable();
+            
             // Name should be in the form class.method:signature
             const char *funcname = strchr(text, '.');
             if (!funcname)
@@ -602,6 +658,7 @@ private:
     StringAttr prevtext;
     jclass javaClass;
     jmethodID javaMethodID;
+    bool contextClassLoaderChecked;
 };
 
 // Each call to a Java function will use a new JavaEmbedScriptContext object
