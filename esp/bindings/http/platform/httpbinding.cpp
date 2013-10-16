@@ -101,7 +101,6 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
     Owned<IPropertyTree> proc_cfg = getProcessConfig(tree, procname);
     m_viewConfig = proc_cfg ? proc_cfg->getPropBool("@httpConfigAccess") : false;   
     m_formOptions = proc_cfg ? proc_cfg->getPropBool("@formOptionsAccess") : false;
-    m_roxieOption = proc_cfg ? proc_cfg->getPropBool("@roxieTestAccess") : false;
     m_includeSoapTest = true;
     m_configFile.set(tree ? tree->queryProp("@config") : "esp.xml");
     Owned<IPropertyTree> bnd_cfg = getBindingConfig(tree, bindname, procname);
@@ -1892,7 +1891,6 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
 
         xform->setParameter("formOptionsAccess", m_formOptions?"1":"0");
         xform->setParameter("includeSoapTest", m_includeSoapTest?"1":"0");
-        xform->setParameter("includeRoxieTest", m_roxieOption?"1":"0");
 
         // set the prop noDefaultValue param
         IProperties* props = context.queryRequestParameters();
