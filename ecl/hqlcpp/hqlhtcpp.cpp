@@ -11785,6 +11785,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true) || userPreventsSort(noSortAttr, no_right))
         flags.append("|JFrightSortedLocally");
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
+    if (isSmartJoin || expr->hasAttribute(unstableAtom))
+        flags.append("|JFunstable");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getJoinFlags", flags.str()+1);
