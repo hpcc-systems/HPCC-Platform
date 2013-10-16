@@ -43,6 +43,7 @@ extern DLLSERVER_API bool getWorkunitXMLFromFile(const char *filename, StringBuf
 extern DLLSERVER_API bool getManifestXMLFromFile(const char *filename, StringBuffer &xml);
 
 extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, StringBuffer &result);
+extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, MemoryBuffer &result);
 extern DLLSERVER_API void compressResource(MemoryBuffer & compressed, size32_t len, const void *data);
 extern DLLSERVER_API void appendResource(MemoryBuffer & mb, size32_t len, const void *data, bool compress);
 

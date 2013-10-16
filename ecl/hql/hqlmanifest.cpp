@@ -39,6 +39,9 @@ public:
 private:
     bool loadInclude(IPropertyTree &include, const char *dir);
     void expand();
+    void expandDirectory(IPropertyTree &res, IDirectoryIterator *it, const char*mask, bool recursive);
+    void expandDirectory(IPropertyTree &res, const char *path, const char*mask, bool recursive);
+
 public:
     Owned<IPropertyTree> manifest;
     StringBuffer absFilename;
@@ -87,6 +90,32 @@ bool ResourceManifest::loadInclude(IPropertyTree &include, const char *dir)
     return true;
 }
 
+void ResourceManifest::expandDirectory(IPropertyTree &res, IDirectoryIterator *it, const char*mask, bool recursive)
+{
+    if (!it)
+        return;
+    ForEach(*it)
+    {
+        if (it->isDir())
+        {
+            if (recursive)
+                expandDirectory(res, it->query().directoryFiles(mask, true, true), mask, recursive);
+            continue;
+        }
+        StringBuffer reldir;
+        IPropertyTree *newRes = manifest->addPropTree("Resource", createPTreeFromIPT(&res));
+        newRes->setProp("@filename", splitRelativePath(it->query().queryFilename(), dir, reldir));
+        updateResourcePaths(*newRes, dir.str());
+    }
+}
+
+void ResourceManifest::expandDirectory(IPropertyTree &res, const char *path, const char*mask, bool recursive)
+{
+    Owned<IDirectoryIterator> it = createDirectoryIterator(path, mask);
+    expandDirectory(res, it, mask, recursive);
+}
+
+
 void ResourceManifest::expand()
 {
     Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@filename]");
@@ -95,6 +124,19 @@ void ResourceManifest::expand()
     Owned<IPropertyTreeIterator> includes = manifest->getElements("Include[@filename]");
     ForEach(*includes)
         loadInclude(includes->query(), dir.str());
+    resources.setown(manifest->getElements("Resource[@filename]"));
+    ForEach(*resources)
+    {
+        IPropertyTree &res = resources->query();
+        const char *name = res.queryProp("@originalFilename");
+        if (containsFileWildcard(name))
+        {
+            StringBuffer wildpath;
+            const char *tail = splitDirTail(name, wildpath);
+            expandDirectory(res, wildpath, tail, res.getPropBool("@recursive"));
+            manifest->removeTree(&res);
+        }
+    }
 }
 
 bool ResourceManifest::checkResourceFilesExist()
