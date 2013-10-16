@@ -1,6 +1,6 @@
 #include "deployutils.hpp"
 
-class CConfigHelper
+class DEPLOYUTILS_API CConfigHelper
 {
 public:
 
