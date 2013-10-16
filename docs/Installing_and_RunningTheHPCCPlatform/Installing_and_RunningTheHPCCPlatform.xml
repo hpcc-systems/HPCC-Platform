@@ -3280,8 +3280,11 @@ add1(10);
 
             <para><emphasis role="bold">RPM-based systems:</emphasis></para>
 
+            <para>JavaScript support not available for CentOS 5.x, only
+            available for CentOS 6.x</para>
+
             <para>On an RPM-based system (CentOS/Red Hat/SuSe) install
-            <emphasis role="bold">v8embed</emphasis></para>
+            <emphasis role="bold">v8embed.</emphasis></para>
 
             <para><emphasis role="bold">Debian-based
             systems:</emphasis></para>
