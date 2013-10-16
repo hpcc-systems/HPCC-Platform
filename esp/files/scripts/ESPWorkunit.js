@@ -94,7 +94,11 @@ define([
             var sequenceResults = [];
             var namedResults = {};
             for (var i = 0; i < Results.ECLResult.length; ++i) {
-                var espResult = ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i]));
+                var espResult = ESPResult.Get(lang.mixin({
+                    wu: this.wu,
+                    Wuid: this.Wuid,
+                    ResultViews: lang.exists("ResultViews.View", Results) ? Results.ResultViews.View : []
+                }, Results.ECLResult[i]));
                 results.push(espResult);
                 sequenceResults[Results.ECLResult[i].Sequence] = espResult;
                 if (Results.ECLResult[i].Name) {
@@ -327,7 +331,7 @@ define([
                     IncludeGraphs: args.onGetGraphs ? true : false,
                     IncludeSourceFiles: args.onGetSourceFiles ? true : false,
                     IncludeResults: (args.onGetResults || args.onGetSequenceResults) ? true : false,
-                    IncludeResultsViewNames: false,
+                    IncludeResultsViewNames: (args.onGetResults || args.onGetSequenceResults) ? true : false,
                     IncludeVariables: args.onGetVariables ? true : false,
                     IncludeTimers: args.onGetTimers ? true : false,
                     IncludeDebugValues: false,
@@ -341,6 +345,11 @@ define([
                     if (!args.onGetText && lang.exists("WUInfoResponse.Workunit.Query", response)) {
                         //  A truncated version of ECL just causes issues  ---
                         delete response.WUInfoResponse.Workunit.Query;
+                    }
+                    if (lang.exists("WUInfoResponse.ResultViews", response) && lang.exists("WUInfoResponse.Workunit.Results", response)) {
+                        lang.mixin(response.WUInfoResponse.Workunit.Results, {
+                            ResultViews: response.WUInfoResponse.ResultViews
+                        });
                     }
                     context.updateData(response.WUInfoResponse.Workunit);
 

@@ -159,11 +159,11 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel) {
                 if (!currSel.initalized) {
-                    if (currSel.hpcc) {
+                    if (currSel.init && currSel.hpcc) {
                         currSel.init(currSel.hpcc.params);
                     }
                     currSel.initalized = true;
-                } else if (currSel.refresh) {
+                } else if (currSel.refresh && !currSel.noRefresh) {
                     currSel.refresh(currSel.hpcc.refreshParams);
                 }
             }
