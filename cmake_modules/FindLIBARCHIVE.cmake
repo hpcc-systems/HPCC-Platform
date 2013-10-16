@@ -23,13 +23,23 @@
 
 IF (NOT LIBARCHIVE_FOUND)
   IF (WIN32)
+    SET (libarchive_ver "3.1.2")
     SET (libarchive_lib "archive_static")
+    IF (${ARCH64BIT} EQUAL 1)
+        SET (osdir "Win64")
+    ELSE ()
+        SET (osdir "Win32")
+    ENDIF ()
+
+    FIND_PATH (LIBARCHIVE_INCLUDE_DIR NAMES archive.h PATHS "${EXTERNALS_DIRECTORY}/libarchive/${libarchive_ver}/include" NO_DEFAULT_PATH)
+    FIND_LIBRARY (LIBARCHIVE_LIBRARIES NAMES ${libarchive_lib} PATHS "${EXTERNALS_DIRECTORY}/libarchive/${libarchive_ver}/lib/${osdir}" NO_DEFAULT_PATH)
   ELSE()
     SET (libarchive_lib "archive")
+    FIND_PATH (LIBARCHIVE_INCLUDE_DIR NAMES archive.h)
+    FIND_LIBRARY (LIBARCHIVE_LIBRARIES NAMES ${libarchive_lib})
   ENDIF()
 
-  FIND_PATH (LIBARCHIVE_INCLUDE_DIR NAMES archive.h)
-  FIND_LIBRARY (LIBARCHIVE_LIBRARIES NAMES ${libarchive_lib})
+
 
   include(FindPackageHandleStandardArgs)
   find_package_handle_standard_args(libarchive DEFAULT_MSG
