@@ -133,6 +133,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefile.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/hpccresourcelist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefilelist.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/WUBugReportForm.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUCopyLogicalFiles.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUDeployWorkunit.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_accountpermissions.xslt
