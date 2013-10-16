@@ -360,7 +360,7 @@ extern DLLSERVER_API ILoadedDllEntry * createExeDllEntry(const char *path)
     return result.getClear();
 }
 
-extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, StringBuffer &result)
+extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, MemoryBuffer &result)
 {
     bool hasVersion = len && (*(const byte *)data == 0x80);
     MemoryBuffer src;
@@ -372,16 +372,22 @@ extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, Str
         src.read(version);
     }
 
-    MemoryBuffer tgt;
     switch (version)
     {
     case 1:
-        decompressToBuffer(tgt, src);
+        decompressToBuffer(result, src);
         break;
     default:
         throwUnexpected();
     }
 
+    return true;
+}
+
+extern DLLSERVER_API bool decompressResource(size32_t len, const void *data, StringBuffer &result)
+{
+    MemoryBuffer tgt;
+    decompressResource(len, data, tgt);
     tgt.append((char)0);
     unsigned expandedLen = tgt.length();
     result.setBuffer(expandedLen, reinterpret_cast<char *>(tgt.detach()), expandedLen-1);
