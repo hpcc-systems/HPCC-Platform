@@ -27,6 +27,7 @@
 #include "jwrapper.hpp"
 #include "wizardInputs.hpp"
 #include "build-config.h"
+#include "confighelper.hpp"
 
 #define TRACE_SCHEMA_NODE(msg, schemaNode)
 
@@ -218,7 +219,8 @@ void getInstalledComponents(const char* pszInstallDir, StringBuffer& sbOutComps,
   }
   else
   {
-    Owned<IPropertyTreeIterator> iter = pEnv->getElements("Programs/Build[1]/*");
+    Owned<IPropertyTreeIterator> iter = CConfigHelper::getInstance() != NULL ? CConfigHelper::getInstance()->getBuildSetTree()->getElements("Programs/Build[1]/*") : pEnv->getElements("Programs/Build[1]/*");
+
     ForEach(*iter)
     {
       IPropertyTree* pBuildSet = &iter->query();
@@ -239,7 +241,7 @@ void getInstalledComponents(const char* pszInstallDir, StringBuffer& sbOutComps,
       }
       else 
       { 
-        if (!szName && !*szName)
+        if (!szName || !*szName)
           continue;
 
         const char* szOveride = pBuildSet->queryProp("@overide");
