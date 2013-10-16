@@ -244,7 +244,7 @@ public:
         }
     }
     
-    inline void ensureContextClassLoaderAvailable ()
+    void ensureContextClassLoaderAvailable ()
     {
         // JVMs that are created by native threads have a context class loader set to the
         // bootstrap class loader, which is not very useful because the bootstrap class
