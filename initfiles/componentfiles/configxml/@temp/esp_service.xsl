@@ -268,23 +268,49 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
         <xsl:choose>
            <xsl:when test="$serviceType='DynamicESDL'">
                 <xsl:element name="ESDL">
-                    <xsl:attribute name="service">
-                        <xsl:value-of select="@esdlservice" />
-                    </xsl:attribute>
-
-                    <xsl:element name="XMLFile">
-                        <xsl:value-of select="@XMLFile" />
-                    </xsl:element>
-
+                    <xsl:choose>
+                        <xsl:when test="@esdlservice != ''">
+                            <xsl:attribute name="service">
+                                <xsl:value-of select="@esdlservice" />
+                            </xsl:attribute>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:message terminate="yes">
+                                The Dynamic ESDL Service must be named - Enter the name as it exists in the ESDL definition file.
+                            </xsl:message>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <xsl:choose>
+                        <xsl:when test="@XMLFile != ''">
+                            <xsl:element name="XMLFile">
+                                <xsl:value-of select="@XMLFile" />
+                            </xsl:element>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:message terminate="yes">
+                                The Dynamic ESDL file must be specified - Enter the location of the file containing the ESDL definiton of the Service you're interested in configuring!
+                            </xsl:message>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <xsl:if test="count(./MethodConfiguration) = 0">
+                        <xsl:message terminate="yes">
+                            Dynamic ESDL Service doesn't have any methods configured!
+                        </xsl:message>
+                    </xsl:if>
                     <xsl:element name="Methods">
                         <xsl:for-each select="./MethodConfiguration">
+                            <xsl:if test="@queryname = ''">
+                                <xsl:message terminate="yes">
+                                    Method must have an associated query name - Enter the query name to be used by this method.
+                                </xsl:message>
+                            </xsl:if>
                             <Method name="{@name}" queryname="{@queryname}" querytype="{@querytype}" url="{@url}"  username="{@username}" password="{@password}" />
                         </xsl:for-each>
                     </xsl:element>
                 </xsl:element>
                 <Gateways>
                     <xsl:for-each select="Gateways">
-						<Gateway name="{@name}" url="{@url}"  username="{@username}" password="{@password}" />
+                        <Gateway name="{@name}" url="{@url}"  username="{@username}" password="{@password}" />
                     </xsl:for-each>
                 </Gateways>
             </xsl:when>
