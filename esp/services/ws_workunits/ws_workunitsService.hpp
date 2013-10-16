@@ -21,6 +21,9 @@
 #include "ws_workunits_esp.ipp"
 #include "workunit.hpp"
 #include "ws_workunitsHelpers.hpp"
+#ifdef _USE_ZLIB
+#include "zcrypt.hpp"
+#endif
 
 class CWsWorkunitsEx : public CWsWorkunits
 {
@@ -112,8 +115,10 @@ public:
 
     bool isQuerySuspended(const char* query, IConstWUClusterInfo *clusterInfo, unsigned wait, StringBuffer& errorMessage);
     bool onWUListQueries(IEspContext &context, IEspWUListQueriesRequest &req, IEspWUListQueriesResponse &resp);
-
+    bool onWUReportBug(IEspContext &context, IEspWUReportBugRequest &req, IEspWUReportBugResponse &resp);
 private:
+    void addProcess(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, MemoryBuffer &mb);
+
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
     StringAttr daliServers;
