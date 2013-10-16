@@ -161,7 +161,7 @@ STREAMED DATASET(r)
              size32_t lenValue, char * value, int len);</programlisting>
   </sect2>
 
-  <sect2 id="Available_Options">
+  <sect2 id="BeginCPP_Available_Options">
     <title>Available Options</title>
 
     <informaltable colsep="1" frame="all" rowsep="1">
