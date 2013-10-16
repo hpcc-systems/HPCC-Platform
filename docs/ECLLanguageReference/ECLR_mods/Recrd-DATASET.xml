@@ -282,8 +282,8 @@
         <row>
           <entry><emphasis role="bold">LOCAL</emphasis></entry>
 
-          <entry>Optional. Specifies records are created on every node.
-          </entry>
+          <entry>Optional. Specifies records are created on every
+          node.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -1469,9 +1469,14 @@ DS2 := DATASET(2,
               LOCAL);
 DS2;
 
-/* creates 2 records on each node
-An alternative (and clearer) way to do
-what the previous example did using DISTRIBUTED
+/* An alternative (and clearer) way
+creates a result like this:
+   Rec 1 on node 1
+   Rec 2 on node 1
+   Rec 1 on node 2
+   Rec 2 on node 2
+   Rec 1 on node 3
+   Rec 2 on node 3
 */</programlisting>
 
     <para>See Also: <link linkend="RECORD_Structure">RECORD Structure</link>,
