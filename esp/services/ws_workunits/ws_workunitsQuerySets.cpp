@@ -1427,7 +1427,7 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
                     break;
                 case CQuerySetQueryActionTypes_Delete:
                     removeNamedQuery(queryset, id);
-                    query = NULL;
+                    query.clear();
                     break;
                 case CQuerySetQueryActionTypes_RemoveAllAliases:
                     removeAliasesFromNamedQuery(queryset, id);
