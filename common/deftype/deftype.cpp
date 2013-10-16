@@ -3588,7 +3588,17 @@ static bool alreadyHadSize(int size, IntArray &sizes)
     return false;
 }
 
-void XmlSchemaBuilder::addSchemaPrefix()
+StringBuffer &appendStartComplexType(StringBuffer &xml, bool hasMixedContent, unsigned *updatePos)
+{
+    xml.append("<xs:complexType");
+    if (hasMixedContent || updatePos)
+        xml.append(" mixed=\"").append(hasMixedContent ? '1' : '0').append('\"');
+    if (updatePos)
+        *updatePos = xml.length()-2;
+    return xml.append('>');
+}
+
+void XmlSchemaBuilder::addSchemaPrefix(bool hasMixedContent)
 {
     if (addHeader)
         xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -3597,9 +3607,8 @@ void XmlSchemaBuilder::addSchemaPrefix()
         "<xs:element name=\"Dataset\">"
             "<xs:complexType>"
                 "<xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">\n"
-                    "<xs:element name=\"Row\">"
-                        "<xs:complexType>"
-                            "<xs:sequence>\n");
+                    "<xs:element name=\"Row\">");
+    appendStartComplexType(xml, hasMixedContent, NULL).append("<xs:sequence>\n");
     attributes.append(*new StringBufferItem);
 }
 
@@ -3750,6 +3759,9 @@ void XmlSchemaBuilder::addField(const char * name, ITypeInfo & type)
     if (xml.length() == 0)
         addSchemaPrefix();
 
+    if (!*name)
+        return;
+
     if (*name == '@')
     {
         if (attributes.length())
@@ -3764,10 +3776,13 @@ void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITy
     if (xml.length() == 0)
         addSchemaPrefix();
 
+    if (!name || !*name) //xpath('') content inherited by parent
+        return;
+
     StringBuffer elementType;
     getXmlTypeName(elementType, *type.queryChildType());
 
-    if ((!itemname || !*itemname) && name) // xpaths 'Name', '/Name', and 'Name/' seem to be equivalent
+    if (!itemname || !*itemname) // xpaths 'Name', '/Name', and 'Name/' seem to be equivalent
     {
         itemname = name;
         name = NULL;
@@ -3789,12 +3804,12 @@ void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITy
         xml.append("</xs:sequence></xs:complexType></xs:element>").newline();
 }
 
-void XmlSchemaBuilder::beginRecord(const char * name)
+void XmlSchemaBuilder::beginRecord(const char * name, bool hasMixedContent, unsigned *updatePos)
 {
     if (!name || !*name)
         return;
     if (xml.length() == 0)
-        addSchemaPrefix();
+        addSchemaPrefix(hasMixedContent);
 
     attributes.append(*new StringBufferItem);
 
@@ -3802,9 +3817,16 @@ void XmlSchemaBuilder::beginRecord(const char * name)
     if (optionalNesting)
         xml.append(" minOccurs=\"0\"");
     xml.append(">").newline();
-    xml.append("<xs:complexType><xs:sequence>").newline();
+    appendStartComplexType(xml, hasMixedContent, updatePos);
+    xml.append("<xs:sequence>").newline();
     nesting.append(optionalNesting);
     optionalNesting = 0;
+}
+
+void XmlSchemaBuilder::updateMixedRecord(unsigned updatePos, bool hasMixedContent)
+{
+    if (updatePos)
+        xml.setCharAt(updatePos, hasMixedContent ? '1' : '0');
 }
 
 void XmlSchemaBuilder::endRecord(const char * name)
@@ -3819,7 +3841,7 @@ void XmlSchemaBuilder::endRecord(const char * name)
     optionalNesting = nesting.pop();
 }
 
-bool XmlSchemaBuilder::beginDataset(const char * name, const char * row)
+bool XmlSchemaBuilder::beginDataset(const char * name, const char * row, bool hasMixedContent, unsigned *updatePos)
 {
     if (xml.length() == 0)
         addSchemaPrefix();
@@ -3838,7 +3860,11 @@ bool XmlSchemaBuilder::beginDataset(const char * name, const char * row)
         else if (optionalNesting)
             xml.append(" minOccurs=\"0\"");
         xml.append(">").newline();
-        xml.append("<xs:complexType>").newline();
+        if (row && *row)
+            appendStartComplexType(xml, false, NULL);
+        else
+            appendStartComplexType(xml, hasMixedContent, updatePos);
+        xml.newline();
     }
 
     xml.append("<xs:sequence");
@@ -3849,7 +3875,9 @@ bool XmlSchemaBuilder::beginDataset(const char * name, const char * row)
     if (row && *row)
     {
         attributes.append(*new StringBufferItem);
-        xml.append("<xs:element name=\"").append(row).append("\"><xs:complexType><xs:sequence>").newline();
+        xml.append("<xs:element name=\"").append(row).append("\">").newline();
+        appendStartComplexType(xml, hasMixedContent, updatePos);
+        xml.append("<xs:sequence>").newline();
     }
     nesting.append(optionalNesting);
     optionalNesting = 0;

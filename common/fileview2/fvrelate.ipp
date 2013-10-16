@@ -340,8 +340,9 @@ public:
     virtual void addField(const char * name, ITypeInfo & type);
     virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type);
     virtual void beginIfBlock();
-    virtual bool beginDataset(const char * name, const char * childname);
-    virtual void beginRecord(const char * name);
+    virtual bool beginDataset(const char * name, const char * childname, bool mixedContent, unsigned *updateMixed);
+    virtual void beginRecord(const char * name, bool mixedContent, unsigned *updateMixed);
+    virtual void updateMixedRecord(unsigned updateMixed, bool mixed){}
     virtual void endIfBlock();
     virtual void endDataset(const char * name, const char * childname);
     virtual void endRecord(const char * name);
