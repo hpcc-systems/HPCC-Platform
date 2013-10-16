@@ -22,6 +22,8 @@ define([
     "dijit/registry",
     "dijit/Tooltip",
 
+    "dojox/widget/UpgradeBar",
+
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
     "hpcc/WsAccount",
@@ -51,23 +53,32 @@ define([
 
 ], function (declare, lang, dom, domStyle,
                 registry, Tooltip,
+                UpgradeBar,
                 _TabContainerWidget, ESPRequest, WsAccount, WsSMC, GraphWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",
-        BuildVer: null,
+
+        banner: "",
+        upgradeBar: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
             this.searchText = registry.byId(this.id + "FindText");
             this.aboutDialog = registry.byId(this.id + "AboutDialog");
+            this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
             this.searchPage = registry.byId(this.id + "_Main" + "_Search");
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
             this.errWarnPage = registry.byId(this.id + "_ErrWarn");
             this.mainStackContainer = registry.byId(this.mainPage.id + "TabContainer");
             this.searchPage = registry.byId(this.id + "_Main" + "_Search");
+
+            this.upgradeBar = new UpgradeBar({
+                notifications: [],
+                noRemindButton: ""
+            });
         },
 
         startup: function (args) {
@@ -78,6 +89,34 @@ define([
         },
 
         //  Implementation  ---
+        parseBuildString: function (build) {
+            this.build = {};
+            this.build.orig = build;
+            this.build.prefix = "";
+            this.build.postfix = "";
+            var verArray = build.split("[");
+            if (verArray.length > 1) {
+                this.build.postfix = verArray[1].split("]")[0];
+            }
+            verArray = verArray[0].split("_");
+            if (verArray.length > 1) {
+                this.build.prefix = verArray[0];
+                verArray.splice(0, 1);
+            }
+            this.build.version = verArray.join("_");
+        },
+
+        refreshActivityResponse: function(response) {
+            if (lang.exists("ActivityResponse.Build", response)) {
+                this.parseBuildString(response.ActivityResponse.Build);
+                this.banner = lang.exists("ActivityResponse.BannerContent", response) ? response.ActivityResponse.BannerContent : "";
+                if (this.banner) {
+                    this.upgradeBar.notify("<div style='text-align:center'><b>" + this.banner + "</b></div>");
+                    this.upgradeBar.show();
+                }
+            }
+        },
+
         init: function (params) {
              if (this.inherited(arguments))
                 return;
@@ -92,11 +131,7 @@ define([
 
             WsSMC.Activity({
             }).then(function (response) {
-                if (lang.exists("ActivityResponse.Build", response)) {
-                    context.BuildVer = response.ActivityResponse.Build;
-                    context.BuildVer = context.BuildVer.substring(0, context.BuildVer.indexOf("["));
-                    context.BuildVer = context.BuildVer.replace("community_","");
-                }
+                context.refreshActivityResponse(response);
             });
 
             this.createStackControllerTooltip(this.id + "_ECL", "ECL");
@@ -132,8 +167,7 @@ define([
         },
 
         _onOpenReleaseNotes: function (evt) {
-            //this.BuildVer = BuildVer
-            var win = window.open("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.BuildVer, "_blank");
+            var win = window.open("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.build.version, "_blank");
             win.focus();
         },
 
@@ -145,21 +179,42 @@ define([
         _onAbout: function (evt) {
             if (!this._onAboutLoaded) {
                 this._onAboutLoaded = true;
-                var context = this;
-                WsSMC.Activity({
-                }).then(function (response) {
-                    if (lang.exists("ActivityResponse.Build", response)) {
-                        dom.byId(context.id + "ServerVersion").value = response.ActivityResponse.Build;
-                    }
-                    var gc = registry.byId(context.id + "GraphControl");
-                    dom.byId(context.id + "GraphControlVersion").value = gc.getVersion();
-                });
+                dom.byId(this.id + "ServerVersion").value = this.build.version;
+                var gc = registry.byId(this.id + "GraphControl");
+                dom.byId(this.id + "GraphControlVersion").value = gc.getVersion();
             }
             this.aboutDialog.show();
         },
 
         _onAboutClose: function (evt) {
             this.aboutDialog.hide();
+        },
+
+        _onSetBanner: function (evt) {
+            dom.byId(this.id + "BannerText").value = this.banner;
+            this.setBannerDialog.show();
+        },
+
+        _onSetBannerOk: function (evt) {
+            var context = this;
+            WsSMC.Activity({
+                request: {
+                    FromSubmitBtn: true,
+                    BannerAction: dom.byId(this.id + "BannerText").value != "",
+                    EnableChatURL: 0,
+                    BannerContent: dom.byId(this.id + "BannerText").value,
+                    BannerColor: "red",
+                    BannerSize: 4,
+                    BannerScroll: 2
+                }
+            }).then(function (response) {
+                context.refreshActivityResponse(response);
+            });
+            this.setBannerDialog.hide();
+        },
+
+        _onSetBannerCancel: function (evt) {
+            this.setBannerDialog.hide();
         },
 
         createStackControllerTooltip: function (widgetID, text) {
