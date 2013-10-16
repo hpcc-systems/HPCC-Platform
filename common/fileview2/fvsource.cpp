@@ -43,7 +43,7 @@ inline void appendNextXpathName(StringBuffer &s, const char *&xpath)
 
 void splitXmlTagNamesFromXPath(const char *xpath, StringAttr &inner, StringAttr *outer=NULL)
 {
-    if (!xpath || !xpath)
+    if (!xpath || !*xpath)
         return;
 
     StringBuffer s1;
@@ -75,11 +75,13 @@ DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, const char * _name, cons
     type.set(_type);
     xpath.set(_xpath);
     splitXmlTagNamesFromXPath(_xpath, tagname);
+    hasMixedContent = false;
 }
 
 DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, MemoryBuffer & in)
 {
     flags = _flags;
+    in.read(hasMixedContent);
     in.read(name);
     in.read(xpath);
     type.setown(deserializeType(in));
@@ -90,6 +92,7 @@ DataSourceMetaItem::DataSourceMetaItem(unsigned _flags, MemoryBuffer & in)
 void DataSourceMetaItem::serialize(MemoryBuffer & out) const
 {
     out.append(flags);
+    out.append(hasMixedContent);
     out.append(name);
     out.append(xpath);
     type->serialize(out);
@@ -128,7 +131,7 @@ DataSourceSetItem::DataSourceSetItem(const char * _name, const char * _xpath, IT
     xpath.set(_xpath);
     StringBuffer attr;
     splitXmlTagNamesFromXPath(_xpath, record.tagname, &tagname);
-    if (!record.tagname.length())
+    if (!_xpath)
         record.tagname.set("Item");
 }
 
@@ -136,7 +139,7 @@ DataSourceSetItem::DataSourceSetItem(unsigned flags, MemoryBuffer & in) : DataSo
 {
     createChild();
     splitXmlTagNamesFromXPath(xpath.get(), record.tagname, &tagname);
-    if (!record.tagname.length())
+    if (!record.tagname.get())
         record.tagname.set("Item");
 }
 
@@ -165,7 +168,7 @@ DataSourceMetaData::DataSourceMetaData(IHqlExpression * _record, byte _numFields
     maxRecordSize = ::getMaxRecordSize(_record, MAX_RECORD_SIZE);
     keyedSize = _keyedSize;
 
-    gatherFields(_record, false);
+    gatherFields(_record, false, &hasMixedContent);
     if (_isGrouped)
     {
         Owned<ITypeInfo> type = makeBoolType();
@@ -208,6 +211,7 @@ void DataSourceMetaData::init()
     isStoredFixedWidth = false;
     randomIsOk = false;
     numFieldsToIgnore = 0;
+    hasMixedContent = false;
 }
 
 DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
@@ -215,6 +219,7 @@ DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
     numVirtualFields = 0;
     buffer.read(numFieldsToIgnore);
     buffer.read(randomIsOk);
+    buffer.read(hasMixedContent);
     buffer.read(isStoredFixedWidth);
     buffer.read(minRecordSize);
     buffer.read(keyedSize);
@@ -329,12 +334,12 @@ void DataSourceMetaData::extractKeyedInfo(UnsignedArray & offsets, TypeInfoArray
 }
 
 //MORE: Really this should create no_selects for the sub records, but pass on that for the moment.
-void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional)
+void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent)
 {
     switch (expr->getOperator())
     {
     case no_record:
-        gatherChildFields(expr, isConditional);
+        gatherChildFields(expr, isConditional, pMixedContent);
         break;
     case no_ifblock:
         {
@@ -342,7 +347,7 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional)
             OwnedITypeInfo voidType = makeVoidType();
             isStoredFixedWidth = false;
             fields.append(*new DataSourceMetaItem(FVFFbeginif, NULL, NULL, boolType));
-            gatherChildFields(expr->queryChild(1), true);
+            gatherChildFields(expr->queryChild(1), true, pMixedContent);
             fields.append(*new DataSourceMetaItem(FVFFendif, NULL, NULL, voidType));
             break;
         }
@@ -371,18 +376,26 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional)
             if (tc == type_row)
             {
                 OwnedITypeInfo voidType = makeVoidType();
-                fields.append(*new DataSourceMetaItem(FVFFbeginrecord, outname, xpath, voidType));
-                gatherChildFields(expr->queryRecord(), isConditional);
+                Owned<DataSourceMetaItem> begin = new DataSourceMetaItem(FVFFbeginrecord, outname, xpath, voidType);
+                //inherit mixed content from child row with xpath('')
+                bool *pItemMixedContent = (pMixedContent && xpath && !*xpath) ? pMixedContent : &(begin->hasMixedContent);
+                fields.append(*begin.getClear());
+                gatherChildFields(expr->queryRecord(), isConditional, pItemMixedContent);
                 fields.append(*new DataSourceMetaItem(FVFFendrecord, outname, xpath, voidType));
             }
             else if ((tc == type_dictionary) || (tc == type_table) || (tc == type_groupedtable))
             {
                 isStoredFixedWidth = false;
-                fields.append(*new DataSourceDatasetItem(outname, xpath, expr));
+                Owned<DataSourceDatasetItem> ds = new DataSourceDatasetItem(outname, xpath, expr);
+                if (pMixedContent && xpath && !*xpath)
+                    *pMixedContent = ds->queryChildMeta()->hasMixedContent;
+                fields.append(*ds.getClear());
             }
             else if (tc == type_set)
             {
                 isStoredFixedWidth = false;
+                if (pMixedContent && xpath && !*xpath)
+                    *pMixedContent = true;
                 fields.append(*new DataSourceSetItem(outname, xpath, type));
             }
             else
@@ -392,6 +405,8 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional)
                     IHqlAlienTypeInfo * alien = queryAlienType(type);
                     type.set(alien->queryPhysicalType());
                 }
+                if (pMixedContent && xpath && !*xpath)
+                    *pMixedContent = true;
                 addSimpleField(outname, xpath, type);
             }
             break;
@@ -400,11 +415,11 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional)
 }
 
 
-void DataSourceMetaData::gatherChildFields(IHqlExpression * expr, bool isConditional)
+void DataSourceMetaData::gatherChildFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent)
 {
     bitsRemaining = 0;
     ForEachChild(idx, expr)
-        gatherFields(expr->queryChild(idx), isConditional);
+        gatherFields(expr->queryChild(idx), isConditional, pMixedContent);
 }
 
 unsigned DataSourceMetaData::numKeyedColumns() const
@@ -448,6 +463,16 @@ ITypeInfo * DataSourceMetaData::queryType(unsigned column) const
 unsigned DataSourceMetaData::queryFieldFlags(unsigned column) const
 {
     return fields.item(column).flags;
+}
+
+bool DataSourceMetaData::mixedContent(unsigned column) const
+{
+    return fields.item(column).hasMixedContent;
+}
+
+bool DataSourceMetaData::mixedContent() const
+{
+    return hasMixedContent;
 }
 
 const char * DataSourceMetaData::queryName(unsigned column) const
@@ -539,6 +564,7 @@ void DataSourceMetaData::serialize(MemoryBuffer & buffer) const
     //NB: Update NullDataSourceMeta if this changes....
     buffer.append(numFieldsToIgnore);
     buffer.append(randomIsOk);
+    buffer.append(hasMixedContent);
     buffer.append(isStoredFixedWidth);
     buffer.append(minRecordSize);
     buffer.append(keyedSize);

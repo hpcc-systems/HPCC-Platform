@@ -87,6 +87,7 @@ public:
     IntArray nestedAttributes;
     OwnedITypeInfo type;
     byte           flags;
+    bool hasMixedContent;
 };
 
 class DataSourceMetaData : public CInterface, implements IFvDataSourceMetaData, public IRecordSizeEx
@@ -111,6 +112,8 @@ public:
     virtual const char *queryXmlTag() const;
     virtual const IntArray &queryAttrList() const;
     virtual const IntArray &queryAttrList(unsigned column) const;
+    virtual bool mixedContent(unsigned column) const;
+    virtual bool mixedContent() const;
 
 
     virtual IFvDataSourceMetaData * queryChildMeta(unsigned column) const;
@@ -139,8 +142,8 @@ public:
 
 protected:
     void addSimpleField(const char * name, const char * xpath, ITypeInfo * type);
-    void gatherFields(IHqlExpression * expr, bool isConditional);
-    void gatherChildFields(IHqlExpression * expr, bool isConditional);
+    void gatherFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent);
+    void gatherChildFields(IHqlExpression * expr, bool isConditional, bool *pMixedContent);
     void gatherAttributes();
     void gatherNestedAttributes(DataSourceMetaItem &rec, aindex_t &idx);
     void init();
@@ -155,6 +158,7 @@ protected:
     unsigned numVirtualFields;
     bool isStoredFixedWidth;
     bool randomIsOk;
+    bool hasMixedContent;
     byte numFieldsToIgnore;
     StringAttr tagname;
 };

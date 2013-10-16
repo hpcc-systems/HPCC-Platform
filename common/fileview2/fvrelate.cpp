@@ -720,7 +720,7 @@ void ViewERdiagramVisitor::beginIfBlock()
     activeFieldCount++;
 }
 
-bool ViewERdiagramVisitor::beginDataset(const char * name, const char * childname)
+bool ViewERdiagramVisitor::beginDataset(const char * name, const char * childname, bool mixed, unsigned *updateMixed)
 {
     noteNextField();
     builder.noteField(activeFieldId.str(), name, "dataset");
@@ -731,7 +731,7 @@ bool ViewERdiagramVisitor::beginDataset(const char * name, const char * childnam
     return false;       // don't expand contents
 }
 
-void ViewERdiagramVisitor::beginRecord(const char * name)
+void ViewERdiagramVisitor::beginRecord(const char * name, bool mixedContent, unsigned *updateMixed)
 {
     noteNextField();
     builder.noteField(activeFieldId.str(), name, "record");

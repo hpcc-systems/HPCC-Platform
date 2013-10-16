@@ -365,8 +365,9 @@ public:
     virtual void addField(const char * name, ITypeInfo & type) = 0;
     virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type) = 0;
     virtual void beginIfBlock() = 0;
-    virtual bool beginDataset(const char * name, const char * childname) = 0;
-    virtual void beginRecord(const char * name) = 0;
+    virtual bool beginDataset(const char * name, const char * childname, bool hasMixedContent, unsigned *updateMixed) = 0;
+    virtual void beginRecord(const char * name, bool hasMixedContent, unsigned *updateMixed) = 0;
+    virtual void updateMixedRecord(unsigned updateToken, bool hasMixedContent) = 0;
     virtual void endIfBlock() = 0;
     virtual void endDataset(const char * name, const char * childname) = 0;
     virtual void endRecord(const char * name) = 0;
@@ -381,8 +382,9 @@ public:
     virtual void addField(const char * name, ITypeInfo & type);
     virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type);
     virtual void beginIfBlock()                                     { optionalNesting++; }
-    virtual bool beginDataset(const char * name, const char * childname);
-    virtual void beginRecord(const char * name);
+    virtual bool beginDataset(const char * name, const char * childname, bool hasMixedContent, unsigned *updateMixed);
+    virtual void beginRecord(const char * name, bool hasMixedContent, unsigned *updateMixed);
+    virtual void updateMixedRecord(unsigned updateToken, bool hasMixedContent);
     virtual void endIfBlock()                                       { optionalNesting--; }
     virtual void endDataset(const char * name, const char * childname);
     virtual void endRecord(const char * name);
@@ -392,7 +394,7 @@ public:
     void getXml(IStringVal & results);
 
 private:
-    void addSchemaPrefix();
+    void addSchemaPrefix(bool hasMixedContent=false);
     void addSchemaSuffix();
     void clear();
     void getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type);
