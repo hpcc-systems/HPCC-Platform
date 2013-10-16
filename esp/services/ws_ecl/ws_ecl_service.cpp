@@ -2603,7 +2603,7 @@ int CWsEclBinding::getWsEclDefinition(CHttpRequest* request, CHttpResponse* resp
 
             Owned<IPropertyTree> xsds_tree;
             if (xsds.length())
-                xsds_tree.setown(createPTreeFromXMLString(xsds.str()));
+                xsds_tree.setown(createPTreeFromXMLString(xsds.str(), ipt_ordered));
             if (xsds_tree)
             {
                 StringBuffer xpath;

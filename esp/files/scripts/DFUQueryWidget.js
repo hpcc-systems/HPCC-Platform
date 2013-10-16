@@ -43,6 +43,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/WsDfu",
+    "hpcc/FileSpray",
     "hpcc/ESPUtil",
     "hpcc/ESPLogicalFile",
     "hpcc/ESPDFUWorkunit",
@@ -70,7 +71,7 @@ define([
 ], function (declare, lang, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, WsDfu, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
+                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -78,6 +79,9 @@ define([
 
         addToSuperFileForm: null,
         desprayDialog: null,
+        sprayFixedDialog: null,
+        sprayVariableDialog: null,
+        sprayXmlDialog: null,
 
         workunitsTab: null,
         workunitsGrid: null,
@@ -88,10 +92,16 @@ define([
             this.inherited(arguments);
             this.addToSuperFileForm = registry.byId(this.id + "AddToSuperfileForm");
             this.desprayDialog = registry.byId(this.id + "DesprayDialog");
+            this.sprayFixedDialog = registry.byId(this.id + "SprayFixedDialog");
+            this.sprayVariableDialog = registry.byId(this.id + "SprayVariableDialog");
+            this.sprayXmlDialog = registry.byId(this.id + "SprayXmlDialog");
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.filter = registry.byId(this.id + "Filter");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
+            this.sprayFixedDestinationSelect = registry.byId(this.id + "SprayFixedDestination");
+            this.sprayVariableDestinationSelect = registry.byId(this.id + "SprayVariableDestination");
+            this.sprayXmlDestinationSelect = registry.byId(this.id + "SprayXmlDestinationSelect");
         },
 
         startup: function (args) {
@@ -179,6 +189,45 @@ define([
             }
         },
 
+        _onSprayFixed: function (event) {
+            if (this.sprayFixedDialog.validate()) {
+                var formData = domForm.toObject(this.id + "SprayFixedDialog");
+                var context = this;
+                FileSpray.SprayFixed({
+                    request: formData
+                }).then(function (response) {
+                    context._handleResponse("SprayFixedResponse.wuid", response);
+                })
+                registry.byId(this.id + "SprayFixedDropDown").closeDropDown();
+            }
+        },
+
+        _onSprayVariable: function (event) {
+            if (this.sprayVariableDialog.validate()) {
+                var context = this;
+                var formData = domForm.toObject(this.id + "SprayVariableDialog");
+                FileSpray.SprayVariable({
+                    request: formData
+                }).then(function (response) {
+                    context._handleResponse("SprayResponse.wuid", response);
+                });
+                registry.byId(this.id + "SprayVariableDropDown").closeDropDown();
+            }
+        },
+
+        _onSprayXml: function (event) {
+            if (this.sprayXmlDialog.validate()) {
+                var context = this;
+                var formData = domForm.toObject(this.id + "SprayXmlDialog");
+                FileSpray.SprayVariable({
+                    request: formData
+                }).then(function (response) {
+                    context._handleResponse("SprayResponse.wuid", response);
+                });
+                registry.byId(this.id + "SprayXmlDropDown").closeDropDown();
+            }
+        },
+
         _onRowDblClick: function (item) {
             var wuTab = this.ensureLFPane(this.id + "_" + item.Name, item);
             this.selectChild(wuTab);
@@ -236,6 +285,15 @@ define([
                     registry.byId(context.id + "DesprayTargetIPAddress").set("value", item.machine.Netaddress);
                     registry.byId(context.id + "DesprayTargetPath").set("value", item.machine.Directory + "/");
                 }
+            });
+            this.sprayFixedDestinationSelect.init({
+                Groups: true
+            });
+            this.sprayVariableDestinationSelect.init({
+                Groups: true
+            });
+            this.sprayXmlDestinationSelect.init({
+                Groups: true
             });
             this.initWorkunitsGrid();
             this.selectChild(this.workunitsTab, true);

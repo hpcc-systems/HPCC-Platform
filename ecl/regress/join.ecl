@@ -78,5 +78,5 @@ JoinedF := join (dNamesTable, dAddressTable,
 
 output(JoinedF,,'out.d00',overwrite);
 
-JoinedF2 := join (dNamesTable, dAddressTable, LEFT.surname != RIGHT.surname, JoinTransform (LEFT, RIGHT), ALL, parallel);
+JoinedF2 := join (dNamesTable, dAddressTable, LEFT.surname != RIGHT.surname, JoinTransform (LEFT, RIGHT), ALL, parallel,unstable);
 output(JoinedF2,,'out2.d00',overwrite);

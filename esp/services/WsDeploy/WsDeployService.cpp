@@ -23,6 +23,7 @@
 #include "daclient.hpp"
 #include "dadfs.hpp"
 #include "jencrypt.hpp"
+#include "confighelper.hpp"
 
 #ifdef _WINDOWS
 #include <winsock2.h>
@@ -31,8 +32,6 @@
 
 #define STANDARD_CONFIG_BACKUPDIR CONFIG_DIR"/backup"
 #define STANDARD_CONFIG_SOURCEDIR CONFIG_DIR
-#define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
-#define STANDARD_CONFIG_CONFIGXML_DIR "/componentfiles/configxml/"
 #define STANDARD_CONFIG_STAGED_PATH "/etc/HPCCSystems/environment.xml"
 
 #define DEFAULT_DIRECTORIES "<Directories name=\""DIR_NAME"\">\
@@ -196,58 +195,6 @@ void expandRange(IPropertyTree* pComputers)
   }
 }
 
-CConfigHelper::CConfigHelper()
-{
-}
-
-CConfigHelper::~CConfigHelper()
-{
-}
-
-void CConfigHelper::init(const IPropertyTree *cfg, const char* esp_name)
-{
-  StringBuffer xpath;
-
-  xpath.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALCONFFILE);
-  m_strConfFile = cfg->queryProp(xpath.str());
-
-  xpath.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALENVCONFFILE);
-  m_strEnvConfFile = cfg->queryProp(xpath.str());
-
-  if (m_strConfFile.length() > 0 && m_strEnvConfFile.length() > 0)
-  {
-    Owned<IProperties> pParams = createProperties(m_strConfFile);
-    Owned<IProperties> pEnvParams = createProperties(m_strEnvConfFile);
-
-    m_strConfigXMLDir = pEnvParams->queryProp(TAG_PATH);
-
-    if ( m_strConfigXMLDir.length() == 0)
-    {
-      m_strConfigXMLDir = INSTALL_DIR;
-    }
-
-    m_strBuildSetFileName = pParams->queryProp(TAG_BUILDSET);
-
-    m_strBuildSetFilePath.append(m_strConfigXMLDir).append(STANDARD_CONFIG_CONFIGXML_DIR).append( m_strBuildSetFileName.length() > 0 ? m_strBuildSetFileName : STANDARD_CONFIG_BUILDSETFILE);
-    m_pDefBldSet.set(createPTreeFromXMLFile(m_strBuildSetFilePath.str()));
-  }
-}
-
-bool CConfigHelper::isInBuildSet(const char* comp_process_name, const char* comp_name) const
-{
-  StringBuffer xpath;
-
-  xpath.appendf("./%s/%s/%s[%s=\"%s\"][%s=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, XML_ATTR_PROCESS_NAME, comp_process_name, XML_ATTR_NAME, comp_name);
-
-  if (strcmp(XML_TAG_DIRECTORIES,comp_name) != 0 && m_pDefBldSet->queryPropTree(xpath.str()) == NULL)
-  {
-     return false;
-  }
-  else
-  {
-     return true;
-  }
-}
 
 CWsDeployExCE::~CWsDeployExCE()
 {
@@ -298,11 +245,11 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
   if (m_service.length() == 0)
     m_service.append(service);
 
+  CConfigHelper::getInstance(cfg, service);
+
   m_bCloud = false;
   StringBuffer xpath;
   m_envFile.clear();
-
-  m_configHelper.init(cfg,service);
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", service);
   const char* tmp = cfg->queryProp(xpath.str());
@@ -2989,10 +2936,13 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
       const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
       const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
 
-      if ( m_pService->m_configHelper.isInBuildSet(pszCompType,buildSetName) == false )
+      if ( CConfigHelper::getInstance()->isInBuildSet(pszCompType,buildSetName) == false )
       {
         throw MakeStringException(-1, "Component '%s' named '%s' not in build set. Component may be incompatible with the current version.", pszCompType, pszCompName);
       }
+
+      StringArray sNewCompArray;
+      CConfigHelper::getInstance()->getNewComponentListFromBuildSet(pEnvRoot, sNewCompArray);
 
       StringBuffer buildSetPath;
       Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
@@ -4100,16 +4050,16 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
 
       StringBuffer xpath;
       xpath.appendf("./Programs/Build/BuildSet[@name=\"%s\"]", buildSet);
-      Owned<IPropertyTreeIterator> buildSetIter = pEnvRoot->getElements(xpath.str());
+      Owned<IPropertyTreeIterator> buildSetIter = CConfigHelper::getInstance()->getBuildSetTree()->getElements(xpath.str());
       buildSetIter->first();
       IPropertyTree* pBuildSet = &buildSetIter->query();
       const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
       const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
 
       StringBuffer buildSetPath;
-      Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
+      Owned<IPropertyTree> pSchema = loadSchema(CConfigHelper::getInstance()->getBuildSetTree()->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
       xpath.clear().appendf("./Software/%s[@name='%s']", processName, buildSetName);
-      IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName(), false);
+      IPropertyTree* pCompTree = generateTreeFromXsd(CConfigHelper::getInstance()->getBuildSetTree(), pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName(), false);
 
       if (processName != NULL && strcmp(processName, XML_TAG_ROXIECLUSTER) == 0 && pCompTree->queryPropTree(XML_TAG_ROXIE_SERVER) != NULL)
         pCompTree->removeTree(pCompTree->queryPropTree(XML_TAG_ROXIE_SERVER));
@@ -4120,6 +4070,7 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
         pCompTree->removeTree(pInstTree);
 
       addComponentToEnv(pEnvRoot, buildSet, sbNewName, pCompTree);
+      CConfigHelper::getInstance()->addNewComponentsFromBuildSetToEnv(pEnvRoot);
     }
 
     resp.setCompName(sbNewName.str());
@@ -4950,6 +4901,7 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
   pTopParams->loadProps(decodedParams.str());
 
   StringBuffer buf("Software/Topology");
+  StringBuffer subPath;
 
   for (int i = 3; i >= 0; i--)
   {
@@ -4981,7 +4933,10 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
         buf.append("/").append(sbCl);
       }
       else if (strstr(sbName, XML_TAG_THORCLUSTER) == sbName)
+      {
+        subPath.set(buf);
         buf.append("/ThorCluster");
+      }
       else if (strstr(sbName, XML_TAG_ROXIECLUSTER) == sbName)
         buf.append("/RoxieCluster");
       else if (buf.str()[buf.length() - 1] != ']')
@@ -5014,9 +4969,15 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
       !strcmp(sbNewType.str(), XML_TAG_ECLSERVERPROCESS) ||
       !strcmp(sbNewType.str(), XML_TAG_ECLAGENTPROCESS) ||
       !strcmp(sbNewType.str(), XML_TAG_ECLSCHEDULERPROCESS) ||
-      !strcmp(sbNewType.str(), XML_TAG_THORCLUSTER) ||
       !strcmp(sbNewType.str(), XML_TAG_ROXIECLUSTER))
       pNode->addProp(XML_ATTR_PROCESS, "");
+    else if (!strcmp(sbNewType.str(), XML_TAG_THORCLUSTER))
+    {
+      StringBuffer strName("thor");
+      strName.set(getUniqueName2(pEnvRoot->queryPropTree(buf.str()), strName, "ThorCluster", XML_ATTR_PROCESS));
+
+      pNode->addProp(XML_ATTR_PROCESS, strName.str());
+    }
     else if (!strcmp(sbNewType.str(), XML_TAG_CLUSTER))
     {
       pNode->addProp(XML_ATTR_NAME, "");
@@ -5031,22 +4992,40 @@ bool CWsDeployFileInfo::handleTopology(IEspContext &context, IEspHandleTopologyR
   }
   else if (!strcmp(operation, "Delete"))
   {
-    String sParent(buf.str());
-    StringBuffer sbParent(XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY);
-    int idx = sParent.lastIndexOf('/');
-
-    if (idx > 0)
+    if (!strcmp(compType, XML_TAG_THORCLUSTER))
     {
-      String* tmpstr = sParent.substring(0, idx);
-      sbParent.clear().append(*tmpstr);
-      delete tmpstr;
-    }
+        StringBuffer xpath("./"XML_TAG_THORCLUSTER);
+        xpath.appendf("[%s=\"%s\"]", XML_ATTR_PROCESS, name);
 
-    IPropertyTree* pTopology = pEnvRoot->queryPropTree(sbParent);
-    IPropertyTree* pDel = pEnvRoot->queryPropTree(buf.str());
-    
-    if (pTopology && pDel)
-      pTopology->removeTree(pDel);
+        IPropertyTree *pParent = pEnvRoot->queryPropTree(subPath.str());
+
+        if (pParent)
+        {
+            IPropertyTree* pDel = pParent->queryPropTree(xpath.str());
+
+            if (pDel)
+              pParent->removeTree(pDel);
+        }
+    }
+    else
+    {
+        String sParent(buf.str());
+        StringBuffer sbParent(XML_TAG_SOFTWARE"/"XML_TAG_TOPOLOGY);
+        int idx = sParent.lastIndexOf('/');
+
+        if (idx > 0)
+        {
+          String* tmpstr = sParent.substring(0, idx);
+          sbParent.clear().append(*tmpstr);
+          delete tmpstr;
+        }
+
+        IPropertyTree* pTopology = pEnvRoot->queryPropTree(sbParent);
+        IPropertyTree* pDel = pEnvRoot->queryPropTree(buf.str());
+
+        if (pTopology && pDel)
+          pTopology->removeTree(pDel);
+    }
     resp.setStatus("true");
   }
 
@@ -6292,20 +6271,6 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
     fileExists = false;
     StringBuffer s("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Environment></Environment>");
     Owned<IPropertyTree> pNewTree = createPTreeFromXMLString(s);
-
-    if ( strlen(m_pService->m_configHelper.getBuildSetFilePath()) > 0 )
-    {
-        try
-        {
-          Owned<IPropertyTree> pDefBldSet = createPTreeFromXMLFile( m_pService->m_configHelper.getBuildSetFilePath() );
-          pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pDefBldSet->queryPropTree("./Programs")));
-          pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTreeFromIPT(pDefBldSet->queryPropTree("./Software")));
-        }
-        catch(IException* e)
-        {
-          e->Release();
-        }
-    }
 
     if(!pNewTree->queryPropTree(XML_TAG_SOFTWARE))
     {

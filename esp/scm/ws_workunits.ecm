@@ -1412,6 +1412,22 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
     string QueryId;
 };
 
+ESPrequest [nil_remove] WUReportBugRequest
+{
+    string WUID;
+    string ESPIPAddress;
+    string ThorIPAddress;
+    string BuildVersion;
+    string ProblemDescription;
+    string WhatChanged;
+    string WhereSlow;
+};
+
+ESPresponse [exceptions_inline] WUReportBugResponse
+{
+    [http_content("application/octet-stream")] binary thefile;
+};
+
 ESPservice [
     version("1.46"), default_client_version("1.46"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
@@ -1482,6 +1498,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
     ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
+    ESPmethod WUReportBug(WUReportBugRequest, WUReportBugResponse);
 };
 
 

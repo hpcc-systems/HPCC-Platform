@@ -10162,6 +10162,16 @@ JoinFlag
                             OwnedHqlExpr impliedAttr = createComma(createAttribute(lookupAtom), createAttribute(manyAtom));
                             $$.setExpr(createComma(groupAttr.getClear(), impliedAttr.getClear()), $1);
                         }
+    | STABLE
+                        {
+                            $$.setExpr(createExprAttribute(stableAtom));
+                            $$.setPosition($1);
+                        }
+    | UNSTABLE
+                        {
+                            $$.setExpr(createExprAttribute(unstableAtom));
+                            $$.setPosition($1);
+                        }
     ;
 
 

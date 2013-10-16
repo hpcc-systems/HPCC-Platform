@@ -1276,10 +1276,13 @@ inline void verifyQueryActionAllowsWild(bool &allowWildChecked, CQuerySetQueryAc
     allowWildChecked=true;
 }
 
+inline bool verifyQueryActionAllowsAlias(CQuerySetQueryActionTypes action)
+{
+    return (action!=CQuerySetQueryActionTypes_Activate && action!=CQuerySetQueryActionTypes_RemoveAllAliases);
+}
 void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset, IArrayOf<IConstQuerySetQueryActionItem> &items, CQuerySetQueryActionTypes action)
 {
     bool allowWildChecked=false;
-    Owned<IPropertyTreeIterator> queries = queryset->getElements("Query");
     ForEachItemIn(i, items)
     {
         const char *itemId = items.item(i).getQueryId();
@@ -1289,16 +1292,39 @@ void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset,
             const char *itemSuspendState = items.item(i).getClientState().getSuspended();
             if (itemSuspendState && (strieq(itemSuspendState, "By User") || strieq(itemSuspendState, "1")))
                 suspendedByUser = true;
-            queryIds->setProp(itemId, suspendedByUser);
+            if (!verifyQueryActionAllowsAlias(action))
+                queryIds->setProp(itemId, suspendedByUser);
+            else
+            {
+                Owned<IPropertyTree> query = resolveQueryAlias(queryset, itemId);
+                if (query)
+                {
+                    const char *id = query->queryProp("@id");
+                    if (id && *id)
+                        queryIds->setProp(id, suspendedByUser);
+                }
+            }
         }
         else
         {
             verifyQueryActionAllowsWild(allowWildChecked, action);
+            if (verifyQueryActionAllowsAlias(action))
+            {
+                Owned<IPropertyTreeIterator> active = queryset->getElements("Alias");
+                ForEach(*active)
+                {
+                    const char *name = active->query().queryProp("@name");
+                    const char *id = active->query().queryProp("@id");
+                    if (name && id && WildMatch(name, itemId))
+                        queryIds->setProp(id, 0);
+                }
+            }
+            Owned<IPropertyTreeIterator> queries = queryset->getElements("Query");
             ForEach(*queries)
             {
-                const char *queryId = queries->query().queryProp("@id");
-                if (queryId && WildMatch(queryId, itemId))
-                    queryIds->setProp(queryId, 0);
+                const char *id = queries->query().queryProp("@id");
+                if (id && WildMatch(id, itemId))
+                    queryIds->setProp(id, 0);
             }
         }
     }
@@ -1378,12 +1404,11 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
     ForEach(*it)
     {
         const char *id = it->getPropKey();
-        VStringBuffer xpath("Query[@id='%s']", id);
         Owned<IEspQuerySetQueryActionResult> result = createQuerySetQueryActionResult();
         result->setQueryId(id);
         try
         {
-            IPropertyTree *query = queryset->queryPropTree(xpath);
+            Owned<IPropertyTree> query = getQueryById(queryset, id);
             if (!query)
                 throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), id);
             switch (req.getAction())
@@ -1402,7 +1427,7 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
                     break;
                 case CQuerySetQueryActionTypes_Delete:
                     removeNamedQuery(queryset, id);
-                    query = NULL;
+                    query.clear();
                     break;
                 case CQuerySetQueryActionTypes_RemoveAllAliases:
                     removeAliasesFromNamedQuery(queryset, id);

@@ -1181,13 +1181,9 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                         superFileNames.append(filename);
                     }
                 }
-                if (!fdir.removeEntry(filename, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT))
-                    returnStr.appendf("<Message><Value>Failed to delete %s</Value></Message>", filename);
-                else
-                {
-                    PROGLOG("Deleted Logical File: %s by: %s\n",filename, username.str());
-                    returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", filename);
-                }
+                fdir.removeEntry(filename, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
+                PROGLOG("Deleted Logical File: %s by: %s\n",filename, username.str());
+                returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", filename);
             }
             catch(IException* e)
             {

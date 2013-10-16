@@ -66,17 +66,23 @@
 #endif // NEWFETCHSTRESS
 #define KJ_BUFFER_SIZE (0x100000*8)
 
-#define KEYLOOKUP_HEADER_SIZE (sizeof(offset_t)+sizeof(CJoinGroup *))
 #define FETCHKEY_HEADER_SIZE (sizeof(offset_t)+sizeof(void *))
-#define KEYEDJOIN_ENDMARKER      ((offset_t)I64C(0xffffffff00000000))
-#define KEYEDJOIN_ENDMARKERMASK  ((offset_t)I64C(0xffffffff00000000))
-#define KEYEDJOIN_CANDIDATECOUNTMASK  ((offset_t)I64C(0x00000000ffffffff))
 #define DEFAULTMAXRESULTPULLPOOL 1
 #define DEFAULTFREEQSIZE 10
 #define DEFAULT_KJ_PRESERVES_ORDER 1
 #define LOWTHROTTLE_GRANULARITY 10
 
 class CJoinGroup;
+
+#pragma pack(push,1)
+struct LookupRowResult
+{
+    offset_t fpos;
+    CJoinGroup *jg;
+    bool eog;
+};
+#pragma pack(pop)
+#define KEYLOOKUP_HEADER_SIZE (sizeof(LookupRowResult))
 
 interface IJoinProcessor
 {
@@ -1296,17 +1302,17 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                 currentJG->notePendingN(1);
 
                                 RtlDynamicRowBuilder lookupRow(owner.keyLookupAllocator);
-                                byte *lookupRowPtr = lookupRow.getSelf();
-                                memcpy(lookupRowPtr, &fpos, sizeof(fpos));
-                                lookupRowPtr += sizeof(fpos);
-                                memcpy(lookupRowPtr, &currentJG, sizeof(currentJG));
+                                LookupRowResult *lookupRowResult = (LookupRowResult *)lookupRow.getSelf();
+                                lookupRowResult->fpos = fpos;
+                                lookupRowResult->jg = currentJG;
+                                lookupRowResult->eog = false;
                                 if (!owner.needsDiskRead)
                                 {
-                                    lookupRowPtr += sizeof(currentJG);
+                                    void *joinFieldsPtr = (void *)(lookupRowResult+1);
                                     RtlDynamicRowBuilder joinFieldsRow(owner.joinFieldsAllocator);
                                     size32_t sz = owner.helper->extractJoinFields(joinFieldsRow, keyRow, fpos, &adapter);
                                     const void *fJoinFieldsRow = joinFieldsRow.finalizeRowClear(sz);
-                                    memcpy(lookupRowPtr, &fJoinFieldsRow, sizeof(const void *));
+                                    memcpy(joinFieldsPtr, &fJoinFieldsRow, sizeof(const void *));
                                 }
 #ifdef TRACE_JOINGROUPS
                                 ::ActPrintLog(&owner, "CJoinGroup [result] %x from %d", currentJG, __LINE__);
@@ -1383,17 +1389,17 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                                 tlkManager->releaseSegmentMonitors();
 
                             RtlDynamicRowBuilder lookupRow(owner.keyLookupAllocator);
-                            byte *lookupRowPtr = lookupRow.getSelf();
+                            LookupRowResult *lookupRowResult = (LookupRowResult *)lookupRow.getSelf();
                             // output an end marker for the matches to this group
-                            offset_t fpos = (offset_t) candidateCount | KEYEDJOIN_ENDMARKER;
-                            memcpy(lookupRowPtr, &fpos, sizeof(fpos));
-                            lookupRowPtr += sizeof(fpos);
-                            memcpy(lookupRowPtr, &currentJG, sizeof(currentJG));
-                            lookupRowPtr += sizeof(currentJG);
+
+                            lookupRowResult->fpos = candidateCount;
+                            lookupRowResult->jg = currentJG;
+                            lookupRowResult->eog = true;
                             if (!owner.needsDiskRead) // need to mark null childrow
                             {
+                                void *joinFieldsPtr = (void *)(lookupRowResult+1);
                                 const void *fJoinFieldsRow = NULL;
-                                memcpy(lookupRowPtr, &fJoinFieldsRow, sizeof(const void *));
+                                memcpy(joinFieldsPtr, &fJoinFieldsRow, sizeof(const void *));
                             }
 #ifdef TRACE_JOINGROUPS
                             ::ActPrintLog(&owner, "CJoinGroup [end marker returned] %x from %d", currentJG, __LINE__);
@@ -2292,16 +2298,11 @@ public:
                             break;
                         }
 
-                        const byte *resultRowPtr = (const byte *)resultRow.get();
-                        CJoinGroup *jg;
-                        offset_t fpos;
-                        memcpy(&fpos, resultRowPtr, sizeof(fpos));
-                        resultRowPtr += sizeof(fpos);
-                        memcpy(&jg, resultRowPtr, sizeof(jg));
-                        if ((fpos & KEYEDJOIN_ENDMARKERMASK) == KEYEDJOIN_ENDMARKER)
+                        const LookupRowResult *lookupRowResult = (const LookupRowResult *)resultRow.get();
+                        CJoinGroup *jg = lookupRowResult->jg;
+                        if (lookupRowResult->eog)
                         {
-                            unsigned candidateCount = (unsigned) (fpos & KEYEDJOIN_CANDIDATECOUNTMASK);
-                            jg->noteCandidates(candidateCount);
+                            jg->noteCandidates(lookupRowResult->fpos); // fpos holds candidates for end of group
                             jg->noteEndCandidate(); // any onFail transform will be done when dequeued
                             if (!onFailTransform) // unless going to transform later, check and abort now if necessary.
                                 checkAbortLimit(jg);
@@ -2316,14 +2317,14 @@ public:
 #ifdef TRACE_JOINGROUPS
                                     wroteToFetchPipe++;
 #endif
-                                    fetchHandler->addRow(fpos, jg);
+                                    fetchHandler->addRow(lookupRowResult->fpos, jg);
                                 }
                                 else
                                 {
-                                    resultRowPtr += sizeof(jg);
+                                    const void *resultRowPtr = (const void *)(lookupRowResult+1);
                                     const void *rhs = *((const void **)resultRowPtr);
                                     LinkThorRow(rhs);
-                                    jg->addRightMatch(rhs, fpos);
+                                    jg->addRightMatch(rhs, lookupRowResult->fpos);
                                 }
                             }
                             jg->noteEnd(0);
