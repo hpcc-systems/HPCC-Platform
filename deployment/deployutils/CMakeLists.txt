@@ -30,6 +30,7 @@ set (    SRCS
          configenvhelper.cpp
          wizardInputs.cpp 
          deployutils.cpp 
+         confighelper.cpp
     )
 
 include_directories ( 
