@@ -123,7 +123,7 @@
       </informaltable></para>
   </sect2>
 
-  <sect2 id="Available_options">
+  <sect2 id="OPTION_Available_Options">
     <title>Available options</title>
 
     <para><emphasis role="bold">The following options are generally useful:
@@ -335,8 +335,8 @@
 
               <entry>Default: false</entry>
 
-              <entry>Specifies that the CRC check on indices produces a warning
-              and not an error.</entry>
+              <entry>Specifies that the CRC check on indices produces a
+              warning and not an error.</entry>
             </row>
 
             <row>
