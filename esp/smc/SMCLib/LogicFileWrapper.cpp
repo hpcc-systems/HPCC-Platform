@@ -79,13 +79,9 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
             }
         }
 
-        if (!fdir.removeEntry(cname.str(), udesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true))
-            returnStr.appendf("<Message><Value>Failed to delete %s</Value></Message>", cname.str());
-        else
-        {
-            returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", cname.str());
-            DBGLOG("%s", returnStr.str());
-        }
+        fdir.removeEntry(cname.str(), udesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
+        returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", cname.str());
+        DBGLOG("%s", returnStr.str());
         return true;
     }
     catch (IException *e)
