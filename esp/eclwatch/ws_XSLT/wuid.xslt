@@ -738,6 +738,30 @@
 </soap:Envelope>
         */
 
+                    function popupBugReportForm()
+                    {
+                        mywindow = window.open ("/WsWorkunits/WUGetBugReportInfo?WUID="+wid,
+                            "mywindow", "location=0,status=1,scrollbars=1,resizable=1,width=800,height=760");
+                        if (mywindow.opener == null)
+                            mywindow.opener = window;
+                        mywindow.focus();
+                        return false;
+                    }
+                    function createBugReport(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo)
+                    {
+                        var href = "/WsWorkunits/WUReportBug?WUID=" + wuid;
+                        href += "&ESPIPAddress=" + espIP;
+                        if (thorIP != '')
+                            href += "&ThorIPAddress=" + thorIP;
+                        href += "&BuildVersion=" + ESPBuildVersion;
+                        if (problemDesciption != '')
+                            href += "&ProblemDescription=" + problemDesciption;
+                        if (history != '')
+                            href += "&WhatChanged=" + history;
+                        if (timingInfo != '')
+                            href += "&WhereSlow=" + timingInfo;
+                        document.location.href=href;
+                    }
                ]]></xsl:text>
           </script>
             </head>
@@ -760,13 +784,23 @@
             <td>
               <h3>Workunit Details</h3>
             </td>
-                        <xsl:if test="number(Workunit/Archived) &lt; 1">
-                            <td>
-                                <img id="refresh" src="/esp/files/img/refresh.png" onclick="TurnRefresh()" title="Turn on/off Auto Refresh" />
-                            </td>
-                            <td style="visibility:hidden">
-                            </td>
-                        </xsl:if>
+                        <xsl:choose>
+                            <xsl:when test="number(Workunit/Archived) &lt; 1">
+                                <td>
+                                    <img id="refresh" src="/esp/files/img/refresh.png" onclick="TurnRefresh()" title="Turn on/off Auto Refresh" />
+                                    <img border="0" src="/esp/files/img/bug.png" title="Create a bug report on this workunit" width="22" height="20" onclick="return popupBugReportForm()"/>
+                                </td>
+                                <td style="visibility:hidden">
+                                </td>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <td>
+                                    <img border="0" src="/esp/files/img/bug.png" title="Create a bug report on this workunit" width="22" height="20" onclick="return popupBugReportForm()"/>
+                                </td>
+                                <td style="visibility:hidden">
+                                </td>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </tr>
                 </table>
 
