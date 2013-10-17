@@ -15,6 +15,7 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/on",
 
@@ -33,7 +34,7 @@ define([
     "hpcc/TimingTreeMapWidget",
     "hpcc/ESPUtil"
 
-], function (declare, arrayUtil, on,
+], function (declare, lang, arrayUtil, on,
                 Button,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, ESPWorkunit, GraphPageWidget, TimingTreeMapWidget, ESPUtil) {
@@ -43,6 +44,7 @@ define([
         idProperty: "Name",
 
         wu: null,
+        query: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -60,16 +62,21 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            var context = this;
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
                 var monitorCount = 4;
-                var context = this;
                 this.wu.monitor(function () {
                     if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
                         context.refreshGrid();
                     }
                 });
             }
+            else if (params.Query){
+                this.query = params.Query;
+                this.refreshGrid();
+            }
+
             this.timingTreeMap.init(params);
             this.timingTreeMap.onClick = function (value) {
                 context.syncSelectionFrom(context.timingTreeMap);
@@ -130,33 +137,64 @@ define([
         },
 
         createDetail: function (id, row, params) {
+            var localParams = {}
+            if (this.wu) {
+                localParams = {
+                    Wuid: this.wu.Wuid,
+                    GraphName: row.Name,
+                    GraphName: row.Name,
+                    SubGraphId: (params && params.SubGraphId) ? params.SubGraphId : null,
+                    SafeMode: (params && params.safeMode) ? true : false
+                }
+            } else if (this.query) {
+                localParams = {
+                    Target: this.query.QuerySet,
+                    QueryId: this.query.QueryId,
+                    GraphName: row.Name,
+                    SubGraphId: (params && params.SubGraphId) ? params.SubGraphId : null,
+                    SafeMode: (params && params.safeMode) ? true : false
+                }
+            }
             return new GraphPageWidget({
                 id: id,
                 title: row.Name,
                 closable: true,
                 hpcc: {
                     type: "graph",
-                    params: {
-                        Wuid: this.wu.Wuid,
-                        GraphName: row.Name,
-                        SubGraphId: (params && params.SubGraphId) ? params.SubGraphId : null,
-                        SafeMode: (params && params.safeMode) ? true : false
-                    }
+                    params: localParams
                 }
             });
         },
 
         refreshGrid: function (args) {
-            var context = this;
-            this.wu.getInfo({
-                onGetTimers: function (timers) {
-                    //  Required to calculate Graphs Total Time  ---
-                },
-                onGetGraphs: function (graphs) {
-                    context.store.setData(graphs);
-                    context.grid.refresh();
+            if (this.wu) {
+                var context = this;
+                this.wu.getInfo({
+                    onGetTimers: function (timers) {
+                        //  Required to calculate Graphs Total Time  ---
+                    },
+                    onGetGraphs: function (graphs) {
+                        context.store.setData(graphs);
+                        context.grid.refresh();
+                    }
+                });
+            } else if (this.query) {
+                var graphs = [];
+                if (lang.exists("GraphIds.Item", this.query)) {
+                    arrayUtil.forEach(this.query.GraphIds.Item, function (item, idx) {
+                        var graph = {
+                            Name: item,
+                            Label: "",
+                            Completed: "",
+                            Time: 0,
+                            Type: ""
+                        };
+                        graphs.push(graph);
+                    });
                 }
-            });
+                this.store.setData(graphs);
+                this.grid.refresh();
+            }
         },
 
         refreshActionState: function (selection) {
