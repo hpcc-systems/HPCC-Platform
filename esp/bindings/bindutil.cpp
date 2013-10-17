@@ -817,3 +817,37 @@ void xslTransformHelper(IXslProcessor *xslp, const char* xml, const char* xslFil
     }
 }
 
+const char *mimeTypeFromFileExt(const char *ext)
+{
+    if (!ext)
+        return "application/octet-stream";
+    if (*ext=='.')
+        ext++;
+    if (strieq(ext, "html") || strieq(ext, "htm"))
+        return "text/html";
+    if (strieq(ext, "xml") || strieq(ext, "xsl") || strieq(ext, "xslt"))
+       return "application/xml";
+    if (strieq(ext, "js"))
+       return "text/javascript";
+    if (strieq(ext, "css"))
+       return "text/css";
+    if (strieq(ext, "jpeg") || strieq(ext, "jpg"))
+       return "image/jpeg";
+    if (strieq(ext, "gif"))
+       return "image/gif";
+    if (strieq(ext, "png"))
+       return "image/png";
+    if (strieq(ext, "svg"))
+       return "image/svg+xml";
+    if (strieq(ext, "txt") || strieq(ext, "text"))
+       return "text/plain";
+    if (strieq(ext, "zip"))
+       return "application/zip";
+    if (strieq(ext, "pdf"))
+       return "application/pdf";
+    if (strieq(ext, "xpi"))
+       return "application/x-xpinstall";
+    if (strieq(ext, "exe") || strieq(ext, "class"))
+       return "application/octet-stream";
+    return "application/octet-stream";
+}
