@@ -4347,7 +4347,7 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
     if (dataset->queryType()->getTypeCode() == type_groupedtable)
         dataset = createDataset(no_group, dataset, NULL);
 
-    IHqlExpression * project = createDataset(no_newusertable, dataset, createComma(aggregateRecord, transform, LINK(keyedAttr), LINK(prefetchAttr)));
+    IHqlExpression * project = createDataset(no_newaggregate, dataset, createComma(aggregateRecord, transform, LINK(keyedAttr), LINK(prefetchAttr)));
     return createRow(no_selectnth, project, createConstantOne());
 }
 
