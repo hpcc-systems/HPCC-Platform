@@ -521,6 +521,8 @@ public:
 
 extern jlib_decl ISocketSelectHandler *createSocketSelectHandler(const char *trc=NULL);
 
+extern jlib_decl ISocketSelectHandler *createSocketEpollHandler(const char *trc=NULL);
+
 
 class MemoryBuffer;
 // sends/receives length as well as contents.
