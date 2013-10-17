@@ -224,7 +224,7 @@ define([
             } else {
                 WsTopology.TpLogicalClusterQuery().then(function (response) {
                     if (lang.exists("TpLogicalClusterQueryResponse.default", response)) {
-                        deferred.resolve(response.TpLogicalClusterQueryResponse.default.Name);
+                        deferred.resolve(response.TpLogicalClusterQueryResponse["default"].Name);
                     }
                 });
             }
