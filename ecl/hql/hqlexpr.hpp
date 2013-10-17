@@ -352,7 +352,7 @@ enum _node_operator {
         no_assertconcrete,
         no_unboundselect,
         no_id,
-    no_unused24,
+        no_orderedactionlist,
         no_dataset_from_transform,
         no_childquery,
         no_unknown,
@@ -1329,7 +1329,9 @@ extern HQL_API IHqlExpression * createCompound(IHqlExpression * expr1, IHqlExpre
 extern HQL_API IHqlExpression * createCompound(const HqlExprArray & actions);
 extern HQL_API IHqlExpression * createCompound(node_operator op, const HqlExprArray & actions);
 extern HQL_API IHqlExpression * createActionList(const HqlExprArray & actions);
+extern HQL_API IHqlExpression * createActionList(node_operator op, const HqlExprArray & actions);
 extern HQL_API IHqlExpression * createActionList(const HqlExprArray & actions, unsigned from, unsigned to);
+extern HQL_API IHqlExpression * createActionList(node_operator op, const HqlExprArray & actions, unsigned from, unsigned to);
 extern HQL_API IHqlExpression * createComma(IHqlExpression * expr1, IHqlExpression * expr2);
 extern HQL_API IHqlExpression * createComma(IHqlExpression * expr1, IHqlExpression * expr2, IHqlExpression * expr3);
 extern HQL_API IHqlExpression * createComma(IHqlExpression * expr1, IHqlExpression * expr2, IHqlExpression * expr3, IHqlExpression * expr4);
@@ -1731,6 +1733,7 @@ extern bool canBeVirtual(IHqlExpression * expr);
 extern bool areAllBasesFullyBound(IHqlExpression * module);
 extern HQL_API bool isUpdatedConditionally(IHqlExpression * expr);
 extern HQL_API bool activityMustBeCompound(IHqlExpression * expr);
+extern HQL_API bool isSequentialActionList(IHqlExpression * expr);
 extern HQL_API unsigned queryCurrentTransformDepth();                   // debugging - only valid inside a transform
 extern HQL_API bool isExternalFunction(IHqlExpression * funcdef);
 extern HQL_API bool isEmbedFunction(IHqlExpression * expr);

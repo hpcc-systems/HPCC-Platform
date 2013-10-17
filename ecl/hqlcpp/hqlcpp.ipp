@@ -727,6 +727,7 @@ struct HqlCppOptions
     bool                optimizeParentAccess;
     bool                expandPersistInputDependencies;
     bool                expirePersists;
+    bool                actionLinkInNewGraph;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1533,6 +1534,8 @@ public:
     IHqlExpression * queryExpandAliasScope(BuildCtx & ctx, IHqlExpression * expr);
 
     void addDependency(BuildCtx & ctx, ABoundActivity * element, ABoundActivity * dependent, IAtom * kind, const char * label=NULL, int controlId = 0);
+    void addDependency(BuildCtx & ctx, ABoundActivity * element, ActivityInstance * instance, IAtom * kind, const char * label=NULL, int controlId = 0);
+    void addDependency(BuildCtx & ctx, ABoundActivity * sourceActivity, IPropertyTree * sinkGraph, ABoundActivity * sinkActivity, IAtom * kind, const char * label, int whenId);
     void addFileDependency(IHqlExpression * name, ABoundActivity * whoAmI);
 
     void doBuildClearAggregateRecord(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * self, IHqlExpression * transform);

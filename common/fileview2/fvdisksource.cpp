@@ -27,7 +27,7 @@
 #include "fverror.hpp"
 #include "dasess.hpp"
 
-#define DEFAULT_MAX_CSV_SIZE    0x1100
+#define DEFAULT_MAX_CSV_SIZE    0x10000  // 64k
 
 PhysicalFileInfo::PhysicalFileInfo()
 {
@@ -333,7 +333,7 @@ UtfReader::UtfFormat getFormat(const char * format)
     return UtfReader::Utf8;
 }
 
-enum { NONE, TERMINATOR };
+enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
 
 void CsvRecordSize::init(IDistributedFile * df)
 {
@@ -355,13 +355,31 @@ void CsvRecordSize::init(IDistributedFile * df)
     maxRecordSize = props->getPropInt("@maxRecordSize", DEFAULT_MAX_CSV_SIZE);
     const char * terminate = props->queryProp("@csvTerminate");
     addUtfActionList(matcher, terminate ? terminate : "\\n,\\r\\n", TERMINATOR, NULL, utfType);
+
+    const char * separate = props->queryProp("@csvSeparate");
+    addUtfActionList(matcher, separate ? separate : "\\,", SEPARATOR, NULL, utfType);
+
+    const char * quote = props->queryProp("@csvQuote");
+    addUtfActionList(matcher, quote ? quote : "'", QUOTE, NULL, utfType);
+
+    const char * escape = props->queryProp("@csvEscape");
+    addUtfActionList(matcher, escape, ESCAPE, NULL, utfType);
+
+    addUtfActionList(matcher, " ",  WHITESPACE, NULL, utfType);
+    addUtfActionList(matcher, "\t",  WHITESPACE, NULL, utfType);
+
 }
 
 size32_t CsvRecordSize::getRecordLength(size32_t maxLength, const void * start, bool includeTerminator)
 {
     //If we need more complicated processing...
+    unsigned quote = 0;
+    unsigned quoteToStrip = 0;
     const byte * cur = (const byte *)start;
     const byte * end = (const byte *)start + maxLength;
+    const byte * firstGood = cur;
+    const byte * lastGood = cur;
+    bool lastEscape = false;
 
     while (cur != end)
     {
@@ -371,12 +389,91 @@ size32_t CsvRecordSize::getRecordLength(size32_t maxLength, const void * start, 
         {
         case NONE:
             cur += unitSize;            // matchLen == 0;
+            lastGood = cur;
+            break;
+        case WHITESPACE:
+            //Skip leading whitespace
+            if (quote)
+                lastGood = cur+matchLen;
+            else if (cur == firstGood)
+            {
+                firstGood = cur+matchLen;
+                lastGood = cur+matchLen;
+            }
+            break;
+        case SEPARATOR:
+            // Quoted separator
+            if (quote == 0)
+            {
+                lastEscape = false;
+                quoteToStrip = 0;
+                firstGood = cur + matchLen;
+            }
+            lastGood = cur+matchLen;
             break;
         case TERMINATOR:
-            if (includeTerminator)
-                return cur + matchLen - (const byte *)start;
-            return cur - (const byte *)start;
+            if (quote == 0) // Is this a good idea? Means a mismatched quote is not fixed by EOL
+            {
+                if (includeTerminator)
+                    return cur + matchLen - (const byte *)start;
+
+                return cur - (const byte *)start;
+            }
+            lastGood = cur+matchLen;
+            break;
+        case QUOTE:
+            // Quoted quote
+            if (quote == 0)
+            {
+                if (cur == firstGood)
+                {
+                    quote = match;
+                    firstGood = cur+matchLen;
+                }
+                lastGood = cur+matchLen;
+            }
+            else
+            {
+                if (quote == match)
+                {
+                    const byte * next = cur + matchLen;
+                    //Check for double quotes
+                    if ((next != end))
+                    {
+                        unsigned nextMatchLen;
+                        unsigned nextMatch = matcher.getMatch((size32_t)(end-next), (const char *)next, nextMatchLen);
+                        if (nextMatch == quote)
+                        {
+                            quoteToStrip = quote;
+                            matchLen += nextMatchLen;
+                            lastGood = cur+matchLen;
+                        }
+                        else
+                            quote = 0;
+                    }
+                    else
+                        quote = 0;
+                }
+                else
+                    lastGood = cur+matchLen;
+            }
+            break;
+        case ESCAPE:
+            lastEscape = true;
+            lastGood = cur+matchLen;
+            // If this escape is at the end, proceed to field range
+            if (lastGood == end)
+                break;
+
+            // Skip escape and ignore the next match
+            cur += matchLen;
+            match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
+            if ((match & 255) == NONE)
+                matchLen = unitSize;
+            lastGood += matchLen;
+            break;
         }
+
         cur += matchLen;
     }
 
