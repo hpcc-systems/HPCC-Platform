@@ -1442,10 +1442,11 @@ const char *getOpString(node_operator op)
     case no_assertconcrete: return "no_assertconcrete";
     case no_unboundselect: return "no_unboundselect";
     case no_id: return "no_id";
+    case no_orderedactionlist: return "ORDERED";
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused24: case no_unused25: case no_unused28: case no_unused29:
+    case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
@@ -2258,6 +2259,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
         return 0;
     case no_sequential:
     case no_parallel:
+    case no_orderedactionlist:
         return 0;
     case no_quoted:
     case no_variable:
@@ -12297,7 +12299,7 @@ extern IHqlExpression * createCompound(const HqlExprArray & actions)
     return expr;
 }
 
-extern IHqlExpression * createActionList(const HqlExprArray & actions)
+extern IHqlExpression * createActionList(node_operator op, const HqlExprArray & actions)
 {
     switch (actions.ordinality())
     {
@@ -12306,7 +12308,12 @@ extern IHqlExpression * createActionList(const HqlExprArray & actions)
     case 1:
         return LINK(&actions.item(0));
     }
-    return createValueSafe(no_actionlist, makeVoidType(), actions);
+    return createValueSafe(op, makeVoidType(), actions);
+}
+
+extern IHqlExpression * createActionList(const HqlExprArray & actions)
+{
+    return createActionList(no_actionlist, actions);
 }
 
 extern void ensureActions(HqlExprArray & actions, unsigned first, unsigned last)
@@ -12324,7 +12331,7 @@ extern void ensureActions(HqlExprArray & actions)
     ensureActions(actions, 0, actions.ordinality());
 }
 
-extern IHqlExpression * createActionList(const HqlExprArray & actions, unsigned from, unsigned to)
+extern IHqlExpression * createActionList(node_operator op, const HqlExprArray & actions, unsigned from, unsigned to)
 {
     switch (to-from)
     {
@@ -12333,7 +12340,12 @@ extern IHqlExpression * createActionList(const HqlExprArray & actions, unsigned 
     case 1:
         return LINK(&actions.item(from));
     }
-    return createValueSafe(no_actionlist, makeVoidType(), actions, from, to);
+    return createValueSafe(op, makeVoidType(), actions, from, to);
+}
+
+extern IHqlExpression * createActionList(const HqlExprArray & actions, unsigned from, unsigned to)
+{
+    return createActionList(no_actionlist, actions, from, to);
 }
 
 extern IHqlExpression * createCompound(node_operator op, const HqlExprArray & actions)
@@ -13164,6 +13176,7 @@ static IHqlExpression * walkInstantEclTransformations(IHqlExpression * expr, uns
     case no_comma:
     case no_sequential:
     case no_parallel:
+    case no_orderedactionlist:
     case no_actionlist:
     case no_if:
     case no_case:
@@ -14959,6 +14972,17 @@ bool activityMustBeCompound(IHqlExpression * expr)
     case no_usertable:
     case no_hqlproject:
         return expr->hasAttribute(keyedAtom);
+    }
+    return false;
+}
+
+bool isSequentialActionList(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_orderedactionlist:
+    case no_sequential:
+        return true;
     }
     return false;
 }

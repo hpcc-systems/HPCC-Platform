@@ -36,7 +36,7 @@ enum ResourceType {
 class CResourceOptions
 {
 public:
-    CResourceOptions() { state.updateSequence = 0; }
+    CResourceOptions() { memset(this, 0, sizeof(*this)); state.updateSequence = 0; }
 
     IHqlExpression * createSpillName(bool isGraphResult);
     void noteGraphsChanged() { state.updateSequence++; }
@@ -63,6 +63,8 @@ public:
     bool     createSpillAsDataset;
     bool     optimizeSharedInputs;
     bool     combineSiblings;
+    bool     actionLinkInNewGraph;
+    bool     convertCompoundToExecuteWhen;
 
     IHqlExpression * graphIdExpr;
     unsigned nextResult;
@@ -153,7 +155,9 @@ public:
 
     bool addCondition(IHqlExpression * condition);
     bool allocateResources(const CResources & value, const CResources & limit);
-    bool containsActiveSinks();
+    bool canMergeActionAsSibling(bool sequential) const;
+    bool containsActiveSinks() const;
+    bool containsActionSink() const;
     unsigned getDepth();
     void getMergeFailReason(StringBuffer & reasonText, ResourceGraphInfo * otherGraph, const CResources & limit);
     bool hasSameConditions(ResourceGraphInfo & other);
@@ -190,6 +194,7 @@ public:
     bool mergedConditionSource:1;
     bool hasConditionSource:1;
     bool hasSequentialSource:1;
+    bool hasRootActivity:1;
     bool isDead:1;
     bool startedGeneratingResourced:1;
     bool inheritedExpandedDependencies:1;
@@ -280,8 +285,7 @@ public:
     {
         return isActivity || containsActivity;
     }
-
-
+    void setRootActivity();
 
 protected:
     bool spillSharesSplitter();
@@ -317,8 +321,10 @@ public:
     unsigned numExternalUses;
     unsigned conditionSourceCount;
     unsigned currentSource;
+    byte pathToExpr;
     bool containsActivity;
     bool isActivity;
+    bool isRootActivity;
     bool gatheredDependencies;
     bool isSpillPoint;
     bool balanced;
@@ -326,7 +332,6 @@ public:
     bool linkedFromChild;
     bool forceHoist;
     bool neverSplit;
-    byte pathToExpr;
     bool isConditionalFilter;
     bool projectResult;
     bool visited;
@@ -347,8 +352,8 @@ public:
     EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions);
     ~EclResourcer();
 
-    void resourceGraph(HqlExprArray & exprs, HqlExprArray & transformed);
-    void resourceRemoteGraph(HqlExprArray & exprs, HqlExprArray & transformed);
+    void resourceGraph(IHqlExpression * expr, HqlExprArray & transformed);
+    void resourceRemoteGraph(IHqlExpression * expr, HqlExprArray & transformed);
     void setChildQuery(bool value);
     void setNewChildQuery(IHqlExpression * graphIdExpr, unsigned numResults);
     void setSequential(bool _sequential) { sequential = _sequential; }
