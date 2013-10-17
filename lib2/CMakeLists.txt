@@ -82,6 +82,11 @@ foreach(dylib ${DYLIBS})
             set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_110_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
         endif ()
 
+        string(REPLACE ".51.2.dylib" ".51.dylib" dylib_51_path "${dylib_path}")
+        if (NOT "${dylib_51_path}" STREQUAL "${dylib_path}")
+            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_51_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+        endif ()
+
         install(CODE "
             file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${EXEC_DIR}/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/plugins/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/*.dylib\")
             foreach(file \${files})
