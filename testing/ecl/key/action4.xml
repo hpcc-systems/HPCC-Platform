@@ -1,0 +1,14 @@
+<Dataset name='msgs'>
+ <Row><text>One</text></Row>
+ <Row><text>Two</text></Row>
+ <Row><text>Three</text></Row>
+ <Row><text>Three</text></Row>
+ <Row><text>Two</text></Row>
+ <Row><text>One</text></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>3</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>3</Result_3></Row>
+</Dataset>

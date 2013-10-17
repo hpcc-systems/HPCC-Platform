@@ -66,48 +66,57 @@ void addGraphAttributeBool(IPropertyTree * node, const char * name, bool value)
         addGraphAttribute(node, name)->setPropBool("@value", value);
 }
 
-void addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, IAtom * kind, const char * label, bool nWay)
+IPropertyTree * addIntraGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex)
 {
     IPropertyTree *edge = createPTree();
     edge->setPropInt64("@target", target);
     edge->setPropInt64("@source", source);
-    if (outputIndex != 0)
-        addGraphAttributeInt(edge, "_sourceIndex", outputIndex);
-    if (inputIndex != 0)
-        addGraphAttributeInt(edge, "_targetIndex", inputIndex);
-    if (label)
-        edge->setProp("@label", label);
-
-    if (kind == dependencyAtom)
-        addGraphAttributeBool(edge, "_dependsOn", true);
-
-    if (nWay)
-        edge->setPropBool("@nWay", true);
 
     StringBuffer s;
     edge->setProp("@id", s.append(source).append('_').append(outputIndex).str());
-    subGraph->addPropTree("edge", edge);
+    return subGraph->addPropTree("edge", edge);
 }
 
-
-void addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, IAtom * kind, const char * label)
+IPropertyTree * addInterGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex)
 {
     StringBuffer idText;
     IPropertyTree *edge = createPTree();
     edge->setProp("@id", idText.clear().append(sourceGraph).append('_').append(targetGraph).append("_").append(outputIndex).str());
     edge->setPropInt64("@target", sourceGraph);
     edge->setPropInt64("@source", targetGraph);
-    if (label)
-        edge->setProp("@label", label);
-    if (outputIndex)
-        addGraphAttributeInt(edge, "_sourceIndex", outputIndex);
-
-    if (kind == dependencyAtom)
-        addGraphAttributeBool(edge, "_dependsOn", true);
 
     addGraphAttributeInt(edge, "_sourceActivity", sourceActivity);
     addGraphAttributeInt(edge, "_targetActivity", targetActivity);
-    graph->addPropTree("edge", edge);
+    return graph->addPropTree("edge", edge);
+}
+
+void setEdgeAttributes(IPropertyTree * edge, unsigned outputIndex, unsigned inputIndex, IAtom * kind, const char * label, bool nWay)
+{
+    if (outputIndex != 0)
+        addGraphAttributeInt(edge, "_sourceIndex", outputIndex);
+    if (inputIndex != 0)
+        addGraphAttributeInt(edge, "_targetIndex", inputIndex);
+    if (label)
+        edge->setProp("@label", label);
+    if (kind == dependencyAtom)
+        addGraphAttributeBool(edge, "_dependsOn", true);
+    if (nWay)
+        edge->setPropBool("@nWay", true);
+}
+
+
+IPropertyTree * addSimpleGraphEdge(IPropertyTree * subGraph, unsigned __int64 source, unsigned __int64 target, unsigned outputIndex, unsigned inputIndex, IAtom * kind, const char * label, bool nWay)
+{
+    IPropertyTree *edge = addIntraGraphEdge(subGraph, source, target, outputIndex);
+    setEdgeAttributes(edge, outputIndex, inputIndex, kind, label, nWay);
+    return edge;
+}
+
+IPropertyTree * addComplexGraphEdge(IPropertyTree * graph, unsigned __int64 sourceGraph, unsigned __int64 targetGraph, unsigned __int64 sourceActivity, unsigned __int64 targetActivity, unsigned outputIndex, IAtom * kind, const char * label)
+{
+    IPropertyTree * edge = addInterGraphEdge(graph, sourceGraph, targetGraph, sourceActivity, targetActivity, outputIndex);
+    setEdgeAttributes(edge, outputIndex, 0, kind, label, false);
+    return edge;
 }
 
 
