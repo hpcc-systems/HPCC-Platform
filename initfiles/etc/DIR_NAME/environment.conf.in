@@ -17,3 +17,5 @@ environment=${ENV_XML_FILE}
 sourcedir=${CONFIG_SOURCE_PATH}
 blockname=${DIR_NAME}
 interface=*
+# enable epoll method for notification events (true/false)
+use_epoll=true
