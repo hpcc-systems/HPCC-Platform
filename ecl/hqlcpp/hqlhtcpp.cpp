@@ -1712,8 +1712,6 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     meta.setMeta(translator, record, ::isGrouped(outputDataset));
 
     activityId = translator.nextActivityId();
-    if (activityId == 1238)
-        dataset->numChildren();
 
     StringBuffer s;
     className.set(s.clear().append("cAc").append(activityId).str());
@@ -6634,27 +6632,8 @@ ABoundActivity * HqlCppTranslator::buildCachedActivity(BuildCtx & ctx, IHqlExpre
 
 void HqlCppTranslator::buildRootActivity(BuildCtx & ctx, IHqlExpression * expr)
 {
-    switch (expr->getOperator())
-    {
-//    case no_compound:
-//    case no_parallel:
-//    case no_actionlist:
-        {
-            ForEachChild(idx, expr)
-                buildRootActivity(ctx, expr->queryChild(idx));
-            break;
-        }
-//    case no_null:
-//        if (expr->isAction())
-//            return;
-        //fall through
-    default:
-        {
-            WarningProcessor::OnWarningStateBlock saved(warningProcessor);
-            ::Release(buildCachedActivity(ctx, expr, true));
-            break;
-        }
-    }
+    WarningProcessor::OnWarningStateBlock saved(warningProcessor);
+    ::Release(buildCachedActivity(ctx, expr, true));
 }
 
 
