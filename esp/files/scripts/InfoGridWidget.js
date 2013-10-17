@@ -28,7 +28,6 @@ define([
     "dijit/registry",
 
     "dojox/data/AndOrReadStore",
-    "dojox/gfx",
     "dojox/html/entities",
 
     "dgrid/OnDemandGrid",
@@ -49,7 +48,7 @@ define([
 ],
     function (declare, lang, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic,
             registry, 
-            AndOrReadStore, gfx, entities,
+            AndOrReadStore, entities,
             OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
             _Widget, ESPUtil, ESPWorkunit,
             template) {
@@ -132,20 +131,14 @@ define([
 
                     var target = dom.byId("stubMore");
                     if (target) {
-                        var newTarget = domConstruct.create("div", {
+                        this.errWarnCount = domConstruct.create("div", {
                             style: {
                                 position: "relative",
                                 top: "16px",
-                                left: "12px"
+                                left: "12px",
+                                color: "white"
                             }
                         }, target.firstChild);
-                        var surface = gfx.createSurface(newTarget, 16, 16);
-                        this.errWarnCount = surface.createText({ x: 8, y: 12, align: "middle", text: "" })
-                                    .setFill([255, 255, 255, 1])
-                        ;
-                        this.errWarnCount.setFont({
-                            size: "12px"
-                        });
                     }
                 }
             },
@@ -287,10 +280,10 @@ define([
 
                 this.refreshFilter();
                 if (this.errWarnCount) {
-                    this.errWarnCount.rawNode.textContent = this.infoData.length;
-                    if (this.errWarnMenuItem) {
-                        this.errWarnMenuItem.set("label", "Error/Warnings (" + this.infoData.length + ")");
-                    }
+                    this.errWarnCount.innerHTML = this.infoData.length;
+                }
+                if (this.errWarnMenuItem) {
+                    this.errWarnMenuItem.set("label", "Error/Warnings (" + this.infoData.length + ")");
                 }
             }
         });
