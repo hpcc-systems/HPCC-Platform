@@ -472,41 +472,6 @@ void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPr
 }
 
 
-static inline bool isPathSeparator(char sep)
-{
-    return (sep=='\\')||(sep=='/');
-}
-
-static inline const char *skipPathNodes(const char *&s, int skip)
-{
-    if (s) {
-        while (*s) {
-            if (isPathSeparator(*s++))
-                if (!skip--)
-                    return s;
-        }
-    }
-    return NULL;
-}
-
-static inline const char *nextPathNode(const char *&s, StringBuffer &node, int skip=0)
-{
-    if (skip)
-        skipPathNodes(s, skip);
-    if (s) while (*s) {
-        if (isPathSeparator(*s))
-            return s++;
-        node.append(*s++);
-    }
-    return NULL;
-}
-
-static inline const char *firstPathNode(const char *&s, StringBuffer &node)
-{
-    if (s && isPathSeparator(*s))
-        s++;
-    return nextPathNode(s, node);
-}
 
 
 static void splitPathTailAndExt(const char *s, StringBuffer &path, StringBuffer &tail, StringBuffer *ext)

@@ -71,6 +71,8 @@ inline char* strupr(char* str)
 BINDUTIL_EXPORT IEspStringIntMap * createStringIntMap();
 
 BINDUTIL_EXPORT void buildArrayHint(StringBuffer& s, int indents, const char* tag, const char* cls);
+BINDUTIL_EXPORT const char *mimeTypeFromFileExt(const char *ext);
+
 
 void xslTransformHelper(IXslProcessor *xslp, const char* xml, const char* xslFile, StringBuffer& output, IProperties *params);
 
