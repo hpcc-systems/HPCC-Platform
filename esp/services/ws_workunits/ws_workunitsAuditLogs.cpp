@@ -1389,11 +1389,11 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
         nextPathNode(pos, wuid, 2);
         Owned<IWuWebView> web = createWuWebView(wuid, wuid, getCFD(), true);
         if (!web)
-            throw createEspHttpException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit", HTTP_STATUS_OK);
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit");
         MemoryBuffer mb;
         StringAttr mimetype(mimeTypeFromFileExt(strrchr(pos, '.')));
         if (!web->getResourceByPath(pos, mb))
-            throw createEspHttpException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open resource", HTTP_STATUS_OK);
+            throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open resource");
 
         response->setContent(mb.length(), mb.toByteArray());
         response->setContentType(mimetype.get());
@@ -1408,10 +1408,10 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
         nextPathNode(pos, wuid, 2);
         Owned<IWuWebView> web = createWuWebView(wuid, wuid, getCFD(), true);
         if (!web)
-            throw createEspHttpException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit", HTTP_STATUS_OK);
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit");
         StringBuffer mf;
         if (!web->getManifest(mf).length())
-            throw createEspHttpException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open manifest", HTTP_STATUS_OK);
+            throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open manifest");
 
         response->setContent(mf.str());
         response->setContentType("text/xml");
