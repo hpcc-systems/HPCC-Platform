@@ -705,7 +705,14 @@ protected:
 
                 unsigned sourceOutput = edge.getPropInt("att[@name=\"_sourceIndex\"]/@value", 0);
                 unsigned targetInput = edge.getPropInt("att[@name=\"_targetIndex\"]/@value", 0);
-                activities->serverItem(target).setInput(targetInput, source, sourceOutput);
+                int controlId = edge.getPropInt("att[@name=\"_when\"]/@value", 0);
+                if (controlId != 0)
+                {
+                    const char * edgeId = edge.queryProp("@id");
+                    addDependency(sourceOutput, source, target, controlId, edgeId, activities);
+                }
+                else
+                    activities->serverItem(target).setInput(targetInput, source, sourceOutput);
             }
         }
         catch (...)
@@ -762,12 +769,22 @@ protected:
             ForEach(*edges)
             {
                 IPropertyTree &edge = edges->query();
-                unsigned source = activities->findActivityIndex(edge.getPropInt("@source", 0));
-                unsigned target = activities->recursiveFindActivityIndex(edge.getPropInt("@target", 0));
+                unsigned sourceActivity = edge.getPropInt("@source", 0);
+                unsigned targetActivity = edge.getPropInt("@target", 0);
+                unsigned source = activities->findActivityIndex(sourceActivity);
+                unsigned target = activities->recursiveFindActivityIndex(targetActivity);
 
                 unsigned sourceOutput = edge.getPropInt("att[@name=\"_sourceIndex\"]/@value", 0);
                 unsigned targetInput = edge.getPropInt("att[@name=\"_targetIndex\"]/@value", 0);
-                activities->serverItem(target).setInput(targetInput, source, sourceOutput);
+
+                int controlId = edge.getPropInt("att[@name=\"_when\"]/@value", 0);
+                if (controlId != 0)
+                {
+                    const char * edgeId = edge.queryProp("@id");
+                    addDependency(sourceOutput, sourceActivity, targetActivity, controlId, edgeId, activities);
+                }
+                else
+                    activities->serverItem(target).setInput(targetInput, source, sourceOutput);
             }
         }
     }

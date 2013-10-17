@@ -821,6 +821,7 @@ ONFAIL              { RETURNSYM(ONFAIL); }
 ONLY                { RETURNSYM(ONLY); }
 ONWARNING           { RETURNSYM(ONWARNING); }
 OPT                 { RETURNSYM(OPT); }
+ORDERED             { RETURNSYM(ORDERED); }
 OUTER               { RETURNSYM(OUTER); }
 OUTPUT              { 
                         //RETURNSYM(OUTPUT);

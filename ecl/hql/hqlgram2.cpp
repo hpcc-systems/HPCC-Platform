@@ -10351,6 +10351,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case OPT: msg.append("OPT"); break;
     case OR : msg.append("OR "); break;
     case ORDER: msg.append("ORDER"); break;
+    case ORDERED: msg.append("ORDERED"); break;
     case OUTER: msg.append("OUTER"); break;
     case OUTPUT: msg.append("OUTPUT"); break;
     case TOK_OUT: msg.append("OUT"); break;
@@ -10639,6 +10640,7 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
     simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);
+    simplify(expected, ACTION_ID, ORDERED, 0); // more include other actions
     simplify(expected, VALUE_ID, DATASET_ID, DICTIONARY_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, DICTIONARY_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, DICTIONARY_TYPE_ID, DATASET_TYPE_ID, 0);
     simplify(expected, LIBRARY, LIBRARY, SCOPE_FUNCTION, STORED, PROJECT, INTERFACE, MODULE, 0);
     simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, 0);

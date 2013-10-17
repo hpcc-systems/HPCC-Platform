@@ -1323,14 +1323,12 @@ unsigned ChildGraphExprBuilder::addInput()
     return id;
 }
 
-IHqlExpression * ChildGraphExprBuilder::getGraph(IAtom * extraAttrName)
+IHqlExpression * ChildGraphExprBuilder::getGraph(node_operator listOp)
 {
     HqlExprArray args;
     args.append(*LINK(represents));
     args.append(*getSizetConstant(numResults()));
-    args.append(*createActionList(results));
-    if (extraAttrName)
-        args.append(*createAttribute(extraAttrName));
+    args.append(*createActionList(listOp, results));
     return createValue(no_childquery, makeVoidType(), args);
 }
 
@@ -1644,7 +1642,8 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         DBGLOG("Before resourcing a child graph");
 
     IHqlExpression * graphIdExpr = childQuery->queryChild(0);
-    LinkedHqlExpr resourced = childQuery->queryChild(2);
+    IHqlExpression * originalQuery = childQuery->queryChild(2);
+    LinkedHqlExpr resourced = originalQuery;
     checkNormalized(ctx, resourced);
 
     unsigned csfFlags = CSFindex|options.optimizeDiskFlag;
@@ -1685,10 +1684,10 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     if (graphKind == no_loop)
     {
         bool insideChild = insideChildQuery(ctx);
-        resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults, insideChild));
+        resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults, insideChild));
     }
     else
-        resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults, childQuery->hasAttribute(sequentialAtom)));
+        resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
 
     DEBUG_TIMER("EclServer: resource graph", msTick()-time);
     checkNormalized(ctx, resourced);
@@ -1725,18 +1724,9 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         DEBUG_TIMER("EclServer: optimize graph", msTick()-time);
     }
 
-    if (numResults == 0) numResults++;
-
-    HqlExprArray children;
-    resourced->unwindList(children, no_actionlist);
-    children.append(*createAttribute(numResultsAtom, getSizetConstant(numResults)));
-    children.append(*LINK(graphIdExpr));
-    resourced.setown(createValue(no_subgraph, makeVoidType(), children));
-
     if (options.paranoidCheckNormalized || options.paranoidCheckDependencies)
         DBGLOG("After resourcing a child graph");
 
-    resourced.setown(inheritAttribute(resourced, childQuery, sequentialAtom));
     return resourced.getClear();
 }
 
