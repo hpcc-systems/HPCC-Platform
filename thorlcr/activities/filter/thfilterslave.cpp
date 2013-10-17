@@ -248,7 +248,7 @@ public:
 
     CFilterGroupSlaveActivity(CGraphElementBase *container) : CFilterSlaveActivityBase(container), CThorSteppable(this)
     {
-        groupLoader.setown(createThorRowLoader(*this, NULL, false, rc_allMem));
+        groupLoader.setown(createThorRowLoader(*this, NULL, stableSort_none, rc_allMem));
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
