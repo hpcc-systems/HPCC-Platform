@@ -46,19 +46,14 @@ static IKeyManager *getKeyManager(IKeyIndex *keyIndex, IHThorIndexReadBaseArg *h
 
 static IKeyIndex *openKeyPart(CActivityBase *activity, const char *logicalFilename, IPartDescriptor &partDesc)
 {
-    unsigned location;
+    RemoteFilename rfn;
+    partDesc.getFilename(0, rfn);
     StringBuffer filePath;
-    OwnedIFile ifile;
-    if (!(globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(activity, partDesc, ifile, location, filePath):getBestFilePart(activity, partDesc, ifile, location, filePath, activity)))
-    {
-        StringBuffer locations;
-        IException *e = MakeActivityException(activity, TE_FileNotFound, "No physical file part for logical key file %s, found at given locations: %s (Error = %d)", logicalFilename, getFilePartLocations(partDesc, locations).str(), GetLastError());
-        EXCLOG(e, NULL);
-        throw e;
-    }
+    rfn.getPath(filePath);
     unsigned crc=0;
     partDesc.getCrc(crc);
-    return createKeyIndex(filePath.str(), crc, false, false);
+    Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*activity, partDesc);
+    return createKeyIndex(filePath.str(), crc, *lfile, false, false);
 }
 
 
