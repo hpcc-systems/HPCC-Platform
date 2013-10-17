@@ -1658,16 +1658,6 @@ bool isLocalActivity(IHqlExpression * expr)
     case no_graphloop:
     case no_aggregate:
     case no_combine:
-        assertex(localChangesActivity(expr));
-        return expr->hasAttribute(localAtom);
-    case no_newusertable:
-        if (isAggregateDataset(expr))
-            return expr->hasAttribute(localAtom);
-        return false;
-    case no_hqlproject:                 // count project may result in distributed output, but not be local(!)
-        if (expr->hasAttribute(_countProject_Atom))
-            return expr->hasAttribute(localAtom);
-        return false;
     case no_denormalize:
     case no_denormalizegroup:
     case no_join:
@@ -1678,6 +1668,14 @@ bool isLocalActivity(IHqlExpression * expr)
     case no_joincount:
         assertex(localChangesActivity(expr));
         return expr->hasAttribute(localAtom);
+    case no_newusertable:
+        if (isAggregateDataset(expr))
+            return expr->hasAttribute(localAtom);
+        return false;
+    case no_hqlproject:                 // count project may result in distributed output, but not be local(!)
+        if (expr->hasAttribute(_countProject_Atom))
+            return expr->hasAttribute(localAtom);
+        return false;
     case no_compound:
         return isLocalActivity(expr->queryChild(1));
     case no_compound_diskread:
@@ -1712,6 +1710,8 @@ bool isLocalActivity(IHqlExpression * expr)
     case no_compound_selectnew:
     case no_compound_inline:
         return true;
+    case no_dataset_from_transform:
+        return expr->hasAttribute(localAtom);
     default:
         {
             assertex(!localChangesActivity(expr));
@@ -1865,6 +1865,7 @@ bool localChangesActivityAction(IHqlExpression * expr)
     case no_loop:
     case no_graphloop:
     case no_combine:
+    case no_dataset_from_transform:
         return true;
     case no_hqlproject:
         return expr->hasAttribute(_countProject_Atom);
@@ -2710,10 +2711,25 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                 IHqlExpression * transform = expr->queryChild(1);
                 __int64 maxCount = value->getIntValue();
                 if (containsSkip(transform))
-                    info.setRange(0, maxCount);
+                {
+                    if (expr->hasAttribute(localAtom))
+                        info.setUnknown(RCMunknown);
+                    else
+                        info.setRange(0, maxCount);
+                }
                 else
-                    info.setN(maxCount);
+                {
+                    if (expr->hasAttribute(localAtom))
+                    {
+                        info.setUnknown(RCMdisk);
+                        info.setMin(maxCount);
+                    }
+                    else
+                        info.setN(maxCount);
+                }
             }
+            else
+                info.setUnknown(RCMdisk);
             // leave it be, if it's a constant expression or a variable
             break;
         }
