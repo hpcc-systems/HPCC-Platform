@@ -648,7 +648,7 @@ void Cws_machineEx::readTargetClusterProcesses(IPropertyTree &processNode, const
         if (!pEnvironmentDirectories || !getConfigurationDirectory(pEnvironmentDirectories, "run", nodeType, process, dirStr))
             dirStr.clear().append(processNode.queryProp("@directory"));
 
-        getProcesses(constEnv, pEnvironmentSoftware, process, nodeType, dirStr.str(), machineInfoData, uniqueProcesses);
+        getProcesses(constEnv, pEnvironmentSoftware, process, nodeType, dirStr.str(), machineInfoData, false, uniqueProcesses);
         return;
     }
 
@@ -657,14 +657,14 @@ void Cws_machineEx::readTargetClusterProcesses(IPropertyTree &processNode, const
 
     if (strieq(nodeType, eqThorCluster))
     {
-        getProcesses(constEnv, pClusterProcess, process, eqThorMasterProcess, dirStr.str(), machineInfoData, uniqueProcesses);
+        getProcesses(constEnv, pClusterProcess, process, eqThorMasterProcess, dirStr.str(), machineInfoData, true, uniqueProcesses);
         getThorProcesses(constEnv, pClusterProcess, process, eqThorSlaveProcess, dirStr.str(), machineInfoData, uniqueProcesses);
         getThorProcesses(constEnv, pClusterProcess, process, eqThorSpareProcess, dirStr.str(), machineInfoData, uniqueProcesses);
     }
     else if (strieq(nodeType, eqRoxieCluster))
     {
         BoolHash uniqueRoxieProcesses;
-        getProcesses(constEnv, pClusterProcess, process, eqRoxieServerProcess, dirStr.str(), machineInfoData, uniqueProcesses, &uniqueRoxieProcesses);
+        getProcesses(constEnv, pClusterProcess, process, eqRoxieServerProcess, dirStr.str(), machineInfoData, true, uniqueProcesses, &uniqueRoxieProcesses);
     }
 }
 
@@ -734,7 +734,7 @@ void Cws_machineEx::getThorProcesses(IConstEnvironment* constEnv, IPropertyTree*
 
 void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* environment, const char* processName,
                                  const char* processType, const char* directory, CGetMachineInfoData& machineInfoData,
-                                 BoolHash& uniqueProcesses, BoolHash* uniqueRoxieProcesses)
+                                 bool isThorOrRoxieProcess, BoolHash& uniqueProcesses, BoolHash* uniqueRoxieProcesses)
 {
     Owned<IPropertyTreeIterator> processes= environment->getElements(processType);
     ForEach(*processes)
@@ -742,9 +742,13 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
         StringArray processInstances, directories;
 
         IPropertyTree &process = processes->query();
-        const char* name = process.queryProp("@name");
-        if (!name || !*name || !streq(name, processName))
-            continue;
+        //Thor master and roxie server has been checked before this call.
+        if (!isThorOrRoxieProcess)
+        {
+            const char* name = process.queryProp("@name");
+            if (!name || !*name || !streq(name, processName))
+                continue;
+        }
 
         const char* computerName = process.queryProp("@computer");
         if (computerName && *computerName)
