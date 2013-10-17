@@ -632,7 +632,7 @@ public:
     COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _grouped, bool _shared, unsigned spillPriority)
         : activity(_activity), rowIf(_rowIf), grouped(_grouped), shared(_shared)
     {
-        collector.setown(createThorRowCollector(activity, rowIf, NULL, false, rc_mixed, spillPriority, grouped));
+        collector.setown(createThorRowCollector(activity, rowIf, NULL, stableSort_none, rc_mixed, spillPriority, grouped));
         writer.setown(collector->getWriter());
         eoi = false;
     }
