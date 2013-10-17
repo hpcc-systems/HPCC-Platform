@@ -2995,6 +2995,7 @@ datasetFlag
                             $$.setExpr(createExprAttribute(distributedAtom));
                             $$.setPosition($1);
                         }
+    | localAttribute
     ;
 
 optIndexFlags
@@ -8559,7 +8560,13 @@ simpleDataSet
                             IHqlExpression * counter = $7.getExpr();
                             if (counter)
                                 counter = createAttribute(_countProject_Atom, counter);
-                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter, $8.getExpr())));
+                            OwnedHqlExpr options = $8.getExpr();
+                            if (options)
+                            {
+                                if (options->numChildren() > 0)
+                                    parser->reportError(ERR_DSPARAM_INVALIDOPTCOMB, $8, "The DATASET options DISTRIBUTED, LOCAL, and NOLOCAL are not permutable.");
+                            }
+                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter, options.getClear())));
                             $$.setPosition($1);
                         }
     | ENTH '(' dataSet ',' expression optCommonAttrs ')'

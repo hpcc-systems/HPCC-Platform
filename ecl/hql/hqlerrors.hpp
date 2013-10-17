@@ -305,6 +305,7 @@
 #define ERR_DSPARM_MISSINGFIELD     2261 /* Dataset has no field as required or mapped */
 #define ERR_DSPARM_MAPNOTUSED       2262 /* A map is not used */
 #define ERR_DSPARAM_TYPEMISMATCH    2263 /* Mapping fields type mismatch */
+#define ERR_DSPARAM_INVALIDOPTCOMB  2264 /* Dataset options DISTRIBUTED, LOCAL, and NOLOCAL cannot be used in combination */
 
 /* pattern/regex */
 #define ERR_TOKEN_IN_TOKEN          2280 /* token used inside a token definition */
