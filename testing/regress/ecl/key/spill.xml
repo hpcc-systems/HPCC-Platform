@@ -1,0 +1,10 @@
+<Dataset name='Result 1'>
+ <Row><val>1</val></Row>
+ <Row><val>2</val></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><val>1</val></Row>
+ <Row><val>2</val></Row>
+ <Row><val>2</val></Row>
+ <Row><val>3</val></Row>
+</Dataset>

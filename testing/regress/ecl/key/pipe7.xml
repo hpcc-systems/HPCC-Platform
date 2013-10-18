@@ -1,0 +1,20 @@
+<Dataset name='Result 1'>
+ <Row><l>Line1</l></Row>
+ <Row><l>Middle</l></Row>
+ <Row><l>Line3</l></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><l>Line1</l></Row>
+ <Row><l>Middle</l></Row>
+ <Row><l>Line3</l></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><l>Line3</l></Row>
+ <Row><l>Middle</l></Row>
+ <Row><l>Line1</l></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><l>Line3</l></Row>
+ <Row><l>Middle</l></Row>
+ <Row><l>Line1</l></Row>
+</Dataset>

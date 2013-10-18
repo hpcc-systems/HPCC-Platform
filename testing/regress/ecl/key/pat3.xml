@@ -1,0 +1,7 @@
+<Dataset name='Result 1'>
+ <Row><_unnamed_1>123456</_unnamed_1><_unnamed_2>Prefix:0&quot;&quot;</_unnamed_2><_unnamed_3>Suffix:1&quot;123456&quot;</_unnamed_3></Row>
+ <Row><_unnamed_1>09876 838 699</_unnamed_1><_unnamed_2>Prefix:1&quot;09876&quot;</_unnamed_2><_unnamed_3>Suffix:1&quot;838 699&quot;</_unnamed_3></Row>
+ <Row><_unnamed_1>09876 123987</_unnamed_1><_unnamed_2>Prefix:1&quot;09876&quot;</_unnamed_2><_unnamed_3>Suffix:1&quot;123987&quot;</_unnamed_3></Row>
+ <Row><_unnamed_1>(09876) 123987</_unnamed_1><_unnamed_2>Prefix:1&quot;(09876)&quot;</_unnamed_2><_unnamed_3>Suffix:1&quot;123987&quot;</_unnamed_3></Row>
+ <Row><_unnamed_1>09876 123987</_unnamed_1><_unnamed_2>Prefix:1&quot;09876&quot;</_unnamed_2><_unnamed_3>Suffix:1&quot;123987&quot;</_unnamed_3></Row>
+</Dataset>

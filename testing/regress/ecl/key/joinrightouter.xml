@@ -1,0 +1,16 @@
+<Dataset name='Result 1'>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>RIGHT OUTER                             </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>D</letr><label>RIGHT OUTER                             </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>E</letr><label>RIGHT OUTER                             </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>RIGHT OUTER                             </label></Row>
+ <Row><did>0</did><letl> </letl><letr>F</letr><label>RIGHT OUTER                             </label></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>RIGHT OUTER, LIMIT(SKIP)                </label></Row>
+ <Row><did>0</did><letl> </letl><letr>F</letr><label>RIGHT OUTER, LIMIT(SKIP)                </label></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><did>1234</did><letl>A</letl><letr> </letr><label>FAILED: RIGHT OUTER, LIMIT, ONFAIL      </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>RIGHT OUTER, LIMIT, ONFAIL              </label></Row>
+ <Row><did>0</did><letl> </letl><letr>F</letr><label>RIGHT OUTER, LIMIT, ONFAIL              </label></Row>
+</Dataset>

@@ -1,0 +1,292 @@
+<Dataset name='Result 1'>
+ <Row><_process>Parent File         </_process></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>                    </name><value1>A</value1><value2>B</value2></Row>
+ <Row><name>                    </name><value1>B</value1><value2>A</value2></Row>
+ <Row><name>                    </name><value1>C</value1><value2>C</value2></Row>
+ <Row><name>                    </name><value1>D</value1><value2>B</value2></Row>
+ <Row><name>                    </name><value1>E</value1><value2>A</value2></Row>
+ <Row><name>                    </name><value1>F</value1><value2>C</value2></Row>
+ <Row><name>                    </name><value1>G</value1><value2>B</value2></Row>
+ <Row><name>                    </name><value1>H</value1><value2>A</value2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><_process>Simple normalize: straight                                                      </_process></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>simple              </name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>A</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>simple              </name><value1>C</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>C</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>C</value1><value2>3</value2></Row>
+ <Row><name>simple              </name><value1>C</value1><value2>4</value2></Row>
+ <Row><name>simple              </name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><name>simple choosen      </name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><name>skip, simple        </name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>skip, simple        </name><value1>C</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>C</value1><value2>3</value2></Row>
+ <Row><name>skip, simple        </name><value1>C</value1><value2>4</value2></Row>
+ <Row><name>skip, simple        </name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>skip, simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><_process>Variable normalize: straight                                                    </_process></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><name>simple</name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>A</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>simple</name><value1>C</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>C</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>C</value1><value2>3</value2></Row>
+ <Row><name>simple</name><value1>C</value1><value2>4</value2></Row>
+ <Row><name>simple</name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><name>simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><name>skip, simple</name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>skip, simple</name><value1>C</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>C</value1><value2>3</value2></Row>
+ <Row><name>skip, simple</name><value1>C</value1><value2>4</value2></Row>
+ <Row><name>skip, simple</name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><name>skip, simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><_process>Simple normalize: grouped                                                       </_process></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><name>simple              </name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>A</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>simple              </name><value1>C</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>C</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>C</value1><value2>3</value2></Row>
+ <Row><name>simple              </name><value1>C</value1><value2>4</value2></Row>
+ <Row><name>simple              </name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><name>simple choosen      </name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><name>skip, simple        </name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>skip, simple        </name><value1>C</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>C</value1><value2>3</value2></Row>
+ <Row><name>skip, simple        </name><value1>C</value1><value2>4</value2></Row>
+ <Row><name>skip, simple        </name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><name>skip, simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><_process>Variable normalize: grouped                                                     </_process></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><name>simple</name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>A</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>simple</name><value1>C</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>C</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>C</value1><value2>3</value2></Row>
+ <Row><name>simple</name><value1>C</value1><value2>4</value2></Row>
+ <Row><name>simple</name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><name>simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><name>skip, simple</name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>skip, simple</name><value1>C</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>C</value1><value2>3</value2></Row>
+ <Row><name>skip, simple</name><value1>C</value1><value2>4</value2></Row>
+ <Row><name>skip, simple</name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><name>skip, simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><_process>Simple normalize: filtered                                                      </_process></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><name>simple              </name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>A</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>simple              </name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><name>simple choosen      </name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><name>skip, simple        </name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>skip, simple        </name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><name>skip, simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><_process>Variable normalize: filtered                                                    </_process></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><name>simple</name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>A</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>simple</name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><name>simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><name>skip, simple</name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>skip, simple</name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><name>skip, simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><_process>Simple normalize: grouped filtered                                              </_process></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><name>simple              </name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>A</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>2</value2></Row>
+ <Row><name>simple              </name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>simple              </name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>simple              </name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><name>simple choosen      </name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><name>skip, simple        </name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>skip, simple        </name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>skip, simple        </name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 37'>
+ <Row><name>skip, simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 38'>
+ <Row><_process>Variable normalize: grouped filtered                                            </_process></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><name>simple</name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>A</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>2</value2></Row>
+ <Row><name>simple</name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>simple</name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>simple</name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><name>simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><name>skip, simple</name><value1>A</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>B</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>B</value1><value2>3</value2></Row>
+ <Row><name>skip, simple</name><value1>D</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>E</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>F</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>G</value1><value2>1</value2></Row>
+ <Row><name>skip, simple</name><value1>H</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 42'>
+ <Row><name>skip, simple choosen</name><value1>A</value1><value2>1</value2></Row>
+</Dataset>
+<Dataset name='Result 43'>
+ <Row><_process>Completed           </_process></Row>
+</Dataset>

@@ -38,7 +38,7 @@ if __name__ == "__main__":
                         nargs='?', default="info",
                         choices=['info', 'debug'])
     parser.add_argument('--suiteDir', '-s', help="suiteDir to use.",
-                        nargs='?')
+                        nargs='?', default=".")
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
     parser_list.add_argument('clusters', help="Print clusters from config.",
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser_query.add_argument('query', help="Run a single query.",
                               nargs='?')
     parser_query.add_argument('cluster', help="Cluster for single query run.",
-                            nargs='?', default='setup')
+                            nargs='?', default='thor')
     args = parser.parse_args()
 
     suiteDir = ""

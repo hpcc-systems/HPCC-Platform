@@ -1,0 +1,12 @@
+<Dataset name='Result 1'>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr></Row>
+ <Row><did>9876</did><letl>C</letl><letr> </letr></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><did>9876</did><letl>C</letl><letr> </letr></Row>
+</Dataset>

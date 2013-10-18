@@ -1,0 +1,13 @@
+<Dataset name='Result 1'>
+ <Row><_unnamed_cnt_1>9</_unnamed_cnt_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><_unnamed_cnt_1>3</_unnamed_cnt_1></Row>
+ <Row><_unnamed_cnt_1>3</_unnamed_cnt_1></Row>
+ <Row><_unnamed_cnt_1>3</_unnamed_cnt_1></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><lout>&lt;/Dataset&gt;&lt;Dataset&gt;&lt;Row&gt;&lt;line&gt;Hello there&lt;/line&gt;&lt;/Row&gt;</lout></Row>
+ <Row><lout>&lt;/Dataset&gt;&lt;Dataset&gt;&lt;Row&gt;&lt;line&gt;what a nice day&lt;/line&gt;&lt;/Row&gt;</lout></Row>
+ <Row><lout>&lt;/Dataset&gt;&lt;Dataset&gt;&lt;Row&gt;&lt;line&gt;1234&lt;/line&gt;&lt;/Row&gt;</lout></Row>
+</Dataset>

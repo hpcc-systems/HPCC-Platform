@@ -1,0 +1,50 @@
+<Dataset name='Result 1'>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>LOOKUP                                  </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>LOOKUP                                  </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP                                  </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP                                  </label></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>LOOKUP, LEFT OUTER                      </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>LOOKUP, LEFT OUTER                      </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, LEFT OUTER                      </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, LEFT OUTER                      </label></Row>
+ <Row><did>9876</did><letl>C</letl><letr> </letr><label>LOOKUP, LEFT OUTER                      </label></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><did>9876</did><letl>C</letl><letr> </letr><label>LOOKUP, LEFT ONLY                       </label></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>LOOKUP, MANY                            </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>D</letr><label>LOOKUP, MANY                            </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>E</letr><label>LOOKUP, MANY                            </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>LOOKUP, MANY                            </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>D</letr><label>LOOKUP, MANY                            </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>E</letr><label>LOOKUP, MANY                            </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, MANY                            </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, MANY                            </label></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, MANY, ATMOST                    </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, MANY, ATMOST                    </label></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, MANY, LIMIT(SKIP)               </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, MANY, LIMIT(SKIP)               </label></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><did>1234</did><letl>A</letl><letr> </letr><label>FAILED: LOOKUP, MANY, LIMIT, ONFAIL     </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr> </letr><label>FAILED: LOOKUP, MANY, LIMIT, ONFAIL     </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, MANY, LIMIT, ONFAIL             </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP, MANY, LIMIT, ONFAIL             </label></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><letl>A</letl><c>2</c><tot>2468</tot><label>LOOKUP LHSGROUPED                       </label></Row>
+ <Row><letl>B</letl><c>2</c><tot>11356</tot><label>LOOKUP LHSGROUPED                       </label></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>LOOKUP MANY LOCAL                       </label></Row>
+ <Row><did>1234</did><letl>A</letl><letr>A</letr><label>LOOKUP MANY LOCAL                       </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP MANY LOCAL                       </label></Row>
+ <Row><did>5678</did><letl>B</letl><letr>B</letr><label>LOOKUP MANY LOCAL                       </label></Row>
+</Dataset>

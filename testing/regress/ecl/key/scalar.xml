@@ -1,0 +1,26 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>Hello, world!
+</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>1</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>
+</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4><Item>1</Item><Item>2</Item><Item>3</Item></Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>
+</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><val>1</val><eol>
+</eol></Row>
+ <Row><val>2</val><eol>
+</eol></Row>
+ <Row><val>3</val><eol>
+</eol></Row>
+</Dataset>

@@ -1,0 +1,11 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>6</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><le>!Shechem!</le><ri>!Hamor the Hivite!</ri><parentphrase>!!</parentphrase><childphrase>!the son of!</childphrase><spousephrase>!!</spousephrase><tree>Tree: [namet[name&quot;Shechem&quot;] ws&quot; &quot; produced_by&quot;the son of&quot; ws&quot; &quot; namet[name&quot;Hamor&quot; name&quot;Hivite&quot;]]</tree></Row>
+ <Row><le>!Eliphaz!</le><ri>!Adah!</ri><parentphrase>!!</parentphrase><childphrase>!the son of!</childphrase><spousephrase>!!</spousephrase><tree>Tree: [namet[name&quot;Eliphaz&quot;] ws&quot; &quot; produced_by&quot;the son of&quot; ws&quot; &quot; namet[name&quot;Adah&quot;]]</tree></Row>
+ <Row><le>!Adah!</le><ri>!Esau!</ri><parentphrase>!!</parentphrase><childphrase>!!</childphrase><spousephrase>!the wife of!</spousephrase><tree>Tree: [namet[name&quot;Adah&quot;] ws&quot; &quot; produces_with&quot;the wife of&quot; ws&quot; &quot; namet[name&quot;Esau&quot;]]</tree></Row>
+ <Row><le>!Reuel!</le><ri>!Bashemath!</ri><parentphrase>!!</parentphrase><childphrase>!the son of!</childphrase><spousephrase>!!</spousephrase><tree>Tree: [namet[name&quot;Reuel&quot;] ws&quot; &quot; produced_by&quot;the son of&quot; ws&quot; &quot; namet[name&quot;Bashemath&quot;]]</tree></Row>
+ <Row><le>!Bashemath!</le><ri>!Esau!</ri><parentphrase>!!</parentphrase><childphrase>!!</childphrase><spousephrase>!the wife of!</spousephrase><tree>Tree: [namet[name&quot;Bashemath&quot;] ws&quot; &quot; produces_with&quot;the wife of&quot; ws&quot; &quot; namet[name&quot;Esau&quot;]]</tree></Row>
+ <Row><le>!Shechem!</le><ri>!Hamor the Hivite!</ri><parentphrase>!!</parentphrase><childphrase>!the son of!</childphrase><spousephrase>!!</spousephrase><tree>Tree: [namet[name&quot;Shechem&quot;] ws&quot; &quot; produced_by&quot;the son of&quot; ws&quot; &quot; namet[name&quot;Hamor&quot; name&quot;Hivite&quot;]]</tree></Row>
+</Dataset>

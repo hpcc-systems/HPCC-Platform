@@ -1,0 +1,55 @@
+<Dataset name='Result 1'>
+ <Row><value1>A</value1><value2>C1</value2><value3>Z </value3></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><value1>A</value1><value2>C1</value2><value3>Z </value3></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><value1>A</value1><value2>C1</value2></Row>
+ <Row><value1>X</value1><value2>B1</value2></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><value1>A</value1><value2>C1</value2></Row>
+ <Row><value1>X</value1><value2>B1</value2></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><value1>A</value1><value2>C1</value2><value3>Z </value3></Row>
+ <Row><value1>C</value1><value2>A1</value2><value3>  </value3></Row>
+ <Row><value1>C</value1><value2>A2</value2><value3>  </value3></Row>
+ <Row><value1>C</value1><value2>A3</value2><value3>  </value3></Row>
+ <Row><value1>C</value1><value2>A4</value2><value3>  </value3></Row>
+ <Row><value1>C</value1><value2>A5</value2><value3>  </value3></Row>
+ <Row><value1>X</value1><value2>B1</value2><value3>  </value3></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><value1>A</value1><value2>C1</value2><value3>Z </value3></Row>
+ <Row><value1>X</value1><value2>B1</value2><value3>  </value3></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><value1>A</value1><value2>C1</value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>X</value1><value2>B1</value2></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><value1>A</value1><value2>C1</value2></Row>
+ <Row><value1>X</value1><value2>B1</value2></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><value1>C</value1><value2>A1</value2><value3>  </value3></Row>
+ <Row><value1>C</value1><value2>A2</value2><value3>  </value3></Row>
+ <Row><value1>C</value1><value2>A3</value2><value3>  </value3></Row>
+ <Row><value1>C</value1><value2>A4</value2><value3>  </value3></Row>
+ <Row><value1>C</value1><value2>A5</value2><value3>  </value3></Row>
+ <Row><value1>X</value1><value2>B1</value2><value3>  </value3></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+ <Row><value1>C</value1><value2>  </value2></Row>
+</Dataset>

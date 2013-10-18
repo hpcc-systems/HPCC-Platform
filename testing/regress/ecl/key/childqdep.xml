@@ -1,0 +1,4 @@
+<Dataset name='Result 1'>
+ <Row><label>odds </label><vals><Row><i>1</i><sq>1</sq><str>one  </str></Row><Row><i>3</i><sq>9</sq><str>three</str></Row><Row><i>5</i><sq>25</sq><str>five </str></Row><Row><i>7</i><sq>49</sq><str>seven</str></Row><Row><i>9</i><sq>91</sq><str>nine </str></Row></vals></Row>
+ <Row><label>evens</label><vals><Row><i>2</i><sq>4</sq><str>two  </str></Row><Row><i>4</i><sq>16</sq><str>four </str></Row><Row><i>6</i><sq>36</sq><str>six  </str></Row><Row><i>8</i><sq>64</sq><str>eight</str></Row></vals></Row>
+</Dataset>

@@ -1,0 +1,306 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>UnicodeLib.UnicodeFilterOut(const unicode src, const unicode _within)</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>ACE</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>UnicodeLib.UnicodeFilter(const unicode src, const unicode _within)</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>BD</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>UnicodeLib.UnicodeSubstituteOut(const unicode src, const unicode _within, const unicode _newchar)</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>AXCXE</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>UnicodeLib.UnicodeSubstitute(const unicode src, const unicode _within, const unicode _newchar)</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>XBXDX</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>UnicodeLib.UnicodeRepad(const unicode src, unsigned4 size)</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>ABCDE </Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>ABC</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>UnicodeLib.UnicodeFind(const unicode src, const unicode tofind, unsigned4 instance)</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>2</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>0</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>7</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>UnicodeLib.UnicodeLocaleFind(const unicode src, const unicode tofind, unsigned4 instance, const varstring localename)</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>2</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>0</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>7</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>UnicodeLib.UnicodeLocaleFindAtStrength(const unicode src, const unicode tofind, unsigned4 instance, const varstring localename, integer1 strength)</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>2</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>0</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>7</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>UnicodeLib.UnicodeExtract(const unicode src, unsigned4 instance)</Result_24></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>CD</Result_25></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><Result_26>UnicodeLib.UnicodeExtract50(const unicode src, unsigned4 instance)</Result_26></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><Result_27>CD                                                </Result_27></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>UnicodeLib.UnicodeToLowerCase(const unicode src)</Result_28></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><Result_29>abcde</Result_29></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><Result_30>UnicodeLib.UnicodeToUpperCase(const unicode src)</Result_30></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><Result_31>ABCDE</Result_31></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><Result_32>UnicodeLib.UnicodeToProperCase(const unicode src)</Result_32></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><Result_33>Abcde</Result_33></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><Result_34>UnicodeLib.UnicodeToLowerCase80(const unicode src)</Result_34></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><Result_35>abcde                                                                           </Result_35></Row>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><Result_36>UnicodeLib.UnicodeToUpperCase80(const unicode src)</Result_36></Row>
+</Dataset>
+<Dataset name='Result 37'>
+ <Row><Result_37>ABCDE                                                                           </Result_37></Row>
+</Dataset>
+<Dataset name='Result 38'>
+ <Row><Result_38>UnicodeLib.UnicodeToProperCase80(const unicode src)</Result_38></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><Result_39>Abcde                                                                           </Result_39></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><Result_40>UnicodeLib.UnicodeLocaleToLowerCase(const unicode src, const varstring localename)</Result_40></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><Result_41>abcde</Result_41></Row>
+</Dataset>
+<Dataset name='Result 42'>
+ <Row><Result_42>UnicodeLib.UnicodeLocaleToUpperCase(const unicode src, const varstring localename)</Result_42></Row>
+</Dataset>
+<Dataset name='Result 43'>
+ <Row><Result_43>ABCDE</Result_43></Row>
+</Dataset>
+<Dataset name='Result 44'>
+ <Row><Result_44>UnicodeLib.UnicodeLocaleToProperCase(const unicode src, const varstring localename)</Result_44></Row>
+</Dataset>
+<Dataset name='Result 45'>
+ <Row><Result_45>Abcde</Result_45></Row>
+</Dataset>
+<Dataset name='Result 46'>
+ <Row><Result_46>UnicodeLib.UnicodeLocaleToLowerCase80(const unicode src, const varstring localename)</Result_46></Row>
+</Dataset>
+<Dataset name='Result 47'>
+ <Row><Result_47>abcde                                                                           </Result_47></Row>
+</Dataset>
+<Dataset name='Result 48'>
+ <Row><Result_48>UnicodeLib.UnicodeLocaleToUpperCase80(const unicode src, const varstring localename)</Result_48></Row>
+</Dataset>
+<Dataset name='Result 49'>
+ <Row><Result_49>ABCDE                                                                           </Result_49></Row>
+</Dataset>
+<Dataset name='Result 50'>
+ <Row><Result_50>UnicodeLib.UnicodeLocaleToProperCase80(const unicode src, const varstring localename)</Result_50></Row>
+</Dataset>
+<Dataset name='Result 51'>
+ <Row><Result_51>Abcde                                                                           </Result_51></Row>
+</Dataset>
+<Dataset name='Result 52'>
+ <Row><Result_52>UnicodeLib.UnicodeCompareIgnoreCase(const unicode src1, const unicode src2)</Result_52></Row>
+</Dataset>
+<Dataset name='Result 53'>
+ <Row><Result_53>0</Result_53></Row>
+</Dataset>
+<Dataset name='Result 54'>
+ <Row><Result_54>-1</Result_54></Row>
+</Dataset>
+<Dataset name='Result 55'>
+ <Row><Result_55>1</Result_55></Row>
+</Dataset>
+<Dataset name='Result 56'>
+ <Row><Result_56>UnicodeLib.UnicodeCompareAtStrength(const unicode src1, const unicode src2, integer1 strength)</Result_56></Row>
+</Dataset>
+<Dataset name='Result 57'>
+ <Row><Result_57>0</Result_57></Row>
+</Dataset>
+<Dataset name='Result 58'>
+ <Row><Result_58>-1</Result_58></Row>
+</Dataset>
+<Dataset name='Result 59'>
+ <Row><Result_59>1</Result_59></Row>
+</Dataset>
+<Dataset name='Result 60'>
+ <Row><Result_60>UnicodeLib.UnicodeLocaleCompareIgnoreCase(const unicode src1, const unicode src2, const varstring localename)</Result_60></Row>
+</Dataset>
+<Dataset name='Result 61'>
+ <Row><Result_61>0</Result_61></Row>
+</Dataset>
+<Dataset name='Result 62'>
+ <Row><Result_62>-1</Result_62></Row>
+</Dataset>
+<Dataset name='Result 63'>
+ <Row><Result_63>1</Result_63></Row>
+</Dataset>
+<Dataset name='Result 64'>
+ <Row><Result_64>UnicodeLib.UnicodeLocaleCompareAtStrength(const unicode src1, const unicode src2, const varstring localename, integer1 strength)</Result_64></Row>
+</Dataset>
+<Dataset name='Result 65'>
+ <Row><Result_65>0</Result_65></Row>
+</Dataset>
+<Dataset name='Result 66'>
+ <Row><Result_66>-1</Result_66></Row>
+</Dataset>
+<Dataset name='Result 67'>
+ <Row><Result_67>1</Result_67></Row>
+</Dataset>
+<Dataset name='Result 68'>
+ <Row><Result_68>UnicodeLib.UnicodeReverse(const unicode src)</Result_68></Row>
+</Dataset>
+<Dataset name='Result 69'>
+ <Row><Result_69>EDCBA</Result_69></Row>
+</Dataset>
+<Dataset name='Result 70'>
+ <Row><Result_70>UnicodeLib.UnicodeFindReplace(const unicode src, const unicode stok, const unicode rtok)</Result_70></Row>
+</Dataset>
+<Dataset name='Result 71'>
+ <Row><Result_71>AXXDEAXXDE</Result_71></Row>
+</Dataset>
+<Dataset name='Result 72'>
+ <Row><Result_72>UnicodeLib.UnicodeLocaleFindReplace(const unicode src, const unicode stok, const unicode rtok, const varstring localename)</Result_72></Row>
+</Dataset>
+<Dataset name='Result 73'>
+ <Row><Result_73>AXXDEAXXDE</Result_73></Row>
+</Dataset>
+<Dataset name='Result 74'>
+ <Row><Result_74>UnicodeLib.UnicodeLocaleFindAtStrengthReplace(const unicode src, const unicode stok, const unicode rtok, const varstring localename, integer1 strength)</Result_74></Row>
+</Dataset>
+<Dataset name='Result 75'>
+ <Row><Result_75>AXXDEAXXDE</Result_75></Row>
+</Dataset>
+<Dataset name='Result 76'>
+ <Row><Result_76>UnicodeLib.UnicodeFindReplace80(const unicode src, const unicode stok, const unicode rtok)</Result_76></Row>
+</Dataset>
+<Dataset name='Result 77'>
+ <Row><Result_77>AXXDEAXXDE                                                                      </Result_77></Row>
+</Dataset>
+<Dataset name='Result 78'>
+ <Row><Result_78>UnicodeLib.UnicodeLocaleFindReplace80(const unicode src, const unicode stok, const unicode rtok, const varstring localename)</Result_78></Row>
+</Dataset>
+<Dataset name='Result 79'>
+ <Row><Result_79>AXXDEAXXDE                                                                      </Result_79></Row>
+</Dataset>
+<Dataset name='Result 80'>
+ <Row><Result_80>UnicodeLib.UnicodeLocaleFindAtStrengthReplace80(const unicode src, const unicode stok, const unicode rtok, const varstring localename, integer1 strength)</Result_80></Row>
+</Dataset>
+<Dataset name='Result 81'>
+ <Row><Result_81>AXXDEAXXDE                                                                      </Result_81></Row>
+</Dataset>
+<Dataset name='Result 82'>
+ <Row><Result_82>UnicodeLib.UnicodeCleanSpaces(const unicode src)</Result_82></Row>
+</Dataset>
+<Dataset name='Result 83'>
+ <Row><Result_83>ABCDE ABCDE ABCDE</Result_83></Row>
+</Dataset>
+<Dataset name='Result 84'>
+ <Row><Result_84>UnicodeLib.UnicodeCleanSpaces25(const unicode src)</Result_84></Row>
+</Dataset>
+<Dataset name='Result 85'>
+ <Row><Result_85>ABCDE ABCDE ABCDE        </Result_85></Row>
+</Dataset>
+<Dataset name='Result 86'>
+ <Row><Result_86>UnicodeLib.UnicodeCleanSpaces80(const unicode src)</Result_86></Row>
+</Dataset>
+<Dataset name='Result 87'>
+ <Row><Result_87>ABCDE ABCDE ABCDE                                                               </Result_87></Row>
+</Dataset>
+<Dataset name='Result 88'>
+ <Row><Result_88>UnicodeLib.UnicodeWildMatch(const unicode src, const unicode _pattern, boolean _noCase)</Result_88></Row>
+</Dataset>
+<Dataset name='Result 89'>
+ <Row><Result_89>true</Result_89></Row>
+</Dataset>
+<Dataset name='Result 90'>
+ <Row><Result_90>false</Result_90></Row>
+</Dataset>
+<Dataset name='Result 91'>
+ <Row><Result_91>true</Result_91></Row>
+</Dataset>
+<Dataset name='Result 92'>
+ <Row><Result_92>true</Result_92></Row>
+</Dataset>
+<Dataset name='Result 93'>
+ <Row><Result_93>false</Result_93></Row>
+</Dataset>
+<Dataset name='Result 94'>
+ <Row><Result_94>false</Result_94></Row>
+</Dataset>
+<Dataset name='Result 95'>
+ <Row><Result_95>true</Result_95></Row>
+</Dataset>
+<Dataset name='Result 96'>
+ <Row><Result_96>UnicodeLib.UnicodeContains(const unicode src, const unicode _pattern, boolean _noCase)</Result_96></Row>
+</Dataset>
+<Dataset name='Result 97'>
+ <Row><Result_97>true</Result_97></Row>
+</Dataset>
+<Dataset name='Result 98'>
+ <Row><Result_98>false</Result_98></Row>
+</Dataset>
+<Dataset name='Result 99'>
+ <Row><Result_99>false</Result_99></Row>
+</Dataset>
+<Dataset name='Result 100'>
+ <Row><Result_100>false</Result_100></Row>
+</Dataset>
+<Dataset name='Result 101'>
+ <Row><Result_101>U</Result_101></Row>
+</Dataset>
+<Dataset name='Result 102'>
+ <Row><Result_102>Ú</Result_102></Row>
+</Dataset>

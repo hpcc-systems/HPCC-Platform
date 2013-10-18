@@ -1,0 +1,126 @@
+<Dataset name='r1_eq_r2_real_const'>
+ <Row><r1_eq_r2_real_const>true</r1_eq_r2_real_const></Row>
+</Dataset>
+<Dataset name='r1_real_const'>
+ <Row><r1_real_const>3.1</r1_real_const></Row>
+</Dataset>
+<Dataset name='r2_real_const'>
+ <Row><r2_real_const>3.1</r2_real_const></Row>
+</Dataset>
+<Dataset name='r1_le_3_1_real_const'>
+ <Row><r1_le_3_1_real_const>true</r1_le_3_1_real_const></Row>
+</Dataset>
+<Dataset name='r2_le_3_1_real_const'>
+ <Row><r2_le_3_1_real_const>true</r2_le_3_1_real_const></Row>
+</Dataset>
+<Dataset name='r1_eq_3_1_real_const'>
+ <Row><r1_eq_3_1_real_const>true</r1_eq_3_1_real_const></Row>
+</Dataset>
+<Dataset name='r2_eq_3_1_real_const'>
+ <Row><r2_eq_3_1_real_const>true</r2_eq_3_1_real_const></Row>
+</Dataset>
+<Dataset name='r1_eq_r2_dec_const'>
+ <Row><r1_eq_r2_dec_const>true</r1_eq_r2_dec_const></Row>
+</Dataset>
+<Dataset name='r1_dec_const'>
+ <Row><r1_dec_const>3.1</r1_dec_const></Row>
+</Dataset>
+<Dataset name='r2_dec_const'>
+ <Row><r2_dec_const>3.1</r2_dec_const></Row>
+</Dataset>
+<Dataset name='r1_le_3_1_dec_const'>
+ <Row><r1_le_3_1_dec_const>true</r1_le_3_1_dec_const></Row>
+</Dataset>
+<Dataset name='r2_le_3_1_dec_const'>
+ <Row><r2_le_3_1_dec_const>true</r2_le_3_1_dec_const></Row>
+</Dataset>
+<Dataset name='r1_eq_3_1_dec_const'>
+ <Row><r1_eq_3_1_dec_const>true</r1_eq_3_1_dec_const></Row>
+</Dataset>
+<Dataset name='r2_eq_3_1_dec_const'>
+ <Row><r2_eq_3_1_dec_const>true</r2_eq_3_1_dec_const></Row>
+</Dataset>
+<Dataset name='r1_eq_r2_string_const'>
+ <Row><r1_eq_r2_string_const>true</r1_eq_r2_string_const></Row>
+</Dataset>
+<Dataset name='r1_string_const'>
+ <Row><r1_string_const>3.1</r1_string_const></Row>
+</Dataset>
+<Dataset name='r2_string_const'>
+ <Row><r2_string_const>3.1</r2_string_const></Row>
+</Dataset>
+<Dataset name='r1_le_3_1_string_const'>
+ <Row><r1_le_3_1_string_const>true</r1_le_3_1_string_const></Row>
+</Dataset>
+<Dataset name='r2_le_3_1_string_const'>
+ <Row><r2_le_3_1_string_const>true</r2_le_3_1_string_const></Row>
+</Dataset>
+<Dataset name='r1_eq_3_1_string_const'>
+ <Row><r1_eq_3_1_string_const>true</r1_eq_3_1_string_const></Row>
+</Dataset>
+<Dataset name='r2_eq_3_1_string_const'>
+ <Row><r2_eq_3_1_string_const>true</r2_eq_3_1_string_const></Row>
+</Dataset>
+<Dataset name='r1_eq_r2_real_stored'>
+ <Row><r1_eq_r2_real_stored>true</r1_eq_r2_real_stored></Row>
+</Dataset>
+<Dataset name='r1_real_stored'>
+ <Row><r1_real_stored>3.1</r1_real_stored></Row>
+</Dataset>
+<Dataset name='r2_real_stored'>
+ <Row><r2_real_stored>3.1</r2_real_stored></Row>
+</Dataset>
+<Dataset name='r1_le_3_1_real_stored'>
+ <Row><r1_le_3_1_real_stored>true</r1_le_3_1_real_stored></Row>
+</Dataset>
+<Dataset name='r2_le_3_1_real_stored'>
+ <Row><r2_le_3_1_real_stored>true</r2_le_3_1_real_stored></Row>
+</Dataset>
+<Dataset name='r1_eq_3_1_real_stored'>
+ <Row><r1_eq_3_1_real_stored>true</r1_eq_3_1_real_stored></Row>
+</Dataset>
+<Dataset name='r2_eq_3_1_real_stored'>
+ <Row><r2_eq_3_1_real_stored>true</r2_eq_3_1_real_stored></Row>
+</Dataset>
+<Dataset name='r1_eq_r2_dec_stored'>
+ <Row><r1_eq_r2_dec_stored>true</r1_eq_r2_dec_stored></Row>
+</Dataset>
+<Dataset name='r1_dec_stored'>
+ <Row><r1_dec_stored>3.1</r1_dec_stored></Row>
+</Dataset>
+<Dataset name='r2_dec_stored'>
+ <Row><r2_dec_stored>3.1</r2_dec_stored></Row>
+</Dataset>
+<Dataset name='r1_le_3_1_dec_stored'>
+ <Row><r1_le_3_1_dec_stored>true</r1_le_3_1_dec_stored></Row>
+</Dataset>
+<Dataset name='r2_le_3_1_dec_stored'>
+ <Row><r2_le_3_1_dec_stored>true</r2_le_3_1_dec_stored></Row>
+</Dataset>
+<Dataset name='r1_eq_3_1_dec_stored'>
+ <Row><r1_eq_3_1_dec_stored>true</r1_eq_3_1_dec_stored></Row>
+</Dataset>
+<Dataset name='r2_eq_3_1_dec_stored'>
+ <Row><r2_eq_3_1_dec_stored>true</r2_eq_3_1_dec_stored></Row>
+</Dataset>
+<Dataset name='r1_eq_r2_string_stored'>
+ <Row><r1_eq_r2_string_stored>true</r1_eq_r2_string_stored></Row>
+</Dataset>
+<Dataset name='r1_string_stored'>
+ <Row><r1_string_stored>3.1</r1_string_stored></Row>
+</Dataset>
+<Dataset name='r2_string_stored'>
+ <Row><r2_string_stored>3.1</r2_string_stored></Row>
+</Dataset>
+<Dataset name='r1_le_3_1_string_stored'>
+ <Row><r1_le_3_1_string_stored>true</r1_le_3_1_string_stored></Row>
+</Dataset>
+<Dataset name='r2_le_3_1_string_stored'>
+ <Row><r2_le_3_1_string_stored>true</r2_le_3_1_string_stored></Row>
+</Dataset>
+<Dataset name='r1_eq_3_1_string_stored'>
+ <Row><r1_eq_3_1_string_stored>true</r1_eq_3_1_string_stored></Row>
+</Dataset>
+<Dataset name='r2_eq_3_1_string_stored'>
+ <Row><r2_eq_3_1_string_stored>true</r2_eq_3_1_string_stored></Row>
+</Dataset>

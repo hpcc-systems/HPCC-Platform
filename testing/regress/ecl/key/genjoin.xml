@@ -1,0 +1,556 @@
+<Dataset name='JOIN'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN</label></Row>
+</Dataset>
+<Dataset name='JOIN_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_KEEP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_KEEP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_KEEP</label></Row>
+</Dataset>
+<Dataset name='JOIN_KEEP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_KEEP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_KEEP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_ATMOST'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ATMOST</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ATMOST</label></Row>
+</Dataset>
+<Dataset name='JOIN_ATMOST_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ATMOST_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ATMOST_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LIMITSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LIMITSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LIMITSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LIMITSKIP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LIMITSKIP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LIMITONFAIL'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LIMITONFAIL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_LIMITONFAIL</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LIMITONFAIL</label></Row>
+</Dataset>
+<Dataset name='JOIN_LIMITONFAIL_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LIMITONFAIL_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_LEFT_OUTER</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_KEEP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_KEEP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_ATMOST'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_ATMOST_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_LIMITSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_LIMITSKIP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_LIMITONFAIL'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_LEFT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITONFAIL</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_OUTER_LIMITONFAIL_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_ONLY'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_ONLY_XFMSKIP'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_ONLY_ATMOST'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY_ATMOST</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY_ATMOST</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY_ATMOST</label></Row>
+</Dataset>
+<Dataset name='JOIN_LEFT_ONLY_ATMOST_XFMSKIP'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY_ATMOST_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY_ATMOST_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LEFT_ONLY_ATMOST_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_RIGHT_OUTER'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>xxx</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_RIGHT_OUTER</label></Row>
+</Dataset>
+<Dataset name='JOIN_RIGHT_OUTER_XFMSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_RIGHT_OUTER_XFMSKIP</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_RIGHT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_RIGHT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_RIGHT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_RIGHT_OUTER_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_RIGHT_OUTER_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_RIGHT_OUTER_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_RIGHT_OUTER_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_RIGHT_OUTER_LIMITSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_RIGHT_OUTER_LIMITSKIP_XFMSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_RIGHT_OUTER_LIMITONFAIL'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_RIGHT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL</label></Row>
+</Dataset>
+<Dataset name='JOIN_RIGHT_OUTER_LIMITONFAIL_XFMSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_RIGHT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_RIGHT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_RIGHT_ONLY'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_RIGHT_ONLY</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>xxx</rstr><c>1</c><label>JOIN_RIGHT_ONLY</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_RIGHT_ONLY</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_RIGHT_ONLY</label></Row>
+</Dataset>
+<Dataset name='JOIN_RIGHT_ONLY_XFMSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_RIGHT_ONLY_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_RIGHT_ONLY_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_RIGHT_ONLY_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_FULL_OUTER'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>xxx</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_FULL_OUTER</label></Row>
+</Dataset>
+<Dataset name='JOIN_FULL_OUTER_XFMSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_FULL_OUTER_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_FULL_OUTER_LIMITSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_FULL_OUTER_LIMITSKIP_XFMSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_FULL_OUTER_LIMITONFAIL'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_FULL_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL</label></Row>
+</Dataset>
+<Dataset name='JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_FULL_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_FULL_ONLY'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_FULL_ONLY</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_ONLY</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>xxx</rstr><c>1</c><label>JOIN_FULL_ONLY</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_ONLY</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_FULL_ONLY</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_FULL_ONLY</label></Row>
+</Dataset>
+<Dataset name='JOIN_FULL_ONLY_XFMSKIP'>
+ <Row><i>0</i><lstr>   </lstr><rstr>fff</rstr><c>1</c><label>JOIN_FULL_ONLY_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_ONLY_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_FULL_ONLY_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>lll</rstr><c>1</c><label>JOIN_FULL_ONLY_XFMSKIP</label></Row>
+ <Row><i>0</i><lstr>   </lstr><rstr>mmm</rstr><c>1</c><label>JOIN_FULL_ONLY_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_LEFT_OUTER'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_LEFT_OUTER_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_LEFT_OUTER_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_LEFT_ONLY'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_LEFT_ONLY</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_LEFT_ONLY</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_LEFT_ONLY_XFMSKIP'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_LEFT_ONLY_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_LEFT_ONLY_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_MANY</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LOOKUP_MANY</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_LOOKUP_MANY</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_MANY_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LOOKUP_MANY_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_LOOKUP_MANY_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_KEEP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_MANY_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LOOKUP_MANY_KEEP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_KEEP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_KEEP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_MANY_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LOOKUP_MANY_KEEP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_KEEP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_ATMOST'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_ATMOST</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_ATMOST</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_ATMOST_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_ATMOST_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_ATMOST_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LIMITSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LIMITSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LIMITSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LIMITSKIP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LIMITSKIP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LIMITONFAIL'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LIMITONFAIL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_LOOKUP_MANY_LIMITONFAIL</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LIMITONFAIL</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LIMITONFAIL_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_LOOKUP_MANY_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LIMITONFAIL_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_ATMOST_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITSKIP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>FAILED: JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_OUTER_LIMITONFAIL_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_ONLY'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_ONLY_XFMSKIP'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_ONLY_ATMOST'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY_ATMOST</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY_ATMOST</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY_ATMOST</label></Row>
+</Dataset>
+<Dataset name='JOIN_LOOKUP_MANY_LEFT_ONLY_ATMOST_XFMSKIP'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY_ATMOST_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY_ATMOST_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_LOOKUP_MANY_LEFT_ONLY_ATMOST_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ALL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_ALL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_ALL</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_ALL</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ALL</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ALL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_ALL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_ALL_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_ALL_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ALL_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_KEEP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ALL_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_ALL_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_ALL_KEEP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ALL_KEEP</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_KEEP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ALL_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_ALL_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_ALL_KEEP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ALL_KEEP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_LEFT_OUTER'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_LEFT_OUTER_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_LEFT_OUTER_KEEP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_LEFT_OUTER_KEEP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>JOIN_ALL_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_LEFT_ONLY'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_ONLY</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_ONLY</label></Row>
+</Dataset>
+<Dataset name='JOIN_ALL_LEFT_ONLY_XFMSKIP'>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_ONLY_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>1</c><label>JOIN_ALL_LEFT_ONLY_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='DENORMALIZE_LEFT_OUTER'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>DENORMALIZE_LEFT_OUTER</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>3</c><label>DENORMALIZE_LEFT_OUTER</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>DENORMALIZE_LEFT_OUTER</label></Row>
+</Dataset>
+<Dataset name='DENORMALIZE_LEFT_OUTER_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>DENORMALIZE_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>3</c><label>DENORMALIZE_LEFT_OUTER_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>DENORMALIZE_LEFT_OUTER_XFMSKIP</label></Row>
+</Dataset>
+<Dataset name='DENORMALIZE_LEFT_OUTER_KEEP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>DENORMALIZE_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>2</c><label>DENORMALIZE_LEFT_OUTER_KEEP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>DENORMALIZE_LEFT_OUTER_KEEP</label></Row>
+</Dataset>
+<Dataset name='DENORMALIZE_LEFT_OUTER_KEEP_XFMSKIP'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>DENORMALIZE_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>iii</rstr><c>2</c><label>DENORMALIZE_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>DENORMALIZE_LEFT_OUTER_KEEP_XFMSKIP</label></Row>
+</Dataset>

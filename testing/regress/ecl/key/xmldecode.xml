@@ -1,0 +1,90 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>Cats &amp; dogs</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>&lt;html&gt;</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>Cats &quot;love&quot; dog&apos;s dinner</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>A is ascii for A</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>B is ascii for B</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>This ---&gt;&#194;&#160;&lt;---- is a non-breaking space</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>Cats &amp; dogs</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>&amp;amp</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>&amp;nosuch</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>&amp;#;</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>&amp;#65 is not valid</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>&amp;#d;</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>&amp;AMP;</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>&amp;;</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>&amp;</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>Cats &amp; dogs</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>&lt;html&gt;</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>Cats &quot;love&quot; dog&apos;s dinner</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>A is ascii for A</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>B is ascii for B</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>This ---&gt; &lt;---- is a non-breaking space</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>Cats &amp; dogs</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>&amp;amp</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>&amp;nosuch</Result_24></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>&amp;#;</Result_25></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><Result_26>&amp;#65 is not valid</Result_26></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><Result_27>&amp;#d;</Result_27></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>&amp;AMP;</Result_28></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><Result_29>&amp;;</Result_29></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><Result_30>&amp;</Result_30></Row>
+</Dataset>

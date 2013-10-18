@@ -1,0 +1,4 @@
+<Dataset name='Result 1'>
+ <Row><step>5</step><docid>1</docid><value>70</value></Row>
+ <Row><step>5</step><docid>2</docid><value>9700</value></Row>
+</Dataset>

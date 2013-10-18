@@ -1,0 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><surname>Hawthorn            </surname><cnt>1</cnt><ids><Row><id>1</id></Row></ids></Row>
+ <Row><surname>Hawthorn            </surname><cnt>2</cnt><ids><Row><id>1</id></Row><Row><id>2</id></Row></ids></Row>
+ <Row><surname>Smithe              </surname><cnt>3</cnt><ids><Row><id>1</id></Row><Row><id>2</id></Row><Row><id>3</id></Row></ids></Row>
+ <Row><surname>X                   </surname><cnt>4</cnt><ids><Row><id>1</id></Row><Row><id>2</id></Row><Row><id>3</id></Row></ids></Row>
+</Dataset>
