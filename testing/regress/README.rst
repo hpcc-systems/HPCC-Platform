@@ -130,7 +130,30 @@ The first and last couple of lines look like this:
 |
 
 
-5. To run Regression Suite with selected test case on a selected cluster (e.g. Thor): 
+
+5. Exclusions:
+--------------
+The exclusion.xml file can be used to exclude execution test case(s) on one or more clusters.
+
+This example shows some examples: 
+
+<exclusion>
+    <cluster name="thor">
+    </cluster>
+    <cluster name="hthor">
+        <exclude> platform.ecl </exclude>
+    </cluster>
+    <cluster name="roxie">
+        <exclude> schedule1.ecl </exclude>
+        <exclude> platform.ecl </exclude>
+     </cluster>
+</exclusion>
+
+The platform.ecl excludes on hthor and roxie clusters, because it is thor specific. 
+Actually roxie cluster doesn't support scheduling therefore schedule1.ecl excluded from this cluster.
+
+
+6. To run Regression Suite with selected test case on a selected cluster (e.g. Thor): 
 -------------------------------------------------------------------------------------
 
 (In this use case the default cluster is: thor)
