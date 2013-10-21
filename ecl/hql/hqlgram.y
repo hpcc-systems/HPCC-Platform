@@ -6545,6 +6545,7 @@ sizeof_expr_target
                         }
     | dataSet
     | dataRow
+    | enumTypeId
     | recordDef
     | fieldSelectedFromRecord
                         {
