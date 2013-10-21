@@ -2042,7 +2042,12 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
             if (srcFormat.rowTag)
                 return new CXmlQuickPartitioner(srcFormat, sameFormats);
             else
-                return new CUtfQuickPartitioner(srcFormat, sameFormats);
+            {
+                if (srcFormat.quote && *srcFormat.quote)
+                    return new CUtfPartitioner(srcFormat);
+                else
+                    return new CUtfQuickPartitioner(srcFormat, sameFormats);
+            }
         }
     }
     if (!calcOutput)
