@@ -323,6 +323,8 @@ public:
         {
             if (!dlfn.setValidate(scopedName.str()))
                 throw MakeStringException(99, "Cannot publish %s, invalid logical name", scopedName.str());
+            if (dlfn.isForeign())
+                throw MakeStringException(99, "Cannot publish to a foreign Dali: %s", scopedName.str());
             efile.setown(queryDistributedFileDirectory().lookup(dlfn, job.queryUserDescriptor(), true));
             if (efile)
             {
