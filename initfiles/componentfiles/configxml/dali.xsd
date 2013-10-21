@@ -247,7 +247,7 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="keepStores" type="xs:nonNegativeInteger" use="optional" default="100">
+    <xs:attribute name="keepStores" type="xs:nonNegativeInteger" use="optional" default="10">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Number of old saved stores to keep</tooltip>
