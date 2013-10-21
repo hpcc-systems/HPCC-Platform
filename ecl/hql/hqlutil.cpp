@@ -1775,6 +1775,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
         return 0;
     case no_compound_selectnew:
     case no_libraryselect:
+    case no_definesideeffect:
         return 1;
     case no_libraryscopeinstance:
         {
