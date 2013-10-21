@@ -44,6 +44,7 @@
   NB: It assumes records cannot be split between parts!
 */
 
+#define MAX_NUMBER_OF_BUFFER_OVERRUN 100
 const offset_t noSizeLimit = I64C(0x7fffffffffffffff);
 
 CPartitioner::CPartitioner()
@@ -266,6 +267,8 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
         bool processFullBuffer =  (nextInputOffset + blockSize) < splitOffset;
 
         unsigned size = getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, processFullBuffer);
+        if( numOfBufferOverrun == 0 )
+            numOfProcessedBytes = 0;
 
         if (size==0)
             throwError1(DFTERR_PartitioningZeroSizedRowLink,((offset_t)(buffer+bufferOffset)));
@@ -314,6 +317,8 @@ CInputBasePartitioner::CInputBasePartitioner(unsigned _headerSize, unsigned expe
     else
         openfilecache->Link();
 
+    numOfBufferOverrun = 0;
+    numOfProcessedBytes = 0;
 }
 
 IFileIOCache *CInputBasePartitioner::openfilecache = NULL;
@@ -690,6 +695,7 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
                }
                else
                {
+                   numOfBufferOverrun = 0;
                    return (size32_t)(cur + matchLen - start);
                }
             }
@@ -758,7 +764,12 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
 
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
-    LOG(MCdebugProgress, unknownJob, "CSV splitRecordSize(%d) at end of file", (unsigned) (end - start));
+
+    numOfProcessedBytes += (unsigned)(end - start);
+
+    if (++numOfBufferOverrun > MAX_NUMBER_OF_BUFFER_OVERRUN)
+        throwError1(DFTERR_EndOfCsvRecordNotFound, numOfProcessedBytes);
+
     return end - start;
 }
 
@@ -991,6 +1002,7 @@ size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
                }
                else
                {
+                   numOfBufferOverrun = 0;
                    return (size32_t)(cur + matchLen - start);
                }
             }
@@ -1059,7 +1071,11 @@ size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
 
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
-    LOG(MCdebugProgress, unknownJob, "UTF splitRecordSize(%d) at end of file", (unsigned) (end - start));
+
+    numOfProcessedBytes += (unsigned)(end - start);
+
+    if (++numOfBufferOverrun > MAX_NUMBER_OF_BUFFER_OVERRUN)
+        throwError1(DFTERR_EndOfUtfRecordNotFound, numOfProcessedBytes);
 
     return end - start;
 }

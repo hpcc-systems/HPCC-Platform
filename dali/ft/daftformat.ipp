@@ -166,6 +166,9 @@ protected:
     bool                   doInputCRC;
     static IFileIOCache    *openfilecache;
     static CriticalSection openfilecachesect;
+    
+    unsigned               numOfBufferOverrun;
+    unsigned               numOfProcessedBytes;
 };
 
 
