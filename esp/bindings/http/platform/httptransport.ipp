@@ -40,33 +40,6 @@
 
 #define MAX_HTTP_HEADER_LEN 4094
 
-interface IEspHttpException : extends IException
-{
-    virtual const char* getHttpStatus() = 0;
-};
-
-class CEspHttpException: public CInterface, public IEspHttpException
-{
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CEspHttpException(int code, const char *_msg, const char* _httpstatus) : errcode(code), msg(_msg), httpstatus(_httpstatus){ };
-    int errorCode() const { return (errcode); };
-    StringBuffer &  errorMessage(StringBuffer &str) const
-    {
-        return str.append("CEspHttpException: (").append(msg).append(")");
-    };
-    MessageAudience errorAudience() const { return (MSGAUD_user); };
-    virtual const char* getHttpStatus() {return httpstatus.get(); }
-
-private:
-    int errcode;
-    StringAttr msg;
-    StringAttr httpstatus;
-};
-
-IEspHttpException* createEspHttpException(int code, const char *_msg, const char* _httpstatus);
-
 enum MessageLogFlag
 {
     LOGALL = 0,
