@@ -448,7 +448,7 @@ define([
                     } else {
                         hasNotFailed = true;
                     }
-                    if (WsWorkunits.isComplete(selection[i].StateID)) {
+                    if (WsWorkunits.isComplete(selection[i].StateID, selection[i].ActionEx)) {
                         hasCompleted = true;
                     } else {
                         hasNotCompleted = true;
