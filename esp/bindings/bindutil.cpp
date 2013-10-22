@@ -851,3 +851,28 @@ const char *mimeTypeFromFileExt(const char *ext)
        return "application/octet-stream";
     return "application/octet-stream";
 }
+
+class CEspHttpException: public CInterface, public IEspHttpException
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CEspHttpException(int code, const char *_msg, const char* _httpstatus) : errcode(code), msg(_msg), httpstatus(_httpstatus){ };
+    int errorCode() const { return (errcode); };
+    StringBuffer &  errorMessage(StringBuffer &str) const
+    {
+        return str.append("CEspHttpException: (").append(msg).append(")");
+    };
+    MessageAudience errorAudience() const { return (MSGAUD_user); };
+    virtual const char* getHttpStatus() {return httpstatus.get(); }
+
+private:
+    int errcode;
+    StringAttr msg;
+    StringAttr httpstatus;
+};
+
+IEspHttpException* createEspHttpException(int code, const char *_msg, const char* _httpstatus)
+{
+    return new CEspHttpException(code, _msg, _httpstatus);
+}
