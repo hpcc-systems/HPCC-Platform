@@ -580,9 +580,16 @@ int main(int argc, char *argv[])
         }
     }
 
+    StringBuffer logDir;
+    if (!logFile.length())
+    {
+        if (!getConfigurationDirectory(NULL,"log","roxiepipe","roxiepipe",logDir))
+            logDir.append(".");
+    }
+
     //Build logfile from component properties settings
     Owned<IComponentLogFileCreator> lf;
-    lf.setown(createComponentLogFileCreator(".", "roxiepipe"));
+    lf.setown(createComponentLogFileCreator(logDir.str(), "roxiepipe"));
     if (logFile.length())
         lf->setCompleteFilespec(logFile.str());
     lf->setCreateAliasFile(false);
