@@ -901,8 +901,12 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
 
     // Check the field name
     StringBuffer fieldName;
-    fieldName.append(start, 0, len);
-    fieldName.trim();
+    MemoryBuffer temp;
+    if( convertUtf(temp, UtfReader::Utf8, len, start, utfFormat))
+    {
+        fieldName.append(temp.length(), temp.toByteArray());
+        fieldName.trim();
+    }
 
     if (isRecordStructurePresent && (0 < fieldName.length() ))
     {
