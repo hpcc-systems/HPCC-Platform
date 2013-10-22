@@ -15,7 +15,7 @@
   role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
-    <tgroup cols="3">
+    <tgroup cols="2">
       <colspec colwidth="80.50pt" />
 
       <colspec />
@@ -32,9 +32,8 @@
           <entry><emphasis>ifexists</emphasis></entry>
 
           <entry>Optional. A boolean value indicating whether to post an error
-          if the <emphasis>filename</emphasis></entry>
-
-          <entry>does not exist. If omitted, the default is FALSE.</entry>
+          if the <emphasis>filename</emphasis> does not exist. If omitted, the
+          default is FALSE.</entry>
         </row>
       </tbody>
     </tgroup>
