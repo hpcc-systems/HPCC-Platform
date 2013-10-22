@@ -3896,7 +3896,7 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     return true;
 }
 
-void CWsWorkunitsEx::addProcess(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, MemoryBuffer &mb)
+void CWsWorkunitsEx::addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr)
 {
     IPropertyTreeIterator& proc = cwu->getProcesses(process, NULL);
     ForEach (proc)
@@ -3907,15 +3907,34 @@ void CWsWorkunitsEx::addProcess(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsW
             continue;
         StringBuffer pid;
         pid.appendf("%d",proc.query().getPropInt("@pid"));
-        mb.clear();
-        if (0 == stricmp(process, "EclAgent"))
-            winfo.getWorkunitEclAgentLog(logName.str(), pid.str(), mb);
-        else if (0 == stricmp(process, "Thor"))
-            winfo.getWorkunitThorLog(logName.str(), mb);
-        else
-            return;
+        MemoryBuffer * pMB = new MemoryBuffer;
+        try
+        {
+            if (0 == stricmp(process, "EclAgent"))
+                winfo.getWorkunitEclAgentLog(logName.str(), pid.str(), *pMB);
+            else if (0 == stricmp(process, "Thor"))
+                winfo.getWorkunitThorLog(logName.str(), *pMB);
+            else
+            {
+                delete pMB;
+                return;
+            }
+            mbArr.append(pMB);
+        }
+        catch(IException *e)
+        {
+            StringBuffer s;
+            e->errorMessage(s);
+            if (s.length())
+            {
+                pMB->append(s.str());
+                mbArr.append(pMB);
+            }
+            e->Release();
+        }
 
-        zipper->addContentToZIP(mb.length(), mb.bufferBase(), (char*)logName.str(), true);
+        if (pMB && pMB->length())
+            zipper->addContentToZIP(pMB->length(), pMB->bufferBase(), (char*)logName.str(), true);
     }
 }
 
@@ -3992,10 +4011,11 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
 
             //Add logfiles to ZIP
             WsWuInfo winfo(context, cwu);
-            MemoryBuffer eclagentLogMB;
-            MemoryBuffer thorLogMB;
-            addProcess(zipper, cwu, winfo, "EclAgent", eclagentLogMB);
-            addProcess(zipper, cwu, winfo, "Thor", thorLogMB);
+            PointerArray eclAgentLogs;//array of dynamically allocated MemoryBuffers
+            PointerArray thorLogs;
+
+            addProcessLogfile(zipper, cwu, winfo, "EclAgent", eclAgentLogs);
+            addProcessLogfile(zipper, cwu, winfo, "Thor", thorLogs);
 
             //Add Workunit XML file
             MemoryBuffer wuXmlMB;
@@ -4005,6 +4025,11 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
 
             //Write out ZIP file
             zipper->zipToFile(zipFile.str());
+
+            for (aindex_t x=0; x<eclAgentLogs.length(); x++)
+                delete (MemoryBuffer*)eclAgentLogs.item(x);
+            for (aindex_t x=0; x<thorLogs.length(); x++)
+                delete (MemoryBuffer*)thorLogs.item(x);
         }
 
         //Download ZIP file to user
