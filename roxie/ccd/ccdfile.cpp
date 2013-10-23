@@ -1612,6 +1612,8 @@ protected:
     PointerIArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
     PointerIArrayOf<IFileDescriptor> remoteSubFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
     PointerIArrayOf<IDefRecordMeta> diskMeta;
+    IArrayOf<IDistributedFile> subDFiles;  // To make sure subfiles get locked too
+
     Owned <IPropertyTree> properties;
 
     void addFile(const char *subName, IFileDescriptor *fdesc, IFileDescriptor *remoteFDesc)
@@ -1673,6 +1675,7 @@ public:
                     Owned<IFileDescriptor> remoteFDesc;
                     if (daliHelper)
                         remoteFDesc.setown(daliHelper->checkClonedFromRemote(sub.queryLogicalName(), fDesc, cacheIt));
+                    subDFiles.append(OLINK(sub));
                     addFile(sub.queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
                 }
             }
@@ -2036,6 +2039,8 @@ public:
             assertex(sub->fileType==fileType);
         else
             fileType = sub->fileType;
+        if (sub->dFile)
+            subDFiles.append(*LINK(sub->dFile));
         ForEachItemIn(idx, sub->subFiles)
         {
             addFile(sub->subNames.item(idx), LINK(sub->subFiles.item(idx)), LINK(sub->remoteSubFiles.item(idx)));

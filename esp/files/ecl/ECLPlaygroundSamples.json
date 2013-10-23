@@ -11,6 +11,7 @@
 		{ "name": "DEDUP_ALL", "filename": "DEDUP_ALL_Example.ecl" },
 		{ "name": "DEDUP", "filename": "DEDUP_Example.ecl" },
 		{ "name": "DENORMALIZE", "filename": "DENORMALIZE_Example.ecl" },
+		{ "name": "DICTIONARY", "filename": "DICTIONARY_Example.ecl" },
 		{ "name": "DISTRIBUTE", "filename": "DISTRIBUTE_Example.ecl" },
 		{ "name": "ENTH", "filename": "ENTH_Example.ecl" },
 		{ "name": "EVALUATE", "filename": "EVALUATE_Example.ecl" },
