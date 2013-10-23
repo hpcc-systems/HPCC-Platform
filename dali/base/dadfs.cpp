@@ -2805,6 +2805,24 @@ public:
                     queryLogicalName(), superRepO);
     }
 
+    virtual void getSuperOwners(StringArray &owners)
+    {
+        if (root)
+        {
+            StringBuffer owner;
+            Owned<IPropertyTreeIterator> iter = root->getElements("SuperOwner");
+            ForEach (*iter)
+            {
+                iter->query().getProp("@name", owner.clear());
+                if (owner.length())
+                {
+                    if (NotFound == owners.find(owner))
+                        owners.append(owner);
+                }
+            }
+        }
+    }
+
     void linkSuperOwner(const char *superfile,bool link)
     {
         if (!superfile||!*superfile)
@@ -4495,7 +4513,87 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     }
                 }
                 // Now we clean the subs
-                sf->doRemoveSubFile(subfile.get(),transaction);
+                if (subfile.get())
+                    sf->doRemoveSubFile(subfile.get(), transaction);
+                else
+                    sf->doRemoveSubFiles(transaction);
+            }
+        }
+    };
+
+    /**
+     * Removes all subfiles exclusively owned by named superfile within a transaction.
+     */
+    class cRemoveOwnedSubFilesAction: public CDFAction
+    {
+        StringAttr parentlname;
+        Owned<IDistributedSuperFile> parent;
+        bool remsub;
+    public:
+        cRemoveOwnedSubFilesAction(IDistributedFileTransaction *_transaction, const char *_parentlname,bool _remsub=false)
+            : parentlname(_parentlname), remsub(_remsub)
+        {
+        }
+        bool prepare()
+        {
+            parent.setown(transaction->lookupSuperFile(parentlname,true));
+            if (!parent)
+                throw MakeStringException(-1,"removeOwnedSubFiles: SuperFile %s cannot be found", parentlname.get());
+            // Try to lock all files
+            addFileLock(parent);
+            bool dirty=false;
+            if (lock(&dirty))
+            {
+                if (dirty)
+                {
+                    // in the process of previous attempt to lock for exclusive access, locks were released
+                    // need to reload to ensure position and # of files is correct
+                    CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());
+                    if (sf)
+                        sf->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
+                }
+                return true;
+            }
+            unlock();
+            return false;
+        }
+        void run()
+        {
+            CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
+            if (sf)
+            {
+                StringArray toRemove;
+                Owned<IDistributedFileIterator> iter = parent->getSubFileIterator(false);
+                ForEach (*iter)
+                {
+                    IDistributedFile *file = &iter->query();
+                    CDistributedFile *_file = QUERYINTERFACE(file, CDistributedFile);
+                    StringArray owners;
+                    _file->getSuperOwners(owners);
+
+                    if (NotFound == owners.find(parentlname))
+                        ThrowStringException(-1, "removeOwnedSubFiles: SuperFile %s, subfile %s - subfile not owned by superfile", parentlname.get(), file->queryLogicalName());
+                    if (1 == owners.ordinality()) // just me
+                    {
+                        const char *logicalName = file->queryLogicalName();
+                        toRemove.append(logicalName);
+                        // Delay the deletion of the subs until commit
+                        if (remsub)
+                        {
+                            CDfsLogicalFileName lname;
+                            lname.set(logicalName);
+                            transaction->addDelayedDelete(lname, SDS_SUB_LOCK_TIMEOUT);
+                        }
+                    }
+                }
+                // Now we clean the subs
+                if (sf->numSubFiles(false) == toRemove.ordinality())
+                    sf->doRemoveSubFiles(transaction); // remove all
+                else
+                {
+                    ForEachItemIn(r, toRemove)
+                        sf->doRemoveSubFile(toRemove.item(r), transaction);
+                }
             }
         }
     };
@@ -4658,6 +4756,27 @@ protected:
             throw exceptions.getClear();
     }
 
+    virtual void getSuperOwners(StringArray &owners)
+    {
+        ForEachItemIn(i, subfiles)
+        {
+            IDistributedFile *file = &subfiles.item(i);
+            IDistributedSuperFile *super = file->querySuperFile();
+            if (super)
+            {
+                CDistributedSuperFile *_super = QUERYINTERFACE(super, CDistributedSuperFile);
+                if (_super)
+                    _super->getSuperOwners(owners);
+            }
+            else
+            {
+                CDistributedFile *_file = QUERYINTERFACE(file, CDistributedFile);
+                if (_file)
+                    _file->getSuperOwners(owners);
+            }
+        }
+
+    }
     static StringBuffer &getSubPath(StringBuffer &path,unsigned idx)
     {
         return path.append("SubFile[@num=\"").append(idx+1).append("\"]");
@@ -4761,14 +4880,13 @@ protected:
         root->setPropInt("@numsubfiles",subfiles.ordinality());
     }
 
-    void removeItem(unsigned pos, StringBuffer &subname)
+    void removeItem(unsigned pos)
     {
         partscache.kill();
         StringBuffer path;
         IPropertyTree* sub = root->queryPropTree(getSubPath(path,pos).str());
         if (!sub)
             throw MakeStringException(-1,"CDistributedSuperFile(3): Corrupt subfile file part %d cannot be found",pos+1);
-        sub->getProp("@name",subname);
         root->removeTree(sub);
         // now renumber all above
         for (unsigned i=pos+1; i<subfiles.ordinality(); i++) {
@@ -5601,56 +5719,56 @@ private:
         linkSubFile(pos, transaction);
     }
 
+    bool doRemoveSubFiles(IDistributedFileTransactionExt *transaction)
+    {
+        // have to be quite careful here
+        unsigned pos = subfiles.ordinality();
+        if (pos)
+        {
+            DistributedFilePropertyLock lock(this);
+            if (lock.needsReload())
+                loadSubFiles(transaction,1000*60*10);
+            pos = subfiles.ordinality();
+            if (pos)
+            {
+                do
+                {
+                    pos--;
+                    unlinkSubFile(pos,transaction);
+                    removeItem(pos);
+                } while (pos);
+                setModified();
+                updateFileAttrs();
+                lock.unlock();
+                updateParentFileAttrs(transaction);
+            }
+        }
+        return true;
+    }
+
     bool doRemoveSubFile(const char *subfile,
                          IDistributedFileTransactionExt *transaction)
     {
         // have to be quite careful here
-        StringAttrArray subnames;
-        unsigned pos;
-        StringBuffer subname;
-        if (subfile) {
-            unsigned pos=findSubFileOrd(subfile);
+        unsigned pos=findSubFileOrd(subfile);
+        if ((pos==NotFound)||(pos>=subfiles.ordinality()))
+            pos = findSubFile(subfile);
+        if (pos==NotFound)
+            return false;
+        {
+            DistributedFilePropertyLock lock(this);
+            // don't reload subfiles here
+            pos=findSubFileOrd(subfile);
             if ((pos==NotFound)||(pos>=subfiles.ordinality()))
                 pos = findSubFile(subfile);
             if (pos==NotFound)
                 return false;
-            {
-                DistributedFilePropertyLock lock(this);
-                // don't reload subfiles here
-                pos=findSubFileOrd(subfile);
-                if ((pos==NotFound)||(pos>=subfiles.ordinality()))
-                    pos = findSubFile(subfile);
-                if (pos==NotFound)
-                    return false;
-                unlinkSubFile(pos,transaction);
-                removeItem(pos,subname.clear());
-                subnames.append(* new StringAttrItem(subname.str()));
-                setModified();
-                updateFileAttrs();
-            }
-            updateParentFileAttrs(transaction);
+            unlinkSubFile(pos,transaction);
+            removeItem(pos);
+            setModified();
+            updateFileAttrs();
         }
-        else {
-            pos = subfiles.ordinality();
-            if (pos) {
-                DistributedFilePropertyLock lock(this);
-                if (lock.needsReload())
-                    loadSubFiles(transaction,1000*60*10);
-                pos = subfiles.ordinality();
-                if (pos) {
-                    do {
-                        pos--;
-                        unlinkSubFile(pos,transaction);
-                        removeItem(pos,subname.clear());
-                        subnames.append(* new StringAttrItem(subname.str()));
-                    } while (pos);
-                    setModified();
-                    updateFileAttrs();
-                    lock.unlock();
-                    updateParentFileAttrs(transaction);
-                }
-            }
-        }
+        updateParentFileAttrs(transaction);
         return true;
     }
 
@@ -5795,6 +5913,34 @@ public:
         }
 
         cRemoveSubFileAction *action = new cRemoveSubFileAction(queryLogicalName(),subfile,remsub);
+        localtrans->addAction(action); // takes ownership
+        localtrans->autoCommit();
+
+        // MORE - auto-commit will throw an exception, change this to void
+        return true;
+    }
+
+    virtual bool removeOwnedSubFiles(bool remsub, // if true removes subfiles from DFS
+                                     IDistributedFileTransaction *transaction)
+    {
+        CriticalBlock block (sect);
+        checkModify("removeOwnedSubFiles");
+        partscache.kill();
+
+        // Create a local transaction that will be destroyed (MORE: make transaction compulsory)
+        Linked<IDistributedFileTransactionExt> localtrans;
+        if (transaction)
+        {
+            IDistributedFileTransactionExt *_transaction = dynamic_cast<IDistributedFileTransactionExt *>(transaction);
+            localtrans.set(_transaction);
+        }
+        else
+            localtrans.setown(new CDistributedFileTransaction(udesc));
+
+        // Make sure this file is in cache (reuse below)
+        localtrans->addFile(this);
+
+        cRemoveOwnedSubFilesAction *action = new cRemoveOwnedSubFilesAction(localtrans, queryLogicalName(), remsub);
         localtrans->addAction(action); // takes ownership
         localtrans->autoCommit();
 

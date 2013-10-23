@@ -312,6 +312,9 @@ interface IDistributedSuperFile: extends IDistributedFile
                                 bool remcontents=false,     // if true removes contents of subfile (assuming it is a superfile)
                                 IDistributedFileTransaction *transaction=NULL)=0;
                             // Note does not delete subfile
+    virtual bool removeOwnedSubFiles(bool remsub,           // if true removes subfiles from DFS
+                                     IDistributedFileTransaction *transaction=NULL)=0;
+                            // Note does not delete subfile
     virtual bool swapSuperFile( IDistributedSuperFile *_file,               // swaps sub files
                                 IDistributedFileTransaction *transaction)=0;
 
