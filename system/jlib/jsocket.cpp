@@ -1020,23 +1020,23 @@ int CSocket::name(char *retname,size32_t namemax)
         namemax = 0;
     if (namemax)
         retname[0] = 0;
-    retname[0] = 0;
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
     DEFINE_SOCKADDR(u);
-    socklen_t ul = sizeof(u);       
+    socklen_t ul = sizeof(u);
     if (::getsockname(sock,&u.sa, &ul)<0) {
         THROWJSOCKEXCEPTION(ERRNO());
     }
     SocketEndpoint ep;
     getSockAddrEndpoint(u,ul,ep);
-    StringBuffer s;
-    ep.getIpText(s);
-    if (namemax>=1) {
+    if (namemax>=1)
+    {
+        StringBuffer s;
+        ep.getIpText(s);
         if (namemax-1<s.length())
             s.setLength(namemax-1);
-        memcpy(retname,s.str(),s.length());
+        memcpy(retname,s.str(),s.length()+1);
     }
     return ep.port;
 }
