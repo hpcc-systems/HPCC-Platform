@@ -27,7 +27,7 @@ public:
     IHqlExpression * addDataset(IHqlExpression * expr);
     void addAction(IHqlExpression * expr);
     unsigned addInput();
-    IHqlExpression * getGraph(IAtom * extraAttrName = NULL);
+    IHqlExpression * getGraph(node_operator listOp = no_actionlist);
 
     inline IHqlExpression * queryRepresents() const { return represents; }
     inline unsigned numResults() const { return numInputs + numOutputs; }

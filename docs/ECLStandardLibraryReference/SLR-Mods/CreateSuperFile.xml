@@ -33,7 +33,7 @@
         <row>
           <entry><emphasis>sequentialparts</emphasis></entry>
 
-          <entry>Optional. A boolean value indicating whether to the sub-files
+          <entry>Optional. A boolean value indicating whether the sub-files
           must be sequentially ordered. If omitted, the default is
           FALSE.</entry>
         </row>
@@ -76,8 +76,9 @@
 
   <para>A._4_of_4, B._4_of_4, and C_4_of_4 are on node 4</para>
 
-  <para>Reading the superfile created with <emphasis>sequentialparts</emphasis>
-  FALSE on Thor will read the parts in the order:</para>
+  <para>Reading the superfile created with
+  <emphasis>sequentialparts</emphasis> FALSE on Thor will read the parts in
+  the order:</para>
 
   <para>[A1,B1,C1,] [A2,B2,C2,] [A3,B3,C3,] [A4,B4,C4]</para>
 
@@ -89,9 +90,10 @@
 
   <para>so that the global order of A,B,C,D is maintained. However, the parts
   cannot all be read locally (e.g. A2 and A3 will be read on part 1). Because
-  of this it is much less efficient to set <emphasis>sequentialparts</emphasis>
-  true, and as it is unusual anyway to have files that are partitioned in
-  order, it becomes a very unusual option to set.</para>
+  of this it is much less efficient to set
+  <emphasis>sequentialparts</emphasis> true, and as it is unusual anyway to
+  have files that are partitioned in order, it becomes a very unusual option
+  to set.</para>
 
   <para>Example:</para>
 

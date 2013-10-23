@@ -1563,6 +1563,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.resourceSequential,"resourceSequential", false),
         DebugOption(options.workunitTemporaries,"workunitTemporaries", true),
         DebugOption(options.resourceConditionalActions,"resourceConditionalActions", false),  //targetRoxie() ??
+        DebugOption(options.actionLinkInNewGraph,"actionLinkInNewGraph",true),
         DebugOption(options.minimizeWorkunitTemporaries, "<exception>", false),
         DebugOption(options.pickBestEngine,"pickBestEngine", true),
         DebugOption(options.groupedChildIterators,"groupedChildIterators", false),
@@ -3571,6 +3572,7 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_parallel:
     case no_sequential:
     case no_actionlist:
+    case no_orderedactionlist:
         {
             ForEachChild(idx, expr)
             {

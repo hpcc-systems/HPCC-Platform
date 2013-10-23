@@ -310,6 +310,17 @@ bool CXmlDiff::cmpAttributes(IPTree* t1, IPTree* t2, const char* xpathFull, bool
     return diff;
 }
 
+bool isDataset(const char* xpath)
+{
+    if(!xpath || !*xpath)
+        return false;
+    const char* start = xpath;
+    const char* slash = strrchr(xpath, '/');
+    if(slash)
+        start = slash+1;
+    return (stricmp(start, "Dataset") == 0);
+}
+
 bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2, const char* xpathFull)
 {
     if(t1 == t2)
@@ -328,20 +339,18 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
             return false;
     }
 
-    StringBuffer keybuf;
-    keybuf.appendf("%p-%p", t1, t2);
-    std::string key = keybuf.str();
-    if(m_compcache.getValue(key.c_str()) != NULL)
+    char keybuf[80];
+    sprintf(keybuf, "%p-%p", t1, t2);
+    if(m_compcache.getValue(keybuf) != NULL)
     {
-        return *(m_compcache.getValue(key.c_str()));
+        return *(m_compcache.getValue(keybuf));
     }
-
 
     if(xpath && *xpath)
     {
         if(m_ignoredXPaths.find(xpath) != m_ignoredXPaths.end())
         {
-            m_compcache.setValue(key.c_str(),true);
+            m_compcache.setValue(keybuf,true);
             return true;
         }
     }
@@ -350,24 +359,25 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     const char* name2 = t2->queryName();
     if((name1 && !name2) || (!name1 && name2) || (name1 && name2 && strcmp(name1, name2) != 0))
     {
-        m_compcache.setValue(key.c_str(),false);
+        m_compcache.setValue(keybuf,false);
         return false;
     }
 
     // compare attributes
     if (cmpAttributes(t1,t2,xpathFull,false))
     {
-        m_compcache.setValue(key.c_str(),false);
+        m_compcache.setValue(keybuf,false);
         return false;
     }
 
+    bool isDS = isDataset(xpath);
     if(t1->hasChildren() && t2->hasChildren())
     {
         int num1 = t1->numChildren();
         int num2 = t2->numChildren();
         if(num1 != num2)
         {
-            m_compcache.setValue(key.c_str(),false);
+            m_compcache.setValue(keybuf,false);
             return false;
         }
 
@@ -403,7 +413,14 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         {
             if(!ptrs1[i])
                 continue;
+
             const char* name1 = ptrs1[i]->queryName();
+            const char* did = NULL;
+            if(isDS && stricmp(name1, "Row") == 0 && ptrs1[i]->hasProp("did"))
+            {
+                did = ptrs1[i]->queryProp("did");
+            }
+
             bool foundmatch = false;
             for(int j = 0; j < num2; j++)
             {
@@ -422,12 +439,35 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
                         if(attrString.length())
                             xpathFullBuf.appendf("[%s]", attrString.str());
 
-                        if(cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str()))
+                        if(did && *did)
                         {
-                            ptrs1[i] = NULL;
-                            ptrs2[j] = NULL;
-                            foundmatch = true;
-                            break;
+                            const char* did2 = ptrs2[j]->queryProp("did");
+                            if(did2 && *did2 && strcmp(did, did2) == 0)
+                            {
+                                bool subtreematch = cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
+                                if(!subtreematch) //DID match but content don't match
+                                {
+                                    m_compcache.setValue(keybuf,false);
+                                    break;
+                                }
+                                else
+                                {
+                                    foundmatch = true;
+                                    ptrs1[i] = NULL;
+                                    ptrs2[j] = NULL;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if(cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str()))
+                            {
+                                ptrs1[i] = NULL;
+                                ptrs2[j] = NULL;
+                                foundmatch = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -435,7 +475,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
 
             if(!foundmatch)
             {
-                m_compcache.setValue(key.c_str(),false);
+                m_compcache.setValue(keybuf,false);
                 delete[] ptrs1;
                 delete[] ptrs2;
                 return false;
@@ -446,7 +486,9 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         {
             if(ptrs1[i] != NULL)
             {
-                m_compcache.setValue(key.c_str(),false);
+                m_compcache.setValue(keybuf,false);
+                delete[] ptrs1;
+                delete[] ptrs2;
                 return false;           
             }
         }
@@ -455,20 +497,21 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         {
             if(ptrs2[i] != NULL)
             {
-                m_compcache.setValue(key.c_str(),false);
+                m_compcache.setValue(keybuf,false);
+                delete[] ptrs1;
+                delete[] ptrs2;
                 return false;
             }
         }
 
         delete[] ptrs1;
         delete[] ptrs2;
-
-        m_compcache.setValue(key.c_str(),true);
+        m_compcache.setValue(keybuf,true);
         return true;
     }
     else if((t1->hasChildren() && !t2->hasChildren()) || (!t1->hasChildren() && t2->hasChildren()))
     {
-        m_compcache.setValue(key.c_str(),false);
+        m_compcache.setValue(keybuf,false);
         return false;
     }
     else
@@ -483,12 +526,12 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         else
             isEqual = true;
 
-        m_compcache.setValue(key.c_str(),isEqual);
+        m_compcache.setValue(keybuf,isEqual);
         return isEqual;
     }
 }   
 
-int CXmlDiff::countLeaves(IPropertyTree* t)
+int CXmlDiff::countNodes(IPropertyTree* t)
 {
     if(!t)
         return 0;
@@ -496,24 +539,23 @@ int CXmlDiff::countLeaves(IPropertyTree* t)
     if(!t->hasChildren())
         return 1;
 
-    int leaves = 0;
+    int nodes = 1;
 
     Owned<IPropertyTreeIterator> mi = t->getElements("*");
     if(mi.get())
     {
         for(mi->first(); mi->isValid(); mi->next())
         {
-            leaves += countLeaves(&mi->query());
+            nodes += countNodes(&mi->query());
         }
     }
 
-    return leaves;
+    return nodes;
 }
 
-// Count the difference of 2 trees in terms of number of different leaves.
+// Count the difference of 2 trees in terms of number of different nodes.
 int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2, const char* xpathFull)
 {
-    //printf("countDiff %s\n", xpath);
     if(t1 == t2)
         return 0;
 
@@ -540,7 +582,7 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         {
             if(t2)
             {
-                int diffcount = countLeaves(t2);
+                int diffcount = countNodes(t2);
                 m_diffcountcache[key] = diffcount;
                 return diffcount;
             }
@@ -549,7 +591,7 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         }
         else
         {
-            int diffcount = countLeaves(t1);
+            int diffcount = countNodes(t1);
             m_diffcountcache[key] = diffcount;
             return diffcount;
         }
@@ -559,12 +601,13 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     const char* name2 = t2->queryName();
     if((name1 && !name2) || (!name1 && name2) || (name1 && name2 && strcmp(name1, name2) != 0))
     {
-        int diffcount = countLeaves(t1) + countLeaves(t2);
+        int diffcount = countNodes(t1) + countNodes(t2);
         m_diffcountcache[key] = diffcount;
         return diffcount;
     }
 
     int diffcount = 0;
+    bool isDS = isDataset(xpath);
     if(t1->hasChildren() && t2->hasChildren())
     {
         int num1 = t1->numChildren();
@@ -607,6 +650,11 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
             if(!ptrs1[i])
                 continue;
             const char* name1 = ptrs1[i]->queryName();
+            const char* did = NULL;
+            if(isDS && stricmp(name1, "Row") == 0 && ptrs1[i]->hasProp("did"))
+            {
+                did = ptrs1[i]->queryProp("did");
+            }
             for(int j = 0; j < num2; j++)
             {
                 if(ptrs2[j])
@@ -624,12 +672,31 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
                         if(attrString.length())
                             xpathFullBuf.appendf("[%s]", attrString.str());
 
-                        if(cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str()))
+                        if(did && *did)
                         {
-                            ptrs1[i] = NULL;
-                            ptrs2[j] = NULL;
-                            foundmatch = true;
-                            break;
+                            const char* did2 = ptrs2[j]->queryProp("did");
+                            if(did2 && *did2 && strcmp(did, did2) == 0)
+                            {
+                                int subdiff = countDiff(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());                                
+                                diffcount += subdiff;
+                                if(subdiff == 0)
+                                {
+                                    foundmatch = true;
+                                }
+                                ptrs1[i] = NULL;
+                                ptrs2[j] = NULL;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            if(cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str()))
+                            {
+                                ptrs1[i] = NULL;
+                                ptrs2[j] = NULL;
+                                foundmatch = true;
+                                break;
+                            }
                         }
                     }
                 }
@@ -681,7 +748,7 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
                         if(name1 && name2 && strcmp(name1, name2) == 0)
                         {
                             diffmatrix[i][j] = countDiff(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
-                            int ind = 0;
+                            unsigned int ind = 0;
                             while(ind < ordered_list.size())
                             {
                                 if(ordered_list[ind].first > diffmatrix[i][j])
@@ -695,7 +762,7 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
             }
         }
 
-        int ind = 0;
+        unsigned int ind = 0;
         while(ind < ordered_list.size())
         {
             int diffval = ordered_list[ind].first;
@@ -724,20 +791,20 @@ int CXmlDiff::countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
         for(i = 0; i < num1; i++)
         {
             if(ptrs1[i])
-                diffcount += countLeaves(ptrs1[i]);
+                diffcount += countNodes(ptrs1[i]);
         }
 
         for(i = 0; i < num2; i++)
         {
             if(ptrs2[i] != NULL)
-                diffcount += countLeaves(ptrs2[i]);
+                diffcount += countNodes(ptrs2[i]);
         }
 
         delete[] ptrs1;
         delete[] ptrs2;
     }
     else if((t1->hasChildren() && !t2->hasChildren()) || (!t1->hasChildren() && t2->hasChildren()))
-        diffcount = countLeaves(t1) + countLeaves(t2);
+        diffcount = countNodes(t1) + countNodes(t2);
     else
     {
         const char* val1 = t1->queryProp(".");
@@ -811,6 +878,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
     if (cmpAttributes(t1,t2,xpathFull,true))
         isEqual = false;
 
+    bool isDS = isDataset(xpath);
     if(t1->hasChildren() && t2->hasChildren())
     {
         int num1 = t1->numChildren();
@@ -852,6 +920,13 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
             if(!ptrs1[i])
                 continue;
             const char* name1 = ptrs1[i]->queryName();
+
+            const char* did = NULL;
+            if(isDS && stricmp(name1, "Row") == 0 && ptrs1[i]->hasProp("did"))
+            {
+                did = ptrs1[i]->queryProp("did");
+            }
+
             for(int j = 0; j < num2; j++)
             {
                 if(ptrs2[j])
@@ -869,12 +944,26 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                         if(attrString.length())
                             xpathFullBuf.appendf("[%s]", attrString.str());
 
-                        bool isEqual = cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
-                        if(isEqual)
+                        if(did && *did)
                         {
-                            ptrs1[i] = NULL;
-                            ptrs2[j] = NULL;
-                            break;
+                            const char* did2 = ptrs2[j]->queryProp("did");
+                            if(did2 && *did2 && strcmp(did, did2) == 0)
+                            {
+                                diffPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
+                                ptrs1[i] = NULL;
+                                ptrs2[j] = NULL;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            bool isEqual = cmpPtree(xpathbuf.str(), ptrs1[i], ptrs2[j], xpathFullBuf.str());
+                            if(isEqual)
+                            {
+                                ptrs1[i] = NULL;
+                                ptrs2[j] = NULL;
+                                break;
+                            }
                         }
                     }
                 }
@@ -943,7 +1032,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                                 //printf("counting diff %s\n", xpathbuf.str());
                                 diffmatrix[i][j] = countDiff(xpathbuf.str(), ptrs1[i], ptrs2[j],xpathFullBuf.str());
                                 //printf("finished counting diff %s\n", xpathbuf.str());
-                                int ind = 0;
+                                unsigned int ind = 0;
                                 while(ind < ordered_list.size())
                                 {
                                     if(ordered_list[ind].first > diffmatrix[i][j])
@@ -957,7 +1046,7 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
                 }
             }
 
-            int ind = 0;
+            unsigned int ind = 0;
             while(ind < ordered_list.size())
             {
                 int diffval = ordered_list[ind].first;

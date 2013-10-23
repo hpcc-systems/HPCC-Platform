@@ -327,6 +327,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   ONWARNING
   OPT
   OR
+  ORDERED
   OUTER
   OUTPUT
   TOK_OUT
@@ -2506,6 +2507,12 @@ actionStmt
                             parser->endList(actions);
                             $$.setExpr(createValue(no_parallel, makeVoidType(), actions), $1);
                         }
+    | ORDERED '(' beginList sequentialActionlist optSemiComma ')'
+                        {
+                            HqlExprArray actions;
+                            parser->endList(actions);
+                            $$.setExpr(createValue(no_orderedactionlist, makeVoidType(), actions), $1);
+                        }
     | SOAPCALL '(' expression ',' expression ',' recordDef ')'
                         {
                             parser->normalizeExpression($3, type_stringorunicode, false);
@@ -2995,6 +3002,7 @@ datasetFlag
                             $$.setExpr(createExprAttribute(distributedAtom));
                             $$.setPosition($1);
                         }
+    | localAttribute
     ;
 
 optIndexFlags
@@ -6537,6 +6545,7 @@ sizeof_expr_target
                         }
     | dataSet
     | dataRow
+    | enumTypeId
     | recordDef
     | fieldSelectedFromRecord
                         {
@@ -8559,7 +8568,13 @@ simpleDataSet
                             IHqlExpression * counter = $7.getExpr();
                             if (counter)
                                 counter = createAttribute(_countProject_Atom, counter);
-                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter, $8.getExpr())));
+                            OwnedHqlExpr options = $8.getExpr();
+                            if (options)
+                            {
+                                if (options->numChildren() > 0)
+                                    parser->reportError(ERR_DSPARAM_INVALIDOPTCOMB, $8, "The DATASET options DISTRIBUTED, LOCAL, and NOLOCAL are not permutable.");
+                            }
+                            $$.setExpr(createDataset(no_dataset_from_transform, $3.getExpr(), createComma($6.getExpr(), counter, options.getClear())));
                             $$.setPosition($1);
                         }
     | ENTH '(' dataSet ',' expression optCommonAttrs ')'

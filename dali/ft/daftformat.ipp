@@ -154,6 +154,7 @@ protected:
         return (byte *)((bufattr.length()!=bufferSize)?bufattr.allocate(bufferSize):bufattr.bufferBase()); 
     }
     virtual void killBuffer()  { bufattr.clear(); }
+    virtual void clearBufferOverrun() { numOfBufferOverrun = 0; numOfProcessedBytes = 0; }
 protected: 
     Owned<IFileIOStream>   inStream;
     MemoryAttr             bufattr;
@@ -166,6 +167,9 @@ protected:
     bool                   doInputCRC;
     static IFileIOCache    *openfilecache;
     static CriticalSection openfilecachesect;
+
+    unsigned               numOfBufferOverrun;
+    unsigned               numOfProcessedBytes;
 };
 
 
@@ -244,8 +248,8 @@ protected:
     }
 
 private:
-	void storeFieldName(const char * start, unsigned len);
-	
+    void storeFieldName(const char * start, unsigned len);
+    
 protected:
     enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned        maxElementLength;
@@ -291,6 +295,9 @@ public:
     CUtfPartitioner(const FileFormat & _format);
 
     virtual void setTarget(IOutputProcessor * _target);
+    
+    virtual void getRecordStructure(StringBuffer & _recordStructure) { _recordStructure = recordStructure; }
+    virtual void setRecordStructurePresent( bool _isRecordStructurePresent) {isRecordStructurePresent = _isRecordStructurePresent;}
 
 protected:
     virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer, bool ateof);
@@ -299,14 +306,22 @@ protected:
     {
         return getSplitRecordSize(record,maxToRead,processFullBuffer,false);
     }
+    
+private:
+    void storeFieldName(const char * start, unsigned len);
 
 protected:
-    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4 };
+    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned        maxElementLength;
     FileFormat      format;
     StringMatcher   matcher;
     unsigned        unitSize;
     UtfReader::UtfFormat utfFormat;
+    
+    bool            isRecordStructurePresent;
+    StringBuffer    recordStructure;
+    unsigned        fieldCount;
+    bool            isFirstRow;
 };
 
 

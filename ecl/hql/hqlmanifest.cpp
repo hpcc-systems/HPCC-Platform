@@ -39,6 +39,9 @@ public:
 private:
     bool loadInclude(IPropertyTree &include, const char *dir);
     void expand();
+    void expandDirectory(IPropertyTree &res, IDirectoryIterator *it, const char*mask, bool recursive);
+    void expandDirectory(IPropertyTree &res, const char *path, const char*mask, bool recursive);
+
 public:
     Owned<IPropertyTree> manifest;
     StringBuffer absFilename;
@@ -87,14 +90,61 @@ bool ResourceManifest::loadInclude(IPropertyTree &include, const char *dir)
     return true;
 }
 
+void ResourceManifest::expandDirectory(IPropertyTree &res, IDirectoryIterator *it, const char*mask, bool recursive)
+{
+    if (!it)
+        return;
+    ForEach(*it)
+    {
+        if (it->isDir())
+        {
+            if (recursive)
+                expandDirectory(res, it->query().directoryFiles(mask, false, true), mask, recursive);
+            continue;
+        }
+        StringBuffer reldir;
+        Owned<IPropertyTree> newRes = createPTreeFromIPT(&res);
+        reldir.append(splitRelativePath(it->query().queryFilename(), dir, reldir));
+        VStringBuffer xpath("Resource[@filename='%s']", reldir.str());
+        if (manifest->hasProp(xpath))
+            continue;
+        newRes->setProp("@filename", reldir.str());
+        updateResourcePaths(*newRes, dir.str());
+        if (manifest->hasProp(xpath.setf("resource[@resourcePath='%s']", newRes->queryProp("@resourcePath"))))
+            continue;
+        manifest->addPropTree("Resource", newRes.getClear());
+    }
+}
+
+void ResourceManifest::expandDirectory(IPropertyTree &res, const char *path, const char*mask, bool recursive)
+{
+    Owned<IDirectoryIterator> it = createDirectoryIterator(path, mask);
+    expandDirectory(res, it, mask, recursive);
+}
+
+
 void ResourceManifest::expand()
 {
-    Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@filename]");
+	manifest->setProp("@manifestDir", dir.str());
+	Owned<IPropertyTreeIterator> resources = manifest->getElements("Resource[@filename]");
     ForEach(*resources)
         updateResourcePaths(resources->query(), dir.str());
     Owned<IPropertyTreeIterator> includes = manifest->getElements("Include[@filename]");
     ForEach(*includes)
         loadInclude(includes->query(), dir.str());
+    resources.setown(manifest->getElements("Resource[@filename]"));
+    ForEach(*resources)
+    {
+        IPropertyTree &res = resources->query();
+        const char *name = res.queryProp("@originalFilename");
+        if (containsFileWildcard(name))
+        {
+            StringBuffer wildpath;
+            const char *tail = splitDirTail(name, wildpath);
+            expandDirectory(res, wildpath, tail, res.getPropBool("@recursive"));
+            manifest->removeTree(&res);
+        }
+    }
 }
 
 bool ResourceManifest::checkResourceFilesExist()

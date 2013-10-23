@@ -54,11 +54,11 @@ define([
                     });
                 }
                 if (hthor) {
-                    response.TpLogicalClusterQueryResponse.default = hthor;
+                    response.TpLogicalClusterQueryResponse["default"] = hthor;
                 } else if (best) {
-                    response.TpLogicalClusterQueryResponse.default = best;
+                    response.TpLogicalClusterQueryResponse["default"] = best;
                 } else {
-                    response.TpLogicalClusterQueryResponse.default = null;
+                    response.TpLogicalClusterQueryResponse["default"] = null;
                 }
                 return response;
             });

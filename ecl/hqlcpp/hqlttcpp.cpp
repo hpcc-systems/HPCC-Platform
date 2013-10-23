@@ -567,6 +567,7 @@ IHqlExpression * NewThorStoredReplacer::createTransformed(IHqlExpression * expr)
             return transform(expr->queryChild(0));
         break;
     case no_actionlist:
+    case no_orderedactionlist:
         {
             HqlExprArray actions;
             ForEachChild(i, expr)
@@ -691,6 +692,7 @@ IHqlExpression * HqlThorBoundaryTransformer::createTransformed(IHqlExpression * 
     switch (op)
     {
     case no_actionlist:
+    case no_orderedactionlist:
         {
             HqlExprArray nonThor, args;
             expr->unwindList(args, op);
@@ -849,6 +851,7 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
             return OptionNo;
         // fallthrough
     case no_actionlist:
+    case no_orderedactionlist:
     case no_parallel:
         {
             YesNoOption option = OptionUnknown;
@@ -857,7 +860,8 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
                 YesNoOption childOption = normalizeThor(expr->queryChild(idx));
                 if (childOption == OptionNo)
                     return OptionNo;
-                option = combine(option, childOption, (op == no_sequential));       // can reorder parallel - so intersection is better
+                bool fixedOrder = (op == no_sequential) || (op == no_orderedactionlist);
+                option = combine(option, childOption, fixedOrder);       // can reorder parallel - so intersection is better
             }
             return option;
         }
@@ -1301,6 +1305,7 @@ IHqlExpression * SequenceNumberAllocator::doTransformRootExpr(IHqlExpression * e
     case no_parallel:
     case no_sequential:
     case no_actionlist:
+    case no_orderedactionlist:
         {
             HqlExprArray args;
             ForEachChild(idx, expr)
@@ -6473,6 +6478,7 @@ IHqlExpression * WorkflowTransformer::transformRootAction(IHqlExpression * expr)
     case no_parallel:
         return createParallelWorkflow(expr);
     case no_sequential:
+    case no_orderedactionlist:
         return createSequentialWorkflow(expr);
     case no_actionlist:
         return createCompoundWorkflow(expr);
@@ -7002,6 +7008,7 @@ static void mergeThorGraphs(HqlExprArray & exprs, bool resourceConditionalAction
             }
             //fall through
         case no_actionlist:
+        case no_orderedactionlist:
             {
                 HqlExprArray args;
                 cur->unwindList(args, op);
@@ -7417,6 +7424,7 @@ protected:
         case no_sequential:
         case no_compound:
         case no_actionlist:
+        case no_orderedactionlist:
             NewHqlTransformer::analyseExpr(expr);
             break;
         case no_output:
@@ -10779,7 +10787,7 @@ IHqlExpression * HqlTreeNormalizer::transformActionList(IHqlExpression * expr)
                 args.append(*transformed.getClear());
         }
     }
-    return createActionList(args);
+    return expr->clone(args);
 }
 
 
@@ -12079,6 +12087,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         }
         break;
     case no_actionlist:
+    case no_orderedactionlist:
         return transformActionList(expr);
     case no_forcelocal:
     case no_forcenolocal:

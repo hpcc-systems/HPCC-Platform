@@ -273,7 +273,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,assertconcrete);
     EXPAND_CASE(no,unboundselect);
     EXPAND_CASE(no,id);
-    EXPAND_CASE(no,unused24);
+    EXPAND_CASE(no,orderedactionlist);
     EXPAND_CASE(no,dataset_from_transform);
     EXPAND_CASE(no,childquery);
     EXPAND_CASE(no,unknown);
@@ -739,6 +739,8 @@ inline type_t getRequiredTypeCode(node_operator op)
     case no_sequential:
     case no_parallel:
     case no_apply:
+    case no_actionlist:
+    case no_orderedactionlist:
         return type_void;
     case no_attr:
     case no_attr_expr:

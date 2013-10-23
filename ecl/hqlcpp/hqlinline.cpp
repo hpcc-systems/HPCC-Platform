@@ -727,6 +727,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimize
     case no_deserialize:
     case no_serialize:
     case no_actionlist:
+    case no_orderedactionlist:
     case no_definesideeffect:
     case no_dataset_alias:
         return GraphNeverAccess;               // Will never access any data values from anywhere

@@ -1379,11 +1379,49 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
     IEspContext *ctx = request->queryContext();
     IProperties *params = request->queryParameters();
 
+
     try
     {
          StringBuffer path;
          request->getPath(path);
 
+         if(!strnicmp(path.str(), "/WsWorkunits/res/", strlen("/WsWorkunits/res/")))
+         {
+            const char *pos = path.str();
+            StringBuffer wuid;
+            nextPathNode(pos, wuid, 2);
+            Owned<IWuWebView> web = createWuWebView(wuid, wuid, getCFD(), true);
+            if (!web)
+                throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit");
+            MemoryBuffer mb;
+            StringAttr mimetype(mimeTypeFromFileExt(strrchr(pos, '.')));
+            if (!web->getResourceByPath(pos, mb))
+                throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open resource");
+
+            response->setContent(mb.length(), mb.toByteArray());
+            response->setContentType(mimetype.get());
+            response->setStatus(HTTP_STATUS_OK);
+            response->send();
+            return 0;
+         }
+         if(!strnicmp(path.str(), "/WsWorkunits/manifest/", strlen("/WsWorkunits/manifest/")))
+         {
+            const char *pos = path.str();
+            StringBuffer wuid;
+            nextPathNode(pos, wuid, 2);
+            Owned<IWuWebView> web = createWuWebView(wuid, wuid, getCFD(), true);
+            if (!web)
+                throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT, "Cannot open workunit");
+            StringBuffer mf;
+            if (!web->getManifest(mf).length())
+                throw MakeStringException(ECLWATCH_RESOURCE_NOT_FOUND, "Cannot open manifest");
+
+            response->setContent(mf.str());
+            response->setContentType("text/xml");
+            response->setStatus(HTTP_STATUS_OK);
+            response->send();
+            return 0;
+         }
          if(!strnicmp(path.str(), "/WsWorkunits/JobList", 20))
          {
             const char *cluster = params->queryProp("Cluster");
@@ -1440,6 +1478,7 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
     }
     catch(IException* e)
     {
+        onGetException(*request->queryContext(), request, response, *e);
         FORWARDEXCEPTION(*request->queryContext(), e,  ECLWATCH_INTERNAL_ERROR);
     }
 

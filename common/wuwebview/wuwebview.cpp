@@ -298,8 +298,12 @@ public:
 
     void appendResultSchemas(WuExpandedResultBuffer &buffer);
     void getResultXSLT(const char *viewName, StringBuffer &xslt, StringBuffer &abspath);
-    void getResource(IPropertyTree *res, StringBuffer &content);
+    bool getResource(IPropertyTree *res, StringBuffer &content);
+    bool getResource(IPropertyTree *res, MemoryBuffer &content);
+    bool getResource(IPropertyTree *res, size32_t & len, const void * & data);
     void getResource(const char *name, StringBuffer &content, StringBuffer &abspath, const char *type);
+    bool getResourceByPath(const char *path, MemoryBuffer &mb);
+    StringBuffer &getManifest(StringBuffer &mf){return toXML(ensureManifest(), mf);}
 
     void calculateResourceIncludePaths();
     virtual bool getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly);
@@ -313,6 +317,7 @@ public:
 
 protected:
     SCMStringBuffer dllname;
+    StringBuffer manifestDir;
     Owned<IConstWorkUnit> cw;
     Owned<ILoadedDllEntry> dll;
     bool delayedDll;
@@ -335,20 +340,26 @@ IPropertyTree *WuWebView::ensureManifest()
     return manifest.get();
 }
 
+StringBuffer &makeResourcePath(const char *path, const char *basedir, StringBuffer &respath)
+{
+    StringBuffer abspath;
+    makeAbsolutePath(path, basedir, abspath);
+
+    return makePathUniversal(abspath, respath);
+}
+
 void WuWebView::calculateResourceIncludePaths()
 {
     if (!manifestIncludePathsSet)
     {
-        Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Resource[@filename]");
+        manifestDir.set(ensureManifest()->queryProp("@manifestDir"));
+        Owned<IPropertyTreeIterator> iter = manifest->getElements("Resource[@filename]");
         ForEach(*iter)
         {
             if (!iter->query().hasProp("@resourcePath")) //backward compatible
             {
-                StringBuffer abspath;
-                makeAbsolutePath(iter->query().queryProp("@filename"), dir.get(), abspath);
-
                 StringBuffer respath;
-                makePathUniversal(abspath.str(), respath);
+                makeResourcePath(iter->query().queryProp("@filename"), dir.get(), respath);
                 iter->query().setProp("@resourcePath", respath.str());
             }
         }
@@ -422,6 +433,26 @@ bool WuWebView::getInclude(const char *includename, MemoryBuffer &includebuf, bo
     return true;
 }
 
+bool WuWebView::getResourceByPath(const char *path, MemoryBuffer &mb)
+{
+    calculateResourceIncludePaths();
+
+    StringBuffer xpath;
+    if (!manifestDir.length())
+        xpath.setf("Resource[@filename='%s'][1]", path);
+    else
+    {
+        StringBuffer respath;
+        makeResourcePath(path, manifestDir.str(), respath);
+        xpath.setf("Resource[@resourcePath='%s'][1]", respath.str());
+    }
+
+    IPropertyTree *res = ensureManifest()->queryPropTree(xpath.str());
+    if (!res)
+        return false;
+    return getResource(res, mb);
+}
+
 void WuWebView::getResultViewNames(StringArray &names)
 {
     Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Views/Results[@name]");
@@ -431,27 +462,46 @@ void WuWebView::getResultViewNames(StringArray &names)
         names.append("EmbeddedView");
 }
 
-void WuWebView::getResource(IPropertyTree *res, StringBuffer &content)
+bool WuWebView::getResource(IPropertyTree *res, size32_t & len, const void * & data)
 {
     if (!loadDll())
-        return;
+        return false;
     if (res->hasProp("@id") && (res->hasProp("@header")||res->hasProp("@compressed")))
     {
         int id = res->getPropInt("@id");
-        size32_t len = 0;
-        const void *data = NULL;
-        if (dll->getResource(len, data, res->queryProp("@type"), (unsigned) id) && len>0)
-        {
-            if (res->getPropBool("@compressed"))
-            {
-                StringBuffer decompressed;
-                decompressResource(len, data, content);
-                content.append(decompressed.str());
-            }
-            else
-                content.append(len, (const char *)data);
-        }
+        return (dll->getResource(len, data, res->queryProp("@type"), (unsigned) id) && len>0);
     }
+    return false;
+}
+
+bool WuWebView::getResource(IPropertyTree *res, MemoryBuffer &content)
+{
+    size32_t len = 0;
+    const void *data = NULL;
+    if (getResource(res, len, data))
+    {
+        if (res->getPropBool("@compressed"))
+            decompressResource(len, data, content);
+        else
+            content.append(len, (const char *)data);
+        return true;
+    }
+    return false;
+}
+
+bool WuWebView::getResource(IPropertyTree *res, StringBuffer &content)
+{
+    size32_t len = 0;
+    const void *data = NULL;
+    if (getResource(res, len, data))
+    {
+        if (res->getPropBool("@compressed"))
+            decompressResource(len, data, content);
+        else
+            content.append(len, (const char *)data);
+        return true;
+    }
+    return false;
 }
 
 void WuWebView::getResource(const char *name, StringBuffer &content, StringBuffer &includepath, const char *type)

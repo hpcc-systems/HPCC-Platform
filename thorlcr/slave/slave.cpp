@@ -232,6 +232,7 @@ void ProcessSlaveActivity::done()
 #include "xmlwrite/thxmlwriteslave.ipp"
 
 CActivityBase *createLookupJoinSlave(CGraphElementBase *container);
+CActivityBase *createAllJoinSlave(CGraphElementBase *container);
 CActivityBase *createXmlParseSlave(CGraphElementBase *container);
 CActivityBase *createKeyDiffSlave(CGraphElementBase *container);
 CActivityBase *createKeyPatchSlave(CGraphElementBase *container);
@@ -440,13 +441,15 @@ public:
             case TAKlookupjoin:
             case TAKlookupdenormalize:
             case TAKlookupdenormalizegroup:
-            case TAKalljoin:
-            case TAKalldenormalize:
-            case TAKalldenormalizegroup:
             case TAKsmartjoin:
             case TAKsmartdenormalize:
             case TAKsmartdenormalizegroup:
                 ret = createLookupJoinSlave(this);
+                break;
+            case TAKalljoin:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
+                ret = createAllJoinSlave(this);
                 break;
             case TAKselfjoin:
                 if (queryLocalOrGrouped())

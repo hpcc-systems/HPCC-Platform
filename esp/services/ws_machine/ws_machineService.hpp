@@ -653,7 +653,7 @@ private:
     bool isLegacyFilter(const char* processType, const char* dependency);
     bool excludePartition(const char* partition) const;
     void appendProcessInstance(const char* name, const char* directory1, const char* directory2, StringArray& machineInstances, StringArray& directories);
-    void getProcesses(IConstEnvironment* constEnv, IPropertyTree* envRoot, const char* processName, const char* processType, const char* directory, CGetMachineInfoData& machineInfoData, BoolHash& uniqueProcesses, BoolHash* uniqueRoxieProcesses = NULL);
+    void getProcesses(IConstEnvironment* constEnv, IPropertyTree* envRoot, const char* processName, const char* processType, const char* directory, CGetMachineInfoData& machineInfoData, bool isThorOrRoxieProcess, BoolHash& uniqueProcesses, BoolHash* uniqueRoxieProcesses = NULL);
     void getThorProcesses(IConstEnvironment* constEnv,  IPropertyTree* cluster, const char* processName, const char* processType, const char* directory, CGetMachineInfoData& machineInfoData, BoolHash& uniqueProcesses);
     const char* getProcessTypeFromMachineType(const char* machineType);
     void readSettingsForTargetClusters(IEspContext& context, StringArray& targetClusters, CGetMachineInfoData& machineInfoData, IPropertyTree* targetClustersOut);

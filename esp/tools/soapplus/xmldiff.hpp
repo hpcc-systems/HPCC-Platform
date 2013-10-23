@@ -49,7 +49,7 @@ private:
     bool diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2, const char* xpathFull);
     bool cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2, const char* xpathFull);
     int countDiff(const char* xpath, IPropertyTree* t1, IPropertyTree* t2, const char* xpathFull);
-    int countLeaves(IPropertyTree* t);
+    int countNodes(IPropertyTree* t);
     void printDiff(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
     bool cmpAttributes(IPTree* t1, IPTree* t2, const char* xpath, bool print);
     void getAttrString(IPropertyTree* t1, StringBuffer& attrBuff);

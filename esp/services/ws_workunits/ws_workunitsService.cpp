@@ -3997,6 +3997,12 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
             addProcess(zipper, cwu, winfo, "EclAgent", eclagentLogMB);
             addProcess(zipper, cwu, winfo, "Thor", thorLogMB);
 
+            //Add Workunit XML file
+            MemoryBuffer wuXmlMB;
+            winfo.getWorkunitXml(NULL, wuXmlMB);
+            fs.clear().append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".xml");
+            zipper->addContentToZIP(wuXmlMB.length(), (void*)wuXmlMB.toByteArray(), (char*)fs.str(), true);
+
             //Write out ZIP file
             zipper->zipToFile(zipFile.str());
         }
@@ -4016,6 +4022,86 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
         io->close();
         f->remove();
 #endif
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUGetBugReportInfo(IEspContext &context, IEspWUGetBugReportInfoRequest &req, IEspWUGetBugReportInfoResponse &resp)
+{
+    try
+    {
+        StringBuffer wuid = req.getWUID();
+        checkAndTrimWorkunit("WUGetBugReportInfo", wuid);
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+        if(!cw)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
+
+        StringBuffer EspIP, ThorIP;
+        resp.setWUID(wuid.str());
+        resp.setBuildVersion(getBuildVersion());
+        IpAddress ipaddr = queryHostIP();
+        ipaddr.getIpText(EspIP);
+        resp.setESPIPAddress(EspIP.str());
+
+        //Get Archive
+        Owned<IConstWUQuery> query = cw->getQuery();
+        if(query)
+        {
+            SCMStringBuffer queryText;
+            query->getQueryText(queryText);
+            if (queryText.length() && isArchiveQuery(queryText.str()))
+                resp.setArchive(queryText.str());
+        }
+
+        //Get Thor IP
+        BoolHash uniqueProcesses, uniqueThorIPs;
+        Owned<IStringIterator> thorInstances = cw->getProcesses("Thor");
+        ForEach (*thorInstances)
+        {
+            SCMStringBuffer processName;
+            thorInstances->str(processName);
+            if ((processName.length() < 1) || uniqueProcesses.getValue(processName.str()))
+                continue;
+
+            uniqueProcesses.setValue(processName.str(), true);
+            Owned<IStringIterator> thorLogs = cw->getLogs("Thor", processName.str());
+            ForEach (*thorLogs)
+            {
+                SCMStringBuffer logName;
+                thorLogs->str(logName);
+                if (!logName.length())
+                    continue;
+
+                const char* thorIPPtr = NULL;
+                const char* ptr = logName.str();
+                while (ptr)
+                {
+                    if (!thorIPPtr && (*ptr != '/'))
+                        thorIPPtr = ptr;
+                    else if (thorIPPtr && (*ptr == '/'))
+                        break;
+                    ptr++;
+                }
+                if (!thorIPPtr)
+                    continue;
+
+                //Found a thor IP
+                if (ThorIP.length())
+                    ThorIP.append(",");
+                if (!*ptr)
+                    ThorIP.append(thorIPPtr);
+                else
+                    ThorIP.append(ptr-thorIPPtr, thorIPPtr);
+            }
+        }
+        if (ThorIP.length())
+            resp.setThorIPAddress(ThorIP.str());
     }
     catch(IException* e)
     {

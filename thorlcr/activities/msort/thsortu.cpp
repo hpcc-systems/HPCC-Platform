@@ -1730,7 +1730,7 @@ public:
         }
         for (unsigned i=0;i<numworkers;i++) 
             delete workers[i];
-        delete workers;
+        delete [] workers;
         ::Release(jhelper);
     }
 

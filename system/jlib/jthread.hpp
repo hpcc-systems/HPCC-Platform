@@ -138,6 +138,8 @@ public:
 interface IThreaded
 {
     virtual void main() = 0;
+protected:
+    virtual ~IThreaded() {}
 };
 
 // utility class, useful for containing a thread

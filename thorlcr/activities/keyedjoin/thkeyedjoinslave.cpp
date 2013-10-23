@@ -1893,7 +1893,7 @@ public:
                 StringBuffer filename;
                 rfn.getPath(filename);
                 Owned<IDelayedFile> lfile = queryThor().queryFileCache().lookup(*this, filePart);
-                partKeySet->addIndex(createKeyIndex(filename.str(), crc, *(lfile.get()), false, false));
+                partKeySet->addIndex(createKeyIndex(filename.str(), crc, *lfile, false, false));
             }
             while (ip<numIndexParts);
 

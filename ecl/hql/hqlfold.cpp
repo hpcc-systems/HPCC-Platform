@@ -3305,6 +3305,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             break;
         }
     case no_actionlist:
+    case no_orderedactionlist:
         {
             bool same = true;
             HqlExprArray args;
@@ -3324,7 +3325,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 }
             }
             if (!same)
-                return createActionList(args);
+                return createActionList(op, args);
             break;
         }
     case no_exists:
@@ -4846,6 +4847,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
         break;
     case no_sequential:
     case no_parallel:
+    case no_orderedactionlist:
         if (expr->numChildren() == 1)
         {
             if (expr->queryChild(0)->isAttribute())

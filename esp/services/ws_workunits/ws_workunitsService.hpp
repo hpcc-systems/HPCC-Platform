@@ -116,6 +116,7 @@ public:
     bool isQuerySuspended(const char* query, IConstWUClusterInfo *clusterInfo, unsigned wait, StringBuffer& errorMessage);
     bool onWUListQueries(IEspContext &context, IEspWUListQueriesRequest &req, IEspWUListQueriesResponse &resp);
     bool onWUReportBug(IEspContext &context, IEspWUReportBugRequest &req, IEspWUReportBugResponse &resp);
+    bool onWUGetBugReportInfo(IEspContext &context, IEspWUGetBugReportInfoRequest &req, IEspWUGetBugReportInfoResponse &resp);
 private:
     void addProcess(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, MemoryBuffer &mb);
 

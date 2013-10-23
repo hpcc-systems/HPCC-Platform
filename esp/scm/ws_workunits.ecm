@@ -1412,6 +1412,20 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
     string QueryId;
 };
 
+ESPrequest [nil_remove] WUGetBugReportInfoRequest
+{
+    string WUID;
+};
+
+ESPresponse [exceptions_inline] WUGetBugReportInfoResponse
+{
+    string WUID;
+    string ESPIPAddress;
+    string ThorIPAddress;
+    string BuildVersion;
+    string Archive;
+};
+
 ESPrequest [nil_remove] WUReportBugRequest
 {
     string WUID;
@@ -1499,6 +1513,7 @@ ESPservice [
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
     ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
     ESPmethod WUReportBug(WUReportBugRequest, WUReportBugResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/WUBugReportForm.xslt")] WUGetBugReportInfo(WUGetBugReportInfoRequest, WUGetBugReportInfoResponse);
 };
 
 
