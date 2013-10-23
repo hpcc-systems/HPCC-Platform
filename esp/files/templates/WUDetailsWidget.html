@@ -18,11 +18,19 @@
                     <div id="${id}Publish" data-dojo-type="dijit.form.DropDownButton">
                         <span>Publish</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <label class="Prompt" for="${id}Jobname2">Job Name:</label>
-                            <input id="${id}Jobname2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox"/>
-                            <button data-dojo-attach-event="onClick:_onPublish" data-dojo-type="dijit.form.Button">Submit</button>
+                            <div id="${id}PublishForm" style="width:460px" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+                                    <input id="${id}Jobname2" title="Job&nbsp;Name:" colspan="2" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
+                                     <input id="${id}RemoteDali" title="Remote&nbsp;Dali:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onPublish" data-dojo-type="dijit.form.Button">Submit</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}ZapReport" data-dojo-attach-event="onClick:_onZapReport" data-dojo-props="iconClass:'iconZap'" title="Zipped Analysis Package" data-dojo-type="dijit.form.Button">Z.A.P</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
                 </div>
@@ -96,6 +104,21 @@
             </div>
             <div id="${id}_XML" title="XML" data-dojo-props="WUXml: true" data-dojo-type="ECLSourceWidget">
             </div>
+        </div>
+    </div>
+    <div id="${id}ZapDialog" data-dojo-type="dijit.Dialog" title="Zipped Analysis Package">
+        <div id="${id}ZapForm" style="width:400px" data-dojo-type="dijit.form.Form">
+            <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+                <input id="${id}ZapWUID" title="WUID:" name="WUID" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}BuildVersion" title="ESP&nbsp;Build&nbsp;Version:" name="BuildVersion" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}ESPIPAddress" title="ESP&nbsp;Network&nbsp;Address:" name="ESPIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}ThorIPAddress" title="Thor&nbsp;Network&nbsp;Address:" name="ThorIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}ZapDescription" title="Description:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+                <input id="${id}WarnHistory" title="History:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+                <input id="${id}WarnTimings" title="Timings:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+            </div>
+            <button id="${id}_onZapSubmit" class="bottomFormButtons" data-dojo-attach-event="onClick:_onZapSubmit" data-dojo-type="dijit.form.Button">Apply</button>
+            <button class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">Cancel</button>
         </div>
     </div>
 </div>

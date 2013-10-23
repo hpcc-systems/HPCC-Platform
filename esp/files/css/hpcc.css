@@ -369,6 +369,13 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+.iconAdvanced{
+    background-image: url("../img/Info.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
 /*###############################*/
 #appLayout {
     height: 100%;
@@ -746,6 +753,20 @@ margin-left:-20px;
 
 .iconDeleted{
     background-image: url("../img/workunit_deleted.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconCluster{
+    background-image: url("../img/server.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconZap{
+    background-image: url("../img/zap.png"); 
     width: 16px;
     height: 16px;
     display: inline-block;
