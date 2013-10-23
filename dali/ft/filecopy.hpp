@@ -56,6 +56,7 @@ public:
     void serializeExtra(MemoryBuffer & out, unsigned version) const;
     void set(FileFormatType _type, unsigned _recordSize = 0) { type = _type, recordSize = _recordSize; }
     void set(const FileFormat & src);
+    bool hasQuote() const                           { return (quote == NULL) || (*quote != '\0'); }
 
 public:
     FileFormatType      type;
