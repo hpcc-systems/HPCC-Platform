@@ -44,6 +44,7 @@
   NB: It assumes records cannot be split between parts!
 */
 
+const static unsigned maxNumberOfBufferOverrun = 100;
 const offset_t noSizeLimit = I64C(0x7fffffffffffffff);
 
 CPartitioner::CPartitioner()
@@ -314,6 +315,7 @@ CInputBasePartitioner::CInputBasePartitioner(unsigned _headerSize, unsigned expe
     else
         openfilecache->Link();
 
+    clearBufferOverrun();
 }
 
 IFileIOCache *CInputBasePartitioner::openfilecache = NULL;
@@ -690,6 +692,7 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
                }
                else
                {
+                   clearBufferOverrun();
                    return (size32_t)(cur + matchLen - start);
                }
             }
@@ -758,7 +761,14 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
 
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
+
+    numOfProcessedBytes += (unsigned)(end - start);
+
     LOG(MCdebugProgress, unknownJob, "CSV splitRecordSize(%d) at end of file", (unsigned) (end - start));
+
+    if (++numOfBufferOverrun > maxNumberOfBufferOverrun)
+        throwError1(DFTERR_EndOfCsvRecordNotFound, numOfProcessedBytes);
+
     return end - start;
 }
 
@@ -991,6 +1001,7 @@ size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
                }
                else
                {
+                   clearBufferOverrun();
                    return (size32_t)(cur + matchLen - start);
                }
             }
@@ -1059,7 +1070,13 @@ size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
 
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
+
+    numOfProcessedBytes += (unsigned)(end - start);
+
     LOG(MCdebugProgress, unknownJob, "UTF splitRecordSize(%d) at end of file", (unsigned) (end - start));
+
+    if (++numOfBufferOverrun > maxNumberOfBufferOverrun)
+        throwError1(DFTERR_EndOfUtfRecordNotFound, numOfProcessedBytes);
 
     return end - start;
 }
