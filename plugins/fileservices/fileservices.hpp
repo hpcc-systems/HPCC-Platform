@@ -67,6 +67,7 @@ FILESERVICES_API void FILESERVICES_CALL fsStartSuperFileTransaction(IGlobalCodeC
 FILESERVICES_API void FILESERVICES_CALL fsAddSuperFile(IGlobalCodeContext *ctx, const char *lsuperfn,const char *_lfn,unsigned atpos=0,bool addcontents=false, bool strict=false);
 FILESERVICES_API void FILESERVICES_CALL fsRemoveSuperFile(IGlobalCodeContext *ctx, const char *lsuperfn,const char *_lfn,bool del=false,bool remcontents=false);
 FILESERVICES_API void FILESERVICES_CALL fsClearSuperFile(IGlobalCodeContext *ctx, const char *lsuperfn,bool del=false);
+FILESERVICES_API void FILESERVICES_CALL fsDeleteOwnedSubFiles(IGlobalCodeContext *ctx, const char *lsuperfn);
 FILESERVICES_API void FILESERVICES_CALL fsSwapSuperFile(IGlobalCodeContext *ctx, const char *lsuperfn1,const char *lsuperfn2);
 FILESERVICES_API void FILESERVICES_CALL fsReplaceSuperFile(IGlobalCodeContext *ctx, const char *lsuperfn,const char *lfn,const char *bylfn);
 FILESERVICES_API void FILESERVICES_CALL fsFinishSuperFileTransaction(IGlobalCodeContext *ctx, bool rollback=false);
@@ -101,6 +102,7 @@ FILESERVICES_API void FILESERVICES_CALL fslStartSuperFileTransaction(ICodeContex
 FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const char *lsuperfn,const char *_lfn,unsigned atpos=0,bool addcontents=false, bool strict=false);
 FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, const char *lsuperfn,const char *_lfn,bool del=false,bool remcontents=false);
 FILESERVICES_API void FILESERVICES_CALL fslClearSuperFile(ICodeContext *ctx, const char *lsuperfn,bool del=false);
+FILESERVICES_API void FILESERVICES_CALL fslDeleteOwnedSubFiles(ICodeContext *ctx, const char *lsuperfn);
 FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, const char *lsuperfn1,const char *lsuperfn2);
 FILESERVICES_API void FILESERVICES_CALL fslReplaceSuperFile(ICodeContext *ctx, const char *lsuperfn,const char *lfn,const char *bylfn);
 FILESERVICES_API void FILESERVICES_CALL fslFinishSuperFileTransaction(ICodeContext *ctx, bool rollback=false);
