@@ -343,6 +343,8 @@ define([
                 this.graphsWidget.set("tooltip", tooltip);
             } else if (name === "StateID") {
                 this.refreshActionState();
+            } else if (name === "ActionEx") {
+                this.refreshActionState();
             } else if (name === "hasCompleted") {
                 this.checkIfComplete();
             }
