@@ -68,7 +68,6 @@ extern HQL_API IAtom * activeAtom;
 extern HQL_API IAtom * activeFailureAtom;
 extern HQL_API IAtom * activeNlpAtom;
 extern HQL_API IAtom * afterAtom;
-extern HQL_API IAtom * aggregateAtom;
 extern HQL_API IAtom * allAtom;
 extern HQL_API IAtom * algorithmAtom;
 extern HQL_API IAtom * allocatorAtom;

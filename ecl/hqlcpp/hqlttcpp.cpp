@@ -1969,11 +1969,13 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
         break;
     case no_newusertable:
         normalized = normalizeTableGrouping(transformed);
-        if (!normalized)
-            normalized = normalizeTableToAggregate(expr, true);
         break;
     case no_newaggregate:
-        normalized = normalizePrefetchAggregate(transformed);
+        normalized = normalizeTableGrouping(transformed);
+        if (!normalized)
+            normalized = normalizeTableToAggregate(transformed, true);
+        if (!normalized || (normalized == transformed))
+            normalized = normalizePrefetchAggregate(transformed);
         break;
     case no_dedup:
         normalized = normalizeDedup(transformed);
@@ -2011,7 +2013,7 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
         return getDebugValueExpr(translator.wu(), expr);
     }
 
-    if (normalized)
+    if (normalized && (normalized != transformed))
     {
         transformed.setown(transform(normalized));
         normalized->Release();
@@ -3331,7 +3333,6 @@ static IHqlExpression * convertAggregateGroupingToGroupedAggregate(IHqlExpressio
     unwindChildren(args, expr);
     args.replace(*result.getClear(), 0);
     args.remove(3); // no longer grouped.
-    args.append(*createAttribute(aggregateAtom));
     return expr->clone(args);
 }
 
@@ -3530,8 +3531,6 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
 
     HqlExprArray aggregateAttrs;
     unwindAttributes(aggregateAttrs, expr);
-    removeAttribute(aggregateAttrs, aggregateAtom);
-    removeAttribute(aggregateAttrs, fewAtom);
     if (!expr->hasAttribute(localAtom) && newGroupBy && !isGrouped(dataset) && isPartitionedForGroup(dataset, newGroupBy, true))
         aggregateAttrs.append(*createLocalAttribute());
 
@@ -3551,6 +3550,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
         ret.setown(createDataset(no_newusertable, ret.getClear(), createComma(LINK(record), projectTransform)));
         ret.setown(expr->cloneAllAnnotations(ret));
     }
+
     return ret.getClear();
 }
 
@@ -3607,7 +3607,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
                 useHashAggregate = true;
         }
 
-        if (!expr->hasAttribute(aggregateAtom) && !useHashAggregate && !expr->hasAttribute(groupedAtom))
+        if (!useHashAggregate && !expr->hasAttribute(groupedAtom))
             return convertAggregateGroupingToGroupedAggregate(expr, group);
     }
     return NULL;
@@ -10570,7 +10570,9 @@ IHqlExpression * HqlTreeNormalizer::convertSelectToProject(IHqlExpression * newR
     unsigned numChildren = expr->numChildren();
     for (unsigned idx = 2; idx < numChildren; idx++)
         args.append(*transform(expr->queryChild(idx)));
-    OwnedHqlExpr project = createDataset(no_newusertable, args);
+
+    node_operator op = isAggregateDataset(expr) ? no_newaggregate : no_newusertable;
+    OwnedHqlExpr project = createDataset(op, args);
     return expr->cloneAllAnnotations(project);
 }
 
