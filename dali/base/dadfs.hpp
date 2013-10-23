@@ -582,8 +582,8 @@ interface INamedGroupStore: implements IGroupResolver
     virtual void addUnique(IGroup *group,StringBuffer &lname,const char *dir=NULL) = 0;
     virtual void swapNode(const IpAddress &from, const IpAddress &to) = 0;
     virtual IGroup *lookup(const char *logicalgroupname, StringBuffer &dir, GroupType &groupType) = 0;
-    virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                    // sets default timeout for SDS connections and locking                                                                                         // returns previous value
-
+    virtual unsigned setDefaultTimeout(unsigned timems) = 0;     // sets default timeout for SDS connections and locking
+    virtual unsigned setRemoteTimeout(unsigned timems) = 0;      // sets default timeout for remote SDS connections and locking
 };
 
 extern da_decl INamedGroupStore  &queryNamedGroupStore();
