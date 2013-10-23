@@ -154,7 +154,7 @@ protected:
         return (byte *)((bufattr.length()!=bufferSize)?bufattr.allocate(bufferSize):bufattr.bufferBase()); 
     }
     virtual void killBuffer()  { bufattr.clear(); }
-    virtual void clearBufferOverrun(void) { numOfBufferOverrun = 0; numOfProcessedBytes = 0;}
+    virtual void clearBufferOverrun() { numOfBufferOverrun = 0; numOfProcessedBytes = 0; }
 protected: 
     Owned<IFileIOStream>   inStream;
     MemoryAttr             bufattr;
