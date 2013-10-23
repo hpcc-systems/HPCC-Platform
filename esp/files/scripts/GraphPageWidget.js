@@ -294,6 +294,10 @@ define([
             this._initItemGrid(this.edgesGrid);
         },
 
+        _onRefresh: function () {
+            this.refreshData();
+        },
+
         _onMainRefresh: function () {
             this.main.setMessage("Performing Layout...");
             this.main.startLayout("dot");
@@ -423,7 +427,7 @@ define([
                                     context.refresh(params);
                                 });
                             } else {
-                                context.refreshGraph(context.wu, context.graphName);
+                                context.refreshGraphFromWU(context.wu, context.graphName);
                             }
                         }
                     });
@@ -447,6 +451,14 @@ define([
 
         },
 
+        refreshData: function () {
+            if (lang.exists("params.Wuid", this)) {
+                this.refreshGraphFromWU(this.wu, this.graphName);
+            } else if (lang.exists("params.QueryId", this)) {
+                this.refreshGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
+            }
+        },
+
         refresh: function (params) {
             if (params && params.SubGraphId) {
                 this.global.setSelectedAsGlobalID([params.SubGraphId]);
@@ -458,6 +470,13 @@ define([
             this.global.loadXGMML(xgmml, false);
             this.refreshMain();
             this.refreshOverview();
+            this.loadSubgraphs();
+            this.loadVertices();
+            this.loadEdges();
+        },
+
+        mergeGraphFromXGMML: function (xgmml) {
+            this.main.mergeXGMML(xgmml);
             this.loadSubgraphs();
             this.loadVertices();
             this.loadEdges();
@@ -488,6 +507,13 @@ define([
             return deferred.promise;
         },
 
+        refreshGraphFromWU: function (wu, graphName) {
+            var context = this;
+            wu.fetchGraphXgmmlByName(graphName, function (xgmml) {
+                context.mergeGraphFromXGMML(xgmml);
+            });
+        },
+
         loadGraphFromQuery: function (targetQuery, queryId, graphName) {
             this.overview.setMessage("Fetching Data...");
             this.main.setMessage("Fetching Data...");
@@ -511,13 +537,20 @@ define([
             });
         },
 
-        refreshGraph: function (wu, graphName) {
+        refreshGraphFromQuery: function (targetQuery, queryId, graphName) {
             var context = this;
-            wu.fetchGraphXgmmlByName(graphName, function (xgmml) {
-                context.main.mergeXGMML(xgmml);
-                context.loadSubgraphs();
-                context.loadVertices();
-                context.loadEdges();
+            WsWorkunits.WUQueryGetGraph({
+                request: {
+                    Target: targetQuery,
+                    QueryId: queryId,
+                    GraphName: graphName
+                }
+            }).then(function (response) {
+                if (lang.exists("WUQueryGetGraphResponse.Graphs.ECLGraphEx", response)) {
+                    if (response.WUQueryGetGraphResponse.Graphs.ECLGraphEx.length > 0) {
+                        context.mergeGraphFromXGMML(response.WUQueryGetGraphResponse.Graphs.ECLGraphEx[0].Graph);
+                    }
+                }
             });
         },
 
