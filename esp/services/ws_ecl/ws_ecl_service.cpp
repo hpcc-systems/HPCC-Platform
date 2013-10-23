@@ -1839,6 +1839,7 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
 void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsEclWuInfo &wsinfo)
 {
     size32_t start = jsonmsg.length();
+    const char *jsonp = context.queryRequestParameters()->queryProp("jsonp");
     try
     {
         Owned<IPropertyTree> parmtree = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
@@ -1857,6 +1858,9 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
             node = node->queryPropTree("Results");
         if (node->hasProp("Result"))
             node = node->queryPropTree("Result");
+
+        if (jsonp && *jsonp)
+            jsonmsg.append(jsonp).append('(');
 
         jsonmsg.appendf("{\"%s\": {", element.str());
         Owned<IPropertyTreeIterator> exceptions = node->getElements("Exception");
@@ -1905,12 +1909,18 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
             }
         }
         jsonmsg.append("}}}");
+        if (jsonp && *jsonp)
+            jsonmsg.append(");");
     }
     catch (IException *e)
     {
         jsonmsg.setLength(start);
+        if (jsonp && *jsonp)
+            jsonmsg.append(jsonp).append('(');
         appendJSONException(jsonmsg.append('{'), e);
         jsonmsg.append('}');
+        if (jsonp && *jsonp)
+            jsonmsg.append(");");
     }
 }
 
@@ -2890,7 +2900,12 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
             StringBuffer output;
             if (getEspLogLevel()>LogNormal)
                 DBGLOG("roxie json req: %s", content.str());
+            const char *jsonp = ctx->queryRequestParameters()->queryProp("jsonp");
+            if (jsonp && *jsonp)
+                jsonresp.append(jsonp).append('(');
             sendRoxieRequest(queryset.str(), content, jsonresp, status, queryname.str(), "application/json");
+            if (jsonp && *jsonp)
+                jsonresp.append(");");
             if (getEspLogLevel()>LogNormal)
                 DBGLOG("roxie json resp: %s", jsonresp.str());
         }
