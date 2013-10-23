@@ -2012,7 +2012,7 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
         case FFTblocked:
             return new CSimpleBlockedPartitioner(sameFormats);
         case FFTcsv:
-            if (srcFormat.quote && *srcFormat.quote)
+            if (srcFormat.hasQuote())
                 return new CCsvPartitioner(srcFormat);
             else
                 return new CCsvQuickPartitioner(srcFormat, sameFormats);
