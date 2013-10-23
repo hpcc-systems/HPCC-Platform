@@ -2043,7 +2043,7 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
                 return new CXmlQuickPartitioner(srcFormat, sameFormats);
             else
             {
-                if (srcFormat.quote && *srcFormat.quote)
+                if (srcFormat.hasQuote())
                     return new CUtfPartitioner(srcFormat);
                 else
                     return new CUtfQuickPartitioner(srcFormat, sameFormats);
