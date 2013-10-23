@@ -3100,9 +3100,16 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
         case no_compound:
             //NB: First argument is forced into a separate graph
             if (options.convertCompoundToExecuteWhen)
+            {
                 createInitialGraph(expr->queryChild(0), expr, thisGraph, UnconditionalLink, true);
+            }
             else
-                createInitialGraph(expr->queryChild(0), expr, NULL, UnconditionalLink, true);
+            {
+                HqlExprArray actions;
+                expr->queryChild(0)->unwindList(actions, no_actionlist);
+                ForEachItemIn(i, actions)
+                    createInitialGraph(&actions.item(i), expr, NULL, UnconditionalLink, true);
+            }
             createInitialGraph(expr->queryChild(1), expr, thisGraph, UnconditionalLink, false);
             return;
         case no_executewhen:
@@ -3363,6 +3370,17 @@ void EclResourcer::markAsUnconditional(IHqlExpression * expr, ResourceGraphInfo 
         }
         markChildDependentsAsUnconditional(info, condition);
         return;
+    case no_compound:
+        if (!options.convertCompoundToExecuteWhen)
+        {
+            HqlExprArray actions;
+            expr->queryChild(0)->unwindList(actions, no_actionlist);
+            ForEachItemIn(i, actions)
+                markAsUnconditional(&actions.item(i), NULL, NULL);
+            markAsUnconditional(expr->queryChild(1), ownerGraph, condition);
+            return;
+        }
+        break;
     case no_sequential:
     case no_orderedactionlist:
 //  case no_nonempty:
