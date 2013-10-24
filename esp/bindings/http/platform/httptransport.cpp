@@ -30,13 +30,6 @@
 #include "http/platform/httptransport.ipp"
 #include "bindutil.hpp"
 
-
-
-IEspHttpException* createEspHttpException(int code, const char *_msg, const char* _httpstatus)
-{
-    return new CEspHttpException(code, _msg, _httpstatus);
-}
-
 bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuffer &fileContents, bool &checkModifiedTime, StringBuffer &lastModified, StringBuffer &etag)
 {
     StringBuffer strfile(filepath);
