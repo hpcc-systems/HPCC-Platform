@@ -297,7 +297,7 @@ protected:
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
     virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
     {
-        return getSplitRecordSize(record,maxToRead,processFullBuffer,false);
+        return getSplitRecordSize(record,maxToRead,processFullBuffer,true);
     }
     
 private:
