@@ -305,7 +305,7 @@ public:
     virtual void * createRow(size32_t & allocatedSize)
     {
         const memsize_t allocSize = meta.getInitialSize();
-        memsize_t newCapacity = allocatedSize;
+        memsize_t newCapacity; // always initialised by allocate
         void * row = heap->allocate(allocSize+CHECKER::extraSize, newCapacity);
         //This test should get constant folded to avoid the decrement when not checked.
         if (CHECKER::extraSize)
@@ -316,8 +316,8 @@ public:
 
     virtual void * resizeRow(size32_t newSize, void * row, size32_t & size)
     {
-        size32_t oldsize = size;  // don't need to include the extra checking bytes
-        memsize_t newCapacity = size;
+        const size32_t oldsize = size;  // don't need to include the extra checking bytes
+        memsize_t newCapacity; // always initialised by resizeRow
         void * newrow = heap->resizeRow(row, oldsize, newSize+CHECKER::extraSize, newCapacity);
         if (CHECKER::extraSize)
             newCapacity -= CHECKER::extraSize;

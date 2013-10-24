@@ -21,7 +21,7 @@
 #include "jlib.hpp"
 #include "jfile.hpp"
 
-static unsigned short crc_16_tab[256] = { // x^16+x^15+x^2+1
+const static unsigned short crc_16_tab[256] = { // x^16+x^15+x^2+1
       0x0000,0xc0c1,0xc181,0x0140,0xc301,0x03c0,0x0280,0xc241,
       0xc601,0x06c0,0x0780,0xc741,0x0500,0xc5c1,0xc481,0x0440,
       0xcc01,0x0cc0,0x0d80,0xcd41,0x0f00,0xcfc1,0xce81,0x0e40,
@@ -67,7 +67,7 @@ unsigned short crc16(const void *buf,size32_t len,unsigned short crc)
 
 //---------------------------------------------------------------------------
 
-static unsigned crc_32_tab[] = { /* CRC polynomial 0xedb88320 */
+const static unsigned crc_32_tab[] = { /* CRC polynomial 0xedb88320 */
 0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f,
 0xe963a535, 0x9e6495a3, 0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988,
 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,
