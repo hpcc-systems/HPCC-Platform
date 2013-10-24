@@ -3974,18 +3974,33 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
             sb.append("ESP:          ").append(req.getESPIPAddress()).append("\r\n");
         if (req.getThorIPAddress())
             sb.append("Thor:         ").append(req.getThorIPAddress()).append("\r\n");
-        sb.append("Exceptions:   ");
-        if (0 == cwu->getExceptionCount())
-            sb.append("None\r\n");
-        else
+        //Exceptions/Warnings/Info
+        Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
+        StringBuffer info, warn, err;
+        ForEach(*exceptions)
         {
-            sb.append("\r\n");
-            Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
-            ForEach(*exceptions)
+            switch (exceptions->query().getSeverity())
             {
-                sb.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+            case ExceptionSeverityInformation:
+                info.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+                break;
+            case ExceptionSeverityWarning:
+                warn.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+                break;
+            case ExceptionSeverityError:
+                err.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+                break;
             }
         }
+        if (err.length())
+            sb.append("Exceptions:   ").append("\r\n").append(err);
+        if (warn.length())
+            sb.append("Warnings:     ").append("\r\n").append(warn);
+        if (info.length())
+            sb.append("Information:  ").append("\r\n").append(info);
+
+        //User provided Information
+
         sb.append("Problem:      ").append(req.getProblemDescription()).append("\r\n\r\n");
         sb.append("What Changed: ").append(req.getWhatChanged()).append("\r\n\r\n");
         sb.append("Timing:       ").append(req.getWhereSlow()).append("\r\n\r\n");
