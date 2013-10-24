@@ -3767,6 +3767,19 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     }
                     break;
                 }
+            case no_compound_indexread:
+                {
+                    //If we reach here the index read isn't shared, so different indices won't duplicate the index read.
+                    if (!isLimitedDataset(child))
+                    {
+                        //Add a choosen() within the index read to minimize the records returned remotely - convert ir[1] to choosen(ir,1)[1]
+                        //Make it local because that is the thor semantics (roxie is happy with local or non local)
+                        OwnedHqlExpr limited = createDataset(no_choosen, LINK(child->queryChild(0)), createComma(LINK(transformed->queryChild(1)), createLocalAttribute()));
+                        OwnedHqlExpr newIndexRead = replaceChild(child, limited);
+                        return replaceChild(transformed, newIndexRead);
+                    }
+                    break;
+                }
             }
         }
     }
