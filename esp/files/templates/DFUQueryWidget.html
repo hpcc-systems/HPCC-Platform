@@ -94,17 +94,16 @@
                                         <option value="9">UTF-32BE</option>
                                     </select>
                                     <input id="${id}SprayVariableMaxRecordLength" title="Max&nbsp;Record&nbsp;Length:" style="width: 95%;" name="sourceMaxRecordSize" value="8192" colspan="2" required="true" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
-                                    <input id="${id}SprayVariableSeperators" title="Seperators:" style="width: 95%;" name="sourceSeparators" value="," colspan="2" data-dojo-props="trim: true, placeHolder:'\,'" data-dojo-type="dijit.form.ValidationTextBox" />
-                                    <input title="No&nbsp;Separator?" name="NoSourceSeparator" colspan="2" data-dojo-type="dijit.form.CheckBox" />
-                                    <input id="${id}SprayVariableEscape" title="Escape:" style="width: 95%;" name="sourceEscape" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
-                                    <input id="${id}SprayVariableTerminators" title="Line&nbsp;Terminators:" name="sourceTerminators"  style="width: 95%;" value="\n,\r\n" colspan="2" required="true" data-dojo-props="trim: true, placeHolder:'\\n,\\r\\n'" data-dojo-type="dijit.form.ValidationTextBox" />
-                                    <input id="${id}SprayVariableQuote" title="Quote:" style="width: 95%;" name="sourceQuote" value="'" colspan="2" data-data-dojo-props="trim: true, placeHolder:'\''" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}SprayVariableSeperators" title="Seperators:" style="width: 95%;" name="sourceCsvSeparate" value="," colspan="2" data-dojo-props="trim: true, placeHolder:'\,'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input title="No&nbsp;Separator?" name="NoSourceCsvSeparator" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                    <input id="${id}SprayVariableEscape" title="Escape:" style="width: 95%;" name="sourceCsvEscape" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}SprayVariableTerminators" title="Line&nbsp;Terminators:" name="sourceCsvTerminate"  style="width: 95%;" value="\n,\r\n" colspan="2" required="true" data-dojo-props="trim: true, placeHolder:'\\n,\\r\\n'" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    <input id="${id}SprayVariableQuote" title="Quote:" style="width: 95%;" name="sourceCsvQuote" value="'" colspan="2" data-data-dojo-props="trim: true, placeHolder:'\''" data-dojo-type="dijit.form.TextBox" />
                                 </div>
                                 <h2>Destination</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
                                     <input id="${id}SprayVariableDestination" title="Group:" style="width: 95%;" name="destGroup" colspan="2" data-dojo-type="TargetSelectWidget" />
                                     <input title="Label:" style="width: 95%;" name="destLogicalName" colspan="2" data-dojo-props="trim: true" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
-                                    <input title="Mask:" style="width: 95%;" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                     <input title="Prefix:" style="width: 95%;" name="prefix" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                 </div>
                                 <h2>Options</h2>
