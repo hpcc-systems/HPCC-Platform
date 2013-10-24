@@ -3901,19 +3901,20 @@ void CWsWorkunitsEx::addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &c
     IPropertyTreeIterator& proc = cwu->getProcesses(process, NULL);
     ForEach (proc)
     {
-        StringBuffer logName;
-        proc.query().getProp("@log",logName);
-        if (!logName.length())
+        StringBuffer logSpec;
+        proc.query().getProp("@log",logSpec);
+        if (!logSpec.length())
             continue;
         StringBuffer pid;
         pid.appendf("%d",proc.query().getPropInt("@pid"));
-        MemoryBuffer * pMB = new MemoryBuffer;
+        MemoryBuffer * pMB = NULL;
         try
         {
+            pMB = new MemoryBuffer;
             if (0 == stricmp(process, "EclAgent"))
-                winfo.getWorkunitEclAgentLog(logName.str(), pid.str(), *pMB);
+                winfo.getWorkunitEclAgentLog(logSpec.str(), pid.str(), *pMB);
             else if (0 == stricmp(process, "Thor"))
-                winfo.getWorkunitThorLog(logName.str(), *pMB);
+                winfo.getWorkunitThorLog(logSpec.str(), *pMB);
             else
             {
                 delete pMB;
@@ -3921,20 +3922,26 @@ void CWsWorkunitsEx::addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &c
             }
             mbArr.append(pMB);
         }
+
         catch(IException *e)
         {
             StringBuffer s;
             e->errorMessage(s);
-            if (s.length())
-            {
-                pMB->append(s.str());
-                mbArr.append(pMB);
-            }
+            pMB->append(s.str());
             e->Release();
+            mbArr.append(pMB);
         }
 
         if (pMB && pMB->length())
-            zipper->addContentToZIP(pMB->length(), pMB->bufferBase(), (char*)logName.str(), true);
+        {
+            const char * logName = logSpec.str();
+            for (const char * p=logSpec; *p; p++)
+            {
+                if (*p == '\\' || *p == '/')
+                    logName = p+1;
+            }
+            zipper->addContentToZIP(pMB->length(), pMB->bufferBase(), (char*)logName, true);
+        }
     }
 }
 
