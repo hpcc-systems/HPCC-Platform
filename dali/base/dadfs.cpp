@@ -4198,8 +4198,23 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     e->Release();
                     return false;
                 }
-                if (!parent->querySubFileNamed(subfile))
+                CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());
+                unsigned pos = findSubFileOrd(subfile);
+                if ((pos==NotFound) || (pos>=sf->subfiles.ordinality()))
+                    pos = sf->findSubFile(subfile);
+                if (pos==NotFound)
+                {
+                    // why isn't this an exception?
                     WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(),parent->queryLogicalName());
+                }
+                else
+                {
+                    VStringBuffer path("SubFile[@name=\"%s\"]", subfile.get());
+                    IPropertyTree *sub = sf->root->queryPropTree(path.str());
+                    dbgassertex(sub);
+                    if ((pos+1) != sub->getPropInt("@num"))
+                        ThrowStringException(-1, "RemoveSubFile: SuperFile %s, subfile %s, part numbers are out of sequence. SubFile[@num=\"%d\"] is at position %d", sf->logicalName.get(), subfile.get(), sub->getPropInt("@num"), pos+1);
+                }
             }
             // Try to lock all files
             addFileLock(parent);
@@ -4511,8 +4526,8 @@ protected:
             return;
         try {
             // Find all reported indexes and bail on bad range (before we lock any file)
+            // JCSMORE this should check that @num are sequence in order with no gaps, add 'before' and remove resequence already
             Owned<IPropertyTreeIterator> subit = root->getElements("SubFile");
-            // Adding a sub 'before' another get the list out of order (but still valid)
             OwnedMalloc<unsigned> subFiles(n, true);
             ForEach (*subit)
             {
