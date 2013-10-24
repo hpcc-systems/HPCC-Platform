@@ -86,6 +86,7 @@ static const char * EclDefinition =
 "  AddSuperFile(const varstring lsuperfn,const varstring lfn,unsigned4 atpos=0,boolean addcontents=false, boolean strict=false) : c,action,globalcontext,entrypoint='fsAddSuperFile'; \n"
 "  RemoveSuperFile(const varstring lsuperfn,const varstring lfn,boolean del=false,boolean remcontents=false) : c,action,globalcontext,entrypoint='fsRemoveSuperFile'; \n"
 "  ClearSuperFile(const varstring lsuperfn,boolean del=false) : c,action,globalcontext,entrypoint='fsClearSuperFile'; \n"
+"  DeleteOwnedSubFiles(const varstring lsuperfn) : c,action,globalcontext,entrypoint='fsDeleteOwnedSubFiles'; \n"
 "  SwapSuperFile(const varstring lsuperfn1,const varstring lsuperfn2) : c,action,globalcontext,entrypoint='fsSwapSuperFile'; \n"
 "  ReplaceSuperFile(const varstring lsuperfn,const varstring lfn,const varstring bylfn) : c,action,globalcontext,entrypoint='fsReplaceSuperFile'; \n"
 "  FinishSuperFileTransaction(boolean rollback=false) : c,action,globalcontext,entrypoint='fsFinishSuperFileTransaction'; \n"
@@ -1012,6 +1013,7 @@ StartSuperFileTransaction();
 AddSuperFile(const varstring lsuperfn,const varstring lfn,unsigned4 atpos=0);
 RemoveSuperFile(const varstring lsuperfn,const varstring lfn,boolean del=false);
 ClearSuperFile(const varstring lsuperfn,boolean del=false);
+DeleteOwnedSubFiles(const varstring lsuperfn);
 SwapSuperFile(const varstring lsuperfn1,const varstring lsuperfn2);
 ReplaceSuperFile(const varstring lsuperfn,const varstring lfn,const varstring bylfn);
 FinishSuperFileTransaction(boolean rollback=false);
@@ -1266,6 +1268,28 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
 FILESERVICES_API void FILESERVICES_CALL fsClearSuperFile(IGlobalCodeContext *gctx, const char *lsuperfn,bool del)
 {
     fsRemoveSuperFile(gctx,lsuperfn,NULL,del);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsDeleteOwnedSubFiles(IGlobalCodeContext *gctx, const char *lsuperfn)
+{
+    fslDeleteOwnedSubFiles(gctx->queryCodeContext(), lsuperfn);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fslDeleteOwnedSubFiles(ICodeContext *ctx, const char *lsuperfn)
+{
+    Owned<IDistributedSuperFile> file;
+    StringBuffer lsfn;
+    lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, true);
+    IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
+    assertex(transaction);
+    file->deleteOwnedSubFiles(transaction);
+    VStringBuffer s("DeleteOwnedSubFiles ('%s') ", lsfn.str());
+    if (transaction->active())
+        s.append("trans");
+    else
+        s.append("done");
+    WUmessage(ctx,ExceptionSeverityInformation,NULL,s.str());
+    AuditMessage(ctx,"DeleteOwnedSubFiles",lsfn.str());
 }
 
 FILESERVICES_API void FILESERVICES_CALL fslClearSuperFile(ICodeContext *ctx, const char *lsuperfn,bool del)
