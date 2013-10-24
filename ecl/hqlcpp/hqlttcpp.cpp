@@ -7342,14 +7342,17 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
         //fall through
     case no_globalscope:
         {
+            IHqlExpression * value = transformed->queryChild(0);
+            if (expr->hasAttribute(optAtom))
+            {
+                if (!isIndependentOfScope(value))
+                    return LINK(value);
+            }
+
             if (!expr->hasAttribute(localAtom) || isUsedUnconditionally(expr))
             {
-                IHqlExpression * value = transformed->queryChild(0);
                 if (!isIndependentOfScope(value))
                 {
-                    if (expr->hasAttribute(optAtom))
-                        return LINK(transformed->queryChild(0));
-
                     IHqlExpression * symbol = queryActiveSymbol();
                     StringBuffer s;
                     if (symbol && symbol->queryBody() == expr)
@@ -7399,6 +7402,49 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                 }
                 break;
             }
+        }
+    }
+    return transformed.getClear();
+}
+
+static HqlTransformerInfo optGlobalTransformerInfo("OptGlobalTransformer");
+OptGlobalTransformer::OptGlobalTransformer() : NewHqlTransformer(optGlobalTransformerInfo)
+{
+    seenOptGlobal = false;
+}
+
+void OptGlobalTransformer::analyseExpr(IHqlExpression * expr)
+{
+    if (alreadyVisited(expr))
+        return;
+
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_globalscope:
+        if (expr->hasAttribute(optAtom))
+            seenOptGlobal = true;
+        break;
+    }
+    NewHqlTransformer::analyseExpr(expr);
+}
+
+IHqlExpression * OptGlobalTransformer::createTransformed(IHqlExpression * expr)
+{
+    OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
+    node_operator op = transformed->getOperator();
+    switch (op)
+    {
+    case no_globalscope:
+        {
+            if (transformed->hasAttribute(optAtom))
+            {
+                IHqlExpression * value = transformed->queryChild(0);
+                if (!isIndependentOfScope(value))
+                    return LINK(value);
+                return removeAttribute(transformed, optAtom);
+            }
+            break;
         }
     }
     return transformed.getClear();
@@ -7686,8 +7732,21 @@ void migrateExprToNaturalLevel(WorkflowItem & cur, IWorkUnit * wu, HqlCppTransla
             transformer.transformRoot(exprs, results);
             replaceArray(exprs, results);
         }
-        translator.checkNormalized(exprs);
     }
+    else
+    {
+        OptGlobalTransformer transformer;
+
+        transformer.analyseArray(exprs, 0);
+        if (transformer.needToTransform())
+        {
+            HqlExprArray results;
+            transformer.transformRoot(exprs, results);
+            replaceArray(exprs, results);
+        }
+    }
+
+    translator.checkNormalized(exprs);
 
     translator.traceExpressions("m1", exprs);
 

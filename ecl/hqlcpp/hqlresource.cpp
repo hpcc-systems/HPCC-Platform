@@ -2269,6 +2269,8 @@ protected:
             return;
         case no_globalscope:
         case no_evalonce:
+            if (expr->hasAttribute(optAtom) && !expr->isIndependentOfScope())
+                break;
             if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
                 noteDataset(expr, expr->queryChild(0), true);
             else
