@@ -1,22 +1,25 @@
 /*##############################################################################
-#	HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#   HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#	Licensed under the Apache License, Version 2.0 (the "License");
-#	you may not use this file except in compliance with the License.
-#	You may obtain a copy of the License at
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-#	   http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-#	Unless required by applicable law or agreed to in writing, software
-#	distributed under the License is distributed on an "AS IS" BASIS,
-#	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#	See the License for the specific language governing permissions and
-#	limitations under the License.
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 ############################################################################## */
 define([
     "dojo/_base/declare",
     "dojo/dom",
+    "dojo/dom-form",
+    "dojo/_base/lang",
     "dojo/dom-attr",
+    "dojo/request/iframe",
     "dojo/dom-class",
     "dojo/query",
     "dojo/store/Memory",
@@ -33,6 +36,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPWorkunit",
+    "hpcc/ESPRequest",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/GraphsWidget",
@@ -42,22 +46,30 @@ define([
     "hpcc/LogsWidget",
     "hpcc/TimingPageWidget",
     "hpcc/ECLPlaygroundWidget",
+    "hpcc/WsWorkunits",
 
     "dojo/text!../templates/WUDetailsWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
+    "dijit/form/Form",
     "dijit/form/Textarea",
     "dijit/form/Button",
     "dijit/Toolbar",
     "dijit/TooltipDialog",
-    "dijit/TitlePane"
-], function (declare, dom, domAttr, domClass, query, Memory, Observable,
+    "dijit/TitlePane",
+    "dijit/form/TextBox",
+    "dijit/Dialog",
+    "dijit/form/SimpleTextarea",
+
+    "dojox/layout/TableContainer"
+], function (declare, dom, domForm, lang, domAttr, iframe, domClass, query, Memory, Observable,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
+                _TabContainerWidget, ESPWorkunit, ESPRequest, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget, WsWorkunits,
                 template) {
+    var uniqueID = 0;
     return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "WUDetailsWidget",
@@ -81,6 +93,10 @@ define([
         publishForm: null,
 
         wu: null,
+        buildVersion: null,
+        espIPAddress: null,
+        thorIPAddress: null,
+
         prevState: "",
 
         postCreate: function (args) {
@@ -123,6 +139,10 @@ define([
             return "ECL Workunit Details";
         },
 
+        _onCancelDialog: function (){
+            registry.byId(this.id + "ZapDialog").hide();
+        }, 
+
         //  Hitched actions  ---
         _onSave: function (event) {
             var protectedCheckbox = registry.byId(this.id + "Protected");
@@ -159,6 +179,34 @@ define([
                 registry.byId(this.id + "Publish").closeDropDown();
                 this.wu.publish(dom.byId(this.id + "Jobname2").value, dom.byId(this.id + "RemoteDali").value);
             }
+        },
+
+        onZapReport: function (event) {
+            var context = this;
+            WsWorkunits.WUGetBugReportInfo({
+                request: {
+                    WUID: this.wu.Wuid
+                }
+            }).then(function (response) {
+                registry.byId(context.id + "ZapDialog").show();
+                if (lang.exists("WUGetBugReportInfoResponse", response)) {
+                    context.updateInput("ZapWUID", null, response.WUGetBugReportInfoResponse.WUID);
+                    context.updateInput("BuildVersion", null, response.WUGetBugReportInfoResponse.BuildVersion);
+                    context.updateInput("ESPIPAddress", null, response.WUGetBugReportInfoResponse.ESPIPAddress);
+                    context.updateInput("ThorIPAddress", null, response.WUGetBugReportInfoResponse.ThorIPAddress);
+                    
+                    context.buildVersion = response.WUGetBugReportInfoResponse.BuildVersion;
+                    context.espIPAddress = response.WUGetBugReportInfoResponse.ESPIPAddress;
+                    context.thorIPAddress = response.WUGetBugReportInfoResponse.ThorIPAddress;
+                }                
+            });
+        },
+
+        onZapSubmit: function (event) {
+            var frame = iframe.create("ZapDownload" + uniqueID++);
+            var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUReportBug?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion);
+            iframe.setSrc(frame, url, true);
+            registry.byId(this.id + "ZapDialog").hide();
         },
 
         //  Implementation  ---

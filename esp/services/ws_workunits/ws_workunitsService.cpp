@@ -3896,26 +3896,52 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     return true;
 }
 
-void CWsWorkunitsEx::addProcess(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, MemoryBuffer &mb)
+void CWsWorkunitsEx::addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr)
 {
     IPropertyTreeIterator& proc = cwu->getProcesses(process, NULL);
     ForEach (proc)
     {
-        StringBuffer logName;
-        proc.query().getProp("@log",logName);
-        if (!logName.length())
+        StringBuffer logSpec;
+        proc.query().getProp("@log",logSpec);
+        if (!logSpec.length())
             continue;
         StringBuffer pid;
         pid.appendf("%d",proc.query().getPropInt("@pid"));
-        mb.clear();
-        if (0 == stricmp(process, "EclAgent"))
-            winfo.getWorkunitEclAgentLog(logName.str(), pid.str(), mb);
-        else if (0 == stricmp(process, "Thor"))
-            winfo.getWorkunitThorLog(logName.str(), mb);
-        else
-            return;
+        MemoryBuffer * pMB = NULL;
+        try
+        {
+            pMB = new MemoryBuffer;
+            if (0 == stricmp(process, "EclAgent"))
+                winfo.getWorkunitEclAgentLog(logSpec.str(), pid.str(), *pMB);
+            else if (0 == stricmp(process, "Thor"))
+                winfo.getWorkunitThorLog(logSpec.str(), *pMB);
+            else
+            {
+                delete pMB;
+                return;
+            }
+            mbArr.append(pMB);
+        }
 
-        zipper->addContentToZIP(mb.length(), mb.bufferBase(), (char*)logName.str(), true);
+        catch(IException *e)
+        {
+            StringBuffer s;
+            e->errorMessage(s);
+            pMB->append(s.str());
+            e->Release();
+            mbArr.append(pMB);
+        }
+
+        if (pMB && pMB->length())
+        {
+            const char * logName = logSpec.str();
+            for (const char * p=logSpec; *p; p++)
+            {
+                if (*p == '\\' || *p == '/')
+                    logName = p+1;
+            }
+            zipper->addContentToZIP(pMB->length(), pMB->bufferBase(), (char*)logName, true);
+        }
     }
 }
 
@@ -3948,18 +3974,33 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
             sb.append("ESP:          ").append(req.getESPIPAddress()).append("\r\n");
         if (req.getThorIPAddress())
             sb.append("Thor:         ").append(req.getThorIPAddress()).append("\r\n");
-        sb.append("Exceptions:   ");
-        if (0 == cwu->getExceptionCount())
-            sb.append("None\r\n");
-        else
+        //Exceptions/Warnings/Info
+        Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
+        StringBuffer info, warn, err;
+        ForEach(*exceptions)
         {
-            sb.append("\r\n");
-            Owned<IConstWUExceptionIterator> exceptions = &cwu->getExceptions();
-            ForEach(*exceptions)
+            switch (exceptions->query().getSeverity())
             {
-                sb.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+            case ExceptionSeverityInformation:
+                info.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+                break;
+            case ExceptionSeverityWarning:
+                warn.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+                break;
+            case ExceptionSeverityError:
+                err.append("\t").append(exceptions->query().getExceptionMessage(temp)).append("\r\n\r\n");
+                break;
             }
         }
+        if (err.length())
+            sb.append("Exceptions:   ").append("\r\n").append(err);
+        if (warn.length())
+            sb.append("Warnings:     ").append("\r\n").append(warn);
+        if (info.length())
+            sb.append("Information:  ").append("\r\n").append(info);
+
+        //User provided Information
+
         sb.append("Problem:      ").append(req.getProblemDescription()).append("\r\n\r\n");
         sb.append("What Changed: ").append(req.getWhatChanged()).append("\r\n\r\n");
         sb.append("Timing:       ").append(req.getWhereSlow()).append("\r\n\r\n");
@@ -3992,10 +4033,11 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
 
             //Add logfiles to ZIP
             WsWuInfo winfo(context, cwu);
-            MemoryBuffer eclagentLogMB;
-            MemoryBuffer thorLogMB;
-            addProcess(zipper, cwu, winfo, "EclAgent", eclagentLogMB);
-            addProcess(zipper, cwu, winfo, "Thor", thorLogMB);
+            PointerArray eclAgentLogs;//array of dynamically allocated MemoryBuffers
+            PointerArray thorLogs;
+
+            addProcessLogfile(zipper, cwu, winfo, "EclAgent", eclAgentLogs);
+            addProcessLogfile(zipper, cwu, winfo, "Thor", thorLogs);
 
             //Add Workunit XML file
             MemoryBuffer wuXmlMB;
@@ -4005,6 +4047,11 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
 
             //Write out ZIP file
             zipper->zipToFile(zipFile.str());
+
+            for (aindex_t x=0; x<eclAgentLogs.length(); x++)
+                delete (MemoryBuffer*)eclAgentLogs.item(x);
+            for (aindex_t x=0; x<thorLogs.length(); x++)
+                delete (MemoryBuffer*)thorLogs.item(x);
         }
 
         //Download ZIP file to user

@@ -15,17 +15,21 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-//UseIndexes
-//nolocal
+r := { string text; };
 
-IMPORT Std;
+msg(string x) := DATASET([x], {r});
 
+o1 := OUTPUT(msg('One'),,NAMED('msgs'),EXTEND);
+o2 := OUTPUT(msg('Two'),,NAMED('msgs'),EXTEND);
+o3 := OUTPUT(msg('Three'),,NAMED('msgs'),EXTEND);
 
-sequential(
+msgs := DATASET(WORKUNIT('msgs'), r);
 
-output(max(choosen(DG_FetchIndex1, 1,3), Fname));
-output(min(choosen(DG_FetchIndex1, 1,3), Fname));
+//Should have the same values for the two output(counts), and should be 3
+t1 := ORDERED(o1,o2,o3,OUTPUT(count(msgs)),o3,o2,o1,OUTPUT(count(msgs)));
 
-output(count(choosen(DG_FetchIndex1, 1,3)))
-);
+t2 := ORDERED(o3,o2,o1,OUTPUT(count(msgs)),o1,o2,o3,OUTPUT(count(msgs)));
+
+boolean updown := true : stored('updown');
+
+IF(updown, t1, t2);

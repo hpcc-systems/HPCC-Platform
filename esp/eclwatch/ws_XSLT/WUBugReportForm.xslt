@@ -86,7 +86,7 @@
                 </script>
             </head>
             <body class="yui-skin-sam" onload="nof5();onLoad()">
-                <h3 style="text-align: center;">Bug Report</h3>
+                <h3 style="text-align: center;">Report</h3>
                 <p/>
                 <form action="" method="POST">
                     <input type="hidden" id="WUID" name="WUID" value="{WUID}"/>
@@ -153,7 +153,7 @@
                         <table>
                             <tr>
                                 <td valign="top" style="width: 450px">
-                                    <b>Problem Description:</b> Please fill in details about what might be going wrong; is it a SOAP call? ...
+                                    <b>Problem Description:</b> Please fill in details about what might be going wrong. Is it a SOAP call? ...
                                 </td>
                                 <td>
                                     <textarea rows="10" cols="72" id="ProblemDescription" name="ProblemDescription">&#160;</textarea>
@@ -161,7 +161,7 @@
                             </tr>
                             <tr>
                                 <td valign="top" style="width: 450px">
-                                    <b>History:</b> Please fill in details about when the job last ran; what has changed since then...
+                                    <b>History:</b> Please fill in details about when the job last ran. What has changed since then?...
                                 </td>
                                 <td>
                                     <textarea rows="10" cols="72" id="WhatChanged" name="WhatChanged">&#160;</textarea>
@@ -169,7 +169,7 @@
                             </tr>
                             <tr>
                                 <td valign="top" style="width: 450px">
-                                    <b>Timing:</b> Please fill in details about where the job is going slow? what do the timings say?...
+                                    <b>Timing:</b> Please fill in details about where the job is going slow. What do the timings say?...
                                 </td>
                                 <td>
                                     <textarea rows="10" cols="72" id="WhereSlow" name="WhereSlow">&#160;</textarea>
@@ -178,7 +178,7 @@
                             <tr>
                                 <td></td>
                                 <td>
-                                    <input type="submit" value="Create Bug Report" name="Report" onclick="onReport()"/>
+                                    <input type="submit" value="Create Report" name="Report" onclick="onReport()"/>
                                 </td>
                             </tr>
                         </table>

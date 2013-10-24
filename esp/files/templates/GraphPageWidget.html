@@ -1,13 +1,7 @@
 <div class="${baseClass}">
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
-        <div id="${id}MainGraphWidget" data-dojo-props="region: 'center'" data-dojo-type="GraphWidget">
-            <div id="${id}FindField" style="width: 120px" data-dojo-props="placeHolder:'find'" data-dojo-type="dijit.form.TextBox">Find</div>
-            <div id="${id}Find" data-dojo-attach-event="onClick:_onFind" data-dojo-props="iconClass:'iconFind', showLabel:false" data-dojo-type="dijit.form.Button">Find</div>
-            <div id="${id}Previous" data-dojo-attach-event="onClick:_onFindPrevious" data-dojo-props="iconClass:'iconFindPrevious', showLabel:false" data-dojo-type="dijit.form.Button">Find Previous</div>
-            <div id="${id}Next" data-dojo-attach-event="onClick:_onFindNext" data-dojo-props="iconClass:'iconFindNext', showLabel:false" data-dojo-type="dijit.form.Button">Find Next</div>
-            <span data-dojo-type="dijit.ToolbarSeparator"></span>
-            <label for="${id}MainDepth">Depth:</label>
-            <input id="${id}MainDepth" style="width: 60px" value="2" data-dojo-attach-event="onChange:_onMainDepthChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+        <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+            <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
             <div id="${id}AdvancedMenu" data-dojo-type="dijit.form.DropDownButton">
                 <span>Advanced</span>
@@ -23,6 +17,15 @@
                 </div>
             </div>
             <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
+        </div>
+        <div id="${id}MainGraphWidget" data-dojo-props="region: 'center'" data-dojo-type="GraphWidget">
+            <div id="${id}FindField" style="width: 120px" data-dojo-props="placeHolder:'find'" data-dojo-type="dijit.form.TextBox">Find</div>
+            <div id="${id}Find" data-dojo-attach-event="onClick:_onFind" data-dojo-props="iconClass:'iconFind', showLabel:false" data-dojo-type="dijit.form.Button">Find</div>
+            <div id="${id}Previous" data-dojo-attach-event="onClick:_onFindPrevious" data-dojo-props="iconClass:'iconFindPrevious', showLabel:false" data-dojo-type="dijit.form.Button">Find Previous</div>
+            <div id="${id}Next" data-dojo-attach-event="onClick:_onFindNext" data-dojo-props="iconClass:'iconFindNext', showLabel:false" data-dojo-type="dijit.form.Button">Find Next</div>
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+            <label for="${id}MainDepth">Depth:</label>
+            <input id="${id}MainDepth" style="width: 60px" value="2" data-dojo-attach-event="onChange:_onMainDepthChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
         </div>
         <div id="${id}RightBorderContainer" style="width: 33%; padding: 0px; overflow: hidden" data-dojo-props="region: 'right', splitter:true, minSize: 120" data-dojo-type="dijit.layout.BorderContainer">
             <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">

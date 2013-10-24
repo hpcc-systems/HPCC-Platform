@@ -40,16 +40,20 @@ define([
         action: "WUResult",
         responseQualifier: "WUResultResponse.Result",
         responseTotalQualifier: "WUResultResponse.Total",
-        idProperty: "rowNum",
+        idProperty: "__hpcc_id",
         startProperty: "Start",
         countProperty: "Count",
+        useSingletons: false,
         preRequest: function (request) {
             if (this.name && this.cluster) {
+                this.idPrefix = this.name + "_" + this.cluster;
                 request['LogicalName'] = this.name;
                 request['Cluster'] = this.cluster;
             } else if (this.name) {
+                this.idPrefix = this.name;
                 request['LogicalName'] = this.name;
             } else {
+                this.idPrefix = this.wuid + "_" + this.sequence;
                 request['Wuid'] = this.wuid;
                 request['Sequence'] = this.sequence;
             }
@@ -68,8 +72,10 @@ define([
                 this.XmlSchema = [];
             }
             var rows = this.getValues(domXml, "Row", ["Row"]);
+            var context = this;
             arrayUtil.forEach(rows, function(item, index) {
-                item.rowNum = request.Start + index + 1;
+                item.__hpcc_rowNum = request.Start + index + 1;
+                item.__hpcc_id = context.idPrefix + "_" + item.__hpcc_rowNum;
             });
             response.Result = rows;
         }
@@ -330,7 +336,7 @@ define([
                     cells: [
                         [
                             {
-                                label: "##", field: this.store.idProperty, width: 54, className: "resultGridCell", sortable: false
+                                label: "##", field: "__hpcc_rowNum", width: 54, className: "resultGridCell", sortable: false
                             }
                         ]
                     ]

@@ -726,7 +726,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         {
             if (expr->isDataset())
             {
-                IHqlExpression * group = queryGroupInfo(expr);
+                IHqlExpression * group = queryGrouping(expr);
                 if (group)
                     getExprECL(group, s.append("G(")).append(")");
                 IHqlExpression * distrib = queryDistribution(expr);
@@ -762,6 +762,10 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 }
     #endif
             }
+        }
+        else if (!expr->isIndependentOfScope())
+        {
+            s.append("[[!]]");
         }
 #endif
 #ifdef SHOW_DSRECORD

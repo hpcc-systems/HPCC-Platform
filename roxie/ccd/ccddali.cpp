@@ -314,6 +314,7 @@ private:
             StringBuffer foreignGroup("foreign::");
             foreignGroup.append(cloneFrom).append("::").append(groupName);
             GroupType groupType;
+            queryNamedGroupStore().setRemoteTimeout(2000);
             Owned<IGroup> group = queryNamedGroupStore().lookup(foreignGroup, dir, groupType);
             ClusterPartDiskMapSpec dmSpec;
             dmSpec.fromProp(&elem);
@@ -422,7 +423,15 @@ public:
             return NULL;
         if (fdesc->queryProperties().hasProp("cloneFromGroup") && fdesc->queryProperties().hasProp("@cloneFromDir"))
         {
-            return recreateCloneSource(fdesc, _lfn);
+            try
+            {
+                return recreateCloneSource(fdesc, _lfn);
+            }
+            catch (IException *E)
+            {
+                E->Release();
+                return NULL;
+            }
         }
         else // Legacy mode - recently cloned files should have the extra info
         {
