@@ -376,6 +376,12 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+.iconZap{
+    background-image: url("../img/zap.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
 /*###############################*/
 #appLayout {
     height: 100%;

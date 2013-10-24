@@ -2610,6 +2610,9 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             {
             case no_choosen:
                 {
+                    //Too complicated to process the grouped variants.
+                    if (isGrouped(child) || isGrouped(transformed))
+                        break;
                     if (transformed->queryChild(2) || child->queryChild(2))
                     {
                         //choosen(choosen(x, a, b), c, d))
@@ -2645,7 +2648,13 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     if (isPureActivity(child) && !isAggregateDataset(child))
                     {
                         //Don't move a choosen with a start value over a count project - we could if we also adjust the counter
-                        if (!child->queryAttribute(_countProject_Atom) || !queryRealChild(transformed, 2))
+                        if (child->queryAttribute(_countProject_Atom))
+                        {
+                            //Don't swap with a grouped project with counter - it changes the meaning of the counter
+                            if (!isGrouped(child) && !queryRealChild(transformed, 2))
+                                return forceSwapNodeWithChild(transformed);
+                        }
+                        else
                             return forceSwapNodeWithChild(transformed);
                     }
                     break;
@@ -2662,6 +2671,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             case no_chooseds:
                 return swapIntoAddFiles(transformed);
             case no_sort:
+                //If the sort is grouped then this can't be converted to a topn.
+                if (!isGrouped(child))
                 {
                     unsigned __int64 topNLimit = 1000;
                     OwnedHqlExpr topn = queryConvertChoosenNSort(transformed, topNLimit);
@@ -2670,8 +2681,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         noteUnused(child);
                         return topn.getClear();
                     }
-                    break;
                 }
+                break;
             }
             break;
         }

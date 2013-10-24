@@ -2666,7 +2666,7 @@ actionStmt
                         {
                             HqlExprArray actions;
                             parser->endList(actions);
-                            $$.setExpr(createActionList(actions), $1);
+                            $$.setExpr(createActionList(no_orderedactionlist, actions), $1);
                         }
     | OUTPUT '(' action ')'
                         {

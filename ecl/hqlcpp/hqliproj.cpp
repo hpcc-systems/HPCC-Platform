@@ -2392,8 +2392,9 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                                     break;
                                 }
                             }
-                            assertex(match);
-                            processMatchingSelector(extra->outputFields, match, match->queryChild(0));
+                            //There may possibly be no match if it hasn't been normalized yet.
+                            if (match)
+                                processMatchingSelector(extra->outputFields, match, match->queryChild(0));
                         }
                     }
                     break;

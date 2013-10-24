@@ -237,7 +237,7 @@ define([
                     var formData = domForm.toObject(context.id + "SprayVariableDialog");
                     lang.mixin(formData, {
                         sourceIP: item.DropZone.NetAddress,
-                        sourcePath: item.DropZone.fullPath
+                        sourcePath: item.fullPath
                     });
                     FileSpray.SprayVariable({
                         request: formData
