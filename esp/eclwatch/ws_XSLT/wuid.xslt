@@ -784,23 +784,13 @@
             <td>
               <h3>Workunit Details</h3>
             </td>
-                        <xsl:choose>
-                            <xsl:when test="number(Workunit/Archived) &lt; 1">
-                                <td>
-                                    <img id="refresh" src="/esp/files/img/refresh.png" onclick="TurnRefresh()" title="Turn on/off Auto Refresh" />
-                                    <img border="0" src="/esp/files/img/bug.png" title="Create a bug report on this workunit" width="22" height="20" onclick="return popupBugReportForm()"/>
-                                </td>
-                                <td style="visibility:hidden">
-                                </td>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <td>
-                                    <img border="0" src="/esp/files/img/bug.png" title="Create a bug report on this workunit" width="22" height="20" onclick="return popupBugReportForm()"/>
-                                </td>
-                                <td style="visibility:hidden">
-                                </td>
-                            </xsl:otherwise>
-                        </xsl:choose>
+                        <xsl:if test="number(Workunit/Archived) &lt; 1">
+                            <td>
+                                <img id="refresh" src="/esp/files/img/refresh.png" onclick="TurnRefresh()" title="Turn on/off Auto Refresh" />
+                            </td>
+                            <td style="visibility:hidden">
+                            </td>
+                        </xsl:if>
                     </tr>
                 </table>
 
