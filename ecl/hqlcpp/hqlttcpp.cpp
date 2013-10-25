@@ -1969,11 +1969,13 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
         break;
     case no_newusertable:
         normalized = normalizeTableGrouping(transformed);
-        if (!normalized)
-            normalized = normalizeTableToAggregate(expr, true);
         break;
     case no_newaggregate:
-        normalized = normalizePrefetchAggregate(transformed);
+        normalized = normalizeTableGrouping(transformed);
+        if (!normalized)
+            normalized = normalizeTableToAggregate(transformed, true);
+        if (!normalized || (normalized == transformed))
+            normalized = normalizePrefetchAggregate(transformed);
         break;
     case no_dedup:
         normalized = normalizeDedup(transformed);
@@ -2011,7 +2013,7 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
         return getDebugValueExpr(translator.wu(), expr);
     }
 
-    if (normalized)
+    if (normalized && (normalized != transformed))
     {
         transformed.setown(transform(normalized));
         normalized->Release();
@@ -3331,7 +3333,6 @@ static IHqlExpression * convertAggregateGroupingToGroupedAggregate(IHqlExpressio
     unwindChildren(args, expr);
     args.replace(*result.getClear(), 0);
     args.remove(3); // no longer grouped.
-    args.append(*createAttribute(aggregateAtom));
     return expr->clone(args);
 }
 
@@ -3530,8 +3531,6 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
 
     HqlExprArray aggregateAttrs;
     unwindAttributes(aggregateAttrs, expr);
-    removeAttribute(aggregateAttrs, aggregateAtom);
-    removeAttribute(aggregateAttrs, fewAtom);
     if (!expr->hasAttribute(localAtom) && newGroupBy && !isGrouped(dataset) && isPartitionedForGroup(dataset, newGroupBy, true))
         aggregateAttrs.append(*createLocalAttribute());
 
@@ -3551,6 +3550,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
         ret.setown(createDataset(no_newusertable, ret.getClear(), createComma(LINK(record), projectTransform)));
         ret.setown(expr->cloneAllAnnotations(ret));
     }
+
     return ret.getClear();
 }
 
@@ -3607,7 +3607,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
                 useHashAggregate = true;
         }
 
-        if (!expr->hasAttribute(aggregateAtom) && !useHashAggregate && !expr->hasAttribute(groupedAtom))
+        if (!useHashAggregate && !expr->hasAttribute(groupedAtom))
             return convertAggregateGroupingToGroupedAggregate(expr, group);
     }
     return NULL;
@@ -7342,14 +7342,17 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
         //fall through
     case no_globalscope:
         {
+            IHqlExpression * value = transformed->queryChild(0);
+            if (expr->hasAttribute(optAtom))
+            {
+                if (!isIndependentOfScope(value))
+                    return LINK(value);
+            }
+
             if (!expr->hasAttribute(localAtom) || isUsedUnconditionally(expr))
             {
-                IHqlExpression * value = transformed->queryChild(0);
                 if (!isIndependentOfScope(value))
                 {
-                    if (expr->hasAttribute(optAtom))
-                        return LINK(transformed->queryChild(0));
-
                     IHqlExpression * symbol = queryActiveSymbol();
                     StringBuffer s;
                     if (symbol && symbol->queryBody() == expr)
@@ -7399,6 +7402,49 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                 }
                 break;
             }
+        }
+    }
+    return transformed.getClear();
+}
+
+static HqlTransformerInfo optGlobalTransformerInfo("OptGlobalTransformer");
+OptGlobalTransformer::OptGlobalTransformer() : NewHqlTransformer(optGlobalTransformerInfo)
+{
+    seenOptGlobal = false;
+}
+
+void OptGlobalTransformer::analyseExpr(IHqlExpression * expr)
+{
+    if (alreadyVisited(expr))
+        return;
+
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_globalscope:
+        if (expr->hasAttribute(optAtom))
+            seenOptGlobal = true;
+        break;
+    }
+    NewHqlTransformer::analyseExpr(expr);
+}
+
+IHqlExpression * OptGlobalTransformer::createTransformed(IHqlExpression * expr)
+{
+    OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
+    node_operator op = transformed->getOperator();
+    switch (op)
+    {
+    case no_globalscope:
+        {
+            if (transformed->hasAttribute(optAtom))
+            {
+                IHqlExpression * value = transformed->queryChild(0);
+                if (!isIndependentOfScope(value))
+                    return LINK(value);
+                return removeAttribute(transformed, optAtom);
+            }
+            break;
         }
     }
     return transformed.getClear();
@@ -7686,8 +7732,21 @@ void migrateExprToNaturalLevel(WorkflowItem & cur, IWorkUnit * wu, HqlCppTransla
             transformer.transformRoot(exprs, results);
             replaceArray(exprs, results);
         }
-        translator.checkNormalized(exprs);
     }
+    else
+    {
+        OptGlobalTransformer transformer;
+
+        transformer.analyseArray(exprs, 0);
+        if (transformer.needToTransform())
+        {
+            HqlExprArray results;
+            transformer.transformRoot(exprs, results);
+            replaceArray(exprs, results);
+        }
+    }
+
+    translator.checkNormalized(exprs);
 
     translator.traceExpressions("m1", exprs);
 
@@ -10570,7 +10629,9 @@ IHqlExpression * HqlTreeNormalizer::convertSelectToProject(IHqlExpression * newR
     unsigned numChildren = expr->numChildren();
     for (unsigned idx = 2; idx < numChildren; idx++)
         args.append(*transform(expr->queryChild(idx)));
-    OwnedHqlExpr project = createDataset(no_newusertable, args);
+
+    node_operator op = isAggregateDataset(expr) ? no_newaggregate : no_newusertable;
+    OwnedHqlExpr project = createDataset(op, args);
     return expr->cloneAllAnnotations(project);
 }
 

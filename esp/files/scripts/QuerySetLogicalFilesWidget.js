@@ -47,7 +47,6 @@ define([
             if (params.Query) {
                 this.query = params.Query
             }
-
             this.refreshGrid();
         },
 
@@ -75,7 +74,7 @@ define([
         refreshGrid: function (args) {
             if (this.query) {
                 var logicalFiles = [];
-                if (lang.exists("Query.LogicalFiles.Item", this.query)) {
+                if (lang.exists("LogicalFiles.Item", this.query)) {
                     var context = this;
                     arrayUtil.forEach(this.query.LogicalFiles.Item, function (item, idx) {
                         var file = {

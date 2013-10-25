@@ -2604,7 +2604,7 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
             else
             {
                 //Aggregation removes grouping
-                if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()) || expr->hasAttribute(aggregateAtom))
+                if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()))
                     meta.removeGroup();
             }
             //Now map any fields that we can.
@@ -3043,7 +3043,7 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
             else
             {
                 //Aggregation removes grouping
-                if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()) || hasAttribute(aggregateAtom, parms))
+                if (op == no_newaggregate || op == no_aggregate || (mapping && mapping->isGroupAggregateFunction()))
                     nowGrouped=false;
                 else
                     nowGrouped = isGrouped(datasetType);

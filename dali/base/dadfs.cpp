@@ -6395,9 +6395,16 @@ public:
     StringAttr groupDir;
     unsigned cachedtime;
     GroupType groupType;
+    Linked<IException> exception;
 
     CNamedGroupCacheEntry(IGroup *_group, const char *_name, const char *_dir, GroupType _groupType)
     : group(_group), name(_name), groupDir(_dir), groupType(_groupType)
+    {
+        cachedtime = msTick();
+    }
+
+    CNamedGroupCacheEntry(IException *_exception, const char *_name)
+    : exception(_exception), name(_name), groupType(grp_unknown)
     {
         cachedtime = msTick();
     }
@@ -6408,6 +6415,7 @@ class CNamedGroupStore: public CInterface, implements INamedGroupStore
     CriticalSection cachesect;
     CIArrayOf<CNamedGroupCacheEntry> cache;
     unsigned defaultTimeout;
+    unsigned defaultRemoteTimeout;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -6415,6 +6423,7 @@ public:
     CNamedGroupStore()
     {
         defaultTimeout = INFINITE;
+        defaultRemoteTimeout = FOREIGN_DALI_TIMEOUT;
     }
 
     IGroup *dolookup(const char *logicalgroupname,IRemoteConnection *conn, StringBuffer *dirret, GroupType &groupType)
@@ -6483,6 +6492,8 @@ public:
                 else if (strcmp(gname.str(),entry.name.get())==0)
                 {
                     cached = true;
+                    if (entry.exception)
+                        throw LINK(entry.exception);
                     if (range.length()==0)
                     {
                         if (dirret)
@@ -6498,45 +6509,74 @@ public:
                 }
             }
         }
-        if ((gname.length()>9)&&(memcmp(logicalgroupname,"foreign::",9)==0)) {
-            StringBuffer eps;
-            const char *s = logicalgroupname+9;
-            while (*s&&((*s!=':')||(s[1]!=':')))
-                eps.append(*(s++));
-            if (*s) {
-                s+=2;
-                if (*s) {
-                    Owned<INode> dali = createINode(eps.str());
-                    if (!dali || !getRemoteGroup(dali, s, FOREIGN_DALI_TIMEOUT, groupdir, type, epa))
+        try
+        {
+            if ((gname.length()>9)&&(memcmp(logicalgroupname,"foreign::",9)==0))
+            {
+                StringBuffer eps;
+                const char *s = logicalgroupname+9;
+                while (*s&&((*s!=':')||(s[1]!=':')))
+                    eps.append(*(s++));
+                if (*s)
+                {
+                    s+=2;
+                    if (*s)
+                    {
+                        Owned<INode> dali = createINode(eps.str());
+                        if (!dali || !getRemoteGroup(dali, s, defaultRemoteTimeout, groupdir, type, epa))
+                        {
+                            if (!cached)
+                            {
+                                CriticalBlock block(cachesect);
+                                cache.append(*new CNamedGroupCacheEntry(NULL, gname, NULL, grp_unknown));
+                            }
+                            return NULL;
+                        }
+                    }
+                }
+            }
+            else if (epa.ordinality()==0) {
+                struct sLock
+                {
+                    sLock()  { lock = NULL; };
+                    ~sLock() { delete lock; };
+                    CConnectLock *lock;
+                } slock;
+                if (!conn)
+                {
+                    slock.lock = new CConnectLock("CNamedGroup::lookup", SDS_GROUPSTORE_ROOT, false, false, false, defaultTimeout);
+                    conn = slock.lock->conn;
+                    if (!conn)
+                    {
+                        if (!cached)
+                        {
+                            CriticalBlock block(cachesect);
+                            cache.append(*new CNamedGroupCacheEntry(NULL, gname, NULL, grp_unknown));
+                        }
                         return NULL;
+                    }
+                }
+                Owned<IPropertyTree> pt = getNamedPropTree(conn->queryRoot(),"Group","@name",gname.str(),true);
+                if (!pt)
+                    return NULL;
+                type = translateGroupType(pt->queryProp("@kind"));
+                groupdir.set(pt->queryProp("@dir"));
+                if (groupdir.isEmpty())
+                    groupdir.set(queryBaseDirectory(type));
+                Owned<IPropertyTreeIterator> pe2 = pt->getElements("Node");
+                ForEach(*pe2)
+                {
+                    SocketEndpoint ep(pe2->query().queryProp("@ip"));
+                    epa.append(ep);
                 }
             }
         }
-        else if (epa.ordinality()==0) {
-            struct sLock
-            {
-                sLock()  { lock = NULL; };
-                ~sLock() { delete lock; };
-                CConnectLock *lock;
-            } slock;
-            if (!conn) {
-                slock.lock = new CConnectLock("CNamedGroup::lookup", SDS_GROUPSTORE_ROOT, false, false, false, defaultTimeout);
-                conn = slock.lock->conn;
-                if (!conn)
-                    return NULL;
-            }
-            Owned<IPropertyTree> pt = getNamedPropTree(conn->queryRoot(),"Group","@name",gname.str(),true);
-            if (!pt)
-                return NULL;
-            type = translateGroupType(pt->queryProp("@kind"));
-            groupdir.set(pt->queryProp("@dir"));
-            if (groupdir.isEmpty())
-                groupdir.set(queryBaseDirectory(type));
-            Owned<IPropertyTreeIterator> pe2 = pt->getElements("Node");
-            ForEach(*pe2) {
-                SocketEndpoint ep(pe2->query().queryProp("@ip"));
-                epa.append(ep);
-            }
+        catch (IException *E)
+        {
+            // cache the exception
+            CriticalBlock block(cachesect);
+            cache.append(*new CNamedGroupCacheEntry(E, gname));
+            throw;
         }
         Owned<IGroup> ret = createIGroup(epa);
         if (!cached)
@@ -6571,7 +6611,7 @@ public:
                     if (!end)
                         end = epa.ordinality();
                 }
-                else 
+                else
                     end = start;
                 if ((start>epa.ordinality())||(end>epa.ordinality()))
                 {
@@ -6588,7 +6628,7 @@ public:
                     epar.append(epa.item(i-1));
                 } while (i!=end);
             }
-            if (*s) 
+            if (*s)
                 throw MakeStringException(-1,"Invalid group range %s",range.str());
             ret.setown(createIGroup(epar));
         }
@@ -6761,6 +6801,13 @@ public:
     {
         unsigned ret = defaultTimeout;
         defaultTimeout = timems;
+        return ret;
+    }
+
+    unsigned setRemoteTimeout(unsigned timems)
+    {
+        unsigned ret = defaultRemoteTimeout;
+        defaultRemoteTimeout = timems;
         return ret;
     }
 

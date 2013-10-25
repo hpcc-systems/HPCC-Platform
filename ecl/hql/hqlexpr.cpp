@@ -2698,20 +2698,9 @@ bool isAggregateDataset(IHqlExpression * expr)
     case no_aggregate:
     case no_newaggregate:
         return true;
-    case no_newusertable:
-        {
-            if (expr->hasAttribute(aggregateAtom))
-                return true;
-            IHqlExpression * grouping = expr->queryChild(3);
-            if (grouping && !grouping->isAttribute())
-                return true;
-            return expr->queryChild(2)->isGroupAggregateFunction();
-        }
     case no_selectfields:
     case no_usertable:
         {
-            if (expr->hasAttribute(aggregateAtom))
-                return true;
             IHqlExpression * grouping = expr->queryChild(2);
             if (grouping && !grouping->isAttribute())
                 return true;

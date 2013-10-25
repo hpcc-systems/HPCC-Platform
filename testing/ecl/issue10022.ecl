@@ -9,7 +9,7 @@ p1 := ds(line <> '') : persist('~p1', many, single);
 
 p2 := ds(line = '') : persist('~p2', multiple);
 
-p3 := ds(line[1]='!') : persist('~p3','10Mway',multiple(10));
+p3 := ds(line[1]='!') : persist('~p3',multiple(10));
 
 p4 := ds(line[1] = ' ') : persist('~p4');
 

@@ -582,6 +582,22 @@ private:
     bool isRoxie;
 };
 
+class OptGlobalTransformer : public NewHqlTransformer
+{
+public:
+    OptGlobalTransformer();
+
+    inline bool needToTransform() const { return seenOptGlobal; }
+
+protected:
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr);
+
+    virtual void analyseExpr(IHqlExpression * expr);
+
+private:
+    bool seenOptGlobal;
+};
+
 class ScalarGlobalExtra : public HoistingTransformInfo
 {
 public:

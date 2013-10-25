@@ -248,8 +248,11 @@ define([
         Store: declare(null, {
             SortbyProperty: 'Sortby',
             DescendingProperty: 'Descending',
+            useSingletons: true,
 
             constructor: function (options) {
+                this.cachedArray = {};
+
                 if (!this.service) {
                     throw new Error("service:  Undefined - Missing service name (eg 'WsWorkunts').");
                 }
@@ -271,22 +274,26 @@ define([
                 return item[this.idProperty];
             },
 
+            getCachedArray: function (create) {
+                return this.useSingletons ? lang.getObject(this.service + "." + this.action, create, _StoreSingletons) : this.cachedArray;
+            },
+
             exists: function (id) {
-                var item = lang.getObject(this.service + "." + this.action, false, _StoreSingletons);
-                if (item) {
-                    return item[id] !== undefined;
+                var cachedArray = this.getCachedArray(false);
+                if (cachedArray) {
+                    return cachedArray[id] !== undefined;
                 }
                 return false;
             },
 
             get: function (id, item) {
                 if (!this.exists(id)) {
-                    var newItem = lang.getObject(this.service + "." + this.action, true, _StoreSingletons);
-                    newItem[id] = this.create(id, item);
-                    return newItem[id];
+                    var cachedArray = this.getCachedArray(true);
+                    cachedArray[id] = this.create(id, item);
+                    return cachedArray[id];
                 }
-                var item = lang.getObject(this.service + "." + this.action, false, _StoreSingletons);
-                return item[id];
+                var cachedArray = this.getCachedArray(false);
+                return cachedArray[id];
             },
 
             create: function (id, item) {
