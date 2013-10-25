@@ -714,7 +714,7 @@ void HqlCppTranslator::doBuildExprAggregate(BuildCtx & ctx, IHqlExpression * exp
 }
 
 
-void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * dataset, IHqlExpression * doneFirstVar)
+void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * dataset, IHqlExpression * doneFirstVar, bool multiPath)
 {
     node_operator op = expr->getOperator();
     switch (op)
@@ -724,7 +724,17 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
             OwnedHqlExpr optimized = queryOptimizedExists(ctx, expr, dataset);
             if (optimized)
             {
-                assignBound(ctx, target, optimized);
+                if (matchesBoolean(optimized, false))
+                    return;
+
+                if (multiPath)
+                {
+                    BuildCtx condctx(ctx);
+                    buildFilter(condctx, optimized);
+                    assignBound(condctx, target, queryBoolExpr(true));
+                }
+                else
+                    assignBound(ctx, target, optimized);
                 return;
             }
             break;
@@ -748,15 +758,15 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
         {
             BuildCtx subctx(ctx);
             IHqlStmt * stmt = buildFilterViaExpr(subctx, dataset->queryChild(0));
-            doBuildAssignAggregateLoop(subctx, target, expr, dataset->queryChild(1), doneFirstVar);
+            doBuildAssignAggregateLoop(subctx, target, expr, dataset->queryChild(1), doneFirstVar, multiPath);
             subctx.selectElse(stmt);
-            doBuildAssignAggregateLoop(subctx, target, expr, dataset->queryChild(2), doneFirstVar);
+            doBuildAssignAggregateLoop(subctx, target, expr, dataset->queryChild(2), doneFirstVar, multiPath);
             return;
         }
     case no_addfiles:
         {
-            doBuildAssignAggregateLoop(ctx, target, expr, dataset->queryChild(0), doneFirstVar);
-            doBuildAssignAggregateLoop(ctx, target, expr, dataset->queryChild(1), doneFirstVar);
+            doBuildAssignAggregateLoop(ctx, target, expr, dataset->queryChild(0), doneFirstVar, true);
+            doBuildAssignAggregateLoop(ctx, target, expr, dataset->queryChild(1), doneFirstVar, true);
             return;
         }
     case no_chooseds:
@@ -778,7 +788,7 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
                 else
                     subctx.addDefault(switchstmt);
 
-                doBuildAssignAggregateLoop(subctx, target, expr, cur, doneFirstVar);
+                doBuildAssignAggregateLoop(subctx, target, expr, cur, doneFirstVar, multiPath);
             }
             return;
         }
@@ -918,7 +928,7 @@ void HqlCppTranslator::doBuildAssignAggregate(BuildCtx & ctx, const CHqlBoundTar
             doneFirstVar.setown(ctx.getTempDeclare(queryBoolType(), queryBoolExpr(false)));
         }
 
-        doBuildAssignAggregateLoop(ctx, target, expr, dataset, doneFirstVar);
+        doBuildAssignAggregateLoop(ctx, target, expr, dataset, doneFirstVar, false);
     }
     else
     {
@@ -1011,22 +1021,29 @@ IHqlExpression * HqlCppTranslator::queryOptimizedExists(BuildCtx & ctx, IHqlExpr
         break;
     }
 
+    OwnedHqlExpr test;
     if (specialCase)
     {
         CHqlBoundExpr temp;
         buildDataset(ctx, dataset, temp, FormatNatural);
-        IHqlExpression * test;
         if (temp.count)
-            test = LINK(temp.count);
+            test.set(temp.count);
         else
-            test = getBoundSize(temp);
-        return createBoolExpr(op, test, createConstant(test->queryType()->castFrom(false, 0)));
+            test.setown(getBoundSize(temp));
     }
     else if (canOptimizeCount)
     {
-        IHqlExpression * count = optimized.expr;
-        return createBoolExpr(op, LINK(count), createConstant(count->queryType()->castFrom(false, 0)));
+        test.set(optimized.expr);
     }
+
+    if (test)
+    {
+        OwnedHqlExpr cond = createBoolExpr(op, LINK(test), createConstant(test->queryType()->castFrom(false, 0)));
+        if (cond->isConstant())
+            return foldHqlExpression(cond);
+        return cond.getClear();
+    }
+
     return NULL;
 }
 
