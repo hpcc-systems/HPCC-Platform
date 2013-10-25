@@ -112,7 +112,7 @@ define([
             var context = this;
             Deferred.when(results, function (response) {
                 var packageMaps = [];
-                for (key in context._watched) {
+                for (var key in context._watched) {
                     context._watched[key].unwatch();
                 }
                 this._watched = {};

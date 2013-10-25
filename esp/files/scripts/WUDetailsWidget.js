@@ -46,6 +46,7 @@ define([
     "hpcc/LogsWidget",
     "hpcc/TimingPageWidget",
     "hpcc/ECLPlaygroundWidget",
+    "hpcc/VizWidget",
     "hpcc/WsWorkunits",
 
     "dojo/text!../templates/WUDetailsWidget.html",
@@ -67,7 +68,7 @@ define([
 ], function (declare, dom, domForm, lang, domAttr, iframe, domClass, query, Memory, Observable,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, ESPWorkunit, ESPRequest, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget, WsWorkunits,
+                _TabContainerWidget, ESPWorkunit, ESPRequest, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget, VizWidget, WsWorkunits,
                 template) {
     var uniqueID = 0;
     return declare("WUDetailsWidget", [_TabContainerWidget], {
@@ -82,6 +83,8 @@ define([
         timersWidgetLoaded: false,
         graphsWidget: null,
         graphsWidgetLoaded: false,
+        vizWidget: null,
+        vizWidgetLoaded: false,
         sourceWidget: null,
         sourceWidgetLoaded: false,
         logsWidget: null,
@@ -105,6 +108,7 @@ define([
             this.variablesWidget = registry.byId(this.id + "_Variables");
             this.resultsWidget = registry.byId(this.id + "_Results");
             this.filesWidget = registry.byId(this.id + "_Files");
+            this.vizWidget = registry.byId(this.id + "_Visualize");
             this.timersWidget = registry.byId(this.id + "_Timers");
             this.graphsWidget = registry.byId(this.id + "_Graphs");
             this.sourceWidget = registry.byId(this.id + "_Source");
@@ -263,6 +267,11 @@ define([
             } else if (currSel.id == this.graphsWidget.id && !this.graphsWidgetLoaded) {
                 this.graphsWidgetLoaded = true;
                 this.graphsWidget.init({
+                    Wuid: this.wu.Wuid
+                });
+            } else if (currSel.id == this.vizWidget.id && !this.vizWidgetLoaded) {
+                this.vizWidgetLoaded = true;
+                this.vizWidget.init({
                     Wuid: this.wu.Wuid
                 });
             } else if (currSel.id == this.sourceWidget.id && !this.sourceWidgetLoaded) {

@@ -1,0 +1,34 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-props="splitter: false" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}Toolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+            <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+            <select id="${id}VizSelect" data-dojo-attach-event="onChange:_onVizSelect" data-dojo-type="dijit/form/Select">
+                <option value="DojoD3ScatterChart">ScatterChart</option>
+                <option value="DojoD3BarChart">Bar Chart</option>
+                <option value="DojoD3PieChart">Pie Chart</option>
+                <option value="DojoD3DonutChart">Donut Chart</option>
+                <option value="DojoD3Choropeth">Choropeth</option>
+                <option value="DojoD3CooccurrenceGraph">Co-Occurrence Graph</option>
+                <option value="DojoD3ForceDirectedGraph">Force Directed Graph</option>
+                <option value="DojoD3Histogram">Histogram</option>
+            </select>
+            <div id="${id}Mappings" data-dojo-type="dijit.form.DropDownButton">
+                <span>Mappings</span>
+                <div data-dojo-type="dijit.TooltipDialog">
+                    <div id="${id}MappingForm" style="width: 400px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                        <div id="${id}MappingItems" data-dojo-type="dijit.layout.ContentPane">
+                        </div>
+                        <div class="dijitDialogPaneActionBar">
+                            <button type="submit" data-dojo-attach-event="onClick:_onMappingsApply" data-dojo-type="dijit.form.Button">Show</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+            <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
+        </div>
+        <div id="${id}VizCP" style="padding: 15px; border:0px; border-color:none; overflow: hidden" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+        </div>
+    </div>
+</div>
