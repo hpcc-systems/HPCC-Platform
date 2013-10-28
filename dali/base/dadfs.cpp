@@ -4205,15 +4205,17 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 if (pos==NotFound)
                 {
                     // why isn't this an exception?
-                    WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(),parent->queryLogicalName());
+                    WARNLOG("removeSubFile: File %s is not a subfile of %s", subfile.get(),parent->queryLogicalName());
                 }
                 else
                 {
                     VStringBuffer path("SubFile[@name=\"%s\"]", subfile.get());
                     IPropertyTree *sub = sf->root->queryPropTree(path.str());
-                    dbgassertex(sub);
-                    if ((pos+1) != sub->getPropInt("@num"))
-                        ThrowStringException(-1, "RemoveSubFile: SuperFile %s, subfile %s, part numbers are out of sequence. SubFile[@num=\"%d\"] is at position %d", sf->logicalName.get(), subfile.get(), sub->getPropInt("@num"), pos+1);
+                    if (sub) // if within trasaction, the subfile may not be in the commited structure yet
+                    {
+                        if ((pos+1) != sub->getPropInt("@num"))
+                            ThrowStringException(-1, "removeSubFile: SuperFile %s, subfile %s, part numbers are out of sequence. SubFile[@num=\"%d\"] is at position %d", sf->logicalName.get(), subfile.get(), sub->getPropInt("@num"), pos+1);
+                    }
                 }
             }
             // Try to lock all files
