@@ -4676,8 +4676,8 @@ protected:
         try {
             // Find all reported indexes and bail on bad range (before we lock any file)
             Owned<IPropertyTreeIterator> subit = root->getElements("SubFile");
-            // Adding a sub 'before' another get the list out of order (but still valid)
             OwnedMalloc<unsigned> subFiles(n, true);
+            unsigned expectedN = 1;
             ForEach (*subit)
             {
                 IPropertyTree &sub = subit->query();
@@ -4688,7 +4688,10 @@ protected:
                     ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: out-of-range subfile part number %d of %d", logicalName.get(), sn, n);
                 if (subFiles[sn-1])
                     ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: duplicated subfile part number %d of %d", logicalName.get(), sn, n);
+                if (sn != expectedN)
+                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: bad part number %d, expected %d", logicalName.get(), sn, expectedN);
                 subFiles[sn-1] = 1;
+                ++expectedN;
             }
             for (unsigned i=0; i<n; i++)
             {
