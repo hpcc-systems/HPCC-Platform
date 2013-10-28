@@ -33,7 +33,7 @@
   <Switch name="Switch"/>
  </Hardware>
  <Programs>
-  <Build name="${projname}_${version}-${stagever}" url="${INSTALL_DIR}">
+  <Build name="_" url="${INSTALL_DIR}">
    <BuildSet installSet="deploy_map.xml"
              name="dafilesrv"
              path="componentfiles/dafilesrv"
@@ -315,7 +315,7 @@
   </Build>
  </Programs>
  <Software>
-  <DafilesrvProcess build="${projname}_${version}-${stagever}"
+  <DafilesrvProcess build="_"
                     buildSet="dafilesrv"
                     description="DaFileSrv process"
                     name="mydafilesrv"
@@ -325,7 +325,7 @@
              name="s1"
              netAddress="."/>
   </DafilesrvProcess>
-  <DaliServerProcess build="${projname}_${version}-${stagever}"
+  <DaliServerProcess build="_"
                      buildSet="dali"
                      environment="${CONFIG_DIR}/${ENV_XML_FILE}"
                      name="mydali"
@@ -336,7 +336,7 @@
              netAddress="."
              port="7070"/>
   </DaliServerProcess>
-  <DfuServerProcess build="${projname}_${version}-${stagever}"
+  <DfuServerProcess build="_"
                     buildSet="dfuserver"
                     daliServers="mydali"
                     description="DFU Server"
@@ -368,14 +368,14 @@
    <Category dir="${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
    <Category dir="${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
   </Directories>
-  <DropZone build="${projname}_${version}-${stagever}"
+  <DropZone build="_"
             buildSet="DropZone"
             computer="localhost"
             description="DropZone process"
             directory="${RUNTIME_PATH}/mydropzone"
             name="mydropzone"/>
   <EclAgentProcess allowedPipePrograms="*"
-                   build="${projname}_${version}-${stagever}"
+                   build="_"
                    buildSet="eclagent"
                    daliServers="mydali"
                    defaultMemoryLimitMB="300"
@@ -390,7 +390,7 @@
              name="s1"
              netAddress="."/>
   </EclAgentProcess>
-  <EclCCServerProcess build="${projname}_${version}-${stagever}"
+  <EclCCServerProcess build="_"
                     buildSet="eclccserver"
                     daliServers="mydali"
                     description="EclCCServer process"
@@ -404,7 +404,7 @@
              netAddress="."/>
    <Option name="maxCompileThreads" value="2"/>
   </EclCCServerProcess>
-   <EclSchedulerProcess build="${projname}_${version}-${stagever}"
+   <EclSchedulerProcess build="_"
                 buildSet="eclscheduler"
                 daliServers="mydali"
                 description="EclScheduler process"
@@ -414,7 +414,7 @@
                name="s1"
                netAddress="."/>
   </EclSchedulerProcess>
-   <EspProcess build="${projname}_${version}-${stagever}"
+   <EspProcess build="_"
               buildSet="esp"
               componentfilesDir="${COMPONENTFILES_PATH}"
               daliServers="mydali"
@@ -599,7 +599,7 @@
   </EspProcess>
   <EspService allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"
-              build="${projname}_${version}-${stagever}"
+              build="_"
               buildSet="espsmc"
               description="ESP services for SMC"
               disableUppercaseTranslation="false"
@@ -735,7 +735,7 @@
     </ProcessFilters>
    </Properties>
   </EspService>
-  <EspService build="${projname}_${version}-${stagever}"
+  <EspService build="_"
               buildSet="ws_ecl"
               description="WS ECL Service"
               name="ws_ecl">
@@ -756,7 +756,7 @@
                          service="ws_ecl"/>
    </Properties>
   </EspService>
-  <FTSlaveProcess build="${projname}_${version}-${stagever}"
+  <FTSlaveProcess build="_"
                   buildSet="ftslave"
                   description="FTSlave process"
                   name="myftslave"
@@ -770,7 +770,7 @@
   <RoxieCluster allFilesDynamic="true"
                 blindLogging="false"
                 blobCacheMem="0"
-                build="${projname}_${version}-${stagever}"
+                build="_"
                 buildSet="roxie"
                 callbackRetries="3"
                 callbackTimeout="500"
@@ -911,7 +911,7 @@
                        netAddress="."/>
   </RoxieCluster>
   <SashaServerProcess autoRestartInterval="0"
-                      build="${projname}_${version}-${stagever}"
+                      build="_"
                       buildSet="sasha"
                       cachedWUat="* * * * *"
                       cachedWUinterval="24"
@@ -965,7 +965,7 @@
              port="8877"/>
   </SashaServerProcess>
   <ThorCluster autoCopyBackup="false"
-               build="${projname}_${version}-${stagever}"
+               build="_"
                buildSet="thor"
                computer="localhost"
                daliServers="mydali"
@@ -989,7 +989,7 @@
    <ThorMasterProcess computer="localhost" name="m1"/>
    <ThorSlaveProcess computer="localhost" name="s1"/>
   </ThorCluster>
-  <Topology build="${projname}_${version}-${stagever}" buildSet="topology" name="topology">
+  <Topology build="_" buildSet="topology" name="topology">
    <Cluster name="hthor" prefix="hthor">
     <EclCCServerProcess process="myeclccserver"/>
     <EclSchedulerProcess process="myeclscheduler"/>
