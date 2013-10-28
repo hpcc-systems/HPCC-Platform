@@ -1209,6 +1209,7 @@ protected:
     HqlExprArray defines;
     struct
     {
+        bool assertSortedDistributed;
         bool removeAsserts;
         bool commonUniqueNameAttributes;
         bool sortIndexPayload;
