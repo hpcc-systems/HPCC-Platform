@@ -183,28 +183,28 @@ define([
 
         onZapReport: function (event) {
             var context = this;
-            WsWorkunits.WUGetBugReportInfo({
+            WsWorkunits.WUGetZapReportInfo({
                 request: {
                     WUID: this.wu.Wuid
                 }
             }).then(function (response) {
                 registry.byId(context.id + "ZapDialog").show();
-                if (lang.exists("WUGetBugReportInfoResponse", response)) {
-                    context.updateInput("ZapWUID", null, response.WUGetBugReportInfoResponse.WUID);
-                    context.updateInput("BuildVersion", null, response.WUGetBugReportInfoResponse.BuildVersion);
-                    context.updateInput("ESPIPAddress", null, response.WUGetBugReportInfoResponse.ESPIPAddress);
-                    context.updateInput("ThorIPAddress", null, response.WUGetBugReportInfoResponse.ThorIPAddress);
+                if (lang.exists("WUGetZapReportInfoResponse", response)) {
+                    context.updateInput("ZapWUID", null, response.WUGetZapReportInfoResponse.WUID);
+                    context.updateInput("BuildVersion", null, response.WUGetZapReportInfoResponse.BuildVersion);
+                    context.updateInput("ESPIPAddress", null, response.WUGetZapReportInfoResponse.ESPIPAddress);
+                    context.updateInput("ThorIPAddress", null, response.WUGetZapReportInfoResponse.ThorIPAddress);
                     
-                    context.buildVersion = response.WUGetBugReportInfoResponse.BuildVersion;
-                    context.espIPAddress = response.WUGetBugReportInfoResponse.ESPIPAddress;
-                    context.thorIPAddress = response.WUGetBugReportInfoResponse.ThorIPAddress;
+                    context.buildVersion = response.WUGetZapReportInfoResponse.BuildVersion;
+                    context.espIPAddress = response.WUGetZapReportInfoResponse.ESPIPAddress;
+                    context.thorIPAddress = response.WUGetZapReportInfoResponse.ThorIPAddress;
                 }                
             });
         },
 
         onZapSubmit: function (event) {
             var frame = iframe.create("ZapDownload" + uniqueID++);
-            var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUReportBug?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion);
+            var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUReportZap?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion);
             iframe.setSrc(frame, url, true);
             registry.byId(this.id + "ZapDialog").hide();
         },
