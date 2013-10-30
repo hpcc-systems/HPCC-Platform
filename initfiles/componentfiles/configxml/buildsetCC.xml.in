@@ -185,6 +185,10 @@
                           path="EclDirectAccess"
                           resource="EclDirectAccess"
                           service="ecldirect"/>
+    <AuthenticateFeature description="Access to WS SQL service"
+                          path="WsSqlAccess"
+                          resource="WsSqlAccess"
+                          service="ws_sql"/>
      <ProcessFilters>
       <Platform name="Windows">
        <ProcessFilter name="any">
@@ -310,6 +314,29 @@
                           service="ecldirect"/>
     </Properties>
    </BuildSet>
+   <BuildSet deployable="no"
+              installSet="deploy_map.xml"
+              name="ws_sql"
+              path="componentfiles/ws_sql"
+              processName="EspService"
+              schema="esp_service_wssql.xsd">
+        <Properties bindingType="ws_sqlSoapBinding"
+                  defaultPort="8009"
+                  defaultResourcesBasedn="ou=WsSql,ou=EspServices,ou=sql"
+                  defaultSecurePort="18009"
+                  plugin="ws_sql"
+                  type="ws_sql">
+            <Authenticate access="Read"
+                      description="Root access to WS SQL service"
+                      path="/"
+                      required="Read"
+                      resource="WsSqlAccess"/>
+                <AuthenticateFeature description="Access to WS SQL service"
+                             path="WsSQLAccess"
+                             resource="WsSqlAccess"
+                             service="ws_sql"/>
+        </Properties>
+    </BuildSet>
   </Build>
 </Programs>
 </Environment>
