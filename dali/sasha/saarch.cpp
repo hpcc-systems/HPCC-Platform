@@ -1277,7 +1277,7 @@ bool processArchiverCommand(ISashaCommand *cmd)
                         if (cmd->getDFU())
                             doArchiveDfuWorkUnit(wuid,ret); 
                         else
-                            doArchiveWorkUnit(wufactory,wuid,ret,true,cmd->getAction()!=SCA_ARCHIVE,NULL);  
+                            doArchiveWorkUnit(wufactory,wuid,ret,true,cmd->getAction()==SCA_ARCHIVE,NULL);
                     }
                     else  if (cmd->getDFU()) 
                         doRestoreDfuWorkUnit(wuid,ret); 
