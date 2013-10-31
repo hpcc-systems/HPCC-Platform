@@ -3120,7 +3120,8 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     StringBuffer xpath("/GraphProgress/");
     xpath.append(wuid);
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-    if (conn) {
+    if (conn)
+    {
         Owned<IPropertyTree> tmp = createPTree("GraphProgress");
         mergePTree(tmp,conn->queryRoot());
         toXML(tmp,extraWorkUnitXML,1,XML_Format);
@@ -3128,10 +3129,12 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     }
 
     Owned<IConstWUQuery> q = getQuery();
-    if (!q) {
-        if(!modifyAndWriteWorkUnitXML(wuid, buf, extraWorkUnitXML, fileio))
+    if (!q)
+    {
+        if (!modifyAndWriteWorkUnitXML(wuid, buf, extraWorkUnitXML, fileio))
            return false;
-        if (del) {
+        if (del)
+        {
             if (getState()==WUStateUnknown)
                 setState(WUStateArchived);  // to allow delete
             cleanupAndDelete(false,deleteOwned);    // no query, may as well delete 
@@ -3145,12 +3148,15 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     Owned<IDllLocation> loc;
     StringBuffer dst, locpath;
     Owned<IPropertyTree> generatedDlls = createPTree("GeneratedDlls");
-    ForEach(*iter) {
+    ForEach(*iter)
+    {
         IConstWUAssociatedFile & cur = iter->query();
         cur.getNameTail(name);
-        if (name.length()) {
+        if (name.length())
+        {
             Owned<IDllEntry> entry = queryDllServer().getEntry(name.str());
-            if (entry.get()) {
+            if (entry.get())
+            {
                 Owned<IPropertyTree> generatedDllBranch = createPTree();
                 generatedDllBranch->setProp("@name", entry->queryName());
                 generatedDllBranch->setProp("@kind", entry->queryKind());
@@ -3167,7 +3173,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 }
                 RemoteFilename filename;
                 loc->getDllFilename(filename);
-                if(!exception)
+                if (!exception)
                 {
                     Owned<IFile> srcfile = createIFile(filename);
                     addPathSepChar(dst.clear().append(base));
@@ -3175,7 +3181,10 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                     Owned<IFile> dstfile = createIFile(dst.str());
                     try
                     {
-                        copyFile(dstfile,srcfile);
+                        if (dstfile->exists())
+                            removeDllFiles = false; // i.e. previously archived
+                        else
+                            copyFile(dstfile,srcfile);
                         makeAbsolutePath(dstfile->queryFilename(), locpath.clear());
                     }
                     catch(IException * e)
@@ -3183,9 +3192,9 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                         exception.setown(e);
                     }
                 }
-                if(exception)
+                if (exception)
                 {
-                    if(ignoredllerrors)
+                    if (ignoredllerrors)
                     {
                         EXCLOG(exception.get(), "archiveWorkUnit (copying associated file)");
                         //copy failed, so store original (best) location and don't delete the files
@@ -3199,22 +3208,49 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 }
                 generatedDllBranch->setProp("@location", locpath.str());
                 generatedDlls->addPropTree("GeneratedDll", generatedDllBranch.getClear());
-                if (del) {
+                if (del)
+                {
                     bool removeDir = (cur.getType() == FileTypeDll); // copied from cleanupAndDelete code, above
                     if (!p->getPropBool("@isClone", false))         // Leak to protect against cloned WUs
                         entry->remove(removeDllFiles, removeDir);
                 }
             }
+            else // no generated dll entry
+            {
+                SCMStringBuffer fname, ip;
+                cur.getName(fname);
+                cur.getIp(ip);
+                SocketEndpoint ep(ip.str());
+                RemoteFilename rfn;
+                rfn.setPath(ep, fname.str());
+                Owned<IFile> srcFile = createIFile(rfn);
+                addPathSepChar(dst.clear().append(base));
+                rfn.getTail(dst);
+                Owned<IFile> dstFile = createIFile(dst.str());
+                try
+                {
+                    copyFile(dstFile, srcFile);
+                    if (del)
+                        srcFile->remove();
+                }
+                catch (IException *e)
+                {
+                    VStringBuffer msg("Failed to archive associated file '%s' to destination '%s'", srcFile->queryFilename(), dstFile->queryFilename());
+                    EXCLOG(e, msg.str());
+                    e->Release();
+                }
+            }
         }
     }
     iter.clear();
-    if(generatedDlls->numChildren())
+    if (generatedDlls->numChildren())
         toXML(generatedDlls, extraWorkUnitXML, 1, XML_Format);
 
-    if(!modifyAndWriteWorkUnitXML(wuid, buf, extraWorkUnitXML, fileio))
+    if (!modifyAndWriteWorkUnitXML(wuid, buf, extraWorkUnitXML, fileio))
        return false;
 
-    if (del) {
+    if (del)
+    {
         //setState(WUStateArchived);    // this isn't useful as about to delete it!
         q.clear();
         //deldll false as should have deleted all those we successfully copied, and archived and removed SDS entries, above
@@ -3282,36 +3318,43 @@ bool restoreWorkUnit(const char *base,const char *wuid)
     StringBuffer dts;
     dt.getString(dts);
     pt->setProp("@restoredDate", dts.str());
-    Owned<IRemoteConnection> conn = querySDS().connect("/WorkUnits", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-    if (!conn) {
-        ERRLOG("restoreWorkUnit could not connect to /WorkUnits");
+    VStringBuffer xpath("/WorkUnits/%s", wuid);
+    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    if (!conn)
+    {
+        ERRLOG("restoreWorkUnit could not create to %s", xpath.str());
         return false;
     }
     IPropertyTree *root = conn->queryRoot();
-    if (root->hasProp(wuid)) {
-        ERRLOG("restoreWorkUnit WUID %s already exists",wuid);
+    if (root->hasChildren())
+    {
+        ERRLOG("restoreWorkUnit WUID %s already exists", wuid);
         return false;
     }
     Owned<IPropertyTree> gprogress = pruneBranch(pt, "GraphProgress[1]");
     Owned<IPropertyTree> generatedDlls = pruneBranch(pt, "GeneratedDlls[1]");
-    root->setPropTree(wuid,pt.getClear());
+    Owned<IPropertyTree> associatedFiles;
+    IPropertyTree *srcAssociated = pt->queryPropTree("Query/Associated");
+    if (srcAssociated)
+        associatedFiles.setown(createPTreeFromIPT(srcAssociated));
+    root->setPropTree(NULL, pt.getClear());
     conn.clear();
 
     // now kludge back GraphProgress and GeneratedDlls
-    if (gprogress) {
-        StringBuffer xpath("/GraphProgress/");
-        conn.setown(querySDS().connect("/GraphProgress", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
-        if (conn) {
+    if (gprogress)
+    {
+        VStringBuffer xpath("/GraphProgress/%s", wuid);
+        conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT));
+        if (conn)
+        {
             IPropertyTree *groot = conn->queryRoot();
-            if (groot->hasProp(wuid)) {
-                ERRLOG("restoreWorkUnit WUID %s graphprogress already exists, removing",wuid);
-                groot->removeProp(wuid);
-            }
-            groot->setPropTree(wuid,gprogress.getClear());
+            if (groot->hasChildren())
+                WARNLOG("restoreWorkUnit WUID %s graphprogress already exists, replacing",wuid);
+            groot->setPropTree(NULL, gprogress.getClear());
         }
     }
 
-    if(generatedDlls)
+    if (generatedDlls)
     {
         Owned<IPropertyTreeIterator> dlls = generatedDlls->getElements("GeneratedDll");
         for(dlls->first(); dlls->isValid(); dlls->next())
@@ -3321,11 +3364,48 @@ bool restoreWorkUnit(const char *base,const char *wuid)
             char const * kind = dll.queryProp("@kind");
             char const * location = dll.queryProp("@location");
             Owned<IDllEntry> got = queryDllServer().getEntry(name);
-            if(!got)
+            if (!got)
                 queryDllServer().registerDll(name, kind, location);
         }
     }
+    if (associatedFiles)
+    {
+        Owned<IPropertyTreeIterator> associated = associatedFiles->getElements("*");
+        ForEach(*associated)
+        {
+            IPropertyTree &file = associated->query();
+            const char *filename = file.queryProp("@filename");
+            SocketEndpoint ep(file.queryProp("@ip"));
+            RemoteFilename rfn;
+            rfn.setPath(ep, filename);
+            OwnedIFile dstFile = createIFile(rfn);
+            StringBuffer srcPath(base), name;
+            addPathSepChar(srcPath);
+            rfn.getTail(name);
+            srcPath.append(name);
+            if (generatedDlls)
+            {
+                VStringBuffer gDllPath("GeneratedDll[@name=\"%s\"]", name.str());
+                if (generatedDlls->hasProp(gDllPath))
+                    continue; // generated dlls handled separately - see above
+            }
 
+            OwnedIFile srcFile = createIFile(srcPath);
+            if (srcFile->exists())
+            {
+                try
+                {
+                    copyFile(dstFile, srcFile);
+                }
+                catch (IException *e)
+                {
+                    VStringBuffer msg("Failed to restore associated file '%s' to destination '%s'", srcFile->queryFilename(), dstFile->queryFilename());
+                    EXCLOG(e, msg.str());
+                    e->Release();
+                }
+            }
+        }
+    }
     return true;
 }
 
