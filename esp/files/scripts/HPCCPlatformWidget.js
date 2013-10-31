@@ -16,6 +16,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-style",
 
@@ -27,6 +28,7 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
     "hpcc/WsAccount",
+    "hpcc/ws_access",
     "hpcc/WsSMC",
     "hpcc/GraphWidget",
 
@@ -51,10 +53,10 @@ define([
     "hpcc/HPCCPlatformRoxieWidget",
     "hpcc/HPCCPlatformOpsWidget"
 
-], function (declare, lang, dom, domStyle,
+], function (declare, lang, arrayUtil, dom, domStyle,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPRequest, WsAccount, WsSMC, GraphWidget,
+                _TabContainerWidget, ESPRequest, WsAccount, WsAccess, WsSMC, GraphWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -118,14 +120,16 @@ define([
         },
 
         init: function (params) {
-             if (this.inherited(arguments))
+            if (this.inherited(arguments))
                 return;
-
             var context = this;
+            registry.byId(context.id + "SetBanner").set("disabled", true);
+
             WsAccount.MyAccount({
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
                     dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
+                    context.checkIfAdmin(response.MyAccountResponse.username);
                 }
             });
 
@@ -152,6 +156,28 @@ define([
 
         getTitle: function () {
             return "HPCC Platform";
+        },
+
+        checkIfAdmin: function (user) {
+            var context = this;
+            if(user == null){
+                registry.byId(context.id + "SetBanner").set("disabled", false);
+            }else{
+                WsAccess.UserEdit({
+                    request: {
+                        username: user
+                    }
+                }).then(function (response) {
+                    if (lang.exists("UserEditResponse.Groups.Group", response)) {
+                        arrayUtil.forEach(response.UserEditResponse.Groups.Group, function (item, idx) {
+                            if(item.name == "Administrators"){
+                                registry.byId(context.id + "SetBanner").set("disabled", false);
+                                return true;
+                            }
+                        });
+                    }
+                });
+            }
         },
 
         //  Hitched actions  ---
