@@ -16,6 +16,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-style",
 
@@ -27,6 +28,7 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
     "hpcc/WsAccount",
+    "hpcc/WsAccess",
     "hpcc/WsSMC",
     "hpcc/GraphWidget",
 
@@ -51,10 +53,10 @@ define([
     "hpcc/HPCCPlatformRoxieWidget",
     "hpcc/HPCCPlatformOpsWidget"
 
-], function (declare, lang, dom, domStyle,
+], function (declare, lang, arrayUtil, dom, domStyle,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPRequest, WsAccount, WsSMC, GraphWidget,
+                _TabContainerWidget, ESPRequest, WsAccount, WsAccess, WsSMC, GraphWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -62,6 +64,7 @@ define([
 
         banner: "",
         upgradeBar: null,
+        user: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -118,14 +121,17 @@ define([
         },
 
         init: function (params) {
-             if (this.inherited(arguments))
+            if (this.inherited(arguments))
                 return;
-
             var context = this;
+            registry.byId(context.id + "SetBanner").set("disabled", true);
+
             WsAccount.MyAccount({
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
                     dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
+                    context.user = response.MyAccountResponse.username;
+                    context.checkIfAdmin();
                 }
             });
 
@@ -139,6 +145,7 @@ define([
             this.createStackControllerTooltip(this.id + "_Queries", "Published Queries");
             this.createStackControllerTooltip(this.id + "_OPS", "Operations");
             this.initTab();
+            this.checkIfAdmin();
         },
 
         initTab: function () {
@@ -152,6 +159,24 @@ define([
 
         getTitle: function () {
             return "HPCC Platform";
+        },
+
+        checkIfAdmin: function () {
+            var context = this;
+            WsAccess.UserEdit({
+                request: {
+                    username: this.user
+                }
+            }).then(function (response) {
+                if (lang.exists("UserEditResponse.Groups.Group", response)) {
+                    var items = lang.getObject("UserEditResponse.Groups.Group", false, response);
+                    arrayUtil.forEach(items, function (item, idx) {
+                        if(item.name == "Administrators"){
+                            registry.byId(context.id + "SetBanner").set("disabled", false);
+                        }
+                    });
+                }
+            });
         },
 
         //  Hitched actions  ---
