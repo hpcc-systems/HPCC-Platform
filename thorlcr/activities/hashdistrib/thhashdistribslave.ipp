@@ -52,5 +52,6 @@ activityslaves_decl CActivityBase *createHashAggregateSlave(CGraphElementBase *c
 activityslaves_decl CActivityBase *createIndexDistributeSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createFetchSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createReDistributeSlave(CGraphElementBase *container);
+activityslaves_decl CActivityBase *createHashDistributedSlave(CGraphElementBase *container);
 
 #endif

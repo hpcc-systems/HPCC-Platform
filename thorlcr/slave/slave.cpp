@@ -498,6 +498,9 @@ public:
             case TAKhashdistribute:
                 ret = createHashDistributeSlave(this);
                 break;
+            case TAKdistributed:
+                ret = createHashDistributedSlave(this);
+                break;
             case TAKhashdistributemerge:
                 ret = createHashDistributeMergeSlave(this);
                 break;
