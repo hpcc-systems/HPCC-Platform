@@ -1563,7 +1563,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.resourceSequential,"resourceSequential", false),
         DebugOption(options.workunitTemporaries,"workunitTemporaries", true),
         DebugOption(options.resourceConditionalActions,"resourceConditionalActions", false),  //targetRoxie() ??
-        DebugOption(options.actionLinkInNewGraph,"actionLinkInNewGraph",true),
+        DebugOption(options.actionLinkInNewGraph,"actionLinkInNewGraph", false),
         DebugOption(options.minimizeWorkunitTemporaries, "<exception>", false),
         DebugOption(options.pickBestEngine,"pickBestEngine", true),
         DebugOption(options.groupedChildIterators,"groupedChildIterators", false),

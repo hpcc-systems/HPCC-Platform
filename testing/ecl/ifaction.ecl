@@ -17,9 +17,6 @@
 
 #option ('resourceConditionalActions', true)
 
-//skip type==thorlcr TBD
-//nothor
-
 r := { string x{maxlength(256)}; };
 
 trueSimple1 := true : stored('trueSimple1');
@@ -30,9 +27,9 @@ falseSimple1 := false : stored('falseSimple1');
 falseSimple2 := false : stored('falseSimple2');
 falseSimple3 := false : stored('falseSimple3');
 
-complex1 := dedup(nofold(dataset([{'1'},{'b'},{'c'}], r)), x, all);
-complex2 := dedup(nofold(dataset([{'2'},{'b'},{'c'}], r)), x, all);
-complex3 := dedup(nofold(dataset([{'3'},{'b'},{'c'}], r)), x, all);
+complex1 := sort(dedup(nofold(dataset([{'1'},{'b'},{'c'}], r)), x, all), x);
+complex2 := sort(dedup(nofold(dataset([{'2'},{'b'},{'c'}], r)), x, all), x);
+complex3 := sort(dedup(nofold(dataset([{'3'},{'b'},{'c'}], r)), x, all), x);
 
 trueComplex1 := count(dedup(nofold(dataset([{'1'},{'b'},{'c'}], r)), x, all)) < 4;
 trueComplex2 := count(dedup(nofold(dataset([{'2'},{'b'},{'c'}], r)), x, all)) < 4;

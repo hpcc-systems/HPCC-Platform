@@ -255,7 +255,6 @@ CActivityBase *createChildAggregateSlave(CGraphElementBase *container);
 CActivityBase *createChildGroupAggregateSlave(CGraphElementBase *container);
 CActivityBase *createChildThroughNormalizeSlave(CGraphElementBase *container);
 CActivityBase *createWhenSlave(CGraphElementBase *container);
-CActivityBase *createIfActionSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
 CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
 
@@ -621,6 +620,7 @@ public:
                 break;
             case TAKcase:
             case TAKif:
+            case TAKifaction:
                 throwUnexpected();
                 break;
             case TAKwhen_dataset:
@@ -742,9 +742,6 @@ public:
                 break;
             case TAKstreamediterator:
                 ret = createStreamedIteratorSlave(this);
-                break;
-            case TAKifaction:
-                ret = createIfActionSlave(this);
                 break;
             default:
                 throw MakeStringException(TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));
