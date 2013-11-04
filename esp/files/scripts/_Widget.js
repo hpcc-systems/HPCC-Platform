@@ -16,7 +16,7 @@ define([
         _onNewPage: function (event) {
             var baseUrl = document.URL.split("?")[0];
             var paramsString = ioQuery.objectToQuery(this.params);
-            var win = window.open(baseUrl + "?Widget=" + this.declaredClass + "&" + paramsString, "_blank");
+            var win = window.open(baseUrl + "?" + paramsString, "_blank");
             win.focus();
         },
 
@@ -25,6 +25,9 @@ define([
                 return true;
             this.initalized = true;
             this.params = params;
+            if (!this.params.Widget) {
+                this.params.Widget = this.declaredClass;
+            }
             
             return false;
         }
