@@ -78,7 +78,6 @@ class ECLFile:
         skipLines = []
         for line in eclText:
             if skipText in line:
-                #print "\tecl:",self.ecl,"line:",line
                 skipLines.append(line.rstrip('\n'))
         if len(skipLines) > 0:
             for skipLine in skipLines:
@@ -91,50 +90,36 @@ class ECLFile:
                     skipType = skipType.split("==")[1]
                 if not skip:
                     return {'reason': skipReason, 'type': skipType}
-                #if skipType == skip:
-                #print "\t\tskip:", skip, "skipType", skipType
                 if skip in skipType:
-                    #print '\treturn {skip:True, type:', skipType, 'reason', skipReason, "}"
                     return {'skip': True, 'type' : skipType, 'reason': skipReason}
-                #else:
-                #    print 'skip:False, reason:', skipType
-                #    return {'skip': False, 'reason': skipType}
-        #print '\treturn {skip: False}'
         return {'skip': False}
 
     def testSkip(self, skip=None):
-        #print "testSkip(skip:", skip,")"
         return self.__checkSkip("//skip", skip)
 
     def testVarSkip(self, skip=None):
         return self.__checkSkip("//varskip", skip)
 
     def testExclusion(self, target):
-        # Standard strign has a problem with unicode characters
+        # Standard string has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//no' + target.encode()
-        #print "testExclusion (ecl:", self.ecl,", target:", target,", tag: ", tag, ")"
+        logging.debug("testExclusion (ecl:", self.ecl,", target:", target,", tag: ", tag, ")")
         eclText = open(self.getEcl(), 'rb')
         for line in eclText:
-            #print line
             if tag in line:
-                #print "\treturn True"
                 return True
-        #print "\treturn False"
         return False
 
     def testPublish(self):
         # Standard strign has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//publish'
-        #print "testPublish (ecl:", self.ecl,", tag: ", tag, ")"
+        logging.debug("testPublish (ecl:", self.ecl,", tag: ", tag, ")")
         eclText = open(self.getEcl(), 'rb')
         for line in eclText:
-            #print line
             if tag in line:
-                #print "\treturn True"
                 return True
-        #print "\treturn False"
         return False
 
 

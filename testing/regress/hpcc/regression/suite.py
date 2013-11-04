@@ -54,10 +54,9 @@ class Suite:
             raise Error("2001", err="Not Found: %s" % self.dir_ec)
         allfiles = os.listdir(self.dir_ec)
         allfiles.sort()
-        #for files in os.listdir(self.dir_ec):
-        for files in allfiles:
-            if files.endswith(".ecl"):
-                ecl = os.path.join(self.dir_ec, files)
+        for file in allfiles:
+            if file.endswith(".ecl"):
+                ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
                                   self.dir_r)
                 result = eclfile.testSkip(self.name)
@@ -65,25 +64,16 @@ class Suite:
                     if not eclfile.testExclusion(self.name):
                         self.suite.append(eclfile)
                     else:
-                        self.exclude.append(format(files, "20")+" excluded")
+                        self.exclude.append(format(file, "25")+" excluded")
                 else:
-                    self.exclude.append(format(files, "20")+" skipped (reason:"+result['reason']+")");
+                    self.exclude.append(format(file, "25")+" skipped (reason:"+result['reason']+")");
 
                 if eclfile.testPublish():
-                    #print "Publish..."
-                    self.publish.append(files)
-
-        #print self.suite
-        #self.suite.reverse()
-        #print self.suite
-        #self.suite.sort(ecl)
+                    self.publish.append(file)
 
     def testPublish(self, ecl):
-        #print "ecl: ", ecl
         if ecl in self.publish:
-            #print "return True"
             return True
-        #print "return False"
         return False
         
     def getSuite(self):

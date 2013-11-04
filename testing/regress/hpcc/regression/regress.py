@@ -65,13 +65,11 @@ class Regression:
         self.log.setLevel(level)
 
     def bootstrap(self, cluster):
-        #print "bootstrap( "+cluster+")"
         self.createDirectory(self.regressionDir)
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
         self.setup = self.Setup()
-        #for cluster in self.config.Clusters:
         if cluster in self.config.Clusters:
             self.createSuite(cluster)
         os.chdir(self.regressionDir)
@@ -116,22 +114,19 @@ class Regression:
         Regression.displayReport(report)
 
     def runQuery(self, cluster, query, report, cnt=1, publish=False):
-        #print "runQuery(cluster:", cluster, ", query:", query, ", report:", report, ", cnt:", cnt, ", publish:", publish, ")"
+        logging.debug("runQuery(cluster:", cluster, ", query:", query, ", report:", report, ", cnt:", cnt, ", publish:", publish, ")")
         logging.warn("%s. Test: %s" % (repr(cnt), query.ecl))
         ECLCC().makeArchive(query)
         if publish:
-            #print "publish"
             res = ECLcmd().runCmd("publish", cluster, query, report[0],
                               server=self.config.ip,
                               username=self.config.username,
                               password=self.config.password)
         else:
-            #print "run"
             res = ECLcmd().runCmd("run", cluster, query, report[0],
                               server=self.config.ip,
                               username=self.config.username,
                               password=self.config.password)
-        #print "res: ", res
         wuid = query.getWuid()
         if wuid:
             url = "http://" + self.config.server
