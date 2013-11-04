@@ -1,0 +1,5 @@
+<Dataset name='Result 1'>
+ <Row><include>false</include><people><Row><surname>Gavin               </surname></Row><Row><surname>Liz                 </surname></Row></people></Row>
+ <Row><include>true</include><people><Row><surname>Jim                 </surname></Row><Row><surname>Richard             </surname></Row></people></Row>
+ <Row><include>false</include><people></people></Row>
+</Dataset>

@@ -1,0 +1,15 @@
+<Dataset name='Result 1'>
+ <Row><value1>C</value1><value2>A</value2><cval2_1> </cval2_1><cval2_2> </cval2_2></Row>
+ <Row><value1>B</value1><value2>B</value2><cval2_1> </cval2_1><cval2_2> </cval2_2></Row>
+ <Row><value1>A</value1><value2>C</value2><cval2_1> </cval2_1><cval2_2> </cval2_2></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><value1>A</value1><value2>C</value2><cval2_1>Z</cval2_1><cval2_2>T</cval2_2></Row>
+ <Row><value1>B</value1><value2>B</value2><cval2_1>S</cval2_1><cval2_2>Y</cval2_2></Row>
+ <Row><value1>C</value1><value2>A</value2><cval2_1>X</cval2_1><cval2_2>W</cval2_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><value1>A</value1><value2>C</value2><cval2_1>Z</cval2_1><cval2_2>T</cval2_2></Row>
+ <Row><value1>B</value1><value2>B</value2><cval2_1>S</cval2_1><cval2_2>Y</cval2_2></Row>
+ <Row><value1>C</value1><value2>A</value2><cval2_1>X</cval2_1><cval2_2>W</cval2_2></Row>
+</Dataset>

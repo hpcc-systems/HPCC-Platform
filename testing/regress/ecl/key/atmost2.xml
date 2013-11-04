@@ -1,0 +1,27 @@
+<Dataset name='Result 1'>
+ <Row><surname>Hawthorn            </surname><forename>Gavin     </forename><age>31</age><addr>10 Slapdash Lane              </addr></Row>
+ <Row><surname>Hawthorn            </surname><forename>Mia       </forename><age>30</age><addr>10 Slapdash Lane              </addr></Row>
+ <Row><surname>Smith               </surname><forename>Jo        </forename><age>25</age><addr>                              </addr></Row>
+ <Row><surname>Smith               </surname><forename>Matthew   </forename><age>25</age><addr>                              </addr></Row>
+ <Row><surname>Smithe              </surname><forename>Pru       </forename><age>10</age><addr>                              </addr></Row>
+ <Row><surname>X                   </surname><forename>Z         </forename><age>25</age><addr>12 The burrows                </addr></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><surname>Hawthorn            </surname><forename>Gavin     </forename><age>31</age></Row>
+ <Row><surname>Hawthorn            </surname><forename>Mia       </forename><age>30</age></Row>
+ <Row><surname>Smith               </surname><forename>Jo        </forename><age>25</age></Row>
+ <Row><surname>Smith               </surname><forename>Matthew   </forename><age>25</age></Row>
+ <Row><surname>Smithe              </surname><forename>Pru       </forename><age>10</age></Row>
+ <Row><surname>X                   </surname><forename>Z         </forename><age>25</age></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><surname>Hawthorn            </surname><forename>Gavin     </forename><age>31</age></Row>
+ <Row><surname>Hawthorn            </surname><forename>Mia       </forename><age>30</age></Row>
+ <Row><surname>Smith               </surname><forename>Jo        </forename><age>25</age></Row>
+ <Row><surname>Smith               </surname><forename>Matthew   </forename><age>25</age></Row>
+ <Row><surname>Smithe              </surname><forename>Pru       </forename><age>10</age></Row>
+ <Row><surname>X                   </surname><forename>Z         </forename><age>25</age></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>6</Result_4></Row>
+</Dataset>

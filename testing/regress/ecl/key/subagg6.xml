@@ -1,0 +1,10 @@
+<Dataset name='Summary'>
+ <Row><id>1</id><addresstext>99 Maltings Road    </addresstext><postcode>SG8       </postcode><countgroup>2</countgroup><sumgroup>3</sumgroup><maxsurname>Halliday            </maxsurname><minforename>Gavin               </minforename></Row>
+ <Row><id>2</id><addresstext>Buck House          </addresstext><postcode>WC1       </postcode><countgroup>2</countgroup><sumgroup>7</sumgroup><maxsurname>Windsor             </maxsurname><minforename>Elizabeth           </minforename></Row>
+ <Row><id>3</id><addresstext>An empty location   </addresstext><postcode>WC1       </postcode><countgroup>0</countgroup><sumgroup>0</sumgroup><maxsurname>                    </maxsurname><minforename>                    </minforename></Row>
+</Dataset>
+<Dataset name='First'>
+ <Row><id>1</id><addresstext>99 Maltings Road    </addresstext><postcode>SG8       </postcode><per_surname>Halliday            </per_surname><per_forename>Gavin               </per_forename></Row>
+ <Row><id>2</id><addresstext>Buck House          </addresstext><postcode>WC1       </postcode><per_surname>Corgi               </per_surname><per_forename>Rolph               </per_forename></Row>
+ <Row><id>3</id><addresstext>An empty location   </addresstext><postcode>WC1       </postcode><per_surname>                    </per_surname><per_forename>                    </per_forename></Row>
+</Dataset>

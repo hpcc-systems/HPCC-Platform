@@ -1,0 +1,66 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>true</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>11</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>Hello1</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>World1</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>Oh là là Straße1</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>Стоял at Oh là là Straße</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>Oh l&#224; l&#224; Stra&#223;e1</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>6261</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9><Item>1</Item><Item>3</Item><Item>2</Item></Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10><Item>30000</Item><Item>50000</Item><Item>40000</Item></Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11><Item>one</Item><Item>three</Item><Item>two</Item></Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12><Item>uno     </Item><Item>tre     </Item><Item>dos     </Item></Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13><Item>un</Item><Item>trois</Item><Item>deux</Item></Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14><Item>ein</Item><Item>drei</Item><Item>zwei</Item></Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15><Item>false</Item><Item>false</Item><Item>true</Item><Item>true</Item></Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16><Item>1.100000023841858</Item><Item>3.299999952316284</Item><Item>2.200000047683716</Item></Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17><Item>1.2</Item><Item>3.4</Item><Item>2.3</Item></Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18><Item>-111</Item><Item>113</Item><Item>0</Item></Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>46875625000</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>328126500000</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>46875625000</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>328126500000</Result_22></Row>
+</Dataset>

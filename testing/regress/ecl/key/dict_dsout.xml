@@ -1,0 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><a>1</a><b>2</b><c><Row><c1>f</c1><c2>F</c2></Row><Row><c1>e</c1><c2>E</c2></Row><Row><c1>d</c1><c2>D</c2></Row><Row><c1>3</c1><c2>4</c2></Row><Row><c1>b</c1><c2>B</c2></Row><Row><c1>a</c1><c2>A</c2></Row><Row><c1>c</c1><c2>C</c2></Row></c><dd>5</dd></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><a>1</a><b>2</b><cc><Row><c1>f</c1><c2>F</c2></Row><Row><c1>e</c1><c2>E</c2></Row><Row><c1>d</c1><c2>D</c2></Row><Row><c1>3</c1><c2>4</c2></Row><Row><c1>b</c1><c2>B</c2></Row><Row><c1>a</c1><c2>A</c2></Row><Row><c1>c</c1><c2>C</c2></Row></cc><dd>5</dd></Row>
+</Dataset>

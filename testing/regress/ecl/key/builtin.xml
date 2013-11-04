@@ -1,0 +1,348 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>------ ABS(1) = 1 ?</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>1</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>------ ABS(-1) = 1 ?</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>1</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>------ COS(Angle45) = 0.707107 ?</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>0.707107</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>------ COSH(Angle45) = 1.324609 ?</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>1.324609</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>------ SIN(Angle45) = 0.707107 ?</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>0.707107</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>------ SINH(Angle45) = 0.868671 ?</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>0.868671</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>------ ASIN(Sine45) = 0.785398 ?</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>0.785398</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>------ ACOS(Cosine45) = 0.785398 ?</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>0.785398</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>------ TAN(Angle45) = 1 ?</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>1.000000</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>------ TANH(Angle45) = 0.655794 ?</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>0.655794</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>------ ATAN(Tangent45) = 0.785398 ?</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>0.785398</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>------ EXP(3.14159)= 23.1406 ?</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>23.140631</Result_24></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>------ LN(3.14159)= 1.14473 ?</Result_25></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><Result_26>1.144729</Result_26></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><Result_27>------ LOG(3.14159) = 0.49715 ?</Result_27></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>0.497150</Result_28></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><Result_29>------ POWER(2.0,3.0) = 8 ?</Result_29></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><Result_30>8.0</Result_30></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><Result_31>------ POWER(3.0,2.0) = 9 ?</Result_31></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><Result_32>9.0</Result_32></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><Result_33>------ RANK(1,[20,30,10,40]) = 2 ?</Result_33></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><Result_34>2</Result_34></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><Result_35>------ RANK(1,[20,30,10,40],DESCEND) = 3 ?</Result_35></Row>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><Result_36>3</Result_36></Row>
+</Dataset>
+<Dataset name='Result 37'>
+ <Row><Result_37>------ RANKED(1,[20,30,10,40]) = 3 ?</Result_37></Row>
+</Dataset>
+<Dataset name='Result 38'>
+ <Row><Result_38>3</Result_38></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><Result_39>------ RANKED(1,[20,30,10,40],DESCEND) = 4 ?</Result_39></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><Result_40>4</Result_40></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><Result_41>------ ROUND(3.14159) = 3 ?</Result_41></Row>
+</Dataset>
+<Dataset name='Result 42'>
+ <Row><Result_42>3</Result_42></Row>
+</Dataset>
+<Dataset name='Result 43'>
+ <Row><Result_43>------ ROUND(3.5) = 4 ?</Result_43></Row>
+</Dataset>
+<Dataset name='Result 44'>
+ <Row><Result_44>4</Result_44></Row>
+</Dataset>
+<Dataset name='Result 45'>
+ <Row><Result_45>------ ROUND(-1.3) = -1 ?</Result_45></Row>
+</Dataset>
+<Dataset name='Result 46'>
+ <Row><Result_46>-1</Result_46></Row>
+</Dataset>
+<Dataset name='Result 47'>
+ <Row><Result_47>------ ROUND(-1.8) = -2 ?</Result_47></Row>
+</Dataset>
+<Dataset name='Result 48'>
+ <Row><Result_48>-2</Result_48></Row>
+</Dataset>
+<Dataset name='Result 49'>
+ <Row><Result_49>------ ROUNDUP(3.14159) = 4 ?</Result_49></Row>
+</Dataset>
+<Dataset name='Result 50'>
+ <Row><Result_50>4</Result_50></Row>
+</Dataset>
+<Dataset name='Result 51'>
+ <Row><Result_51>------ ROUNDUP(-3.9) = -4 ?</Result_51></Row>
+</Dataset>
+<Dataset name='Result 52'>
+ <Row><Result_52>-4</Result_52></Row>
+</Dataset>
+<Dataset name='Result 53'>
+ <Row><Result_53>------ SQRT(16.0) = 4 ?</Result_53></Row>
+</Dataset>
+<Dataset name='Result 54'>
+ <Row><Result_54>4.0</Result_54></Row>
+</Dataset>
+<Dataset name='Result 55'>
+ <Row><Result_55>------ SQRT(81.0) = 9 ?</Result_55></Row>
+</Dataset>
+<Dataset name='Result 56'>
+ <Row><Result_56>9.0</Result_56></Row>
+</Dataset>
+<Dataset name='Result 57'>
+ <Row><Result_57>------ TRANSFER(65,STRING1) = 0 ?</Result_57></Row>
+</Dataset>
+<Dataset name='Result 58'>
+ <Row><Result_58>0</Result_58></Row>
+</Dataset>
+<Dataset name='Result 59'>
+ <Row><Result_59>------ TRIM STRING COMMANDS</Result_59></Row>
+</Dataset>
+<Dataset name='Result 60'>
+ <Row><Result_60>   ABC</Result_60></Row>
+</Dataset>
+<Dataset name='Result 61'>
+ <Row><Result_61>ABC</Result_61></Row>
+</Dataset>
+<Dataset name='Result 62'>
+ <Row><Result_62>ABC</Result_62></Row>
+</Dataset>
+<Dataset name='Result 63'>
+ <Row><Result_63>------ TRUNCATE(3.75) = 3 ?</Result_63></Row>
+</Dataset>
+<Dataset name='Result 64'>
+ <Row><Result_64>3</Result_64></Row>
+</Dataset>
+<Dataset name='Result 65'>
+ <Row><Result_65>------ TRUNCATE(1.25) = 1 ?</Result_65></Row>
+</Dataset>
+<Dataset name='Result 66'>
+ <Row><Result_66>1</Result_66></Row>
+</Dataset>
+<Dataset name='Result 67'>
+ <Row><Result_67>------ TRUNCATE(10.1) = 10 ?</Result_67></Row>
+</Dataset>
+<Dataset name='Result 68'>
+ <Row><Result_68>10</Result_68></Row>
+</Dataset>
+<Dataset name='Result 69'>
+ <Row><Result_69>------ CASE COMMANDS = 9,8,7,5 ?</Result_69></Row>
+</Dataset>
+<Dataset name='Result 70'>
+ <Row><Result_70>9</Result_70></Row>
+</Dataset>
+<Dataset name='Result 71'>
+ <Row><Result_71>8</Result_71></Row>
+</Dataset>
+<Dataset name='Result 72'>
+ <Row><Result_72>7</Result_72></Row>
+</Dataset>
+<Dataset name='Result 73'>
+ <Row><Result_73>5</Result_73></Row>
+</Dataset>
+<Dataset name='Result 74'>
+ <Row><Result_74>------ CHOOSE COMMANDS = 7,3,5,13 ?</Result_74></Row>
+</Dataset>
+<Dataset name='Result 75'>
+ <Row><Result_75>7</Result_75></Row>
+</Dataset>
+<Dataset name='Result 76'>
+ <Row><Result_76>3</Result_76></Row>
+</Dataset>
+<Dataset name='Result 77'>
+ <Row><Result_77>5</Result_77></Row>
+</Dataset>
+<Dataset name='Result 78'>
+ <Row><Result_78>13</Result_78></Row>
+</Dataset>
+<Dataset name='Result 79'>
+ <Row><Result_79>------ REJECTED COMMANDS = 0,3,3,1 ?</Result_79></Row>
+</Dataset>
+<Dataset name='Result 80'>
+ <Row><Result_80>0</Result_80></Row>
+</Dataset>
+<Dataset name='Result 81'>
+ <Row><Result_81>3</Result_81></Row>
+</Dataset>
+<Dataset name='Result 82'>
+ <Row><Result_82>3</Result_82></Row>
+</Dataset>
+<Dataset name='Result 83'>
+ <Row><Result_83>1</Result_83></Row>
+</Dataset>
+<Dataset name='Result 84'>
+ <Row><Result_84>------ REJECTED COMMANDS = 5,2,1,0 ?</Result_84></Row>
+</Dataset>
+<Dataset name='Result 85'>
+ <Row><Result_85>5</Result_85></Row>
+</Dataset>
+<Dataset name='Result 86'>
+ <Row><Result_86>2</Result_86></Row>
+</Dataset>
+<Dataset name='Result 87'>
+ <Row><Result_87>1</Result_87></Row>
+</Dataset>
+<Dataset name='Result 88'>
+ <Row><Result_88>0</Result_88></Row>
+</Dataset>
+<Dataset name='Result 89'>
+ <Row><Result_89>------ AVE COMMANDS = 65.8,48.8 ?</Result_89></Row>
+</Dataset>
+<Dataset name='Result 90'>
+ <Row><Result_90>56.8</Result_90></Row>
+</Dataset>
+<Dataset name='Result 91'>
+ <Row><Result_91>48.8</Result_91></Row>
+</Dataset>
+<Dataset name='Result 92'>
+ <Row><Result_92>------ MIN COMMANDS = 20,15 ?</Result_92></Row>
+</Dataset>
+<Dataset name='Result 93'>
+ <Row><Result_93>20</Result_93></Row>
+</Dataset>
+<Dataset name='Result 94'>
+ <Row><Result_94>15</Result_94></Row>
+</Dataset>
+<Dataset name='Result 95'>
+ <Row><Result_95>------ MAX COMMANDS = 102,97 ?</Result_95></Row>
+</Dataset>
+<Dataset name='Result 96'>
+ <Row><Result_96>102</Result_96></Row>
+</Dataset>
+<Dataset name='Result 97'>
+ <Row><Result_97>97</Result_97></Row>
+</Dataset>
+<Dataset name='Result 98'>
+ <Row><Result_98>------ SUM COMMANDS = 284,244 ?</Result_98></Row>
+</Dataset>
+<Dataset name='Result 99'>
+ <Row><Result_99>284</Result_99></Row>
+</Dataset>
+<Dataset name='Result 100'>
+ <Row><Result_100>244</Result_100></Row>
+</Dataset>
+<Dataset name='Result 101'>
+ <Row><Result_101>------ COUNT COMMANDS = 5,1,2 ?</Result_101></Row>
+</Dataset>
+<Dataset name='Result 102'>
+ <Row><Result_102>5</Result_102></Row>
+</Dataset>
+<Dataset name='Result 103'>
+ <Row><Result_103>1</Result_103></Row>
+</Dataset>
+<Dataset name='Result 104'>
+ <Row><Result_104>2</Result_104></Row>
+</Dataset>
+<Dataset name='Result 105'>
+ <Row><Result_105>00000025</Result_105></Row>
+</Dataset>
+<Dataset name='Result 106'>
+ <Row><Result_106>00000071</Result_106></Row>
+</Dataset>
+<Dataset name='Result 107'>
+ <Row><Result_107>066</Result_107></Row>
+</Dataset>
+<Dataset name='Result 108'>
+ <Row><Result_108>102</Result_108></Row>
+</Dataset>
+<Dataset name='Result 109'>
+ <Row><Result_109>*</Result_109></Row>
+</Dataset>
+<Dataset name='Result 110'>
+ <Row><Result_110>*</Result_110></Row>
+</Dataset>
+<Dataset name='Result 111'>
+ <Row><Result_111>0</Result_111></Row>
+</Dataset>
+<Dataset name='Result 112'>
+ <Row><Result_112>0</Result_112></Row>
+</Dataset>
+<Dataset name='Result 113'>
+ <Row><Result_113> </Result_113></Row>
+</Dataset>
+<Dataset name='Result 114'>
+ <Row><Result_114> </Result_114></Row>
+</Dataset>
+<Dataset name='Result 115'>
+ <Row><Result_115> </Result_115></Row>
+</Dataset>
+<Dataset name='Result 116'>
+ <Row><Result_116> </Result_116></Row>
+</Dataset>

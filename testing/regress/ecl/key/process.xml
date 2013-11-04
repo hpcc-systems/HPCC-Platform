@@ -1,0 +1,691 @@
+<Dataset name='Result 1'>
+ <Row><_unnamed_1></_unnamed_1><_process>Simple PROCESS: straight                                                        </_process></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>simple              </name><value>1</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>2</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>3</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>4</value><sequence>1</sequence></Row>
+ <Row><name>simple              </name><value>5</value><sequence>2</sequence></Row>
+ <Row><name>simple              </name><value>6</value><sequence>3</sequence></Row>
+ <Row><name>simple              </name><value>7</value><sequence>4</sequence></Row>
+ <Row><name>simple              </name><value>8</value><sequence>5</sequence></Row>
+ <Row><name>simple              </name><value>9</value><sequence>6</sequence></Row>
+ <Row><name>simple              </name><value>10</value><sequence>7</sequence></Row>
+ <Row><name>simple              </name><value>11</value><sequence>8</sequence></Row>
+ <Row><name>simple              </name><value>12</value><sequence>9</sequence></Row>
+ <Row><name>simple              </name><value>13</value><sequence>10</sequence></Row>
+ <Row><name>simple              </name><value>14</value><sequence>11</sequence></Row>
+ <Row><name>simple              </name><value>15</value><sequence>12</sequence></Row>
+ <Row><name>simple              </name><value>16</value><sequence>13</sequence></Row>
+ <Row><name>simple              </name><value>17</value><sequence>14</sequence></Row>
+ <Row><name>simple              </name><value>18</value><sequence>15</sequence></Row>
+ <Row><name>simple              </name><value>19</value><sequence>16</sequence></Row>
+ <Row><name>simple              </name><value>20</value><sequence>17</sequence></Row>
+ <Row><name>simple              </name><value>21</value><sequence>18</sequence></Row>
+ <Row><name>simple              </name><value>22</value><sequence>19</sequence></Row>
+ <Row><name>simple              </name><value>23</value><sequence>20</sequence></Row>
+ <Row><name>simple              </name><value>24</value><sequence>21</sequence></Row>
+ <Row><name>simple              </name><value>25</value><sequence>22</sequence></Row>
+ <Row><name>simple              </name><value>26</value><sequence>23</sequence></Row>
+ <Row><name>simple              </name><value>27</value><sequence>24</sequence></Row>
+ <Row><name>simple              </name><value>28</value><sequence>25</sequence></Row>
+ <Row><name>simple              </name><value>29</value><sequence>26</sequence></Row>
+ <Row><name>simple              </name><value>30</value><sequence>27</sequence></Row>
+ <Row><name>simple              </name><value>31</value><sequence>28</sequence></Row>
+ <Row><name>simple              </name><value>32</value><sequence>29</sequence></Row>
+ <Row><name>simple              </name><value>33</value><sequence>30</sequence></Row>
+ <Row><name>simple              </name><value>34</value><sequence>31</sequence></Row>
+ <Row><name>simple              </name><value>35</value><sequence>32</sequence></Row>
+ <Row><name>simple              </name><value>36</value><sequence>33</sequence></Row>
+ <Row><name>simple              </name><value>37</value><sequence>34</sequence></Row>
+ <Row><name>simple              </name><value>38</value><sequence>35</sequence></Row>
+ <Row><name>simple              </name><value>39</value><sequence>36</sequence></Row>
+ <Row><name>simple              </name><value>40</value><sequence>37</sequence></Row>
+ <Row><name>simple              </name><value>41</value><sequence>38</sequence></Row>
+ <Row><name>simple              </name><value>42</value><sequence>39</sequence></Row>
+ <Row><name>simple              </name><value>43</value><sequence>40</sequence></Row>
+ <Row><name>simple              </name><value>44</value><sequence>41</sequence></Row>
+ <Row><name>simple              </name><value>45</value><sequence>42</sequence></Row>
+ <Row><name>simple              </name><value>46</value><sequence>43</sequence></Row>
+ <Row><name>simple              </name><value>47</value><sequence>44</sequence></Row>
+ <Row><name>simple              </name><value>48</value><sequence>45</sequence></Row>
+ <Row><name>simple              </name><value>49</value><sequence>46</sequence></Row>
+ <Row><name>simple              </name><value>50</value><sequence>47</sequence></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><name>simple choosen      </name><value>1</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>skip, simple        </name><value>2</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>4</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>6</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>8</value><sequence>2</sequence></Row>
+ <Row><name>skip, simple        </name><value>10</value><sequence>4</sequence></Row>
+ <Row><name>skip, simple        </name><value>12</value><sequence>6</sequence></Row>
+ <Row><name>skip, simple        </name><value>14</value><sequence>8</sequence></Row>
+ <Row><name>skip, simple        </name><value>16</value><sequence>10</sequence></Row>
+ <Row><name>skip, simple        </name><value>18</value><sequence>12</sequence></Row>
+ <Row><name>skip, simple        </name><value>20</value><sequence>14</sequence></Row>
+ <Row><name>skip, simple        </name><value>22</value><sequence>16</sequence></Row>
+ <Row><name>skip, simple        </name><value>24</value><sequence>18</sequence></Row>
+ <Row><name>skip, simple        </name><value>26</value><sequence>20</sequence></Row>
+ <Row><name>skip, simple        </name><value>28</value><sequence>22</sequence></Row>
+ <Row><name>skip, simple        </name><value>30</value><sequence>24</sequence></Row>
+ <Row><name>skip, simple        </name><value>32</value><sequence>26</sequence></Row>
+ <Row><name>skip, simple        </name><value>34</value><sequence>28</sequence></Row>
+ <Row><name>skip, simple        </name><value>36</value><sequence>30</sequence></Row>
+ <Row><name>skip, simple        </name><value>38</value><sequence>32</sequence></Row>
+ <Row><name>skip, simple        </name><value>40</value><sequence>34</sequence></Row>
+ <Row><name>skip, simple        </name><value>42</value><sequence>36</sequence></Row>
+ <Row><name>skip, simple        </name><value>44</value><sequence>38</sequence></Row>
+ <Row><name>skip, simple        </name><value>46</value><sequence>40</sequence></Row>
+ <Row><name>skip, simple        </name><value>48</value><sequence>42</sequence></Row>
+ <Row><name>skip, simple        </name><value>50</value><sequence>44</sequence></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><name>skip, simple choosen</name><value>2</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><_unnamed_1></_unnamed_1><_process>Counter PROCESS: straight                                                       </_process></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>counter             </name><value>1</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>2</value><sequence>2</sequence></Row>
+ <Row><name>counter             </name><value>3</value><sequence>3</sequence></Row>
+ <Row><name>counter             </name><value>4</value><sequence>4</sequence></Row>
+ <Row><name>counter             </name><value>5</value><sequence>5</sequence></Row>
+ <Row><name>counter             </name><value>6</value><sequence>6</sequence></Row>
+ <Row><name>counter             </name><value>7</value><sequence>7</sequence></Row>
+ <Row><name>counter             </name><value>8</value><sequence>8</sequence></Row>
+ <Row><name>counter             </name><value>9</value><sequence>9</sequence></Row>
+ <Row><name>counter             </name><value>10</value><sequence>10</sequence></Row>
+ <Row><name>counter             </name><value>11</value><sequence>11</sequence></Row>
+ <Row><name>counter             </name><value>12</value><sequence>12</sequence></Row>
+ <Row><name>counter             </name><value>13</value><sequence>13</sequence></Row>
+ <Row><name>counter             </name><value>14</value><sequence>14</sequence></Row>
+ <Row><name>counter             </name><value>15</value><sequence>15</sequence></Row>
+ <Row><name>counter             </name><value>16</value><sequence>16</sequence></Row>
+ <Row><name>counter             </name><value>17</value><sequence>17</sequence></Row>
+ <Row><name>counter             </name><value>18</value><sequence>18</sequence></Row>
+ <Row><name>counter             </name><value>19</value><sequence>19</sequence></Row>
+ <Row><name>counter             </name><value>20</value><sequence>20</sequence></Row>
+ <Row><name>counter             </name><value>21</value><sequence>21</sequence></Row>
+ <Row><name>counter             </name><value>22</value><sequence>22</sequence></Row>
+ <Row><name>counter             </name><value>23</value><sequence>23</sequence></Row>
+ <Row><name>counter             </name><value>24</value><sequence>24</sequence></Row>
+ <Row><name>counter             </name><value>25</value><sequence>25</sequence></Row>
+ <Row><name>counter             </name><value>26</value><sequence>26</sequence></Row>
+ <Row><name>counter             </name><value>27</value><sequence>27</sequence></Row>
+ <Row><name>counter             </name><value>28</value><sequence>28</sequence></Row>
+ <Row><name>counter             </name><value>29</value><sequence>29</sequence></Row>
+ <Row><name>counter             </name><value>30</value><sequence>30</sequence></Row>
+ <Row><name>counter             </name><value>31</value><sequence>31</sequence></Row>
+ <Row><name>counter             </name><value>32</value><sequence>32</sequence></Row>
+ <Row><name>counter             </name><value>33</value><sequence>33</sequence></Row>
+ <Row><name>counter             </name><value>34</value><sequence>34</sequence></Row>
+ <Row><name>counter             </name><value>35</value><sequence>35</sequence></Row>
+ <Row><name>counter             </name><value>36</value><sequence>36</sequence></Row>
+ <Row><name>counter             </name><value>37</value><sequence>37</sequence></Row>
+ <Row><name>counter             </name><value>38</value><sequence>38</sequence></Row>
+ <Row><name>counter             </name><value>39</value><sequence>39</sequence></Row>
+ <Row><name>counter             </name><value>40</value><sequence>40</sequence></Row>
+ <Row><name>counter             </name><value>41</value><sequence>41</sequence></Row>
+ <Row><name>counter             </name><value>42</value><sequence>42</sequence></Row>
+ <Row><name>counter             </name><value>43</value><sequence>43</sequence></Row>
+ <Row><name>counter             </name><value>44</value><sequence>44</sequence></Row>
+ <Row><name>counter             </name><value>45</value><sequence>45</sequence></Row>
+ <Row><name>counter             </name><value>46</value><sequence>46</sequence></Row>
+ <Row><name>counter             </name><value>47</value><sequence>47</sequence></Row>
+ <Row><name>counter             </name><value>48</value><sequence>48</sequence></Row>
+ <Row><name>counter             </name><value>49</value><sequence>49</sequence></Row>
+ <Row><name>counter             </name><value>50</value><sequence>50</sequence></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><name>counter choosen     </name><value>1</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><name>skip, counter       </name><value>2</value><sequence>2</sequence></Row>
+ <Row><name>skip, counter       </name><value>4</value><sequence>4</sequence></Row>
+ <Row><name>skip, counter       </name><value>6</value><sequence>6</sequence></Row>
+ <Row><name>skip, counter       </name><value>8</value><sequence>8</sequence></Row>
+ <Row><name>skip, counter       </name><value>10</value><sequence>10</sequence></Row>
+ <Row><name>skip, counter       </name><value>12</value><sequence>12</sequence></Row>
+ <Row><name>skip, counter       </name><value>14</value><sequence>14</sequence></Row>
+ <Row><name>skip, counter       </name><value>16</value><sequence>16</sequence></Row>
+ <Row><name>skip, counter       </name><value>18</value><sequence>18</sequence></Row>
+ <Row><name>skip, counter       </name><value>20</value><sequence>20</sequence></Row>
+ <Row><name>skip, counter       </name><value>22</value><sequence>22</sequence></Row>
+ <Row><name>skip, counter       </name><value>24</value><sequence>24</sequence></Row>
+ <Row><name>skip, counter       </name><value>26</value><sequence>26</sequence></Row>
+ <Row><name>skip, counter       </name><value>28</value><sequence>28</sequence></Row>
+ <Row><name>skip, counter       </name><value>30</value><sequence>30</sequence></Row>
+ <Row><name>skip, counter       </name><value>32</value><sequence>32</sequence></Row>
+ <Row><name>skip, counter       </name><value>34</value><sequence>34</sequence></Row>
+ <Row><name>skip, counter       </name><value>36</value><sequence>36</sequence></Row>
+ <Row><name>skip, counter       </name><value>38</value><sequence>38</sequence></Row>
+ <Row><name>skip, counter       </name><value>40</value><sequence>40</sequence></Row>
+ <Row><name>skip, counter       </name><value>42</value><sequence>42</sequence></Row>
+ <Row><name>skip, counter       </name><value>44</value><sequence>44</sequence></Row>
+ <Row><name>skip, counter       </name><value>46</value><sequence>46</sequence></Row>
+ <Row><name>skip, counter       </name><value>48</value><sequence>48</sequence></Row>
+ <Row><name>skip, counter       </name><value>50</value><sequence>50</sequence></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><name>skip, counter choose</name><value>2</value><sequence>2</sequence></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><_unnamed_1></_unnamed_1><_process>Simple PROCESS: grouped                                                         </_process></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><name>simple              </name><value>1</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>2</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>3</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>4</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>5</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>6</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>7</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>8</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>9</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>10</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>11</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>12</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>13</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>14</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>15</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>16</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>17</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>18</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>19</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>20</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>21</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>22</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>23</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>24</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>25</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>26</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>27</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>28</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>29</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>30</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>31</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>32</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>33</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>34</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>35</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>36</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>37</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>38</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>39</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>40</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>41</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>42</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>43</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>44</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>45</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>46</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>47</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>48</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>49</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>50</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><name>simple choosen      </name><value>1</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><name>skip, simple        </name><value>2</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>4</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>6</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>8</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>10</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>12</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>14</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>16</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>18</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>20</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>22</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>24</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>26</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>28</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>30</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>32</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>34</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>36</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>38</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>40</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>42</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>44</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>46</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>48</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>50</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><name>skip, simple choosen</name><value>2</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><_unnamed_1></_unnamed_1><_process>Counter PROCESS: grouped                                                        </_process></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><name>counter             </name><value>1</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>2</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>3</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>4</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>5</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>6</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>7</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>8</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>9</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>10</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>11</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>12</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>13</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>14</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>15</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>16</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>17</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>18</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>19</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>20</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>21</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>22</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>23</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>24</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>25</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>26</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>27</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>28</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>29</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>30</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>31</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>32</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>33</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>34</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>35</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>36</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>37</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>38</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>39</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>40</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>41</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>42</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>43</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>44</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>45</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>46</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>47</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>48</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>49</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>50</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><name>counter choosen     </name><value>1</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><name>skip, counter       </name><value>2</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>4</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>6</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>8</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>10</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>12</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>14</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>16</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>18</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>20</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>22</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>24</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>26</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>28</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>30</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>32</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>34</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>36</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>38</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>40</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>42</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>44</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>46</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>48</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>50</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><name>skip, counter choose</name><value>2</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><_unnamed_1></_unnamed_1><_process>Simple PROCESS: filtered                                                        </_process></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><name>simple              </name><value>4</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>5</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>6</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>7</value><sequence>4</sequence></Row>
+ <Row><name>simple              </name><value>8</value><sequence>5</sequence></Row>
+ <Row><name>simple              </name><value>9</value><sequence>6</sequence></Row>
+ <Row><name>simple              </name><value>10</value><sequence>7</sequence></Row>
+ <Row><name>simple              </name><value>11</value><sequence>8</sequence></Row>
+ <Row><name>simple              </name><value>12</value><sequence>9</sequence></Row>
+ <Row><name>simple              </name><value>13</value><sequence>10</sequence></Row>
+ <Row><name>simple              </name><value>14</value><sequence>11</sequence></Row>
+ <Row><name>simple              </name><value>15</value><sequence>12</sequence></Row>
+ <Row><name>simple              </name><value>16</value><sequence>13</sequence></Row>
+ <Row><name>simple              </name><value>17</value><sequence>14</sequence></Row>
+ <Row><name>simple              </name><value>18</value><sequence>15</sequence></Row>
+ <Row><name>simple              </name><value>19</value><sequence>16</sequence></Row>
+ <Row><name>simple              </name><value>20</value><sequence>17</sequence></Row>
+ <Row><name>simple              </name><value>21</value><sequence>18</sequence></Row>
+ <Row><name>simple              </name><value>22</value><sequence>19</sequence></Row>
+ <Row><name>simple              </name><value>23</value><sequence>20</sequence></Row>
+ <Row><name>simple              </name><value>24</value><sequence>21</sequence></Row>
+ <Row><name>simple              </name><value>25</value><sequence>22</sequence></Row>
+ <Row><name>simple              </name><value>26</value><sequence>23</sequence></Row>
+ <Row><name>simple              </name><value>27</value><sequence>24</sequence></Row>
+ <Row><name>simple              </name><value>28</value><sequence>25</sequence></Row>
+ <Row><name>simple              </name><value>29</value><sequence>26</sequence></Row>
+ <Row><name>simple              </name><value>30</value><sequence>27</sequence></Row>
+ <Row><name>simple              </name><value>31</value><sequence>28</sequence></Row>
+ <Row><name>simple              </name><value>32</value><sequence>29</sequence></Row>
+ <Row><name>simple              </name><value>33</value><sequence>30</sequence></Row>
+ <Row><name>simple              </name><value>34</value><sequence>31</sequence></Row>
+ <Row><name>simple              </name><value>35</value><sequence>32</sequence></Row>
+ <Row><name>simple              </name><value>36</value><sequence>33</sequence></Row>
+ <Row><name>simple              </name><value>37</value><sequence>34</sequence></Row>
+ <Row><name>simple              </name><value>38</value><sequence>35</sequence></Row>
+ <Row><name>simple              </name><value>39</value><sequence>36</sequence></Row>
+ <Row><name>simple              </name><value>40</value><sequence>37</sequence></Row>
+ <Row><name>simple              </name><value>41</value><sequence>38</sequence></Row>
+ <Row><name>simple              </name><value>42</value><sequence>39</sequence></Row>
+ <Row><name>simple              </name><value>43</value><sequence>40</sequence></Row>
+ <Row><name>simple              </name><value>44</value><sequence>41</sequence></Row>
+ <Row><name>simple              </name><value>45</value><sequence>42</sequence></Row>
+ <Row><name>simple              </name><value>46</value><sequence>43</sequence></Row>
+ <Row><name>simple              </name><value>47</value><sequence>44</sequence></Row>
+ <Row><name>simple              </name><value>48</value><sequence>45</sequence></Row>
+ <Row><name>simple              </name><value>49</value><sequence>46</sequence></Row>
+ <Row><name>simple              </name><value>50</value><sequence>47</sequence></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><name>simple choosen      </name><value>4</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><name>skip, simple        </name><value>4</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>6</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>8</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>10</value><sequence>4</sequence></Row>
+ <Row><name>skip, simple        </name><value>12</value><sequence>6</sequence></Row>
+ <Row><name>skip, simple        </name><value>14</value><sequence>8</sequence></Row>
+ <Row><name>skip, simple        </name><value>16</value><sequence>10</sequence></Row>
+ <Row><name>skip, simple        </name><value>18</value><sequence>12</sequence></Row>
+ <Row><name>skip, simple        </name><value>20</value><sequence>14</sequence></Row>
+ <Row><name>skip, simple        </name><value>22</value><sequence>16</sequence></Row>
+ <Row><name>skip, simple        </name><value>24</value><sequence>18</sequence></Row>
+ <Row><name>skip, simple        </name><value>26</value><sequence>20</sequence></Row>
+ <Row><name>skip, simple        </name><value>28</value><sequence>22</sequence></Row>
+ <Row><name>skip, simple        </name><value>30</value><sequence>24</sequence></Row>
+ <Row><name>skip, simple        </name><value>32</value><sequence>26</sequence></Row>
+ <Row><name>skip, simple        </name><value>34</value><sequence>28</sequence></Row>
+ <Row><name>skip, simple        </name><value>36</value><sequence>30</sequence></Row>
+ <Row><name>skip, simple        </name><value>38</value><sequence>32</sequence></Row>
+ <Row><name>skip, simple        </name><value>40</value><sequence>34</sequence></Row>
+ <Row><name>skip, simple        </name><value>42</value><sequence>36</sequence></Row>
+ <Row><name>skip, simple        </name><value>44</value><sequence>38</sequence></Row>
+ <Row><name>skip, simple        </name><value>46</value><sequence>40</sequence></Row>
+ <Row><name>skip, simple        </name><value>48</value><sequence>42</sequence></Row>
+ <Row><name>skip, simple        </name><value>50</value><sequence>44</sequence></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><name>skip, simple choosen</name><value>4</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><_unnamed_1></_unnamed_1><_process>Counter PROCESS: filtered                                                       </_process></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><name>counter             </name><value>4</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>5</value><sequence>2</sequence></Row>
+ <Row><name>counter             </name><value>6</value><sequence>3</sequence></Row>
+ <Row><name>counter             </name><value>7</value><sequence>4</sequence></Row>
+ <Row><name>counter             </name><value>8</value><sequence>5</sequence></Row>
+ <Row><name>counter             </name><value>9</value><sequence>6</sequence></Row>
+ <Row><name>counter             </name><value>10</value><sequence>7</sequence></Row>
+ <Row><name>counter             </name><value>11</value><sequence>8</sequence></Row>
+ <Row><name>counter             </name><value>12</value><sequence>9</sequence></Row>
+ <Row><name>counter             </name><value>13</value><sequence>10</sequence></Row>
+ <Row><name>counter             </name><value>14</value><sequence>11</sequence></Row>
+ <Row><name>counter             </name><value>15</value><sequence>12</sequence></Row>
+ <Row><name>counter             </name><value>16</value><sequence>13</sequence></Row>
+ <Row><name>counter             </name><value>17</value><sequence>14</sequence></Row>
+ <Row><name>counter             </name><value>18</value><sequence>15</sequence></Row>
+ <Row><name>counter             </name><value>19</value><sequence>16</sequence></Row>
+ <Row><name>counter             </name><value>20</value><sequence>17</sequence></Row>
+ <Row><name>counter             </name><value>21</value><sequence>18</sequence></Row>
+ <Row><name>counter             </name><value>22</value><sequence>19</sequence></Row>
+ <Row><name>counter             </name><value>23</value><sequence>20</sequence></Row>
+ <Row><name>counter             </name><value>24</value><sequence>21</sequence></Row>
+ <Row><name>counter             </name><value>25</value><sequence>22</sequence></Row>
+ <Row><name>counter             </name><value>26</value><sequence>23</sequence></Row>
+ <Row><name>counter             </name><value>27</value><sequence>24</sequence></Row>
+ <Row><name>counter             </name><value>28</value><sequence>25</sequence></Row>
+ <Row><name>counter             </name><value>29</value><sequence>26</sequence></Row>
+ <Row><name>counter             </name><value>30</value><sequence>27</sequence></Row>
+ <Row><name>counter             </name><value>31</value><sequence>28</sequence></Row>
+ <Row><name>counter             </name><value>32</value><sequence>29</sequence></Row>
+ <Row><name>counter             </name><value>33</value><sequence>30</sequence></Row>
+ <Row><name>counter             </name><value>34</value><sequence>31</sequence></Row>
+ <Row><name>counter             </name><value>35</value><sequence>32</sequence></Row>
+ <Row><name>counter             </name><value>36</value><sequence>33</sequence></Row>
+ <Row><name>counter             </name><value>37</value><sequence>34</sequence></Row>
+ <Row><name>counter             </name><value>38</value><sequence>35</sequence></Row>
+ <Row><name>counter             </name><value>39</value><sequence>36</sequence></Row>
+ <Row><name>counter             </name><value>40</value><sequence>37</sequence></Row>
+ <Row><name>counter             </name><value>41</value><sequence>38</sequence></Row>
+ <Row><name>counter             </name><value>42</value><sequence>39</sequence></Row>
+ <Row><name>counter             </name><value>43</value><sequence>40</sequence></Row>
+ <Row><name>counter             </name><value>44</value><sequence>41</sequence></Row>
+ <Row><name>counter             </name><value>45</value><sequence>42</sequence></Row>
+ <Row><name>counter             </name><value>46</value><sequence>43</sequence></Row>
+ <Row><name>counter             </name><value>47</value><sequence>44</sequence></Row>
+ <Row><name>counter             </name><value>48</value><sequence>45</sequence></Row>
+ <Row><name>counter             </name><value>49</value><sequence>46</sequence></Row>
+ <Row><name>counter             </name><value>50</value><sequence>47</sequence></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><name>counter choosen     </name><value>4</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><name>skip, counter       </name><value>4</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>6</value><sequence>3</sequence></Row>
+ <Row><name>skip, counter       </name><value>8</value><sequence>5</sequence></Row>
+ <Row><name>skip, counter       </name><value>10</value><sequence>7</sequence></Row>
+ <Row><name>skip, counter       </name><value>12</value><sequence>9</sequence></Row>
+ <Row><name>skip, counter       </name><value>14</value><sequence>11</sequence></Row>
+ <Row><name>skip, counter       </name><value>16</value><sequence>13</sequence></Row>
+ <Row><name>skip, counter       </name><value>18</value><sequence>15</sequence></Row>
+ <Row><name>skip, counter       </name><value>20</value><sequence>17</sequence></Row>
+ <Row><name>skip, counter       </name><value>22</value><sequence>19</sequence></Row>
+ <Row><name>skip, counter       </name><value>24</value><sequence>21</sequence></Row>
+ <Row><name>skip, counter       </name><value>26</value><sequence>23</sequence></Row>
+ <Row><name>skip, counter       </name><value>28</value><sequence>25</sequence></Row>
+ <Row><name>skip, counter       </name><value>30</value><sequence>27</sequence></Row>
+ <Row><name>skip, counter       </name><value>32</value><sequence>29</sequence></Row>
+ <Row><name>skip, counter       </name><value>34</value><sequence>31</sequence></Row>
+ <Row><name>skip, counter       </name><value>36</value><sequence>33</sequence></Row>
+ <Row><name>skip, counter       </name><value>38</value><sequence>35</sequence></Row>
+ <Row><name>skip, counter       </name><value>40</value><sequence>37</sequence></Row>
+ <Row><name>skip, counter       </name><value>42</value><sequence>39</sequence></Row>
+ <Row><name>skip, counter       </name><value>44</value><sequence>41</sequence></Row>
+ <Row><name>skip, counter       </name><value>46</value><sequence>43</sequence></Row>
+ <Row><name>skip, counter       </name><value>48</value><sequence>45</sequence></Row>
+ <Row><name>skip, counter       </name><value>50</value><sequence>47</sequence></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><name>skip, counter choose</name><value>4</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><_unnamed_1></_unnamed_1><_process>Simple PROCESS: grouped filtered                                                </_process></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><name>simple              </name><value>4</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>5</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>6</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>7</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>8</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>9</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>10</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>11</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>12</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>13</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>14</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>15</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>16</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>17</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>18</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>19</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>20</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>21</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>22</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>23</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>24</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>25</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>26</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>27</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>28</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>29</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>30</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>31</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>32</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>33</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>34</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>35</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>36</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>37</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>38</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>39</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>40</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>41</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>42</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>43</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>44</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>45</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>46</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>47</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>48</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>49</value><sequence>0</sequence></Row>
+ <Row><name>simple              </name><value>50</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><name>simple choosen      </name><value>4</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><name>skip, simple        </name><value>4</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>6</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>8</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>10</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>12</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>14</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>16</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>18</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>20</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>22</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>24</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>26</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>28</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>30</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>32</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>34</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>36</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>38</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>40</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>42</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>44</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>46</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>48</value><sequence>0</sequence></Row>
+ <Row><name>skip, simple        </name><value>50</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><name>skip, simple choosen</name><value>4</value><sequence>0</sequence></Row>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><_unnamed_1></_unnamed_1><_process>Counter PROCESS: grouped filtered                                               </_process></Row>
+</Dataset>
+<Dataset name='Result 37'>
+ <Row><name>counter             </name><value>4</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>5</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>6</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>7</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>8</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>9</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>10</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>11</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>12</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>13</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>14</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>15</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>16</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>17</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>18</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>19</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>20</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>21</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>22</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>23</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>24</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>25</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>26</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>27</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>28</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>29</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>30</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>31</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>32</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>33</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>34</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>35</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>36</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>37</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>38</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>39</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>40</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>41</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>42</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>43</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>44</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>45</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>46</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>47</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>48</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>49</value><sequence>1</sequence></Row>
+ <Row><name>counter             </name><value>50</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 38'>
+ <Row><name>counter choosen     </name><value>4</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><name>skip, counter       </name><value>4</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>6</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>8</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>10</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>12</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>14</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>16</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>18</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>20</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>22</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>24</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>26</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>28</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>30</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>32</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>34</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>36</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>38</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>40</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>42</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>44</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>46</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>48</value><sequence>1</sequence></Row>
+ <Row><name>skip, counter       </name><value>50</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><name>skip, counter choose</name><value>4</value><sequence>1</sequence></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><_unnamed_1></_unnamed_1><_process>Completed           </_process></Row>
+</Dataset>

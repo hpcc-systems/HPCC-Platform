@@ -1,0 +1,87 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>0.58</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>0.58</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>0.58</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>0.58</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>0.58</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>0.58</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>0.58</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>0.58</Result_8></Row>
+</Dataset>
+<Dataset name='Res1'>
+ <Row><Res1>58</Res1></Row>
+</Dataset>
+<Dataset name='Res2'>
+ <Row><Res2>57</Res2></Row>
+</Dataset>
+<Dataset name='TRUNCATE_58d_100_0'>
+ <Row><TRUNCATE_58d_100_0>0</TRUNCATE_58d_100_0></Row>
+</Dataset>
+<Dataset name='TRUNCATE_58d_100'>
+ <Row><TRUNCATE_58d_100>0</TRUNCATE_58d_100></Row>
+</Dataset>
+<Dataset name='TRUNCATE_58d_100d'>
+ <Row><TRUNCATE_58d_100d>0</TRUNCATE_58d_100d></Row>
+</Dataset>
+<Dataset name='Res1b'>
+ <Row><Res1b>658</Res1b></Row>
+</Dataset>
+<Dataset name='Res2b'>
+ <Row><Res2b>658</Res2b></Row>
+</Dataset>
+<Dataset name='TRUNCATE_68d_100_0'>
+ <Row><TRUNCATE_68d_100_0>6</TRUNCATE_68d_100_0></Row>
+</Dataset>
+<Dataset name='TRUNCATE_68d_100'>
+ <Row><TRUNCATE_68d_100>6</TRUNCATE_68d_100></Row>
+</Dataset>
+<Dataset name='TRUNCATE_68d_100d'>
+ <Row><TRUNCATE_68d_100d>6</TRUNCATE_68d_100d></Row>
+</Dataset>
+<Dataset name='TRUNCATE_68d_100dy'>
+ <Row><TRUNCATE_68d_100dy>6</TRUNCATE_68d_100dy></Row>
+</Dataset>
+<Dataset name='Res1cx'>
+ <Row><Res1cx>58</Res1cx></Row>
+</Dataset>
+<Dataset name='Res2cx'>
+ <Row><Res2cx>57</Res2cx></Row>
+</Dataset>
+<Dataset name='TRUNCATE_58d_100_0x'>
+ <Row><TRUNCATE_58d_100_0x>0</TRUNCATE_58d_100_0x></Row>
+</Dataset>
+<Dataset name='TRUNCATE_58d_100x'>
+ <Row><TRUNCATE_58d_100x>0</TRUNCATE_58d_100x></Row>
+</Dataset>
+<Dataset name='TRUNCATE_58d_100dx'>
+ <Row><TRUNCATE_58d_100dx>0</TRUNCATE_58d_100dx></Row>
+</Dataset>
+<Dataset name='Res1dx'>
+ <Row><Res1dx>658</Res1dx></Row>
+</Dataset>
+<Dataset name='Res2dx'>
+ <Row><Res2dx>658</Res2dx></Row>
+</Dataset>
+<Dataset name='TRUNCATE_68d_100_0x'>
+ <Row><TRUNCATE_68d_100_0x>6</TRUNCATE_68d_100_0x></Row>
+</Dataset>
+<Dataset name='TRUNCATE_68d_100x'>
+ <Row><TRUNCATE_68d_100x>6</TRUNCATE_68d_100x></Row>
+</Dataset>
+<Dataset name='TRUNCATE_68d_100dx'>
+ <Row><TRUNCATE_68d_100dx>6</TRUNCATE_68d_100dx></Row>
+</Dataset>

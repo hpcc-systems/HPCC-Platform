@@ -1,0 +1,19 @@
+<Dataset name='Result 1'>
+ <Row><did>1</did><names><Row><name>Gavin               </name></Row><Row><name>Gavin Halliday      </name></Row><Row><name>Halliday            </name></Row></names><secondname>Gavin Halliday      </secondname></Row>
+ <Row><did>2</did><names><Row><name>Richard             </name></Row><Row><name>Richard Chapman     </name></Row><Row><name>Richard             </name></Row></names><secondname>Richard Chapman     </secondname></Row>
+ <Row><did>3</did><names><Row><name>Jake Smith          </name></Row></names><secondname>                    </secondname></Row>
+ <Row><did>4</did><names></names><secondname>                    </secondname></Row>
+ <Row><did>5</did><names><Row><name>Nigel               </name></Row><Row><name>Nigel Hicks         </name></Row></names><secondname>Nigel Hicks         </secondname></Row>
+ <Row><did>6</did><names><Row><name>Pete                </name></Row><Row><name>Peter               </name></Row><Row><name>Petie               </name></Row></names><secondname>Peter               </secondname></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><did>1</did><names><Row><name>Gavin               </name></Row><Row><name>Gavin Halliday      </name></Row><Row><name>Halliday            </name></Row></names><secondname>                    </secondname></Row>
+ <Row><did>2</did><names><Row><name>Richard             </name></Row><Row><name>Richard Chapman     </name></Row><Row><name>Richard             </name></Row></names><secondname>                    </secondname></Row>
+ <Row><did>3</did><names><Row><name>Jake Smith          </name></Row></names><secondname>                    </secondname></Row>
+ <Row><did>4</did><names></names><secondname>                    </secondname></Row>
+ <Row><did>5</did><names><Row><name>Nigel               </name></Row><Row><name>Nigel Hicks         </name></Row></names><secondname>                    </secondname></Row>
+ <Row><did>6</did><names><Row><name>Pete                </name></Row><Row><name>Peter               </name></Row><Row><name>Petie               </name></Row></names><secondname>                    </secondname></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><cnt>6</cnt></Row>
+</Dataset>

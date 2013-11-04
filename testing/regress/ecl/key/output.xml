@@ -1,0 +1,60 @@
+<Dataset name='Result 1'>
+ <Row><a>1</a><b>a</b><c>3.400000095367432</c><de>5.6</de><t>true</t><f>false</f></Row>
+</Dataset>
+<Dataset name='named1'>
+ <Row><a>1</a><b>a</b><c>3.400000095367432</c><de>5.6</de><t>true</t><f>false</f></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>1</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>a</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>3.4</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>5.6</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>true</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>false</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>1</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>a</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>3.4</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>0.6</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>true</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>false</Result_14></Row>
+</Dataset>
+<Dataset name='named2'>
+ <Row><named2>1</named2></Row>
+</Dataset>
+<Dataset name='named3'>
+ <Row><named3>a</named3></Row>
+</Dataset>
+<Dataset name='named4'>
+ <Row><named4>3.4</named4></Row>
+</Dataset>
+<Dataset name='named5'>
+ <Row><named5>5.6</named5></Row>
+</Dataset>
+<Dataset name='named6'>
+ <Row><named6>true</named6></Row>
+</Dataset>
+<Dataset name='named7'>
+ <Row><named7>false</named7></Row>
+</Dataset>

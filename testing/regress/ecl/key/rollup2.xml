@@ -1,0 +1,127 @@
+<Dataset name='Result 1'>
+ <Row><_process>Simple ROLLUP: straight                                                         </_process></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>simple              </name><sequence>1</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>2</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>3</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>4</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>5</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>6</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>7</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>8</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>9</sequence><value>4</value></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><name>simple choosen      </name><sequence>1</sequence><value>4</value></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>skip, simple        </name><sequence>1</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>2</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>3</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>4</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>5</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>6</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>7</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>8</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>9</sequence><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><name>skip, simple choosen</name><sequence>1</sequence><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><_process>Simple ROLLUP: grouped                                                          </_process></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>simple              </name><sequence>1</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>2</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>3</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>4</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>5</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>6</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>7</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>8</sequence><value>4</value></Row>
+ <Row><name>simple              </name><sequence>9</sequence><value>4</value></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><name>simple choosen      </name><sequence>1</sequence><value>4</value></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><name>skip, simple        </name><sequence>1</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>2</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>3</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>4</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>5</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>6</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>7</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>8</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>9</sequence><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><name>skip, simple choosen</name><sequence>1</sequence><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><_process>Simple ROLLUP: filtered                                                         </_process></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><name>simple              </name><sequence>1</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>2</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>3</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>4</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>5</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>6</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>7</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>8</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>9</sequence><value>3</value></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><name>simple choosen      </name><sequence>1</sequence><value>3</value></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><name>skip, simple        </name><sequence>1</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>2</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>3</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>4</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>5</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>6</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>7</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>8</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>9</sequence><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><name>skip, simple choosen</name><sequence>1</sequence><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><_process>Simple ROLLUP: grouped filtered                                                 </_process></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><name>simple              </name><sequence>1</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>2</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>3</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>4</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>5</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>6</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>7</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>8</sequence><value>3</value></Row>
+ <Row><name>simple              </name><sequence>9</sequence><value>3</value></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><name>simple choosen      </name><sequence>1</sequence><value>3</value></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><name>skip, simple        </name><sequence>1</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>2</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>3</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>4</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>5</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>6</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>7</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>8</sequence><value>2</value></Row>
+ <Row><name>skip, simple        </name><sequence>9</sequence><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><name>skip, simple choosen</name><sequence>1</sequence><value>2</value></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><_unnamed_1></_unnamed_1><_process>Completed           </_process></Row>
+</Dataset>

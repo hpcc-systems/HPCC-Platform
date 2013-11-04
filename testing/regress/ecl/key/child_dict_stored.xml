@@ -1,0 +1,6 @@
+<Dataset name='Result 1'>
+ <Row><a>a</a><childds><Row><c1>b</c1><c2>c</c2></Row></childds><childdict><Row><c1>f</c1><c2>g</c2></Row><Row><c1>d</c1><c2>e</c2></Row></childdict></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><a>a</a><childds><Row><c1>b</c1><c2>c</c2></Row></childds><childdict><Row><c1>f</c1><c2>g</c2></Row><Row><c1>d</c1><c2>e</c2></Row></childdict></Row>
+</Dataset>

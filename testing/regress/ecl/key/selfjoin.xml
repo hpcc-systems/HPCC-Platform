@@ -1,0 +1,14 @@
+<Dataset name='Result 1'>
+ <Row><surname>Dear                </surname><forename>Jo        </forename><age>25</age><otherforename>Jo                  </otherforename></Row>
+ <Row><surname>Dear                </surname><forename>Jo        </forename><age>25</age><otherforename>Matthew             </otherforename></Row>
+ <Row><surname>Dear                </surname><forename>Matthew   </forename><age>25</age><otherforename>Jo                  </otherforename></Row>
+ <Row><surname>Dear                </surname><forename>Matthew   </forename><age>25</age><otherforename>Matthew             </otherforename></Row>
+ <Row><surname>Halliday            </surname><forename>Gavin     </forename><age>31</age><otherforename>Gavin               </otherforename></Row>
+ <Row><surname>Halliday            </surname><forename>Gavin     </forename><age>31</age><otherforename>Liz                 </otherforename></Row>
+ <Row><surname>Halliday            </surname><forename>Liz       </forename><age>30</age><otherforename>Gavin               </otherforename></Row>
+ <Row><surname>Halliday            </surname><forename>Liz       </forename><age>30</age><otherforename>Liz                 </otherforename></Row>
+ <Row><surname>Salter              </surname><forename>Abi       </forename><age>10</age><otherforename>Abi                 </otherforename></Row>
+ <Row><surname>X                   </surname><forename>Z         </forename><age>25</age><otherforename>Z                   </otherforename></Row>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>

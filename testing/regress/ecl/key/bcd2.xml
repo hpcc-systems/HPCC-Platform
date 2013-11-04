@@ -1,0 +1,23 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>6.6666666667</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>6.6666666667</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><sumx>20</sumx><countx>3</countx><average>6.6666666667</average><_unnamed_4>false</_unnamed_4><_unnamed_5>false</_unnamed_5></Row>
+ <Row><sumx>10</sumx><countx>2</countx><average>5</average><_unnamed_4>true</_unnamed_4><_unnamed_5>true</_unnamed_5></Row>
+ <Row><sumx>10.0001</sumx><countx>2</countx><average>5.00005</average><_unnamed_4>false</_unnamed_4><_unnamed_5>false</_unnamed_5></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>2</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>2</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>2</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>2</Result_7></Row>
+</Dataset>

@@ -1,0 +1,14 @@
+<Dataset name='Result 1'>
+ <Row><forename>Gavin               </forename><surname>Halliday            </surname><children><Row><forename>Abigail             </forename><age>2</age></Row><Row><forename>Nathan              </forename><age>2</age></Row></children></Row>
+ <Row><forename>John                </forename><surname>Simmons             </surname><children><Row><forename>Jennifer            </forename><age>18</age></Row><Row><forename>Alison              </forename><age>16</age></Row><Row><forename>Andrew              </forename><age>13</age></Row><Row><forename>Fiona               </forename><age>10</age></Row></children></Row>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><forename>Gavin               </forename><surname>Halliday            </surname><children><Row><forename>Abigail             </forename><age>2</age></Row><Row><forename>Nathan              </forename><age>2</age></Row></children></Row>
+ <Row><forename>John                </forename><surname>Simmons             </surname><children></children></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><forename>Gavin               </forename><surname>Halliday            </surname><children><Row><forename>Abigail             </forename><age>2</age></Row><Row><forename>Nathan              </forename><age>2</age></Row></children></Row>
+ <Row><forename>John                </forename><surname>Simmons             </surname><children></children></Row>
+</Dataset>

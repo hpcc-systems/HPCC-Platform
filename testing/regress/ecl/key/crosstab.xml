@@ -1,0 +1,5 @@
+<Dataset name='Result 1'>
+ <Row><value1>A</value1><grpcount>2</grpcount><grpsum>8</grpsum></Row>
+ <Row><value1>B</value1><grpcount>1</grpcount><grpsum>4</grpsum></Row>
+ <Row><value1>C</value1><grpcount>2</grpcount><grpsum>3</grpsum></Row>
+</Dataset>

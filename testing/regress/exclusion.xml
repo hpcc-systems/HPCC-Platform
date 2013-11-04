@@ -1,0 +1,11 @@
+<exclusion>
+    <cluster name="thor">
+    </cluster>
+    <cluster name="hthor">
+        <exclude> platform.ecl </exclude>
+    </cluster>
+    <cluster name="roxie">
+        <exclude> schedule1.ecl </exclude>
+        <exclude> platform.ecl </exclude>
+     </cluster>
+</exclusion>

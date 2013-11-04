@@ -1,0 +1,21 @@
+<Dataset name='Result 1'>
+ <Row><le>!abc * def + ghi!</le></Row>
+ <Row><le>!(a + b) * (c + d)!</le></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><le>!abc!</le></Row>
+ <Row><le>!abc * def!</le></Row>
+ <Row><le>!abc * def + ghi!</le></Row>
+ <Row><le>!def!</le></Row>
+ <Row><le>!def + ghi!</le></Row>
+ <Row><le>!ghi!</le></Row>
+ <Row><le>!(a + b)!</le></Row>
+ <Row><le>!(a + b) * (c + d)!</le></Row>
+ <Row><le>!a!</le></Row>
+ <Row><le>!a + b!</le></Row>
+ <Row><le>!b!</le></Row>
+ <Row><le>!(c + d)!</le></Row>
+ <Row><le>!c!</le></Row>
+ <Row><le>!c + d!</le></Row>
+ <Row><le>!d!</le></Row>
+</Dataset>

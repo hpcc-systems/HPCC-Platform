@@ -1,0 +1,33 @@
+<Dataset name='Result 1'>
+ <Row><rec>1</rec><x>1</x><y>2</y><neighbor>2</neighbor><distance>2.0</distance><comp>0</comp></Row>
+ <Row><rec>2</rec><x>3</x><y>2</y><neighbor>4</neighbor><distance>1.0</distance><comp>0</comp></Row>
+ <Row><rec>3</rec><x>5</x><y>4</y><neighbor>4</neighbor><distance>2.2360680103302</distance><comp>0</comp></Row>
+ <Row><rec>4</rec><x>3</x><y>3</y><neighbor>2</neighbor><distance>1.0</distance><comp>0</comp></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><rec>1</rec><x>1</x><y>2</y><neighbor>2</neighbor><distance>2.0</distance><comp>0</comp></Row>
+ <Row><rec>2</rec><x>3</x><y>2</y><neighbor>4</neighbor><distance>1.0</distance><comp>0</comp></Row>
+ <Row><rec>3</rec><x>5</x><y>4</y><neighbor>4</neighbor><distance>2.2360680103302</distance><comp>0</comp></Row>
+ <Row><rec>4</rec><x>3</x><y>3</y><neighbor>2</neighbor><distance>1.0</distance><comp>0</comp></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>DENORMALIZE_LOOKUP_LEFT_OUTER_PAR</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>3</c><label>DENORMALIZE_LOOKUP_LEFT_OUTER_PAR</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>DENORMALIZE_LOOKUP_LEFT_OUTER_PAR</label></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>DENORMALIZE_LOOKUP_LEFT_OUTER_PAR</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>hhh</rstr><c>1</c><label>DENORMALIZE_LOOKUP_LEFT_OUTER_PAR</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>DENORMALIZE_LOOKUP_LEFT_OUTER_PAR</label></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><i>3</i><lstr>aaa</lstr><rstr>ggg</rstr><c>1</c><label>DENORMALIZE_ALL_LEFT_OUTER_PAR</label></Row>
+ <Row><i>4</i><lstr>bbb</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>5</i><lstr>ccc</lstr><rstr>jjj</rstr><c>3</c><label>DENORMALIZE_ALL_LEFT_OUTER_PAR</label></Row>
+ <Row><i>6</i><lstr>ddd</lstr><rstr>   </rstr><c>0</c><label></label></Row>
+ <Row><i>7</i><lstr>eee</lstr><rstr>kkk</rstr><c>1</c><label>DENORMALIZE_ALL_LEFT_OUTER_PAR</label></Row>
+</Dataset>

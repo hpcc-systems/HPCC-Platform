@@ -1,0 +1,99 @@
+<Dataset name='Result 1'>
+ <Row><team>Baltimore           </team><conference>American            </conference><groupcount>1</groupcount><groupsum>1.26</groupsum><groupmin>1.26</groupmin><groupmax>1.26</groupmax></Row>
+ <Row><team>Buffalo             </team><conference>American            </conference><groupcount>1</groupcount><groupsum>4.2</groupsum><groupmin>4.2</groupmin><groupmax>4.2</groupmax></Row>
+ <Row><team>Cincinnati          </team><conference>American            </conference><groupcount>1</groupcount><groupsum>5.206</groupsum><groupmin>5.206</groupmin><groupmax>5.206</groupmax></Row>
+ <Row><team>Cleveland           </team><conference>American            </conference><groupcount>1</groupcount><groupsum>4.67</groupsum><groupmin>4.67</groupmin><groupmax>4.67</groupmax></Row>
+ <Row><team>Denver              </team><conference>American            </conference><groupcount>1</groupcount><groupsum>1.17</groupsum><groupmin>1.17</groupmin><groupmax>1.17</groupmax></Row>
+ <Row><team>Houston             </team><conference>American            </conference><groupcount>1</groupcount><groupsum>6.45</groupsum><groupmin>6.45</groupmin><groupmax>6.45</groupmax></Row>
+ <Row><team>Indianapolis        </team><conference>American            </conference><groupcount>1</groupcount><groupsum>2.18</groupsum><groupmin>2.18</groupmin><groupmax>2.18</groupmax></Row>
+ <Row><team>Jacksonville        </team><conference>American            </conference><groupcount>1</groupcount><groupsum>5.53</groupsum><groupmin>5.53</groupmin><groupmax>5.53</groupmax></Row>
+ <Row><team>Kansas City         </team><conference>American            </conference><groupcount>1</groupcount><groupsum>2.35</groupsum><groupmin>2.35</groupmin><groupmax>2.35</groupmax></Row>
+ <Row><team>Miami               </team><conference>American            </conference><groupcount>1</groupcount><groupsum>2.62</groupsum><groupmin>2.62</groupmin><groupmax>2.62</groupmax></Row>
+ <Row><team>New England         </team><conference>American            </conference><groupcount>1</groupcount><groupsum>2.0</groupsum><groupmin>2.0</groupmin><groupmax>2.0</groupmax></Row>
+ <Row><team>New York            </team><conference>American            </conference><groupcount>1</groupcount><groupsum>0.855</groupsum><groupmin>0.855</groupmin><groupmax>0.855</groupmax></Row>
+ <Row><team>Oakland             </team><conference>American            </conference><groupcount>1</groupcount><groupsum>1.61</groupsum><groupmin>1.61</groupmin><groupmax>1.61</groupmax></Row>
+ <Row><team>Pittsburgh          </team><conference>American            </conference><groupcount>1</groupcount><groupsum>2.61</groupsum><groupmin>2.61</groupmin><groupmax>2.61</groupmax></Row>
+ <Row><team>San Diego           </team><conference>American            </conference><groupcount>1</groupcount><groupsum>1.12</groupsum><groupmin>1.12</groupmin><groupmax>1.12</groupmax></Row>
+ <Row><team>Tennessee           </team><conference>American            </conference><groupcount>1</groupcount><groupsum>2.13</groupsum><groupmin>2.13</groupmin><groupmax>2.13</groupmax></Row>
+ <Row><team>Arizona             </team><conference>National            </conference><groupcount>1</groupcount><groupsum>6.15</groupsum><groupmin>6.15</groupmin><groupmax>6.15</groupmax></Row>
+ <Row><team>Atlanta             </team><conference>National            </conference><groupcount>1</groupcount><groupsum>3.36</groupsum><groupmin>3.36</groupmin><groupmax>3.36</groupmax></Row>
+ <Row><team>Carolina            </team><conference>National            </conference><groupcount>1</groupcount><groupsum>0.976</groupsum><groupmin>0.976</groupmin><groupmax>0.976</groupmax></Row>
+ <Row><team>Chicago             </team><conference>National            </conference><groupcount>1</groupcount><groupsum>6.26</groupsum><groupmin>6.26</groupmin><groupmax>6.26</groupmax></Row>
+ <Row><team>Dallas              </team><conference>National            </conference><groupcount>1</groupcount><groupsum>3.26</groupsum><groupmin>3.26</groupmin><groupmax>3.26</groupmax></Row>
+ <Row><team>Detroit             </team><conference>National            </conference><groupcount>1</groupcount><groupsum>4.839</groupsum><groupmin>4.839</groupmin><groupmax>4.839</groupmax></Row>
+ <Row><team>Green Bay           </team><conference>National            </conference><groupcount>1</groupcount><groupsum>3.29</groupsum><groupmin>3.29</groupmin><groupmax>3.29</groupmax></Row>
+ <Row><team>Minnesota           </team><conference>National            </conference><groupcount>1</groupcount><groupsum>6.64</groupsum><groupmin>6.64</groupmin><groupmax>6.64</groupmax></Row>
+ <Row><team>New Orleans         </team><conference>National            </conference><groupcount>1</groupcount><groupsum>2.86</groupsum><groupmin>2.86</groupmin><groupmax>2.86</groupmax></Row>
+ <Row><team>New York            </team><conference>National            </conference><groupcount>1</groupcount><groupsum>2.75</groupsum><groupmin>2.75</groupmin><groupmax>2.75</groupmax></Row>
+ <Row><team>Philidelphia        </team><conference>National            </conference><groupcount>1</groupcount><groupsum>9.9</groupsum><groupmin>9.9</groupmin><groupmax>9.9</groupmax></Row>
+ <Row><team>Saint Louis         </team><conference>National            </conference><groupcount>1</groupcount><groupsum>1.96</groupsum><groupmin>1.96</groupmin><groupmax>1.96</groupmax></Row>
+ <Row><team>San Francisco       </team><conference>National            </conference><groupcount>1</groupcount><groupsum>5.19</groupsum><groupmin>5.19</groupmin><groupmax>5.19</groupmax></Row>
+ <Row><team>Seattle             </team><conference>National            </conference><groupcount>1</groupcount><groupsum>1.304</groupsum><groupmin>1.304</groupmin><groupmax>1.304</groupmax></Row>
+ <Row><team>Tampa Bay           </team><conference>National            </conference><groupcount>1</groupcount><groupsum>1.28</groupsum><groupmin>1.28</groupmin><groupmax>1.28</groupmax></Row>
+ <Row><team>Washington          </team><conference>National            </conference><groupcount>1</groupcount><groupsum>3.34</groupsum><groupmin>3.34</groupmin><groupmax>3.34</groupmax></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><team>Buffalo             </team><division>East                </division><groupcount>1</groupcount><groupsum>4.2</groupsum><groupmin>4.2</groupmin><groupmax>4.2</groupmax></Row>
+ <Row><team>Dallas              </team><division>East                </division><groupcount>1</groupcount><groupsum>3.26</groupsum><groupmin>3.26</groupmin><groupmax>3.26</groupmax></Row>
+ <Row><team>Miami               </team><division>East                </division><groupcount>1</groupcount><groupsum>2.62</groupsum><groupmin>2.62</groupmin><groupmax>2.62</groupmax></Row>
+ <Row><team>New England         </team><division>East                </division><groupcount>1</groupcount><groupsum>2.0</groupsum><groupmin>2.0</groupmin><groupmax>2.0</groupmax></Row>
+ <Row><team>New York            </team><division>East                </division><groupcount>2</groupcount><groupsum>3.605</groupsum><groupmin>0.855</groupmin><groupmax>2.75</groupmax></Row>
+ <Row><team>Philidelphia        </team><division>East                </division><groupcount>1</groupcount><groupsum>9.9</groupsum><groupmin>9.9</groupmin><groupmax>9.9</groupmax></Row>
+ <Row><team>Washington          </team><division>East                </division><groupcount>1</groupcount><groupsum>3.34</groupsum><groupmin>3.34</groupmin><groupmax>3.34</groupmax></Row>
+ <Row><team>Baltimore           </team><division>North               </division><groupcount>1</groupcount><groupsum>1.26</groupsum><groupmin>1.26</groupmin><groupmax>1.26</groupmax></Row>
+ <Row><team>Chicago             </team><division>North               </division><groupcount>1</groupcount><groupsum>6.26</groupsum><groupmin>6.26</groupmin><groupmax>6.26</groupmax></Row>
+ <Row><team>Cincinnati          </team><division>North               </division><groupcount>1</groupcount><groupsum>5.206</groupsum><groupmin>5.206</groupmin><groupmax>5.206</groupmax></Row>
+ <Row><team>Cleveland           </team><division>North               </division><groupcount>1</groupcount><groupsum>4.67</groupsum><groupmin>4.67</groupmin><groupmax>4.67</groupmax></Row>
+ <Row><team>Detroit             </team><division>North               </division><groupcount>1</groupcount><groupsum>4.839</groupsum><groupmin>4.839</groupmin><groupmax>4.839</groupmax></Row>
+ <Row><team>Green Bay           </team><division>North               </division><groupcount>1</groupcount><groupsum>3.29</groupsum><groupmin>3.29</groupmin><groupmax>3.29</groupmax></Row>
+ <Row><team>Minnesota           </team><division>North               </division><groupcount>1</groupcount><groupsum>6.64</groupsum><groupmin>6.64</groupmin><groupmax>6.64</groupmax></Row>
+ <Row><team>Pittsburgh          </team><division>North               </division><groupcount>1</groupcount><groupsum>2.61</groupsum><groupmin>2.61</groupmin><groupmax>2.61</groupmax></Row>
+ <Row><team>Atlanta             </team><division>South               </division><groupcount>1</groupcount><groupsum>3.36</groupsum><groupmin>3.36</groupmin><groupmax>3.36</groupmax></Row>
+ <Row><team>Carolina            </team><division>South               </division><groupcount>1</groupcount><groupsum>0.976</groupsum><groupmin>0.976</groupmin><groupmax>0.976</groupmax></Row>
+ <Row><team>Houston             </team><division>South               </division><groupcount>1</groupcount><groupsum>6.45</groupsum><groupmin>6.45</groupmin><groupmax>6.45</groupmax></Row>
+ <Row><team>Indianapolis        </team><division>South               </division><groupcount>1</groupcount><groupsum>2.18</groupsum><groupmin>2.18</groupmin><groupmax>2.18</groupmax></Row>
+ <Row><team>Jacksonville        </team><division>South               </division><groupcount>1</groupcount><groupsum>5.53</groupsum><groupmin>5.53</groupmin><groupmax>5.53</groupmax></Row>
+ <Row><team>New Orleans         </team><division>South               </division><groupcount>1</groupcount><groupsum>2.86</groupsum><groupmin>2.86</groupmin><groupmax>2.86</groupmax></Row>
+ <Row><team>Tampa Bay           </team><division>South               </division><groupcount>1</groupcount><groupsum>1.28</groupsum><groupmin>1.28</groupmin><groupmax>1.28</groupmax></Row>
+ <Row><team>Tennessee           </team><division>South               </division><groupcount>1</groupcount><groupsum>2.13</groupsum><groupmin>2.13</groupmin><groupmax>2.13</groupmax></Row>
+ <Row><team>Arizona             </team><division>West                </division><groupcount>1</groupcount><groupsum>6.15</groupsum><groupmin>6.15</groupmin><groupmax>6.15</groupmax></Row>
+ <Row><team>Denver              </team><division>West                </division><groupcount>1</groupcount><groupsum>1.17</groupsum><groupmin>1.17</groupmin><groupmax>1.17</groupmax></Row>
+ <Row><team>Kansas City         </team><division>West                </division><groupcount>1</groupcount><groupsum>2.35</groupsum><groupmin>2.35</groupmin><groupmax>2.35</groupmax></Row>
+ <Row><team>Oakland             </team><division>West                </division><groupcount>1</groupcount><groupsum>1.61</groupsum><groupmin>1.61</groupmin><groupmax>1.61</groupmax></Row>
+ <Row><team>Saint Louis         </team><division>West                </division><groupcount>1</groupcount><groupsum>1.96</groupsum><groupmin>1.96</groupmin><groupmax>1.96</groupmax></Row>
+ <Row><team>San Diego           </team><division>West                </division><groupcount>1</groupcount><groupsum>1.12</groupsum><groupmin>1.12</groupmin><groupmax>1.12</groupmax></Row>
+ <Row><team>San Francisco       </team><division>West                </division><groupcount>1</groupcount><groupsum>5.19</groupsum><groupmin>5.19</groupmin><groupmax>5.19</groupmax></Row>
+ <Row><team>Seattle             </team><division>West                </division><groupcount>1</groupcount><groupsum>1.304</groupsum><groupmin>1.304</groupmin><groupmax>1.304</groupmax></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><conference>American            </conference><division>East                </division><groupcount>4</groupcount><groupsum>9.675000000000001</groupsum><groupmin>0.855</groupmin><groupmax>4.2</groupmax></Row>
+ <Row><conference>American            </conference><division>North               </division><groupcount>4</groupcount><groupsum>13.746</groupsum><groupmin>1.26</groupmin><groupmax>5.206</groupmax></Row>
+ <Row><conference>American            </conference><division>South               </division><groupcount>4</groupcount><groupsum>16.29</groupsum><groupmin>2.13</groupmin><groupmax>6.45</groupmax></Row>
+ <Row><conference>American            </conference><division>West                </division><groupcount>4</groupcount><groupsum>6.25</groupsum><groupmin>1.12</groupmin><groupmax>2.35</groupmax></Row>
+ <Row><conference>National            </conference><division>East                </division><groupcount>4</groupcount><groupsum>19.25</groupsum><groupmin>2.75</groupmin><groupmax>9.9</groupmax></Row>
+ <Row><conference>National            </conference><division>North               </division><groupcount>4</groupcount><groupsum>21.029</groupsum><groupmin>3.29</groupmin><groupmax>6.64</groupmax></Row>
+ <Row><conference>National            </conference><division>South               </division><groupcount>4</groupcount><groupsum>8.475999999999999</groupsum><groupmin>0.976</groupmin><groupmax>3.36</groupmax></Row>
+ <Row><conference>National            </conference><division>West                </division><groupcount>4</groupcount><groupsum>14.604</groupsum><groupmin>1.304</groupmin><groupmax>6.15</groupmax></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><division>East                </division><conference>American            </conference><groupcount>4</groupcount><groupsum>9.675000000000001</groupsum><groupmin>0.855</groupmin><groupmax>4.2</groupmax></Row>
+ <Row><division>East                </division><conference>National            </conference><groupcount>4</groupcount><groupsum>19.25</groupsum><groupmin>2.75</groupmin><groupmax>9.9</groupmax></Row>
+ <Row><division>North               </division><conference>American            </conference><groupcount>4</groupcount><groupsum>13.746</groupsum><groupmin>1.26</groupmin><groupmax>5.206</groupmax></Row>
+ <Row><division>North               </division><conference>National            </conference><groupcount>4</groupcount><groupsum>21.029</groupsum><groupmin>3.29</groupmin><groupmax>6.64</groupmax></Row>
+ <Row><division>South               </division><conference>American            </conference><groupcount>4</groupcount><groupsum>16.29</groupsum><groupmin>2.13</groupmin><groupmax>6.45</groupmax></Row>
+ <Row><division>South               </division><conference>National            </conference><groupcount>4</groupcount><groupsum>8.475999999999999</groupsum><groupmin>0.976</groupmin><groupmax>3.36</groupmax></Row>
+ <Row><division>West                </division><conference>American            </conference><groupcount>4</groupcount><groupsum>6.25</groupsum><groupmin>1.12</groupmin><groupmax>2.35</groupmax></Row>
+ <Row><division>West                </division><conference>National            </conference><groupcount>4</groupcount><groupsum>14.604</groupsum><groupmin>1.304</groupmin><groupmax>6.15</groupmax></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><nickname_category>Animal              </nickname_category><conference>American            </conference><groupcount>7</groupcount><groupsum>22.166</groupsum><groupmin>1.17</groupmin><groupmax>5.53</groupmax></Row>
+ <Row><nickname_category>Animal              </nickname_category><conference>National            </conference><groupcount>8</groupcount><groupsum>34.749</groupsum><groupmin>0.976</groupmin><groupmax>9.9</groupmax></Row>
+ <Row><nickname_category>People              </nickname_category><conference>American            </conference><groupcount>8</groupcount><groupsum>22.94</groupsum><groupmin>1.12</groupmin><groupmax>6.45</groupmax></Row>
+ <Row><nickname_category>People              </nickname_category><conference>National            </conference><groupcount>8</groupcount><groupsum>28.61</groupsum><groupmin>1.28</groupmin><groupmax>6.64</groupmax></Row>
+ <Row><nickname_category>Thing               </nickname_category><conference>American            </conference><groupcount>1</groupcount><groupsum>0.855</groupsum><groupmin>0.855</groupmin><groupmax>0.855</groupmax></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><nickname_category>Animal              </nickname_category><groupcount>15</groupcount><groupsum>56.915</groupsum><groupmin>0.976</groupmin><groupmax>9.9</groupmax></Row>
+ <Row><nickname_category>People              </nickname_category><groupcount>16</groupcount><groupsum>51.55</groupsum><groupmin>1.12</groupmin><groupmax>6.64</groupmax></Row>
+ <Row><nickname_category>Thing               </nickname_category><groupcount>1</groupcount><groupsum>0.855</groupsum><groupmin>0.855</groupmin><groupmax>0.855</groupmax></Row>
+</Dataset>

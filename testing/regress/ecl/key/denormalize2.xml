@@ -1,0 +1,227 @@
+<Dataset name='Result 1'>
+ <Row><_process>Simple Denormalize: straight                                                    </_process></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>simple              </name><childcount>2</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>4</childcount><value1>C</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>4</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>1</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>2</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>3</childcount><value1>C</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>4</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>1</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><_process>Counter Denormalize: straight                                                   </_process></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>counter             </name><childcount>2</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>4</childcount><value1>C</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>4</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>1</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>4</childcount><value1>C</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>4</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>1</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><_process>Simple Denormalize: grouped                                                     </_process></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><name>simple              </name><childcount>2</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>4</childcount><value1>C</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>4</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>1</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>2</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>3</childcount><value1>C</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>4</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>1</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><_process>Counter Denormalize: grouped                                                    </_process></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><name>counter             </name><childcount>2</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>4</childcount><value1>C</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>4</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>1</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>4</childcount><value1>C</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>4</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>1</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><_process>Simple Denormalize: filtered                                                    </_process></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><name>simple              </name><childcount>2</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>1</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>2</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>1</Result_25></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><_process>Counter Denormalize: filtered                                                   </_process></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><name>counter             </name><childcount>2</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>1</Result_28></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><Result_30>1</Result_30></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><_process>Simple Denormalize: grouped filtered                                            </_process></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><name>simple              </name><childcount>2</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>simple              </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><Result_33>1</Result_33></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>2</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, simple        </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><Result_35>1</Result_35></Row>
+</Dataset>
+<Dataset name='Result 36'>
+ <Row><_process>Counter Denormalize: grouped filtered                                           </_process></Row>
+</Dataset>
+<Dataset name='Result 37'>
+ <Row><name>counter             </name><childcount>2</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>2</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>counter             </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 38'>
+ <Row><Result_38>1</Result_38></Row>
+</Dataset>
+<Dataset name='Result 39'>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>A</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>3</childcount><value1>B</value1><value2>20</value2><childval1>1</childval1><childval2>99</childval2><childval3>3</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>D</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>E</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>F</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>G</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+ <Row><name>skip, counter       </name><childcount>1</childcount><value1>H</value1><value2>10</value2><childval1>1</childval1><childval2>99</childval2><childval3>99</childval3><childval4>99</childval4></Row>
+</Dataset>
+<Dataset name='Result 40'>
+ <Row><Result_40>1</Result_40></Row>
+</Dataset>
+<Dataset name='Result 41'>
+ <Row><_process>Completed           </_process></Row>
+</Dataset>

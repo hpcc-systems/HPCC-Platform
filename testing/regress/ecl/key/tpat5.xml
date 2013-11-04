@@ -1,0 +1,9 @@
+<Dataset name='Result 1'>
+ <Row><beforepos>1</beforepos><afterpos>4</afterpos><x>abc!</x></Row>
+ <Row><beforepos>7</beforepos><afterpos>10</afterpos><x>def!</x></Row>
+ <Row><beforepos>13</beforepos><afterpos>16</afterpos><x>ghi!</x></Row>
+ <Row><beforepos>2</beforepos><afterpos>3</afterpos><x>a!</x></Row>
+ <Row><beforepos>6</beforepos><afterpos>7</afterpos><x>b!</x></Row>
+ <Row><beforepos>12</beforepos><afterpos>13</afterpos><x>c!</x></Row>
+ <Row><beforepos>16</beforepos><afterpos>17</afterpos><x>d!</x></Row>
+</Dataset>

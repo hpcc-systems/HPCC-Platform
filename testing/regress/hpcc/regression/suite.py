@@ -20,6 +20,7 @@
 import os
 from ..util.ecl.file import ECLFile
 from ..common.error import Error
+from ..util.exclusion import Exclusion
 
 
 class Suite:
@@ -30,7 +31,9 @@ class Suite:
         self.dir_a = dir_a
         self.dir_ex = dir_ex
         self.dir_r = dir_r
+        self.exclusion = Exclusion()
         self.buildSuite()
+        
 
     def buildSuite(self):
         if not os.path.isdir(self.dir_ec):
@@ -40,8 +43,12 @@ class Suite:
                 ecl = os.path.join(self.dir_ec, files)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
                                   self.dir_r)
-                if not eclfile.testSkip(self.name)['skip']:
+                #if not eclfile.testSkip(self.name)['skip']:
+                #    self.suite.append(eclfile)
+                #print "self.name:", self.name, ", files:", files
+                if not self.exclusion.checkException(self.name, files):
                     self.suite.append(eclfile)
+
         self.suite.reverse()
 
     def getSuite(self):

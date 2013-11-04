@@ -1,0 +1,5 @@
+<Dataset name='Result 1'>
+ <Row><le>!left = right!</le><tree>Tree: s[l[&quot;left&quot;] &quot;=&quot; r[l[&quot;right&quot;]]]</tree></Row>
+ <Row><le>!*left = right!</le><tree>Tree: s[l[&quot;*&quot; r[l[&quot;left&quot;]]] &quot;=&quot; r[l[&quot;right&quot;]]]</tree></Row>
+ <Row><le>!dcccd!</le><tree>Tree: s[r[l[&quot;dcccd&quot;]]]</tree></Row>
+</Dataset>

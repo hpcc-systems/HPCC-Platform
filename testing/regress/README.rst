@@ -31,7 +31,7 @@ Result:
 |            --loglevel [{info,debug}]
 |                                  Set the log level.
 |            --suiteDir [SUITEDIR], -s [SUITEDIR]
-|                               suiteDir to use. Except the list it should be an absolute path!!
+|                               suiteDir to use. Default value is the current directory and it can handle relative path.
 
 	
 Steps to run Regression Suite
@@ -56,20 +56,16 @@ The result looks like this:
 
 
 
-3. The first item of the list (setup) is the default target, but its need to suiteDir set to HPCC-Platform/testing/regress directory! 
--------------------------------------------------------------------------------------------------------------------------------------
-
-Actually there are two reasons for this:
-	1. To point ecl files of new regression suite located testing/regress/ecl/setup directory
-	2. To point matched key files.)
+3. To run the Regression Suite setup:
+-------------------------------------
 
 Command:
 
-        ./regress --suiteDir $(HPCC_INST_DIR)/HPCC-Platform/testing/regress run
+        ./regress run
 
 or
 
-        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing/regress run setup
+        ./regress run setup
 
 The result:
 
@@ -98,41 +94,93 @@ The result:
 
 	    
 
-4. To run Regression Suite on a selected cluster (e.g. Thor) the suiteDir should point to absolute path of HPCC-Platform/testing/ directory:
---------------------------------------------------------------------------------------------------------------------------------------------
+4. To run Regression Suite on a selected cluster (e.g. Thor):
+-------------------------------------------------------------
 Command:
 
-        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing/regress run thor
+        ./regress run thor
 
 
-The result is a list of test cases (actually 0) and their result. 
+The result is a list of test cases and their result. 
 
-The first couple of lines look like this:
+The first and last couple of lines look like this:
 
 |
 |        [Action] Suite: thor
-|        [Action] Queries: 0
-|        [Action] 
+|        [Action] Queries: 266
+|        [Action] 1. Test: stepjoin2.ecl
+|        [Pass] Pass W20131018-121854
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131018-121854
+|        [Action] 2. Test: groupglobal3b.ecl
+|        [Pass] Pass W20131018-121859
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131018-121859
+|        [Action] 3. Test: realround.ecl
+|        ...
+|        [Action] 266. Test: lookupjoin.ecl
+|        [Pass] Pass W20131018-124534
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131018-124534
+|
 |         Results
 |         `-------------------------------------------------`
-|         Passing: 0
+|         Passing: 266
 |         Failure: 0
 |         `-------------------------------------------------`
-|         Log: /var/log/HPCCSystems/regression/thor.13-06-20-13-40.log
+|         Log: /var/log/HPCCSystems/regression/thor.13-10-18-12-18.log
 |         `-------------------------------------------------`
 |
 
 
-5. To run Regression Suite with selected test case on a selected cluster (e.g. Thor): 
+
+5. Exclusions:
+--------------
+The exclusion.xml file can be used to exclude execution test case(s) on one or more clusters.
+
+This example shows some examples: 
+
+<exclusion>
+    <cluster name="thor">
+    </cluster>
+    <cluster name="hthor">
+        <exclude> platform.ecl </exclude>
+    </cluster>
+    <cluster name="roxie">
+        <exclude> schedule1.ecl </exclude>
+        <exclude> platform.ecl </exclude>
+     </cluster>
+</exclusion>
+
+The platform.ecl excludes on hthor and roxie clusters, because it is thor specific. 
+Actually roxie cluster doesn't support scheduling therefore schedule1.ecl excluded from this cluster.
+
+
+6. To run Regression Suite with selected test case on a selected cluster (e.g. Thor): 
 -------------------------------------------------------------------------------------
 
-The --suiteDir should point to absolute path of HPCC-Platform/testing/regress directory:
+(In this use case the default cluster is: thor)
 
 Command:
 
-        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing/regress query test_name cluster
+        ./regress query test_name cluster
 
+or (for execute on thor)
 
-Actually the result is an error message "[Errno 2] No such file or directory: 'path'" related we have no test case in the Regression Suite.
+        ./regress query test_name 
+
+The result is same as above:
+
+|
+|        [Action] 1. Test: unicodelib.ecl
+|        [Pass] Pass W20131018-134023
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131018-134023
+|        [Action] 
+|            Results
+|            -------------------------------------------------
+|            Passing: 1
+|            Failure: 0
+|            -------------------------------------------------
+|            Log: /var/log/HPCCSystems/regression/unicodelib.ecl.13-10-18-13-40.log
+|            -------------------------------------------------
+|    
 
 **Important! Actually regression suite always compares the test case result with xml files stored in testing/regression/ecl/key independently from the cluster.**
+
