@@ -64,13 +64,15 @@ class Regression:
     def setLogLevel(self, level):
         self.log.setLevel(level)
 
-    def bootstrap(self):
+    def bootstrap(self, cluster):
+        #print "bootstrap( "+cluster+")"
         self.createDirectory(self.regressionDir)
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
         self.setup = self.Setup()
-        for cluster in self.config.Clusters:
+        #for cluster in self.config.Clusters:
+        if cluster in self.config.Clusters:
             self.createSuite(cluster)
         os.chdir(self.regressionDir)
 
@@ -80,11 +82,11 @@ class Regression:
 
     def createSuite(self, cluster):
         self.suites[cluster] = Suite(cluster, self.dir_ec,
-                                     self.dir_a, self.dir_ex, self.dir_r)
+                                     self.dir_a, self.dir_ex, self.dir_r, self.logDir)
 
     def Setup(self):
         return Suite('setup', self.setupDir, self.dir_a, self.dir_ex,
-                     self.dir_r)
+                     self.dir_r, self.logDir)
 
     def buildLogging(self, name):
         report = Report(name)
@@ -109,22 +111,33 @@ class Regression:
         logging.warn("Queries: %s" % repr(len(suite.getSuite())))
         cnt = 1
         for query in suite.getSuite():
-            self.runQuery(cluster, query, report, cnt)
+            self.runQuery(cluster, query, report, cnt, suite.testPublish(query.ecl))
             cnt += 1
         Regression.displayReport(report)
 
-    def runQuery(self, cluster, query, report, cnt=1):
+    def runQuery(self, cluster, query, report, cnt=1, publish=False):
+        #print "runQuery(cluster:", cluster, ", query:", query, ", report:", report, ", cnt:", cnt, ", publish:", publish, ")"
         logging.warn("%s. Test: %s" % (repr(cnt), query.ecl))
         ECLCC().makeArchive(query)
-        res = ECLcmd().runCmd("run", cluster, query, report[0],
+        if publish:
+            #print "publish"
+            res = ECLcmd().runCmd("publish", cluster, query, report[0],
                               server=self.config.ip,
                               username=self.config.username,
                               password=self.config.password)
+        else:
+            #print "run"
+            res = ECLcmd().runCmd("run", cluster, query, report[0],
+                              server=self.config.ip,
+                              username=self.config.username,
+                              password=self.config.password)
+        #print "res: ", res
         wuid = query.getWuid()
         if wuid:
             url = "http://" + self.config.server
             url += "/WsWorkunits/WUInfo?Wuid="
             url += wuid
+
         if res:
             logging.info("Pass %s" % wuid)
             logging.info("URL %s" % url)

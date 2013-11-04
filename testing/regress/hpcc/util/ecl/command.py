@@ -36,25 +36,30 @@ class ECLcmd(Shell):
         args = []
         args.append(cmd)
         args.append('-v')
-        args.append('--noroot')
         args.append('--cluster=' + cluster)
-        name = kwargs.pop('name', False)
-        username = kwargs.pop('username', False)
-        password = kwargs.pop('password', False)
-        server = kwargs.pop('server', False)
-        if server:
-            args.append('--server=' + server)
-        if not name:
-            name = eclfile.ecl
-        if username:
-            args.append("--username=" + username)
-        if password:
-            args.append("--password=" + password)
-        args.append("--name=" + name)
-        args.append(eclfile.getArchive())
+        if cmd == 'publish':
+            args.append(eclfile.getEcl())
+        else:
+            args.append('--noroot')
+            name = kwargs.pop('name', False)
+            username = kwargs.pop('username', False)
+            password = kwargs.pop('password', False)
+            server = kwargs.pop('server', False)
+            if server:
+                args.append('--server=' + server)
+            if not name:
+                name = eclfile.ecl
+            if username:
+                args.append("--username=" + username)
+            if password:
+                args.append("--password=" + password)
+            args.append("--name=" + name)
+            args.append(eclfile.getArchive())
         data = ""
         wuid = ""
+        state = ""
         try:
+            #print "runCmd:", args
             results = self.__ECLcmd()(*args)
             data = '\n'.join(line for line in
                              results.split('\n') if line) + "\n"
@@ -64,6 +69,8 @@ class ECLcmd(Shell):
             for i in ret:
                 if "wuid:" in i:
                     wuid = i.split()[1]
+                if "state:" in i:
+                    state = i.split()[1]
                 if cnt > 4:
                     result += i + "\n"
                 cnt += 1
@@ -76,7 +83,15 @@ class ECLcmd(Shell):
             return err + "\n"
         finally:
             eclfile.addResults(data, wuid)
-            test = eclfile.testResults()
+            if cmd == 'publish':
+                if state == 'compiled':
+                    test = True
+                else:
+                    test = False
+                    eclfile.diff = 'Error'
+                
+            else:
+                test = eclfile.testResults()
             report.addResult(eclfile)
             if not test:
                 return False

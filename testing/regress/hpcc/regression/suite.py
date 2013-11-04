@@ -18,31 +18,73 @@
 '''
 
 import os
+import sys
+import time
+
 from ..util.ecl.file import ECLFile
 from ..common.error import Error
 
-
 class Suite:
-    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r):
+    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir):
         self.name = name
         self.suite = []
         self.dir_ec = dir_ec
         self.dir_a = dir_a
         self.dir_ex = dir_ex
         self.dir_r = dir_r
+        self.logDir = logDir
+        self.exclude = []
+        self.publish = []
+
         self.buildSuite()
+
+        if len(self.exclude):
+            curTime = time.strftime("%y-%m-%d-%H-%M")
+            logName = name + "-exclusion." + curTime + ".log"
+            self.logName = os.path.join(self.logDir, logName)
+            self.log = open(self.logName, "w");
+            for item in self.exclude:
+                self.log.write(item+"\n")
+            self.log.close();
+            
+
 
     def buildSuite(self):
         if not os.path.isdir(self.dir_ec):
             raise Error("2001", err="Not Found: %s" % self.dir_ec)
-        for files in os.listdir(self.dir_ec):
+        allfiles = os.listdir(self.dir_ec)
+        allfiles.sort()
+        #for files in os.listdir(self.dir_ec):
+        for files in allfiles:
             if files.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, files)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
                                   self.dir_r)
-                if not eclfile.testSkip(self.name)['skip']:
-                    self.suite.append(eclfile)
-        self.suite.reverse()
+                result = eclfile.testSkip(self.name)
+                if not result['skip']:
+                    if not eclfile.testExclusion(self.name):
+                        self.suite.append(eclfile)
+                    else:
+                        self.exclude.append(format(files, "20")+" excluded")
+                else:
+                    self.exclude.append(format(files, "20")+" skipped (reason:"+result['reason']+")");
 
+                if eclfile.testPublish():
+                    #print "Publish..."
+                    self.publish.append(files)
+
+        #print self.suite
+        #self.suite.reverse()
+        #print self.suite
+        #self.suite.sort(ecl)
+
+    def testPublish(self, ecl):
+        #print "ecl: ", ecl
+        if ecl in self.publish:
+            #print "return True"
+            return True
+        #print "return False"
+        return False
+        
     def getSuite(self):
         return self.suite
