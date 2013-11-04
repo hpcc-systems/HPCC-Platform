@@ -3760,11 +3760,21 @@ public:
         if (!row)
             return NULL;
         if (myNode != (ihash->hash(row.get()) % nodes))
-            throw MakeActivityException(this, 0, "Not distributed");
+        {
+            StringBuffer errMsg("Not distributed");
+            CommonXmlWriter xmlWrite(0);
+            if (baseHelper->queryOutputMeta()->hasXML())
+            {
+                errMsg.append(" - detected at row: ");
+                baseHelper->queryOutputMeta()->toXML((byte *) row.get(), xmlWrite);
+                errMsg.append(xmlWrite.str());
+            }
+            throw MakeActivityException(this, 0, "%s", errMsg.str());
+        }
         dataLinkIncrement();
         return row.getClear();
     }
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
         initMetaInfo(info);
