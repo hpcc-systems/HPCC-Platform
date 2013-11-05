@@ -839,6 +839,24 @@ StringBuffer & StringBuffer::replaceString(const char* oldStr, const char* newSt
     return *this;
 }
 
+StringBuffer & StringBuffer::stripChar(char oldChar)
+{
+    if (buffer)
+    {
+        int delta = 0;
+        int l = curLen;
+        for (int i = 0; i < l; i++)
+        {
+            if (buffer[i] == oldChar)
+                delta++;
+            else if (delta)
+                buffer[i-delta] = buffer[i];
+        }
+        curLen = curLen - delta;
+    }
+    return *this;
+}
+
 const char * StringBuffer::toCharArray() const
 {
     if (buffer)

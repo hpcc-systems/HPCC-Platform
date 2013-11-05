@@ -178,6 +178,7 @@ public:
         {
             prevtext.clear();
             // Try compiling as a eval first... if that fails, try as a script.
+            text.stripChar('\r');
             script.setown(Py_CompileString(text, "", Py_eval_input));
             if (!script)
             {
@@ -187,7 +188,7 @@ public:
                 script.setown(Py_CompileString(wrapped, "<embed>", Py_file_input));
             }
             checkPythonError();
-            prevtext.set(text);
+            prevtext.set(utf, bytes);
         }
         return script.getLink();
     }

@@ -164,29 +164,71 @@ public:
 
     virtual bool getBooleanResult()
     {
-        return ::Rcpp::as<bool>(result);
+        try
+        {
+            return ::Rcpp::as<bool>(result);
+        }
+        catch (std::runtime_error &E)
+        {
+            rtlFail(0, E.what());
+        }
     }
     virtual void getDataResult(size32_t &__len, void * &__result)
     {
-        std::vector<byte> vval = ::Rcpp::as<std::vector<byte> >(result);
-        rtlStrToDataX(__len, __result, vval.size(), vval.data());
+        try
+        {
+            std::vector<byte> vval = ::Rcpp::as<std::vector<byte> >(result);
+            rtlStrToDataX(__len, __result, vval.size(), vval.data());
+        }
+        catch (std::runtime_error &E)
+        {
+            rtlFail(0, E.what());
+        }
     }
     virtual double getRealResult()
     {
-        return ::Rcpp::as<double>(result);
+        try
+        {
+            return ::Rcpp::as<double>(result);
+        }
+        catch (std::runtime_error &E)
+        {
+            rtlFail(0, E.what());
+        }
     }
     virtual __int64 getSignedResult()
     {
-        return ::Rcpp::as<long int>(result); // Should really be long long, but RInside does not support that
+        try
+        {
+            return ::Rcpp::as<long int>(result); // Should really be long long, but RInside does not support that
+        }
+        catch (std::runtime_error &E)
+        {
+            rtlFail(0, E.what());
+        }
     }
     virtual unsigned __int64 getUnsignedResult()
     {
-        return ::Rcpp::as<unsigned long int>(result); // Should really be long long, but RInside does not support that
+        try
+        {
+            return ::Rcpp::as<unsigned long int>(result); // Should really be long long, but RInside does not support that
+        }
+        catch (std::runtime_error &E)
+        {
+            rtlFail(0, E.what());
+        }
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
     {
-        std::string str = ::Rcpp::as<std::string>(result);
-        rtlStrToStrX(__len, __result, str.length(), str.data());
+        try
+        {
+            std::string str = ::Rcpp::as<std::string>(result);
+            rtlStrToStrX(__len, __result, str.length(), str.data());
+        }
+        catch (std::runtime_error &E)
+        {
+            rtlFail(0, E.what());
+        }
     }
     virtual void getUTF8Result(size32_t &chars, char * &result)
     {
@@ -198,10 +240,12 @@ public:
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int _elemType, size32_t elemSize)
     {
-        type_t elemType = (type_t) _elemType;
-        __isAllResult = false;
-        switch(elemType)
+        try
         {
+            type_t elemType = (type_t) _elemType;
+            __isAllResult = false;
+            switch(elemType)
+            {
 
 #define FETCH_ARRAY(type) \
 {  \
@@ -209,111 +253,116 @@ public:
     rtlStrToDataX(__resultBytes, __result, vval.size()*elemSize, (const void *) vval.data()); \
 }
 
-        case type_boolean:
-        {
-            std::vector<bool> vval = ::Rcpp::as< std::vector<bool> >(result);
-            size32_t size = vval.size();
-            // Vector of bool is odd, and can't be retrieved via data()
-            // Instead we need to iterate, I guess
-            rtlDataAttr out(size);
-            bool *outData = (bool *) out.getdata();
-            for (std::vector<bool>::iterator iter = vval.begin(); iter < vval.end(); iter++)
+            case type_boolean:
             {
-                *outData++ = *iter;
-            }
-            __resultBytes = size;
-            __result = out.detachdata();
-            break;
-        }
-        case type_int:
-            /* if (elemSize == sizeof(signed char))  // rcpp does not seem to support...
-                FETCH_ARRAY(signed char)
-            else */ if (elemSize == sizeof(short))
-                FETCH_ARRAY(short)
-            else if (elemSize == sizeof(int))
-                FETCH_ARRAY(int)
-            else if (elemSize == sizeof(long))    // __int64 / long long does not work...
-                FETCH_ARRAY(long)
-            else
-                rtlFail(0, "Rembed: Unsupported result type");
-            break;
-        case type_unsigned:
-            if (elemSize == sizeof(byte))
-                FETCH_ARRAY(byte)
-            else if (elemSize == sizeof(unsigned short))
-                FETCH_ARRAY(unsigned short)
-            else if (elemSize == sizeof(unsigned int))
-                FETCH_ARRAY(unsigned int)
-            else if (elemSize == sizeof(unsigned long))    // __int64 / long long does not work...
-                FETCH_ARRAY(unsigned long)
-            else
-                rtlFail(0, "Rembed: Unsupported result type");
-            break;
-        case type_real:
-            if (elemSize == sizeof(float))
-                FETCH_ARRAY(float)
-            else if (elemSize == sizeof(double))
-                FETCH_ARRAY(double)
-            else
-                rtlFail(0, "Rembed: Unsupported result type");
-            break;
-        case type_string:
-        case type_varstring:
-        {
-            std::vector<std::string> vval = ::Rcpp::as< std::vector<std::string> >(result);
-            size32_t numResults = vval.size();
-            rtlRowBuilder out;
-            byte *outData = NULL;
-            size32_t outBytes = 0;
-            if (elemSize != UNKNOWN_LENGTH)
-            {
-                outBytes = numResults * elemSize;  // MORE - check for overflow?
-                out.ensureAvailable(outBytes);
-                outData = out.getbytes();
-            }
-            for (std::vector<std::string>::iterator iter = vval.begin(); iter < vval.end(); iter++)
-            {
-                size32_t lenBytes = (*iter).size();
-                const char *text = (*iter).data();
-                if (elemType == type_string)
+                std::vector<bool> vval = ::Rcpp::as< std::vector<bool> >(result);
+                size32_t size = vval.size();
+                // Vector of bool is odd, and can't be retrieved via data()
+                // Instead we need to iterate, I guess
+                rtlDataAttr out(size);
+                bool *outData = (bool *) out.getdata();
+                for (std::vector<bool>::iterator iter = vval.begin(); iter < vval.end(); iter++)
                 {
-                    if (elemSize == UNKNOWN_LENGTH)
-                    {
-                        out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
-                        outData = out.getbytes() + outBytes;
-                        * (size32_t *) outData = lenBytes;
-                        rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
-                        outBytes += lenBytes + sizeof(size32_t);
-                    }
-                    else
-                    {
-                        rtlStrToStr(elemSize, outData, lenBytes, text);
-                        outData += elemSize;
-                    }
+                    *outData++ = *iter;
                 }
+                __resultBytes = size;
+                __result = out.detachdata();
+                break;
+            }
+            case type_int:
+                /* if (elemSize == sizeof(signed char))  // rcpp does not seem to support...
+                    FETCH_ARRAY(signed char)
+                else */ if (elemSize == sizeof(short))
+                    FETCH_ARRAY(short)
+                else if (elemSize == sizeof(int))
+                    FETCH_ARRAY(int)
+                else if (elemSize == sizeof(long))    // __int64 / long long does not work...
+                    FETCH_ARRAY(long)
                 else
+                    rtlFail(0, "Rembed: Unsupported result type");
+                break;
+            case type_unsigned:
+                if (elemSize == sizeof(byte))
+                    FETCH_ARRAY(byte)
+                else if (elemSize == sizeof(unsigned short))
+                    FETCH_ARRAY(unsigned short)
+                else if (elemSize == sizeof(unsigned int))
+                    FETCH_ARRAY(unsigned int)
+                else if (elemSize == sizeof(unsigned long))    // __int64 / long long does not work...
+                    FETCH_ARRAY(unsigned long)
+                else
+                    rtlFail(0, "Rembed: Unsupported result type");
+                break;
+            case type_real:
+                if (elemSize == sizeof(float))
+                    FETCH_ARRAY(float)
+                else if (elemSize == sizeof(double))
+                    FETCH_ARRAY(double)
+                else
+                    rtlFail(0, "Rembed: Unsupported result type");
+                break;
+            case type_string:
+            case type_varstring:
+            {
+                std::vector<std::string> vval = ::Rcpp::as< std::vector<std::string> >(result);
+                size32_t numResults = vval.size();
+                rtlRowBuilder out;
+                byte *outData = NULL;
+                size32_t outBytes = 0;
+                if (elemSize != UNKNOWN_LENGTH)
                 {
-                    if (elemSize == UNKNOWN_LENGTH)
+                    outBytes = numResults * elemSize;  // MORE - check for overflow?
+                    out.ensureAvailable(outBytes);
+                    outData = out.getbytes();
+                }
+                for (std::vector<std::string>::iterator iter = vval.begin(); iter < vval.end(); iter++)
+                {
+                    size32_t lenBytes = (*iter).size();
+                    const char *text = (*iter).data();
+                    if (elemType == type_string)
                     {
-                        out.ensureAvailable(outBytes + lenBytes + 1);
-                        outData = out.getbytes() + outBytes;
-                        rtlStrToVStr(0, outData, lenBytes, text);
-                        outBytes += lenBytes + 1;
+                        if (elemSize == UNKNOWN_LENGTH)
+                        {
+                            out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                            outData = out.getbytes() + outBytes;
+                            * (size32_t *) outData = lenBytes;
+                            rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                            outBytes += lenBytes + sizeof(size32_t);
+                        }
+                        else
+                        {
+                            rtlStrToStr(elemSize, outData, lenBytes, text);
+                            outData += elemSize;
+                        }
                     }
                     else
                     {
-                        rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
-                        outData += elemSize;
+                        if (elemSize == UNKNOWN_LENGTH)
+                        {
+                            out.ensureAvailable(outBytes + lenBytes + 1);
+                            outData = out.getbytes() + outBytes;
+                            rtlStrToVStr(0, outData, lenBytes, text);
+                            outBytes += lenBytes + 1;
+                        }
+                        else
+                        {
+                            rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
+                            outData += elemSize;
+                        }
                     }
                 }
+                __resultBytes = outBytes;
+                __result = out.detachdata();
+                break;
             }
-            __resultBytes = outBytes;
-            __result = out.detachdata();
-            break;
+            default:
+                rtlFail(0, "REmbed: Unsupported result type");
+                break;
+            }
         }
-        default:
-            rtlFail(0, "REmbed: Unsupported result type");
-            break;
+        catch (std::runtime_error &E)
+        {
+            rtlFail(0, E.what());
         }
     }
 
@@ -451,12 +500,21 @@ public:
     }
     virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
-        func.assign(utf, rtlUtf8Size(lenChars, utf));
+        StringBuffer text(rtlUtf8Size(lenChars, utf), utf);
+        text.stripChar('\r');
+        func.assign(text.str());
     }
 
     virtual void callFunction()
     {
-        result = R.parseEval(func);
+        try
+        {
+            result = R.parseEval(func);
+        }
+        catch (std::runtime_error &E)
+        {
+            rtlFail(0, E.what());
+        }
     }
 private:
     RInside &R;
