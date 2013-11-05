@@ -1292,7 +1292,7 @@
           </a>
         </td>
         <td>
-          <a href="javascript:void(0)" onclick="getOptions('eclagent.log', '/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Name={Name}&amp;Type=EclAgentLog', false); return false;">
+          <a href="javascript:void(0)" onclick="getOptions('eclagent.log', '/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Name={Name}&amp;Process={PID}&amp;Type=EclAgentLog', false); return false;">
             download
           </a>
         </td>
