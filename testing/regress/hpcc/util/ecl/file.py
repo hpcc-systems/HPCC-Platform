@@ -90,8 +90,8 @@ class ECLFile:
                     skipType = skipType.split("==")[1]
                 if not skip:
                     return {'reason': skipReason, 'type': skipType}
-                if skipType == skip:
-                    return {'skip': True, 'reason': skipReason}
+                if skip in skipType:
+                    return {'skip': True, 'type' : skipType, 'reason': skipReason}
         return {'skip': False}
 
     def testSkip(self, skip=None):
@@ -99,6 +99,29 @@ class ECLFile:
 
     def testVarSkip(self, skip=None):
         return self.__checkSkip("//varskip", skip)
+
+    def testExclusion(self, target):
+        # Standard string has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = b'//no' + target.encode()
+        logging.debug("testExclusion (ecl:", self.ecl,", target:", target,", tag: ", tag, ")")
+        eclText = open(self.getEcl(), 'rb')
+        for line in eclText:
+            if tag in line:
+                return True
+        return False
+
+    def testPublish(self):
+        # Standard strign has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = b'//publish'
+        logging.debug("testPublish (ecl:", self.ecl,", tag: ", tag, ")")
+        eclText = open(self.getEcl(), 'rb')
+        for line in eclText:
+            if tag in line:
+                return True
+        return False
+
 
     def testResults(self):
         d = difflib.Differ()

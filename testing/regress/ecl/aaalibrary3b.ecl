@@ -18,10 +18,12 @@
 //nohthor
 //nothor
 //nothorlcr
+//publish
 
-#option ('targetService', 'aaaLibrary4')
+#option ('targetService', 'aaaLibrary3b')
 #option ('createServiceAlias', true)
 
+//Example of nested 
 namesRecord := 
             RECORD
 string20        surname;
@@ -30,16 +32,22 @@ integer2        age := 25;
             END;
 
 FilterLibrary(dataset(namesRecord) ds, string search, boolean onlyOldies) := interface
-    export dataset(namesRecord) matches;
-    export dataset(namesRecord) others;
+    export dataset(namesRecord) included;
+    export dataset(namesRecord) excluded;
+    export unsigned someValue;      // different interface from 1.2 in library2
 end;
 
 
-FilterLibrary4(dataset(namesRecord) ds, string search, boolean onlyOldies) := module,library(FilterLibrary)
-    f := ds;
-    shared g := if (onlyOldies, f(age >= 65), f);
-    export matches := g(surname = search);
-    export others := g(surname != search);
+HallidayLibrary(dataset(namesRecord) ds) := interface
+    export dataset(namesRecord) included;
+    export dataset(namesRecord) excluded;
 end;
 
-BUILD(FilterLibrary4);
+
+HallidayLibrary3(dataset(namesRecord) ds) := module,library(HallidayLibrary)
+    shared baseLibrary := LIBRARY('aaaLibrary3a', filterLibrary(ds, 'Halliday', false));
+    export included := baseLibrary.included;
+    export excluded := baseLibrary.excluded;
+end;
+
+BUILD(HallidayLibrary3);

@@ -31,7 +31,7 @@ Result:
 |            --loglevel [{info,debug}]
 |                                  Set the log level.
 |            --suiteDir [SUITEDIR], -s [SUITEDIR]
-|                               suiteDir to use. Except the list it should be an absolute path!!
+|                               suiteDir to use. Default value is the current directory and it can handle relative path.
 
 	
 Steps to run Regression Suite
@@ -44,7 +44,7 @@ Steps to run Regression Suite
 ----------------------------------
 Command:
 
-    ./regress --suiteDir . list
+    ./regress list
 
 The result looks like this:
 
@@ -56,20 +56,16 @@ The result looks like this:
 
 
 
-3. The first item of the list (setup) is the default target, but its need to suiteDir set to HPCC-Platform/testing/regress directory! 
--------------------------------------------------------------------------------------------------------------------------------------
-
-Actually there are two reasons for this:
-	1. To point ecl files of new regression suite located testing/regress/ecl/setup directory
-	2. To point matched key files.)
+3. To run the Regression Suite setup:
+-------------------------------------
 
 Command:
 
-        ./regress --suiteDir $(HPCC_INST_DIR)/HPCC-Platform/testing/regress run
+        ./regress run
 
 or
 
-        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing/regress run setup
+        ./regress run setup
 
 The result:
 
@@ -98,27 +94,44 @@ The result:
 
 	    
 
-4. To run Regression Suite on a selected cluster (e.g. Thor) the suiteDir should point to absolute path of HPCC-Platform/testing/ directory:
---------------------------------------------------------------------------------------------------------------------------------------------
+4. To run Regression Suite on a selected cluster (e.g. Thor):
+-------------------------------------------------------------
 Command:
 
-        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing/regress run thor
+        ./regress run thor
 
 
-The result is a list of test cases (actually 0) and their result. 
+The result is a list of test cases and their result. 
 
-The first couple of lines look like this:
+The first and last couple of lines look like this:
 
 |
 |        [Action] Suite: thor
-|        [Action] Queries: 0
+|        [Action] Queries: 253
 |        [Action] 
+|        [Action] 1. Test: groupglobal3b.ecl
+|        [Pass] Pass W20131029-165658
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131029-165658
+|        [Action] 2. Test: realround.ecl
+|        [Pass] Pass W20131029-165701
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131029-165701
+|        [Action] 3. Test: patmin.ecl
+|        .
+|        .
+|        .
+|        [Action] 252. Test: ds_map.ecl
+|        [Pass] Pass W20131029-171831
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131029-171831
+|        [Action] 253. Test: lookupjoin.ecl
+|        [Pass] Pass W20131029-171833
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131029-171833
+|        
 |         Results
 |         `-------------------------------------------------`
-|         Passing: 0
+|         Passing: 253
 |         Failure: 0
 |         `-------------------------------------------------`
-|         Log: /var/log/HPCCSystems/regression/thor.13-06-20-13-40.log
+|         Log: /var/log/HPCCSystems/regression/thor.13-10-29-16-56.log
 |         `-------------------------------------------------`
 |
 
@@ -126,13 +139,25 @@ The first couple of lines look like this:
 5. To run Regression Suite with selected test case on a selected cluster (e.g. Thor): 
 -------------------------------------------------------------------------------------
 
-The --suiteDir should point to absolute path of HPCC-Platform/testing/regress directory:
+(In this use case the default cluster is: thor)
 
 Command:
 
-        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing/regress query test_name cluster
+        ./regress query test_name [cluster]
 
 
-Actually the result is an error message "[Errno 2] No such file or directory: 'path'" related we have no test case in the Regression Suite.
+The format of result is same as above:
 
-**Important! Actually regression suite always compares the test case result with xml files stored in testing/regression/ecl/key independently from the cluster.**
+6. Tags used in testcases:
+--------------------------
+
+To exclude testcase from cluster or clusters, the tag is:
+//no<cluster_name>
+
+To skip (similar to exclusion)
+//skip type==<cluster> <reason>
+
+To build and publish testcase (e.g.:for libraries)
+//publish
+
+**Important! Actually regression suite compares the test case result with xml files stored in testing/regression/ecl/key independently from the cluster.**

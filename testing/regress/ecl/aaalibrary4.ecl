@@ -18,8 +18,9 @@
 //nohthor
 //nothor
 //nothorlcr
+//publish
 
-#option ('targetService', 'aaaLibrary2')
+#option ('targetService', 'aaaLibrary4')
 #option ('createServiceAlias', true)
 
 namesRecord := 
@@ -29,17 +30,17 @@ string10        forename;
 integer2        age := 25;
             END;
 
-FilterDatasetInterface(dataset(namesRecord) ds, string search, boolean onlyOldies) := interface
+FilterLibrary(dataset(namesRecord) ds, string search, boolean onlyOldies) := interface
     export dataset(namesRecord) matches;
     export dataset(namesRecord) others;
 end;
 
 
-filterDatasetLibrary(dataset(namesRecord) ds, string search, boolean onlyOldies) := module,library(FilterDatasetInterface)
+FilterLibrary4(dataset(namesRecord) ds, string search, boolean onlyOldies) := module,library(FilterLibrary)
     f := ds;
     shared g := if (onlyOldies, f(age >= 65), f);
     export matches := g(surname = search);
     export others := g(surname != search);
 end;
 
-build(filterDatasetLibrary);
+BUILD(FilterLibrary4);
