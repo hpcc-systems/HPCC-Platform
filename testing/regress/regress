@@ -38,7 +38,7 @@ if __name__ == "__main__":
                         nargs='?', default="info",
                         choices=['info', 'debug'])
     parser.add_argument('--suiteDir', '-s', help="suiteDir to use.",
-                        nargs='?')
+                        nargs='?', default=".")
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
     parser_list.add_argument('clusters', help="Print clusters from config.",
@@ -50,7 +50,9 @@ if __name__ == "__main__":
     parser_query.add_argument('query', help="Run a single query.",
                               nargs='?')
     parser_query.add_argument('cluster', help="Cluster for single query run.",
-                            nargs='?', default='setup')
+                            nargs='?', default='thor')
+    parser_query.add_argument('publish', help="Publish compiled query insted of run.",
+                            nargs='?', default='False')
     args = parser.parse_args()
 
     suiteDir = ""
@@ -70,11 +72,19 @@ if __name__ == "__main__":
             eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex,
                               regress.dir_r)
             if not eclfile.testSkip(args.cluster)['skip']:
-                report = regress.buildLogging(args.query)
-                regress.runQuery(args.cluster, eclfile, report)
-                Regression.displayReport(report)
+                if not eclfile.testExclusion(args.cluster):
+                    report = regress.buildLogging(args.query)
+                    if (args.publish == 'publish') or eclfile.testPublish():
+                        regress.runQuery(args.cluster, eclfile, report, 1, True)
+                    else:
+                        regress.runQuery(args.cluster, eclfile, report)
+                    Regression.displayReport(report)
+                else:
+                    print args.query+" excluded on "+args.cluster+" cluster."
+            else:
+                print args.query+" skipped on "+args.cluster+" cluster."
         elif 'cluster' in args:
-            regress.bootstrap()
+            regress.bootstrap(args.cluster)
             if 'setup' in args.cluster:
                 regress.runSuite('setup', regress.setup)
             else:

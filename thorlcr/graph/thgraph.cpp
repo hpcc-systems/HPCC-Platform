@@ -2847,6 +2847,27 @@ bool CActivityBase::fireException(IException *e)
     return container.queryOwner().fireException(te);
 }
 
+void CActivityBase::processAndThrowOwnedException(IException * _e)
+{
+    IThorException *e = QUERYINTERFACE(_e, IThorException);
+    if (e)
+    {
+        if (!e->queryActivityId())
+            setExceptionActivityInfo(container, e);
+    }
+    else
+    {
+        e = MakeActivityException(this, _e);
+        _e->Release();
+    }
+    if (!e->queryNotified())
+    {
+        fireException(e);
+        e->setNotified();
+    }
+    throw e;
+}
+
 
 IEngineRowAllocator * CActivityBase::queryRowAllocator()
 {

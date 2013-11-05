@@ -18,31 +18,63 @@
 '''
 
 import os
+import sys
+import time
+
 from ..util.ecl.file import ECLFile
 from ..common.error import Error
 
-
 class Suite:
-    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r):
+    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir):
         self.name = name
         self.suite = []
         self.dir_ec = dir_ec
         self.dir_a = dir_a
         self.dir_ex = dir_ex
         self.dir_r = dir_r
+        self.logDir = logDir
+        self.exclude = []
+        self.publish = []
+
         self.buildSuite()
+
+        if len(self.exclude):
+            curTime = time.strftime("%y-%m-%d-%H-%M")
+            logName = name + "-exclusion." + curTime + ".log"
+            self.logName = os.path.join(self.logDir, logName)
+            self.log = open(self.logName, "w");
+            for item in self.exclude:
+                self.log.write(item+"\n")
+            self.log.close();
+            
+
 
     def buildSuite(self):
         if not os.path.isdir(self.dir_ec):
             raise Error("2001", err="Not Found: %s" % self.dir_ec)
-        for files in os.listdir(self.dir_ec):
-            if files.endswith(".ecl"):
-                ecl = os.path.join(self.dir_ec, files)
+        allfiles = os.listdir(self.dir_ec)
+        allfiles.sort()
+        for file in allfiles:
+            if file.endswith(".ecl"):
+                ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
                                   self.dir_r)
-                if not eclfile.testSkip(self.name)['skip']:
-                    self.suite.append(eclfile)
-        self.suite.reverse()
+                result = eclfile.testSkip(self.name)
+                if not result['skip']:
+                    if not eclfile.testExclusion(self.name):
+                        self.suite.append(eclfile)
+                    else:
+                        self.exclude.append(format(file, "25")+" excluded")
+                else:
+                    self.exclude.append(format(file, "25")+" skipped (reason:"+result['reason']+")");
 
+                if eclfile.testPublish():
+                    self.publish.append(file)
+
+    def testPublish(self, ecl):
+        if ecl in self.publish:
+            return True
+        return False
+        
     def getSuite(self):
         return self.suite

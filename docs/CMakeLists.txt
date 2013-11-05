@@ -32,9 +32,9 @@ set (VERSION_DIR ${CMAKE_CURRENT_BINARY_DIR}/)
 
 
 if ( "${HPCC_MATURITY}" STREQUAL "release" )
-	set (DOC_VERSION "${DOC_VERSION}.${HPCC_SEQUENCE}")
+	set (DOC_VERSION "${DOC_VERSION}-${HPCC_SEQUENCE}")
 else()
-	set (DOC_VERSION "${DOC_VERSION}.${HPCC_SEQUENCE}${HPCC_MATURITY}")
+	set (DOC_VERSION "${DOC_VERSION}-${HPCC_MATURITY}${HPCC_SEQUENCE}")
 endif()
 
 # Build image file list to add to source watch.

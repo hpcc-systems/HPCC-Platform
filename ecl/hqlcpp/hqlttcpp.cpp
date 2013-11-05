@@ -4698,7 +4698,7 @@ static bool isCheckExistsAtleast(IHqlExpression * cond, IHqlExpression * ds, __i
     case no_ne:
         {
             IHqlExpression * condLhs = cond->queryChild(0);
-            if ((condLhs->getOperator() == no_count) && isZero(cond->queryChild(1)))
+            if ((condLhs->getOperator() == no_count) && isZero(cond->queryChild(1)) && (minMinElements == 1))
             {
                 if (aggregateMatchesDataset(condLhs->queryChild(0), ds))
                     return true;
@@ -4779,19 +4779,30 @@ IHqlExpression * OptimizeActivityTransformer::doCreateTransformed(IHqlExpression
             IHqlExpression * lhs = expr->queryChild(1);
             //convert if(exists(x)|count(x)>0, x, y) to nonempty(x, y);
             //must happen before the count(x)>n optimization below....
-            if (optimizeNonEmpty && expr->isDataset() && !canProcessInline(NULL, expr))
+            if (expr->isDataset())
             {
                 if (isCheckExistsAtleast(cond, lhs, 1, 1))
                 {
-                    HqlExprArray args;
-                    args.append(*transform(lhs));
-                    args.append(*transform(expr->queryChild(2)));
-                    OwnedHqlExpr ret = createDataset(no_nonempty, args);
-                    return expr->cloneAllAnnotations(ret);
+                    IHqlExpression * rhs = expr->queryChild(2);
+
+                    //always convert if(exists(x),x) to x regardless of x, or the optimizeNonEmpty option
+                    if (rhs->getOperator() == no_null)
+                        return transform(lhs);
+
+                    if (optimizeNonEmpty && !canProcessInline(NULL, expr))
+                    {
+                        HqlExprArray args;
+                        args.append(*transform(lhs));
+                        args.append(*transform(rhs));
+                        OwnedHqlExpr ret = createDataset(no_nonempty, args);
+                        return expr->cloneAllAnnotations(ret);
+                    }
                 }
             }
 
             __int64 selectIndex = 0;
+            //check for if (count(x) >= 10, x[10].value, <null>) and convert to x[10].value
+            //also valid for count(x) >= 1, but not count(x) >= 11
             IHqlExpression * ds = queryNullDsSelect(selectIndex, expr->queryChild(1), expr->queryChild(2));
             if (ds)
             {
