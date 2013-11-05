@@ -110,7 +110,17 @@ public:
 
         if (conf && conf->hasProp("jvmoptions"))
         {
-            optionStrings.appendList(conf->queryProp("jvmoptions"), ENVSEPSTR);
+            StringBuffer options;
+            conf->getProp("jvmoptions", options);
+            if (strstr(options.str(), "-Xrs") == NULL)
+            {
+                if (options.length() > 0)
+                {
+                    options.append(ENVSEPCHAR);
+                }
+                options.append("-Xrs");
+            }
+            optionStrings.appendList(options, ENVSEPSTR);
         }
 
         // These may be useful for debugging
@@ -243,7 +253,7 @@ public:
             rtlFail(0, message.str());
         }
     }
-    
+
     void ensureContextClassLoaderAvailable ()
     {
         // JVMs that are created by native threads have a context class loader set to the
@@ -255,7 +265,7 @@ public:
         //
         // if (Thread.currentThread().getContextClassLoader == NULL)
         //     Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
-        
+
         if (!contextClassLoaderChecked)
         {
             JNIenv->ExceptionClear();
@@ -270,7 +280,7 @@ public:
             checkException();
             jobject contextClassLoaderObj = JNIenv->CallObjectMethod(threadObj, getContextClassLoaderMethod);
             checkException();
-            
+
             if (!contextClassLoaderObj)
             {
                 // No context class loader, so use the system class loader (hopefully it's present)
@@ -280,7 +290,7 @@ public:
                 checkException();
                 jobject systemClassLoaderObj = JNIenv->CallStaticObjectMethod(javaLangClassLoaderClass, getSystemClassLoaderMethod);
                 checkException();
-                
+
                 if (systemClassLoaderObj)
                 {
                     jmethodID setContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "setContextClassLoader", "(Ljava/lang/ClassLoader;)V");
@@ -289,7 +299,7 @@ public:
                     checkException();
                 }
             }
-            
+
             contextClassLoaderChecked = true;
         }
     }
@@ -301,11 +311,11 @@ public:
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
             prevtext.clear();
-            
+
             // Make sure there is a context class loader available; we need to
             // do this before calling FindClass() on the class we need
             ensureContextClassLoaderAvailable();
-            
+
             // Name should be in the form class.method:signature
             const char *funcname = strchr(text, '.');
             if (!funcname)
