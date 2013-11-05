@@ -464,11 +464,12 @@ bool CThorExpandingRowArray::resizeRowTable(void **oldRows, memsize_t newCapacit
 {
     try
     {
+        unsigned spillPriority = roxiemem::RequiredPriority;
         if (oldRows)
-            rowManager->resizeRow(oldRows, copy?RoxieRowCapacity(oldRows):0, newCapacity, activity.queryContainer().queryId(), callback);
+            rowManager->resizeRow(oldRows, copy?RoxieRowCapacity(oldRows):0, newCapacity, activity.queryContainer().queryId(), spillPriority, callback);
         else
         {
-            void **newRows = (void **)rowManager->allocate(newCapacity, activity.queryContainer().queryId());
+            void **newRows = (void **)rowManager->allocate(newCapacity, activity.queryContainer().queryId(), spillPriority);
             callback.atomicUpdate(RoxieRowCapacity(newRows), newRows);
         }
     }
