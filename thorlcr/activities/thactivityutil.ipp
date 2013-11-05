@@ -54,23 +54,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
 #define CATCH_NEXTROWX_CATCH \
         catch (IException *_e) \
         { \
-            IThorException *e = QUERYINTERFACE(_e, IThorException); \
-            if (e) \
-            { \
-                if (!e->queryActivityId()) \
-                    setExceptionActivityInfo(container, e); \
-            } \
-            else \
-            {  \
-                e = MakeActivityException(this, _e); \
-                _e->Release(); \
-            }  \
-            if (!e->queryNotified()) \
-            { \
-                fireException(e); \
-                e->setNotified(); \
-            } \
-            throw e; \
+            this->processAndThrowOwnedException(_e); \
         }
 
 #define CATCH_NEXTROW() \
@@ -82,7 +66,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
         } \
         CATCH_NEXTROWX_CATCH \
     } \
-    const void *nextRowNoCatch()
+    inline const void *nextRowNoCatch() __attribute__((always_inline))
 
 void initMetaInfo(ThorDataLinkMetaInfo &info);
 class CThorDataLink : implements IThorDataLink
