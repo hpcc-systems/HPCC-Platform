@@ -1243,7 +1243,7 @@ public:
             }
             if(rc != LDAP_SUCCESS)
             {
-                if (strstr(ldap_errstring, " data "))//if extended error strings are available (they are not in windows clients)
+                if (ldap_errstring && *ldap_errstring && strstr(ldap_errstring, " data "))//if extended error strings are available (they are not in windows clients)
                 {
 #ifdef _DEBUG
                     DBGLOG("LDAPBIND ERR: RC=%d, - '%s'", rc, ldap_errstring);
