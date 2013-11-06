@@ -11518,6 +11518,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     bool joinToSelf = (op == no_selfjoin);
     bool allowAllToLookupConvert = !options.noAllToLookupConversion;
     IHqlExpression * atmostAttr = expr->queryAttribute(atmostAtom);
+    LinkedHqlExpr keepLimit = queryAttributeChild(expr, keepAtom, 0);
     //Delay removing ungroups until this point because they can be useful for reducing the size of spill files.
     if (isUngroup(dataset1) && !isLookupJoin)
         dataset1.set(dataset1->queryChild(0));
@@ -11602,6 +11603,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
                 }
             }
             isAllJoin = true;
+            //A non-many LOOKUP join can't really be converted to an ALL join.
+            //Possibly if KEEP(1) was added, no limits, no skipping in transform etc.
+            if (isLookupJoin && !isManyLookup)
+                isAllJoin = false;
             WARNING(HQLWRN_JoinConditionFoldedNowAll);
         }
         else
@@ -11729,7 +11734,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     buildInstancePrefix(instance);
     StringBuffer s,temp;
 
-    LinkedHqlExpr keepLimit = queryAttributeChild(expr, keepAtom, 0);
     DatasetReference lhsDsRef(dataset1, no_activetable, NULL);
     DatasetReference rhsDsRef(dataset2, no_activetable, NULL);
 
