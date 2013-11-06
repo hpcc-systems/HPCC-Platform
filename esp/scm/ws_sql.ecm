@@ -1,0 +1,215 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+EspInclude(ws_workunits);
+EspInclude(ws_topology);
+
+ESPStruct HPCCColumn
+{
+   string Name;
+   string Type;
+};
+
+ESPStruct HPCCTable
+{
+    string Name;
+    ESParray<ESPstruct HPCCColumn, Column> Columns;
+    string ECL;
+    string Format;
+    string ContentType;
+    string Description;
+    boolean IsKeyed;
+    //string IndexFilePosFieldName;
+    boolean IsSuper;
+    string CsvQuote;
+    string CsvSeparate;
+    string CsvTerminate;
+    string Group;
+    integer MaxRecordSize;
+    string Modified;
+    integer NumParts;
+    string Owner;
+};
+
+ESPstruct OutputDataset
+{
+    string name;
+    ESParray<ESPstruct HPCCColumn, OutParam> OutParams;
+};
+ESPstruct QuerySignature
+{
+    ESParray<ESPstruct HPCCColumn, InParam> InParams;
+    ESParray<ESPstruct OutputDataset, ResultSet> ResultSets;
+};
+
+ESPstruct PublishedQuery
+{
+    string Name;
+    string Id;
+    string Wuid;
+    boolean Suspended;
+    ESPstruct QuerySignature Signature;
+};
+
+ESPStruct QuerySetAliasMap
+{
+    string Id;
+    string Name;
+};
+
+ESPStruct HPCCQuerySet
+{
+    string Name;
+    ESParray<ESPstruct PublishedQuery, QuerySetQuery> QuerySetQueries;
+    ESParray<ESPstruct QuerySetAliasMap, QuerySetAlias> QuerySetAliases;
+};
+
+ESPStruct HPCCTargetCluster
+{
+    string Name;
+    ESParray<ESPstruct PublishedQuery, QuerySetQuery> QuerySetQueries;
+    ESParray<ESPstruct QuerySetAliasMap, QuerySetAlias> QuerySetAliases;
+};
+
+ESPrequest PrepareSQLRequest
+{
+    [rows(28), cols(80)] string SqlText;
+    //string UserName;
+    string TargetCluster; //where should this be compiled
+    string TargetQuerySet; //pertaining to Stored Proc calls
+    //boolean IncludeResults;
+    int Wait(-1);
+    //not so sure about this setting result limits in the prepare
+    //int resultLimit(0);
+};
+
+ESPresponse [exceptions_inline] PrepareSQLResponse
+{
+    ESPstruct ECLWorkunit Workunit;
+    string Result;
+};
+
+ESPrequest ExecuteSQLRequest
+{
+    [rows(28), cols(80)] string SqlText;
+    string UserName;
+    string TargetCluster; //where should this compile and execute
+    string TargetQuerySet; //pertaining to Stored Proc calls
+    boolean IncludeResults(true);
+    int Wait(-1);
+    int resultLimit(0);
+    int ResultWindowStart(0);
+    int ResultWindowCount(0);
+};
+
+ESPresponse [exceptions_inline] ExecuteSQLResponse
+{
+    //string WuId;
+    string ParentWuId;
+    string Result;
+    ESPstruct ECLWorkunit Workunit;
+    int resultLimit;
+    unsigned ResultWindowStart;
+    unsigned ResultWindowCount;
+};
+
+ESPrequest ExecutePreparedSQLRequest
+{
+    string WuId;
+    string UserName;
+    string TargetCluster; //where should this execute
+    string TargetQuerySet; //pertaining to Stored Proc calls
+    boolean IncludeResults(true);
+    int Wait(-1);
+    int resultLimit(0);
+    int ResultWindowStart(0);
+    int ResultWindowCount(0);
+    ESParray<ESPstruct NamedValue> Variables;
+};
+
+ESPresponse [exceptions_inline] ExecutePreparedSQLResponse
+{
+    string ParentWuId;
+    string Result;
+    int resultLimit;
+    unsigned ResultWindowStart;
+    unsigned ResultWindowCount;
+    ESPstruct ECLWorkunit Workunit;
+};
+
+ESPrequest GetDBSystemInfoRequest
+{
+};
+
+ESPresponse [exceptions_inline] GetDBSystemInfoResponse
+{
+    string Name;
+    string FullVersion;
+    string Major;
+    string Minor;
+    string Point;
+    string Project;
+    string Maturity;
+};
+
+ESPrequest GetDBMetaDataRequest
+{
+    boolean IncludeTables;
+    string  TableFilter;
+    boolean IncludeStoredProcedures;
+    string  QuerySet;
+    boolean IncludeTargetClusters;
+    string  ClusterType; //ALLCLUSTERS | ROOT
+};
+
+ESPresponse [exceptions_inline] GetDBMetaDataResponse
+{
+    ESParray<ESPstruct HPCCTable, Table> Tables;
+    integer TableCount;
+    ESParray<ESPstruct HPCCQuerySet, QuerySet> QuerySets;
+    ESParray<ESPstruct TpCluster> TpClusters;
+};
+
+ESPrequest GetResultsRequest
+{
+    string  WuId;
+    boolean SuppressXmlSchema;
+    int     ResultWindowStart(0);
+    int     ResultWindowCount(0);
+};
+
+ESPresponse [exceptions_inline] GetResultsResponse
+{
+    string Result;
+    unsigned ResultWindowStart;
+    unsigned ResultWindowCount;
+    ESPstruct ECLWorkunit Workunit;
+};
+
+ESPservice [version("1.0"), default_client_version("0.10"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_sql
+{
+    ESPmethod [] PrepareSQL(PrepareSQLRequest, PrepareSQLResponse);
+    ESPmethod [] ExecuteSQL(ExecuteSQLRequest, ExecuteSQLResponse);
+    ESPmethod [] ExecutePreparedSQL(ExecutePreparedSQLRequest, ExecutePreparedSQLResponse);
+    ESPmethod [] GetResults(GetResultsRequest, GetResultsResponse);
+    ESPmethod [] GetDBSystemInfo(GetDBSystemInfoRequest, GetDBSystemInfoResponse);
+    ESPmethod [] GetDBMetaData(GetDBMetaDataRequest, GetDBMetaDataResponse);
+};
+
+SCMexportdef(ws_sql);
+
+SCMapi(ws_sql) IClientws_sql *createws_sqlClient();
