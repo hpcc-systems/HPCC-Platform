@@ -69,7 +69,7 @@ public:
     RGlobalState()
     {
         const char *args[] = {"R", "--slave" };
-        R = new RInside(2, args, true, false, false);
+        R = new RInside(2, args, true, false, true);  // Setting interactive mode=true prevents R syntax errors from terminating the process
         // The R code for checking stack limits assumes that all calls are on the same thread
         // as the original context was created on - this will not always be true in ECL (and hardly
         // ever true in Roxie
