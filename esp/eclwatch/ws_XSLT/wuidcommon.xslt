@@ -788,7 +788,7 @@
                           <xsl:attribute name="disabled">disabled</xsl:attribute>
                         </xsl:if>
                       </input>
-              <input type="button" name="ZAPReport" style="width: 120px" value="Z.A.P. Report" class="sbutton" onclick="return popupBugReportForm()"/>
+              <input type="button" name="ZAPReport" style="width: 120px" value="Z.A.P. Report" class="sbutton" onclick="return popupZAPInfoForm()"/>
             </td>
           </tr>
           <tr>
