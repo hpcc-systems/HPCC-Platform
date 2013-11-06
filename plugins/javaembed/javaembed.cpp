@@ -110,18 +110,11 @@ public:
 
         if (conf && conf->hasProp("jvmoptions"))
         {
-            StringBuffer options;
-            conf->getProp("jvmoptions", options);
-            if (strstr(options.str(), "-Xrs") == NULL)
-            {
-                if (options.length() > 0)
-                {
-                    options.append(ENVSEPCHAR);
-                }
-                options.append("-Xrs");
-            }
-            optionStrings.appendList(options, ENVSEPSTR);
+             optionStrings.appendList(conf->queryProp("jvmoptions"), ENVSEPSTR);
         }
+
+        // Options we know we always want set
+        optionStrings.append("-Xrs");
 
         // These may be useful for debugging
         // optionStrings.append("-Xcheck:jni");
