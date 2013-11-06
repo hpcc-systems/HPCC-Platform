@@ -1581,7 +1581,7 @@ public:
     IHqlExpression * buildGetLocalResult(BuildCtx & ctx, IHqlExpression * expr);
 
     IHqlExpression * queryOptimizedExists(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * dataset);
-    void doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * dataset, IHqlExpression * doneFirstVar);
+    void doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * dataset, IHqlExpression * doneFirstVar, bool multiPath);
 
     void validateExprScope(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * expr, const char * opName, const char * argName);
 

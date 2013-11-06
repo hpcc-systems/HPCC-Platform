@@ -473,6 +473,9 @@ EXPORT RemoveSuperFile(varstring lsuperfn, varstring lfn, boolean del=false, boo
 EXPORT ClearSuperFile(varstring lsuperfn, boolean del=false) :=
     lib_fileservices.FileServices.ClearSuperFile(lsuperfn, del);
 
+EXPORT RemoveOwnedSubFiles(varstring lsuperfn, boolean del=false) :=
+    lib_fileservices.FileServices.RemoveOwnedSubFiles(lsuperfn, del);
+
 EXPORT SwapSuperFile(varstring lsuperfn1, varstring lsuperfn2) :=
     lib_fileservices.FileServices.SwapSuperFile(lsuperfn1, lsuperfn2);
 

@@ -3946,7 +3946,7 @@ void CWsWorkunitsEx::addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &c
 }
 
 
-bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest &req, IEspWUReportBugResponse &resp)
+bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp)
 {
     try
     {
@@ -3963,7 +3963,7 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
         StringBuffer userName;
         if (context.queryUser())
             userName.append(context.queryUser()->getName());
-        zipFile.append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".zip");
+        zipFile.append("ZAPReport_").append(req.getWUID()).append('_').append(userName.str()).append(".zip");
         SCMStringBuffer temp;
         StringBuffer sb;
         sb.append("Workunit:     ").append(cwu->getWuid(temp)).append("\r\n");
@@ -4013,7 +4013,7 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
 #endif
             StringBuffer fs;
             //add report file to ZIP
-            fs.append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".txt");
+            fs.append("ZAPReport_").append(req.getWUID()).append('_').append(userName.str()).append(".txt");
             zipper->addContentToZIP(sb.length(), (void*)sb.str(), (char*)fs.str(), false);
 
             //add ECL query/archive to zip
@@ -4024,7 +4024,7 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
                 query->getQueryText(temp);
                 if (temp.length())
                 {
-                    fs.clear().append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".");
+                    fs.clear().append("ZAPReport_").append(req.getWUID()).append('_').append(userName.str()).append(".");
                     fs.append(isArchiveQuery(temp.str()) ? "archive" : "ecl");
                     ecl.append(temp.str());
                     zipper->addContentToZIP(ecl.length(), (void*)ecl.str(), (char*)fs.str(), true);
@@ -4042,7 +4042,7 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
             //Add Workunit XML file
             MemoryBuffer wuXmlMB;
             winfo.getWorkunitXml(NULL, wuXmlMB);
-            fs.clear().append("bugReport_").append(req.getWUID()).append('_').append(userName.str()).append(".xml");
+            fs.clear().append("ZAPReport_").append(req.getWUID()).append('_').append(userName.str()).append(".xml");
             zipper->addContentToZIP(wuXmlMB.length(), (void*)wuXmlMB.toByteArray(), (char*)fs.str(), true);
 
             //Write out ZIP file
@@ -4077,12 +4077,12 @@ bool CWsWorkunitsEx::onWUReportBug(IEspContext &context, IEspWUReportBugRequest 
     return true;
 }
 
-bool CWsWorkunitsEx::onWUGetBugReportInfo(IEspContext &context, IEspWUGetBugReportInfoRequest &req, IEspWUGetBugReportInfoResponse &resp)
+bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoRequest &req, IEspWUGetZAPInfoResponse &resp)
 {
     try
     {
         StringBuffer wuid = req.getWUID();
-        checkAndTrimWorkunit("WUGetBugReportInfo", wuid);
+        checkAndTrimWorkunit("WUGetZAPInfo", wuid);
 
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
         Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);

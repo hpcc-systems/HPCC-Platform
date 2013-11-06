@@ -1153,6 +1153,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
         root->setPropInt("@numsubfiles",subnum);
     i = 0;
     byte fixstate = 0;
+    bool outOfSequence = false;
     loop {
         bool err = false;
         IPropertyTree *sub = root->queryPropTree(path.clear().appendf("SubFile[%d]",i+1).str());
@@ -1170,6 +1171,13 @@ static void checksuperfile(const char *lfn,bool fix=false)
                     fixed = true;
                     i--;
                 }
+            }
+            else if (pn != i+1) {
+                if (!outOfSequence)
+                    ERRLOG("SuperFile %s: corrupt, subfile file part @num values out of sequence, starting at part: %d", lname.get(), pn);
+                if (fix && (outOfSequence || doFix()))
+                    sub->setPropInt("@num", i+1);
+                outOfSequence = true;
             }
         }
         else
