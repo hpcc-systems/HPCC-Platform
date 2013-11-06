@@ -115,6 +115,7 @@ public:
     StringBuffer &  replaceString(const char* oldStr, const char* newStr);
     char *          reserve(size32_t size);
     char *          reserveTruncate(size32_t size);
+    StringBuffer &  stripChar(char oldChar);
     void            swapWith(StringBuffer &other);
     void setBuffer(size32_t buffLen, char * newBuff, size32_t strLen);
 
