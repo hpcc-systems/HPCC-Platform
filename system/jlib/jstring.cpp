@@ -843,9 +843,9 @@ StringBuffer & StringBuffer::stripChar(char oldChar)
 {
     if (buffer)
     {
-        int delta = 0;
-        int l = curLen;
-        for (int i = 0; i < l; i++)
+        size32_t delta = 0;
+        size32_t l = curLen;
+        for (size32_t i = 0; i < l; i++)
         {
             if (buffer[i] == oldChar)
                 delta++;
