@@ -15,12 +15,14 @@
 #    limitations under the License.
 ################################################################################
 
+trap "exit" SIGHUP SIGINT SIGTERM
+
 originalDir=$PWD
 target=thor
 server=.
 user=me
 password=
-userflags=
+userflags=-fallowVariableRoxieFilenames
 queries=
 eclccoutput=( `eclcc --version` )
 version=${eclccoutput[1]}
