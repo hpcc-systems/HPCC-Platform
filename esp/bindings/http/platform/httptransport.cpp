@@ -1848,7 +1848,9 @@ bool CHttpRequest::readContentToBuffer(MemoryBuffer& buffer, __int64& bytesNotRe
 
 bool CHttpRequest::readUploadFileName(CMimeMultiPart* mimemultipart, StringBuffer& fileName, MemoryBuffer& contentBuffer, __int64& bytesNotRead)
 {
-    if (contentBuffer.length())
+    //Make sure that contentBuffer contains all of the mime headers for a file. The readUploadFileName() retrieves
+    //the file name from those headers and moves a data pointer to the end of those headers.
+    if ((bytesNotRead < 1) || (contentBuffer.length() > 512))
         mimemultipart->readUploadFileName(contentBuffer, fileName);
 
     while((fileName.length() < 1) && (bytesNotRead > 0))
