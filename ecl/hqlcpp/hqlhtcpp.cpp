@@ -13237,7 +13237,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
             doBuildAggregateFirstFunc(instance->startctx, expr);
             doBuildAggregateNextFunc(instance->startctx, expr);
 
-            if (targetThor() && !isGrouped(dataset) && !expr->hasAttribute(localAtom))
+            if (targetThor() && !isGroupedActivity(expr) && !expr->hasAttribute(localAtom))
                 doBuildAggregateMergeFunc(instance->startctx, expr, requiresOrderedMerge);
         }
     }
