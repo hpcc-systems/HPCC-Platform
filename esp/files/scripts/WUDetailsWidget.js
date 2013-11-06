@@ -183,28 +183,28 @@ define([
 
         onZapReport: function (event) {
             var context = this;
-            WsWorkunits.WUGetBugReportInfo({
+            WsWorkunits.WUGetZAPInfo({
                 request: {
                     WUID: this.wu.Wuid
                 }
             }).then(function (response) {
                 registry.byId(context.id + "ZapDialog").show();
-                if (lang.exists("WUGetBugReportInfoResponse", response)) {
-                    context.updateInput("ZapWUID", null, response.WUGetBugReportInfoResponse.WUID);
-                    context.updateInput("BuildVersion", null, response.WUGetBugReportInfoResponse.BuildVersion);
-                    context.updateInput("ESPIPAddress", null, response.WUGetBugReportInfoResponse.ESPIPAddress);
-                    context.updateInput("ThorIPAddress", null, response.WUGetBugReportInfoResponse.ThorIPAddress);
+                if (lang.exists("WUGetZAPInfoResponse", response)) {
+                    context.updateInput("ZapWUID", null, response.WUGetZAPInfoResponse.WUID);
+                    context.updateInput("BuildVersion", null, response.WUGetZAPInfoResponse.BuildVersion);
+                    context.updateInput("ESPIPAddress", null, response.WUGetZAPInfoResponse.ESPIPAddress);
+                    context.updateInput("ThorIPAddress", null, response.WUGetZAPInfoResponse.ThorIPAddress);
                     
-                    context.buildVersion = response.WUGetBugReportInfoResponse.BuildVersion;
-                    context.espIPAddress = response.WUGetBugReportInfoResponse.ESPIPAddress;
-                    context.thorIPAddress = response.WUGetBugReportInfoResponse.ThorIPAddress;
+                    context.buildVersion = response.WUGetZAPInfoResponse.BuildVersion;
+                    context.espIPAddress = response.WUGetZAPInfoResponse.ESPIPAddress;
+                    context.thorIPAddress = response.WUGetZAPInfoResponse.ThorIPAddress;
                 }                
             });
         },
 
         onZapSubmit: function (event) {
             var frame = iframe.create("ZapDownload" + uniqueID++);
-            var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUReportBug?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion);
+            var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUCreateZAPInfo?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion);
             iframe.setSrc(frame, url, true);
             registry.byId(this.id + "ZapDialog").hide();
         },

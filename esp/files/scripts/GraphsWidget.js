@@ -117,7 +117,16 @@ define([
                     },
                     Label: { label: "Label", sortable: true },
                     Complete: { label: "Completed", width: 72, sortable: true },
-                    Time: { label: "Time", width: 72, sortable: true },
+                    Time: {
+                        label: "Time", width: 90, sortable: true,
+                        formatter: function (totalSeconds, idx) {
+                            var hours = Math.floor(totalSeconds / 3600);
+                            totalSeconds %= 3600;
+                            var minutes = Math.floor(totalSeconds / 60);
+                            var seconds = (totalSeconds % 60).toFixed(2);
+                            return (hours < 10 ? "0" : "") + hours + ":" + (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+                        }
+                    },
                     Type: { label: "Type", width: 72, sortable: true }
                 }
             }, domID);

@@ -880,8 +880,9 @@ public:
         int ret=-1;
         if (mb.remaining()>=sizeof(ret)) {
             mb.read(ret);
-            int e = 0;
-            if (mb.remaining()>=sizeof(e)) {
+            if (mb.remaining()>=sizeof(int)) {
+                int e = 0;
+                mb.read(e);
                 if (err)
                     *err = e;
                 else if (e) 
