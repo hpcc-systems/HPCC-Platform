@@ -1607,7 +1607,7 @@ public:
     void buildDictionaryHashClass(IHqlExpression *record, StringBuffer &lookupHelperName);
     void buildDictionaryHashMember(BuildCtx & ctx, IHqlExpression *dictionary, const char * memberName);
     void buildHashClass(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, const DatasetReference & dataset);
-    void buildHashOfExprsClass(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset, bool compareToSelf);
+    void buildHashOfExprsClass(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset, bool compareToSelf, bool compareSameTypes);
     void buildInstancePrefix(ActivityInstance * instance);
     void buildInstanceSuffix(ActivityInstance * instance);
     void buildIterateTransformFunction(BuildCtx & ctx, IHqlExpression * boundDataset, IHqlExpression * transform, IHqlExpression * counter, IHqlExpression * selSeq);

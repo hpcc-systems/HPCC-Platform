@@ -72,6 +72,7 @@ extern IAtom * _noReplicate_Atom;
 extern IAtom * noSetAtom;
 extern IAtom * _noVirtual_Atom;
 extern IAtom * numResultsAtom;
+extern IAtom * optimizeCastAtom;
 extern IAtom * packingAtom;
 extern IAtom * parentHelpersAtom;
 extern IAtom * pathAtom;

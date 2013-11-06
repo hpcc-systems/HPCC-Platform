@@ -5324,9 +5324,9 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
 }
 
 
-void HqlCppTranslator::buildHashOfExprsClass(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset, bool compareToSelf)
+void HqlCppTranslator::buildHashOfExprsClass(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset, bool compareToSelf, bool compareSameTypes)
 {
-    IHqlExpression * attr = compareToSelf ? createAttribute(internalAtom) : NULL;
+    IHqlExpression * attr = compareToSelf ? createAttribute(internalAtom) : compareSameTypes ? createAttribute(optimizeCastAtom) : NULL;
     OwnedHqlExpr hash = createValue(no_hash32, LINK(unsignedType), LINK(cond), attr);
 
     buildHashClass(ctx, name, hash, dataset);
@@ -5376,8 +5376,8 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBu
         OwnedHqlExpr keyedSourceList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedSourceFields);
         OwnedHqlExpr keyedDictList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedDictFields);
 
-        buildHashOfExprsClass(classctx, "HashLookup", keyedSourceList, sourceRef, false);
-        buildHashOfExprsClass(classctx, "Hash", keyedDictList, dictRef, false);
+        buildHashOfExprsClass(classctx, "HashLookup", keyedSourceList, sourceRef, false, false);
+        buildHashOfExprsClass(classctx, "Hash", keyedDictList, dictRef, false, false);
 
         OwnedHqlExpr seq = createDummySelectorSequence();
         OwnedHqlExpr leftSelect = createSelector(no_left, source, seq);
@@ -11879,13 +11879,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isHashJoin||isLookupJoin|isSmartJoin)
     {
         OwnedHqlExpr leftList = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftReq());
-        buildHashOfExprsClass(instance->nestedctx, "HashLeft", leftList, lhsDsRef, false);
+        buildHashOfExprsClass(instance->nestedctx, "HashLeft", leftList, lhsDsRef, false, false);
 
         bool canReuseLeftHash = recordTypesMatch(dataset1, dataset2) && arraysMatch(joinInfo.queryLeftReq(), joinInfo.queryRightReq());
         if (!canReuseLeftHash)
         {
             OwnedHqlExpr rightList = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryRightReq());
-            buildHashOfExprsClass(instance->nestedctx, "HashRight", rightList, rhsDsRef, false);
+            buildHashOfExprsClass(instance->nestedctx, "HashRight", rightList, rhsDsRef, false, false);
         }
         else
             instance->nestedctx.addQuoted("virtual IHash * queryHashRight() { return &HashLeft; }");
@@ -13260,8 +13260,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
         OwnedHqlExpr allAggregateFields = createValueSafe(no_sortlist, makeSortListType(NULL), aggregateFields);
         buildCompareMember(instance->nestedctx, "CompareElements", allAggregateFields, outRef);     // compare transformed elements
         doCompareLeftRight(instance->nestedctx, "CompareRowElement", inputRef, outRef, recordFields, aggregateFields);
-        buildHashOfExprsClass(instance->nestedctx, "Hash", allRecordFields, inputRef, true);
-        buildHashOfExprsClass(instance->nestedctx, "HashElement", allAggregateFields, outRef, true);
+        buildHashOfExprsClass(instance->nestedctx, "Hash", allRecordFields, inputRef, false, true);
+        buildHashOfExprsClass(instance->nestedctx, "HashElement", allAggregateFields, outRef, false, true);
     }
     if (passThrough)
     {
@@ -13650,7 +13650,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
 
         OwnedHqlExpr order = createValueSafe(no_sortlist, makeSortListType(NULL), info.equalities);
         buildCompareMember(instance->nestedctx, "Compare", order, DatasetReference(dataset));
-        buildHashOfExprsClass(instance->nestedctx, "Hash", order, DatasetReference(dataset), true);
+        buildHashOfExprsClass(instance->nestedctx, "Hash", order, DatasetReference(dataset), true, true);
 
         HqlExprArray fields, selects;
         ForEachItemIn(idx, info.equalities)
@@ -13704,7 +13704,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
         if (reuseCompare)
             instance->nestedctx.addQuoted("virtual IHash * queryKeyHash() { return &Hash; }");
         else
-            buildHashOfExprsClass(instance->nestedctx, "KeyHash", keyOrder, DatasetReference(keyDataset, no_activetable, NULL), true);
+            buildHashOfExprsClass(instance->nestedctx, "KeyHash", keyOrder, DatasetReference(keyDataset, no_activetable, NULL), true, true);
 
         //virtual ICompare * queryRowKeyCompare()=0; // lhs is a row, rhs is a key
         if (!reuseCompare)
