@@ -110,7 +110,7 @@ public:
 
         if (conf && conf->hasProp("jvmoptions"))
         {
-             optionStrings.appendList(conf->queryProp("jvmoptions"), ENVSEPSTR);
+            optionStrings.appendList(conf->queryProp("jvmoptions"), ENVSEPSTR);
         }
 
         // Options we know we always want set
