@@ -1904,6 +1904,7 @@ mapEnums workunitSortFields[] =
    { WUSFpriority, "@priorityClass" },
    { WUSFprotected, "@protected" },
    { WUSFwuid, "@" },
+   { WUSFecl, "Query/Text" },
    { WUSFfileread, "FilesRead/File/@name" },
    { WUSFroxiecluster, "RoxieQueryInfo/@roxieClusterName" },
    { WUSFbatchloginid, "Application/Dispatcher/FTPUserID" },
@@ -2389,6 +2390,8 @@ public:
                     namefilterhi.set(fv);
                 else if (subfmt==WUSFwildwuid)
                     namefilter.set(fv);
+                else if (subfmt==WUSFapplication)
+                    query.append("[").append(fv).append("]");
                 else if (!fv || !*fv)
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
                 else {
