@@ -1412,12 +1412,12 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
     string QueryId;
 };
 
-ESPrequest [nil_remove] WUGetBugReportInfoRequest
+ESPrequest [nil_remove] WUGetZAPInfoRequest
 {
     string WUID;
 };
 
-ESPresponse [exceptions_inline] WUGetBugReportInfoResponse
+ESPresponse [exceptions_inline] WUGetZAPInfoResponse
 {
     string WUID;
     string ESPIPAddress;
@@ -1426,7 +1426,7 @@ ESPresponse [exceptions_inline] WUGetBugReportInfoResponse
     string Archive;
 };
 
-ESPrequest [nil_remove] WUReportBugRequest
+ESPrequest [nil_remove] WUCreateZAPInfoRequest
 {
     string WUID;
     string ESPIPAddress;
@@ -1437,7 +1437,7 @@ ESPrequest [nil_remove] WUReportBugRequest
     string WhereSlow;
 };
 
-ESPresponse [exceptions_inline] WUReportBugResponse
+ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 {
     [http_content("application/octet-stream")] binary thefile;
 };
@@ -1512,8 +1512,8 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
     ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
-    ESPmethod WUReportBug(WUReportBugRequest, WUReportBugResponse);
-    ESPmethod [resp_xsl_default("/esp/xslt/WUBugReportForm.xslt")] WUGetBugReportInfo(WUGetBugReportInfoRequest, WUGetBugReportInfoResponse);
+    ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
 };
 
 

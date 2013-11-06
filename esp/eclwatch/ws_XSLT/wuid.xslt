@@ -738,18 +738,18 @@
 </soap:Envelope>
         */
 
-                    function popupBugReportForm()
+                    function popupZAPInfoForm()
                     {
-                        mywindow = window.open ("/WsWorkunits/WUGetBugReportInfo?WUID="+wid,
+                        mywindow = window.open ("/WsWorkunits/WUGetZAPInfo?WUID="+wid,
                             "mywindow", "location=0,status=1,scrollbars=1,resizable=1,width=800,height=760");
                         if (mywindow.opener == null)
                             mywindow.opener = window;
                         mywindow.focus();
                         return false;
                     }
-                    function createBugReport(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo)
+                    function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo)
                     {
-                        var href = "/WsWorkunits/WUReportBug?WUID=" + wuid;
+                        var href = "/WsWorkunits/WUCreateZAPInfo?WUID=" + wuid;
                         href += "&ESPIPAddress=" + espIP;
                         if (thorIP != '')
                             href += "&ThorIPAddress=" + thorIP;

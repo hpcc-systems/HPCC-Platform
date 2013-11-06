@@ -788,7 +788,7 @@
                           <xsl:attribute name="disabled">disabled</xsl:attribute>
                         </xsl:if>
                       </input>
-              <input type="button" name="ZAPReport" style="width: 120px" value="Z.A.P. Report" class="sbutton" onclick="return popupBugReportForm()"/>
+              <input type="button" name="ZAPReport" style="width: 120px" value="Z.A.P. Report" class="sbutton" onclick="return popupZAPInfoForm()"/>
             </td>
           </tr>
           <tr>
@@ -1292,7 +1292,7 @@
           </a>
         </td>
         <td>
-          <a href="javascript:void(0)" onclick="getOptions('eclagent.log', '/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Name={Name}&amp;Type=EclAgentLog', false); return false;">
+          <a href="javascript:void(0)" onclick="getOptions('eclagent.log', '/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Name={Name}&amp;Process={PID}&amp;Type=EclAgentLog', false); return false;">
             download
           </a>
         </td>

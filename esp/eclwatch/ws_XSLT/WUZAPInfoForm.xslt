@@ -18,7 +18,7 @@
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:output method="html"/>
-    <xsl:template match="/WUGetBugReportInfoResponse">
+    <xsl:template match="/WUGetZAPInfoResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -66,7 +66,7 @@
                                 var desc = document.getElementById("ProblemDescription").value;
                                 var history = document.getElementById("WhatChanged").value;
                                 var timing = document.getElementById("WhereSlow").value;
-                                opener.createBugReport(wuid, espIP, thorIP, buildVersion, desc, history, timing);
+                                opener.createZAPInfo(wuid, espIP, thorIP, buildVersion, desc, history, timing);
                             }
                             window.close();
                         }
@@ -86,7 +86,7 @@
                 </script>
             </head>
             <body class="yui-skin-sam" onload="nof5();onLoad()">
-                <h3 style="text-align: center;">Report</h3>
+                <h3 style="text-align: center;">Zipped Analysis Package</h3>
                 <p/>
                 <form action="" method="POST">
                     <input type="hidden" id="WUID" name="WUID" value="{WUID}"/>

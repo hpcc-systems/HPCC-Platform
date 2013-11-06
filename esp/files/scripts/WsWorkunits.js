@@ -65,8 +65,8 @@ define([
             return ESPRequest.send("WsWorkunits", "WUQueryDetails", params);
         },
 
-        WUGetBugReportInfo: function (params) {
-            return ESPRequest.send("WsWorkunits", "WUGetBugReportInfo", params);
+        WUGetZAPInfo: function (params) {
+            return ESPRequest.send("WsWorkunits", "WUGetZAPInfo", params);
         },
 
         WUQuerysetAliasAction: function (selection, action) {
