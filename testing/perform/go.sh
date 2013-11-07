@@ -74,6 +74,8 @@ fi
 now=`date -u +%Y_%m_%d`
 
 output=
+version="${version//\//_}"
+
 if [[ -z "$queries" ]]; then
     prefix="history/$target.$now.$version"
     output="$prefix.perf"

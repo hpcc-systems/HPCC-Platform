@@ -2,7 +2,7 @@ import perform.system, perform.format, perform.files;
 #option ('unlimitedResources', true); // generate all the sorts into a single graph
 
 s(unsigned delta) := FUNCTION
-    ds := files.generateSimple(delta);
+    ds := files.generateSimpleScaled(delta, 4);
 
     RETURN NOFOLD(distribute(ds, HASH32(id3)));
 END;
