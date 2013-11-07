@@ -7,7 +7,11 @@ class ExpandCheck:
     @staticmethod
     def dir_exists(path, require=False):
         logging.debug("dir_exists(path: %s, require: %d", path, require)
-        path = os.path.abspath(path)
+        if '~' in path:
+            path = os.path.expanduser(path)
+        else:
+            path = os.path.abspath(path)
+        logging.debug("path: %s", path)
         if not os.path.exists(path):
             if require:
                 logging.debug("Path: %s not found and it is required!" ,path)
