@@ -1475,11 +1475,8 @@ protected:
             }
             else
             {
-                // 0 rows, no overflow and candidate for allMemRows
-                if ((rc_allDiskOrAllMem == diskMemMix) || // must supply allMemRows, only here if no spilling (see above)
-                    (NULL!=allMemRows && (rc_allMem == diskMemMix)) ||
-                    (NULL!=allMemRows && (rc_mixed == diskMemMix) && 0 == overflowCount) // if allMemRows given, only if no spilling
-                   )
+                // If 0 rows, no overflow, don't return stream, except for rc_allDisk which will never fill allMemRows
+                if (allMemRows && (0 == overflowCount) && (diskMemMix != rc_allDisk))
                     return NULL;
             }
         }
