@@ -47,11 +47,11 @@ if __name__ == "__main__":
     parser_run.add_argument('cluster', help="Run the cluster suite.",
                             nargs='?', default='setup')
     parser_query = subparsers.add_parser('query', help='query help')
-    parser_query.add_argument('query', help="Run a single query.",
-                              nargs='?')
+    parser_query.add_argument('query', help="Run a single ECL query.",
+                              nargs='?', metavar="ECL query")
     parser_query.add_argument('cluster', help="Cluster for single query run.",
-                            nargs='?', default='thor')
-    parser_query.add_argument('publish', help="Publish compiled query insted of run.",
+                            nargs='?', default='thor', metavar="target cluster")
+    parser_query.add_argument('publish', help="Publish compiled query instead of run.",
                             nargs='?', default='False')
     args = parser.parse_args()
 
@@ -68,6 +68,10 @@ if __name__ == "__main__":
             for i in Clusters:
                 print i
         if 'query' in args:
+            if not args.query:
+                print "\nMissing ECL query file!\n"
+                parser_query.print_help()
+                exit()
             ecl = os.path.join(regress.dir_ec, args.query)
             eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex,
                               regress.dir_r)
