@@ -207,7 +207,6 @@ public:
     {
         rows.swap(inRows);
         useCompression = false;
-        activity.queryJob().queryRowManager()->addRowBuffer(this);
     }
     ~CSpillableStreamBase()
     {
@@ -292,6 +291,7 @@ public:
     CSharedSpillableRowSet(CActivityBase &_activity, CThorSpillableRowArray &inRows, IRowInterfaces *_rowIf, bool _preserveNulls)
         : CSpillableStreamBase(_activity, inRows, _rowIf, _preserveNulls)
     {
+        activity.queryJob().queryRowManager()->addRowBuffer(this);
     }
     IRowStream *createRowStream()
     {
@@ -329,6 +329,7 @@ public:
         // a small amount of rows to read from swappable rows
         roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
         readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId()));
+        activity.queryJob().queryRowManager()->addRowBuffer(this);
     }
     ~CSpillableStream()
     {
