@@ -122,7 +122,10 @@ define([
                             selectedItems.push(item);
                         }
                     }
-                    this.treeMap.set("selectedItems", selectedItems);
+                    try {  //  Throws an exception in IE 8
+                        this.treeMap.set("selectedItems", selectedItems);
+                    } catch (e) {
+                    }
                 }
             },
 
@@ -135,7 +138,10 @@ define([
                             selectedItems.push(item);
                         }
                     }
-                    this.treeMap.set("selectedItems", selectedItems);
+                    try {  //  Throws an exception in IE 8
+                        this.treeMap.set("selectedItems", selectedItems);
+                    } catch (e) {
+                    }
                 }
             },
 
