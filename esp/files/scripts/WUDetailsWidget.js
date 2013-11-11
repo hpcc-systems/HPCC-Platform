@@ -114,6 +114,7 @@ define([
             this.publishForm = registry.byId(this.id + "PublishForm");
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
+            this.zapDialog = registry.byId(this.id + "ZapDialog");
         },
 
         startup: function (args) {
@@ -135,12 +136,17 @@ define([
             this.variablesGrid.startup();
         },
 
+        destroy: function (args) {
+            this.zapDialog.destroyRecursive();
+            this.inherited(arguments);
+        },
+
         getTitle: function () {
             return "ECL Workunit Details";
         },
 
         _onCancelDialog: function (){
-            registry.byId(this.id + "ZapDialog").hide();
+            this.zapDialog.hide();
         }, 
 
         //  Hitched actions  ---
@@ -188,7 +194,7 @@ define([
                     WUID: this.wu.Wuid
                 }
             }).then(function (response) {
-                registry.byId(context.id + "ZapDialog").show();
+                context.zapDialog.show();
                 if (lang.exists("WUGetZAPInfoResponse", response)) {
                     context.updateInput("ZapWUID", null, response.WUGetZAPInfoResponse.WUID);
                     context.updateInput("BuildVersion", null, response.WUGetZAPInfoResponse.BuildVersion);
@@ -206,7 +212,7 @@ define([
             var frame = iframe.create("ZapDownload" + uniqueID++);
             var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUCreateZAPInfo?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion);
             iframe.setSrc(frame, url, true);
-            registry.byId(this.id + "ZapDialog").hide();
+            this.zapDialog.hide();
         },
 
         //  Implementation  ---
