@@ -46,8 +46,19 @@ require([
             dot: "",
             svg: "",
 
+            isIE11: false,
+            isIE: false,
+
             //  Known control properties  ---
             DOT_META_ATTR: "DOT_META_ATTR",
+
+            constructor: function() {
+                if (has("ie")) {
+                    this.isIE = true;
+                } else if (window.ActiveXObject !== undefined) {
+                    this.isIE11 = true;
+                }
+            },
 
             _onClickRefresh: function () {
                 this.setMessage("Performing Layout...");
@@ -288,7 +299,7 @@ require([
             },
 
             isPluginInstalled: function () {
-                if (has("ie")) {
+                if (this.isIE || this.isIE11) {
                     try {
                         var o = new ActiveXObject("HPCCSystems.HPCCSystemsGraphViewControl.1");
                         o = null;
@@ -309,7 +320,7 @@ require([
                 if (this._plugin == null) {
                     if (this._isPluginInstalled) {
                         var pluginID = this.id + "Plugin";
-                        if (has("ie")) {
+                        if (this.isIE || this.isIE11) {
                             this.graphContentPane.domNode.innerHTML = '<object type="application/x-hpccsystemsgraphviewcontrol" '
                                                     + 'id="' + pluginID + '" '
                                                     + 'name="' + pluginID + '" '
@@ -605,8 +616,10 @@ require([
 
             registerEvent: function (evt, func) {
                 if (this._plugin) {
-                    if (this._plugin.attachEvent) {
-                        return this._plugin.attachEvent("on" + evt, func);
+                    if (this.isIE11) {
+                        this._plugin["on" + evt] = func;
+                    } else if (this.isIE) {
+                        return this._plugin.attachEvent("on" + evt, func, false);
                     } else {
                         return this._plugin.addEventListener(evt, func, false);
                     }
