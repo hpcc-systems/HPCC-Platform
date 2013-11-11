@@ -36,6 +36,7 @@ define([
         service: "WsWorkunits",
         action: "WUListQueries",
         responseQualifier: "WUListQueriesResponse.QuerysetQueries.QuerySetQuery",
+        responseTotalQualifier: "WUListQueriesResponse.NumberOfQueries",
         idProperty: "Id",
         startProperty: "PageStartFrom",
         countProperty: "NumberOfQueries",

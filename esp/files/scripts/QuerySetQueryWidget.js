@@ -121,6 +121,7 @@ define([
             });
             this.initQuerySetGrid();
             this.selectChild(this.queriesTab, true);
+            this.refreshGrid();
         },
 
         initTab: function () {
@@ -228,7 +229,7 @@ define([
                 this.menuFilterCluster.set("disabled", true);
                 this.menuFilterCluster.set("label", "Cluster: " + "N/A");
             }*/
-            
+
             if (item.Suspend == "") {
                 this.menuFilterSuspend.set("disabled", true);
                 this.menuFilterSuspend.set("label", "Suspend: " + "N/A");
@@ -251,10 +252,15 @@ define([
         initQuerySetGrid: function (params) {
             var context = this;
             var store = ESPQuery.CreateQueryStore();
-            this.querySetGrid = declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+            this.querySetGrid = declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper, Pagination,])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,
+                rowsPerPage: 50,
+                pagingLinks: 1,
+                pagingTextBox: true,
+                firstLastArrows: true,
+                pageSizeOptions: [25, 50, 100],
                 columns: {
                     col1: selector({
                         width: 27,
@@ -264,7 +270,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = "<img src='../files/img/suspended.png'>";
                         },
-                        width: 18,
+                        width: 20,
                         sortable: false,
                         formatter: function (suspended) {
                             if (suspended == true) {
@@ -277,7 +283,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = "<img src='../files/img/active.png'>";
                         },
-                        width: 18,
+                        width: 20,
                         sortable: false,
                         formatter: function (activated) {
                             if (activated == true) {
@@ -290,7 +296,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = "<img src='../files/img/error.png'>";
                         },
-                        width: 18,
+                        width: 20,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
@@ -418,7 +424,7 @@ define([
                 });
             }
         },
-        
+
         refreshGrid: function (args) {
             this.querySetGrid.set("query", this.getFilter());
         },
