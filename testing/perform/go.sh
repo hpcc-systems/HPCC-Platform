@@ -24,12 +24,13 @@ user=me
 password=
 userflags=-fallowVariableRoxieFilenames
 queries=
+repeats=1
 eclccoutput=( `eclcc --version` )
 version=${eclccoutput[1]}
 
 #process command line options to override the various settings.
 if [[ $* != '' ]]; then
-    while getopts "f:p:s:q:t:u:v:x" opt; do
+    while getopts "f:p:r:s:q:t:u:v:x" opt; do
         case $opt in
             f)
                 userflags="$userflags -f$OPTARG"
@@ -39,6 +40,9 @@ if [[ $* != '' ]]; then
                 ;;
             q)
                 queries="$queries $OPTARG"
+                ;;
+            r)
+                repeats=$OPTARG
                 ;;
             s)
                 server=$OPTARG
@@ -99,13 +103,20 @@ do
        cat deploy.err
        echo
     else
-        /usr/bin/time -o runtime.log -f %e ecl run "$wuid" --username=$user --password=$password --server=$server > results.log
-        timetaken=`cat runtime.log`
-        echo $timetaken seconds
+        for (( iter=1; iter<=$repeats; iter++ ))
+        do
+            /usr/bin/time -o runtime.log -f %e ecl run "$wuid" --username=$user --password=$password --server=$server > results.log
+            timetaken=`cat runtime.log`
+            if [[ $iter != 1 ]]; then
+                echo -n ", "
+            fi
+            echo -n "$timetaken"
 
-        if [[ -n "$output" ]]; then
-           echo \"$now\",\"$version\",\"$f\",$timetaken >> $output
-        fi
+            if [[ -n "$output" ]]; then
+               echo \"$now\",\"$version\",\"$f\",$timetaken >> $output
+            fi
+        done
+        echo
     fi
 
     rm deploy.log deploy.err results.log deploytime.log runtime.log 2> /dev/null
