@@ -678,10 +678,19 @@ public:
                 continue;
             if (iter.matchOption(optPMID, ECLOPT_PMID) || iter.matchOption(optPMID, ECLOPT_PMID_S))
                 continue;
-            if (iter.matchOption(optQueryId, ECLOPT_QUERYID))
-                continue;
             if (iter.matchFlag(optGlobalScope, ECLOPT_GLOBAL_SCOPE))
                 continue;
+            StringAttr queryIds;
+            if (iter.matchOption(queryIds, ECLOPT_QUERYID))
+            {
+                optQueryIds.append(queryIds.get());
+                continue;
+            }
+            if (iter.matchOption(queryIds, ECLOPT_QUERYIDS))
+            {
+                optQueryIds.appendList(queryIds.get(), ",");
+                continue;
+            }
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -733,7 +742,7 @@ public:
         request->setActive(optValidateActive);
         request->setPMID(optPMID);
         request->setTarget(optTarget);
-        request->setQueryIdToVerify(optQueryId);
+        request->setQueriesToVerify(optQueryIds);
         request->setCheckDFS(optCheckDFS);
         request->setGlobalScope(optGlobalScope);
 
@@ -811,16 +820,18 @@ public:
                     "   --active                    Validate the active packagemap\n"
                     "   --check-dfs                 Verify that subfiles exist in DFS\n"
                     "   -pm, --pmid                 Identifier of packagemap to validate\n"
+                    "   --queryid                   Query to verify against packagemap, parameter can be used more than once\n"
+                    "   --queryids                  Comma separated list of queries to verify against packagemap\n"
                     "   --global-scope              The specified packagemap can be shared across multiple targets\n",
                     stdout);
 
         EclCmdCommon::usage();
     }
 private:
+    StringArray optQueryIds;
     StringAttr optFileName;
     StringAttr optTarget;
     StringAttr optPMID;
-    StringAttr optQueryId;
     bool optValidateActive;
     bool optCheckDFS;
     bool optGlobalScope;

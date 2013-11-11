@@ -127,6 +127,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PMID "--pmid"
 #define ECLOPT_PMID_S "-pm"
 #define ECLOPT_QUERYID "--queryid"
+#define ECLOPT_QUERYIDS "--queryids"
 
 
 #define ECLOPT_DALIIP "--daliip"

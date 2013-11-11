@@ -49,7 +49,7 @@ interface IHpccPackageMap : extends IInterface
     virtual const IHpccPackage *matchPackage(const char *name) const = 0;
     virtual const char *queryPackageId() const = 0;
     virtual bool isActive() const = 0;
-    virtual bool validate(const char *queryid, StringArray &warn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const = 0;
+    virtual bool validate(StringArray &queriesToVerify, StringArray &warn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const = 0;
     virtual void gatherFileMappingForQuery(const char *queryname, IPropertyTree *fileInfo) const = 0;
 };
 

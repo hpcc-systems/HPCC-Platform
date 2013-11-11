@@ -157,6 +157,7 @@ ESPrequest ValidatePackageRequest
     bool Active;
     string PMID;
     string QueryIdToVerify;
+    ESParray<string> QueriesToVerify;
     bool CheckDFS;
     bool GlobalScope(0);
 };
