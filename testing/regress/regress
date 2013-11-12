@@ -22,16 +22,18 @@
 import argparse
 import logging
 import os
+import atexit
 
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
 
 if __name__ == "__main__":
+    atexit.register(logging.shutdown)
     prog = "regress"
     description = 'HPCC Platform Regression suite'
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('--version', '-v', action='version',
-                        version='%(prog)s 0.0.1')
+                        version='%(prog)s 0.0.2')
     parser.add_argument('--config', help="Config file to use.",
                         nargs='?', default="regress.json")
     parser.add_argument('--loglevel', help="Set the log level.",
@@ -46,13 +48,15 @@ if __name__ == "__main__":
     parser_run = subparsers.add_parser('run', help='run help')
     parser_run.add_argument('cluster', help="Run the cluster suite.",
                             nargs='?', default='setup')
+    parser_run.add_argument('--pq', help="Parallel query.",
+                            action='store_true')
     parser_query = subparsers.add_parser('query', help='query help')
-    parser_query.add_argument('query', help="Run a single ECL query.",
+    parser_query.add_argument('query', help="Name of a single ECL query (mandatory).",
                               nargs='?', metavar="ECL query")
-    parser_query.add_argument('cluster', help="Cluster for single query run.",
-                            nargs='?', default='thor', metavar="target cluster")
-    parser_query.add_argument('publish', help="Publish compiled query instead of run.",
-                            nargs='?', default='False')
+    parser_query.add_argument('cluster', help="Cluster for single query run. If cluster = 'all' then run single query on all clusters.",
+                            nargs='?', default='thor', metavar="target cluster | all")
+    parser_query.add_argument('--publish', help="Publish compiled query instead of run.",
+                            action='store_true')
     args = parser.parse_args()
 
     suiteDir = ""
@@ -75,24 +79,43 @@ if __name__ == "__main__":
             ecl = os.path.join(regress.dir_ec, args.query)
             eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex,
                               regress.dir_r)
-            if not eclfile.testSkip(args.cluster)['skip']:
-                if not eclfile.testExclusion(args.cluster):
-                    report = regress.buildLogging(args.query)
-                    if (args.publish == 'publish') or eclfile.testPublish():
-                        regress.runQuery(args.cluster, eclfile, report, 1, True)
-                    else:
-                        regress.runQuery(args.cluster, eclfile, report)
-                    Regression.displayReport(report)
-                else:
-                    print args.query+" excluded on "+args.cluster+" cluster."
+            targetClusters = []
+            if 'all' in args.cluster:
+                for cluster in regress.config.Clusters:
+                    targetClusters.append(str(cluster))
             else:
-                print args.query+" skipped on "+args.cluster+" cluster."
+                targetClusters.append(args.cluster)
+            for cluster in targetClusters:
+                logging.warn("Target: %s" % cluster)
+                logging.warn("Queries: %s" % 1)
+                try:
+                    if not eclfile.testSkip(cluster)['skip']:
+                        if not eclfile.testExclusion(cluster):
+                            report = regress.buildLogging(args.query)
+                            if args.publish or eclfile.testPublish():
+                                regress.runQuery(cluster, eclfile, report, 1, True)
+                            else:
+                                regress.runQuery(cluster, eclfile, report)
+                            Regression.displayReport(report)
+                        else:
+                            #print args.query+" excluded on "+cluster+" cluster."
+                            logging.warn("%s. %s excluded on this cluster." % (1, args.query))
+                    else:
+                        #print args.query+" skipped on "+cluster+" cluster."
+                        logging.warn("%s. %s skipped on this cluster." % (1, args.query))
+                except IOError:
+                    #print "Query "+args.query+ " does not exist!"
+                    logging.error("%s. Query %s does not exist!" % (1,  args.query))
+                    exit()
         elif 'cluster' in args:
             regress.bootstrap(args.cluster)
             if 'setup' in args.cluster:
                 regress.runSuite('setup', regress.setup)
             else:
-                regress.runSuite(args.cluster, regress.suites[args.cluster])
+                if  args.pq :
+                    regress.runSuiteP(args.cluster, regress.suites[args.cluster])
+                else:
+                    regress.runSuite(args.cluster, regress.suites[args.cluster])
     except Exception as e:
         logging.critical(e)
     except KeyboardInterrupt:

@@ -34,6 +34,7 @@ class ECLFile:
     dir_a = None
     diff = ''
     wuid = None
+    elapsTime = 0
 
     def __init__(self, ecl, dir_a, dir_ex, dir_r):
         self.dir_ec = os.path.dirname(ecl)
@@ -112,7 +113,7 @@ class ECLFile:
         return False
 
     def testPublish(self):
-        # Standard strign has a problem with unicode characters
+        # Standard string has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//publish'
         logging.debug("testPublish (ecl:", self.ecl,", tag: ", tag, ")")
@@ -129,8 +130,10 @@ class ECLFile:
             logging.debug("EXP: " + self.getExpected())
             logging.debug("REC: " + self.getResults())
             if not os.path.isfile(self.getExpected()):
+                self.diff += "KEY FILE NOT FOUND. " + self.getExpected()
                 raise IOError("KEY FILE NOT FOUND. " + self.getExpected())
             if not os.path.isfile(self.getResults()):
+                self.diff += "RESULT FILE NOT FOUND. " + self.getResults()
                 raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
             expected = open(self.getExpected(), 'r').readlines()
             recieved = open(self.getResults(), 'r').readlines()
@@ -146,3 +149,6 @@ class ECLFile:
         if not self.diff:
             return True
         return False
+
+    def setElapsTime(self,  time):
+        self.elapsTime = time

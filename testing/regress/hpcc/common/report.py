@@ -47,7 +47,7 @@ class Report:
         self.report = _dict(report)
         self.name = name
 
-    def display(self, log=None):
+    def display(self, log=None,  elapsTime = 0):
         reportStr = "\n"
         reportStr += "Results\n"
         reportStr += "-------------------------------------------------\n"
@@ -61,6 +61,13 @@ class Report:
             reportStr += "-------------------------------------------------\n"
         if log:
             reportStr += "Log: %s\n" % str(log)
+            reportStr += "-------------------------------------------------\n"
+        if elapsTime:
+            reportStr += "Elapsed time: %d sec " % (elapsTime)
+            hours = elapsTime / 3600
+            elapsTime = elapsTime % 3600
+            mins = elapsTime / 60
+            reportStr += " (%02d:%02d:%02d) \n" % (hours,  mins,  elapsTime % 60)
             reportStr += "-------------------------------------------------\n"
         logging.warn(reportStr)
 
