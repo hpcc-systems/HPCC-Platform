@@ -5895,7 +5895,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         Owned<IWorkflowItem> wf = addWorkflowToWorkunit(schedWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(getValue), info.queryCluster());
         setWorkflowSchedule(wf, sched);
         workflowOut->append(*createWorkflowItem(getValue, schedWfid, no_none));
-        getValue.setown(createValue(no_null, makeVoidType()));
+        getValue.setown(createNullExpr(expr->queryType()));
     }
     else
         queryBodyExtra(getValue.get())->addDependency(wfid);
