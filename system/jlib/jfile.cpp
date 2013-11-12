@@ -36,6 +36,8 @@
 #include <sys/vfs.h>
 #include <sys/mman.h>
 #include <sys/sendfile.h>
+#include "build-config.h"
+#include "jprop.hpp"
 #endif
 
 #include "time.h"
@@ -77,6 +79,13 @@
 #define NULLFILE INVALID_HANDLE_VALUE
 #else
 #define NULLFILE -1
+#endif
+
+enum FlushEnabled { FLUSH_INIT = 0, FLUSH_DISABLED, FLUSH_ENABLED };
+#if defined(__linux__)
+static FlushEnabled flush_enabled = FLUSH_INIT;
+#else
+static FlushEnabled flush_enabled = FLUSH_DISABLED;
 #endif
 
 static IFile *createIFileByHook(const RemoteFilename & filename);
@@ -240,6 +249,18 @@ CFile::CFile(const char * _filename)
 {
     filename.set(_filename);
     flags = ((unsigned)IFSHread)|((S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)<<16);
+    flush_pgcache = false;
+    fd = NULLFILE;
+#if defined (__linux__)
+    if (flush_enabled == FLUSH_INIT)
+    {
+        Owned<IProperties> conf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
+        if (conf->getPropBool("pgcache_flush", true))
+            flush_enabled = FLUSH_ENABLED;
+        else
+            flush_enabled = FLUSH_DISABLED;
+    }
+#endif
 }
 
 void CFile::setCreateFlags(unsigned cflags)
@@ -546,8 +567,11 @@ static bool setShareLock(int fd,IFSHmode share)
 
 #endif
 
-HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
+HANDLE CFile::openHandle(IFOmode _mode, IFSHmode sharemode, bool async, int stdh)
 {
+    if (flush_enabled == FLUSH_ENABLED)
+        flush_pgcache = static_cast<bool>(_mode & 0x80);
+    IFOmode mode = static_cast<IFOmode>(_mode & 0x7f);
     HANDLE handle = NULLFILE;
 #ifdef _WIN32
     if (stdh>=0) {
@@ -645,7 +669,13 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
         handle = NULLFILE;
         throw MakeErrnoException(EISDIR, "CFile::open %s", filename.get());
     }
-    
+
+    fd = handle;
+# if 0
+    if (flush_pgcache)
+        posix_fadvise(handle, 0, 0, POSIX_FADV_RANDOM);
+# endif
+
 #endif
     return handle;
 }
@@ -656,6 +686,33 @@ IFileIO * CFile::open(IFOmode mode)
     return openShared(mode,(IFSHmode)(flags&(IFSHfull|IFSHread)));
 }
 
+void CFile::flush_fbuffers(flushMethod flshmeth, offset_t offset, size32_t len)
+{
+    if (fd == NULLFILE)
+        return;
+
+#if defined(__linux__)
+    // DBGLOG("flush_fbuffers(%d %d %llu %d)", fd, flshmeth, offset, len);
+    if (flshmeth == FLUSH_ASYNC)
+    {
+        sync_file_range(fd, offset, len, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE);
+    }
+    else if (flshmeth == FLUSH_WAIT)
+    {
+        sync_file_range(fd, offset, len, SYNC_FILE_RANGE_WAIT_AFTER);
+        posix_fadvise(fd, offset, len, POSIX_FADV_DONTNEED);
+    }
+    else if (flshmeth == WRITE_WAIT)
+    {
+        sync_file_range(fd, offset, len, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE | SYNC_FILE_RANGE_WAIT_AFTER);
+        posix_fadvise(fd, offset, len, POSIX_FADV_DONTNEED);
+    }
+    else if (flshmeth == DONT_NEED)
+    {
+        posix_fadvise(fd, offset, len, POSIX_FADV_DONTNEED);
+    }
+#endif
+}
 
 IFileAsyncIO * CFile::openAsync(IFOmode mode)
 {
@@ -1696,6 +1753,10 @@ public:
 
 IFileIO * CFile::openShared(IFOmode mode,IFSHmode share)
 {
+    bool _flush_pgcache = false;
+    if (flush_enabled == FLUSH_ENABLED)
+        _flush_pgcache = static_cast<unsigned>(mode & 0x80);
+    IFOmode _mode = static_cast<IFOmode>(mode & 0x7f);
     int stdh = stdIoHandle(filename);
     HANDLE handle = openHandle(mode,share,false, stdh);
     if (handle==NULLFILE)
@@ -1705,7 +1766,7 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share)
 #endif
     if (stdh>=0)
         return new CSequentialFileIO(handle,share);
-    return new CFileIO(handle,share);
+    return new CFileIO(handle,share,_flush_pgcache,(_mode != IFOread));
 }
 
 
@@ -1754,6 +1815,18 @@ CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
     throwOnError = false;
     file = handle;
     sharemode = _sharemode;
+    flush_pgcache = false;
+    syncdata = false;
+}
+
+CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode, bool _flush_pgcache, bool _syncdata)
+{
+    assertex(handle != NULLFILE);
+    throwOnError = false;
+    file = handle;
+    sharemode = _sharemode;
+    flush_pgcache = false;
+    syncdata = false;
 }
 
 CFileIO::~CFileIO()
@@ -1851,6 +1924,21 @@ CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
     throwOnError = false;
     file = handle;
     sharemode = _sharemode;
+    flush_pgcache = false;
+    syncdata = false;
+}
+
+CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode, bool _flush_pgcache, bool _syncdata)
+{
+    assertex(handle != NULLFILE);
+    throwOnError = false;
+    file = handle;
+    sharemode = _sharemode;
+    if (flush_enabled == FLUSH_ENABLED)
+        flush_pgcache = _flush_pgcache;
+    else
+        flush_pgcache = false;
+    syncdata = _syncdata;
 }
 
 CFileIO::~CFileIO()
@@ -1869,6 +1957,12 @@ CFileIO::~CFileIO()
 void CFileIO::close()
 {
     if (file != NULLFILE) {
+        if (flush_pgcache)
+        {
+            if (syncdata)
+                sync_file_range(file, 0, 0, SYNC_FILE_RANGE_WRITE);
+            posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+        }
         if (::close(file) < 0)
             throw MakeErrnoException(errno,"CFileIO::close");
         file=NULLFILE;
@@ -1884,6 +1978,9 @@ void CFileIO::flush()
     if (fdatasync(file) != 0)
 #endif
         throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::flush");
+
+    if (flush_pgcache)
+        posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
 }
 
 
@@ -2769,7 +2866,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         }
     }
 #endif
-    OwnedIFileIO sourceIO = source->open(IFOread);
+    OwnedIFileIO sourceIO = source->open(IFOreadFlsh);
     if (!sourceIO)
         throw MakeStringException(-1, "copyFile: source '%s' not found", source->queryFilename());
 
@@ -2793,9 +2890,33 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
     }
     else
         dest = target;
-    targetIO.setown(dest->open(IFOcreate));
+    targetIO.setown(dest->open(IFOcreateFlsh));
     if (!targetIO)
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", dest->queryFilename());
+
+#if defined (__linux__)
+    CFile *dcfile = QUERYINTERFACE(dest,CFile);
+    CFile *scfile = QUERYINTERFACE(source,CFile);
+
+    size32_t nbytes = 0;
+    const size32_t fcache_max = 64*1024*1024;
+    bool flush_dst = false;
+    bool flush_src = false;
+    offset_t doffset = 0;
+    offset_t doffset0 = 0;
+    offset_t soffset = 0;
+    offset_t soffset0 = 0;
+    bool scfirst = false;
+
+    if (!copyintercept)
+    {
+        if ( (dcfile) && (dcfile->flush_pgcache) )
+            flush_dst = true;
+        if ( (scfile) && (scfile->flush_pgcache) )
+            flush_src = true;
+    }
+#endif
+
     MemoryAttr mb;
     void * buffer = copyintercept?NULL:mb.allocate(buffersize);
     
@@ -2814,16 +2935,66 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
                 if (got == 0)
                     break;
             }
-            else {
+            else
+            {
                 got = sourceIO->read(offset, buffersize, buffer);
                 if (got == 0)
                     break;
                 targetIO->write(offset, got, buffer);
+
+#if defined (__linux__)
+                if (flush_dst || flush_src)
+                {
+                    nbytes += got;
+                    if (nbytes >= fcache_max)
+                    {
+                        if (flush_dst)
+                        {
+                            if (doffset == 0)
+                                dcfile->flush_fbuffers(FLUSH_ASYNC, doffset, nbytes);
+                            else
+                            {
+                                dcfile->flush_fbuffers(FLUSH_WAIT, doffset0, nbytes);
+                                doffset0 += nbytes;
+                                dcfile->flush_fbuffers(FLUSH_ASYNC, doffset, nbytes);
+                            }
+                            doffset += nbytes;
+                        }
+                        if (flush_src)
+                        {
+                            if (soffset > 0)
+                            {
+                                scfile->flush_fbuffers(DONT_NEED, soffset0, nbytes);
+                                soffset0 += nbytes;
+                            }
+                            soffset += nbytes;
+                        }
+                        nbytes = 0;
+                    }
+                }
+#endif
+
             }
             offset += got;
             if (progress && progress->onProgress(offset, total) != CFPcontinue)
                 break;
         }
+
+#if defined (__linux__)
+        if (nbytes > 0)
+        {
+            if (flush_dst)
+            {
+                if (doffset0 == 0)
+                    dcfile->flush_fbuffers(WRITE_WAIT, doffset0, 0);
+                else
+                    dcfile->flush_fbuffers(FLUSH_WAIT, doffset0, 0);
+            }
+            if (flush_src)
+                scfile->flush_fbuffers(DONT_NEED, soffset0, 0);
+        }
+#endif
+
         targetIO.clear();
         if (usetmp) {
             StringAttr tail(pathTail(target->queryFilename()));
