@@ -64,6 +64,7 @@ public:
 
     virtual void init(IPropertyTree *_cfg, const char *_process, const char *_service);
 
+    bool onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoResponse &resp);
     bool onPrepareSQL(IEspContext &context, IEspPrepareSQLRequest &req, IEspPrepareSQLResponse &resp);
     bool onExecuteSQL(IEspContext &context, IEspExecuteSQLRequest &req, IEspExecuteSQLResponse &resp);
     bool getWUResult(IEspContext &context, const char * wuid, StringBuffer &resp, unsigned start, unsigned count);

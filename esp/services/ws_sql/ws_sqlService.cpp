@@ -34,6 +34,27 @@ void Cws_sqlEx::init(IPropertyTree *_cfg, const char *_process, const char *_ser
     m_envFactory.setown( getEnvironmentFactory() );
 }
 
+bool Cws_sqlEx::onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoResponse &resp)
+{
+    StringBuffer respMsg;
+    ISecUser* user = context.queryUser();
+    if(user != NULL)
+    {
+        const char* name = user->getName();
+        if (name && *name)
+            respMsg.appendf("%s: ", name);
+    }
+
+    const char* reqMsg = req.getRequest();
+    if (reqMsg && *reqMsg)
+        respMsg.append(reqMsg);
+    else
+        respMsg.append("??");
+
+    resp.setResponse(respMsg.str());
+    return true;
+}
+
 bool Cws_sqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &req, IEspGetDBMetaDataResponse &resp)
 {
     if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Read, false))

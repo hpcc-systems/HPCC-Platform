@@ -200,6 +200,16 @@ ESPresponse [exceptions_inline] GetResultsResponse
     ESPstruct ECLWorkunit Workunit;
 };
 
+ESPrequest EchoRequest
+{
+    string Request;
+};
+
+ESPresponse EchoResponse
+{
+    string Response;
+};
+
 ESPservice [version("1.0"), default_client_version("0.10"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_sql
 {
     ESPmethod [] PrepareSQL(PrepareSQLRequest, PrepareSQLResponse);
@@ -208,6 +218,7 @@ ESPservice [version("1.0"), default_client_version("0.10"), exceptions_inline(".
     ESPmethod [] GetResults(GetResultsRequest, GetResultsResponse);
     ESPmethod [] GetDBSystemInfo(GetDBSystemInfoRequest, GetDBSystemInfoResponse);
     ESPmethod [] GetDBMetaData(GetDBMetaDataRequest, GetDBMetaDataResponse);
+    ESPmethod Echo(EchoRequest, EchoResponse);
 };
 
 SCMexportdef(ws_sql);
