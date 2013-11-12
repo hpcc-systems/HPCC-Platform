@@ -986,6 +986,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKsideeffect:
         case TAKsimpleaction:
         case TAKsorted:
+        case TAKdistributed:
             break;
 
         case TAKnwayjoin:

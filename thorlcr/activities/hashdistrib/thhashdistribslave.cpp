@@ -3718,6 +3718,72 @@ public:
 #pragma warning(pop)
 #endif
 
+
+class CHashDistributeSlavedActivity : public CSlaveActivity, public CThorDataLink
+{
+    IHash *ihash;
+    IThorDataLink *input;
+    unsigned myNode, nodes;
+
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CHashDistributeSlavedActivity(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
+    {
+        IHThorHashDistributeArg *distribargs = (IHThorHashDistributeArg *)queryHelper();
+        ihash = distribargs->queryHash();
+        input = NULL;
+        myNode = container.queryJob().queryMyRank()-1;
+        nodes = container.queryJob().querySlaves();
+    }
+    virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
+    {
+        appendOutputLinked(this);
+    }
+    virtual void start()
+    {
+        ActivityTimer s(totalCycles, timeActivities, NULL);
+        input = inputs.item(0);
+        input->start();
+        dataLinkStart();
+    }
+    virtual void stop()
+    {
+        if (input)
+            input->stop();
+        dataLinkStop();
+    }
+    CATCH_NEXTROW()
+    {
+        ActivityTimer t(totalCycles, timeActivities, NULL);
+        OwnedConstThorRow row = input->ungroupedNextRow();
+        if (!row)
+            return NULL;
+        if (myNode != (ihash->hash(row.get()) % nodes))
+        {
+            StringBuffer errMsg("Not distributed");
+            CommonXmlWriter xmlWrite(0);
+            if (baseHelper->queryOutputMeta()->hasXML())
+            {
+                errMsg.append(" - detected at row: ");
+                baseHelper->queryOutputMeta()->toXML((byte *) row.get(), xmlWrite);
+                errMsg.append(xmlWrite.str());
+            }
+            throw MakeActivityException(this, 0, "%s", errMsg.str());
+        }
+        dataLinkIncrement();
+        return row.getClear();
+    }
+    virtual bool isGrouped() { return inputs.item(0)->isGrouped(); }
+    virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
+    {
+        initMetaInfo(info);
+        if (input)
+            input->getMetaInfo(info);
+    }
+};
+
+
 //===========================================================================
 
 
@@ -3769,5 +3835,10 @@ CActivityBase *createReDistributeSlave(CGraphElementBase *container)
 {
     ActPrintLog(container, "REDISTRIBUTE: createReDistributeSlave");
     return new ReDistributeSlaveActivity(container);
+}
+
+CActivityBase *createHashDistributedSlave(CGraphElementBase *container)
+{
+    return new CHashDistributeSlavedActivity(container);
 }
 
