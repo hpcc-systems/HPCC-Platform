@@ -1569,7 +1569,7 @@ OUTPUT(ValidWords)
           Roxie<parameter></parameter></title>
 
           <para><orderedlist>
-              <listitem>
+                  <listitem>                                                
                 <?dbfo keep-together="always"?>
 
                 <para>RT-CLICK on the <emphasis role="bold">MyFIles</emphasis>
@@ -2293,6 +2293,20 @@ OUTPUT(ValidWords)
 
           <answer>
             <para>This VM is designed to utilize a single core.</para>
+          </answer>
+        </qandaentry>
+
+        <qandaentry>
+          <question>
+            <para>The VM Fails to start on Mac OSx after upgrading to OSx
+            10.9 Mavericks. How can I correct this?</para>
+          </question>
+
+          <answer>
+            <para>To correct this issue run the following command:
+            <programlisting>sudo launchctl load 
+            /Library/LaunchDaemons/org.virtualbox.startup.plist</programlisting>
+            </para>
           </answer>
         </qandaentry>
 
