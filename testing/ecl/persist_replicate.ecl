@@ -39,7 +39,7 @@ small_rec trans(rec r) := TRANSFORM
 END;
 
 // In Thor, this created a file that could not be replicated
-ds2 := PROJECT(ds, trans(LEFT)) : PERSIST('~temp::PersistReplicate');
+ds2 := PROJECT(ds, trans(LEFT)) : PERSIST('~temp::PersistReplicate', SINGLE);
 OUTPUT(ds2);
 
 // Now, replicate
