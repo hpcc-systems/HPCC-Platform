@@ -96,6 +96,9 @@ define([
         buildVersion: null,
         espIPAddress: null,
         thorIPAddress: null,
+        zapDescription: null,
+        warnHistory: null,
+        warnTimings: null,
 
         prevState: "",
 
@@ -112,6 +115,9 @@ define([
             this.playgroundWidget = registry.byId(this.id + "_Playground");
             this.xmlWidget = registry.byId(this.id + "_XML");
             this.publishForm = registry.byId(this.id + "PublishForm");
+            this.zapDescription = registry.byId(this.id + "ZapDescription");
+            this.warnHistory = registry.byId(this.id + "WarnHistory");
+            this.warnTimings = registry.byId(this.id + "WarnTimings");
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
             this.zapDialog = registry.byId(this.id + "ZapDialog");
@@ -210,7 +216,7 @@ define([
 
         onZapSubmit: function (event) {
             var frame = iframe.create("ZapDownload" + uniqueID++);
-            var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUCreateZAPInfo?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion);
+            var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUCreateZAPInfo?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion) + "&ProblemDescription=" + encodeURIComponent(this.zapDescription.value) + "&WhatChanged=" + encodeURIComponent(this.warnHistory.value) + "&WhereSlow=" + encodeURIComponent(this.warnTimings.value);
             iframe.setSrc(frame, url, true);
             this.zapDialog.hide();
         },
