@@ -236,6 +236,7 @@ static class Python27GlobalState
 public:
     Python27GlobalState()
     {
+        pythonLibrary = (HINSTANCE) 0;
 #ifndef _WIN32
         // If Py_Initialize is called when stdin is set to a directory, it calls exit()
         // We don't want that to happen - just disable Python support in such situations
@@ -244,6 +245,33 @@ public:
         {
             initialized = false;
             return;
+        }
+#endif
+#ifndef _WIN32
+        // We need to ensure all symbols in the python2.6 so are loaded - due to bugs in some distro's python installations
+        FILE *diskfp = fopen("/proc/self/maps", "r");
+        if (diskfp)
+        {
+            char ln[_MAX_PATH];
+            while (fgets(ln, sizeof(ln), diskfp))
+            {
+                if (strstr(ln, "libpython2"))
+                {
+                    const char *fullName = strchr(ln, '/');
+                    if (fullName)
+                    {
+                        char * lf = (char *) strchr(fullName, '\n');
+                        if (lf)
+                        {
+                            *lf = 0;
+                            pythonLibrary = dlopen((char *)fullName, RTLD_NOW|RTLD_GLOBAL);
+//                            DBGLOG("dlopen %s returns %"I64F"x", fullName, (__uint64) pythonLibrary);
+                            break;
+                        }
+                    }
+                }
+            }
+            fclose(diskfp);
         }
 #endif
         // Initialize the Python Interpreter
@@ -263,6 +291,8 @@ public:
             // Finish the Python Interpreter
             Py_Finalize();
         }
+        if (pythonLibrary)
+            FreeSharedObject(pythonLibrary);
     }
     bool isInitialized()
     {
@@ -271,6 +301,7 @@ public:
 protected:
     PyThreadState *tstate;
     bool initialized;
+    HINSTANCE pythonLibrary;
 } globalState;
 
 // Each call to a Python function will use a new Python27EmbedFunctionContext object
