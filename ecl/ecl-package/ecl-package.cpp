@@ -683,11 +683,6 @@ public:
             StringAttr queryIds;
             if (iter.matchOption(queryIds, ECLOPT_QUERYID))
             {
-                optQueryIds.append(queryIds.get());
-                continue;
-            }
-            if (iter.matchOption(queryIds, ECLOPT_QUERYIDS))
-            {
                 optQueryIds.appendList(queryIds.get(), ",");
                 continue;
             }
@@ -820,8 +815,9 @@ public:
                     "   --active                    Validate the active packagemap\n"
                     "   --check-dfs                 Verify that subfiles exist in DFS\n"
                     "   -pm, --pmid                 Identifier of packagemap to validate\n"
-                    "   --queryid                   Query to verify against packagemap, parameter can be used more than once\n"
-                    "   --queryids                  Comma separated list of queries to verify against packagemap\n"
+                    "   --queryid                   Query to verify against packagemap, multiple queries can be\n"
+                    "                               specified using a comma separated list, or by using --queryid\n"
+                    "                               more than once. Default is all queries in the target queryset\n"
                     "   --global-scope              The specified packagemap can be shared across multiple targets\n",
                     stdout);
 

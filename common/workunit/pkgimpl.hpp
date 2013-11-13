@@ -456,6 +456,11 @@ public:
                 Owned<IPropertyTree> queryEntry = qs->getPropTree(xpath);
                 if (queryEntry)
                     tempQuerySet->addPropTree("Query", queryEntry.getClear());
+                else
+                {
+                    VStringBuffer msg("Query %s not found in %s queryset", queriesToCheck.item(i), querySet.sget());
+                    err.append(msg);
+                }
             }
             queries.setown(tempQuerySet->getElements("Query"));
         }
