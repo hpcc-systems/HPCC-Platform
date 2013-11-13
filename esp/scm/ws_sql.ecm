@@ -153,6 +153,7 @@ ESPresponse [exceptions_inline] ExecutePreparedSQLResponse
 
 ESPrequest GetDBSystemInfoRequest
 {
+    boolean IncludeAll(true);
 };
 
 ESPresponse [exceptions_inline] GetDBSystemInfoResponse

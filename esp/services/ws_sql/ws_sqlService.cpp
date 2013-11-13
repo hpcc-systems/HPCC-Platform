@@ -36,22 +36,7 @@ void Cws_sqlEx::init(IPropertyTree *_cfg, const char *_process, const char *_ser
 
 bool Cws_sqlEx::onEcho(IEspContext &context, IEspEchoRequest &req, IEspEchoResponse &resp)
 {
-    StringBuffer respMsg;
-    ISecUser* user = context.queryUser();
-    if(user != NULL)
-    {
-        const char* name = user->getName();
-        if (name && *name)
-            respMsg.appendf("%s: ", name);
-    }
-
-    const char* reqMsg = req.getRequest();
-    if (reqMsg && *reqMsg)
-        respMsg.append(reqMsg);
-    else
-        respMsg.append("??");
-
-    resp.setResponse(respMsg.str());
+    resp.setResponse(req.getRequest());
     return true;
 }
 
@@ -245,18 +230,16 @@ bool Cws_sqlEx::onGetDBMetaData(IEspContext &context, IEspGetDBMetaDataRequest &
 bool Cws_sqlEx::onGetDBSystemInfo(IEspContext &context, IEspGetDBSystemInfoRequest &req, IEspGetDBSystemInfoResponse &resp)
 {
     bool success = false;
+    resp.setName("HPCC Systems");
+
+    if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Access, false))
+        throw MakeStringException(-1, "Failed to fetch HPCC information. Permission denied.");
     try
     {
-        if (!context.validateFeatureAccess(WSSQLACCESS, SecAccess_Access, false))
-            throw MakeStringException(-1, "Failed to fetch HPCC information. Permission denied.");
-
         const char* build_ver = getBuildVersion();
 
         if (build_ver && *build_ver)
         {
-            resp.setName("HPCC Systems");
-            resp.setFullVersion(build_ver);
-
             StringBuffer project;
             StringBuffer major;
             StringBuffer minor;
@@ -272,24 +255,28 @@ bool Cws_sqlEx::onGetDBSystemInfo(IEspContext &context, IEspGetDBSystemInfoReque
             tail++;
             while (tail && *tail != '.')
                 major.append(*tail++);
+            resp.setMajor(major.str());
 
             tail++;
             while (tail && *tail != '.')
                 minor.append(*tail++);
+            resp.setMinor(minor.str());
 
             tail++;
             while (tail && *tail != '-')
                 point.append(*tail++);
-
-            tail++;
-            while (tail && *tail != '-')
-                maturity.append(*tail++);
-
-            resp.setMajor(major.str());
-            resp.setMinor(minor.str());
             resp.setPoint(point.str());
-            resp.setProject(project.str());
-            resp.setMaturity(maturity.str());
+
+            if (req.getIncludeAll())
+            {
+                resp.setFullVersion(build_ver);
+                resp.setProject(project.str());
+
+                tail++;
+                while (tail && *tail != '-' && *tail != '[')
+                    maturity.append(*tail++);
+                resp.setMaturity(maturity.str());
+            }
 
             success = true;
         }

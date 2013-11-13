@@ -322,7 +322,7 @@
               schema="esp_service_wssql.xsd">
         <Properties bindingType="ws_sqlSoapBinding"
                   defaultPort="8009"
-                  defaultResourcesBasedn="ou=WsSql,ou=EspServices,ou=sql"
+                  defaultResourcesBasedn="ou=WsSql,ou=EspServices,ou=ecl"
                   defaultSecurePort="18009"
                   plugin="ws_sql"
                   type="ws_sql">
@@ -335,6 +335,14 @@
                              path="WsSQLAccess"
                              resource="WsSqlAccess"
                              service="ws_sql"/>
+                <AuthenticateFeature description="Access to own workunits"
+                          path="OwnWorkunitsAccess"
+                          resource="OwnWorkunitsAccess"
+                          service="ws_sql"/>
+                <AuthenticateFeature description="Access to others&apos; workunits"
+                          path="OthersWorkunitsAccess"
+                          resource="OthersWorkunitsAccess"
+                          service="ws_sql"/>
         </Properties>
     </BuildSet>
   </Build>

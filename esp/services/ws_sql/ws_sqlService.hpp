@@ -38,7 +38,7 @@ limitations under the License.
 
 #include "HPCCSQLTreeWalker.hpp"
 
-static const char* WSSQLACCESS = "SQLAccess";
+static const char* WSSQLACCESS = "WsSqlAccess";
 
 class Cws_sqlSoapBindingEx : public Cws_sqlSoapBinding
 {
