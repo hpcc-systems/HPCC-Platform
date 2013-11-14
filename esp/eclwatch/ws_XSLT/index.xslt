@@ -540,7 +540,7 @@
                         <tr>
                             <td align="left">
                                 <xsl:choose>
-                                    <xsl:when test="SuperUser">
+                                    <xsl:when test="SuperUser=1">
                                         <A href="javascript:void(0)" onclick="SetBanner();">
                                             <h3>Existing Activity on Servers:</h3>
                                         </A>
@@ -651,7 +651,7 @@
                     </xsl:for-each>
                     <xsl:apply-templates select="DFUJobs"/>
                 </form>
-                <xsl:if test="SuperUser">
+                <xsl:if test="SuperUser=1">
                     <span id="SetBannerFrame"   style="display:none; visibility:hidden">
                         <form id="SetBannerForm">
                             <table>
