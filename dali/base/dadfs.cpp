@@ -5129,7 +5129,7 @@ public:
                 }
             }
             unsigned np = file.numParts();
-            if (width)
+            if (0 == width)
                 width = np;
             else if (np!=width)
                 mixedwidth = true;
