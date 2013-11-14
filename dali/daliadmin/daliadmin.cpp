@@ -2529,13 +2529,13 @@ int main(int argc, char* argv[])
         const char *param = argv[i];
         if ((memcmp(param,"server=",7)==0)||
             (memcmp(param,"logfile=",8)==0)||
-            (memcmp(param,"rawlog=",8)==0)||
+            (memcmp(param,"rawlog=",7)==0)||
             (memcmp(param,"user=",5)==0)||
             (memcmp(param,"password=",9)==0) ||
             (memcmp(param,"fix=",4)==0) ||
             (memcmp(param,"verbose=",8)==0) ||
             (memcmp(param,"deletefiles=",12)==0) ||
-            (memcmp(param,"timeout=",4)==0))
+            (memcmp(param,"timeout=",8)==0))
             props->loadProp(param);
         else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
             props->setProp("server",ep.getUrlStr(tmps.clear()).str());
