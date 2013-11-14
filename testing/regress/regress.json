@@ -11,8 +11,8 @@
         "keyDir": "ecl/key",
         "archiveDir": "archives",
         "resultDir": "results",
-        "regressionDir": "/var/lib/HPCCSystems/regression",
-        "logDir": "/var/log/HPCCSystems/regression",
+        "regressionDir": "~/HPCCSystems-regression",
+        "logDir": "~/HPCCSystems-regression/log",    
         "Clusters": [
             "hthor",
             "thor",
