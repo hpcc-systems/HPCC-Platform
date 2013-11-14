@@ -119,6 +119,10 @@ protected:
 };
 #else
 
+#include <semaphore.h>
+
+//#define USE_OLD_SEMAPHORE_CODE
+
 class jlib_decl Semaphore
 {
 public:
@@ -129,14 +133,18 @@ public:
     void signal();
     void signal(unsigned count);
     void reinit(unsigned initialCount=0U);
+#ifndef USE_OLD_SEMAPHORE_CODE
+protected:
+    sem_t sem;
+#else
 protected:
     void init();
 protected:
     MutexId mx;
     pthread_cond_t cond;
     int count;
+#endif
 };
-
 
 #endif
 
