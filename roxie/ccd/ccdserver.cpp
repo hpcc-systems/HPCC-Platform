@@ -12168,26 +12168,128 @@ IRoxieServerActivityFactory *createRoxieServerJoinActivityFactory(unsigned _id, 
 
 #define CONCAT_READAHEAD 1000
 
-MAKEPointerArray(RecordPullerThread, RecordPullerArray);
-
-class CRoxieServerThreadedConcatActivity : public CRoxieServerActivity, implements IRecordPullerCallback
+class CRoxieThreadedConcatReader : public CInterface, implements IRecordPullerCallback
 {
-    QueueOf<const void, true> buffer;
-    InterruptableSemaphore ready;
+public:
+    IMPLEMENT_IINTERFACE;
+    CRoxieThreadedConcatReader(InterruptableSemaphore &_ready, bool _grouped)
+    : puller(false), ready(_ready), eof(false)
+    {
+
+    }
+
+    void start(unsigned parentExtractSize, const byte *parentExtract, bool paused, IRoxieSlaveContext *ctx)
+    {
+        space.reinit(CONCAT_READAHEAD);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->concatPreload(), false, ctx);
+    }
+
+    void stop(bool aborting)
+    {
+        space.interrupt();
+        puller.stop(aborting);
+    }
+
+    IRoxieInput *queryInput() const
+    {
+        return puller.queryInput();
+    }
+
+    void reset()
+    {
+        puller.reset();
+        ForEachItemIn(idx, buffer)
+            ReleaseRoxieRow(buffer.item(idx));
+        buffer.clear();
+        eof = false;
+    }
+
+    void setInput(IRoxieInput *_in)
+    {
+        puller.setInput(this, _in);
+    }
+
+    virtual void processRow(const void *row)
+    {
+        buffer.enqueue(row);
+        ready.signal();
+        space.wait();
+    }
+
+    virtual void processGroup(const ConstPointerArray &rows)
+    {
+        // We use record-by-record input mode of the puller thread even in grouped mode.
+        throwUnexpected();
+    }
+
+    virtual void processEOG()
+    {
+        processRow(NULL);
+    }
+
+    virtual void processDone()
+    {
+        eof = true;
+        ready.signal();
+    }
+
+    virtual bool fireException(IException *e)
+    {
+        // called from puller thread on failure
+        ready.interrupt(LINK(e));
+        space.interrupt(e);
+        return true;
+    }
+
+    bool peek(const void * &row, bool &anyActive)
+    {
+        if (buffer.ordinality())
+        {
+            space.signal();
+            row = buffer.dequeue();
+            return true;
+        }
+        if (!eof)
+            anyActive = true;
+        return false;
+    }
+
+    inline bool atEof() const
+    {
+        return eof;
+    }
+
+protected:
+    RecordPullerThread puller;
     InterruptableSemaphore space;
-    CriticalSection crit;
-    unsigned eofs;
-    RecordPullerArray pullers;
+    InterruptableSemaphore &ready;
+    SafeQueueOf<const void, true> buffer;
+    bool eof;
+};
+
+MAKEPointerArray(CRoxieThreadedConcatReader, ReaderArray);
+
+class CRoxieServerThreadedConcatActivity : public CRoxieServerActivity
+{
+    InterruptableSemaphore ready;
+    ReaderArray pullers;
     unsigned numInputs;
+    unsigned nextPuller; // for round robin
+    unsigned readyPending;
+    bool eof;
+    bool inGroup;
+    bool grouped;
 
 public:
     CRoxieServerThreadedConcatActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _grouped, unsigned _numInputs)
-        : CRoxieServerActivity(_factory, _probeManager)
+        : CRoxieServerActivity(_factory, _probeManager), grouped(_grouped)
     {
-        eofs = 0;
+        eof = false;
         numInputs = _numInputs;
+        nextPuller = 0;
+        readyPending = 0;
         for (unsigned i = 0; i < numInputs; i++)
-            pullers.append(*new RecordPullerThread(_grouped));
+            pullers.append(*new CRoxieThreadedConcatReader(ready, _grouped));
 
     }
 
@@ -12199,23 +12301,23 @@ public:
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
-        space.reinit(CONCAT_READAHEAD);
+        eof = false;
+        inGroup = false;
+        nextPuller = 0;
+        readyPending = 0;
         ready.reinit();
-        eofs = 0;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         ForEachItemIn(idx, pullers)
         {
-            pullers.item(idx).start(parentExtractSize, parentExtract, paused, ctx->concatPreload(), false, ctx);  
+            pullers.item(idx).start(parentExtractSize, parentExtract, paused, ctx);
             // NOTE - it is ok to start the thread running while parts of the subgraph are still being started, since everything 
             // in the part of the subgraph that the thread uses has been started.
             // Note that splitters are supposed to cope with being used when only some outputs have been started.
         }
     }
 
-
     virtual void stop(bool aborting)    
     {
-        space.interrupt();
         ready.interrupt();
         ForEachItemIn(idx, pullers)
             pullers.item(idx).stop(aborting);
@@ -12240,15 +12342,16 @@ public:
         CRoxieServerActivity::reset();
         ForEachItemIn(idx, pullers)
             pullers.item(idx).reset();
-        ForEachItemIn(idx1, buffer)
-            ReleaseRoxieRow(buffer.item(idx1));
-        buffer.clear();
+        eof = false;
+        inGroup = false;
+        nextPuller = 0;
+        readyPending = 0;
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *_in)
     {
         if (pullers.isItem(idx))
-            pullers.item(idx).setInput(this, _in);
+            pullers.item(idx).setInput(_in);
         else
             throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() parameter out of bounds at %s(%d)", __FILE__, __LINE__); 
     }
@@ -12256,74 +12359,44 @@ public:
     virtual const void * nextInGroup()
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        if (eof)
+            return NULL;
+        bool anyActive = false;
         loop
         {
+            if (readyPending && !inGroup)
+                readyPending--;
+            else
+                ready.wait();
+            ForEachItemIn(unused_index, pullers)
             {
-                CriticalBlock b(crit);
-                if (eofs==numInputs && !buffer.ordinality())
-                    return NULL;  // eof
+                // NOTE - we round robin not just because it's more efficient, but because it ensures the preservation of grouping information
+                const void *ret;
+                bool fetched = pullers.item(nextPuller).peek(ret, anyActive);
+                if (fetched)
+                {
+                    inGroup = (ret != NULL);
+                    return ret;
+                }
+                if (inGroup && grouped)
+                {
+                    // Some other puller has data, but we can't consume it until the group we are reading is complete.
+                    readyPending++;
+                    anyActive = true;
+                    break;
+                }
+                nextPuller++;
+                if (nextPuller==pullers.ordinality())
+                    nextPuller = 0;
             }
-            ready.wait();
-            const void *ret;
-            {
-                CriticalBlock b(crit);
-                ret = buffer.dequeue();
-            }
-            if (ret)
-                processed++;
-            space.signal();
-            return ret;
+            if (!anyActive)
+                break;
+            // A ready signal without anything being ready means someone reached end-of-file.
         }
+        eof = true;
+        return NULL;
     }
 
-    virtual bool fireException(IException *e)
-    {
-        // called from puller thread on failure
-        ready.interrupt(LINK(e));
-        space.interrupt(e);
-        return true;
-    }
-
-    virtual void processRow(const void *row)
-    {
-        {
-            CriticalBlock b(crit);
-            buffer.enqueue(row);
-        }
-        ready.signal();
-        space.wait();
-    }
-
-    virtual void processGroup(const ConstPointerArray &rows)
-    {
-        // NOTE - a bit bizzare in that it waits for the space AFTER using it.
-        // But the space semaphore is only there to stop infinite readahead. And otherwise it would deadlock
-        // if group was larger than max(space)
-        {
-            CriticalBlock b(crit);
-            ForEachItemIn(idx, rows)
-                buffer.enqueue(rows.item(idx));
-            buffer.enqueue(NULL);
-        }
-        for (unsigned i2 = 0; i2 <= rows.length(); i2++) // note - does 1 extra for the null
-        {
-            ready.signal();
-            space.wait();
-        }
-    }
-
-    virtual void processEOG()
-    {
-        // Used when output is not grouped - just ignore
-    }
-
-    virtual void processDone()
-    {
-        CriticalBlock b(crit);
-        eofs++;
-        if (eofs == numInputs)
-            ready.signal();
-    }
 };
 
 class CRoxieServerOrderedConcatActivity : public CRoxieServerActivity
