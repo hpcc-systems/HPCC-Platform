@@ -4975,7 +4975,12 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
 void HqlCppTranslator::doBuildAssignGetGraphResult(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     if (expr->hasAttribute(_streaming_Atom))
-        throwError(HQLERR_LoopTooComplexForParallel);
+    {
+        if (insideLibrary())
+            throwError(HQLERR_StreamInputUsedDirectly);
+        else
+            throwError(HQLERR_LoopTooComplexForParallel);
+    }
 
     if (expr->hasAttribute(externalAtom))
     {
