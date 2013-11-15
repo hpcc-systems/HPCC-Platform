@@ -502,9 +502,9 @@ public:
     {
         return BASE::isActive();
     }
-    virtual bool validate(const char *queryid, StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
+    virtual bool validate(StringArray &queryids, StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
     {
-        return BASE::validate(queryid, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles);
+        return BASE::validate(queryids, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles);
     }
     virtual void gatherFileMappingForQuery(const char *queryname, IPropertyTree *fileInfo) const
     {

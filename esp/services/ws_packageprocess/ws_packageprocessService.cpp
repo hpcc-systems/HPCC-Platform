@@ -795,7 +795,17 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
     if (!map)
         throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", id);
 
-    map->validate(req.getQueryIdToVerify(), warnings, errors, unmatchedQueries, unusedPackages, unmatchedFiles);
+    StringArray queriesToVerify;
+    const char *queryid = req.getQueryIdToVerify();
+    if (queryid && *queryid)
+        queriesToVerify.append(queryid);
+    ForEachItemIn(i, req.getQueriesToVerify())
+    {
+        queryid = req.getQueriesToVerify().item(i);
+        if (queryid && *queryid)
+            queriesToVerify.appendUniq(queryid);
+    }
+    map->validate(queriesToVerify, warnings, errors, unmatchedQueries, unusedPackages, unmatchedFiles);
 
     resp.setPMID(map->queryPackageId());
     resp.setWarnings(warnings);
