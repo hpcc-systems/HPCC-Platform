@@ -1,0 +1,7 @@
+svg {
+    font: 12px sans-serif;
+}
+
+text.active { 
+    fill: red; 
+}

@@ -119,7 +119,7 @@ define([
 
             var context = this;
             var data = this.query.getData();
-            for (key in data) {
+            for (var key in data) {
                 this.updateInput(key, null, data[key]);
             }
             this.query.watch(function (name, oldValue, newValue) {
