@@ -5094,40 +5094,55 @@ public:
         CriticalBlock block (sect);
         if (subfiles.ordinality()==1)
             return subfiles.item(0).getFileDescriptor(clustername);
-        // superfiles assume consistant replication
+        // superfiles assume consistant replication & compression
         UnsignedArray subcounts;  
         bool mixedwidth = false;
+        unsigned width = 0;
+        bool first = true;
         Owned<IPropertyTree> at = getEmptyAttr();
-        if (subfiles.ordinality()!=0) {
-            Owned<IAttributeIterator> ait = subfiles.item(0).queryAttributes().getAttributes();
-            ForEach(*ait) {
-                const char *name = ait->queryName();
-                if ((stricmp(name,"@size")!=0)&&(stricmp(name,"@recordCount")!=0)) {
-                    const char *v = ait->queryValue();
-                    if (!v)
-                        continue;
-                    bool ok = true;
-                    for (unsigned i=1;i<subfiles.ordinality();i++) {
-                        const char *p = subfiles.item(i).queryAttributes().queryProp(name);
-                        if (!p||(strcmp(p,v)!=0)) {
-                            ok = false;
-                            break;
+        Owned<IDistributedFileIterator> fiter = getSubFileIterator(true);
+        ForEach(*fiter)
+        {
+            IDistributedFile &file = fiter->query();
+            if (first)
+            {
+                first = false;
+                Owned<IAttributeIterator> ait = file.queryAttributes().getAttributes();
+                ForEach(*ait)
+                {
+                    const char *name = ait->queryName();
+                    if ((stricmp(name,"@size")!=0)&&(stricmp(name,"@recordCount")!=0))
+                    {
+                        const char *v = ait->queryValue();
+                        if (!v)
+                            continue;
+                        bool ok = true;
+                        // add attributes that are common
+                        for (unsigned i=1;i<subfiles.ordinality();i++)
+                        {
+                            IDistributedFile &file = subfiles.item(i);
+                            IDistributedSuperFile *sFile = file.querySuperFile();
+                            if (!sFile || sFile->numSubFiles(true)) // skip empty super files
+                            {
+                                const char *p = file.queryAttributes().queryProp(name);
+                                if (!p||(strcmp(p,v)!=0))
+                                {
+                                    ok = false;
+                                    break;
+                                }
+                            }
                         }
+                        if (ok)
+                            at->setProp(name,v);
                     }
-                    if (ok)
-                        at->setProp(name,v);
                 }
             }
-            unsigned width = 0;
-            Owned<IDistributedFileIterator> fiter = getSubFileIterator(true);
-            ForEach(*fiter) {
-                unsigned np = fiter->query().numParts();
-                if (width) 
-                    width = np;
-                else if (np!=width) 
-                    mixedwidth = true;
-                subcounts.append(np);
-            }
+            unsigned np = file.numParts();
+            if (width)
+                width = np;
+            else if (np!=width)
+                mixedwidth = true;
+            subcounts.append(np);
         }
 
         // need common attributes
