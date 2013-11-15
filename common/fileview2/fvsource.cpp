@@ -43,7 +43,7 @@ inline void appendNextXpathName(StringBuffer &s, const char *&xpath)
 
 void splitXmlTagNamesFromXPath(const char *xpath, StringAttr &inner, StringAttr *outer=NULL)
 {
-    if (!xpath || !*xpath)
+    if (!xpath)
         return;
 
     StringBuffer s1;
