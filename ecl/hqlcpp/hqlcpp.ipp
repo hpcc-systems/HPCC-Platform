@@ -1533,9 +1533,10 @@ public:
     void expandAliasScope(BuildCtx & ctx, IHqlExpression * expr);
     IHqlExpression * queryExpandAliasScope(BuildCtx & ctx, IHqlExpression * expr);
 
-    void addDependency(BuildCtx & ctx, ABoundActivity * element, ABoundActivity * dependent, IAtom * kind, const char * label=NULL, int controlId = 0);
-    void addDependency(BuildCtx & ctx, ABoundActivity * element, ActivityInstance * instance, IAtom * kind, const char * label=NULL, int controlId = 0);
-    void addDependency(BuildCtx & ctx, ABoundActivity * sourceActivity, IPropertyTree * sinkGraph, ABoundActivity * sinkActivity, IAtom * kind, const char * label, int whenId);
+    void addDependency(BuildCtx & ctx, ABoundActivity * element, ABoundActivity * dependent, IAtom * kind, const char * label=NULL);
+    void addDependency(BuildCtx & ctx, ABoundActivity * element, ActivityInstance * instance, IAtom * kind, const char * label=NULL);
+    void addDependency(BuildCtx & ctx, ABoundActivity * sourceActivity, IPropertyTree * sinkGraph, ABoundActivity * sinkActivity, IAtom * kind, const char * label, unsigned inputIndex, int whenId);
+    void addActionConnection(BuildCtx & ctx, ABoundActivity * element, ActivityInstance * instance, IAtom * kind, const char * label, unsigned inputIndex, int whenId);
     void addFileDependency(IHqlExpression * name, ABoundActivity * whoAmI);
 
     void doBuildClearAggregateRecord(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * self, IHqlExpression * transform);

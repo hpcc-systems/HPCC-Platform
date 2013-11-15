@@ -6906,7 +6906,7 @@ BoundRow * HqlCppTranslator::resolveSelectorDataset(BuildCtx & ctx, IHqlExpressi
 
 //---------------------------------------------------------------------------
 
-void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActivity, IPropertyTree * sinkGraphTree, ABoundActivity * sinkActivity, IAtom * kind, const char * label, int whenId)
+void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActivity, IPropertyTree * sinkGraphTree, ABoundActivity * sinkActivity, IAtom * kind, const char * label, unsigned inputIndex, int whenId)
 {
     IPropertyTree * graphTree = NULL;
     if (sinkActivity->queryGraphId() == sourceActivity->queryGraphId())
@@ -6923,16 +6923,6 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActi
     StringBuffer idText;
     idText.append(sourceActivity->queryActivityId()).append('_').append(sinkActivity->queryActivityId());
 
-#if 0
-    StringBuffer edgeText;
-    edgeText.append("edge[@id=\").append(idText).append("\"]");
-    if (activeGraph->xgmml->hasProp(edgePath))
-        return;
-#endif
-
-//  if (outputIndex)
-//      idText.append("_").append(outputIndex);
-
     IPropertyTree *edge = createPTree();
     edge->setProp("@id", idText.str());
     if (label)
@@ -6942,6 +6932,8 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActi
         if (outputIndex)
             addGraphAttributeInt(edge, "_sourceIndex", outputIndex);
     }
+    if (inputIndex)
+        addGraphAttributeInt(edge, "_targetIndex", inputIndex);
 
     if (kind == childAtom)
     {
@@ -6977,14 +6969,21 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActi
     }
 }
 
-void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, ABoundActivity * dependent, IAtom * kind, const char * label, int whenId)
+void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, ABoundActivity * dependent, IAtom * kind, const char * label)
 {
-    addDependency(ctx, element, NULL, dependent, kind, label, whenId);
+    unsigned whenId = 0;
+    addDependency(ctx, element, NULL, dependent, kind, label, 0, whenId);
 }
 
-void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, ActivityInstance * instance, IAtom * kind, const char * label, int whenId)
+void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, ActivityInstance * instance, IAtom * kind, const char * label)
 {
-    addDependency(ctx, element, instance->querySubgraphNode(), instance->queryBoundActivity(), kind, label, whenId);
+    unsigned whenId = 0;
+    addDependency(ctx, element, instance->querySubgraphNode(), instance->queryBoundActivity(), kind, label, 0, whenId);
+}
+
+void HqlCppTranslator::addActionConnection(BuildCtx & ctx, ABoundActivity * element, ActivityInstance * instance, IAtom * kind, const char * label, unsigned inputIndex, int whenId)
+{
+    addDependency(ctx, element, instance->querySubgraphNode(), instance->queryBoundActivity(), kind, label, inputIndex, whenId);
 }
 
 void HqlCppTranslator::buildClearRecord(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * record, int direction)
@@ -14772,10 +14771,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IH
     buildInstanceSuffix(instance);
 
     if (expr->isAction())
-        addDependency(ctx, boundDataset, instance, dependencyAtom, NULL, 1);
+        addActionConnection(ctx, boundDataset, instance, dependencyAtom, NULL, 0, 1);
     else
         buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
-    addDependency(ctx, associatedActivity, instance, dependencyAtom, label, when);
+    addActionConnection(ctx, associatedActivity, instance, dependencyAtom, label, 0, when);
 
     return instance->getBoundActivity();
 }
@@ -15695,9 +15694,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpress
         if (expr->isAction())
         {
             if (boundTrue)
-                addDependency(ctx, boundTrue, instance, dependencyAtom, firstLabel, 1);
+                addActionConnection(ctx, boundTrue, instance, dependencyAtom, firstLabel, 0, 1);
             if (boundFalse)
-                addDependency(ctx, boundFalse, instance, dependencyAtom, "False", 2);
+                addActionConnection(ctx, boundFalse, instance, dependencyAtom, "False", 1, 2);
         }
         else
         {
@@ -15742,7 +15741,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySequentialParallel(BuildCtx & 
         ABoundActivity & cur = (ABoundActivity&)boundActivities.item(j);
         StringBuffer temp;
         temp.append("Action #").append(j+1);
-        addDependency(ctx, &cur, instance, dependencyAtom, temp.str(), j+1);
+        addActionConnection(ctx, &cur, instance, dependencyAtom, temp.str(), j, j+1);
     }
 
     buildInstanceSuffix(instance);
@@ -15776,7 +15775,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChoose(BuildCtx & ctx, IHqlExp
         ABoundActivity * boundBranch = &inputs.item(branchIdx);
         label.clear().append("Branch ").append(branchIdx+1);
         if (expr->isAction())
-            addDependency(ctx, boundBranch, instance, dependencyAtom, label.str(), branchIdx+1);
+            addActionConnection(ctx, boundBranch, instance, dependencyAtom, label.str(), branchIdx, branchIdx+1);
         else
             buildConnectInputOutput(ctx, instance, boundBranch, 0, branchIdx, label.str());
     }
@@ -15851,9 +15850,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCase(BuildCtx & ctx, IHqlExpre
             label.clear().append("Branch ").append(branchIdx+1);
 
         if (expr->isAction())
-            addDependency(ctx, boundBranch, instance, dependencyAtom, label.str(), branchIdx+1);
+            addActionConnection(ctx, boundBranch, instance, dependencyAtom, label.str(), branchIdx, branchIdx+1);
         else
-            buildConnectInputOutput(ctx, instance, boundBranch, 0, idx-first, label.str());
+            buildConnectInputOutput(ctx, instance, boundBranch, 0, branchIdx, label.str());
     }
 
     args.append(*createConstant(unsignedType->castFrom(false, (__int64)max-1)));
