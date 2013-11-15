@@ -1181,7 +1181,7 @@ bool getPacketStats(unsigned & tx, unsigned & rx)
 struct UserStatusInfo
 {
 public:
-    UserStatusInfo(int _pid)
+    UserStatusInfo(pid_t _pid)
     {
         pid = _pid;
     }
@@ -1228,7 +1228,7 @@ public:
         //printf("**N'%s'\n",num);
         time.user = (unsigned)atoi64_l(num,strlen(num));
 
-        //stime - amount of tme scheduled in kernel mode in clock ticks
+        //stime - amount of time scheduled in kernel mode in clock ticks
         s = skipnumfld(s,num);
         //printf("**N'%s'\n",num);
         time.system = (unsigned)atoi64_l(num,strlen(num));
@@ -1237,23 +1237,23 @@ public:
     }
 
 public:
-    int pid;
+    pid_t pid;
     char cmd[16];
     UserSystemTime_t time;
 
 private:
     char *skipnumfld(char *s, const char *&num)
     {
-        while (*s&&isspace(*s))
+        while (*s && isspace(*s))
             s++;
         num = s;
         if ((*s=='-')||(*s=='+'))
             s++;
-        while (*s&&isdigit(*s))
+        while (*s && isdigit(*s))
             s++;
         if (*s==' ')
-            *(s++)= 0;      // terminate num
-        while (*s&&isspace(*s))
+            *(s++) = 0;      // terminate num
+        while (*s && isspace(*s))
             s++;
         return s;
     }
@@ -1274,7 +1274,7 @@ struct CProcInfo: extends CInterface
         first = true;
     }
 
-    inline int pid() const { return info.pid; }
+    inline pid_t pid() const { return info.pid; }
 
     bool load()
     {
@@ -1282,6 +1282,7 @@ struct CProcInfo: extends CInterface
         if (!info.update())
             return false;
 
+        active = true;
         if (first) 
             first = false;
         else {
