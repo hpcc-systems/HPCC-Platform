@@ -10571,6 +10571,28 @@ void HqlCppTranslator::buildXmlSerializeEndNested(BuildCtx & ctx, IHqlExpression
     }
 }
 
+void HqlCppTranslator::buildXmlSerializeBeginArray(BuildCtx & ctx, IHqlExpression * name)
+{
+    if (name)
+    {
+        HqlExprArray args;
+        args.append(*createVariable("out", makeBoolType()));
+        args.append(*LINK(name));
+        callProcedure(ctx, outputXmlBeginArrayId, args);
+    }
+}
+
+void HqlCppTranslator::buildXmlSerializeEndArray(BuildCtx & ctx, IHqlExpression * name)
+{
+    if (name)
+    {
+        HqlExprArray args;
+        args.append(*createVariable("out", makeBoolType()));
+        args.append(*LINK(name));
+        callProcedure(ctx, outputXmlEndArrayId, args);
+    }
+}
+
 void HqlCppTranslator::buildXmlSerializeSet(BuildCtx & ctx, IHqlExpression * field, IHqlExpression * value)
 {
     OwnedHqlExpr name, itemName;
@@ -10578,7 +10600,9 @@ void HqlCppTranslator::buildXmlSerializeSet(BuildCtx & ctx, IHqlExpression * fie
 
     HqlExprArray args;
     buildXmlSerializeBeginNested(ctx, name, false);
+    buildXmlSerializeBeginArray(ctx, itemName);
     buildXmlSerializeSetValues(ctx, value, itemName, (name != NULL));
+    buildXmlSerializeEndArray(ctx, itemName);
     buildXmlSerializeEndNested(ctx, name);
 }
 
@@ -10589,6 +10613,7 @@ void HqlCppTranslator::buildXmlSerializeDataset(BuildCtx & ctx, IHqlExpression *
 
     HqlExprArray args;
     buildXmlSerializeBeginNested(ctx, name, false);
+    buildXmlSerializeBeginArray(ctx, rowName);
 
     Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, value);
     BuildCtx subctx(ctx);
@@ -10601,6 +10626,7 @@ void HqlCppTranslator::buildXmlSerializeDataset(BuildCtx & ctx, IHqlExpression *
 
     buildXmlSerializeEndNested(subctx, rowName);
 
+    buildXmlSerializeEndArray(ctx, rowName);
     buildXmlSerializeEndNested(ctx, name);
 }
 
