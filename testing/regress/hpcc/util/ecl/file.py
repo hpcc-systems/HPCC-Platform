@@ -134,10 +134,10 @@ class ECLFile:
                 raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
             expected = open(self.getExpected(), 'r').readlines()
             recieved = open(self.getResults(), 'r').readlines()
-            for line in difflib.unified_diff(recieved,
-                                             expected,
-                                             fromfile=self.xml_r,
-                                             tofile=self.xml_e):
+            for line in difflib.unified_diff(expected,
+                                             recieved,
+                                             fromfile=self.xml_e,
+                                             tofile=self.xml_r):
                 self.diff += line
         except Exception as e:
             logging.critical(e)
