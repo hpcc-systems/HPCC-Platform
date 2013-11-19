@@ -383,12 +383,10 @@ public:
                 UNIMPLEMENTED;
             case TAKcase:           // gen. time.
             case TAKif:
+            case TAKifaction:
                 throwUnexpected();
             case TAKwhen_dataset:
                 ret = createWhenActivityMaster(this);
-                break;
-            case TAKifaction:
-                ret = createIfActionActivityMaster(this);
                 break;
             default:
                 throw MakeActivityException(this, TE_UnsupportedActivityKind, "Unsupported activity kind: %s", activityKindStr(kind));

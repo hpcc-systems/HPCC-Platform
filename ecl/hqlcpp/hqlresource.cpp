@@ -1865,7 +1865,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.minimiseSpills = _translatorOptions.minimiseSpills;
     spillMultiCondition = _translatorOptions.spillMultiCondition;
     spotThroughAggregate = _translatorOptions.spotThroughAggregate && (targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster);
-    options.noConditionalLinks = (targetClusterType == RoxieCluster);
+    options.noConditionalLinks = (targetClusterType != HThorCluster);
     options.hoistResourced = _translatorOptions.hoistResourced;
     options.useGraphResults = false;        // modified by later call
     options.groupedChildIterators = _translatorOptions.groupedChildIterators;
@@ -1878,7 +1878,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.createSpillAsDataset = _translatorOptions.optimizeSpillProject && (targetClusterType != HThorCluster);
     options.combineSiblings = _translatorOptions.combineSiblingGraphs && (targetClusterType != HThorCluster) && (targetClusterType != RoxieCluster);
     options.optimizeSharedInputs = _translatorOptions.optimizeSharedGraphInputs && options.combineSiblings;
-    options.actionLinkInNewGraph = _translatorOptions.actionLinkInNewGraph  || (targetClusterType == HThorCluster);
+    options.actionLinkInNewGraph = _translatorOptions.actionLinkInNewGraph || (targetClusterType == HThorCluster);
     options.convertCompoundToExecuteWhen = false;
 }
 

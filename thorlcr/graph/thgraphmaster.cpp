@@ -2117,7 +2117,7 @@ void CMasterGraph::abort(IException *e)
 void CMasterGraph::serializeCreateContexts(MemoryBuffer &mb)
 {
     CGraphBase::serializeCreateContexts(mb);
-    Owned<IThorActivityIterator> iter = (queryOwner() && !isGlobal()) ? getIterator() : getTraverseIterator();
+    Owned<IThorActivityIterator> iter = getIterator();
     ForEach (*iter)
     {
         CMasterGraphElement &element = (CMasterGraphElement &)iter->query();
@@ -2234,7 +2234,7 @@ void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
 
 void CMasterGraph::start()
 {
-    Owned<IThorActivityIterator> iter = getTraverseIterator();
+    Owned<IThorActivityIterator> iter = getConnectedIterator();
     ForEach (*iter)
         iter->query().queryActivity()->startProcess();
 }
@@ -2250,7 +2250,7 @@ void CMasterGraph::sendActivityInitData()
     for (; w<queryJob().querySlaves(); w++)
     {
         unsigned needActInit = 0;
-        Owned<IThorActivityIterator> iter = getTraverseIterator();
+        Owned<IThorActivityIterator> iter = getConnectedIterator();
         ForEach(*iter)
         {
             CGraphElementBase &element = iter->query();
@@ -2265,7 +2265,7 @@ void CMasterGraph::sendActivityInitData()
             try
             {
                 msg.rewrite(pos);
-                Owned<IThorActivityIterator> iter = getTraverseIterator();
+                Owned<IThorActivityIterator> iter = getConnectedIterator();
                 serializeActivityInitData(w, msg, *iter);
             }
             catch (IException *e)

@@ -41,7 +41,11 @@ private:
     
     void doReportGraph(IWUGraphProgress *progress, CGraphBase *graph, bool finished)
     {
-        Owned<IThorActivityIterator> iter = (graph->queryOwner() && !graph->isGlobal()) ? graph->getIterator() : graph->getTraverseIterator();
+        Owned<IThorActivityIterator> iter;
+        if (graph->queryOwner() && !graph->isGlobal())
+            iter.setown(graph->getIterator()); // Local child graphs still send progress, but aren't connected in master
+        else
+            iter.setown(graph->getConnectedIterator());
         ForEach (*iter)
         {
             CMasterGraphElement &container = (CMasterGraphElement &)iter->query();

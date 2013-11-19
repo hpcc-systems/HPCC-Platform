@@ -306,15 +306,7 @@ public:
         IHThorSplitArg *helper = (IHThorSplitArg *)queryHelper();
         int dV = getOptInt(THOROPT_SPLITTER_SPILL, -1);
         if (-1 == dV)
-        {
             spill = !helper->isBalanced();
-            bool forcedUnbalanced = queryContainer().queryXGMML().getPropBool("@unbalanced", false);
-            if (!spill && forcedUnbalanced)
-            {
-                ActPrintLog("Was marked balanced, but forced unbalanced due to UPDATE changes.");
-                spill = true;
-            }
-        }
         else
             spill = dV>0;
     }

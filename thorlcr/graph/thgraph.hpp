@@ -303,8 +303,10 @@ public:
     void onCreate();
     void abort(IException *e);
     virtual void preStart(size32_t parentExtractSz, const byte *parentExtract);
-    const bool &isOnCreated() const { return onCreateCalled; }
-    const bool &isPrepared() const { return prepared; }
+    bool isOnCreated() const { return onCreateCalled; }
+    bool isOnStarted() const { return onStartCalled; }
+    bool isPrepared() const { return prepared; }
+
     CGraphBase &queryOwner() const { return *owner; }
     CGraphBase *queryResultsGraph() const { return resultsGraph; }
     IThorGraphIterator *getAssociatedChildGraphs() const;
@@ -426,7 +428,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
     mutable CriticalSection crit;
     CriticalSection evaluateCrit;
     CGraphElementTable containers;
-    CGraphElementArray sinks;
+    CGraphElementArray sinks, connectedSinks;
     bool sink, complete, global, localChild;
     mutable int localOnly;
     activity_id parentActivityId;
@@ -546,56 +548,6 @@ protected:
     unsigned counter;
     CReplyCancelHandler graphCancelHandler;
 
-    class CGraphGraphActElementIterator : public CInterface, implements IThorActivityIterator
-    {
-    protected:
-        CGraphBase &graph;
-        IPropertyTree &xgmml;
-        Owned<IPropertyTreeIterator> iter;
-        CGraphElementBase *current;
-    public:
-        IMPLEMENT_IINTERFACE;
-
-        CGraphGraphActElementIterator(CGraphBase &_graph, IPropertyTree &_xgmml) : graph(_graph), xgmml(_xgmml)
-        {
-            iter.setown(xgmml.getElements("node"));
-        }
-        virtual bool first()
-        {
-            if (iter->first())
-            {
-                IPropertyTree &node = iter->query();
-                current = graph.queryElement(node.getPropInt("@id"));
-                if (current)
-                    return true;
-                else if (next())
-                    return true;
-            }
-            current = NULL;
-            return false;
-        }
-        virtual bool next()
-        {
-            loop
-            {
-                if (!iter->next())
-                    break;
-                IPropertyTree &node = iter->query();
-                current = graph.queryElement(node.getPropInt("@id"));
-                if (current)
-                    return true;
-            }
-            current = NULL;
-            return false;
-        }
-        virtual bool isValid() { return NULL!=current; }
-        virtual CGraphElementBase & query()
-        {
-            return *current;
-        }
-        CGraphElementBase & get() { CGraphElementBase &c = query(); c.Link(); return c; }
-    };
-
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -604,16 +556,15 @@ public:
 
     CGraphBase(CJobBase &job);
     ~CGraphBase();
-    
+
     const void *queryFindParam() const { return &queryGraphId(); } // for SimpleHashTableOf
 
     virtual void init() { }
-    IThorActivityIterator *getTraverseIterator(bool all=false); // all traverses and includes conditionals, others traverses connected nodes only
     void GraphPrintLog(const char *msg, ...) __attribute__((format(printf, 2, 3)));
     void GraphPrintLog(IException *e, const char *msg, ...) __attribute__((format(printf, 3, 4)));
     void GraphPrintLog(IException *e);
     void createFromXGMML(IPropertyTree *node, CGraphBase *owner, CGraphBase *parent, CGraphBase *resultsGraph);
-    const bool &queryAborted() const { return aborted; }
+    bool queryAborted() const { return aborted; }
     CJobBase &queryJob() const { return job; }
     IGraphTempHandler *queryTempHandler() const { assertex(tmpHandler.get()); return tmpHandler; }
     CGraphBase *queryOwner() { return owner; }
@@ -659,11 +610,12 @@ public:
     virtual void execute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies, bool async);
     IThorActivityIterator *getIterator()
     {
-        return new CGraphGraphActElementIterator(*this, *xgmml);
+        return new CGraphElementIterator(containers);
     }
+    IThorActivityIterator *getConnectedIterator();
     IThorActivityIterator *getSinkIterator() const
     {
-        return new CGraphElementArrayIterator(sinks);
+        return new CGraphElementArrayIterator(connectedSinks);
     }
     IPropertyTree &queryXGMML() const { return *xgmml; }
     void addActivity(CGraphElementBase *element)
@@ -673,16 +625,7 @@ public:
             element->Release();
             return;
         }
-
         containers.replace(*element);
-        if (element->isSink())
-            sinks.append(*LINK(element));
-    }
-    bool removeActivity(CGraphElementBase *element)
-    {
-        bool res = containers.removeExact(element);
-        sinks.zap(* element);
-        return res;
     }
     unsigned activityCount() const
     {
@@ -847,7 +790,7 @@ public:
     void init();
     void setXGMML(IPropertyTree *_xgmml) { xgmml.set(_xgmml); }
     IPropertyTree *queryXGMML() { return xgmml; }
-    const bool &queryAborted() const { return aborted; }
+    bool queryAborted() const { return aborted; }
     const char *queryKey() const { return key; }
     const char *queryGraphName() const { return graphName; }
     bool queryForceLogging(graph_id graphId, bool def) const;
@@ -888,8 +831,8 @@ public:
     IThorResult *getOwnedResult(graph_id gid, activity_id ownerId, unsigned resultId);
     IThorAllocator *queryThorAllocator() const { return thorAllocator; }
     bool queryUseCheckpoints() const;
-    const bool &queryPausing() const { return pausing; }
-    const bool &queryResumed() const { return resumed; }
+    bool queryPausing() const { return pausing; }
+    bool queryResumed() const { return resumed; }
     IGraphTempHandler *queryTempHandler() const { return tmpHandler; }
     ILoadedDllEntry &queryDllEntry() const { return *querySo; }
     ICodeContext &queryCodeContext() const;
@@ -910,7 +853,7 @@ public:
     unsigned querySlaves() const { return slaveGroup->ordinality(); }
     ICommunicator &queryJobComm() const { return *jobComm; }
     IGroup &queryJobGroup() const { return *jobGroup; }
-    const bool &queryTimeActivities() const { return timeActivities; }
+    bool queryTimeActivities() const { return timeActivities; }
     unsigned queryMaxDefaultActivityCores() const { return maxActivityCores; }
     IGroup &querySlaveGroup() const { return *slaveGroup; }
     const rank_t &queryMyRank() const { return myrank; }
@@ -972,10 +915,10 @@ public:
     CJobBase &queryJob() const { return container.queryJob(); }
     CGraphBase &queryGraph() const { return container.queryOwner(); }
     inline const mptag_t queryMpTag() const { return mpTag; }
-    inline const bool &queryAbortSoon() const { return abortSoon; }
+    inline bool queryAbortSoon() const { return abortSoon; }
     inline IHThorArg *queryHelper() const { return baseHelper; }
     inline bool needReInit() const { return reInit; }
-    inline const bool &queryTimeActivities() const { return timeActivities; } 
+    inline bool queryTimeActivities() const { return timeActivities; }
     void onStart(size32_t _parentExtractSz, const byte *_parentExtract) { parentExtractSz = _parentExtractSz; parentExtract = _parentExtract; }
     bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
     void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
