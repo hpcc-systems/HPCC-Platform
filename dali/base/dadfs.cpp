@@ -1311,13 +1311,6 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
                     }
                 }
             }
-            SuperHashIteratorOf<HTMapping> iter(subFilesByName);
-            ForEach(iter)
-            {
-                HTMapping &map = iter.query();
-                PROGLOG("subfile: %s", map.queryFindString());
-            }
-
             return false;
         }
         const void *queryFindParam() const { return &file; }
@@ -4792,11 +4785,12 @@ protected:
         unsigned n = root->getPropInt("@numsubfiles");
         if (n == 0)
             return;
-        try {
+        try
+        {
             // Find all reported indexes and bail on bad range (before we lock any file)
             Owned<IPropertyTreeIterator> subit = root->getElements("SubFile");
-            OwnedMalloc<unsigned> subFiles(n, true);
-            unsigned expectedN = 1;
+            // Adding a sub 'before' another get the list out of order (but still valid)
+            OwnedMalloc<IPropertyTree *> orderedSubFiles(n, true);
             ForEach (*subit)
             {
                 IPropertyTree &sub = subit->query();
@@ -4805,23 +4799,19 @@ protected:
                     ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: bad subfile part number %d of %d", logicalName.get(), sn, n);
                 if (sn > n)
                     ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: out-of-range subfile part number %d of %d", logicalName.get(), sn, n);
-                if (subFiles[sn-1])
+                if (orderedSubFiles[sn-1])
                     ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: duplicated subfile part number %d of %d", logicalName.get(), sn, n);
-                if (sn != expectedN)
-                    ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: bad part number %d, expected %d", logicalName.get(), sn, expectedN);
-                subFiles[sn-1] = 1;
-                ++expectedN;
+                orderedSubFiles[sn-1] = &sub;
             }
             for (unsigned i=0; i<n; i++)
             {
-                if (!subFiles[i])
+                if (!orderedSubFiles[i])
                     ThrowStringException(-1, "CDistributedSuperFile: SuperFile %s: missing subfile part number %d of %d", logicalName.get(), i+1, n);
             }
-
             // Now try to resolve them all (file/superfile)
-            ForEach (*subit)
+            for (unsigned f=0; f<n; f++)
             {
-                IPropertyTree &sub = subit->query();
+                IPropertyTree &sub = *(orderedSubFiles[f]);
                 sub.getProp("@name",subname.clear());
                 Owned<IDistributedFile> subfile;
                 subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(), udesc, false, false, transaction, timeout));
@@ -4852,7 +4842,8 @@ protected:
                 root->setPropInt("@numsubfiles", subfiles.ordinality());
             }
         }
-        catch (IException *) {
+        catch (IException *)
+        {
             partscache.kill();
             subfiles.kill();    // one out, all out
             throw;
