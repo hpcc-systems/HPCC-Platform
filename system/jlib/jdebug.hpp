@@ -62,6 +62,16 @@ struct HardwareInfo
     unsigned NICSpeed;       // 
 };
 
+struct UserSystemTime_t
+{
+public:
+    UserSystemTime_t() : user(0), system(0) {}
+
+    unsigned user;
+    unsigned system;
+};
+
+
 interface ITimeReportInfo
 {
     virtual void report(const char *name, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
@@ -276,6 +286,7 @@ unsigned jlib_decl setAllocHook(bool on);  // bwd compat returns unsigned
 #endif
 
 extern jlib_decl void getHardwareInfo(HardwareInfo &hdwInfo, const char *primDiskPath = NULL, const char *secDiskPath = NULL);
+extern jlib_decl void getProcessTime(UserSystemTime_t & time);
 extern jlib_decl memsize_t getMapInfo(const char *type);
 extern jlib_decl void getCpuInfo(unsigned &numCPUs, unsigned &CPUSpeed);
 extern jlib_decl void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident);

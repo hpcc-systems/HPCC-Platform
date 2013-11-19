@@ -1178,93 +1178,117 @@ bool getPacketStats(unsigned & tx, unsigned & rx)
 
 #ifndef _WIN32
 
-struct CProcInfo: extends CInterface
+struct UserStatusInfo
 {
-    IMPLEMENT_IINTERFACE;
-    int pid;
-    char cmd[16];
-    unsigned tot_utime;
-    unsigned tot_stime;
-    unsigned utime;
-    unsigned stime;
-    bool active;
-    bool first;
-
-    CProcInfo(int _pid)
+public:
+    UserStatusInfo(pid_t _pid)
     {
         pid = _pid;
-        tot_utime = 0;
-        tot_stime = 0;
-        utime = 0;
-        stime = 0;
-        active = false;
-        first = true;
     }
 
-    char *skipnumfld(char *s, const char *&num) 
-    {
-        while (*s&&isspace(*s))
-            s++;
-        num = s;
-        if ((*s=='-')||(*s=='+'))
-            s++;
-        while (*s&&isdigit(*s))
-            s++;
-        if (*s==' ') 
-            *(s++)= 0;      // terminate num
-        while (*s&&isspace(*s))
-            s++;
-        return s;
-    }
-
-
-    bool load()
+    bool update()
     {
         StringBuffer fn;
         fn.appendf("/proc/%d/stat", pid);
         char buf[800]; /* about 40 fields, 64-bit decimal is about 20 chars */
         int fd = open(fn.str(), O_RDONLY, 0);
-        if (fd==-1) 
+        if (fd==-1)
             return false;
         int rd = read(fd, buf, sizeof(buf)-1);
         close(fd);
-        if (rd<80) 
+        if (rd<80)
             return false;
         buf[rd] = 0;
+
         char *s = strchr(buf,'(');
-        if (!s) 
+        if (!s)
             return false;
         s++;
         unsigned i = 0;
         while (*s&&(*s!=')')&&(i<15))
             cmd[i++] = *(s++);
-        if (!*s) 
+        if (!*s)
             return false;
         cmd[i] = 0;
         s+=2;
+
         char state = *(s++);
-        //printf("**'%s'\n",s);
+
+        //The PID of the parent process
         const char *num;
         s = skipnumfld(s,num);
         int ppid = atoi(num);
+
         // skip pgrp, session, tty_num, tpgid, flags, min_flt, cmin_flt, maj_flt, cmaj_flt
         for (i=0;i<9;i++)
             s = skipnumfld(s,num);
-        unsigned prev_utime = tot_utime;
-        unsigned prev_stime = tot_stime;
+
+        //utime - user mode time in clock ticks.
         s = skipnumfld(s,num);
         //printf("**N'%s'\n",num);
-        tot_utime = (unsigned)atoi64_l(num,strlen(num));
+        time.user = (unsigned)atoi64_l(num,strlen(num));
+
+        //stime - amount of time scheduled in kernel mode in clock ticks
         s = skipnumfld(s,num);
         //printf("**N'%s'\n",num);
-        tot_stime = (unsigned)atoi64_l(num,strlen(num));
+        time.system = (unsigned)atoi64_l(num,strlen(num));
+
+        return true;
+    }
+
+public:
+    pid_t pid;
+    char cmd[16];
+    UserSystemTime_t time;
+
+private:
+    char *skipnumfld(char *s, const char *&num)
+    {
+        while (*s && isspace(*s))
+            s++;
+        num = s;
+        if ((*s=='-')||(*s=='+'))
+            s++;
+        while (*s && isdigit(*s))
+            s++;
+        if (*s==' ')
+            *(s++) = 0;      // terminate num
+        while (*s && isspace(*s))
+            s++;
+        return s;
+    }
+};
+
+struct CProcInfo: extends CInterface
+{
+    IMPLEMENT_IINTERFACE;
+
+    UserStatusInfo info;
+    UserSystemTime_t delta;
+    bool active;
+    bool first;
+
+    CProcInfo(int _pid) : info(_pid)
+    {
+        active = false;
+        first = true;
+    }
+
+    inline pid_t pid() const { return info.pid; }
+
+    bool load()
+    {
+        UserSystemTime_t prev = info.time;
+        if (!info.update())
+            return false;
+
+        active = true;
         if (first) 
             first = false;
         else {
-            stime = tot_stime-prev_stime;
-            utime = tot_utime-prev_utime;
+            delta.system = info.time.system-prev.system;
+            delta.user = info.time.user-prev.user;
         }
-        active = true;
         return true;
     }
 };
@@ -1280,7 +1304,7 @@ class CProcessMonitor
     {
         CProcInfo *pi1 = QUERYINTERFACE(*i1,CProcInfo);
         CProcInfo *pi2 = QUERYINTERFACE(*i2,CProcInfo);
-        return pi2->stime+pi2->utime-pi1->stime-pi1->utime;
+        return pi2->delta.system+pi2->delta.user-pi1->delta.system-pi1->delta.user;
     }
 public:
     CProcessMonitor()
@@ -1305,7 +1329,7 @@ public:
                 if (pid) {
                     CProcInfo *pi = NULL;
                     ForEachItemIn(i2,processes) {
-                        if (processes.item(i2).pid == pid) {
+                        if (processes.item(i2).pid() == pid) {
                             pi = &processes.item(i2);
                             break;
                         }
@@ -1323,7 +1347,7 @@ public:
         ForEachItemInRev(i3,processes) {
             CProcInfo &pi = processes.item(i3);
             if (pi.active) 
-                tot_time += pi.stime+pi.utime;
+                tot_time += pi.delta.system+pi.delta.user;
             else
                 processes.remove(i3);
         }
@@ -1341,10 +1365,11 @@ public:
         StringBuffer name;
         ForEachItemIn(i1,processes) {
             CProcInfo &pi = processes.item(i1);
-            if ((pi.stime==0)&&(pi.utime==0))
+            if ((pi.delta.system==0)&&(pi.delta.user==0))
                 break;
-            getThreadName(pi.pid,0,name.clear());
-            str.appendf("\n TT: PI=%d PN=%s PC=%d ST=%d UT=%d%s%s",pi.pid,pi.cmd,(pi.stime+pi.utime)*100/tot_time,pi.stime,pi.utime,name.length()?" TN=":"",name.str());
+            getThreadName(pi.pid(),0,name.clear());
+            str.appendf("\n TT: PI=%d PN=%s PC=%d ST=%d UT=%d%s%s",
+                        pi.pid(),pi.info.cmd,(pi.delta.system+pi.delta.user)*100/tot_time,pi.delta.system,pi.delta.user,name.length()?" TN=":"",name.str());
             if (--n==0)
                 break;
         }
@@ -1886,51 +1911,11 @@ public:
 
 #endif
 
-
-static class CMemoryUsageReporter: public Thread
-{
-    bool term;
-    unsigned  interval;
-    Semaphore sem;
-    PerfMonMode traceMode;
-    IPerfMonHook * hook;
-    unsigned latestCPU;
-    double                         dbIdleTime;
-    double                         dbSystemTime;
 #ifdef _WIN32
-    PROCNTQSI NtQuerySystemInformation;
-    PROCNTQIP NtQueryInformationProcess;
-    PROCNTGST pGetSystemTimes;
-    SYSTEM_BASIC_INFORMATION       SysBaseInfo;
-    LONG                           status;
-    LARGE_INTEGER                  liOldIdleTime;
-    LARGE_INTEGER                  liOldSystemTime;
-#else
-    double                         OldIdleTime;
-    double                         OldSystemTime;   
-    CProcessMonitor                procmon;
-    CExtendedStats                 extstats;
-#endif
-    StringBuffer                   primaryfs;
-    StringBuffer                   secondaryfs;
-    CriticalSection                sect; // for getSystemTraceInfo 
-
-
-public:
-    CMemoryUsageReporter(unsigned _interval, PerfMonMode _traceMode, IPerfMonHook * _hook, bool printklog)
-        : Thread("CMemoryUsageReporter"), traceMode(_traceMode)
-#ifndef _WIN32
-        , extstats(printklog)
-#endif
-
+static struct CNtKernelInformation
+{
+    CNtKernelInformation()
     {
-        interval = _interval;
-        hook = _hook;
-        term = false;
-        latestCPU = 0;
-#ifdef _WIN32      
-        memset(&liOldIdleTime,0,sizeof(liOldIdleTime));
-        memset(&liOldSystemTime,0,sizeof(liOldSystemTime));
         NtQuerySystemInformation = (PROCNTQSI)GetProcAddress(
                                           GetModuleHandle("ntdll"),
                                          "NtQuerySystemInformation"
@@ -1945,6 +1930,58 @@ public:
                                          "GetSystemTimes"
                                          );
         NtQuerySystemInformation(SystemBasicInformation,&SysBaseInfo,sizeof(SysBaseInfo),NULL);
+    }
+
+    PROCNTQSI NtQuerySystemInformation;
+    PROCNTQIP NtQueryInformationProcess;
+              
+    PROCNTGST pGetSystemTimes;
+    SYSTEM_BASIC_INFORMATION       SysBaseInfo;
+
+} NtKernelFunctions;
+#endif
+
+
+static class CMemoryUsageReporter: public Thread
+{
+    bool term;
+    unsigned  interval;
+    Semaphore sem;
+    PerfMonMode traceMode;
+    IPerfMonHook * hook;
+    unsigned latestCPU;
+    double                         dbIdleTime;
+    double                         dbSystemTime;
+#ifdef _WIN32
+    LONG                           status;
+    LARGE_INTEGER                  liOldIdleTime;
+    LARGE_INTEGER                  liOldSystemTime;
+#else
+    double                         OldIdleTime;
+    double                         OldSystemTime;
+    CProcessMonitor                procmon;
+    CExtendedStats                 extstats;
+#endif
+    StringBuffer                   primaryfs;
+    StringBuffer                   secondaryfs;
+    CriticalSection                sect; // for getSystemTraceInfo
+
+
+public:
+    CMemoryUsageReporter(unsigned _interval, PerfMonMode _traceMode, IPerfMonHook * _hook, bool printklog)
+        : Thread("CMemoryUsageReporter"), traceMode(_traceMode)
+#ifndef _WIN32
+        , extstats(printklog)
+#endif
+
+    {
+        interval = _interval;
+        hook = _hook;
+        term = false;
+        latestCPU = 0;
+#ifdef _WIN32
+        memset(&liOldIdleTime,0,sizeof(liOldIdleTime));
+        memset(&liOldSystemTime,0,sizeof(liOldSystemTime));
         dbIdleTime = 0;
         primaryfs.append("C:");
 #else
@@ -1979,9 +2016,9 @@ public:
     {
         CriticalBlock block(sect);
 #ifdef _WIN32
-        if (pGetSystemTimes) {
+        if (NtKernelFunctions.pGetSystemTimes) {
             LARGE_INTEGER idle, kernel, user;
-            pGetSystemTimes(&idle, &kernel, &user);
+            NtKernelFunctions.pGetSystemTimes(&idle, &kernel, &user);
             // note - kernel time seems to include idle time
 
             if(liOldIdleTime.QuadPart != 0) {
@@ -1998,8 +2035,8 @@ public:
         } else {
             SYSTEM_PERFORMANCE_INFORMATION SysPerfInfo;
             SYSTEM_TIME_INFORMATION        SysTimeInfo;
-            NtQuerySystemInformation(SystemTimeInformation,&SysTimeInfo,sizeof(SysTimeInfo),0);
-            NtQuerySystemInformation(SystemPerformanceInformation,&SysPerfInfo,sizeof(SysPerfInfo),NULL);
+            NtKernelFunctions.NtQuerySystemInformation(SystemTimeInformation,&SysTimeInfo,sizeof(SysTimeInfo),0);
+            NtKernelFunctions.NtQuerySystemInformation(SystemPerformanceInformation,&SysPerfInfo,sizeof(SysPerfInfo),NULL);
 
             if(liOldIdleTime.QuadPart != 0) {
                 // CurrentValue = NewValue - OldValue
@@ -2008,7 +2045,7 @@ public:
                 // CurrentCpuIdle = IdleTime / SystemTime
                 dbIdleTime = dbIdleTime / dbSystemTime;
                 // CurrentCpuUsage% = 100 - (CurrentCpuIdle * 100) / NumberOfProcessors
-                latestCPU = (unsigned) (100.0 - dbIdleTime * 100.0 / (double)SysBaseInfo.bKeNumberProcessors + 0.5);
+                latestCPU = (unsigned) (100.0 - dbIdleTime * 100.0 / (double)NtKernelFunctions.SysBaseInfo.bKeNumberProcessors + 0.5);
             }
             liOldIdleTime = SysPerfInfo.liIdleTime;
             liOldSystemTime = SysTimeInfo.liKeSystemTime;
@@ -2058,7 +2095,7 @@ public:
 #if 0
             VM_COUNTERS vmc;
             DWORD dwSize = 0;
-            NtQueryInformationProcess(GetCurrentProcess(), ProcessVmCounters, &vmc, sizeof(vmc), &dwSize);
+            NtKernelFunctions.NtQueryInformationProcess(GetCurrentProcess(), ProcessVmCounters, &vmc, sizeof(vmc), &dwSize);
             str.appendf(" MU=%3u%%",(unsigned)((__int64)vmc.WorkingSetSize*100/(__int64)vmTotal));
 #else
             str.appendf(" MU=%3u%%",(unsigned)((__int64)vmInUse*100/(__int64)vmTotal));
@@ -2066,7 +2103,7 @@ public:
             if (hook)
                 hook->extraLogging(str);
 #ifdef _USE_MALLOC_HOOK
-            if (totalMem) 
+            if (totalMem)
                 str.appendf(" TM=%"I64F"d",totalMem);
 #endif
 
@@ -2095,17 +2132,17 @@ public:
             DWORD dwHandles;
 
             dwSize = 0;
-            NtQueryInformationProcess(GetCurrentProcess(), ProcessVmCounters, &vmc, sizeof(vmc), &dwSize);
+            NtKernelFunctions.NtQueryInformationProcess(GetCurrentProcess(), ProcessVmCounters, &vmc, sizeof(vmc), &dwSize);
             dwHandles = 0;
             dwSize = 0;
-            NtQueryInformationProcess(GetCurrentProcess(), ProcessHandleCount, &dwHandles, sizeof(dwHandles), &dwSize);
+            NtKernelFunctions.NtQueryInformationProcess(GetCurrentProcess(), ProcessHandleCount, &dwHandles, sizeof(dwHandles), &dwSize);
             dwSize = 0;
-            NtQueryInformationProcess(GetCurrentProcess(), ProcessIoCounters, &ioc, sizeof(ioc), &dwSize);
+            NtKernelFunctions.NtQueryInformationProcess(GetCurrentProcess(), ProcessIoCounters, &ioc, sizeof(ioc), &dwSize);
             dwSize = 0;
-            NtQueryInformationProcess(GetCurrentProcess(), ProcessTimes, &kut, sizeof(kut), &dwSize);
+            NtKernelFunctions.NtQueryInformationProcess(GetCurrentProcess(), ProcessTimes, &kut, sizeof(kut), &dwSize);
             dwSize = 0;
-            NtQueryInformationProcess(GetCurrentProcess(), ProcessPooledUsageAndLimits, &put, sizeof(put), &dwSize);
-        
+            NtKernelFunctions.NtQueryInformationProcess(GetCurrentProcess(), ProcessPooledUsageAndLimits, &put, sizeof(put), &dwSize);
+
             str.appendf(" WS=%10u ",vmc.WorkingSetSize);
             str.appendf("PP=%10u ",put.PagedPoolUsage);
             str.appendf("NP=%10u ",put.NonPagedPoolUsage);
@@ -2140,7 +2177,7 @@ public:
             latestCPU = 0;
         }
 #endif
-        
+
 
         unsigned __int64 primaryfsTotal = 0;
         unsigned __int64 primaryfsInUse = 0;
@@ -2176,10 +2213,10 @@ public:
                 getMemUsage(mu,ma,mt,st,su);
                 memused = mu+su;
                 memtot = mt+st;
-            }   
+            }
             hook->processPerfStats(latestCPU, memused, memtot, primaryfsInUse, primaryfsTotal, secondaryfsInUse, secondaryfsTotal, getThreadCount());
         }
-        
+
         if(mode & PerfMonPackets)
         {
             unsigned tx, rx;
@@ -2245,6 +2282,31 @@ public:
         return latestCPU;
     }
 } *MemoryUsageReporter=NULL;
+
+
+static inline unsigned scaleFileTimeToMilli(unsigned __int64 nano100)
+{
+    return (unsigned)(nano100 / 10000);
+}
+
+void getProcessTime(UserSystemTime_t & result)
+{
+#ifdef _WIN32
+    LARGE_INTEGER startTime, exitTime, kernelTime, userTime;
+    if (GetProcessTimes(GetCurrentProcess(), (FILETIME *)&startTime, (FILETIME *)&exitTime, (FILETIME *)&kernelTime, (FILETIME *)&userTime))
+    {
+        result.user = scaleFileTimeToMilli(userTime.QuadPart);
+        result.system = scaleFileTimeToMilli(kernelTime.QuadPart);
+    }
+#else
+    UserStatusInfo info(GetCurrentProcessId());
+    if (info.update())
+        result = info.time;
+#endif
+}
+
+
+
 
 void getSystemTraceInfo(StringBuffer &str, PerfMonMode mode)
 {
