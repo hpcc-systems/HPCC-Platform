@@ -1658,6 +1658,8 @@ public:
     void buildXmlSerializeSet(BuildCtx & ctx, IHqlExpression * field, IHqlExpression * value);
     void buildXmlSerializeSetValues(BuildCtx & ctx, IHqlExpression * value, IHqlExpression * itemName, bool includeAll);
     void buildXmlSerializeDataset(BuildCtx & ctx, IHqlExpression * field, IHqlExpression * value, HqlExprArray * assigns);
+    void buildXmlSerializeBeginArray(BuildCtx & ctx, IHqlExpression * name);
+    void buildXmlSerializeEndArray(BuildCtx & ctx, IHqlExpression * name);
     void buildXmlSerializeBeginNested(BuildCtx & ctx, IHqlExpression * name, bool doIndent);
     void buildXmlSerializeEndNested(BuildCtx & ctx, IHqlExpression * name);
     void buildXmlSerializeUsingMeta(BuildCtx & ctx, IHqlExpression * dataset, const char * self);
