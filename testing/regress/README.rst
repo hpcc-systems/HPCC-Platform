@@ -98,8 +98,15 @@ The result:
 -------------------------------------------------------------
 Command:
 
-        ./regress run thor
+        ./regress run cluster [-h] [--pq threadNumber]
 
+Positional arguments:
+  cluster            Run the cluster suite (default: setup).
+
+Optional arguments:
+  -h, --help         show help message and exit
+  --pq threadNumber  Parallel query execution with threadNumber threads.
+                    ('-1' can be use to calculate usable thread count on a single node system)
 
 The result is a list of test cases and their result. 
 
@@ -107,33 +114,124 @@ The first and last couple of lines look like this:
 
 |
 |        [Action] Suite: thor
-|        [Action] Queries: 253
-|        [Action] 
-|        [Action] 1. Test: groupglobal3b.ecl
-|        [Pass] Pass W20131029-165658
-|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131029-165658
-|        [Action] 2. Test: realround.ecl
-|        [Pass] Pass W20131029-165701
-|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131029-165701
-|        [Action] 3. Test: patmin.ecl
+|        [Action] Queries: 257
+|        [Action]
+|        [Action]   1. Test: agglist.ecl
+|        [Pass]   1. Pass W20131119-173524 (2 sec)
+|        [Pass]   1. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-173524
+|        [Action]   2. Test: aggregate.ecl
+|        [Pass]   2. Pass W20131119-173527 (1 sec)
+|        [Pass]   2. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-173527
+|        [Action]   3. Test: aggsq1.ecl
+
 |        .
 |        .
 |        .
-|        [Action] 252. Test: ds_map.ecl
-|        [Pass] Pass W20131029-171831
-|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131029-171831
-|        [Action] 253. Test: lookupjoin.ecl
-|        [Pass] Pass W20131029-171833
-|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131029-171833
+|        [Action] 256. Test: xmlout2.ecl
+|        [Pass] Pass W20131119-182536 (1 sec)
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-182536
+|        [Action] 257. Test: xmlparse.ecl
+|        [Pass] Pass W20131119-182537 (1 sec)
+|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-182537
 |        
 |         Results
 |         `-------------------------------------------------`
-|         Passing: 253
+|         Passing: 257
 |         Failure: 0
 |         `-------------------------------------------------`
-|         Log: /var/log/HPCCSystems/regression/thor.13-10-29-16-56.log
+|         Log: /home/ati/HPCCSystems-regression/log/thor.13-11-19-17-52-27.log
+|         `-------------------------------------------------`
+|         Elapsed time: 1992 sec  (00:33:12)
 |         `-------------------------------------------------`
 |
+
+If --pq option used (in this case with 16 threads) then then the content of the console log will be different like this:
+
+|
+|        [Action] Suite: thor
+|        [Action] Queries: 257
+|        [Action]
+|        [Action]   1. Test: agglist.ecl
+|        [Action]   2. Test: aggregate.ecl
+|        [Action]   3. Test: aggsq1.ecl
+|        [Action]   4. Test: aggsq1seq.ecl
+|        [Action]   5. Test: aggsq2.ecl
+|        [Action]   6. Test: aggsq2seq.ecl
+|        [Action]   7. Test: aggsq4.ecl
+|        [Action]   8. Test: aggsq4seq.ecl
+|        [Action]   9. Test: alljoin.ecl
+|        [Action]  10. Test: apply3.ecl
+|        [Action]  11. Test: atmost2.ecl
+|        [Action]  12. Test: bcd1.ecl
+|        [Action]  13. Test: bcd2.ecl
+|        [Action]  14. Test: bcd4.ecl
+|        [Action]  15. Test: betweenjoin.ecl
+|        [Action]  16. Test: bigrecs.ecl
+|        [Pass]   2. Pass W20131119-150514 (4 sec)
+|        [Pass]   2. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-150514
+|        [Pass]   1. Pass W20131119-150513 (4 sec)
+|        [Pass]   1. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-150513
+|        [Action]  17. Test: bloom2.ecl
+|        [Action]  18. Test: bug8688.ecl
+|        [Pass]   3. Pass W20131119-150514-5 (5 sec)
+|        [Pass]   3. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-150514-5
+|        [Action]  19. Test: builtin.ecl
+|        [Pass]  12. Pass W20131119-150517 (5 sec)
+|        [Pass]  12. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-150517
+|        [Action]  20. Test: casts.ecl
+|        [Pass]  14. Pass W20131119-150517-2 (6 sec)
+|        [Pass]  14. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-150517-2
+|        [Action]  21. Test: catchexpr.ecl
+|        .
+|        .
+|        .
+|        [Action] 257. Test: xmlparse.ecl
+|        [Pass] 240. Pass W20131119-160614 (9 sec)
+|        [Pass] 240. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160614
+|        [Pass] 241. Pass W20131119-160614-3 (10 sec)
+|        [Pass] 241. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160614-3
+|        [Pass] 254. Pass W20131119-160622-1 (2 sec)
+|        [Pass] 254. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160622-1
+|        [Pass] 191. Pass W20131119-160058-2 (327 sec)
+|        [Pass] 191. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160058-2
+|        [Pass] 245. Pass W20131119-160617-3 (9 sec)
+|        [Pass] 245. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160617-3
+|        [Pass] 248. Pass W20131119-160619-4 (7 sec)
+|        [Pass] 248. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160619-4
+|        [Pass] 249. Pass W20131119-160619-3 (9 sec)
+|        [Pass] 249. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160619-3
+|        [Pass] 250. Pass W20131119-160620 (10 sec)
+|        [Pass] 250. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160620
+|        [Pass] 252. Pass W20131119-160620-3 (10 sec)
+|        [Pass] 252. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160620-3
+|        [Pass] 253. Pass W20131119-160622 (8 sec)
+|        [Pass] 253. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160622
+|        [Pass] 255. Pass W20131119-160623 (8 sec)
+|        [Pass] 255. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160623
+|        [Pass] 256. Pass W20131119-160623-1 (9 sec)
+|        [Pass] 256. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160623-1
+|        [Pass] 257. Pass W20131119-160624 (9 sec)
+|        [Pass] 257. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160624
+|        [Pass] 213. Pass W20131119-160138-4 (305 sec)
+|        [Pass] 213. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-160138-4
+|        [Pass] 127. Pass W20131119-155918 (462 sec)
+|        [Pass] 127. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-155918
+|        [Pass] 100. Pass W20131119-155713 (600 sec)
+|        [Pass] 100. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-155713
+|        [Action]
+|        [Action]
+|         Results
+|         `-------------------------------------------------`
+|         Passing: 257
+|         Failure: 0
+|         `-------------------------------------------------`
+|         Log: /home/ati/HPCCSystems-regression/log/thor.13-11-19-15-55-32.log
+|         `-------------------------------------------------`
+|         Elapsed time: 701 sec  (00:11:41)
+|         `-------------------------------------------------`
+|
+
+The logfile generated into the HPCCSystems-regression/log subfolder of the user personal folder and sorted by the test case number.
 
 
 5. To run Regression Suite with selected test case on a selected cluster (e.g. Thor): 
@@ -143,7 +241,15 @@ The first and last couple of lines look like this:
 
 Command:
 
-        ./regress query test_name [cluster]
+        ./regress query [-h] [--publish] test_name [target cluster | all]
+
+Positional arguments:
+        test_name               Name of a single ECL query (mandatory).
+        target cluster | all    Cluster for single query run (default: thor).
+                                If cluster = 'all' then run ECL query on all clusters.
+Optional arguments:
+        -h, --help            Show help message and exit
+        --publish             Publish compiled query instead of run.
 
 
 The format of result is same as above:

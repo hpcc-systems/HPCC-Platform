@@ -34,7 +34,7 @@ from ..util.expandcheck import ExpandCheck
 
 
 class Regression:
-    def __init__(self, config="regress.json", level='info', suiteDir=None):
+    def __init__(self, config="regress.json", level='info', suiteDir=None,  numOfThreads=1):
         self.config = Config(config).configObj
         self.suites = {}
         self.log = Logger(level)
@@ -63,14 +63,15 @@ class Regression:
         logging.debug("Archive Dir    : %s", self.dir_a)
 
         self.loggermutex = thread.allocate_lock()
-        self.numOfCpus = 1
+        if numOfThreads == -1:
+            self.numOfCpus = 1
+            if 'linux' in sys.platform :
+                command = 'grep cores /proc/cpuinfo | sort -u'
+                cpuInfo = os.popen(command).read()
+                self.numOfCpus = int(cpuInfo.split()[3])
+            numOfThreads = self.numOfCpus  * 2
 
-        if 'linux' in sys.platform :
-            command = 'grep cores /proc/cpuinfo | sort -u'
-            cpuInfo = os.popen(command).read()
-            self.numOfCpus = int(cpuInfo.split()[3])
-
-        self.maxthreads = self.numOfCpus * 2
+        self.maxthreads = numOfThreads
         self.maxtasks = 0
         self.exitmutexes = [thread.allocate_lock() for i in range(self.maxthreads)]
 
