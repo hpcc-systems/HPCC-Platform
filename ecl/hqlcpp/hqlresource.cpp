@@ -2124,7 +2124,6 @@ protected:
 };
 
 
-
 class EclChildSplitPointLocator : public EclHoistLocator
 {
 public:
@@ -2374,6 +2373,17 @@ protected:
                     conditionalDepth--;
                 break;
             }
+        case no_attr_expr:
+            //Ignore internal tracking attributes e.g., _selectors_Atom
+            if (!isInternalAttributeName(expr->queryName()))
+            {
+                //Default action for no_attr_expr is to not walk children, but we need to here.
+                bool wasExecutedOnce = executedOnce;
+                executedOnce = true;
+                analyseChildren(expr);
+                executedOnce = wasExecutedOnce;
+            }
+            break;
         default:
             NewHqlTransformer::analyseExpr(expr);
             break;

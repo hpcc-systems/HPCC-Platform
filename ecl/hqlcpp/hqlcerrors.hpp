@@ -209,6 +209,7 @@
 #define HQLERR_UnexpectedOptionValue_XY         4189
 #define HQLERR_VariableRowMustBeLinked          4190
 #define HQLERR_UserCodeNotAllowed               4191
+#define HQLERR_StreamInputUsedDirectly          4192
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -494,6 +495,7 @@
 #define HQLERR_UnexpectedOptionValue_XY_Text    "Unexpected value for option %s: %s"
 #define HQLERR_VariableRowMustBeLinked_Text     "External function '%s' cannot return a non-linked variable length row"
 #define HQLERR_UserCodeNotAllowed_Text          "Workunit-supplied code is not permitted on this system"
+#define HQLERR_StreamInputUsedDirectly_Text     "Library input used directly in a child query"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
