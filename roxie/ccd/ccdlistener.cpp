@@ -132,7 +132,7 @@ class CHttpRequestAsyncFor : public CInterface, public CAsyncFor
 {
 private:
     const char *queryName, *queryText;
-    const IRoxieContextLogger &logctx;
+    const ContextLogger &logctx;
     IArrayOf<IPropertyTree> &requestArray;
     Linked<IQueryFactory> f;
     SafeSocket &client;
@@ -143,7 +143,7 @@ private:
     CriticalSection crit;
 
 public:
-    CHttpRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
+    CHttpRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
       f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused), slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags)
     {
         queryName = _queryName;
@@ -1171,7 +1171,10 @@ public:
             Owned<IRoxieServerContext> ctx = queryFactory->createContext(wu, logctx);
             try
             {
-                ctx->process();
+                {
+                    MTIME_SECTION(logctx.queryTimer(), "Process");
+                    ctx->process();
+                }
                 memused = ctx->getMemoryUsage();
                 slavesReplyLen = ctx->getSlavesReplyLen();
                 ctx->done(false);
