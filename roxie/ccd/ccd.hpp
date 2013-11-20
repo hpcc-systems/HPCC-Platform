@@ -785,6 +785,8 @@ public: // Not very clean but I don't care
     bool intercept;
     bool blind;
     mutable CIArrayOf<LogItem> log;
+private:
+    ContextLogger(const ContextLogger &);  // Disable copy constructor
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -799,7 +801,7 @@ public:
     }
     ~ContextLogger()
     {
-        delete timeReporter;
+        ::Release(timeReporter);
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -945,6 +947,11 @@ public:
     {
         return timeReporter;
     }
+    void reset()
+    {
+        stats.reset();
+        timer->reset();
+    }
 };
 
 class StringContextLogger : public ContextLogger
@@ -963,7 +970,7 @@ public:
     }
     void set(const char *_id)
     {
-        stats.reset();
+        reset();
         id.set(_id);
     }
 };
