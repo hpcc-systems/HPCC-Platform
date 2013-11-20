@@ -643,43 +643,11 @@ StringBuffer &Utils::url_encode(const char* url, StringBuffer& encoded_url)
     return encoded_url;
 }
 
-static char translateHex(char hex) {
-    if(hex >= 'A')
-        return (hex & 0xdf) - 'A' + 10;
-    else
-        return hex - '0';
-}
-
 int Utils::url_decode(const char* url, StringBuffer& result)
 {
-    if(!url || !*url)
-        return 0;
-
-    const char *finger = url;
-    while (*finger)
-    {
-        char c = *finger++;
-        if (c == '+')
-            c = ' ';
-        else if (c == '%')
-        {
-            if(*finger != '\0')
-            {
-                c = translateHex(*finger);
-                finger++;
-            }
-            if(*finger != '\0')
-            {
-                c = (char)(c*16 + translateHex(*finger));
-                finger++;
-            }
-        }
-        result.append(c);
-    }
-
+    appendDecodedURL(result, url);
     return 0;
 }
-
 
 void Utils::SplitURL(const char* url, StringBuffer& protocol,StringBuffer& UserName,StringBuffer& Password,StringBuffer& host, StringBuffer& port, StringBuffer& path)
 {
