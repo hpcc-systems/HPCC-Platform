@@ -77,9 +77,61 @@ class Logger(object):
                 formatted = formatted.rstrip() + "\n" + record.exc_text
             return formatted.replace("\n", "\n    ")
 
+    class ProgressFileHandler(logging.FileHandler):
+        terminator = '\n'
+        isBuffer = False
+        logBuffer=[]
+        toSort = False
+
+        def close(self):
+            if len(self.logBuffer):
+                if self.toSort:
+                    self.logBuffer.sort()
+                stream = self.stream
+                for item in self.logBuffer:
+                    stream.write(item)
+                    stream.write(self.terminator)
+                self.logBuffer = []
+                self.toSort = False
+            self.flush()
+            self.stream.close()
+
+        def emit(self, record):
+            try:
+                msg = self.format(record)
+                stream = self.stream
+                isBuffer = hasattr(record, 'filebuffer')
+                toSort = hasattr(record,  'filesort')
+                if toSort:
+                    self.toSort = True
+                if isBuffer:
+                    #toggle buffer switcch
+                    self.isBuffer = not self.isBuffer
+                if self.isBuffer or isBuffer:
+                    if len(msg):
+                         self.logBuffer.append(msg.replace(". Test:",". Case:"))
+                else:
+                    if len(self.logBuffer):
+                        if self.toSort:
+                            self.logBuffer.sort()
+                        for item in self.logBuffer:
+                            item = item.replace(". Case:",". Test:")
+                            stream.write(item)
+                            stream.write(self.terminator)
+                        self.logBuffer = []
+                        self.toSort = False
+                    if  len(msg):
+                        stream.write(msg)
+                        stream.write(self.terminator)
+                    self.flush()
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except:
+                self.handleError(record)
+
     def addHandler(self, fd, level='info'):
         root_logger = logging.getLogger()
-        channel = logging.FileHandler(fd)
+        channel = self.ProgressFileHandler(fd)
         channel.setLevel(getattr(logging, level.upper()))
         root_logger.addHandler(channel)
 

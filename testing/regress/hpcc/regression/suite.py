@@ -75,6 +75,15 @@ class Suite:
         if ecl in self.publish:
             return True
         return False
-        
+
     def getSuite(self):
         return self.suite
+
+    def setStarTime(self,  time):
+        self.startTime = time
+
+    def setEndTime(self,  time):
+        self.endTime=time
+
+    def getelapsTime(self):
+        return self.endTime-self.startTime

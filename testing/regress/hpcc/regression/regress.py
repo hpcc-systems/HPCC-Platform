@@ -21,6 +21,7 @@ import logging
 import os
 import sys
 import time
+import thread
 
 from ..common.config import Config
 from ..common.error import Error
@@ -33,7 +34,7 @@ from ..util.expandcheck import ExpandCheck
 
 
 class Regression:
-    def __init__(self, config="regress.json", level='info', suiteDir=None):
+    def __init__(self, config="regress.json", level='info', suiteDir=None,  numOfThreads=1):
         self.config = Config(config).configObj
         self.suites = {}
         self.log = Logger(level)
@@ -61,6 +62,19 @@ class Regression:
         logging.debug("Setup Dir      : %s", self.setupDir)
         logging.debug("Archive Dir    : %s", self.dir_a)
 
+        self.loggermutex = thread.allocate_lock()
+        if numOfThreads == -1:
+            self.numOfCpus = 1
+            if 'linux' in sys.platform :
+                command = 'grep cores /proc/cpuinfo | sort -u'
+                cpuInfo = os.popen(command).read()
+                self.numOfCpus = int(cpuInfo.split()[3])
+            numOfThreads = self.numOfCpus  * 2
+
+        self.maxthreads = numOfThreads
+        self.maxtasks = 0
+        self.exitmutexes = [thread.allocate_lock() for i in range(self.maxthreads)]
+
     def setLogLevel(self, level):
         self.log.setLevel(level)
 
@@ -72,7 +86,9 @@ class Regression:
         self.setup = self.Setup()
         if cluster in self.config.Clusters:
             self.createSuite(cluster)
+            self.maxtasks = len(self.suites[cluster].getSuite())
         os.chdir(self.regressionDir)
+
 
     def createDirectory(self, dir_n):
         if not os.path.isdir(dir_n):
@@ -88,15 +104,44 @@ class Regression:
 
     def buildLogging(self, name):
         report = Report(name)
-        curTime = time.strftime("%y-%m-%d-%H-%M")
+        curTime = time.strftime("%y-%m-%d-%H-%M-%S")
         logName = name + "." + curTime + ".log"
         log = os.path.join(self.logDir, logName)
         self.log.addHandler(log, 'DEBUG')
         return (report, log)
 
     @staticmethod
-    def displayReport(report):
-        report[0].display(report[1])
+    def displayReport(report,  elapsTime=0):
+        report[0].display(report[1],  elapsTime)
+
+    def runSuiteP(self, name, suite):
+        report = self.buildLogging(name)
+        if name == "setup":
+            cluster = 'hthor'
+        else:
+            cluster = name
+
+        logging.warn("Suite: %s ",  name)
+        logging.warn("Queries: %s" % repr(len(suite.getSuite())))
+        logging.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
+        cnt = 0
+        suite.setStarTime(time.time())
+        suiteItems = suite.getSuite()
+        while cnt in range(self.maxtasks):
+            query = suiteItems[cnt]
+            for th in range(self.maxthreads):
+                if not self.exitmutexes[th].locked():
+                    cnt += 1
+                    thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
+                    break
+            time.sleep(0.1)
+
+        for mutex in self.exitmutexes:
+            while mutex.locked(): pass
+
+        logging.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
+        suite.setEndTime(time.time())
+        Regression.displayReport(report, suite.getelapsTime())
 
     def runSuite(self, name, suite):
         report = self.buildLogging(name)
@@ -107,23 +152,32 @@ class Regression:
 
         logging.warn("Suite: %s" % name)
         logging.warn("Queries: %s" % repr(len(suite.getSuite())))
+        suite.setStarTime(time.time())
         cnt = 1
         for query in suite.getSuite():
             self.runQuery(cluster, query, report, cnt, suite.testPublish(query.ecl))
             cnt += 1
-        Regression.displayReport(report)
+        suite.setEndTime(time.time())
+        Regression.displayReport(report, suite.getelapsTime())
 
-    def runQuery(self, cluster, query, report, cnt=1, publish=False):
+    def runQuery(self, cluster, query, report, cnt=1, publish=False,  th = 0):
+        startTime = time.time()
+        self.exitmutexes[th].acquire()
+        self.loggermutex.acquire()
         logging.debug("runQuery(cluster:", cluster, ", query:", query, ", report:", report, ", cnt:", cnt, ", publish:", publish, ")")
-        logging.warn("%s. Test: %s" % (repr(cnt), query.ecl))
+        logging.warn("%3d. Test: %s" % (cnt, query.ecl))
         ECLCC().makeArchive(query)
+        eclCmd = ECLcmd()
+        self.loggermutex.release()
+        res = 0
+
         if publish:
-            res = ECLcmd().runCmd("publish", cluster, query, report[0],
+            res = eclCmd.runCmd("publish", cluster, query, report[0],
                               server=self.config.ip,
                               username=self.config.username,
                               password=self.config.password)
         else:
-            res = ECLcmd().runCmd("run", cluster, query, report[0],
+            res = eclCmd.runCmd("run", cluster, query, report[0],
                               server=self.config.ip,
                               username=self.config.username,
                               password=self.config.password)
@@ -133,12 +187,17 @@ class Regression:
             url += "/WsWorkunits/WUInfo?Wuid="
             url += wuid
 
+        self.loggermutex.acquire()
+        elapsTime = time.time()-startTime
         if res:
-            logging.info("Pass %s" % wuid)
-            logging.info("URL %s" % url)
+            logging.info("%3d. Pass %s (%d sec)" % (cnt, wuid,  elapsTime))
+            logging.info("%3d. URL %s" % (cnt,url))
         else:
             if not wuid:
-                logging.error("Fail No WUID")
+                logging.error("%3d. Fail No WUID (%d sec)" % (cnt,  elapsTime))
             else:
-                logging.error("Fail %s" % wuid)
-                logging.error("URL %s" % url)
+                logging.error("%3d. Fail %s (%d sec)" % (cnt, wuid,  elapsTime))
+                logging.error("%3d. URL %s" %  (cnt,url))
+        self.loggermutex.release()
+        query.setElapsTime(elapsTime)
+        self.exitmutexes[th].release()
