@@ -3610,7 +3610,6 @@ void CLocalWorkUnit::unsubscribe()
 void CLocalWorkUnit::unlockRemote(bool commit)
 {
     CriticalBlock block(crit);
-    MTIME_SECTION(timer, "WorkUnit_unlockRemote");
     locked.unlock();
     if (commit)  
     {
@@ -3643,7 +3642,6 @@ IWorkUnit &CLocalWorkUnit::lockRemote(bool commit)
         checkWuSecAccess(*this, *secMgr.get(), secUser.get(), SecAccess_Write, "write lock", true, true);
     locked.lock();
     CriticalBlock block(crit);
-    MTIME_SECTION(timer, "WorkUnit_lockRemote");
     if (commit)
     {
         try

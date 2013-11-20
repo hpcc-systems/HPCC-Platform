@@ -610,7 +610,7 @@ protected:
     Owned<IRoxieDaliHelper> daliHelperLink;
 
     CriticalSection statsCrit;
-    const IRoxieContextLogger &logctx;
+    const ContextLogger &logctx;
 
 protected:
     CriticalSection resultsCrit;
@@ -670,7 +670,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive, bool _checkingHeap)
+    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive, bool _checkingHeap)
         : factory(_factory), logctx(_logctx)
     {
         if (_packet)
@@ -1905,6 +1905,7 @@ protected:
     void startWorkUnit()
     {
         WorkunitUpdate wu(&workUnit->lock());
+        wu->addTimeStamp("Roxie", GetCachedHostName(), "Started");
         if (!context->getPropBool("@outputToSocket", false))
             client = NULL;
         SCMStringBuffer wuParams;
@@ -1952,7 +1953,7 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieServerContext(const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
+    CRoxieServerContext(const IQueryFactory *_factory, const ContextLogger &_logctx)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
     {
         init();
@@ -1961,7 +1962,7 @@ public:
         context.setown(createPTree(ipt_caseInsensitive));
     }
 
-    CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const IRoxieContextLogger &_logctx)
+    CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const ContextLogger &_logctx)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
     {
         init();
@@ -1972,7 +1973,7 @@ public:
         startWorkUnit();
     }
 
-    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags)
+    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
     {
         init();
@@ -2145,7 +2146,20 @@ public:
     {
         if (debugContext)
             debugContext->debugTerminate();
-        setWUState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
+        if (workUnit)
+        {
+            WorkunitUpdate w(&workUnit->lock());
+            w->setState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
+            w->addTimeStamp("Roxie", GetCachedHostName(), "Finished");
+            ITimeReporter *timer = logctx.queryTimer();
+            for (unsigned i = 0; i < timer->numSections(); i++)
+            {
+                StringBuffer str("roxie: ");
+                timer->getSection(i, str);
+                w->setTimerInfo(str, NULL, (unsigned)(timer->getTime(i)/1000000), timer->getCount(i), (unsigned)timer->getMaxTime(i));
+            }
+            // logctx.dumpStats(w);
+        }
     }
 
     virtual ICodeContext *queryCodeContext()
@@ -2924,7 +2938,7 @@ private:
     StringAttr queryName;
 
 public:
-    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
+    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
         : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
     {
         queryName.set(_context->queryName());
@@ -2983,7 +2997,7 @@ private:
     StringAttr queryName;
 
 public:
-    CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
+    CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
         : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
     {
         queryName.set(_context->queryName());
@@ -3062,7 +3076,7 @@ public:
     }
 };
 
-IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions readFlags)
+IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const ContextLogger &_logctx, PTreeReaderOptions readFlags)
 {
     if (httpHelper.isHttp())
     {
@@ -3074,12 +3088,12 @@ IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQue
         return new CRoxieServerContext(context, factory, client, isXml ? MarkupFmt_XML : MarkupFmt_Unknown, isRaw, isBlocked, httpHelper, trim, priority, _logctx, readFlags);
 }
 
-IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
+IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const ContextLogger &_logctx)
 {
     return new CRoxieServerContext(factory, _logctx);
 }
 
-IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
+IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const ContextLogger &_logctx)
 {
     return new CRoxieServerContext(wu, factory, _logctx);
 }

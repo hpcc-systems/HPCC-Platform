@@ -73,9 +73,9 @@ interface IDeserializedResultStore;
 
 interface ISharedOnceContext : extends IInterface
 {
-    virtual IPropertyTree &queryOnceContext(const IQueryFactory *queryFactory, const IRoxieContextLogger &_logctx) const = 0;
+    virtual IPropertyTree &queryOnceContext(const IQueryFactory *queryFactory, const ContextLogger &_logctx) const = 0;
     virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
-    virtual void checkOnceDone(const IQueryFactory *queryFactory, const IRoxieContextLogger &_logctx) const = 0;
+    virtual void checkOnceDone(const IQueryFactory *queryFactory, const ContextLogger &_logctx) const = 0;
 };
 
 interface IQueryFactory : extends IInterface
@@ -102,21 +102,21 @@ interface IQueryFactory : extends IInterface
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual ISharedOnceContext *querySharedOnceContext() const = 0;
     virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
-    virtual IPropertyTree &queryOnceContext(const IRoxieContextLogger &logctx) const = 0;
+    virtual IPropertyTree &queryOnceContext(const ContextLogger &logctx) const = 0;
 
     virtual const IRoxiePackage &queryPackage() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
 
     virtual IPropertyTree *cloneQueryXGMML() const = 0;
-    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const IRoxieContextLogger &logctx) const = 0;
+    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const ContextLogger &logctx) const = 0;
     virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
     virtual unsigned getPriority() const = 0;
     virtual unsigned getWarnTimeLimit() const = 0;
     virtual int getDebugValueInt(const char * propname, int defVal) const = 0;
     virtual bool getDebugValueBool(const char * propname, bool defVal) const = 0;
 
-    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags) const = 0;
-    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const = 0;
+    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags) const = 0;
+    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const ContextLogger &_logctx) const = 0;
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsed, unsigned memused, unsigned slavesReplyLen, unsigned bytesOut) = 0;
     virtual IPropertyTree *getQueryStats(time_t from, time_t to) = 0;
     virtual void getGraphNames(StringArray &ret) const = 0;

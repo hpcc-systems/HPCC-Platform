@@ -218,14 +218,14 @@ public:
         return *onceResultStore;
     }
 
-    virtual IPropertyTree &queryOnceContext(const IQueryFactory *factory, const IRoxieContextLogger &logctx) const
+    virtual IPropertyTree &queryOnceContext(const IQueryFactory *factory, const ContextLogger &logctx) const
     {
         checkOnceDone(factory, logctx);
         assertex(onceContext != NULL);
         return *onceContext;
     }
 
-    virtual void checkOnceDone(const IQueryFactory *factory, const IRoxieContextLogger &logctx) const
+    virtual void checkOnceDone(const IQueryFactory *factory, const ContextLogger &logctx) const
     {
         CriticalBlock b(onceCrit);
         if (!onceContext)
@@ -987,7 +987,7 @@ public:
         return sharedOnceContext->queryOnceResultStore();
     }
 
-    virtual IPropertyTree &queryOnceContext(const IRoxieContextLogger &logctx) const
+    virtual IPropertyTree &queryOnceContext(const ContextLogger &logctx) const
     {
         assertex(sharedOnceContext);
         return sharedOnceContext->queryOnceContext(this, logctx);
@@ -1187,7 +1187,7 @@ public:
     {
         return package;
     }
-    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const IRoxieContextLogger &logctx) const 
+    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const ContextLogger &logctx) const
     {
         throwUnexpected();  // only on server...
     }
@@ -1237,11 +1237,11 @@ public:
         throwUnexpected();   // only implemented in derived slave class
     }
 
-    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags) const
+    virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags) const
     {
         throwUnexpected();   // only implemented in derived server class
     }
-    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const
+    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const ContextLogger &_logctx) const
     {
         throwUnexpected();   // only implemented in derived server class
     }
@@ -1356,19 +1356,19 @@ public:
         return activities;
     }
 
-    virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) const
+    virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) const
     {
         checkSuspended();
         return createRoxieServerContext(context, this, client, mlFmt==MarkupFmt_XML, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _xmlReadFlags);
     }
 
-    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const
+    virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const ContextLogger &_logctx) const
     {
         checkSuspended();
         return createWorkUnitServerContext(wu, this, _logctx);
     }
 
-    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const IRoxieContextLogger &logctx) const
+    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const ContextLogger &logctx) const
     {
         IPropertyTree *workflow = queryWorkflowTree();
         if (workflow)

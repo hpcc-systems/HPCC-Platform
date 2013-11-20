@@ -30,6 +30,7 @@
 #include "roxie.hpp"
 #include "roxiedebug.ipp"
 #include "eclrtl.hpp"
+#include "workunit.hpp"
 
 #ifdef _WIN32
 #ifdef CCD_EXPORTS
@@ -695,6 +696,19 @@ public:
         }
     }
 
+    void dumpStats(IWorkUnit *wu) const
+    {
+        SpinBlock b(lock);
+        if (cumulative)
+        {
+            for (unsigned i = 0; i < STATS_SIZE; i++)
+            {
+                if (counts[i])
+                    wu->setTimerInfo(getStatName(i), NULL, 0, cumulative[i], 0);
+            }
+        }
+    }
+
     void toXML(StringBuffer &reply) const
     {
         SpinBlock b(lock);
@@ -765,6 +779,7 @@ protected:
     unsigned start;
     unsigned ctxTraceLevel;
     mutable StatsCollector stats;
+    mutable ITimeReporter *timeReporter;
     unsigned channel;
 public: // Not very clean but I don't care
     bool intercept;
@@ -778,8 +793,13 @@ public:
         ctxTraceLevel = traceLevel;
         intercept = false;
         blind = false;
+        timeReporter = createStdTimeReporter();
         start = msTick();
         channel = 0;
+    }
+    ~ContextLogger()
+    {
+        delete timeReporter;
     }
 
     void outputXML(IXmlStreamFlusher &out)
@@ -897,6 +917,11 @@ public:
         stats.dumpStats(*this);
     }
 
+    virtual void dumpStats(IWorkUnit *wu) const
+    {
+        stats.dumpStats(wu);
+    }
+
     virtual bool isIntercepted() const
     {
         return intercept;
@@ -915,6 +940,10 @@ public:
     virtual unsigned queryTraceLevel() const
     {
         return ctxTraceLevel;
+    }
+    inline ITimeReporter *queryTimer() const
+    {
+        return timeReporter;
     }
 };
 
