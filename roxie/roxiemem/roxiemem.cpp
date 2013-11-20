@@ -1690,6 +1690,30 @@ public:
             delete [] results;
         }
     }
+
+    virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache)
+    {
+        ActivityEntry **results = new ActivityEntry *[map.count()];
+        HashIterator i(map);
+        unsigned j = 0;
+        for(i.first();i.isValid();i.next())
+        {
+            IMapping &cur = i.query();
+            results[j] = map.mapToValue(&cur);
+            j++;
+        }
+        qsort(results, j, sizeof(results[0]), sortUsage);
+        StringBuffer activityId;
+        while (j)
+        {
+            j--;
+            activityId.clear().append(getRealActivityId(results[j]->activityId, allocatorCache));
+            target.addStatistic(NULL, activityId.str(), "roxiepeakmem", NULL, SMEASURE_MEM_KB, results[j]->usage / 1024, results[j]->allocations, 0, false);
+        }
+        delete [] results;
+
+        target.addStatistic(NULL, NULL, "roxiepeakmem", NULL, SMEASURE_MEM_KB, totalUsed / 1024, 1, 0, false);
+    }
 };
 
 //================================================================================
@@ -3170,6 +3194,18 @@ public:
             peakPages = totalPages;
         }
         return true;
+    }
+
+    virtual void reportPeakStatistics(IStatisticTarget & target, unsigned detail)
+    {
+        Owned<IActivityMemoryUsageMap> map;
+        {
+            SpinBlock block(peakSpinLock);
+            map.set(peakUsageMap);
+        }
+        if (map)
+            map->reportStatistics(target, detail, allocatorCache);
+        target.addStatistic(NULL, NULL, "roxiehwm", NULL, SMEASURE_MEM_KB, peakPages * (HEAP_ALIGNMENT_SIZE / 1024), 1, 0, false);
     }
 
     void restoreLimit(unsigned numRequested)

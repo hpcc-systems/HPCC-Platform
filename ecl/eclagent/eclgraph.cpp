@@ -980,10 +980,16 @@ void EclSubGraph::execute(const byte * parentExtract)
         cleanupActivities();
 
         {
+            unsigned elapsed = msTick()-startTime;
+
             Owned<IWorkUnit> wu(agent->updateWorkUnit());
-            StringBuffer timer;
-            timer.append("Graph ").append(parent.queryGraphName()).append(" - ").append(seqNo+1).append(" (").append(id).append(")");
-            wu->setTimerInfo(timer.str(), NULL, msTick()-startTime, 1, 0);
+            StringBuffer timerText;
+            formatGraphTimerLabel(timerText, parent.queryGraphName(), seqNo+1, id);
+
+            //graphn: id
+            StringBuffer wuScope;
+            formatGraphTimerScope(wuScope, parent.queryGraphName(), seqNo+1, id);
+            updateWorkunitTimeStat(wu, "eclagent", wuScope, "time", timerText.str(), milliToNano(elapsed), 1, 0);
         }
     }
     agent->updateWULogfile();//Update workunit logfile name in case of rollover
@@ -1188,12 +1194,24 @@ void EclGraph::execute(const byte * parentExtract)
     if (agent->queryRemoteWorkunit())
         run = new GraphRunningState(*this, 0);
 
+    unsigned startTime = msTick();
     aindex_t lastSink = -1;
     ForEachItemIn(idx, graphs)
     {
         EclSubGraph & cur = graphs.item(idx);
         if (cur.isSink)
             cur.execute(parentExtract);
+    }
+
+    {
+        unsigned elapsed = msTick()-startTime;
+
+        Owned<IWorkUnit> wu(agent->updateWorkUnit());
+
+        StringBuffer description;
+        formatGraphTimerLabel(description, queryGraphName(), 0, 0);
+
+        updateWorkunitTimeStat(wu, "eclagent", queryGraphName(), "time", description.str(), milliToNano(elapsed), 1, 0);
     }
 
     if (run)

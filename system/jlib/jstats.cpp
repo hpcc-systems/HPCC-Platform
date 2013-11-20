@@ -87,6 +87,11 @@ extern jlib_decl const char *getStatShortName(unsigned i)
     }
 }
 
+extern jlib_decl StatisticMeasure getStatMeasure(unsigned i)
+{
+    return SMEASURE_COUNT;
+}
+
 extern jlib_decl StatisticCombineType getStatCombineMode(unsigned  i)
 {
     switch (i)

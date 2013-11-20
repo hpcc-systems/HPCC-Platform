@@ -16,7 +16,9 @@ EXPORT FileReadRecord := lib_workunitservices.WsFileRead;
 
 EXPORT FileWrittenRecord := lib_workunitservices.WsFileWritten;
 
-EXPORT TimingRecord := WsTiming;
+EXPORT TimingRecord := lib_workunitservices.WsTiming;
+
+EXPORT StatisticRecord := lib_workunitservices.WsStatistic;
 
 /*
  * Returns a Boolean indication whether the work unit exists.
@@ -134,5 +136,15 @@ EXPORT dataset(FileWrittenRecord) WorkunitFilesWritten(varstring wuid) :=
 
 EXPORT dataset(TimingRecord) WorkunitTimings(varstring wuid) :=
   lib_workunitservices.WorkUnitServices.WorkunitTimings(wuid); 
+
+/*
+ * Returns the statistics from a particular workunit.
+ *
+ * @param wuid          the name of the workunit
+*/
+
+EXPORT dataset(StatisticRecord) WorkunitStatistics(varstring wuid, bool includeActivities = false) :=
+  lib_workunitservices.WorkUnitServices.WorkunitStatistics(wuid, includeActivities);
+
 
 END;

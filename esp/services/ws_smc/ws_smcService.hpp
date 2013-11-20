@@ -79,7 +79,6 @@ class CWsSMCEx : public CWsSMC
 {
     long m_counter;
     CTpWrapper m_ClusterStatus;
-    CWUXMLInfo m_WuidInfo;
 
     StringBuffer m_ChatURL;
     StringBuffer m_Banner;

@@ -159,8 +159,13 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
                 {
                     section.insert(0, "eclcc: ");
+
+                    unsigned __int64 mval = atoi(total); // in milliseconds
                     unsigned __int64 umax = atoi(max); // in microseconds
-                    workunit->setTimerInfo(section.str(), NULL, atoi(total), atoi(count), umax*1000); // max is stored in nanoseconds
+                    unsigned __int64 cnt = atoi(count);
+                    const char * wuScope = section.str(); // should be different
+                    const char * description = section.str();
+                    updateWorkunitTiming(workunit, "eclcc", wuScope, description, milliToNano(mval), cnt, umax*1000);
                 }
             }
             else
@@ -344,7 +349,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 queryDllServer().registerDll(realdllname.str(), "Workunit DLL", dllurl.str());
                 time = msTick()-time;
                 if (workunit->getDebugValueBool("addTimingToWorkunit", true))
-                    workunit->setTimerInfo("eclccserver: create workunit", NULL, time, 1, 0);
+                    updateWorkunitTimeStat(workunit, "eclccserver", "workunit", "create workunit", NULL, milliToNano(time), 1, 0);
 
                 workunit->commit();
                 return true;

@@ -753,7 +753,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                     {
                         StringBuffer str;
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
-                        MTimeSection timing(NULL, str.str());
+                        TimeSection timing(str.str());
                         if (useTreeCopy)
                             sourceFile->treeCopyTo(destFile, subnet, fromip, true);
                         else

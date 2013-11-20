@@ -74,19 +74,20 @@ public:
 
 interface ITimeReportInfo
 {
-    virtual void report(const char *name, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
+    virtual void report(const char * scope, const char * description, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
 };
 class StringBuffer;
 class MemoryBuffer;
 struct ITimeReporter : public IInterface
 {
-  virtual void addTiming(const char *title, __int64 time) = 0;
-  virtual void addTiming(const char *title, const __int64 totaltime, const __int64 maxtime, const unsigned count) = 0;
+  virtual void addTiming(const char * scope, const char *desc, unsigned __int64 cycles) = 0;
+  virtual void mergeTiming(const char * scope, const char *desc, const __int64 totalcycles, const __int64 maxcycles, const unsigned count) = 0;
   virtual unsigned numSections() = 0;
   virtual __int64 getTime(unsigned idx) = 0;
   virtual __int64 getMaxTime(unsigned idx) = 0;
   virtual unsigned getCount(unsigned idx) = 0;
-  virtual StringBuffer &getSection(unsigned idx, StringBuffer &s) = 0;
+  virtual StringBuffer &getScope(unsigned idx, StringBuffer &s) = 0;
+  virtual StringBuffer &getDescription(unsigned idx, StringBuffer &s) = 0;
   virtual StringBuffer &getTimings(StringBuffer &s) = 0;
   virtual void printTimings() = 0;
   virtual void reset() = 0;
@@ -134,9 +135,10 @@ protected:
 class jlib_decl MTimeSection
 {
 public:
-  MTimeSection(ITimeReporter *_master, const char * _title);
+  MTimeSection(ITimeReporter *_master, const char * scope, const char * _title);
   ~MTimeSection();
 protected:
+  const char * scope;
   const char *    title;
   cycle_t         start_time;
   ITimeReporter *master;
@@ -149,7 +151,7 @@ extern jlib_decl ITimeReporter *timer;
 extern jlib_decl ITimeReporter *createStdTimeReporter();
 extern jlib_decl ITimeReporter *createStdTimeReporter(MemoryBuffer &mb);
 #define TIME_SECTION(title)   TimeSection   glue(_timer,__LINE__)(title);
-#define MTIME_SECTION(master,title)  MTimeSection   glue(mtimer,__LINE__)(master, title);
+#define MTIME_SECTION(master,title)  MTimeSection   glue(mtimer,__LINE__)(master, "workunit;" title, title);
 #else
 #define TIME_SECTION(title)   
 #define MTIME_SECTION(master,title)

@@ -107,6 +107,16 @@ static const char * EclDefinition =
                             " unsigned4 max;"
                             " string name{maxlength(64)};"
                         " end;\n"
+"export WsStatistic := record "
+                            " unsigned8 value;"
+                            " unsigned8 count;"
+                            " unsigned8 maxValue;"
+                            " string creator;"
+                            " string scope;"
+                            " string name;"
+                            " string description;"
+                            " string unit;"
+                        " end;\n"
 "export WorkunitServices := SERVICE\n"
 "   boolean WorkunitExists(const varstring wuid, boolean online=true, boolean archived=false) : c,entrypoint='wsWorkunitExists'; \n"
 "   dataset(WsWorkunitRecord) WorkunitList("
@@ -131,6 +141,7 @@ static const char * EclDefinition =
 "  dataset(WsFileRead) WorkunitFilesRead(const varstring wuid) : c,context,entrypoint='wsWorkunitFilesRead'; \n"
 "  dataset(WsFileWritten) WorkunitFilesWritten(const varstring wuid) : c,context,entrypoint='wsWorkunitFilesWritten'; \n"
 "  dataset(WsTiming) WorkunitTimings(const varstring wuid) : c,context,entrypoint='wsWorkunitTimings'; \n"
+"  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, bool includeActivities = false) : c,context,entrypoint='wsWorkunitStatistics'; \n"
     
 "END;";
 
@@ -679,24 +690,122 @@ WORKUNITSERVICES_API void wsWorkunitTimings( ICodeContext *ctx, size32_t & __len
 {
     unsigned tmp;
     MemoryBuffer mb;
-    Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"Timings");
-    if (pt) {
-        Owned<IPropertyTreeIterator> iter = pt->getElements("Timing");
+    Owned<IPropertyTree> st = getWorkUnitBranch(ctx,wuid,"Statistics");
+    if (st)
+    {
+        Owned<IPropertyTreeIterator> iter = st->getElements("Statistic[@unit=\"ns\"]");
         ForEach(*iter) {
             IPropertyTree &item = iter->query();
             if (&item==NULL)
                 continue; // paranoia
             tmp = (unsigned)item.getPropInt("@count");
             mb.append(sizeof(tmp),&tmp);
-            tmp = (unsigned)item.getPropInt("@duration");
+            tmp = (unsigned)(item.getPropInt64("@value") / 1000000);
             mb.append(sizeof(tmp),&tmp);
             tmp = (unsigned)item.getPropInt("@max");
             mb.append(sizeof(tmp),&tmp);
-            varAppend(mb, 64, item, "@name");               
+            varAppend(mb, 64, item, "@desc");
+        }
+    }
+    else
+    {
+        Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"Timings");
+        if (pt) {
+            Owned<IPropertyTreeIterator> iter = pt->getElements("Timing");
+            ForEach(*iter) {
+                IPropertyTree &item = iter->query();
+                if (&item==NULL)
+                    continue; // paranoia
+                tmp = (unsigned)item.getPropInt("@count");
+                mb.append(sizeof(tmp),&tmp);
+                tmp = (unsigned)item.getPropInt("@duration");
+                mb.append(sizeof(tmp),&tmp);
+                tmp = (unsigned)item.getPropInt("@max");
+                mb.append(sizeof(tmp),&tmp);
+                varAppend(mb, 64, item, "@name");
+            }
         }
     }
     __lenResult = mb.length();
     __result = mb.detach();
+}
+
+
+class StreamedStatistics : public CInterfaceOf<IRowStream>
+{
+public:
+    StreamedStatistics(IEngineRowAllocator * _resultAllocator, IPropertyTreeIterator * _iter)
+    : resultAllocator(_resultAllocator),iter(_iter)
+    {
+    }
+
+    virtual const void *nextRow()
+    {
+        if (!iter || !iter->isValid())
+            return NULL;
+
+        IPropertyTree & cur = iter->query();
+        unsigned __int64 value = cur.getPropInt64("@value", 0);
+        unsigned __int64 count = cur.getPropInt64("@count", 0);
+        unsigned __int64 max = cur.getPropInt64("@max", 0);
+        const char * uid = cur.queryProp("@name");
+        const char * sep1 = strchr(uid, ';');
+        const char * scope = sep1+1;
+        const char * sep2 = strchr(scope, ';');
+        const char * name = sep2+1;
+        const char * desc = cur.queryProp("@desc");
+        const char * unit = cur.queryProp("@unit");
+        if (!desc) desc = "";
+
+        size32_t lenComponent = sep1-uid;
+        size32_t lenScope = sep2-scope;
+        size32_t lenName = strlen(name);
+        size32_t lenUnit = strlen(unit);
+
+        MemoryBuffer mb;
+        mb.append(sizeof(value),&value);
+        mb.append(sizeof(count),&count);
+        mb.append(sizeof(max),&max);
+        varAppend(mb, lenComponent, uid);
+        varAppend(mb, lenScope, scope);
+        varAppend(mb, lenName, name);
+        varAppend(mb, desc);
+        varAppend(mb, unit);
+
+        size32_t len = mb.length();
+        size32_t newSize;
+        void * row = resultAllocator->createRow(newSize);
+        row = resultAllocator->resizeRow(len, row, newSize);
+        memcpy(row, mb.bufferBase(), len);
+
+        iter->next();
+        return resultAllocator->finalizeRow(len, row, newSize);
+    }
+    virtual void stop()
+    {
+        iter.clear();
+    }
+
+
+protected:
+    Linked<IEngineRowAllocator> resultAllocator;
+    Linked<IPropertyTreeIterator> iter;
+};
+
+WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities)
+{
+    unsigned tmp;
+    MemoryBuffer mb;
+    Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"Statistics");
+    Owned<IPropertyTreeIterator> iter;
+    if (pt)
+    {
+        iter.setown(pt->getElements("Statistic"));
+
+        //MORE - it includeActivities create an iterator over the progress information, and create a union iterator.
+        iter->first();
+    }
+    return new StreamedStatistics(allocator, iter);
 }
 
 

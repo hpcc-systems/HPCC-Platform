@@ -88,10 +88,12 @@ private:
     void reportStatus(IWorkUnit *wu, CGraphBase &graph, unsigned startTime, bool finished, bool success=true)
     {
         const char *graphname = graph.queryJob().queryGraphName();
-        StringBuffer timer;
+        StringBuffer timer, graphScope;
         formatGraphTimerLabel(timer, graphname, 0, graph.queryGraphId());
+        formatGraphTimerScope(graphScope, graphname, 0, graph.queryGraphId());
         unsigned duration = msTick()-startTime;
-        wu->setTimerInfo(timer.str(), NULL, duration, 1, 0);
+        updateWorkunitTimeStat(wu, "thor", graphScope, "totalTime", timer, milliToNano(duration), 1, 0);
+
         if (finished)
         {
             if (memcmp(graphname,"graph",5)==0)

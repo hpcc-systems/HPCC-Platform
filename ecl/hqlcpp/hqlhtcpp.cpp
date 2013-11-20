@@ -5548,8 +5548,7 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
         if (!isEmbeddedLibrary)
             updateClusterType();
 
-        if (options.addTimingToWorkunit)
-            wu()->setTimerInfo("EclServer: tree transform", NULL, msTick()-time, 1, 0);
+        updateTimer("workunit;tree transform", msTick()-time);
 
         if (insideLibrary())
         {
@@ -5596,8 +5595,7 @@ bool HqlCppTranslator::buildCode(HqlQueryContext & query, const char * embeddedL
             StringBuffer complexityText;
             complexityText.append(getComplexity(workflow));
             wu()->setDebugValue("__Calculated__Complexity__", complexityText, true);
-            if (options.addTimingToWorkunit)
-                wu()->setTimerInfo("EclServer: calculate complexity", NULL, msTick()-time, 1, 0);
+            updateTimer("workunit;calculate complexity", msTick()-time);
         }
     }
 
@@ -5677,7 +5675,7 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         {
             cycle_t time = msTick();
             peepholeOptimize(*code, *this);
-            DEBUG_TIMER("EclServer: peephole optimize", msTick()-time);
+            updateTimer("workunit;peephole optimize", msTick()-time);
         }
     }
     catch (IException * e)
@@ -5699,15 +5697,14 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
     return true;
 }
 
-
 class WuTimingUpdater : implements ITimeReportInfo
 {
 public:
     WuTimingUpdater(IWorkUnit * _wu) { wu = _wu; }
 
-    virtual void report(const char *name, const __int64 totaltime, const __int64 maxtime, const unsigned count)
+    virtual void report(const char * scope, const char * description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
     {
-        wu->setTimerInfo(name, NULL, (unsigned)totaltime, count, (unsigned)maxtime);
+        updateWorkunitTiming(wu, "eclcc", scope, description, milliToNano(totaltime), count, milliToNano(maxtime));
     }
 
 protected:
@@ -9005,7 +9002,7 @@ IHqlExpression * HqlCppTranslator::optimizeCompoundSource(IHqlExpression * expr,
 
     CompoundSourceTransformer transformer(*this, flags);
     OwnedHqlExpr ret = transformer.process(expr);
-    DEBUG_TIMER("EclServer: tree transform: optimize disk read", msTick()-time);
+    updateTimer("workunit;tree transform: optimize disk read", msTick()-time);
     return ret.getClear();
 }
 
@@ -9020,7 +9017,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     {
         cycle_t time = msTick();
         OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), options.optimizeSpillProject);
-        DEBUG_TIMER("EclServer: implicit projects", msTick()-time);
+        updateTimer("workunit;implicit projects", msTick()-time);
         traceExpression("AfterResourcedImplicit", resourced);
         checkNormalized(optimized);
 
@@ -9035,7 +9032,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
         traceExpression("BeforeOptimize2", resourced);
         resourced.setown(optimizeHqlExpression(resourced, getOptimizeFlags()|HOOcompoundproject));
         traceExpression("AfterOptimize2", resourced);
-        DEBUG_TIMER("EclServer: optimize graph", msTick()-time);
+        updateTimer("workunit;optimize graph", msTick()-time);
     }
     resourced.setown(optimizeCompoundSource(resourced, csfFlags));
     return resourced.getClear();
@@ -9067,7 +9064,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
         resourced.setown(optimizeHqlExpression(resourced, optFlags|HOOfiltersharedproject));
         //have the following on an "aggressive fold" option?  If no_selects extract constants it can be quite impressive (jholt22.hql)
         //resourced.setown(foldHqlExpression(resourced));
-        DEBUG_TIMER("EclServer: optimize graph", msTick()-time);
+        updateTimer("workunit;optimize graph", msTick()-time);
     }
     traceExpression("AfterOptimize", resourced);
     checkNormalized(resourced);
@@ -9095,7 +9092,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     if (!resourced)
         return NULL;
 
-    DEBUG_TIMER("EclServer: resource graph", msTick()-time);
+    updateTimer("workunit;resource graph", msTick()-time);
     traceExpression("AfterResourcing", resourced);
 
     if (options.regressionTest)
@@ -9118,7 +9115,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
         CompoundActivityTransformer transformer(targetClusterType);
         resourced.setown(transformer.transformRoot(resourced));
         traceExpression("AfterCompoundActivity", resourced);
-        DEBUG_TIMER("EclServer: tree transform: compound activity", msTick()-time);
+        updateTimer("workunit;tree transform: compound activity", msTick()-time);
     }
 
     resourced.setown(spotTableInvariant(resourced));
@@ -18172,7 +18169,7 @@ void HqlCppTranslator::spotGlobalCSE(WorkflowItem & curWorkflow)
     {
         unsigned startTime = msTick();
         spotGlobalCSE(curWorkflow.queryExprs());
-        DEBUG_TIMER("EclServer: tree transform: spot global cse", msTick()-startTime);
+        updateTimer("workunit;tree transform: spot global cse", msTick()-startTime);
     }
 }
 
@@ -18447,7 +18444,7 @@ void HqlCppTranslator::pickBestEngine(HqlExprArray & exprs)
         // if we got this far, thor not required
         setTargetClusterType(HThorCluster);
         DBGLOG("Thor query redirected to hthor instead");
-        DEBUG_TIMER("EclServer: tree transform: pick engine", msTick()-time);
+        updateTimer("workunit;tree transform: pick engine", msTick()-time);
     }
 }
 
@@ -18469,7 +18466,7 @@ void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
         }
         setTargetClusterType(HThorCluster);
         DBGLOG("Thor query redirected to hthor instead");
-        DEBUG_TIMER("EclServer: tree transform: pick engine", msTick()-time);
+        updateTimer("workunit;tree transform: pick engine", msTick()-time);
     }
 }
 

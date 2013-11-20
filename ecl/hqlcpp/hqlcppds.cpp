@@ -1682,7 +1682,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         CompoundSourceTransformer transformer(*this, CSFpreload|csfFlags);
         resourced.setown(transformer.process(resourced));
         checkNormalized(ctx, resourced);
-        DEBUG_TIMER("EclServer: tree transform: optimize disk read", msTick()-time);
+        updateTimer("workunit;tree transform: optimize disk read", msTick()-time);
     }
 
     if (options.optimizeChildGraph)
@@ -1691,7 +1691,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         traceExpression("BeforeOptimizeSub", resourced);
         resourced.setown(optimizeHqlExpression(resourced, getOptimizeFlags()|HOOcompoundproject));
         traceExpression("AfterOptimizeSub", resourced);
-        DEBUG_TIMER("EclServer: optimize graph", msTick()-time);
+        updateTimer("workunit;optimize graph", msTick()-time);
     }
 
     traceExpression("BeforeResourcing Child", resourced);
@@ -1706,7 +1706,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     else
         resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, numResults));
 
-    DEBUG_TIMER("EclServer: resource graph", msTick()-time);
+    updateTimer("workunit;resource graph", msTick()-time);
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
     
@@ -1717,7 +1717,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     {
         cycle_t time = msTick();
         OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), options.optimizeSpillProject);
-        DEBUG_TIMER("EclServer: child.implicitprojects", msTick()-time);
+        updateTimer("workunit;child.implicitprojects", msTick()-time);
         traceExpression("AfterResourcedImplicit", optimized);
         checkNormalized(ctx, optimized);
         resourced.set(optimized);
@@ -1728,7 +1728,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
 
         CompoundSourceTransformer transformer(*this, csfFlags);
         resourced.setown(transformer.process(resourced));
-        DEBUG_TIMER("EclServer: tree transform: optimize disk read", msTick()-time);
+        updateTimer("workunit;tree transform: optimize disk read", msTick()-time);
     }
 
     //Now call the optimizer again - the main purpose is to move projects over limits and into compound index/disk reads
@@ -1738,7 +1738,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         traceExpression("BeforeOptimize2", resourced);
         resourced.setown(optimizeHqlExpression(resourced, getOptimizeFlags()|HOOcompoundproject));
         traceExpression("AfterOptimize2", resourced);
-        DEBUG_TIMER("EclServer: optimize graph", msTick()-time);
+        updateTimer("workunit;optimize graph", msTick()-time);
     }
 
     if (options.paranoidCheckNormalized || options.paranoidCheckDependencies)

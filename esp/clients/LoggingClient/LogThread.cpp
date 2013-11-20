@@ -822,7 +822,7 @@ void CLogThread::checkRollOver()
             localtime_r(&tNow, &m_startTime);  // reset the start time for next rollover check
             int numNewArrivals = m_pServiceLog.ordinality();
             {
-                MTimeSection mt(NULL, "Tank file rollover");
+                TimeSection mt("Tank file rollover");
                 m_LogFailSafe->SafeRollover();
             }
             if(numNewArrivals > 0)

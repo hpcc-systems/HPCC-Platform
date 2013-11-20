@@ -704,7 +704,7 @@ public:
             for (unsigned i = 0; i < STATS_SIZE; i++)
             {
                 if (counts[i])
-                    wu->setTimerInfo(getStatName(i), NULL, 0, cumulative[i], 0);
+                    wu->setStatistic("roxie", "workunit", getStatShortName(i), getStatName(i), getStatMeasure(i), cumulative[i], counts[i], 0, false);
             }
         }
     }

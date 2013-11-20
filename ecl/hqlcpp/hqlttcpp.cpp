@@ -3626,7 +3626,7 @@ void HqlCppTranslator::convertLogicalToActivities(WorkflowItem & curWorkflow)
         transformer.transformRoot(exprs, transformed);
 
         replaceArray(exprs, transformed);
-        DEBUG_TIMER("EclServer: tree transform: convert logical", msTick()-time);
+        updateTimer("workunit;tree transform: convert logical", msTick()-time);
     }
 
     if (queryOptions().normalizeLocations)
@@ -10153,7 +10153,7 @@ void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs)
     normalizer.analyseArray(exprs, 0);
     normalizer.transformRoot(exprs, transformed);
     replaceArray(exprs, transformed);
-    DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.annotations", msTick()-time);
+    translator.updateTimer("workunit;tree transform: normalize.annotations", msTick()-time);
 }
 
 //---------------------------------------------------------------------------
@@ -12567,7 +12567,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         replaceArray(exprs, transformed);
         seenForceLocal = normalizer.querySeenForceLocal();
         seenLocalUpload = normalizer.querySeenLocalUpload();
-        DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.initial", msTick()-time);
+        translator.updateTimer("workunit;tree transform: normalize.initial", msTick()-time);
     }
 
     if (translator.queryOptions().constantFoldPostNormalize)
@@ -12576,7 +12576,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         HqlExprArray transformed;
         quickFoldExpressions(transformed, exprs, NULL, 0);
         replaceArray(exprs, transformed);
-        DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.fold", msTick()-time);
+        translator.updateTimer("workunit;tree transform: normalize.fold", msTick()-time);
     }
 
     translator.traceExpressions("before scope tag", exprs);
@@ -12587,7 +12587,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         HqlExprArray transformed;
         normalizer.transformRoot(exprs, transformed);
         replaceArray(exprs, transformed);
-        DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.scope", msTick()-time);
+        translator.updateTimer("workunit;tree transform: normalize.scope", msTick()-time);
         normalizer.reportWarnings();
     }
 
@@ -12602,7 +12602,7 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
         HqlExprArray transformed;
         transformer.transformArray(exprs, transformed);
         replaceArray(exprs, transformed);
-        DEBUG_TIMERX(translator.queryTimeReporter(), "EclServer: tree transform: normalize.linkedChildRows", msTick()-time);;
+        translator.updateTimer("workunit;tree transform: normalize.linkedChildRows", msTick()-time);;
     }
 
     if (seenLocalUpload)
@@ -12831,13 +12831,13 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
 
     unsigned timeCall = msTick();
     expandDelayedFunctionCalls(queryErrors(), exprs);
-    DEBUG_TIMER("EclServer: tree transform: expand delayed calls", msTick()-timeCall);
+    updateTimer("workunit;tree transform: expand delayed calls", msTick()-timeCall);
 
 
     unsigned time1 = msTick();
     traceExpressions("before normalize", exprs);
     normalizeHqlTree(*this, exprs);
-    DEBUG_TIMER("EclServer: tree transform: normalize", msTick()-time1);
+    updateTimer("workunit;tree transform: normalize", msTick()-time1);
 
     if (wu()->getDebugValueBool("dumpIR", false))
         EclIR::dbglogIR(exprs);
@@ -12867,7 +12867,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     {
         unsigned startTime = msTick();
         substituteClusterSize(exprs);
-        DEBUG_TIMER("EclServer: tree transform: substituteClusterSize", msTick()-startTime);
+        updateTimer("workunit;tree transform: substituteClusterSize", msTick()-startTime);
     }
 
     {
@@ -12881,7 +12881,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
             foldOptions = options.globalFoldOptions;
         foldHqlExpression(folded, exprs, foldOptions);
         replaceArray(exprs, folded);
-        DEBUG_TIMER("EclServer: tree transform: global fold", msTick()-startTime);
+        updateTimer("workunit;tree transform: global fold", msTick()-startTime);
     }
 
     traceExpressions("after global fold", exprs);
@@ -12893,7 +12893,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         HqlExprArray folded;
         optimizeHqlExpression(folded, exprs, HOOfold);
         replaceArray(exprs, folded);
-        DEBUG_TIMER("EclServer: tree transform: global optimize", msTick()-startTime);
+        updateTimer("workunit;tree transform: global optimize", msTick()-startTime);
     }
 
     traceExpressions("alloc", exprs);
@@ -12908,7 +12908,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
 
     traceExpressions("workflow", workflow);
     checkNormalized(workflow);
-    DEBUG_TIMER("EclServer: tree transform: stored results", msTick()-time4);
+    updateTimer("workunit;tree transform: stored results", msTick()-time4);
 
     if (outputLibrary && workflow.ordinality() > 1)
     {
@@ -12936,7 +12936,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
             unsigned time = msTick();
             LeftRightTransformer normalizer;
             normalizer.process(curWorkflow.queryExprs());
-            DEBUG_TIMERX(queryTimeReporter(), "EclServer: tree transform: left right", msTick()-time);
+            updateTimer("workunit;tree transform: left right", msTick()-time);
             //traceExpressions("after implicit alias", workflow);
         }
 #endif
@@ -12946,21 +12946,21 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
             unsigned time = msTick();
             ImplicitAliasTransformer normalizer;
             normalizer.process(curWorkflow.queryExprs());
-            DEBUG_TIMERX(queryTimeReporter(), "EclServer: tree transform: implicit alias", msTick()-time);
+            updateTimer("workunit;tree transform: implicit alias", msTick()-time);
             //traceExpressions("after implicit alias", workflow);
         }
 
         {
             unsigned startTime = msTick();
             hoistNestedCompound(*this, curWorkflow.queryExprs());
-            DEBUG_TIMER("EclServer: tree transform: hoist nested compound", msTick()-startTime);
+            updateTimer("workunit;tree transform: hoist nested compound", msTick()-startTime);
         }
 
         if (options.optimizeNestedConditional)
         {
             cycle_t time = msTick();
             optimizeNestedConditional(curWorkflow.queryExprs());
-            DEBUG_TIMER("EclServer: optimize nested conditional", msTick()-time);
+            updateTimer("workunit;optimize nested conditional", msTick()-time);
             traceExpressions("nested", curWorkflow);
             checkNormalized(curWorkflow);
         }
@@ -12970,20 +12970,20 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         {
             unsigned startTime = msTick();
             optimizeActivities(curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
-            DEBUG_TIMER("EclServer: tree transform: optimize activities", msTick()-startTime);
+            updateTimer("workunit;tree transform: optimize activities", msTick()-startTime);
         }
         checkNormalized(curWorkflow);
 
         unsigned time5 = msTick();
         migrateExprToNaturalLevel(curWorkflow, wu(), *this);       // Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.
-        DEBUG_TIMER("EclServer: tree transform: migrate", msTick()-time5);
+        updateTimer("workunit;tree transform: migrate", msTick()-time5);
         //transformToAliases(exprs);
         traceExpressions("migrate", curWorkflow);
         checkNormalized(curWorkflow);
 
         unsigned time2 = msTick();
         markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
-        DEBUG_TIMER("EclServer: tree transform: thor hole", msTick()-time2);
+        updateTimer("workunit;tree transform: thor hole", msTick()-time2);
         traceExpressions("boundary", curWorkflow);
         checkNormalized(curWorkflow);
 
@@ -12991,14 +12991,14 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         {
             cycle_t time = msTick();
             insertImplicitProjects(*this, curWorkflow.queryExprs());
-            DEBUG_TIMER("EclServer: global implicit projects", msTick()-time);
+            updateTimer("workunit;global implicit projects", msTick()-time);
             traceExpressions("implicit", curWorkflow);
             checkNormalized(curWorkflow);
         }
 
         unsigned time3 = msTick();
         normalizeResultFormat(curWorkflow, options);
-        DEBUG_TIMER("EclServer: tree transform: normalize result", msTick()-time3);
+        updateTimer("workunit;tree transform: normalize result", msTick()-time3);
         traceExpressions("results", curWorkflow);
         checkNormalized(curWorkflow);
 
@@ -13012,7 +13012,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         {
             unsigned startTime = msTick();
             mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);          // reduces number of graphs sent to thor
-            DEBUG_TIMER("EclServer: tree transform: merge thor", msTick()-startTime);
+            updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
         }
 
         traceExpressions("merged", curWorkflow);
@@ -13029,7 +13029,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         {
             unsigned startTime = msTick();
             mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);
-            DEBUG_TIMER("EclServer: tree transform: merge thor", msTick()-startTime);
+            updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
         }
         checkNormalized(curWorkflow);
 
@@ -13057,7 +13057,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         {
             unsigned startTime = msTick();
             checkDependencyConsistency(curWorkflow.queryExprs());
-            DEBUG_TIMER("EclServer: tree transform: check dependency", msTick()-startTime);
+            updateTimer("workunit;tree transform: check dependency", msTick()-startTime);
         }
 
         traceExpressions("end transformGraphForGeneration", curWorkflow);

@@ -491,7 +491,7 @@ CPooledHttpThread::~CPooledHttpThread()
 
 void CPooledHttpThread::main()
 {
-    MTimeSection timing(NULL, "CPooledHttpThread::main()");
+    TimeSection timing("CPooledHttpThread::main()");
     Owned<CEspHttpServer> httpserver;
     
     Owned<ISecureSocket> secure_sock;
