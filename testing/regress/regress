@@ -29,7 +29,6 @@ from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam
 
 if __name__ == "__main__":
-    atexit.register(logging.shutdown)
     prog = "regress"
     description = 'HPCC Platform Regression suite'
     parser = argparse.ArgumentParser(prog=prog, description=description)
