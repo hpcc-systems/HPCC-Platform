@@ -1034,7 +1034,10 @@ void CHqlBoundTarget::validate() const
             assertex(!length);
         }
         else if (isArrayRowset(queryType()))
-            assertex(count != NULL);
+        {
+            if (!hasStreamedModifier(queryType()))
+                assertex(count != NULL);
+        }
         else
         {
             assertex(length || queryType()->getTypeCode() == type_varstring || queryType()->getTypeCode() == type_varunicode);
@@ -11585,6 +11588,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     funcctx.addQuoted("__ctx->callFunction();");
     IIdAtom * returnFunc;
     HqlExprArray retargs;
+    Owned<ITypeInfo> newReturnType;
     retargs.append(*LINK(ctxVar));
     switch (returnType->getTypeCode())
     {
@@ -11621,12 +11625,18 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         retargs.append(*createIntConstant(returnType->queryChildType()->getSize()));
         break;
     }
+    case type_table:
+        {
+            returnFunc = getDatasetResultId;
+            newReturnType.set(returnType);
+            break;
+        }
     default:
         StringBuffer typeText;
         getFriendlyTypeStr(returnType, typeText);
         throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
     }
-    OwnedHqlExpr call = bindFunctionCall(returnFunc, retargs);
+    OwnedHqlExpr call = bindFunctionCall(returnFunc, retargs, newReturnType);
     doBuildUserFunctionReturn(funcctx, returnType, call);
 }
 

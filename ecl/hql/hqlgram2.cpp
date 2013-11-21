@@ -894,7 +894,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     result.setown(createLocationAnnotation(result.getClear(), errpos.pos));
 
     if (queryParametered())
-        return createWrapper(no_outofline, result.getClear());
+        return createWrapper(no_outofline, result.getClear(), createAttribute(contextAtom));    // MORE: this needs more thought
     return result.getClear();
 }
 

@@ -3009,8 +3009,11 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     case type_table:
     case type_groupedtable:
     case type_row:
-        initBoundStringTarget(target, type, "__lenResult", "__result");
-        returnByReference = true;
+        if (!hasStreamedModifier(type))
+        {
+            initBoundStringTarget(target, type, "__lenResult", "__result");
+            returnByReference = true;
+        }
         break;
     case type_set:
         target.isAll.setown(createVariable("__isAllResult", makeBoolType()));

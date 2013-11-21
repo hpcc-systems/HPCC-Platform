@@ -36,6 +36,7 @@ extern HQL_API IIdAtom * failId;
 extern HQL_API IIdAtom * getEmbedContextId;
 extern HQL_API IIdAtom * getBooleanResultId;
 extern HQL_API IIdAtom * getDataResultId;
+extern HQL_API IIdAtom * getDatasetResultId;
 extern HQL_API IIdAtom * getRealResultId;
 extern HQL_API IIdAtom * getSetResultId;
 extern HQL_API IIdAtom * getSignedResultId;

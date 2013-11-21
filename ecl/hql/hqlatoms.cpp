@@ -34,6 +34,7 @@ IIdAtom * compileEmbeddedScriptId;
 IIdAtom * getEmbedContextId;
 IIdAtom * getBooleanResultId;
 IIdAtom * getDataResultId;
+IIdAtom * getDatasetResultId;
 IIdAtom * getRealResultId;
 IIdAtom * getSetResultId;
 IIdAtom * getSignedResultId;
@@ -439,6 +440,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEID(getEmbedContext);
     MAKEID(getBooleanResult);
     MAKEID(getDataResult);
+    MAKEID(getDatasetResult);
     MAKEID(getRealResult);
     MAKEID(getSetResult);
     MAKEID(getSignedResult);

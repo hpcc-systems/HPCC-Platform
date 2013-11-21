@@ -855,6 +855,7 @@ const char * cppSystemText[]  = {
 
     "   boolean getBooleanResult() : method,entrypoint='getBooleanResult';",
     "   data getDataResult() : method,entrypoint='getDataResult';",
+    "   streamed dataset getDatasetResult() : method,entrypoint='getDatasetResult';",
     "   real getRealResult() : method,entrypoint='getRealResult';",
     "   integer getSignedResult() : method,entrypoint='getSignedResult';",
     "   string getStringResult() : method,entrypoint='getStringResult';",
