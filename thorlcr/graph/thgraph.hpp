@@ -853,7 +853,7 @@ public:
     unsigned querySlaves() const { return slaveGroup->ordinality(); }
     ICommunicator &queryJobComm() const { return *jobComm; }
     IGroup &queryJobGroup() const { return *jobGroup; }
-    bool queryTimeActivities() const { return timeActivities; }
+    inline bool queryTimeActivities() const { return timeActivities; }
     unsigned queryMaxDefaultActivityCores() const { return maxActivityCores; }
     IGroup &querySlaveGroup() const { return *slaveGroup; }
     const rank_t &queryMyRank() const { return myrank; }
@@ -900,7 +900,7 @@ protected:
     Linked<IHThorArg> baseHelper;
     mptag_t mpTag; // to be used by any direct inter master<->slave communication
     bool abortSoon;
-    const bool &timeActivities; // purely for access efficiency
+    bool timeActivities; // purely for access efficiency
     size32_t parentExtractSz;
     const byte *parentExtract;
     bool receiving, cancelledReceive, reInit;
