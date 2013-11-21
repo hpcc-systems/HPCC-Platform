@@ -70,6 +70,7 @@ if __name__ == "__main__":
     try:
         if 'clusters' in args:
             Clusters = ['setup']
+            regress = Regression(args.config, args.loglevel, suiteDir)
             for cluster in regress.config.Clusters:
                 Clusters.append(str(cluster))
             print "Avaliable Clusters: "
