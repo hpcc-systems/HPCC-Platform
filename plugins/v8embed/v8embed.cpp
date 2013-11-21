@@ -435,6 +435,11 @@ public:
         __result = out.detachdata();
     }
 
+    virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
+    {
+        UNIMPLEMENTED;
+    }
+
     virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
         v8::HandleScope handle_scope;

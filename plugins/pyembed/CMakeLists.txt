@@ -39,6 +39,7 @@ if (USE_PYTHON)
          ./../../system/include
          ./../../rtl/eclrtl
          ./../../rtl/include
+         ./../../rtl/nbcd
          ./../../common/deftype
          ./../../system/jlib
        )

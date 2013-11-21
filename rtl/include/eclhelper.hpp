@@ -62,6 +62,7 @@ interface IException;
 class MemoryBuffer;
 class StringBuffer;
 class rtlRowBuilder;
+class Decimal;
 struct RtlFieldInfo;
 struct RtlTypeInfo;
 
@@ -199,7 +200,33 @@ public:
     virtual void processEndRow(const RtlFieldInfo * field) = 0;
 };
 
-// Functions for processing rows - creating, serializing, destorying etc.
+class RtlDynamicRowBuilder;
+
+interface IFieldSource : public IInterface
+{
+public:
+    virtual bool getBooleanResult(const RtlFieldInfo *field) = 0;
+    virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void * &result) = 0;
+    virtual double getRealResult(const RtlFieldInfo *field) = 0;
+    virtual __int64 getSignedResult(const RtlFieldInfo *field) = 0;
+    virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field) = 0;
+    virtual void getStringResult(const RtlFieldInfo *field, size32_t &len, char * &result) = 0;
+    virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result) = 0;
+    virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result) = 0;
+    virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value) = 0;
+
+    //The following are used process the structured fields
+    virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll) = 0;
+    virtual void processBeginDataset(const RtlFieldInfo * field) = 0;
+    virtual void processBeginRow(const RtlFieldInfo * field) = 0;
+    virtual bool processNextSet(const RtlFieldInfo * field) = 0;
+    virtual bool processNextRow(const RtlFieldInfo * field) = 0;
+    virtual void processEndSet(const RtlFieldInfo * field) = 0;
+    virtual void processEndDataset(const RtlFieldInfo * field) = 0;
+    virtual void processEndRow(const RtlFieldInfo * field) = 0;
+};
+
+// Functions for processing rows - creating, serializing, destroying etc.
 interface IOutputRowSerializer;
 interface IOutputRowDeserializer;
 
@@ -313,6 +340,8 @@ interface RtlITypeInfo
     virtual const char * queryLocale() const = 0;
     virtual const RtlFieldInfo * const * queryFields() const = 0;               // null terminated list
     virtual const RtlTypeInfo * queryChildType() const = 0;
+
+    virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const = 0;
 };
 
 
@@ -340,6 +369,7 @@ public:
                                     // if RFTMunknownsize then maxlength (records) [maxcount(datasets)]
 };
 
+
 //Core struct used for representing meta for a field.
 struct RtlFieldInfo
 {
@@ -356,6 +386,10 @@ struct RtlFieldInfo
     inline size32_t size(const byte * self, const byte * selfrow) const 
     { 
         return type->size(self, selfrow); 
+    }
+    inline size32_t build(ARowBuilder &builder, size32_t offset, IFieldSource & source) const
+    {
+        return type->build(builder, offset, this, source);
     }
     inline size32_t process(const byte * self, const byte * selfrow, IFieldProcessor & target) const 
     {

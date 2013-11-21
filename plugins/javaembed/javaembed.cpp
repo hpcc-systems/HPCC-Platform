@@ -723,7 +723,10 @@ public:
     {
         sharedCtx->getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
     }
-
+    virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
+    {
+        UNIMPLEMENTED;
+    }
     virtual void bindBooleanParam(const char *name, bool val)
     {
         if (*argsig != 'B')

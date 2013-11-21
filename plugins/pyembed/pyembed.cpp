@@ -21,8 +21,12 @@
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
 #include "deftype.hpp"
+#include "eclhelper.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlds_imp.hpp"
+#include "rtlfield_imp.hpp"
+#include "nbcd.hpp"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -69,6 +73,7 @@ public:
     inline OwnedPyObject(PyObject *_ptr) : ptr(_ptr) {}
     inline ~OwnedPyObject()                { if (ptr) Py_DECREF(ptr); }
     inline PyObject * get() const           { return ptr; }
+    inline PyObject * getClear()            { PyObject *ret = ptr; ptr = NULL; return ret; }
     inline PyObject * operator -> () const { return ptr; }
     inline operator PyObject *() const    { return ptr; }
     inline void clear()                     { if (ptr) Py_DECREF(ptr); ptr = NULL; }
@@ -304,15 +309,421 @@ protected:
     HINSTANCE pythonLibrary;
 } globalState;
 
+static int countFields(const RtlFieldInfo * const * fields)
+{
+    unsigned count = 0;
+    loop
+    {
+        if (!*fields)
+            break;
+        fields++;
+        count++;
+    }
+    return count;
+}
+
+// Conversions from Python objects to ECL data
+
+static void typeError(const char *expected, const RtlFieldInfo *field) __attribute__((noreturn));
+
+static void typeError(const char *expected, const RtlFieldInfo *field)
+{
+    VStringBuffer msg("pyembed: type mismatch - %s expected", expected);
+    if (field)
+        msg.appendf(" for field %s", field->name->str());
+    rtlFail(0, msg.str());
+}
+
+static bool getBooleanResult(const RtlFieldInfo *field, PyObject *obj)
+{
+    assertex(obj && obj != Py_None);
+    if (!PyBool_Check(obj))
+        typeError("boolean", field);
+    return obj == Py_True;
+}
+
+static void getDataResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, void * &result)
+{
+    assertex(obj && obj != Py_None);
+    if (!PyByteArray_Check(obj))
+        typeError("bytearray", field);
+    rtlStrToDataX(chars, result, PyByteArray_Size(obj), PyByteArray_AsString(obj));
+}
+
+static double getRealResult(const RtlFieldInfo *field, PyObject *obj)
+{
+    assertex(obj && obj != Py_None);
+    if (!PyFloat_Check(obj))
+        typeError("real", field);
+    return PyFloat_AsDouble(obj);
+}
+
+static __int64 getSignedResult(const RtlFieldInfo *field, PyObject *obj)
+{
+    assertex(obj && obj != Py_None);
+    __int64 ret;
+    if (PyInt_Check(obj))
+        ret = PyInt_AsUnsignedLongLongMask(obj);
+    else if (PyLong_Check(obj))
+        ret = (__int64) PyLong_AsLongLong(obj);
+    else
+        typeError("integer", field);
+    return ret;
+}
+
+static unsigned __int64 getUnsignedResult(const RtlFieldInfo *field, PyObject *obj)
+{
+    assertex(obj && obj != Py_None);
+    unsigned __int64 ret;
+    if (PyInt_Check(obj))
+        ret = PyInt_AsUnsignedLongLongMask(obj);
+    else if (PyLong_Check(obj))
+        ret =  (unsigned __int64) PyLong_AsUnsignedLongLong(obj);
+    else
+        typeError("integer", field);
+    return ret;
+}
+
+static void getStringResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
+{
+    assertex(obj && obj != Py_None);
+    if (PyString_Check(obj))
+    {
+        const char * text =  PyString_AsString(obj);
+        checkPythonError();
+        size_t lenBytes = PyString_Size(obj);
+        rtlStrToStrX(chars, result, lenBytes, text);
+    }
+    else
+        typeError("string", field);
+}
+
+static void getUTF8Result(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, char * &result)
+{
+    assertex(obj && obj != Py_None);
+    if (PyUnicode_Check(obj))
+    {
+        OwnedPyObject utf8 = PyUnicode_AsUTF8String(obj);
+        checkPythonError();
+        size_t lenBytes = PyString_Size(utf8);
+        const char * text =  PyString_AsString(utf8);
+        checkPythonError();
+        size32_t numchars = rtlUtf8Length(lenBytes, text);
+        rtlUtf8ToUtf8X(chars, result, numchars, text);
+    }
+    else
+        typeError("unicode string", field);
+}
+
+static void getSetResult(PyObject *obj, bool & isAllResult, size32_t & resultBytes, void * & result, int elemType, size32_t elemSize)
+{
+    // MORE - should probably recode to use the getResultDataset mechanism
+    assertex(obj && obj != Py_None);
+    if (!PyList_Check(obj) && !PySet_Check(obj))
+        rtlFail(0, "pyembed: type mismatch - list or set expected");
+    rtlRowBuilder out;
+    size32_t outBytes = 0;
+    byte *outData = NULL;
+    OwnedPyObject iter = PyObject_GetIter(obj);
+    OwnedPyObject elem;
+    for (elem.setown(PyIter_Next(iter)); elem != NULL; elem.setown(PyIter_Next(iter)))
+    {
+        if (elemSize != UNKNOWN_LENGTH)
+        {
+            out.ensureAvailable(outBytes + elemSize);
+            outData = out.getbytes() + outBytes;
+            outBytes += elemSize;
+        }
+        switch ((type_t) elemType)
+        {
+        case type_int:
+            rtlWriteInt(outData, pyembed::getSignedResult(NULL, elem), elemSize);
+            break;
+        case type_unsigned:
+            rtlWriteInt(outData, pyembed::getUnsignedResult(NULL, elem), elemSize);
+            break;
+        case type_real:
+            if (elemSize == sizeof(double))
+                * (double *) outData = (double) pyembed::getRealResult(NULL, elem);
+            else
+            {
+                assertex(elemSize == sizeof(float));
+                * (float *) outData = (float) pyembed::getRealResult(NULL, elem);
+            }
+            break;
+        case type_boolean:
+            assertex(elemSize == sizeof(bool));
+            * (bool *) outData = pyembed::getBooleanResult(NULL, elem);
+            break;
+        case type_string:
+        case type_varstring:
+        {
+            if (!PyString_Check(elem))
+                rtlFail(0, "pyembed: type mismatch - return value in list was not a STRING");
+            const char * text =  PyString_AsString(elem);
+            checkPythonError();
+            size_t lenBytes = PyString_Size(elem);
+            if (elemSize == UNKNOWN_LENGTH)
+            {
+                if (elemType == type_string)
+                {
+                    out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                    outData = out.getbytes() + outBytes;
+                    * (size32_t *) outData = lenBytes;
+                    rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                    outBytes += lenBytes + sizeof(size32_t);
+                }
+                else
+                {
+                    out.ensureAvailable(outBytes + lenBytes + 1);
+                    outData = out.getbytes() + outBytes;
+                    rtlStrToVStr(0, outData, lenBytes, text);
+                    outBytes += lenBytes + 1;
+                }
+            }
+            else
+            {
+                if (elemType == type_string)
+                    rtlStrToStr(elemSize, outData, lenBytes, text);
+                else
+                    rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
+            }
+            break;
+        }
+        case type_unicode:
+        case type_utf8:
+        {
+            if (!PyUnicode_Check(elem))
+                rtlFail(0, "pyembed: type mismatch - return value in list was not a unicode STRING");
+            OwnedPyObject utf8 = PyUnicode_AsUTF8String(elem);
+            checkPythonError();
+            size_t lenBytes = PyString_Size(utf8);
+            const char * text =  PyString_AsString(utf8);
+            checkPythonError();
+            size32_t numchars = rtlUtf8Length(lenBytes, text);
+            if (elemType == type_utf8)
+            {
+                assertex (elemSize == UNKNOWN_LENGTH);
+                out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                outData = out.getbytes() + outBytes;
+                * (size32_t *) outData = numchars;
+                rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                outBytes += lenBytes + sizeof(size32_t);
+            }
+            else
+            {
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    out.ensureAvailable(outBytes + numchars*sizeof(UChar) + sizeof(size32_t));
+                    outData = out.getbytes() + outBytes;
+                    // You can't assume that number of chars in utf8 matches number in unicode16 ...
+                    size32_t numchars16;
+                    rtlDataAttr unicode16;
+                    rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+                    * (size32_t *) outData = numchars16;
+                    rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
+                    outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
+                }
+                else
+                    rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
+            }
+            break;
+        }
+        case type_data:
+        {
+            if (!PyByteArray_Check(elem))
+                rtlFail(0, "pyembed: type mismatch - return value in list was not a bytearray");
+            size_t lenBytes = PyByteArray_Size(elem);  // Could check does not overflow size32_t
+            const char *data = PyByteArray_AsString(elem);
+            if (elemSize == UNKNOWN_LENGTH)
+            {
+                out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                outData = out.getbytes() + outBytes;
+                * (size32_t *) outData = lenBytes;
+                rtlStrToData(lenBytes, outData+sizeof(size32_t), lenBytes, data);
+                outBytes += lenBytes + sizeof(size32_t);
+            }
+            else
+                rtlStrToData(elemSize, outData, lenBytes, data);
+            break;
+        }
+        default:
+            rtlFail(0, "pyembed: type mismatch - unsupported return type");
+            break;
+        }
+        checkPythonError();
+    }
+    isAllResult = false;
+    resultBytes = outBytes;
+    result = out.detachdata();
+}
+
+static void getUnicodeResult(const RtlFieldInfo *field, PyObject *obj, size32_t &chars, UChar * &result)
+{
+    assertex(obj && obj != Py_None);
+    if (PyUnicode_Check(obj))
+    {
+        OwnedPyObject utf8 = PyUnicode_AsUTF8String(obj);
+        checkPythonError();
+        size_t lenBytes = PyString_Size(utf8);
+        const char * text =  PyString_AsString(utf8);
+        checkPythonError();
+        size32_t numchars = rtlUtf8Length(lenBytes, text);
+        rtlUtf8ToUnicodeX(chars, result, numchars, text);
+    }
+    else
+        typeError("unicode string", field);
+}
+
+// A PythonRowBuilder object is used to construct an ECL row from a python object
+
+class PythonRowBuilder : public CInterfaceOf<IFieldSource>
+{
+public:
+    PythonRowBuilder(PyObject *_row)
+    : iter(NULL), elem(_row)
+    {
+    }
+    virtual bool getBooleanResult(const RtlFieldInfo *field)
+    {
+        bool ret = pyembed::getBooleanResult(field, elem);
+        nextField();
+        return ret;
+    }
+    virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void * &result)
+    {
+        pyembed::getDataResult(field, elem, len, result);
+        nextField();
+    }
+    virtual double getRealResult(const RtlFieldInfo *field)
+    {
+        double ret = pyembed::getRealResult(field, elem);
+        nextField();
+        return ret;
+    }
+    virtual __int64 getSignedResult(const RtlFieldInfo *field)
+    {
+        __int64 ret = pyembed::getSignedResult(field, elem);
+        nextField();
+        return ret;
+    }
+    virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field)
+    {
+        unsigned __int64 ret = pyembed::getUnsignedResult(field, elem);
+        nextField();
+        return ret;
+    }
+    virtual void getStringResult(const RtlFieldInfo *field, size32_t &chars, char * &result)
+    {
+        pyembed::getStringResult(field, elem, chars, result);
+        nextField();
+    }
+    virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result)
+    {
+        pyembed::getUTF8Result(field, elem, chars, result);
+        nextField();
+    }
+    virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result)
+    {
+        pyembed::getUnicodeResult(field, elem, chars, result);
+        nextField();
+    }
+    virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value)
+    {
+        double ret = pyembed::getRealResult(field, elem);
+        value.setReal(ret);
+        nextField();
+    }
+
+    virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
+    {
+        isAll = false;  // No concept of an 'all' set in Python
+        assertex(elem && elem != Py_None);
+        if (!PyList_Check(elem) && !PySet_Check(elem))
+            typeError("list or set", field);
+        iterStack.append(iter.getClear());
+        iter.setown(PyObject_GetIter(elem));
+        nextField();
+    }
+    virtual bool processNextSet(const RtlFieldInfo * field)
+    {
+        return elem != NULL;
+    }
+    virtual void processBeginDataset(const RtlFieldInfo * field)
+    {
+        if (PyList_Check(elem))
+        {
+            iterStack.append(iter.getClear());
+            iter.setown(PyObject_GetIter(elem));
+            nextField();
+        }
+        else
+            typeError("list", field);
+    }
+    virtual void processBeginRow(const RtlFieldInfo * field)
+    {
+        // Expect to see a tuple here, or possibly (if the ECL record has a single field), an arbitrary scalar object
+        // If it's a tuple, we push it onto our stack as the active object
+        iterStack.append(iter.getClear());
+        if (PyTuple_Check(elem))
+        {
+            iter.setown(PyObject_GetIter(elem));
+            nextField();
+        }
+        else if (countFields(field->type->queryFields())==1)
+        {
+            // iter is NULL;
+            // NOTE - we don't call nextField here. There is a single field. Debatable whether supporting this is helpful?
+        }
+        else
+        {
+            typeError("tuple", field);
+        }
+    }
+    virtual bool processNextRow(const RtlFieldInfo * field)
+    {
+        return elem != NULL;
+    }
+    virtual void processEndSet(const RtlFieldInfo * field)
+    {
+        iter.setown((PyObject *) iterStack.pop());
+        nextField();
+    }
+    virtual void processEndDataset(const RtlFieldInfo * field)
+    {
+        iter.setown((PyObject *) iterStack.pop());
+        nextField();
+    }
+    virtual void processEndRow(const RtlFieldInfo * field)
+    {
+        iter.setown((PyObject *) iterStack.pop());
+        nextField();
+    }
+protected:
+    void nextField()
+    {
+        if (iter)
+            elem.setown(PyIter_Next(iter));
+        else
+            elem = NULL;
+        checkPythonError();
+    }
+    OwnedPyObject iter;
+    OwnedPyObject elem;
+    PointerArray iterStack;
+};
+
 // Each call to a Python function will use a new Python27EmbedFunctionContext object
 // This takes care of ensuring that the Python GIL is locked while we are executing python code,
 // and released when we are not
 
-class Python27EmbedContextBase : public CInterfaceOf<IEmbedFunctionContext>
+class Python27EmbedContextBase : public CInterface, implements IEmbedFunctionContext, implements IRowStream
 {
 public:
+    IMPLEMENT_IINTERFACE;
+
     Python27EmbedContextBase(PythonThreadContext *_sharedCtx)
-    : sharedCtx(_sharedCtx)
+    : sharedCtx(_sharedCtx), resultIterator(NULL)
     {
         PyEval_RestoreThread(sharedCtx->threadState);
         locals.setown(PyDict_New());
@@ -331,225 +742,67 @@ public:
 
     virtual bool getBooleanResult()
     {
-        assertex(result && result != Py_None);
-        if (!PyBool_Check(result))
-            rtlFail(0, "pyembed: Type mismatch on result - value is not BOOLEAN ");
-        return result == Py_True;
+        return pyembed::getBooleanResult(NULL, result);
     }
     virtual void getDataResult(size32_t &__chars, void * &__result)
     {
-        assertex(result && result != Py_None);
-        if (!PyByteArray_Check(result))
-            rtlFail(0, "pyembed: Type mismatch on result - value is not a bytearray");
-        rtlStrToDataX(__chars, __result, PyByteArray_Size(result), PyByteArray_AsString(result));
+        pyembed::getDataResult(NULL, result, __chars, __result);
     }
     virtual double getRealResult()
     {
-        assertex(result && result != Py_None);
-        return PyFloat_AsDouble(result);
+        return pyembed::getRealResult(NULL, result);
     }
     virtual __int64 getSignedResult()
     {
-        assertex(result && result != Py_None);
-        return (__int64) PyLong_AsLongLong(result);
+        return pyembed::getSignedResult(NULL, result);
     }
     virtual unsigned __int64 getUnsignedResult()
     {
-        assertex(result && result != Py_None);
-        return (__int64) PyLong_AsUnsignedLongLong(result);
+        return pyembed::getUnsignedResult(NULL, result);
     }
     virtual void getStringResult(size32_t &__chars, char * &__result)
     {
-        assertex(result && result != Py_None);
-        if (PyString_Check(result))
-        {
-            const char * text =  PyString_AsString(result);
-            checkPythonError();
-            size_t lenBytes = PyString_Size(result);
-            rtlStrToStrX(__chars, __result, lenBytes, text);
-        }
-        else
-            rtlFail(0, "pyembed: type mismatch - return value was not a string");
+        pyembed::getStringResult(NULL, result, __chars, __result);
     }
     virtual void getUTF8Result(size32_t &__chars, char * &__result)
     {
-        assertex(result && result != Py_None);
-        if (PyUnicode_Check(result))
-        {
-            OwnedPyObject utf8 = PyUnicode_AsUTF8String(result);
-            checkPythonError();
-            size_t lenBytes = PyString_Size(utf8);
-            const char * text =  PyString_AsString(utf8);
-            checkPythonError();
-            size32_t numchars = rtlUtf8Length(lenBytes, text);
-            rtlUtf8ToUtf8X(__chars, __result, numchars, text);
-        }
-        else
-            rtlFail(0, "pyembed: type mismatch - return value was not a unicode string");
+        pyembed::getUTF8Result(NULL, result, __chars, __result);
     }
     virtual void getUnicodeResult(size32_t &__chars, UChar * &__result)
     {
-        assertex(result && result != Py_None);
-        if (PyUnicode_Check(result))
-        {
-            OwnedPyObject utf8 = PyUnicode_AsUTF8String(result);
-            checkPythonError();
-            size_t lenBytes = PyString_Size(utf8);
-            const char * text =  PyString_AsString(utf8);
-            checkPythonError();
-            size32_t numchars = rtlUtf8Length(lenBytes, text);
-            rtlUtf8ToUnicodeX(__chars, __result, numchars, text);
-        }
-        else
-            rtlFail(0, "pyembed: type mismatch - return value was not a unicode string");
+        pyembed::getUnicodeResult(NULL, result, __chars, __result);
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
     {
+        pyembed::getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
+    }
+    virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
+    {
         assertex(result && result != Py_None);
         if (!PyList_Check(result))
-            rtlFail(0, "pyembed: type mismatch - return value was not a list");
-        Py_ssize_t numResults = PyList_Size(result);
-        rtlRowBuilder out;
-        byte *outData = NULL;
-        size32_t outBytes = 0;
-        if (elemSize != UNKNOWN_LENGTH)
-        {
-            out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
-            outData = out.getbytes();
-        }
-        for (int i = 0; i < numResults; i++)
-        {
-            PyObject *elem = PyList_GetItem(result, i); // note - borrowed reference
-            switch ((type_t) elemType)
-            {
-            case type_int:
-                rtlWriteInt(outData, PyLong_AsLongLong(elem), elemSize);
-                break;
-            case type_unsigned:
-                rtlWriteInt(outData, PyLong_AsUnsignedLongLong(elem), elemSize);
-                break;
-            case type_real:
-                if (!PyFloat_Check(elem))
-                    rtlFail(0, "pyembed: type mismatch - return value in list was not a REAL");
-                if (elemSize == sizeof(double))
-                    * (double *) outData = (double) PyFloat_AsDouble(elem);
-                else
-                {
-                    assertex(elemSize == sizeof(float));
-                    * (float *) outData = (float) PyFloat_AsDouble(elem);
-                }
-                break;
-            case type_boolean:
-                assertex(elemSize == sizeof(bool));
-                if (!PyBool_Check(elem))
-                    rtlFail(0, "pyembed: type mismatch - return value in list was not a BOOLEAN");
-                * (bool *) outData = (result == Py_True);
-                break;
-            case type_string:
-            case type_varstring:
-            {
-                if (!PyString_Check(elem))
-                    rtlFail(0, "pyembed: type mismatch - return value in list was not a STRING");
-                const char * text =  PyString_AsString(elem);
-                checkPythonError();
-                size_t lenBytes = PyString_Size(elem);
-                if (elemSize == UNKNOWN_LENGTH)
-                {
-                    if (elemType == type_string)
-                    {
-                        out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
-                        outData = out.getbytes() + outBytes;
-                        * (size32_t *) outData = lenBytes;
-                        rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
-                        outBytes += lenBytes + sizeof(size32_t);
-                    }
-                    else
-                    {
-                        out.ensureAvailable(outBytes + lenBytes + 1);
-                        outData = out.getbytes() + outBytes;
-                        rtlStrToVStr(0, outData, lenBytes, text);
-                        outBytes += lenBytes + 1;
-                    }
-                }
-                else
-                {
-                    if (elemType == type_string)
-                        rtlStrToStr(elemSize, outData, lenBytes, text);
-                    else
-                        rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
-                }
-                break;
-            }
-            case type_unicode:
-            case type_utf8:
-            {
-                if (!PyUnicode_Check(elem))
-                    rtlFail(0, "pyembed: type mismatch - return value in list was not a unicode STRING");
-                OwnedPyObject utf8 = PyUnicode_AsUTF8String(elem);
-                checkPythonError();
-                size_t lenBytes = PyString_Size(utf8);
-                const char * text =  PyString_AsString(utf8);
-                checkPythonError();
-                size32_t numchars = rtlUtf8Length(lenBytes, text);
-                if (elemType == type_utf8)
-                {
-                    assertex (elemSize == UNKNOWN_LENGTH);
-                    out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
-                    outData = out.getbytes() + outBytes;
-                    * (size32_t *) outData = numchars;
-                    rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
-                    outBytes += lenBytes + sizeof(size32_t);
-                }
-                else
-                {
-                    if (elemSize == UNKNOWN_LENGTH)
-                    {
-                        out.ensureAvailable(outBytes + numchars*sizeof(UChar) + sizeof(size32_t));
-                        outData = out.getbytes() + outBytes;
-                        // You can't assume that number of chars in utf8 matches number in unicode16 ...
-                        size32_t numchars16;
-                        rtlDataAttr unicode16;
-                        rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
-                        * (size32_t *) outData = numchars16;
-                        rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
-                        outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
-                    }
-                    else
-                        rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
-                }
-                break;
-            }
-            case type_data:
-            {
-                if (!PyByteArray_Check(elem))
-                    rtlFail(0, "pyembed: type mismatch - return value in list was not a bytearray");
-                size_t lenBytes = PyByteArray_Size(elem);  // Could check does not overflow size32_t
-                const char *data = PyByteArray_AsString(elem);
-                if (elemSize == UNKNOWN_LENGTH)
-                {
-                    out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
-                    outData = out.getbytes() + outBytes;
-                    * (size32_t *) outData = lenBytes;
-                    rtlStrToData(lenBytes, outData+sizeof(size32_t), lenBytes, data);
-                    outBytes += lenBytes + sizeof(size32_t);
-                }
-                else
-                    rtlStrToData(elemSize, outData, lenBytes, data);
-                break;
-            }
-            default:
-                rtlFail(0, "pyembed: type mismatch - unsupported return type");
-            }
-            checkPythonError();
-            if (elemSize != UNKNOWN_LENGTH)
-            {
-                outData += elemSize;
-                outBytes += elemSize;
-            }
-        }
-        __isAllResult = false;
-        __resultBytes = outBytes;
-        __result = out.detachdata();
+            typeError("list", NULL);
+        resultIterator = PyObject_GetIter(result);
+        resultAllocator.set(_resultAllocator);
+        return LINK(this);
+    }
+    virtual const void *nextRow()
+    {
+        assertex(resultAllocator);
+        assertex(resultIterator);
+        OwnedPyObject row = PyIter_Next(resultIterator);
+        if (!row)
+            return NULL;
+        RtlDynamicRowBuilder rowBuilder(resultAllocator);
+        PythonRowBuilder pyRowBuilder(row);
+        const RtlTypeInfo *typeInfo = resultAllocator->queryOutputMeta()->queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, pyRowBuilder);
+        return rowBuilder.finalizeRowClear(len);
+    }
+    virtual void stop()
+    {
+        resultAllocator.clear();
     }
 
     virtual void bindBooleanParam(const char *name, bool val)
@@ -694,6 +947,9 @@ protected:
     OwnedPyObject globals;
     OwnedPyObject result;
     OwnedPyObject script;
+
+    Linked<IEngineRowAllocator> resultAllocator;
+    PyObject *resultIterator;
 };
 
 class Python27EmbedScriptContext : public Python27EmbedContextBase
