@@ -24,13 +24,14 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/ResultWidget",
     "hpcc/LFDetailsWidget",
+    "hpcc/VizWidget",
 
     "dojo/text!../templates/ECLPlaygroundResultsWidget.html",
 
     "dijit/layout/TabContainer"
 ], function (declare, lang, dom, 
                 registry,
-                _TabContainerWidget, ESPWorkunit, ResultWidget, LFDetailsWidget,
+                _TabContainerWidget, ESPWorkunit, ResultWidget, LFDetailsWidget, VizWidget,
                 template) {
     return declare("ECLPlaygroundResultsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -52,19 +53,7 @@ define([
         ensurePane: function (id, title, params) {
             var retVal = registry.byId(id);
             if (!retVal) {
-                if (lang.exists("Name", params) && lang.exists("Cluster", params)) {
-                    retVal = new LFDetailsWidget.fixCircularDependency({
-                        id: id,
-                        title: title,
-                        params: params
-                    });
-                } else if (lang.exists("Wuid", params) && lang.exists("exceptions", params)) {
-                    retVal = new InfoGridWidget({
-                        id: id,
-                        title: title,
-                        params: params
-                    });
-                } else if (lang.exists("Wuid", params) && lang.exists("Sequence", params)) {
+                if (lang.exists("Wuid", params) && lang.exists("Sequence", params)) {
                     retVal = new ResultWidget({
                         id: id,
                         title: title,
@@ -88,29 +77,6 @@ define([
                 this.wu.monitor(function () {
                     if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
                         context.wu.getInfo({
-                            onGetWUExceptions: function (exceptions) {
-                                if (params.ShowErrors && exceptions.length) {
-                                    context.ensurePane(context.id + "_exceptions", "Errors/Warnings", {
-                                        Wuid: params.Wuid,
-                                        onErrorClick: context.onErrorClick,
-                                        exceptions: exceptions
-                                    });
-                                    context.initTab();
-                                }
-                            },
-                            onGetSourceFiles: function (sourceFiles) {
-                                if (params.SourceFiles) {
-                                    for (var i = 0; i < sourceFiles.length; ++i) {
-                                        var tab = context.ensurePane(context.id + "_logicalFile" + i, sourceFiles[i].Name, {
-                                            Name: sourceFiles[i].Name,
-                                            Cluster: sourceFiles[i].FileCluster
-                                        });
-                                        if (i == 0) {
-                                            context.initTab();
-                                        }
-                                    }
-                                }
-                            },
                             onGetResults: function (results) {
                                 if (!params.SourceFiles) {
                                     for (var i = 0; i < results.length; ++i) {
@@ -145,8 +111,7 @@ define([
                 this.clear();
                 this.workunit = wu;
                 this.init({
-                    Wuid: wu.Wuid,
-                    ShowErrors: true
+                    Wuid: wu.Wuid
                 });
             }
         }

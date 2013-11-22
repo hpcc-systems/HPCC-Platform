@@ -42,6 +42,7 @@
 		{ "name": "SAMPLE", "filename": "SAMPLE_Example.ecl" },
 		{ "name": "ScopeResolutionOperator", "filename": "ScopeResolutionOperator.ecl" },
 		{ "name": "SORT", "filename": "SORT_Example.ecl" },
-		{ "name": "VARIANCE", "filename": "VARIANCE_Example.ecl" }
+		{ "name": "VARIANCE", "filename": "VARIANCE_Example.ecl" },
+		{ "name": "Bar Chart", "filename": "BarChart_Example.ecl" }
 	]
 }
