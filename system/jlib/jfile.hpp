@@ -36,10 +36,13 @@ interface IMemoryMappedFile;
 class MemoryBuffer;
 class Semaphore;
 
-enum IFOmode { IFOcreate, IFOread, IFOwrite, IFOreadwrite, IFOcreaterw };    // modes for open
+enum IFOmode { IFOcreate=0x0,      IFOread=0x1,      IFOwrite=0x2,      IFOreadwrite=0x3,      IFOcreaterw=0x4,
+               IFOcreateFlsh=0x80, IFOreadFlsh=0x81, IFOwriteFlsh=0x82, IFOreadwriteFlsh=0x83, IFOcreaterwFlsh=0x84 };    // modes for open
 enum IFSHmode { IFSHnone, IFSHread=0x8, IFSHfull=0x10};   // sharing modes
 enum IFSmode { IFScurrent = FILE_CURRENT, IFSend = FILE_END, IFSbegin = FILE_BEGIN };    // seek mode
 enum CFPmode { CFPcontinue, CFPcancel, CFPstop };    // modes for ICopyFileProgress::onProgress return
+
+enum flushMethod { FLUSH_ASYNC = 0, FLUSH_WAIT, WRITE_WAIT, DONT_NEED };    // page cache flush methods
 
 class CDateTime;
 

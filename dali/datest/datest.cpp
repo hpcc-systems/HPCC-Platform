@@ -753,7 +753,7 @@ void TestRemoteFile3(int nfiles, int fsizemb)
     for (int oi=0;oi<=0;oi++) {
 
         IFile *file = createRemoteFile(ep, "testfile20.d00");
-        IFileIO *io = file->open(IFOcreate);
+        IFileIO *io = file->open(IFOcreateFlsh);
         byte *buffer = (byte *)malloc(0x8000);
         unsigned br = 0x8000/sizeof(RecordStruct);
         size32_t buffsize = br*sizeof(RecordStruct);
@@ -789,33 +789,47 @@ void TestRemoteFile3(int nfiles, int fsizemb)
         printf("Write (buffsize = %dk): elapsed time write = %lf (sec)\n",(buffsize+1023)/1024,(double)r/1000.0);
         Sleep(10);
 #endif
-        br = 0x2000/sizeof(RecordStruct);
-        for (unsigned iter=1;iter<10;iter++) {
-            t=msTick();
-            buffsize = br*sizeof(RecordStruct);
-            buffer = (byte *)realloc(buffer,buffsize);
-            curidx = 0;
-            nr = nrecs;
-            pos = 0;
-            unsigned r = msTick();
-            IFileIO *io = file->open(IFOread);
-            while (nr) {
-                if (nr<br)
-                    br = nr;
-                size32_t rd = io->read(pos, br*sizeof(RecordStruct),buffer);
-                // fprintf(stderr, "nr = %u rd = %u br = %u sizeof(RecordStruct) = %lu\n", nr, rd, br, sizeof(RecordStruct));
-                assertex(rd==br*sizeof(RecordStruct));
-                pos += br*sizeof(RecordStruct);
-                nr -= br;
-            }
-            io->Release();
-            r = msTick()-t;
-            printf("Read (buffsize = %dk): elapsed time read = %lf (sec)\n",(buffsize+1023)/1024,(double)r/1000.0);
-            Sleep(10);
-            br += br;
-        }
 
-        file->Release();
+        if(nfiles >= 0) {
+
+            br = 0x2000/sizeof(RecordStruct);
+            for (unsigned iter=1;iter<7;iter++) {
+                t=msTick();
+                buffsize = br*sizeof(RecordStruct);
+                buffer = (byte *)realloc(buffer,buffsize);
+                curidx = 0;
+                nr = nrecs;
+                pos = 0;
+                unsigned r = msTick();
+                IFileIO *io = file->open(IFOreadFlsh);
+                while (nr) {
+                    if (nr<br)
+                        br = nr;
+                    size32_t rd = io->read(pos, br*sizeof(RecordStruct),buffer);
+                    // fprintf(stderr, "nr = %u rd = %u br = %u sizeof(RecordStruct) = %lu\n", nr, rd, br, sizeof(RecordStruct));
+                    assertex(rd==br*sizeof(RecordStruct));
+                    pos += br*sizeof(RecordStruct);
+                    nr -= br;
+                }
+                io->Release();
+                r = msTick()-t;
+                printf("Read (buffsize = %dk): elapsed time read = %lf (sec)\n",(buffsize+1023)/1024,(double)r/1000.0);
+                Sleep(10);
+                br += br;
+            }
+
+            file->Release();
+
+        } else {
+
+            t=msTick();
+            file = createIFile("/var/lib/HPCCSystems/mydafilesrv/testfile20.d00");
+            IFile *dstfile = createIFile("/var/lib/HPCCSystems/mydafilesrv/destfile20.d00");
+            doCopyFile(dstfile, file, 65536, NULL, NULL, false);
+            r = msTick()-t;
+            printf("CopyFile: elapsed time copy = %lf (sec)\n",(double)r/1000.0);
+
+        }
 
     }
 #endif

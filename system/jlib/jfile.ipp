@@ -28,7 +28,6 @@
 #include <dirent.h>
 #endif
 
-
 class jlib_decl CFile : public CInterface, implements IFile
 {
     HANDLE openHandle(IFOmode mode, IFSHmode share, bool async, int stdh=-1);
@@ -86,8 +85,12 @@ public:
         GetHostIp(resfrom);
         copyTo(dest,0x100000,NULL,usetmp);
     }
-    
+
+    virtual void flush_fbuffers(flushMethod flshmeth, offset_t offset, size32_t len);
+    bool flush_pgcache;
+
 protected:
+    HANDLE fd;
     StringAttr filename;
     unsigned flags;
 };
@@ -97,6 +100,7 @@ class jlib_decl CFileIO : public CInterface, implements IFileIO
 {
 public:
     CFileIO(HANDLE,IFSHmode _sharemode);
+    CFileIO(HANDLE,IFSHmode _sharemode, bool flush_pgcache, bool syncdata);
     ~CFileIO();
     IMPLEMENT_IINTERFACE
 
@@ -119,6 +123,8 @@ protected:
     HANDLE              file;
     bool                throwOnError;
     IFSHmode            sharemode;
+    bool                flush_pgcache;
+    bool                syncdata;
 private:
     void setPos(offset_t pos);
 
