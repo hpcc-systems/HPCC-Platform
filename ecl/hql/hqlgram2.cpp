@@ -862,6 +862,13 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     if (!type)
         type.setown(makeVoidType());
 
+    //All non C++ dataset embedded functions must return streamed datasets
+    if (language && isDatasetType(type))
+    {
+        type.setown(setStreamedAttr(type, true));
+        type.setown(setLinkCountedAttr(type, true));
+    }
+
     IHqlExpression * record = queryOriginalRecord(type);
     OwnedHqlExpr result;
     if (record)
@@ -2413,6 +2420,10 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
         if (childAttrs)
             attrs = createComma(LINK(childAttrs->queryChild(0)), attrs);
     }
+
+    //An explicitly link counted dataset type should ensure the field is linkcounted
+    if (isLinkedRowset(fieldType) && !queryAttributeInList(_linkCounted_Atom, attrs))
+        attrs = createComma(attrs, getLinkCountedAttr());
 
     Owned<ITypeInfo> dsType = LINK(fieldType);
     if (value)
