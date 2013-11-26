@@ -672,8 +672,10 @@ public:
         }
         else if (countFields(field->type->queryFields())==1)
         {
-            // iter is NULL;
-            // NOTE - we don't call nextField here. There is a single field. Debatable whether supporting this is helpful?
+            // Python doesn't seem to support the concept of a tuple containing a single element.
+            // If we are expecting a single field in our row, then the 'tuple' layer will be missing
+            // NOTE - we don't call nextField here, and iter is set to null by the getClear() above.
+            // elem will be valid for one field only
         }
         else
         {

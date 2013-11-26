@@ -143,6 +143,10 @@ public:
         self = NULL;
         reserved = 0;
     }
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return NULL;
+    }
 
 protected:
     virtual byte * createSelf()
@@ -181,6 +185,10 @@ public:
         return self;
     }
 
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return builder->queryAllocator();
+    }
 protected:
     size32_t offset;
     Linked<ARowBuilder> builder;

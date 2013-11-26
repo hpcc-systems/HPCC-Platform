@@ -227,6 +227,10 @@ public:
             maxLength = 0;
         }
     }
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return rowAllocator;
+    }
     inline RtlDynamicRowBuilder(IEngineRowAllocator * _rowAllocator, bool createInitial) : rowAllocator(_rowAllocator) 
     {
         if (rowAllocator && createInitial)
@@ -284,6 +288,10 @@ public:
     }
 
     virtual byte * ensureCapacity(size32_t required, const char * fieldName);
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return NULL;
+    }
 
     inline void clear() { self = NULL; maxLength = 0; }
     inline void set(size32_t _maxLength, void * _self) { self = static_cast<byte *>(_self); maxLength = _maxLength; }
@@ -309,6 +317,10 @@ public:
     {
         self = container.ensureCapacity(offset+required+suffix, fieldName) + offset;
         return self;
+    }
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return container.queryAllocator();
     }
 
 protected:

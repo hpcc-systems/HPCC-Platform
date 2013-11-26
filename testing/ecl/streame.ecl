@@ -20,17 +20,19 @@ IMPORT Python;
 childrec := RECORD
    string name => unsigned value;
 END;
+
 namesRecord := RECORD
     STRING name1;
     STRING10 name2;
     LINKCOUNTED DATASET(childrec) childnames;
-    DICTIONARY(childrec) childdict;
+//    DICTIONARY(childrec) childdict;
+    childrec r;
     unsigned1 val1;
     integer1   val2;
     UTF8 u1;
     UNICODE u2;
     UNICODE8 u3;
-    BIG_ENDIAN unsigned6 val3;
+    BIG_ENDIAN unsigned4 val3;
     DATA d;
     BOOLEAN b;
     SET OF STRING ss1;
@@ -46,10 +48,8 @@ ENDEMBED;
 
 dataset(namesRecord) streamedNames(data d, utf8 u) := EMBED(Python)
   return [  \
-     ("Gavin", "Halliday", [("a", 1)], 250, -1,  U'là',  U'là',  U'là', 1234566, d, False, {"1","2"}), \
-     ("John", "Smith", [], 250, -1,  U'là',  U'là',  u, 1234566, d, True, [])]
+     ("Gavin", "Halliday", [("a", 1)], ("b", 2), 250, -1,  U'là',  U'là',  U'là', 0x01000000, d, False, {"1","2"}), \
+     ("John", "Smith", [], ("c", 3), 250, -1,  U'là',  U'là',  u, 0x02000000, d, True, [])]
 ENDEMBED;
 
-//output(linkedNames('AA'));
-//output(blockedNames('AA'));
 output(streamedNames(d'AA', u'là'));

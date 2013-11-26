@@ -201,7 +201,10 @@ public:
     {
         return meta.createInternalDeserializer(ctx, activityId);
     }
-
+    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type)
+    {
+        return this; // MORE - wrong!
+    }
 protected:
     inline byte * * doReallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
     {

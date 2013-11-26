@@ -75,13 +75,13 @@ size32_t RtlTypeInfoBase::toXML(const byte * self, const byte * selfrow, const R
     rtlFailUnexpected();
     return 0;
 }
-/*
+
 size32_t RtlTypeInfoBase::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
 {
     rtlFailUnexpected();
     return 0;
 }
-*/
+
 const char * RtlTypeInfoBase::queryLocale() const 
 {
     return NULL; 
@@ -189,7 +189,8 @@ size32_t RtlSwapIntTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
 {
     builder.ensureCapacity(length+offset, field->name->str());
     __int64 val = isUnsigned() ? (__int64) source.getUnsignedResult(field) : source.getSignedResult(field);
-    rtlWriteSwapInt(builder.getSelf() + offset, val, length);
+    // NOTE - we assume that the value returned from the source is already a swapped int
+    rtlWriteInt(builder.getSelf() + offset, val, length);
     offset += length;
     return offset;
 }
@@ -266,9 +267,14 @@ size32_t RtlStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const R
         builder.ensureCapacity(offset+size+sizeof(size32_t), field->name->str());
         byte *dest = builder.getSelf()+offset;
         rtlWriteInt4(dest, size);
+#if 0
+        // NOTE - you might argue that we should convert the incoming data to EBCDIC. But it seems more useful to
+        // define the semantics as being that the IFieldSource should return EBCDIC if you have declared the matching field as EBCDIC
+        // (otherwise, why did you bother?)
         if (isEbcdic())
-            rtlStrToEStr(size, (char *) dest+sizeof(size32_t), size, (char *)value);  // slightly debatable - might expect incoming result to already be in ebcdic?
+            rtlStrToEStr(size, (char *) dest+sizeof(size32_t), size, (char *)value);
         else
+#endif
             memcpy(dest+sizeof(size32_t), value, size);
         offset += size+sizeof(size32_t);
     }
@@ -276,9 +282,12 @@ size32_t RtlStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const R
     {
         builder.ensureCapacity(offset+length, field->name->str());
         byte *dest = builder.getSelf()+offset;
+#if 0
+        // See above...
         if (isEbcdic())
             rtlStrToEStr(length, (char *) dest, size, (char *) value);
         else
+#endif
             rtlStrToStr(length, dest, size, value);
         offset += length;
     }
@@ -1088,15 +1097,20 @@ size32_t RtlDatasetTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
         // a 32-bit record count, and a pointer to an array of record pointers
         size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
         builder.ensureCapacity(offset+sizeInBytes, field->name->str());
-        size32_t newOffset = offset + sizeInBytes;
         size32_t numRows = 0;
-
-        // MORE - read all the child rows
-
+        IEngineRowAllocator *childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
+        byte **childRows = NULL;
+        RtlFieldStrInfo dummyField("<nested row>", NULL, child);
+        while (source.processNextRow(field))
+        {
+            RtlDynamicRowBuilder childBuilder(childAllocator);
+            size32_t childLen = child->build(childBuilder, 0, &dummyField, source);
+            childRows = childAllocator->appendRowOwn(childRows, ++numRows, (void *) childBuilder.finalizeRowClear(childLen));
+        }
         // Go back in and patch the count, remembering it may have moved
         rtlWriteInt4(builder.getSelf()+offset, numRows);
-        // * ( void * * ) (builder.getSelf()+offset+sizeof(size32_t)) = rows;
-        offset = newOffset;
+        * ( const void * * ) (builder.getSelf()+offset+sizeof(size32_t)) = childRows;
+        offset += sizeInBytes;
     }
     else
     {

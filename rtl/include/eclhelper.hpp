@@ -103,9 +103,12 @@ interface INaryCompareEq
     virtual bool match(unsigned _num, const void * * _rows) const = 0;
 };
 
+interface IEngineRowAllocator;
+
 interface IRowBuilder : public IInterface
 {
     virtual byte * ensureCapacity(size32_t required, const char * fieldName) = 0;
+    virtual IEngineRowAllocator *queryAllocator() const = 0;
 protected:
     virtual byte * createSelf() = 0;
     virtual void reportMissingRow() const = 0;
@@ -254,6 +257,7 @@ interface IEngineRowAllocator : extends IInterface
     virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) = 0;
     virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) = 0;
     virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) = 0;
+    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *childtype) = 0;
 };
 
 interface IRowSerializerTarget
