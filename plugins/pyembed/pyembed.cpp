@@ -781,9 +781,10 @@ public:
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
         assertex(result && result != Py_None);
-        if (!PyList_Check(result))
-            typeError("list", NULL);
-        resultIterator = PyObject_GetIter(result);
+        if (!PyList_Check(result) && !PyGen_Check(result))  // MORE - should I remove this check, and just say if it is iterable, it's good?
+            typeError("list or generator", NULL);
+        resultIterator.setown(PyObject_GetIter(result));
+        checkPythonError();
         resultAllocator.set(_resultAllocator);
         return LINK(this);
     }
@@ -951,7 +952,7 @@ protected:
     OwnedPyObject script;
 
     Linked<IEngineRowAllocator> resultAllocator;
-    PyObject *resultIterator;
+    OwnedPyObject resultIterator;
 };
 
 class Python27EmbedScriptContext : public Python27EmbedContextBase

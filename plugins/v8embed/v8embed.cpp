@@ -437,9 +437,20 @@ public:
 
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
+        assertex (!result.IsEmpty());
+        if (!result->IsArray())
+            rtlFail(0, "v8embed: type mismatch - return value was not an array");
+        UNIMPLEMENTED;
+//        resultIterator.setown(new ArrayIterator(result);
+//        resultAllocator.set(_resultAllocator);
+//        return LINK(this);
+    }
+    virtual const void *nextRow()
+    {
+//        assertex(resultAllocator);
+//        assertex(resultIterator);
         UNIMPLEMENTED;
     }
-
     virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
         v8::HandleScope handle_scope;

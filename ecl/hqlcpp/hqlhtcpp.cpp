@@ -3899,6 +3899,9 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             childType = buildRtlType(arguments, ::queryRecordType(type));
             if (hasLinkCountedModifier(type))
                 fieldType |= RFTMlinkcounted;
+            StringBuffer lookupHelperName;
+            buildDictionaryHashClass(::queryRecord(type), lookupHelperName);
+            arguments.append(",&").append(lookupHelperName.str());
             break;
         }
     case type_set:
@@ -5349,9 +5352,9 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBu
         appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
 
         BuildCtx classctx(declarectx);
-        //I suspect all the priorities should be killed.  This is here because you can have meta functions accessing the
+        //I suspect all the priorities should be killed.  This is here because you can have type info constructors accessing the
         //dictionary hash functions.
-        classctx.setNextPriority(RowMetaPrio);
+        classctx.setNextPriority(HashFunctionPrio);
 
         beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
         OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);

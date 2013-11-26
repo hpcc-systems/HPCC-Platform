@@ -25,7 +25,7 @@ namesRecord := RECORD
     STRING name1;
     STRING10 name2;
     LINKCOUNTED DATASET(childrec) childnames;
-//    DICTIONARY(childrec) childdict;
+    LINKCOUNTED DICTIONARY(childrec) childdict{linkcounted};
     childrec r;
     unsigned1 val1;
     integer1   val2;
@@ -48,8 +48,19 @@ ENDEMBED;
 
 dataset(namesRecord) streamedNames(data d, utf8 u) := EMBED(Python)
   return [  \
-     ("Gavin", "Halliday", [("a", 1)], ("b", 2), 250, -1,  U'là',  U'là',  U'là', 0x01000000, d, False, {"1","2"}), \
-     ("John", "Smith", [], ("c", 3), 250, -1,  U'là',  U'là',  u, 0x02000000, d, True, [])]
+     ("Gavin", "Halliday", [("a", 1)], [("aa", 11)], ("b", 2), 250, -1,  U'là',  U'là',  U'là', 0x01000000, d, False, {"1","2"}), \
+     ("John", "Smith", [], [], ("c", 3), 250, -1,  U'là',  U'là',  u, 0x02000000, d, True, []) \
+     ]
+ENDEMBED;
+
+// Test use of Python generator object for lazy evaluation...
+
+dataset(childrec) testGenerator(unsigned lim) := EMBED(Python)
+  num = 0
+  while num < lim:
+    yield ("Generate:", num)
+    num += 1
 ENDEMBED;
 
 output(streamedNames(d'AA', u'là'));
+output (testGenerator(10));

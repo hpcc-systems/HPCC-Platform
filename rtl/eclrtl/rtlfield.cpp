@@ -448,11 +448,10 @@ size32_t RtlVarStringTypeInfo::build(ARowBuilder &builder, size32_t offset, cons
     char *value;
     source.getStringResult(field, size, value);
     byte *dest = builder.getSelf()+offset;
-    if (isEbcdic())
-        UNIMPLEMENTED;
     if (!isFixedSize())
     {
         builder.ensureCapacity(offset+size+1, field->name->str());
+        // See notes re EBCDIC conversion in RtlStringTypeInfo code
         memcpy(dest, value, size);
         dest[size] = '\0';
         offset += size+1;
@@ -1218,12 +1217,30 @@ size32_t RtlDictionaryTypeInfo::size(const byte * self, const byte * selfrow) co
 
 size32_t RtlDictionaryTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
 {
+    source.processBeginDataset(field);
     if (isLinkCounted())
     {
-        UNIMPLEMENTED;
+        // a 32-bit record count, and a pointer to an hash table with record pointers
+        size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
+        builder.ensureCapacity(offset+sizeInBytes, field->name->str());
+        IEngineRowAllocator *childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
+        RtlLinkedDictionaryBuilder dictBuilder(childAllocator, hashInfo);
+        RtlFieldStrInfo dummyField("<nested row>", NULL, child);
+        while (source.processNextRow(field))
+        {
+            RtlDynamicRowBuilder childBuilder(childAllocator);
+            size32_t childLen = child->build(childBuilder, 0, &dummyField, source);
+            dictBuilder.appendOwn((void *) childBuilder.finalizeRowClear(childLen));
+        }
+        // Go back in and patch the count
+        rtlWriteInt4(builder.getSelf()+offset, dictBuilder.getcount());
+        * ( const void * * ) (builder.getSelf()+offset+sizeof(size32_t)) = dictBuilder.linkrows();
+        offset += sizeInBytes;
     }
     else
-        UNIMPLEMENTED;
+        UNIMPLEMENTED;  // And may never be...
+    source.processEndDataset(field);
+    return offset;
 }
 
 size32_t RtlDictionaryTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const

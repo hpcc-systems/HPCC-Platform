@@ -48,6 +48,7 @@ enum GraphLocalisation {
 
 enum { 
     EclTextPrio = 1000,         // has no dependencies on anything else
+    HashFunctionPrio = 1100,
     TypeInfoPrio = 1200,
     RowMetaPrio = 1500,         
     XmlTransformerPrio = 1700,

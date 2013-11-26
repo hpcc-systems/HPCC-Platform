@@ -250,7 +250,9 @@ struct ECLRTL_API RtlDatasetTypeInfo : public RtlCompoundTypeInfo
 
 struct ECLRTL_API RtlDictionaryTypeInfo : public RtlCompoundTypeInfo
 {
-    inline RtlDictionaryTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child) : RtlCompoundTypeInfo(_fieldType, _length, _child) {}
+    inline RtlDictionaryTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child, IHThorHashLookupInfo *_hashInfo)
+    : RtlCompoundTypeInfo(_fieldType, _length, _child), hashInfo(_hashInfo) {}
+    IHThorHashLookupInfo * hashInfo;
 
     virtual size32_t size(const byte * self, const byte * selfrow) const;
     virtual size32_t build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const;
