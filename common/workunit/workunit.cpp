@@ -5504,7 +5504,7 @@ StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, un
 StringBuffer &formatGraphTimerScope(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId)
 {
     str.append(graphName);
-    if (subId) str.append(": ").append(subId);
+    if (subId) str.append(":").append(subId);
     return str;
 }
 

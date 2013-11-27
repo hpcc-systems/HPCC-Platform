@@ -160,9 +160,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 {
                     section.insert(0, "eclcc: ");
 
-                    unsigned __int64 mval = atoi(total); // in milliseconds
-                    unsigned __int64 umax = atoi(max); // in microseconds
-                    unsigned __int64 cnt = atoi(count);
+                    unsigned __int64 mval = atoi64(total); // in milliseconds
+                    unsigned __int64 umax = atoi64(max); // in microseconds
+                    unsigned __int64 cnt = atoi64(count);
                     const char * wuScope = section.str(); // should be different
                     const char * description = section.str();
                     updateWorkunitTiming(workunit, "eclcc", wuScope, description, milliToNano(mval), cnt, umax*1000);

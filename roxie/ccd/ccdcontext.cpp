@@ -1977,6 +1977,10 @@ public:
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
         workflow.setown(_factory->createWorkflowMachine(false, logctx));
         context.setown(createPTree(ipt_caseInsensitive));
+
+        //MORE: Use various debug settings to override settings:
+        rowManager->setActivityTracking(workUnit->getDebugValueBool("traceRoxiePeakMemory", false));
+
         startWorkUnit();
     }
 

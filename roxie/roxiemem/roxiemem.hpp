@@ -56,6 +56,8 @@
 // MAX_ACTIVITY_ID is further subdivided:
 #define ALLOCATORID_CHECK_MASK          0x00300000
 #define ALLOCATORID_MASK                0x000fffff
+#define UNKNOWN_ROWSET_ID               0x000F8421              // Use as the allocatorId for a rowset from an unknown activity
+#define UNKNOWN_ACTIVITY                123456789
 
 #define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
 #define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks

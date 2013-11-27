@@ -469,7 +469,7 @@ public:
         else
         {
             //assert(false);
-            return 12345678; // Used for tracing, better than a crash...
+            return UNKNOWN_ACTIVITY; // Used for tracing, better than a crash...
         }
     }
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const

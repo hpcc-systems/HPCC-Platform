@@ -143,7 +143,7 @@ EXPORT dataset(TimingRecord) WorkunitTimings(varstring wuid) :=
  * @param wuid          the name of the workunit
 */
 
-EXPORT dataset(StatisticRecord) WorkunitStatistics(varstring wuid, bool includeActivities = false) :=
+EXPORT dataset(StatisticRecord) WorkunitStatistics(varstring wuid, boolean includeActivities = false) :=
   lib_workunitservices.WorkUnitServices.WorkunitStatistics(wuid, includeActivities);
 
 

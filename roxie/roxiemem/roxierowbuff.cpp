@@ -24,16 +24,14 @@
 #include <sys/mman.h>
 #endif
 
-const unsigned RowArrayActivityId = 0xc3f7;
-
 namespace roxiemem {
 
-RoxieOutputRowArray::RoxieOutputRowArray(IRowManager * _rowManager, rowidx_t initialSize, size32_t _commitDelta) :
-    rowManager(_rowManager), commitDelta(_commitDelta)
+RoxieOutputRowArray::RoxieOutputRowArray(IRowManager * _rowManager, rowidx_t initialSize, size32_t _commitDelta, unsigned _allocatorId) :
+    rowManager(_rowManager), commitDelta(_commitDelta), allocatorId(_allocatorId)
 {
     if (initialSize)
     {
-        rows = static_cast<const void * *>(rowManager->allocate(initialSize * sizeof(void*), RowArrayActivityId));
+        rows = static_cast<const void * *>(rowManager->allocate(initialSize * sizeof(void*), allocatorId));
         maxRows = RoxieRowCapacity(rows) / sizeof(void *);
     }
     else
@@ -158,7 +156,7 @@ bool DynamicRoxieOutputRowArray::ensure(rowidx_t requiredRows)
     const void * * newRows;
     try
     {
-        newRows = static_cast<const void * *>(rowManager->allocate(newSize * sizeof(void*), RowArrayActivityId));
+        newRows = static_cast<const void * *>(rowManager->allocate(newSize * sizeof(void*), allocatorId));
         if (!newRows)
             return false;
     }

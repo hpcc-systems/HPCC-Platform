@@ -141,7 +141,7 @@ static const char * EclDefinition =
 "  dataset(WsFileRead) WorkunitFilesRead(const varstring wuid) : c,context,entrypoint='wsWorkunitFilesRead'; \n"
 "  dataset(WsFileWritten) WorkunitFilesWritten(const varstring wuid) : c,context,entrypoint='wsWorkunitFilesWritten'; \n"
 "  dataset(WsTiming) WorkunitTimings(const varstring wuid) : c,context,entrypoint='wsWorkunitTimings'; \n"
-"  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, bool includeActivities = false) : c,context,entrypoint='wsWorkunitStatistics'; \n"
+"  streamed dataset(WsStatistic) WorkunitStatistics(const varstring wuid, boolean includeActivities = false) : c,context,entrypoint='wsWorkunitStatistics'; \n"
     
 "END;";
 
