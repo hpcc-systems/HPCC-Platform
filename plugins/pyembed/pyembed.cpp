@@ -665,22 +665,19 @@ public:
         // Expect to see a tuple here, or possibly (if the ECL record has a single field), an arbitrary scalar object
         // If it's a tuple, we push it onto our stack as the active object
         iterStack.append(iter.getClear());
-        if (PyTuple_Check(elem))
+        if (!PyTuple_Check(elem))
         {
-            iter.setown(PyObject_GetIter(elem));
-            nextField();
+            if (countFields(field->type->queryFields())==1)
+            {
+                // Python doesn't seem to support the concept of a tuple containing a single element.
+                // If we are expecting a single field in our row, then the 'tuple' layer will be missing
+                elem.setown(PyTuple_Pack(1, elem.get()));
+            }
+            else
+                typeError("tuple", field);
         }
-        else if (countFields(field->type->queryFields())==1)
-        {
-            // Python doesn't seem to support the concept of a tuple containing a single element.
-            // If we are expecting a single field in our row, then the 'tuple' layer will be missing
-            // NOTE - we don't call nextField here, and iter is set to null by the getClear() above.
-            // elem will be valid for one field only
-        }
-        else
-        {
-            typeError("tuple", field);
-        }
+        iter.setown(PyObject_GetIter(elem));
+        nextField();
     }
     virtual bool processNextRow(const RtlFieldInfo * field)
     {

@@ -1097,7 +1097,7 @@ size32_t RtlDatasetTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
         size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
         builder.ensureCapacity(offset+sizeInBytes, field->name->str());
         size32_t numRows = 0;
-        IEngineRowAllocator *childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
+        Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
         byte **childRows = NULL;
         RtlFieldStrInfo dummyField("<nested row>", NULL, child);
         while (source.processNextRow(field))
@@ -1223,7 +1223,7 @@ size32_t RtlDictionaryTypeInfo::build(ARowBuilder &builder, size32_t offset, con
         // a 32-bit record count, and a pointer to an hash table with record pointers
         size32_t sizeInBytes = sizeof(size32_t) + sizeof(void *);
         builder.ensureCapacity(offset+sizeInBytes, field->name->str());
-        IEngineRowAllocator *childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
+        Owned<IEngineRowAllocator> childAllocator = builder.queryAllocator()->createChildRowAllocator(child);
         RtlLinkedDictionaryBuilder dictBuilder(childAllocator, hashInfo);
         RtlFieldStrInfo dummyField("<nested row>", NULL, child);
         while (source.processNextRow(field))
