@@ -99,6 +99,10 @@ public:
             return meta->querySerializedDiskMeta();
         return meta;
     }
+    inline IOutputMetaData * queryChildMeta(unsigned i) const
+    {
+        return meta->queryChildMeta(i);
+    }
 
 //cast operators.
     inline IOutputMetaData * queryOriginal() const          { return meta; }
@@ -402,7 +406,11 @@ public:
     {
         original->walkIndirectMembers(self+offset, visitor);
     }
-        
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return original->queryChildMeta(i);
+    }
+
 protected:
     size32_t offset;
     IOutputMetaData *original;
@@ -533,7 +541,11 @@ public:
     {
         original->walkIndirectMembers(self, visitor);
     }
-        
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return original->queryChildMeta(i);
+    }
+
 protected:
     size32_t offset;
     Linked<IOutputMetaData> original;

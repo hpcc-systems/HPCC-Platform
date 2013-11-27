@@ -4320,6 +4320,70 @@ protected:
 
 
 
+class MetaChildMetaCallback
+{
+public:
+    MetaChildMetaCallback(HqlCppTranslator & _translator, IHqlStmt * _switchStmt)
+        : translator(_translator), switchStmt(_switchStmt)
+    {
+        nextIndex = 0;
+    }
+
+    void walkRecord(BuildCtx & ctx, IHqlExpression * record)
+    {
+        ForEachChild(i, record)
+        {
+            IHqlExpression * cur = record->queryChild(i);
+            switch (cur->getOperator())
+            {
+            case no_record:
+                walkRecord(ctx, cur);
+                break;
+            case no_ifblock:
+                walkRecord(ctx, cur->queryChild(1));
+                break;
+            case no_field:
+                {
+                    ITypeInfo * type = cur->queryType();
+                    switch (type->getTypeCode())
+                    {
+                    case type_row:
+                        walkRecord(ctx, queryRecord(cur));
+                        break;
+                    case type_dictionary:
+                    case type_table:
+                    case type_groupedtable:
+                        {
+                            IHqlExpression * record = cur->queryRecord()->queryBody();
+                            if (!visited.contains(*record))
+                            {
+                                BuildCtx condctx(ctx);
+                                OwnedHqlExpr branch = getSizetConstant(nextIndex++);
+                                OwnedHqlExpr childMeta = translator.buildMetaParameter(record);
+                                OwnedHqlExpr ret = createValue(no_address, makeBoolType(), LINK(childMeta));
+
+                                condctx.addCase(switchStmt, branch);
+                                condctx.addReturn(ret);
+                                visited.append(*record);
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+protected:
+    HqlCppTranslator & translator;
+    IHqlStmt * switchStmt;
+    HqlExprCopyArray visited;
+    unsigned nextIndex;
+};
+
+
+
 void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpression * record, const char * diskSerializerName, const char * diskDeserializerName, const char * internalSerializerName, const char * internalDeserializerName, const char * prefetcherName)
 {
     OwnedHqlExpr dataset = createDataset(no_null, LINK(record));
@@ -4341,6 +4405,23 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
         bindTableCursor(walkctx, dataset, "self");
         MetaWalkIndirectCallback builder(*this, visitor);
         builder.walkRecord(walkctx, dataset, record);
+    }
+
+    if (recordRequiresDestructor(record))
+    {
+        BuildCtx childmetactx(ctx);
+        OwnedHqlExpr switchVar = createVariable("i", makeIntType(4, false));
+        IHqlStmt * child = childmetactx.addQuotedCompound("virtual IOutputMetaData * queryChildMeta(unsigned i)");
+
+        BuildCtx switchctx(childmetactx);
+        IHqlStmt * switchStmt = switchctx.addSwitch(switchVar);
+        unsigned prevChildren = calcTotalChildren(child);
+        MetaChildMetaCallback builder(*this, switchStmt);
+        builder.walkRecord(childmetactx, record);
+        if (prevChildren != calcTotalChildren(child))
+            childmetactx.addReturn(queryQuotedNullExpr());
+        else
+            child->setIncluded(false);
     }
 
     if (diskSerializerName && *diskSerializerName)

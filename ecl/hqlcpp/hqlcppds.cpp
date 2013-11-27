@@ -2909,7 +2909,7 @@ public:
     virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) { throwUnexpected(); }
     virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) { throwUnexpected(); }
     virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) { throwUnexpected(); }
-    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type) { return this; }
+    virtual IEngineRowAllocator *createChildRowAllocator(const RtlTypeInfo *type) { throwUnexpected(); }
 };
 
 //Use a (constant) transform to map selectors of the form queryActiveTableSelector().field

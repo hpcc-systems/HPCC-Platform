@@ -9320,6 +9320,7 @@ public:
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 };
 
 //=====================================================================================================
@@ -10042,9 +10043,4 @@ IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId,
 IHThorException * makeHThorException(ThorActivityKind kind, unsigned activityId, unsigned subgraphId, IException * exc, char const * extra)
 {
     return new CHThorException(exc, extra, kind, activityId, subgraphId);
-}
-
-extern HTHOR_API IEngineRowAllocator * createHThorRowAllocator(IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId)
-{
-    return createRoxieRowAllocator(_rowManager, _meta, _activityId, _allocatorId, roxiemem::RHFnone);
 }

@@ -108,10 +108,11 @@ interface IEngineRowAllocator;
 interface IRowBuilder : public IInterface
 {
     virtual byte * ensureCapacity(size32_t required, const char * fieldName) = 0;
-    virtual IEngineRowAllocator *queryAllocator() const = 0;
 protected:
     virtual byte * createSelf() = 0;
     virtual void reportMissingRow() const = 0;
+public:
+    virtual IEngineRowAllocator *queryAllocator() const = 0;
 };
 
 class ARowBuilder : public IRowBuilder
@@ -448,6 +449,7 @@ interface IOutputMetaData : public IRecordSize
 
     virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}            // from and to are *hints* for the range of fields to call through with
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) = 0;
+    virtual IOutputMetaData * queryChildMeta(unsigned i) = 0;
 };
 
 

@@ -867,6 +867,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     {
         type.setown(setStreamedAttr(type, true));
         type.setown(setLinkCountedAttr(type, true));
+        //MORE: Recursively set link counted on the records.
     }
 
     IHqlExpression * record = queryOriginalRecord(type);
@@ -2421,10 +2422,6 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
             attrs = createComma(LINK(childAttrs->queryChild(0)), attrs);
     }
 
-    //An explicitly link counted dataset type should ensure the field is linkcounted
-    if (isLinkedRowset(fieldType) && !queryAttributeInList(_linkCounted_Atom, attrs))
-        attrs = createComma(attrs, getLinkCountedAttr());
-
     Owned<ITypeInfo> dsType = LINK(fieldType);
     if (value)
     {
@@ -2451,6 +2448,10 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
+
+    //An explicitly link counted dataset type should ensure the field is linkcounted
+    if (isLinkedRowset(dsType) && !queryAttributeInList(_linkCounted_Atom, attrs))
+        attrs = createComma(attrs, getLinkCountedAttr());
 
     IHqlExpression *newField = createField(name, LINK(dsType), value, attrs);
     addToActiveRecord(newField);
@@ -2479,6 +2480,9 @@ void HqlGram::addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeI
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
+
+    if (isLinkedRowset(dictType) && !queryAttributeInList(_linkCounted_Atom, attrs))
+        attrs = createComma(attrs, getLinkCountedAttr());
 
     IHqlExpression *newField = createField(name, dictType.getClear(), value, attrs);
     addToActiveRecord(newField);
