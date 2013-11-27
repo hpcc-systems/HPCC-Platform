@@ -769,7 +769,7 @@ ECLRTL_API bool rtlGPF();
 //-----------------------------------------------------------------------------
 interface IRowStream;
 struct RtlTypeInfo;
-
+class ARowBuilder;
 interface IEmbedFunctionContext : extends IInterface
 {
     virtual void bindBooleanParam(const char *name, bool val) = 0;
@@ -799,7 +799,8 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void callFunction() = 0;
 
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator) = 0;
-
+    virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator) = 0;
+    virtual size32_t getTransformResult(ARowBuilder & builder) = 0;
 };
 
 interface IEmbedContext : extends IInterface

@@ -445,6 +445,14 @@ public:
 //        resultAllocator.set(_resultAllocator);
 //        return LINK(this);
     }
+    virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual size32_t getTransformResult(ARowBuilder & builder)
+    {
+        UNIMPLEMENTED;
+    }
     virtual const void *nextRow()
     {
 //        assertex(resultAllocator);

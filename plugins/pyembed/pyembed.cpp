@@ -862,7 +862,14 @@ public:
     {
         return new PythonRowStream(sharedCtx, result, _resultAllocator);
     }
-
+    virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual size32_t getTransformResult(ARowBuilder & builder)
+    {
+        UNIMPLEMENTED;
+    }
     virtual void bindBooleanParam(const char *name, bool val)
     {
         addArg(name, PyBool_FromLong(val ? 1 : 0));

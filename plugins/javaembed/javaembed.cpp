@@ -727,6 +727,14 @@ public:
     {
         UNIMPLEMENTED;
     }
+    virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual size32_t getTransformResult(ARowBuilder & builder)
+    {
+        UNIMPLEMENTED;
+    }
     virtual void bindBooleanParam(const char *name, bool val)
     {
         if (*argsig != 'B')

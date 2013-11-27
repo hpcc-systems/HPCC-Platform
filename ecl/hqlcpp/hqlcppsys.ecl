@@ -421,8 +421,8 @@ const char * cppSystemText[]  = {
     "   unicode deserializeUnicodeX(boolean o) :    eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeUnicodeX';",
     "   utf8 deserializeUtf8X(boolean o) :  eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeUtf8X';",
     "   varunicode deserializeVUnicodeX(boolean o) :    eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeVUnicodeX';",
-    "   _linkcounted_ row(dummyRecord) deserializeRow(boolean _allocator, boolean _deserializer, boolean _in) : eclrtl,include,entrypoint='rtlDeserializeBufferRow';",
-    "   _linkcounted_ row(dummyRecord) createRowFromXml(boolean _allocator, utf8 _text, boolean xmltransformer, boolean _stripWhitespace) : ctxmethod,pure,entrypoint='fromXml';",
+    "   _linkcounted_ row(dummyRecord) deserializeRow(boolean _deserializer, boolean _in) : eclrtl,include,entrypoint='rtlDeserializeBufferRow';",
+    "   _linkcounted_ row(dummyRecord) createRowFromXml(utf8 _text, boolean xmltransformer, boolean _stripWhitespace) : ctxmethod,pure,entrypoint='fromXml';",
 
     "   _linkcounted_ dataset appendRowsToRowset(_array_ dataset _in) : pure,eclrtl,include,entrypoint='appendRowsToRowset';",
 
@@ -740,7 +740,7 @@ const char * cppSystemText[]  = {
     "   reportRowOverflow(unsigned4 curSize, unsigned4 maxRowSize) : eclrtl,pure,include='eclrtl.hpp',library='eclrtl',entrypoint='rtlReportRowOverflow';", 
     "   checkFieldOverflow(unsigned4 curSize, unsigned4 maxRowSize, const varstring _name) : eclrtl,pure,include='eclrtl.hpp',library='eclrtl',entrypoint='rtlCheckFieldOverflow';", 
     "   reportFieldOverflow(unsigned4 curSize, unsigned4 maxRowSize, const varstring _name) : eclrtl,pure,include='eclrtl.hpp',library='eclrtl',entrypoint='rtlReportFieldOverflow';", 
-    "   _linkcounted_ row(dummyRecord) ensureCapacity(unsigned4 curSize, const varstring _fieldName) : omethod,entrypoint='ensureCapacity';", 
+    "   _linkcounted_ row(dummyRecord) ensureCapacity(unsigned4 curSize, const varstring _fieldName) : omethod,entrypoint='ensureCapacity',allocator=false;",
     "   ensureRowAvailable(unsigned4 curSize) : omethod,entrypoint='ensureAvailable';", 
     "   IIndirectMemberVisitor_visitRowset(_linkcounted_ dataset _x) : omethod,entrypoint='visitRowset';", 
     "   IIndirectMemberVisitor_visitRow(row _x) : omethod,entrypoint='visitRow';", 
@@ -753,7 +753,7 @@ const char * cppSystemText[]  = {
     "   linkcounted dictionary getLocalDictionaryResult(unsigned4 id) : method,allocator(false),pure,entrypoint='getDictionaryResult';",
     "   unsigned4 getGraphLoopCounter() : ctxmethod,entrypoint='getGraphLoopCounter';",
 
-    "   _linkcounted_ row(dummyRecord) finalizeRowClear(unsigned4 _size) : omethod,entrypoint='finalizeRowClear';",
+    "   _linkcounted_ row(dummyRecord) finalizeRowClear(unsigned4 _size) : omethod,entrypoint='finalizeRowClear',allocator=false;",
     "   setMethod(boolean _allocator) : omethod,entrypoint='set';",
     "   setownMethod(boolean _allocator) : omethod,entrypoint='setown';",
 
@@ -779,7 +779,7 @@ const char * cppSystemText[]  = {
 
     "   dummyRecord rtlSerializeToBuilder(boolean _serializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlSerializeToBuilder';",
     "   dummyRecord rtlDeserializeToBuilder(boolean _serializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlDeserializeToBuilder';",
-    "   _linkcounted_ row(dummyRecord) rtlDeserializeRow(boolean _allocator, boolean _deserializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlDeserializeRow';",
+    "   _linkcounted_ row(dummyRecord) rtlDeserializeRow(boolean _deserializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlDeserializeRow';",
 
     "   releaseRow(row _x) : include,entrypoint='rtlReleaseRow';",
     "   releaseRowset(_linkcounted_ dataset _x) : include,allocator(false),entrypoint='rtlReleaseRowset';",
@@ -824,13 +824,13 @@ const char * cppSystemText[]  = {
     // Dictionary support
     "    integer8 dictionaryCount(_linkcounted_ dictionary dict) : eclrtl,include,pure,entrypoint='rtlDictionaryCount';",
     "    boolean dictionaryExists(_linkcounted_ dictionary dict) : eclrtl,include,pure,entrypoint='rtlDictionaryExists';",
-    "   _linkcounted_ row(dummyRecord) dictionaryLookup(IHThorHashLookupInfo meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup';",
-    "   _linkcounted_ row(dummyRecord) dictionaryLookupString(_linkcounted_ dictionary dict, const string key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupString';",
-    "   _linkcounted_ row(dummyRecord) dictionaryLookupStringN(_linkcounted_ dictionary dict, const unsigned4 size, const string key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupStringN';",
-    "   _linkcounted_ row(dummyRecord) dictionaryLookupSigned(_linkcounted_ dictionary dict, const integer key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupSigned';",
-    "   _linkcounted_ row(dummyRecord) dictionaryLookupUnsigned(_linkcounted_ dictionary dict, const unsigned key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupUnsigned';",
-    "   _linkcounted_ row(dummyRecord) dictionaryLookupSignedN(_linkcounted_ dictionary dict, const unsigned4 size, const integer key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupSignedN';",
-    "   _linkcounted_ row(dummyRecord) dictionaryLookupUnsignedN(_linkcounted_ dictionary dict, const unsigned4 size, const unsigned key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupUnsignedN';",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookup(IHThorHashLookupInfo meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup',allocator=false;",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupString(_linkcounted_ dictionary dict, const string key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupString',allocator=false;",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupStringN(_linkcounted_ dictionary dict, const unsigned4 size, const string key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupStringN',allocator=false;",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupSigned(_linkcounted_ dictionary dict, const integer key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupSigned',allocator=false;",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupUnsigned(_linkcounted_ dictionary dict, const unsigned key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupUnsigned',allocator=false;",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupSignedN(_linkcounted_ dictionary dict, const unsigned4 size, const integer key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupSignedN',allocator=false;",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupUnsignedN(_linkcounted_ dictionary dict, const unsigned4 size, const unsigned key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupUnsignedN',allocator=false;",
 
     "   boolean dictionaryLookupExists(boolean meta, _linkcounted_ dictionary dict, row key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExists';",
     "   boolean dictionaryLookupExistsString(_linkcounted_ dictionary dict, const string key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExistsString';",
@@ -844,6 +844,7 @@ const char * cppSystemText[]  = {
     "   bindBooleanParam(const varstring name, boolean val) : method,entrypoint='bindBooleanParam';",
     "   bindDataParam(const varstring name, data val) : method,entrypoint='bindDataParam';",
     "   bindRealParam(const varstring name, real val) : method,entrypoint='bindRealParam';",
+    "   bindRowParam(const varstring name, _linkcounted_ row row) : method,entrypoint='bindRowParam';",
     "   bindSignedParam(const varstring name, integer val) : method,entrypoint='bindSignedParam';",
     "   bindUnsignedParam(const varstring name, unsigned val) : method,entrypoint='bindUnsignedParam';",
     "   bindStringParam(const varstring name, const string val) : method,entrypoint='bindStringParam';",
@@ -857,6 +858,8 @@ const char * cppSystemText[]  = {
     "   data getDataResult() : method,entrypoint='getDataResult';",
     "   streamed dataset getDatasetResult() : method,entrypoint='getDatasetResult';",
     "   real getRealResult() : method,entrypoint='getRealResult';",
+    "   _linkcounted_ row(dummyRecord) getRowResult() : method,entrypoint='getRowResult';",
+    "   transform(dummyRecord) getTransformResult() : method,entrypoint='getTransformResult';",
     "   integer getSignedResult() : method,entrypoint='getSignedResult';",
     "   string getStringResult() : method,entrypoint='getStringResult';",
     "   unsigned getUnsignedResult() : method,entrypoint='getUnsignedResult';",

@@ -54,7 +54,21 @@ dataset(namerec) testMissingTuple2(unsigned lim) := EMBED(Python)
   return [ ('1'), ('2'), ('3') ]
 ENDEMBED;
 
+// Test returning a row
+childrec testRowReturn(unsigned lim) := EMBED(Python)
+  return ("Hello", lim)
+ENDEMBED;
+
+// Test defining a transform
+transform(childrec) testTransform(unsigned lim) := EMBED(Python)
+  return ("Hello", lim)
+ENDEMBED;
+
+
 //output (testGenerator(10));
-output (testNamedTuple(10));
+//output (testNamedTuple(10));
 //output (testMissingTuple1(10));
 //output (testMissingTuple2(10));
+
+output(testRowReturn(10));
+//output(row(testTransform(10)));

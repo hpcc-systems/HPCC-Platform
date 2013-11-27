@@ -2992,6 +2992,7 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
 {
     bool returnByReference = false;
     CHqlBoundTarget target;
+    OwnedHqlExpr returnValue;
 
     switch (type->getTypeCode())
     {
@@ -3008,13 +3009,29 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-    case type_row:
         if (!hasStreamedModifier(type))
         {
             initBoundStringTarget(target, type, "__lenResult", "__result");
             returnByReference = true;
         }
         break;
+    case type_row:
+        if (!hasLinkCountedModifier(type))
+        {
+            initBoundStringTarget(target, type, "__lenResult", "__result");
+            returnByReference = true;
+        }
+        break;
+    case type_transform:
+        {
+            OwnedHqlExpr dataset = createDataset(no_anon, LINK(::queryRecord(type)));
+            BoundRow * row = bindSelf(ctx, dataset, "__self");
+            target.expr.set(row->querySelector());
+            returnByReference = true;
+            //A transform also returns the size that was generated (which will be bound to a local variable)
+            returnValue.setown(getRecordSize(row->querySelector()));
+            break;
+        }
     case type_set:
         target.isAll.setown(createVariable("__isAllResult", makeBoolType()));
         target.length.setown(createVariable("__lenResult", LINK(sizetType)));
@@ -3024,7 +3041,11 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     }
 
     if (returnByReference)
+    {
         buildExprAssign(ctx, target, value);
+        if (returnValue)
+            buildReturn(ctx, returnValue);
+    }
     else
         buildReturn(ctx, value, type);
 }
@@ -7310,7 +7331,6 @@ void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildC
                 buildFunctionCall(serializectx, serializeRowId, serializeArgs);
 
 
-                deserializeArgs.append(*createRowAllocator(deserializectx, record));
                 deserializeArgs.append(*createSerializer(deserializectx, record, serializeForm, deserializerAtom));
                 deserializeArgs.append(*createVariable(inBufferName, makeBoolType()));
                 Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));

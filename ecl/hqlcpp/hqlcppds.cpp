@@ -127,7 +127,6 @@ IReferenceSelector * HqlCppTranslator::doBuildRowDeserializeRow(BuildCtx & ctx, 
     target.expr.set(tempRow->queryBound());
 
     HqlExprArray args;  
-    args.append(*createRowAllocator(ctx, record));
     args.append(*createSerializer(ctx, record, serializeForm, deserializerAtom));
     args.append(*LINK(srcRow));
     Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
@@ -352,7 +351,6 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExp
     }
 
     HqlExprArray args;
-    args.append(*createRowAllocator(ctx, record));
     args.append(*ensureExprType(expr->queryChild(1), utf8Type));
     args.append(*createQuoted(xmlInstanceName, makeBoolType()));
     args.append(*createConstant(expr->hasAttribute(trimAtom)));

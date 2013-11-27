@@ -3350,7 +3350,8 @@ void HqlCppTranslator::buildReturn(BuildCtx & ctx, IHqlExpression * expr, ITypeI
     expr = queryExpandAliasScope(ctx, expr);
 
     node_operator op = expr->getOperator();
-    if ((retType->getSize() == UNKNOWN_LENGTH) && (retType->getTypeCode() == type_varstring))
+    type_t returntc = retType->getTypeCode();
+    if ((retType->getSize() == UNKNOWN_LENGTH) && (returntc == type_varstring))
     {
         if (hasConstModifier(retType) && (hasConstModifier(exprType) || expr->queryValue()))
         {
@@ -3402,7 +3403,20 @@ void HqlCppTranslator::buildReturn(BuildCtx & ctx, IHqlExpression * expr, ITypeI
             ctx.addReturn(temp);
         }
     }
-    else if ((retType->getTypeCode() == type_boolean) && specialCaseBoolReturn(ctx, expr))
+    else if ((returntc == type_row) && hasLinkCountedModifier(retType))
+    {
+        CHqlBoundTarget result;
+        buildTempExpr(ctx, ctx, result, expr, FormatNatural, false);
+
+        //MORE: There should be a cleaner way of doing this
+        StringBuffer s;
+        result.expr->toString(s);
+        s.append(".getClear()");
+
+        OwnedHqlExpr temp = createQuoted(s.str(), LINK(exprType));
+        ctx.addReturn(temp);
+    }
+    else if ((returntc == type_boolean) && specialCaseBoolReturn(ctx, expr))
     {
         bool successValue = true;
         if (op == no_not)
@@ -4265,6 +4279,14 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
     case type_row:
         {
             Owned<BoundRow> tempRow = declareTempRow(declareCtx, subctx, expr);
+            tempTarget.expr.set(tempRow->queryBound());
+            //MORE: This should be more general - i) to avoid unnecessary temporaries, and ii) to allow rows to be copied by linking.
+            if (isCall(expr->getOperator()))
+            {
+                buildExprAssign(subctx, tempTarget, expr);
+                return;
+            }
+
             IHqlStmt * stmt = subctx.addGroup();
             stmt->setIncomplete(true);
 
@@ -4275,7 +4297,6 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
 
             stmt->setIncomplete(false);
             stmt->mergeScopeWithContainer();
-            tempTarget.expr.set(tempRow->queryBound());
             
             ctx.associate(*tempRow);
             break;
@@ -5785,6 +5806,8 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         {
             if (hasLinkCountedModifier(retType))
             {
+                if (hasNonNullRecord(retType) && getBoolAttribute(external, allocatorAtom, true))
+                    args.append(*createRowAllocator(ctx, ::queryRecord(retType)));
                 //Always assign link counted rows to a temporary (or the target) to ensure the are not leaked.
                 returnMustAssign = true;
                 if (tgt && hasLinkCountedModifier(targetType) && recordTypesMatch(targetType, retType))
@@ -11566,6 +11589,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         case type_data:
             bindFunc = bindDataParamId;
             break;
+        case type_row:
+            bindFunc = bindRowParamId; // more
+            break;
         case type_set:
         {
             bindFunc = bindSetParamId;
@@ -11625,12 +11651,18 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         retargs.append(*createIntConstant(returnType->queryChildType()->getSize()));
         break;
     }
+    case type_row:
+        returnFunc = getRowResultId;
+        newReturnType.set(returnType);
+        break;
     case type_table:
-        {
-            returnFunc = getDatasetResultId;
-            newReturnType.set(returnType);
-            break;
-        }
+        returnFunc = getDatasetResultId;
+        newReturnType.set(returnType);
+        break;
+    case type_transform:
+        returnFunc = getTransformResultId;
+        newReturnType.set(returnType);
+        break;
     default:
         StringBuffer typeText;
         getFriendlyTypeStr(returnType, typeText);
@@ -11655,6 +11687,8 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         funcctx.addGroupPass(pass);
     }
     expandFunctionPrototype(proto, funcdef);
+//    BoundRow * row = bindSelf(deserializectx, dataset, "crSelf");
+
 
     if (bodyCode->getOperator() == no_embedbody)
     {

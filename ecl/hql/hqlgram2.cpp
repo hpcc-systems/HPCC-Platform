@@ -862,22 +862,21 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     if (!type)
         type.setown(makeVoidType());
 
-    //All non C++ dataset embedded functions must return streamed datasets
-    if (language && isDatasetType(type))
-    {
-        type.setown(setStreamedAttr(type, true));
-        type.setown(setLinkCountedAttr(type, true));
-        //MORE: Recursively set link counted on the records.
-    }
+    if (type->getTypeCode() == type_record)
+        type.setown(makeRowType(LINK(type)));
 
     IHqlExpression * record = queryOriginalRecord(type);
     OwnedHqlExpr result;
     if (record)
     {
         args.add(*LINK(record),1);
-        if (hasLinkCountedModifier(type))
+        if (hasLinkCountedModifier(type) || language)
+        {
+            //MORE: Recursively set link counted on the records. for language != NULL
             args.append(*getLinkCountedAttr());
-        if (hasStreamedModifier(type))
+        }
+        //All non C++ dataset embedded functions must return streamed datasets
+        if (hasStreamedModifier(type) || (language && isDatasetType(type)))
             args.append(*getStreamedAttr());
         switch (type->getTypeCode())
         {
@@ -902,7 +901,18 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     result.setown(createLocationAnnotation(result.getClear(), errpos.pos));
 
     if (queryParametered())
-        return createWrapper(no_outofline, result.getClear(), createAttribute(contextAtom));    // MORE: this needs more thought
+    {
+        HqlExprArray args;
+        args.append(*LINK(result));
+        if (language)
+        {
+            args.append(*createAttribute(contextAtom));
+            if (result->isDatarow())
+                args.append(*createAttribute(allocatorAtom));
+        }
+
+        return createWrapper(no_outofline, result->queryType(), args);
+    }
     return result.getClear();
 }
 

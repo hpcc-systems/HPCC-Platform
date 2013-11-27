@@ -1862,5 +1862,6 @@ extern HQL_API bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool d
 extern HQL_API void setLegacyEclSemantics(bool _value);
 extern HQL_API bool queryLegacyEclSemantics();
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx);
+inline bool isCall(node_operator op) { return (op == no_call || op == no_externalcall); }
 
 #endif

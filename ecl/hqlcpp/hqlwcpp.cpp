@@ -1024,8 +1024,17 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
             break;
         }
     case type_row:
-        out.append("void");
-        params.append("byte * __result");
+        if (hasLinkCountedModifier(retType))
+        {
+            out.append("byte *");
+            if (hasNonNullRecord(retType) && getBoolAttribute(attrs, allocatorAtom, true))
+                params.append("IEngineRowAllocator * _resultAllocator");
+        }
+        else
+        {
+            out.append("void");
+            params.append("byte * __result");
+        }
         break;
     default:
         generateType(retType, NULL);
