@@ -581,90 +581,83 @@ class PythonRowBuilder : public CInterfaceOf<IFieldSource>
 {
 public:
     PythonRowBuilder(PyObject *_row)
-    : iter(NULL), elem(_row)
+    : iter(NULL), elem(NULL), pushback(_row), named(false)
     {
     }
     virtual bool getBooleanResult(const RtlFieldInfo *field)
     {
-        bool ret = pyembed::getBooleanResult(field, elem);
-        nextField();
-        return ret;
+        nextField(field);
+        return pyembed::getBooleanResult(field, elem);
     }
     virtual void getDataResult(const RtlFieldInfo *field, size32_t &len, void * &result)
     {
+        nextField(field);
         pyembed::getDataResult(field, elem, len, result);
-        nextField();
     }
     virtual double getRealResult(const RtlFieldInfo *field)
     {
-        double ret = pyembed::getRealResult(field, elem);
-        nextField();
-        return ret;
+        nextField(field);
+        return pyembed::getRealResult(field, elem);
     }
     virtual __int64 getSignedResult(const RtlFieldInfo *field)
     {
-        __int64 ret = pyembed::getSignedResult(field, elem);
-        nextField();
-        return ret;
+        nextField(field);
+        return pyembed::getSignedResult(field, elem);
     }
     virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field)
     {
-        unsigned __int64 ret = pyembed::getUnsignedResult(field, elem);
-        nextField();
-        return ret;
+        nextField(field);
+        return pyembed::getUnsignedResult(field, elem);
     }
     virtual void getStringResult(const RtlFieldInfo *field, size32_t &chars, char * &result)
     {
+        nextField(field);
         pyembed::getStringResult(field, elem, chars, result);
-        nextField();
     }
     virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result)
     {
+        nextField(field);
         pyembed::getUTF8Result(field, elem, chars, result);
-        nextField();
     }
     virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result)
     {
+        nextField(field);
         pyembed::getUnicodeResult(field, elem, chars, result);
-        nextField();
     }
     virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value)
     {
+        nextField(field);
         double ret = pyembed::getRealResult(field, elem);
         value.setReal(ret);
-        nextField();
     }
 
     virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
     {
+        nextField(field);
         isAll = false;  // No concept of an 'all' set in Python
         assertex(elem && elem != Py_None);
         if (!PyList_Check(elem) && !PySet_Check(elem))
             typeError("list or set", field);
-        iterStack.append(iter.getClear());
-        iter.setown(PyObject_GetIter(elem));
-        nextField();
+        push();
     }
     virtual bool processNextSet(const RtlFieldInfo * field)
     {
-        return elem != NULL;
+        nextField(NULL);
+        pushback.setown(elem.getClear());
+        return pushback != NULL;
     }
     virtual void processBeginDataset(const RtlFieldInfo * field)
     {
-        if (PyList_Check(elem))
-        {
-            iterStack.append(iter.getClear());
-            iter.setown(PyObject_GetIter(elem));
-            nextField();
-        }
-        else
+        nextField(field);
+        if (!PyList_Check(elem))
             typeError("list", field);
+        push();
     }
     virtual void processBeginRow(const RtlFieldInfo * field)
     {
         // Expect to see a tuple here, or possibly (if the ECL record has a single field), an arbitrary scalar object
         // If it's a tuple, we push it onto our stack as the active object
-        iterStack.append(iter.getClear());
+        nextField(NULL);  // MORE - should it be passing field?
         if (!PyTuple_Check(elem))
         {
             if (countFields(field->type->queryFields())==1)
@@ -676,40 +669,69 @@ public:
             else
                 typeError("tuple", field);
         }
-        iter.setown(PyObject_GetIter(elem));
-        nextField();
+        push();
     }
     virtual bool processNextRow(const RtlFieldInfo * field)
     {
-        return elem != NULL;
+        nextField(NULL);
+        pushback.setown(elem.getClear());
+        return pushback != NULL;
     }
     virtual void processEndSet(const RtlFieldInfo * field)
     {
-        iter.setown((PyObject *) iterStack.pop());
-        nextField();
+        pop();
     }
     virtual void processEndDataset(const RtlFieldInfo * field)
     {
-        iter.setown((PyObject *) iterStack.pop());
-        nextField();
+        pop();
     }
     virtual void processEndRow(const RtlFieldInfo * field)
     {
-        iter.setown((PyObject *) iterStack.pop());
-        nextField();
+        pop();
     }
 protected:
-    void nextField()
+    void pop()
     {
-        if (iter)
+        iter.setown((PyObject *) iterStack.pop());
+        parent.setown((PyObject *) parentStack.pop());
+        named = namedStack.pop();
+        elem.clear();
+    }
+    void push()
+    {
+        iterStack.append(iter.getClear());
+        parentStack.append(parent.getClear());
+        namedStack.append(named);
+        parent.set(elem);
+        iter.setown(PyObject_GetIter(elem));
+        named = isNamedTuple(elem);
+    }
+    bool isNamedTuple(PyObject *obj)
+    {
+        return PyObject_HasAttrString((PyObject *) obj->ob_type, "_fields");
+    }
+    void nextField(const RtlFieldInfo * field)
+    {
+        if (pushback)
+            elem.setown(pushback.getClear());
+        else if (field && named) // If it's named tuple, expect to always resolve fields by name, not position
+        {
+            elem.setown(PyObject_GetAttrString(parent, field->name->str()));
+        }
+        else if (iter)
             elem.setown(PyIter_Next(iter));
         else
             elem = NULL;
         checkPythonError();
     }
     OwnedPyObject iter;
+    OwnedPyObject pushback;
     OwnedPyObject elem;
+    OwnedPyObject parent;
+    bool named;
     PointerArray iterStack;
+    PointerArray parentStack;
+    BoolArray namedStack;
 };
 
 // GILBlock ensures the we hold the Python "Global interpreter lock" for the appropriate duration
