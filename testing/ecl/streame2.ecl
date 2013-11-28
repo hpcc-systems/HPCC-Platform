@@ -65,10 +65,10 @@ transform(childrec) testTransform(unsigned lim) := EMBED(Python)
 ENDEMBED;
 
 
-//output (testGenerator(10));
-//output (testNamedTuple(10));
-//output (testMissingTuple1(10));
-//output (testMissingTuple2(10));
+output (testGenerator(10));
+output (testNamedTuple(10));
+output (testMissingTuple1(10));
+output (testMissingTuple2(10));
 
 output(testRowReturn(10));
-//output(row(testTransform(10)));
+output(row(testTransform(10)));
