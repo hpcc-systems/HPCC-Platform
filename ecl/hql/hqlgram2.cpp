@@ -3519,6 +3519,8 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         {
             IHqlExpression* attr = &attrArray.item(i);
             IAtom * name = attr->queryName();
+            if (attr->queryChild(0) && !attr->queryChild(0)->queryValue())
+                reportError(ERR_EXPECTED_CONST, errpos.pos, "Expected a constant argument for service attribute: '%s';", name->str());
 
             // check duplication
             unsigned j;
@@ -3542,7 +3544,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                     invalid = true;
                 else
                 {
-                    attr->queryChild(0)->queryValue()->getStringValue(buf);
+                    getStringValue(buf, attr->queryChild(0));
                     if (!isCIdentifier(buf.str()))
                         invalid = true;
                 }
@@ -3570,7 +3572,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 else
                 {
                     StringBuffer buf;
-                    attr->queryChild(0)->queryValue()->getStringValue(buf);
+                    getStringValue(buf, attr->queryChild(0));
                     
                     // can we do better?
                     if (*buf.str() == 0)
@@ -3587,7 +3589,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 if (attr->numChildren()!=0)
                 {
                     StringBuffer buf;
-                    attr->queryChild(0)->queryValue()->getStringValue(buf);
+                    getStringValue(buf, attr->queryChild(0));
                     
                     // can we do better?
                     if (*buf.str() == 0)
