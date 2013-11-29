@@ -246,6 +246,14 @@ public:
         }
         context->Global()->Set(v8::String::New(name), array);
     }
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
+    {
+        UNIMPLEMENTED;
+    }
 
     virtual bool getBooleanResult()
     {

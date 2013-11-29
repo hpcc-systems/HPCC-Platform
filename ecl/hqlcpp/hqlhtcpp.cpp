@@ -1498,14 +1498,11 @@ BoundRow * HqlCppTranslator::createRowBuilder(BuildCtx & ctx, BoundRow * targetR
     }
 }
 
-BoundRow * HqlCppTranslator::declareLinkedRow(BuildCtx & ctx, IHqlExpression * expr, bool isMember)
+IHqlExpression * HqlCppTranslator::declareLinkedRowExpr(BuildCtx & ctx, IHqlExpression * record, bool isMember)
 {
-    assertex(expr->isDatarow());
-
     StringBuffer rowName;
     getUniqueId(rowName.append('r'));
 
-    IHqlExpression * record = expr->queryRecord();
     Owned<ITypeInfo> rowType = makeRowType(record->getType());
     rowType.setown(makeAttributeModifier(makeWrapperModifier(rowType.getClear()), getLinkCountedAttr()));
     if (isMember)
@@ -1518,6 +1515,13 @@ BoundRow * HqlCppTranslator::declareLinkedRow(BuildCtx & ctx, IHqlExpression * e
     //this the outer most scope (within a function)
     ctx.setNextPriority(BuildCtx::OutermostScopePrio);
     ctx.addDeclare(boundRow);
+    return boundRow.getClear();
+}
+
+BoundRow * HqlCppTranslator::declareLinkedRow(BuildCtx & ctx, IHqlExpression * expr, bool isMember)
+{
+    assertex(expr->isDatarow());
+    OwnedHqlExpr boundRow = declareLinkedRowExpr(ctx, expr->queryRecord(), isMember);
     return createBoundRow(expr, boundRow);
 }
 

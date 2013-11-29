@@ -294,6 +294,7 @@ IAtom * parameterAtom;
 IAtom * partitionAtom;
 IAtom * partitionLeftAtom;
 IAtom * partitionRightAtom;
+IAtom * passParameterMetaAtom;
 IAtom * _payload_Atom;
 IAtom * persistAtom;
 IAtom * physicalFilenameAtom;
@@ -704,6 +705,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(partition);
     partitionLeftAtom = createLowerCaseAtom("partition left");
     partitionRightAtom = createLowerCaseAtom("partition right");
+    MAKEATOM(passParameterMeta);
     MAKESYSATOM(payload);
     MAKEATOM(persist);
     MAKEATOM(physicalFilename);

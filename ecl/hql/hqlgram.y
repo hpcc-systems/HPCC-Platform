@@ -803,6 +803,29 @@ explicitDictionaryType
     | userTypedefDictionary
     ;
 
+explicitRowType
+    : explicitRowType1
+    | LINKCOUNTED explicitRowType1
+                        {
+                            $$.setType(setLinkCountedAttr($2.getType(), true));
+                            $$.setPosition($1);
+                        }
+    ;
+
+explicitRowType1
+    : ROW               {
+                            IHqlExpression* record = queryNullRecord();
+                            $$.setType(makeRowType(record->getType()));
+                            $$.setPosition($1);
+                        }
+    | ROW '(' recordDef ')'
+                        {
+                            OwnedHqlExpr record = $3.getExpr();
+                            $$.setType(makeRowType(record->getType()));
+                            $$.setPosition($1);
+                        }
+    ;
+
 
 transformType
     : TRANSFORM '(' recordDef ')'
@@ -865,17 +888,7 @@ paramType
                         }
     | explicitDatasetType
     | explicitDictionaryType
-    | ROW               {
-                            IHqlExpression* record = queryNullRecord();
-                            $$.setType(makeRowType(record->getType()));
-                            $$.setPosition($1);
-                        }
-    | LINKCOUNTED ROW {
-                            IHqlExpression* record = queryNullRecord();
-                            Owned<ITypeInfo> rowType = makeRowType(record->getType());
-                            $$.setType(setLinkCountedAttr(rowType, true));
-                            $$.setPosition($1);
-                        }
+    | explicitRowType
     | abstractModule
                         {
                             OwnedHqlExpr scope = $1.getExpr();

@@ -835,6 +835,7 @@ public:
     IReferenceSelector * buildActiveRow(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * buildNewRow(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * buildNewOrActiveRow(BuildCtx & ctx, IHqlExpression * expr, bool isNew);
+    void buildRowAssign(BuildCtx & ctx, BoundRow * target, IHqlExpression * expr);
     void buildRowAssign(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void buildRowAssign(BuildCtx & ctx, IReferenceSelector * target, IReferenceSelector * source);
     BoundRow * ensureLinkCountedRow(BuildCtx & ctx, BoundRow * row);
@@ -1076,6 +1077,7 @@ public:
     void finalizeTempRow(BuildCtx & ctx, BoundRow * targetRow, BoundRow * rowBuilder);
     BoundRow * declareTempAnonRow(BuildCtx & ctx, BuildCtx & codectx, IHqlExpression * record);
 
+    IHqlExpression * declareLinkedRowExpr(BuildCtx & ctx, IHqlExpression * record, bool isMember);
     BoundRow * declareLinkedRow(BuildCtx & ctx, IHqlExpression * expr, bool isMember);
     BoundRow * declareStaticRow(BuildCtx & ctx, IHqlExpression * expr);
 

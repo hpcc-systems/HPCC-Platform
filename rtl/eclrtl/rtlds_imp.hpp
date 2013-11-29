@@ -84,6 +84,7 @@ public:
     RtlFixedDatasetBuilder(unsigned _recordSize, unsigned _initRows);
 
     byte * createSelf();
+    virtual IEngineRowAllocator *queryAllocator() const { return NULL; }
 
 protected:
     unsigned recordSize;
@@ -112,6 +113,7 @@ public:
 
     void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
     virtual byte * createSelf();
+    virtual IEngineRowAllocator *queryAllocator() const { return NULL; }
 
 protected:
     IRecordSize * recordSize;

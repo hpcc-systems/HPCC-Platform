@@ -688,7 +688,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
             firstParam = false;
 
         IHqlExpression * param = formals->queryChild(i);
-        generateParamCpp(param);
+        generateParamCpp(param, body);
     }
     out.append(")");
     return true;
@@ -781,7 +781,7 @@ void HqlCppWriter::generateInitializer(IHqlExpression * expr)
 }
 
 
-void HqlCppWriter::generateParamCpp(IHqlExpression * param)
+void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * attrs)
 {
     ITypeInfo *paramType = param->queryType();
     
@@ -804,6 +804,22 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
             else if (attr->queryName() == outAtom)
                 isOut = true;
         }
+    }
+
+    switch (paramType->getTypeCode())
+    {
+    case type_dictionary:
+    case type_table:
+    case type_groupedtable:
+    case type_row:
+        if (getBoolAttribute(attrs, passParameterMetaAtom, false))
+        {
+            out.append("IOutputMetaData & ");
+            if (paramName)
+                appendCapital(out.append(" meta"), paramNameText);
+            out.append(",");
+        }
+        break;
     }
 
     switch (paramType->getTypeCode())
@@ -852,7 +868,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     case type_row:
         isConst = true;
         break;
-    } 
+    }
     
     bool nameappended = false;
     switch (paramType->getTypeCode())
@@ -1359,7 +1375,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
             generateExprCpp(expr->queryChild(0));
             break;
         case no_param:
-            generateParamCpp(expr);
+            generateParamCpp(expr, NULL);
             break;
         case no_callback:
             {

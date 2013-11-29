@@ -801,6 +801,8 @@ interface IEmbedFunctionContext : extends IInterface
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator) = 0;
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator) = 0;
     virtual size32_t getTransformResult(ARowBuilder & builder) = 0;
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val) = 0;
+    virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val) = 0;
 };
 
 interface IEmbedContext : extends IInterface

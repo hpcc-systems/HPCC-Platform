@@ -261,11 +261,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowViaTemp(BuildCtx & ctx, IHqlExp
     }
 
     Owned<BoundRow> tempRow = declareTempRow(ctx, ctx, expr);
-
-    Owned<BoundRow> rowBuilder = createRowBuilder(ctx, tempRow);
-    Owned<IReferenceSelector> createdRef = createReferenceSelector(rowBuilder);
-    buildRowAssign(ctx, createdRef, expr);
-    finalizeTempRow(ctx, tempRow, rowBuilder);
+    buildRowAssign(ctx, tempRow, expr);
 
     ctx.associate(*tempRow);
     return createReferenceSelector(tempRow);
@@ -639,7 +635,8 @@ BoundRow * HqlCppTranslator::ensureLinkCountedRow(BuildCtx & ctx, BoundRow * row
         return row;
 
     OwnedHqlExpr srcRow = createTranslated(row->queryBound());
-    Owned<BoundRow> tempRow = declareLinkedRow(ctx, row->queryDataset(), false);
+    OwnedHqlExpr tempRowExpr = declareLinkedRowExpr(ctx, row->queryRecord(), false);
+    Owned<BoundRow> tempRow = row->clone(tempRowExpr);
 
     OwnedHqlExpr source = getPointer(row->queryBound());
     BuildCtx subctx(ctx);
@@ -660,7 +657,7 @@ BoundRow * HqlCppTranslator::ensureLinkCountedRow(BuildCtx & ctx, BoundRow * row
     generateExprCpp(s, boundSize.expr).append(",");
     generateExprCpp(s, source);
     s.append(")");
-    OwnedHqlExpr call = createQuoted(s, tempRow->queryBound()->queryType());
+    OwnedHqlExpr call = createQuoted(s, tempRow->queryBound()->getType());
 
     subctx.addAssign(tempRow->queryBound(), call);
 
@@ -4354,6 +4351,47 @@ void HqlCppTranslator::doBuildRowAssignUserTable(BuildCtx & ctx, IReferenceSelec
 {
     Owned<BoundRow> selfCursor = target->getRow(ctx);
     doTransform(ctx, expr->queryChild(2), selfCursor);
+}
+
+
+void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, BoundRow * targetRow, IHqlExpression * expr)
+{
+    //MORE: We should improve assigning a link counted row to a dataset as well.
+    //The problem is that currently the dataset constructor is responsible for finializing the rows.
+    //which is more compact if the row can't just be appended.  Possibly needs an alwaysCreatesTemp()
+    //to help decide.
+    IHqlExpression * targetExpr = targetRow->queryBound();
+    if (targetRow->isLinkCounted() && hasWrapperModifier(targetExpr->queryType()))
+    {
+        CHqlBoundTarget target;
+        target.expr.set(targetRow->queryBound());
+
+        switch (expr->getOperator())
+        {
+        //MORE could support no_null, no_if, no_translated, constant no_createrow etc.
+        case no_call:
+        case no_externalcall:
+            buildExprAssign(ctx, target, expr);
+            return;
+        case no_comma:
+        case no_compound:
+            buildStmt(ctx, expr->queryChild(0));
+            buildRowAssign(ctx, targetRow, expr->queryChild(1));
+            return;
+        }
+    }
+
+    BuildCtx subctx(ctx);
+    IHqlStmt * stmt = subctx.addGroup();
+    stmt->setIncomplete(true);
+
+    Owned<BoundRow> rowBuilder = createRowBuilder(subctx, targetRow);
+    Owned<IReferenceSelector> createdRef = createReferenceSelector(rowBuilder);
+    buildRowAssign(subctx, createdRef, expr);
+    finalizeTempRow(subctx, targetRow, rowBuilder);
+
+    stmt->setIncomplete(false);
+    stmt->mergeScopeWithContainer();
 }
 
 

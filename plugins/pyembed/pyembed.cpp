@@ -1012,6 +1012,14 @@ public:
         }
         addArg(name, vval.getLink());
     }
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
+    {
+        UNIMPLEMENTED;
+    }
 
 protected:
     virtual void addArg(const char *name, PyObject *arg) = 0;

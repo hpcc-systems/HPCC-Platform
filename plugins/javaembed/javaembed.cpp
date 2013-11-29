@@ -1038,6 +1038,14 @@ public:
         argsig++;
         addArg(v);
     }
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
+    {
+        UNIMPLEMENTED;
+    }
 
     virtual void importFunction(size32_t lenChars, const char *utf)
     {

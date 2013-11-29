@@ -4279,25 +4279,8 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, BuildCtx & declareCtx, CHql
     case type_row:
         {
             Owned<BoundRow> tempRow = declareTempRow(declareCtx, subctx, expr);
+            buildRowAssign(subctx, tempRow, expr);
             tempTarget.expr.set(tempRow->queryBound());
-            //MORE: This should be more general - i) to avoid unnecessary temporaries, and ii) to allow rows to be copied by linking.
-            if (isCall(expr->getOperator()))
-            {
-                buildExprAssign(subctx, tempTarget, expr);
-                return;
-            }
-
-            IHqlStmt * stmt = subctx.addGroup();
-            stmt->setIncomplete(true);
-
-            Owned<BoundRow> rowBuilder = createRowBuilder(subctx, tempRow);
-            Owned<IReferenceSelector> createdRef = createReferenceSelector(rowBuilder);
-            buildRowAssign(subctx, createdRef, expr);
-            finalizeTempRow(subctx, tempRow, rowBuilder);
-
-            stmt->setIncomplete(false);
-            stmt->mergeScopeWithContainer();
-            
             ctx.associate(*tempRow);
             break;
         }
@@ -5888,12 +5871,16 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         case type_table:
         case type_groupedtable:
             {
+                if (getBoolAttribute(external, passParameterMetaAtom, false))
+                    args.append(*buildMetaParameter(curParam));
                 ExpressionFormat format = queryNaturalFormat(argType);
                 buildDataset(ctx, castParam, bound, format);
                 break;
             }
         case type_row:
             {
+                if (getBoolAttribute(external, passParameterMetaAtom, false))
+                    args.append(*buildMetaParameter(curParam));
                 Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
 
                 if (hasLinkCountedModifier(argType))
