@@ -129,6 +129,7 @@ public:
     PythonThreadContext()
     {
         threadState = PyEval_SaveThread();
+        lrutype = NULL;
     }
     ~PythonThreadContext()
     {
@@ -175,45 +176,14 @@ public:
         return script.getLink();
     }
 
-    inline PyObject *compileEmbeddedScript(size32_t lenChars, const char *utf)
-    {
-        size32_t bytes = rtlUtf8Size(lenChars, utf);
-        StringBuffer text(bytes, utf);
-        if (!prevtext || strcmp(text, prevtext) != 0)
-        {
-            prevtext.clear();
-            // Try compiling as a eval first... if that fails, try as a script.
-            text.stripChar('\r');
-            script.setown(Py_CompileString(text, "", Py_eval_input));
-            if (!script)
-            {
-                PyErr_Clear();
-                StringBuffer wrapped;
-                wrapPythonText(wrapped, text);
-                script.setown(Py_CompileString(wrapped, "<embed>", Py_file_input));
-            }
-            checkPythonError();
-            prevtext.set(utf, bytes);
-        }
-        return script.getLink();
-    }
+    PyObject *compileEmbeddedScript(size32_t lenChars, const char *utf);
+    PyObject *getNamedTupleType(const RtlTypeInfo *type);
 private:
-    static StringBuffer &wrapPythonText(StringBuffer &out, const char *in)
-    {
-        out.append("def __user__():\n  ");
-        char c;
-        while ((c = *in++) != '\0')
-        {
-            out.append(c);
-            if (c=='\n')
-                out.append("  ");
-        }
-        out.append("\n__result__ = __user__()\n");
-        return out;
-    }
     GILstateWrapper GILState;
     OwnedPyObject module;
     OwnedPyObject script;
+    OwnedPyObject lru;
+    const RtlTypeInfo *lrutype;
     StringAttr prevtext;
 };
 
@@ -294,6 +264,9 @@ public:
         {
             PyEval_RestoreThread(tstate);
             // Finish the Python Interpreter
+            namedtuple.clear();
+            namedtupleTypes.clear();
+            compiledScripts.clear();
             Py_Finalize();
         }
         if (pythonLibrary)
@@ -303,11 +276,114 @@ public:
     {
         return initialized;
     }
+    PyObject *getNamedTupleType(const RtlTypeInfo *type)
+    {
+        // It seems the customized namedtuple types leak, and they are slow to create, so take care to reuse
+        CriticalBlock b(lock);  // Not sure if this is really needed, as we have effectively locked out other threads using the GIL
+        if (!namedtuple)
+        {
+            namedtupleTypes.setown(PyDict_New());
+            OwnedPyObject pName = PyString_FromString("collections");
+            OwnedPyObject collections = PyImport_Import(pName);
+            checkPythonError();
+            namedtuple.setown(PyObject_GetAttrString(collections, "namedtuple"));
+            checkPythonError();
+            assertex(PyCallable_Check(namedtuple));
+        }
+
+        const RtlFieldInfo * const *fields = type->queryFields();
+        StringBuffer names;
+        while (*fields)
+        {
+            const RtlFieldInfo *field = *fields;
+            if (names.length())
+                names.append(',');
+            names.append(field->name->str());
+            fields++;
+        }
+        OwnedPyObject pnames = PyString_FromString(names.str());
+        OwnedPyObject mynamedtupletype;
+        mynamedtupletype.set(PyDict_GetItem(namedtupleTypes, pnames));   // NOTE - returns borrowed reference
+        if (!mynamedtupletype)
+        {
+            OwnedPyObject recname = PyString_FromString("namerec");     // MORE - do we care what the name is?
+            OwnedPyObject ntargs = PyTuple_Pack(2, recname.get(), pnames.get());
+            mynamedtupletype.setown(PyObject_CallObject(namedtuple, ntargs));
+            PyDict_SetItem(namedtupleTypes, pnames, mynamedtupletype);
+        }
+        checkPythonError();
+        assertex(PyCallable_Check(mynamedtupletype));
+        return mynamedtupletype.getClear();
+    }
+    PyObject *compileScript(const char *text)
+    {
+        CriticalBlock b(lock);  // Not sure if this is really needed, as we have effectively locked out other threads using the GIL
+        if (!compiledScripts)
+            compiledScripts.setown(PyDict_New());
+        OwnedPyObject code;
+        code.set(PyDict_GetItemString(compiledScripts, text));
+        if (!code)
+        {
+            code.setown(Py_CompileString(text, "", Py_eval_input));
+
+            if (!code)
+            {
+                PyErr_Clear();
+                StringBuffer wrapped;
+                wrapPythonText(wrapped, text);
+                code.setown(Py_CompileString(wrapped, "<embed>", Py_file_input));
+            }
+            checkPythonError();
+            if (code)
+                PyDict_SetItemString(compiledScripts, text, code);
+        }
+        return code.getClear();
+    }
 protected:
+    static StringBuffer &wrapPythonText(StringBuffer &out, const char *in)
+    {
+        out.append("def __user__():\n  ");
+        char c;
+        while ((c = *in++) != '\0')
+        {
+            out.append(c);
+            if (c=='\n')
+                out.append("  ");
+        }
+        out.append("\n__result__ = __user__()\n");
+        return out;
+    }
     PyThreadState *tstate;
     bool initialized;
     HINSTANCE pythonLibrary;
+    OwnedPyObject namedtuple;      // collections.namedtuple
+    OwnedPyObject namedtupleTypes; // dictionary of return values from namedtuple()
+    OwnedPyObject compiledScripts; // dictionary of previously compiled scripts
+    CriticalSection lock;
 } globalState;
+
+PyObject *PythonThreadContext::getNamedTupleType(const RtlTypeInfo *type)
+{
+    if (!lru || (type!=lrutype))
+    {
+        lru.setown(globalState.getNamedTupleType(type));
+        lrutype = type;
+    }
+    return lru.getLink();
+}
+
+PyObject *PythonThreadContext::compileEmbeddedScript(size32_t lenChars, const char *utf)
+{
+    size32_t bytes = rtlUtf8Size(lenChars, utf);
+    StringBuffer text(bytes, utf);
+    if (!prevtext || strcmp(text, prevtext) != 0)
+    {
+        prevtext.clear();
+        script.setown(globalState.compileScript(text));
+        prevtext.set(utf, bytes);
+    }
+    return script.getLink();
+}
 
 static int countFields(const RtlFieldInfo * const * fields)
 {
@@ -745,6 +821,149 @@ static size32_t getRowResult(PyObject *result, ARowBuilder &builder)
     return typeInfo->build(builder, 0, &dummyField, pyRowBuilder);
 }
 
+// A PythonNamedTupleBuilder object is used to construct a Python named tuple from an ECL row
+
+class PythonNamedTupleBuilder : public CInterfaceOf<IFieldProcessor>
+{
+public:
+    PythonNamedTupleBuilder(PythonThreadContext *_sharedCtx, const RtlFieldInfo *_outerRow)
+    : outerRow(_outerRow), sharedCtx(_sharedCtx)
+    {
+        argcount = 0;
+    }
+    virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        addArg(PyString_FromStringAndSize(value, len));
+    }
+    virtual void processBool(bool value, const RtlFieldInfo * field)
+    {
+        addArg(PyBool_FromLong(value ? 1 : 0));
+    }
+    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field)
+    {
+        addArg(PyByteArray_FromStringAndSize((const char *) value, len));
+    }
+    virtual void processInt(__int64 value, const RtlFieldInfo * field)
+    {
+        addArg(PyLong_FromLongLong(value));
+    }
+    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field)
+    {
+        addArg(PyLong_FromUnsignedLongLong(value));
+    }
+    virtual void processReal(double value, const RtlFieldInfo * field)
+    {
+        addArg(PyFloat_FromDouble(value));
+    }
+    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field)
+    {
+        // You don't really know what size Py_UNICODE is (varies from system to system), so go via utf8
+        unsigned unicodeChars;
+        char *unicode;
+        rtlUnicodeToUtf8X(unicodeChars, unicode, len, value);
+        size32_t sizeBytes = rtlUtf8Size(unicodeChars, unicode);
+        PyObject *vval = PyUnicode_FromStringAndSize(unicode, sizeBytes);   // NOTE - requires size in bytes not chars
+        checkPythonError();
+        addArg( vval);
+        rtlFree(unicode);  // MORE - this will leak on exceptions
+    }
+    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual void processSetAll(const RtlFieldInfo * field)
+    {
+        rtlFail(0, "pyembed: ALL sets are not supported");
+    }
+    virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        size32_t sizeBytes = rtlUtf8Size(len, value);
+        PyObject *vval = PyUnicode_FromStringAndSize(value, sizeBytes);   // NOTE - requires size in bytes not chars
+        checkPythonError();
+        addArg(vval);
+    }
+
+    virtual bool processBeginSet(const RtlFieldInfo * field)
+    {
+        push();
+        return true;
+    }
+    virtual bool processBeginDataset(const RtlFieldInfo * field)
+    {
+        push();
+        return true;
+    }
+    virtual bool processBeginRow(const RtlFieldInfo * field)
+    {
+        if (field != outerRow)
+            push();
+        return true;
+    }
+    virtual void processEndSet(const RtlFieldInfo * field)
+    {
+        pop();
+    }
+    virtual void processEndDataset(const RtlFieldInfo * field)
+    {
+        pop();
+    }
+    virtual void processEndRow(const RtlFieldInfo * field)
+    {
+        if (field != outerRow)
+        {
+            args.setown(getTuple(field->type));
+            pop();
+        }
+    }
+    PyObject *getTuple(const RtlTypeInfo *type)
+    {
+        OwnedPyObject mynamedtupletype = sharedCtx->getNamedTupleType(type);
+        OwnedPyObject argsTuple = PyList_AsTuple(args);
+        OwnedPyObject mynamedtuple = PyObject_CallObject(mynamedtupletype, argsTuple);  // Creates a namedtuple from the supplied tuple
+        checkPythonError();
+        return mynamedtuple.getClear();
+    }
+protected:
+    void push()
+    {
+        stack.append(args.getClear());
+        counts.append(argcount);
+        argcount = 0;
+    }
+    void pop()
+    {
+        addArg(args.getClear());
+        args.setown((PyObject *) stack.pop());
+        argcount = counts.pop();
+    }
+    void addArg(PyObject *arg)
+    {
+        if (!argcount)
+        {
+            args.setown(PyList_New(0));
+        }
+        PyList_Append(args, arg);
+        Py_DECREF(arg);
+    }
+    unsigned argcount;
+    OwnedPyObject args;
+    OwnedPyObject names;
+    PointerArray namestack;
+    PointerArray stack;
+    UnsignedArray counts;
+    const RtlFieldInfo *outerRow;
+    PythonThreadContext *sharedCtx;
+};
+
+
 // GILBlock ensures the we hold the Python "Global interpreter lock" for the appropriate duration
 
 class GILBlock
@@ -1014,7 +1233,12 @@ public:
     }
     virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
     {
-        UNIMPLEMENTED;
+        const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        PythonNamedTupleBuilder tupleBuilder(sharedCtx, &dummyField);
+        typeInfo->process(val, val, &dummyField, tupleBuilder); // Creates a tuple from the incoming ECL row
+        addArg(name, tupleBuilder.getTuple(typeInfo));
     }
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
     {
@@ -1063,11 +1287,14 @@ public:
 protected:
     virtual void addArg(const char *name, PyObject *arg)
     {
+        if (!arg)
+            return;
         assertex(arg);
         PyDict_SetItemString(locals, name, arg);
         Py_DECREF(arg);
         checkPythonError();
     }
+    StringBuffer delayedScript;
 };
 
 class Python27EmbedImportContext : public Python27EmbedContextBase

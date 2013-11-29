@@ -25,6 +25,11 @@ namerec := RECORD
    string name;
 END;
 
+namerec2 := RECORD
+   string name;
+   string name2;
+END;
+
 // Test use of Python generator object for lazy evaluation...
 
 dataset(childrec) testGenerator(unsigned lim) := EMBED(Python)
@@ -64,11 +69,17 @@ transform(childrec) testTransform(unsigned lim) := EMBED(Python)
   return ("Hello", lim)
 ENDEMBED;
 
+// Test a transform with input and output rows
+transform(childrec) testTransform2(namerec inrec, unsigned p) := EMBED(Python)
+  return (inrec.name, p)
+ENDEMBED;
 
-output (testGenerator(10));
-output (testNamedTuple(10));
-output (testMissingTuple1(10));
-output (testMissingTuple2(10));
+//output (testGenerator(10));
+//output (testNamedTuple(10));
+//output (testMissingTuple1(10));
+//output (testMissingTuple2(10));
 
-output(testRowReturn(10));
-output(row(testTransform(10)));
+//output(testRowReturn(10));
+//output(row(testTransform(10)));
+d := dataset([{'Richard'},{'dsfg'}], namerec);
+output(project(d, testTransform2(LEFT, 10)));

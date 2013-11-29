@@ -23,7 +23,7 @@
 #    Cmake Input File for pyembed
 #####################################################
 
-set ( debug_python Off )   # A lot slower but can assist in debugging...
+set ( debug_python On )   # A lot slower but can assist in debugging...
 SET ( DEBUG_PYTHON_LIBRARY "/usr/lib/libpython2.7_d.so" )
 
 project( pyembed )
