@@ -5,8 +5,8 @@
 
 externals := 
     SERVICE
-string EncodeBase64(const data src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Encode';
-data DecodeBase64(const string src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Decode';
+STRING EncodeBase64(const data src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Encode';
+DATA DecodeBase64(const string src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Decode';
     END;
 
 EXPORT Str := MODULE
@@ -242,7 +242,7 @@ EXPORT BOOLEAN StartsWith(STRING src, STRING prefix) := src[1..LENGTH(TRIM(prefi
  * @param src           The string being searched in.
  * @param suffix        The prefix to search for.
  */
-export BOOLEAN EndsWith(STRING src, STRING suffix) := src[LENGTH(TRIM(src))-LENGTH(TRIM(suffix))+1..]=suffix;
+EXPORT BOOLEAN EndsWith(STRING src, STRING suffix) := src[LENGTH(TRIM(src))-LENGTH(TRIM(suffix))+1..]=suffix;
 
 
 /**
@@ -263,7 +263,7 @@ EXPORT STRING RemoveSuffix(STRING src, STRING suffix) :=
  * @param mask          A bitmask of which elements should be included.  Bit 0 is item1, bit1 item 2 etc.
  */
 
-EXPORT STRING ExtractMultiple(string src, unsigned8 mask) := lib_stringlib.StringLib.StringExtractMultiple(src, mask);
+EXPORT STRING ExtractMultiple(STRING src, UNSIGNED8 mask) := lib_stringlib.StringLib.StringExtractMultiple(src, mask);
 
 /**
  * Returns the number of words that the string contains.  Words are separated by one or more separator strings. No 
@@ -308,7 +308,7 @@ EXPORT STRING CombineWords(SET OF STRING words, STRING separator) := lib_stringl
  * @return              The minimum edit distance between the two strings.
  */
 
-EXPORT UNSIGNED4 EditDistance(string _left, string _right) :=
+EXPORT UNSIGNED4 EditDistance(STRING _left, STRING _right) :=
     lib_stringlib.StringLib.EditDistanceV2(_left, _right);
 
 /**
@@ -321,7 +321,7 @@ EXPORT UNSIGNED4 EditDistance(string _left, string _right) :=
  * @return              Whether or not the two strings are within the given specified edit distance.
  */
 
-EXPORT BOOLEAN EditDistanceWithinRadius(string _left, string _right, unsigned4 radius) :=
+EXPORT BOOLEAN EditDistanceWithinRadius(STRING _left, STRING _right, UNSIGNED4 radius) :=
     lib_stringlib.StringLib.EditDistanceWithinRadiusV2(_left, _right, radius);
 
 
@@ -332,7 +332,7 @@ EXPORT BOOLEAN EditDistanceWithinRadius(string _left, string _right, unsigned4 r
  * @return              The number of words in the string.
  */
 
-EXPORT unsigned4 WordCount(string text) :=
+EXPORT UNSIGNED4 WordCount(STRING text) :=
     lib_stringlib.StringLib.StringWordCount(text);
 
 /**
@@ -343,7 +343,7 @@ EXPORT unsigned4 WordCount(string text) :=
  * @return              The number of words in the string.
  */
 
-EXPORT string GetNthWord(string text, unsigned4 n) :=
+EXPORT STRING GetNthWord(STRING text, UNSIGNED4 n) :=
     lib_stringlib.StringLib.StringGetNthWord(text, n);
 
 /**
@@ -378,13 +378,23 @@ EXPORT ExcludeLastWord(STRING text) := lib_stringlib.Stringlib.StringExcludeLast
 EXPORT ExcludeNthWord(STRING text, UNSIGNED2 n) := lib_stringlib.Stringlib.StringExcludeNthWord(text, n);
 
 /*
+ * Returns a string containing text repeated n times.
+ *
+ * @param text          The string to be repeated.
+ * @param n             Number of repetitions.
+ * @return              A string containing n concatenations of the string text.
+ */
+
+EXPORT STRING Repeat(STRING text, UNSIGNED4 n) := lib_stringlib.Stringlib.StringRepeat(text, n);
+
+/*
  * Converts the data value to a sequence of hex pairs.
  *
  * @param value         The data value that should be expanded as a sequence of hex pairs.
  * @return              A string containg a sequence of hex pairs.
  */
 
-EXPORT string ToHexPairs(data value) := lib_stringlib.StringLib.Data2String(value);
+EXPORT STRING ToHexPairs(DATA value) := lib_stringlib.StringLib.Data2String(value);
 
 /*
  * Converts a string containing sequences of hex pairs to a data value.
@@ -397,7 +407,7 @@ EXPORT string ToHexPairs(data value) := lib_stringlib.StringLib.Data2String(valu
  * @return              A data value with each byte created from a pair of hex digits.
  */
 
-EXPORT data FromHexPairs(string hex_pairs) := lib_stringlib.StringLib.String2Data(hex_pairs);
+EXPORT DATA FromHexPairs(STRING hex_pairs) := lib_stringlib.StringLib.String2Data(hex_pairs);
 
 /*
  * Encode binary data to base64 string.
@@ -410,7 +420,7 @@ EXPORT data FromHexPairs(string hex_pairs) := lib_stringlib.StringLib.String2Dat
  * @return              Base 64 encoded string.
  */
 
-EXPORT STRING EncodeBase64(data value) := externals.EncodeBase64(value);
+EXPORT STRING EncodeBase64(DATA value) := externals.EncodeBase64(value);
 
 /*
  * Decode base64 encoded string to binary data.
