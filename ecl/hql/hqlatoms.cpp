@@ -22,6 +22,7 @@ IIdAtom * defaultFieldNameId;
 IIdAtom * failId;
 IIdAtom * bindBooleanParamId;
 IIdAtom * bindDataParamId;
+IIdAtom * bindDatasetParamId;
 IIdAtom * bindRealParamId;
 IIdAtom * bindRowParamId;
 IIdAtom * bindSetParamId;
@@ -430,6 +431,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEID(at);
     MAKEID(bindBooleanParam);
     MAKEID(bindDataParam);
+    MAKEID(bindDatasetParam);
     MAKEID(bindRealParam);
     MAKEID(bindRowParam);
     MAKEID(bindSetParam);

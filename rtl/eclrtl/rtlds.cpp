@@ -22,6 +22,8 @@
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
 
+#include "roxiemem.hpp"
+
 #define FIRST_CHUNK_SIZE  0x100
 #define DOUBLE_LIMIT      0x10000           // must be a power of 2
 
@@ -1619,6 +1621,57 @@ const byte * RtlLinkedDatasetCursor::select(unsigned idx)
     return cur < numRows ? rows[cur] : NULL;
 }
 
+
+//---------------------------------------------------------------------------
+
+RtlSafeLinkedDatasetCursor::RtlSafeLinkedDatasetCursor(unsigned _numRows, byte * * _rows)
+{
+    init(_numRows, _rows);
+}
+
+RtlSafeLinkedDatasetCursor::~RtlSafeLinkedDatasetCursor()
+{
+    ReleaseRoxieRowset(numRows, rows);
+}
+
+void RtlSafeLinkedDatasetCursor::init(unsigned _numRows, byte * * _rows)
+{
+    ReleaseRoxieRowset(numRows, rows);
+    numRows = _numRows;
+    rows = _rows;
+    cur = (unsigned)-1;
+    LinkRoxieRowset(rows);
+}
+
+//---------------------------------------------------------------------------
+
+RtlStreamedDatasetCursor::RtlStreamedDatasetCursor(IRowStream * _stream)
+{
+    init(_stream);
+}
+
+RtlStreamedDatasetCursor::RtlStreamedDatasetCursor()
+{
+}
+
+void RtlStreamedDatasetCursor::init(IRowStream * _stream)
+{
+    stream.set(_stream);
+    cur.clear();
+}
+
+const byte * RtlStreamedDatasetCursor::first()
+{
+    cur.setown(stream->nextRow());
+    return cur.getbytes();
+}
+
+
+const byte * RtlStreamedDatasetCursor::next()
+{
+    cur.setown(stream->nextRow());
+    return cur.getbytes();
+}
 
 //---------------------------------------------------------------------------
 

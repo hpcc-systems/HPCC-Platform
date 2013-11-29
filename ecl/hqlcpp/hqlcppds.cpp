@@ -1991,10 +1991,23 @@ void HqlCppTranslator::buildDeserializedDataset(BuildCtx & ctx, ITypeInfo * type
 void HqlCppTranslator::ensureDatasetFormat(BuildCtx & ctx, ITypeInfo * type, CHqlBoundExpr & tgt, ExpressionFormat format)
 {
     IAtom * serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
+    ITypeInfo * tgtType = tgt.queryType();
     switch (format)
     {
+    case FormatStreamedDataset:
+        if (!hasStreamedModifier(tgtType))
+        {
+            ensureDatasetFormat(ctx, type, tgt, FormatLinkedDataset);
+            HqlExprArray args;
+            args.append(*tgt.getTranslatedExpr());
+            OwnedITypeInfo streamedType = setStreamedAttr(type, true);
+            OwnedHqlExpr call = bindFunctionCall(createRowStreamId, args, streamedType);
+            buildTempExpr(ctx, call, tgt);
+            return;
+        }
+        break;
     case FormatBlockedDataset:
-        if (isArrayRowset(tgt.queryType()))
+        if (isArrayRowset(tgtType))
         {
             OwnedHqlExpr deserializedExpr = tgt.getTranslatedExpr();
             LinkedHqlExpr savedCount = tgt.count;
@@ -2006,10 +2019,10 @@ void HqlCppTranslator::ensureDatasetFormat(BuildCtx & ctx, ITypeInfo * type, CHq
         }
         break;
     case FormatLinkedDataset:
-        if (!hasLinkCountedModifier(tgt.queryType()))
+        if (!hasLinkCountedModifier(tgtType))
         {
             OwnedHqlExpr serializedExpr = tgt.getTranslatedExpr();
-            if (recordTypesMatch(type, tgt.queryType()))
+            if (recordTypesMatch(type, tgtType))
             {
                 //source is an array of rows, or a simple dataset that doesn't need any transformation
                 buildTempExpr(ctx, serializedExpr, tgt, FormatLinkedDataset);
@@ -2020,7 +2033,7 @@ void HqlCppTranslator::ensureDatasetFormat(BuildCtx & ctx, ITypeInfo * type, CHq
         }
         break;
     case FormatArrayDataset:
-        if (!isArrayRowset(tgt.queryType()))
+        if (!isArrayRowset(tgtType))
         {
             OwnedHqlExpr serializedExpr = tgt.getTranslatedExpr();
             buildDeserializedDataset(ctx, type, serializedExpr, tgt, serializeForm);
@@ -2106,12 +2119,8 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
         return;
     case no_call:
     case no_externalcall:
-        if (!hasStreamedModifier(expr->queryType()))
-        {
-            buildTempExpr(ctx, expr, tgt);
-            return;
-        }
-        break;
+        buildTempExpr(ctx, expr, tgt);
+        return;
     case no_newaggregate:
         if (canAssignInline(&ctx, expr))
         {
@@ -2385,12 +2394,8 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         return;
     case no_call:
     case no_externalcall:
-        if (!hasStreamedModifier(expr->queryType()))
-        {
-            doBuildCall(ctx, &target, expr, NULL);
-            return;
-        }
-        break;
+        doBuildCall(ctx, &target, expr, NULL);
+        return;
     case no_getgraphresult:
         doBuildAssignGetGraphResult(ctx, target, expr);
         return;
@@ -2597,7 +2602,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_translated:
         {
             bool sourceOutOfLine = isArrayRowset(exprType);
-            if (sourceOutOfLine != targetOutOfLine)
+            if (sourceOutOfLine != targetOutOfLine && !hasStreamedModifier(exprType))
             {
                 IAtom * serializeFormat = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
                 OwnedITypeInfo serializedSourceType = getSerializedForm(exprType, serializeFormat);
@@ -3822,7 +3827,6 @@ BoundRow * HqlCppTranslator::buildDatasetIterateStreamedCall(BuildCtx & ctx, IHq
 
     ITypeInfo * exprType = expr->queryType();
     Owned<ITypeInfo> wrappedType = makeWrapperModifier(LINK(exprType));
-    OwnedHqlExpr temp = ctx.getTempDeclare(wrappedType, bound.expr);
 
     ctx.addLoop(NULL, NULL, false);
 
@@ -3831,7 +3835,7 @@ BoundRow * HqlCppTranslator::buildDatasetIterateStreamedCall(BuildCtx & ctx, IHq
 
     StringBuffer s;
     generateExprCpp(s, tempRow).append(".setown(");
-    generateExprCpp(s, temp).append("->nextRow());");
+    generateExprCpp(s, bound.expr).append("->nextRow());");
     ctx.addQuoted(s);
 
     s.clear().append("if (!");generateExprCpp(s, tempRow).append(".getbytes()) break;");

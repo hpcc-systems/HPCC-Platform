@@ -3646,9 +3646,6 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
 
     if (!hasEntrypoint)
     {
-        // may change from warning to error in the future
-        reportWarning(ERR_SVC_NOENTRYPOINT, errpos.pos, "Entrypoint is not defined; default to %s", name->str());
-
         IHqlExpression *nameAttr = createAttribute(entrypointAtom, createConstant(name->str()));
         attrs = createComma(attrs, nameAttr);
     }

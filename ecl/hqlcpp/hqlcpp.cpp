@@ -883,6 +883,8 @@ bool isNullAssign(const CHqlBoundTarget & target, IHqlExpression * expr)
 
 ExpressionFormat queryNaturalFormat(ITypeInfo * type)
 {
+    if (hasStreamedModifier(type))
+        return FormatStreamedDataset;
     if (hasOutOfLineModifier(type))
         return FormatArrayDataset;
     if (hasLinkCountedModifier(type))
@@ -1040,7 +1042,7 @@ void CHqlBoundTarget::validate() const
         }
         else
         {
-            assertex(length || queryType()->getTypeCode() == type_varstring || queryType()->getTypeCode() == type_varunicode);
+            assertex(length || queryType()->getTypeCode() == type_varstring || queryType()->getTypeCode() == type_varunicode || hasStreamedModifier(queryType()));
         }
     }
 }
@@ -3416,6 +3418,19 @@ void HqlCppTranslator::buildReturn(BuildCtx & ctx, IHqlExpression * expr, ITypeI
         OwnedHqlExpr temp = createQuoted(s.str(), LINK(exprType));
         ctx.addReturn(temp);
     }
+    else if ((returntc == type_table) && hasStreamedModifier(retType))
+    {
+        CHqlBoundTarget result;
+        buildTempExpr(ctx, ctx, result, expr, FormatStreamedDataset, false);
+
+        //MORE: There should be a cleaner way of doing this
+        StringBuffer s;
+        result.expr->toString(s);
+        s.append(".getClear()");
+
+        OwnedHqlExpr temp = createQuoted(s.str(), LINK(exprType));
+        ctx.addReturn(temp);
+    }
     else if ((returntc == type_boolean) && specialCaseBoolReturn(ctx, expr))
     {
         bool successValue = true;
@@ -4096,7 +4111,9 @@ IHqlExpression * HqlCppTranslator::buildSimplifyExpr(BuildCtx & ctx, IHqlExpress
 IHqlExpression * HqlCppTranslator::createWrapperTemp(BuildCtx & ctx, ITypeInfo * type, typemod_t modifier)
 {
     Linked<ITypeInfo> rawType = queryUnqualifiedType(type);
-    if (hasLinkCountedModifier(type))
+    if (hasStreamedModifier(type))
+        rawType.setown(setStreamedAttr(rawType, true));
+    else if (hasLinkCountedModifier(type))
         rawType.setown(makeAttributeModifier(rawType.getClear(), getLinkCountedAttr()));
 
     Owned<ITypeInfo> declType = makeWrapperModifier(rawType.getClear());
@@ -4136,30 +4153,43 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
     case type_table:
     case type_groupedtable:
         {
-            if (recordRequiresLinkCount(::queryRecord(exprType)) || hasLinkCountedModifier(_exprType))
+            if (format == FormatStreamedDataset || hasStreamedModifier(exprType))
             {
-                assertex(format != FormatBlockedDataset);
-                format = FormatLinkedDataset;
             }
-            else if (format == FormatNatural)
-                format = FormatLinkedDataset;
+            else
+            {
+                if (recordRequiresLinkCount(::queryRecord(exprType)) || hasLinkCountedModifier(_exprType))
+                {
+                    assertex(format != FormatBlockedDataset);
+                    format = FormatLinkedDataset;
+                }
+                else if (format == FormatNatural)
+                    format = FormatLinkedDataset;
+            }
             break;
         }
     }
 
-    if (hasLinkCountedModifier(exprType))
+    switch (format)
     {
-        if (format == FormatNatural)
+    case FormatBlockedDataset:
+        exprType.setown(setLinkCountedAttr(exprType, false));
+        break;
+    case FormatLinkedDataset:
+    case FormatArrayDataset:
+        exprType.setown(setLinkCountedAttr(exprType, true));
+        break;
+    case FormatStreamedDataset:
+        exprType.setown(setStreamedAttr(exprType, true));
+        break;
+    case FormatNatural:
+        if (hasStreamedModifier(exprType))
+            format = FormatStreamedDataset;
+        else if (hasLinkCountedModifier(exprType))
             format = FormatLinkedDataset;
-        else if (format == FormatBlockedDataset)
-            exprType.setown(setLinkCountedAttr(exprType, false));
-    }
-    else
-    {
-        if (format == FormatNatural)
+        else
             format = FormatBlockedDataset;
-        else if ((format == FormatLinkedDataset) || (format == FormatArrayDataset))
-            exprType.setown(setLinkCountedAttr(exprType, true));
+        break;
     }
 
     size32_t size = exprType->getSize();
@@ -4231,17 +4261,20 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
         {
             OwnedITypeInfo lenType = makeModifier(LINK(sizetType), modifier);
             target.expr.setown(createWrapperTemp(ctx, exprType, modifier));
-            if (isArrayRowset(exprType))
+            if (!hasStreamedModifier(exprType))
             {
-                //A bit of a hack, but the cleanest I could come up with... really access to the count member should be wrapped in
-                //member functions, but getting them created needs a whole new level of complication (probably moving out out of hqlwcpp)
-                StringBuffer name;
-                target.expr->toString(name).append(".count");
-                target.count.setown(createVariable(name, LINK(lenType)));
+                if (isArrayRowset(exprType))
+                {
+                    //A bit of a hack, but the cleanest I could come up with... really access to the count member should be wrapped in
+                    //member functions, but getting them created needs a whole new level of complication (probably moving out out of hqlwcpp)
+                    StringBuffer name;
+                    target.expr->toString(name).append(".count");
+                    target.count.setown(createVariable(name, LINK(lenType)));
+                }
+                else
+                    target.length.setown(ctx.getTempDeclare(lenType, NULL));
+                break;
             }
-            else
-                target.length.setown(ctx.getTempDeclare(lenType, NULL));
-            break;
         }
     }
 
@@ -4371,7 +4404,15 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, IHqlExpression * expr, CHql
         //fall through
     case no_externalcall:
         if (format == FormatNatural && expr->isDataset())
-            format = hasLinkCountedModifier(expr->queryType()) ? FormatLinkedDataset : FormatBlockedDataset;
+        {
+            ITypeInfo * exprType = expr->queryType();
+            if (hasStreamedModifier(exprType))
+                format = FormatStreamedDataset;
+            else if (hasLinkCountedModifier(exprType) || hasOutOfLineModifier(exprType))
+                format = FormatLinkedDataset;
+            else
+                format = FormatBlockedDataset;
+        }
         break;
     }
 
@@ -5756,7 +5797,16 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         {
             if (hasStreamedModifier(retType))
             {
-                args.append(*createRowAllocator(ctx, ::queryRecord(retType)));
+                if (getBoolAttribute(external, allocatorAtom, true))
+                    args.append(*createRowAllocator(ctx, ::queryRecord(retType)));
+                returnMustAssign = true;
+                if (tgt && hasStreamedModifier(targetType) && recordTypesMatch(targetType, retType))
+                {
+                    doneAssign = true;
+                    localBound.expr.set(tgt->expr);
+                }
+                else
+                    localBound.expr.setown(createWrapperTemp(ctx, retType, typemod_none));
                 break;
             }
             const CHqlBoundTarget * curTarget;
@@ -5958,10 +6008,13 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         case type_table:
         case type_groupedtable:
             {
-                if (isArrayRowset(argType))
-                    args.append(*getBoundCount(bound));
-                else
-                    args.append(*getBoundSize(bound));
+                if (!hasStreamedModifier(argType))
+                {
+                    if (isArrayRowset(argType))
+                        args.append(*getBoundCount(bound));
+                    else
+                        args.append(*getBoundSize(bound));
+                }
                 bound.expr.setown(getPointer(bound.expr));
                 break;
             }
@@ -11578,6 +11631,10 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             break;
         case type_row:
             bindFunc = bindRowParamId; // more
+            break;
+        case type_table:
+        case type_groupedtable:
+            bindFunc = bindDatasetParamId; // more
             break;
         case type_set:
         {

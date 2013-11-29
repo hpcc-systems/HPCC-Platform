@@ -308,9 +308,25 @@ public:
     inline void setDataset(unsigned _numRows, byte * * _rows) { iter.setDataset(_numRows, _rows); }
 
 protected:
-    RtlLinkedDatasetCursor  iter;
+    RtlSafeLinkedDatasetCursor  iter;
 };
     
+class CNormalizeStreamedChildIterator : public RtlCInterface, implements INormalizeChildIterator
+{
+public:
+    CNormalizeStreamedChildIterator() {}
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual byte * first(const void * parentRecord)         { init(parentRecord); return (byte *)iter.first(); }
+    virtual byte * next()                                   { return (byte *)iter.next(); }
+    virtual void init(const void * parentRecord) = 0;
+
+    inline void setDataset(IRowStream * _streamed) { iter.init(_streamed); }
+
+protected:
+    RtlStreamedDatasetCursor  iter;
+};
+
 //---------------------------------------------------------------------------
 
 class CThorArg : public RtlCInterface

@@ -22,6 +22,7 @@
 extern HQL_API IIdAtom * atId;
 extern HQL_API IIdAtom * bindBooleanParamId;
 extern HQL_API IIdAtom * bindDataParamId;
+extern HQL_API IIdAtom * bindDatasetParamId;
 extern HQL_API IIdAtom * bindRealParamId;
 extern HQL_API IIdAtom * bindRowParamId;
 extern HQL_API IIdAtom * bindSetParamId;

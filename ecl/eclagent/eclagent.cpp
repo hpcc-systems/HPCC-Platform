@@ -2092,6 +2092,7 @@ void EclAgent::runProcess(IEclProcess *process)
 #ifdef _DEBUG_LEAKS
     rowManager.clear();//Early release of rowManager, so activity IDs of leaked blocks are available
 #endif
+    rowManager.clear(); // Must go before the allocatorCache
     allocatorMetaCache.clear(); //release meta before libraries unloaded
     queryLibraries.kill();
 

@@ -766,8 +766,14 @@ ECLRTL_API unsigned rtlDelayReturn(unsigned value, unsigned sleepTime);
 
 ECLRTL_API bool rtlGPF();
 
-//-----------------------------------------------------------------------------
+
 interface IRowStream;
+
+//-----------------------------------------------------------------------------
+
+ECLRTL_API IRowStream * createRowStream(size32_t count, byte * * rowset);
+
+//-----------------------------------------------------------------------------
 struct RtlTypeInfo;
 class ARowBuilder;
 interface IEmbedFunctionContext : extends IInterface

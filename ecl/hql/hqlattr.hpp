@@ -70,6 +70,7 @@ inline bool hasLinkCountedModifier(ITypeInfo * t)    { return queryAttribute(t, 
 inline bool hasOutOfLineRows(ITypeInfo * type) { return (hasOutOfLineModifier(type) || hasLinkCountedModifier(type)); }
 inline bool hasLinkCountedModifier(IHqlExpression * expr)    { return hasLinkCountedModifier(expr->queryType()); }
 inline bool hasStreamedModifier(ITypeInfo * t)   { return queryAttribute(t, streamedAtom) != NULL; }
+inline bool isStreamed(IHqlExpression * expr) { return hasStreamedModifier(expr->queryType()); }
 
 extern HQL_API ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue);
 extern HQL_API ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue);

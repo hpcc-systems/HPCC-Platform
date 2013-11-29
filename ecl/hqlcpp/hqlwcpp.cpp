@@ -832,7 +832,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        if (paramType->getSize() == UNKNOWN_LENGTH)
+        if ((paramType->getSize() == UNKNOWN_LENGTH) && !hasStreamedModifier(paramType))
         {
             out.append("size32_t");
             if (isOut)
@@ -881,7 +881,9 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * att
     case type_groupedtable:
         if (isConst)
             out.append("const ");
-        if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
+        if (hasStreamedModifier(paramType))
+            out.append("IRowStream *");
+        else if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
             out.append("byte * *");
         else
             out.append("void *");
@@ -1211,7 +1213,9 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                     case type_dictionary:
                     case type_table:
                     case type_groupedtable:
-                        if (hasLinkCountedModifier(type))
+                        if (hasStreamedModifier(type))
+                            out.append("get()");
+                        else if (hasLinkCountedModifier(type))
                             out.append("queryrows()");
                         else
                             out.append("getbytes()");
@@ -1781,7 +1785,7 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign)
         case type_groupedtable:
             if (hasWrapperModifier(type))
             {
-                if (hasLinkCountedModifier(type))
+                if (hasLinkCountedModifier(type) && !hasStreamedModifier(type))
                 {
                     assertex(source->getOperator() == no_complex);
                     indent();

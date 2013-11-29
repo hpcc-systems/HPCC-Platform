@@ -843,6 +843,7 @@ const char * cppSystemText[]  = {
     // Marshalling parameters to external languages
     "   bindBooleanParam(const varstring name, boolean val) : method,entrypoint='bindBooleanParam';",
     "   bindDataParam(const varstring name, data val) : method,entrypoint='bindDataParam';",
+    "   bindDatasetParam(const varstring name, streamed dataset val) : method,entrypoint='bindDatasetParam',passParameterMeta(true);",
     "   bindRealParam(const varstring name, real val) : method,entrypoint='bindRealParam';",
     "   bindRowParam(const varstring name, _linkcounted_ row row) : method,entrypoint='bindRowParam',passParameterMeta(true);",
     "   bindSignedParam(const varstring name, integer val) : method,entrypoint='bindSignedParam';",
@@ -865,6 +866,8 @@ const char * cppSystemText[]  = {
     "   unsigned getUnsignedResult() : method,entrypoint='getUnsignedResult';",
     "   utf8 getUTF8Result() : method,entrypoint='getUTF8Result';",
     "   unicode getUnicodeResult() : method,entrypoint='getUnicodeResult';",
+
+    "   streamed dataset createRowStream(linkcounted dataset value) : eclrtl,include,allocator(false);",
 
     "   set of any getSetResult(integer4 typeCode, unsigned4 elemSize) : method,entrypoint='getSetResult';",
 
