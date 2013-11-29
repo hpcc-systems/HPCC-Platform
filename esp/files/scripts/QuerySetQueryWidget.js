@@ -256,6 +256,7 @@ define([
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,
+                sort: [{ attribute: "Id" }],
                 rowsPerPage: 50,
                 pagingLinks: 1,
                 pagingTextBox: true,
@@ -318,7 +319,8 @@ define([
                     },
                     QuerySetId:{
                         width: 180,
-                        label: "Target"
+                        label: "Target",
+                        sortable: false
                     },
                     Wuid: {
                         width: 180,
@@ -330,11 +332,13 @@ define([
                     },
                     Priority: {
                         width: 100,
-                        label: "Priority"
+                        label: "Priority",
+                        sortable: false
                     },
                     IsLibrary: {
                         width: 100,
-                        label: "Is Library"
+                        label: "Is Library",
+                        sortable: false
                     },
                     PublishedBy: {
                         width: 180,
