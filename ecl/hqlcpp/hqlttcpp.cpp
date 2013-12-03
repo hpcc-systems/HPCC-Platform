@@ -10526,6 +10526,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     seenForceLocal = false;
     seenLocalUpload = false;
     const HqlCppOptions & translatorOptions = translator.queryOptions();
+    options.assertSortedDistributed = translatorOptions.assertSortedDistributed;
     options.removeAsserts = !translatorOptions.checkAsserts;
     options.commonUniqueNameAttributes = translatorOptions.commonUniqueNameAttributes;
     options.sortIndexPayload = translatorOptions.sortIndexPayload;
@@ -11381,7 +11382,7 @@ IHqlExpression * HqlTreeNormalizer::transformIfAssert(node_operator newOp, IHqlE
     unsigned max = expr->numChildren();
     HqlExprArray children;
     bool same = transformChildren(expr, children);
-    if (expr->hasAttribute(assertAtom) && !options.removeAsserts)
+    if ((expr->hasAttribute(assertAtom) || (options.assertSortedDistributed && (newOp != no_assertgrouped))) && !options.removeAsserts)
     {
         OwnedHqlExpr ret = createDataset(newOp, children);
         return expr->cloneAllAnnotations(ret);

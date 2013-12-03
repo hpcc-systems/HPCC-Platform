@@ -1544,6 +1544,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.defaultExpiry, "defaultExpiry", DEFAULT_EXPIRY_PERIOD),
 
         DebugOption(options.checkAsserts,"checkAsserts", true),
+        DebugOption(options.assertSortedDistributed,"assertSortedDistributed", false),
         DebugOption(options.optimizeLoopInvariant,"optimizeLoopInvariant", false),      // doesn't fully work yet! and has little effect, and messes up the alias dependencies
         DebugOption(options.defaultImplicitKeyedJoinLimit, "defaultImplicitKeyedJoinLimit", 10000),
         DebugOption(options.defaultImplicitIndexReadLimit, "defaultImplicitIndexReadLimit", 0),

@@ -577,6 +577,7 @@ struct HqlCppOptions
     bool                optimizeResourcedProjects;
     byte                notifyOptimizedProjects;
     bool                checkAsserts;
+    bool                assertSortedDistributed;
     bool                optimizeLoopInvariant;
     bool                warnOnImplicitJoinLimit;
     bool                warnOnImplicitReadLimit;
