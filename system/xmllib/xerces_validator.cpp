@@ -272,7 +272,7 @@ int CDomXmlValidator::setSchemaSource(const char *pszBuffer, unsigned int nSize)
 void CDomXmlValidator::validate()
 {
     // use entity resolver so we can use file/buffer for xml and xsd
-    MTimeSection timing(NULL, "CDomXmlValidator::validate()");
+    TimeSection timing("CDomXmlValidator::validate()");
 
     // error handling
     ParseErrorHandler eh;

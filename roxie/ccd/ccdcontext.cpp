@@ -985,10 +985,11 @@ public:
     }
 
     Owned<IWUGraphProgress> graphProgress; // could make local to endGraph and pass to reset - might be cleaner
-    void endGraph(bool aborting)
+    void endGraph(cycle_t startCycles, bool aborting)
     {
         if (graph)
         {
+            unsigned __int64 elapsedTime = cycle_to_nanosec(get_cycles_now() - startCycles);
             if (debugContext)
                 debugContext->checkBreakpoint(aborting ? DebugStateGraphAbort : DebugStateGraphEnd, NULL, graph->queryName());
             if (aborting)
@@ -1000,6 +1001,11 @@ public:
                 progressWorkUnit.setown(&workUnit->lock());
                 progress.setown(progressWorkUnit->getGraphProgress(graph->queryName()));
                 graphProgress.setown(progress->update());
+
+                const char * graphName = graph->queryName();
+                StringBuffer graphDesc;
+                formatGraphTimerLabel(graphDesc, graphName);
+                updateWorkunitTimeStat(progressWorkUnit, "roxie", graphName, "time", graphDesc, elapsedTime, 1, 0);
             }
             graph->reset();
             if (graphProgress)
@@ -1038,6 +1044,7 @@ public:
 
         assertex(!realThor);
         bool created = false;
+        cycle_t startCycles = get_cycles_now();
         try
         {
             beginGraph(name);
@@ -1054,7 +1061,7 @@ public:
                 CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
             }
             if (created)
-                endGraph(true);
+                endGraph(startCycles, true);
             CTXLOG("Done cleaning up");
             throw;
         }
@@ -1062,11 +1069,11 @@ public:
         {
             CTXLOG("Exception thrown in query - cleaning up");
             if (created)
-                endGraph(true);
+                endGraph(startCycles, true);
             CTXLOG("Done cleaning up");
             throw;
         }
-        endGraph(false);
+        endGraph(startCycles, false);
     }
 
     virtual IActivityGraph * queryChildGraph(unsigned  id)
@@ -1970,6 +1977,10 @@ public:
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
         workflow.setown(_factory->createWorkflowMachine(false, logctx));
         context.setown(createPTree(ipt_caseInsensitive));
+
+        //MORE: Use various debug settings to override settings:
+        rowManager->setActivityTracking(workUnit->getDebugValueBool("traceRoxiePeakMemory", false));
+
         startWorkUnit();
     }
 
@@ -2152,13 +2163,11 @@ public:
             w->setState(aborted ? WUStateAborted : (failed ? WUStateFailed : WUStateCompleted));
             w->addTimeStamp("Roxie", GetCachedHostName(), "Finished");
             ITimeReporter *timer = logctx.queryTimer();
-            for (unsigned i = 0; i < timer->numSections(); i++)
-            {
-                StringBuffer str("roxie: ");
-                timer->getSection(i, str);
-                w->setTimerInfo(str, NULL, (unsigned)(timer->getTime(i)/1000000), timer->getCount(i), (unsigned)timer->getMaxTime(i));
-            }
-            // logctx.dumpStats(w);
+            updateWorkunitTimings(w, timer, "roxie");
+            logctx.dumpStats(w);
+
+            WuStatisticTarget statsTarget(w, "roxie");
+            rowManager->reportPeakStatistics(statsTarget, 0);
         }
     }
 

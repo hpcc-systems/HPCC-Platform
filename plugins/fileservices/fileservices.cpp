@@ -566,11 +566,14 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
         IConstDFUWorkunit & dfuwu = result->getResult();
 
         if (wu.get()) { // if updatable (e.g. not hthor with no agent context)
-            StringBuffer ElapsedLabel, RemainingLabel;
-            ElapsedLabel.appendf("%s-%s (Elapsed) ", label, dfuwu.getID());
-            RemainingLabel.appendf("%s-%s (Remaining) ", label, dfuwu.getID());
-            wu->setTimerInfo(ElapsedLabel.str(), "", time.elapsed(), 1, 0);
-            wu->setTimerInfo(RemainingLabel.str(), "", dfuwu.getSecsLeft()*1000, 1, 0);
+            StringBuffer wuScope, ElapsedLabel, RemainingLabel;
+            wuScope.appendf("%s-%s", label, dfuwu.getID());
+            ElapsedLabel.append(wuScope).append(" (Elapsed) ");
+            RemainingLabel.append(wuScope).append(" (Remaining) ");
+
+            //MORE: I think this are intended to replace the timing information, but will currently combine
+            updateWorkunitTimeStat(wu, "fileservices", wuScope, "elapsed", ElapsedLabel, milliToNano(time.elapsed()), 1, 0);
+            updateWorkunitTimeStat(wu, "fileservices", wuScope, "remaining", RemainingLabel, milliToNano(dfuwu.getSecsLeft()*1000), 1, 0);
             wu->setApplicationValue(label, dfuwu.getID(), dfuwu.getSummaryMessage(), true);
             wu->commit();
         }

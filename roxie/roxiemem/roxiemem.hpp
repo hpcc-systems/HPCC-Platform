@@ -20,6 +20,7 @@
 #include "jlib.hpp"
 #include "jlog.hpp"
 #include "jdebug.hpp"
+#include "jstats.h"
 #include "errorlist.h"
 
 #ifdef _WIN32
@@ -55,6 +56,8 @@
 // MAX_ACTIVITY_ID is further subdivided:
 #define ALLOCATORID_CHECK_MASK          0x00300000
 #define ALLOCATORID_MASK                0x000fffff
+#define UNKNOWN_ROWSET_ID               0x000F8421              // Use as the allocatorId for a rowset from an unknown activity
+#define UNKNOWN_ACTIVITY                123456789
 
 #define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
 #define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks
@@ -446,6 +449,7 @@ interface IRowManager : extends IInterface
     virtual bool compactRows(memsize_t count, const void * * rows) = 0;
     virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
     virtual memsize_t getExpectedFootprint(memsize_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
+    virtual void reportPeakStatistics(IStatisticTarget & target, unsigned detail) = 0;
 
 //Allow various options to be configured
     virtual void setActivityTracking(bool val) = 0;
@@ -475,6 +479,7 @@ interface IActivityMemoryUsageMap : public IInterface
     virtual void noteMemUsage(unsigned activityId, memsize_t memUsed, unsigned numAllocs) = 0;
     virtual void noteHeapUsage(memsize_t allocatorSize, RoxieHeapFlags heapFlags, memsize_t memReserved, memsize_t memUsed) = 0;
     virtual void report(const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache) = 0;
+    virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache) = 0;
 };
 
 extern roxiemem_decl IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks = false);

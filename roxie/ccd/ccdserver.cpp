@@ -7321,7 +7321,7 @@ class CSpillingQuickSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>, imp
 
 public:
     CSpillingQuickSortAlgorithm(ICompare *_compare, IRoxieSlaveContext * _ctx, IOutputMetaData * _rowMeta, unsigned _activityId)
-        : rowsToSort(&_ctx->queryRowManager(), InitialSortElements, CommitStep), ctx(_ctx), compare(_compare), rowMeta(_rowMeta), activityId(_activityId)
+        : rowsToSort(&_ctx->queryRowManager(), InitialSortElements, CommitStep, _activityId), ctx(_ctx), compare(_compare), rowMeta(_rowMeta), activityId(_activityId)
     {
         ctx->queryRowManager().addRowBuffer(this);
     }

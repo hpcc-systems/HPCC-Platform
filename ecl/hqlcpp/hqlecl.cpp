@@ -436,7 +436,10 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 
         doExpand(translator);
         if (wu->getDebugValueBool("addTimingToWorkunit", true))
-            wu->setTimerInfo("EclServer: generate code", NULL, msTick()-time, 1, 0);
+        {
+            unsigned elapsed = msTick()-time;
+            updateWorkunitTimeStat(wu, "eclcc", "workunit", "GenerateCpp", "eclcc: generate code", milliToNano(elapsed), 1, 0);
+        }
 
         wu->commit();
         addWorkUnitAsResource();
@@ -484,7 +487,7 @@ void HqlDllGenerator::doExpand(HqlCppTranslator & translator)
 
     unsigned endExpandTime = msTick();
     if (wu->getDebugValueBool("addTimingToWorkunit", true))
-        wu->setTimerInfo("EclServer: write c++", NULL, endExpandTime-startExpandTime, 1, 0);
+        updateWorkunitTimeStat(wu, "eclcc", "workunit", "writeCpp", "eclcc: Time to write c++", milliToNano(endExpandTime-startExpandTime), 1, 0);
 }
 
 bool HqlDllGenerator::abortRequested()
@@ -541,7 +544,7 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
         PrintLog("Failed to compile %s", wuname);
     time = msTick()-time;
     if (wu->getDebugValueBool("addTimingToWorkunit", true))
-        wu->setTimerInfo("EclServer: compile code", NULL, time, 1, 0);
+        updateWorkunitTimeStat(wu, "eclcc", "workunit", "compile", "eclcc: compile code", milliToNano(time), 1, 0);
 
     //Keep the files if there was a compile error.
     if (ok && deleteGenerated)

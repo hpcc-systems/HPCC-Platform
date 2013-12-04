@@ -30,9 +30,6 @@
 #include "hqlusage.hpp"
 #include "eclrtl.hpp"
 
-#define DEBUG_TIMER(name, time)                     if (options.addTimingToWorkunit) { timeReporter->addTiming(name, time); }
-#define DEBUG_TIMERX(timeReporter, name, time)      if (timeReporter) { timeReporter->addTiming(name, time); }
-
 #ifdef _DEBUG
 //#define SPOT_POTENTIAL_COMMON_ACTIVITIES
 #endif
@@ -1040,6 +1037,11 @@ public:
     HqlCppOptions const & queryOptions() const { return options; }
     bool needToSerializeToSlave(IHqlExpression * expr) const;
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
+    void updateTimer(const char * name, unsigned timems)
+    {
+        if (options.addTimingToWorkunit)
+            timeReporter->addTiming(name, NULL, timems);
+    }
 
     void updateClusterType();
     bool buildCode(HqlQueryContext & query, const char * embeddedLibraryName, bool isEmbeddedLibrary);

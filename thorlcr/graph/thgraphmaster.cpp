@@ -2585,12 +2585,17 @@ void CMasterGraph::done()
                     {
                         wu.setown(&graph.queryJob().queryWorkUnit().lock());
                     }
-                    virtual void report(const char *name, const __int64 totaltime, const __int64 maxtime, const unsigned count)
+                    virtual void report(const char * stat, const char *description, const __int64 totaltime, const __int64 maxtime, const unsigned count)
                     {
                         StringBuffer timerStr(graph.queryJob().queryGraphName());
                         timerStr.append("(").append(graph.queryGraphId()).append("): ");
-                        timerStr.append(name);
-                        wu->setTimerInfo(timerStr.str(), NULL, (unsigned)totaltime, count, (unsigned)maxtime);
+                        timerStr.append(description);
+
+                        StringBuffer wuScope;
+                        wuScope.append(graph.queryJob().queryGraphName()).append("(").append(graph.queryGraphId()).append(")");
+
+                        updateWorkunitTimeStat(wu, "thor", wuScope, stat, timerStr.str(), totaltime, count, maxtime);
+
                     }
                 } wureport(*this);
                 queryJob().queryTimeReporter().report(wureport);

@@ -391,7 +391,7 @@ TimeSection::~TimeSection()
     display_time(title, end_time-start_time);
 }
 
-MTimeSection::MTimeSection(ITimeReporter *_master, const char * _title) : title(_title), master(_master)
+MTimeSection::MTimeSection(ITimeReporter *_master, const char * _scope, const char * _title) : scope(_scope), title(_title), master(_master)
 {
   start_time = get_cycles_now();
 }
@@ -400,7 +400,7 @@ MTimeSection::~MTimeSection()
 {
     cycle_t end_time = get_cycles_now();
     if (master)
-        master->addTiming(title, end_time-start_time);
+        master->addTiming(scope, title, end_time-start_time);
     else
         display_time(title, end_time-start_time);
 }
@@ -408,20 +408,22 @@ MTimeSection::~MTimeSection()
 class TimeSectionInfo : public MappingBase 
 {
 public:
-    TimeSectionInfo(const char *_name, __int64 _time) : name(_name), totaltime(_time), count(1), maxtime(_time) {};
-    TimeSectionInfo(const char *_name, __int64 _time, __int64 _maxtime, unsigned _count) : name(_name), totaltime(_time), count(_count), maxtime(_maxtime) {};
+    TimeSectionInfo(const char * _scope, const char *_description, __int64 _cycles) : scope(_scope), description(_description), totalcycles(_cycles), count(1), maxcycles(_cycles) {};
+    TimeSectionInfo(const char * _scope, const char *_description, __int64 _cycles, __int64 _maxcycles, unsigned _count)
+    : scope(_scope), description(_description), totalcycles(_cycles), count(_count), maxcycles(_maxcycles) {};
     TimeSectionInfo(MemoryBuffer &mb)
     {
-        mb.read(name).read(totaltime).read(maxtime).read(count);
+        mb.read(scope).read(description).read(totalcycles).read(maxcycles).read(count);
     }
     void serialize(MemoryBuffer &mb)
     {
-        mb.append(name).append(totaltime).append(maxtime).append(count);
+        mb.read(scope).read(description).append(totalcycles).append(maxcycles).append(count);
     }
-    virtual const void * getKey() const { return name.get(); }
-    StringAttr  name;
-    __int64 totaltime;
-    __int64 maxtime;
+    virtual const void * getKey() const { return scope.get(); }
+    StringAttr  scope;
+    StringAttr  description;
+    __int64 totalcycles;
+    __int64 maxcycles;
     unsigned count;
 };
 
@@ -469,22 +471,22 @@ public:
         for(iter.first(); iter.isValid(); iter.next())
         {
             TimeSectionInfo &ts = (TimeSectionInfo &)iter.query();
-            cb.report(ts.name, ts.totaltime, ts.maxtime, ts.count);
+            cb.report(ts.scope, ts.description, ts.totalcycles, ts.maxcycles, ts.count);
         }
     }
-    virtual void addTiming(const char *title, __int64 time)
+    virtual void addTiming(const char * scope, const char *desc, unsigned __int64 cycles)
     {
         CriticalBlock b(c);
-        TimeSectionInfo *info = sections->find(title);
+        TimeSectionInfo *info = sections->find(scope);
         if (info)
         {
-            info->totaltime += time;
-            if (time > info->maxtime) info->maxtime = time;
+            info->totalcycles += cycles;
+            if (cycles > info->maxcycles) info->maxcycles = cycles;
             info->count++;
         }
         else
         {
-            TimeSectionInfo &newinfo = * new TimeSectionInfo(title, time);
+            TimeSectionInfo &newinfo = * new TimeSectionInfo(scope, desc, cycles);
             sections->replaceOwn(newinfo);
         }
     }
@@ -496,22 +498,27 @@ public:
     virtual __int64 getTime(unsigned idx)
     {
         CriticalBlock b(c);
-        return cycle_to_nanosec(findSection(idx).totaltime);
+        return cycle_to_nanosec(findSection(idx).totalcycles);
     }
     virtual __int64 getMaxTime(unsigned idx)
     {
         CriticalBlock b(c);
-        return cycle_to_nanosec(findSection(idx).maxtime);
+        return cycle_to_nanosec(findSection(idx).maxcycles);
     }
     virtual unsigned getCount(unsigned idx)
     {
         CriticalBlock b(c);
         return findSection(idx).count;
     }
-    virtual StringBuffer &getSection(unsigned idx, StringBuffer &s)
+    virtual StringBuffer &getScope(unsigned idx, StringBuffer &s)
     {
         CriticalBlock b(c);
-        return s.append(findSection(idx).name);
+        return s.append(findSection(idx).scope);
+    }
+    virtual StringBuffer &getDescription(unsigned idx, StringBuffer &s)
+    {
+        CriticalBlock b(c);
+        return s.append(findSection(idx).description);
     }
     virtual void reset()
     {
@@ -525,7 +532,7 @@ public:
         if (numSections())
         {
             for (unsigned i = 0; i < numSections(); i++)
-                getSection(i, str.append("Timing: ")).append(" total=")
+                getDescription(i, str.append("Timing: ")).append(" total=")
                                          .append(getTime(i)/1000000)
                                          .append("ms max=")
                                          .append(getMaxTime(i)/1000)
@@ -546,19 +553,19 @@ public:
             PrintLog(getTimings(str).str());
         }
     }
-    virtual void addTiming(const char *name, const __int64 totaltime, const __int64 maxtime, const unsigned count)
+    virtual void mergeTiming(const char * scope, const char *desc, const __int64 totalcycles, const __int64 maxcycles, const unsigned count)
     {
         CriticalBlock b(c);
-        TimeSectionInfo *info = sections->find(name);
+        TimeSectionInfo *info = sections->find(scope);
         if (!info)
         {
-            info = new TimeSectionInfo(name, totaltime, maxtime, count);
+            info = new TimeSectionInfo(scope, desc, totalcycles, maxcycles, count);
             sections->replaceOwn(*info);
         }
         else
         {
-            info->totaltime += totaltime;
-            if (maxtime > info->maxtime) info->maxtime = maxtime;
+            info->totalcycles += totalcycles;
+            if (maxcycles > info->maxcycles) info->maxcycles = maxcycles;
             info->count += count;
         }
     }
@@ -569,7 +576,7 @@ public:
         for(iter.first(); iter.isValid(); iter.next())
         {
             TimeSectionInfo &ts = (TimeSectionInfo &) iter.query();
-            other.addTiming(ts.name, ts.totaltime, ts.maxtime, ts.count);
+            other.mergeTiming(ts.scope, ts.description, ts.totalcycles, ts.maxcycles, ts.count);
         }
     }
     virtual void merge(ITimeReporter &other)

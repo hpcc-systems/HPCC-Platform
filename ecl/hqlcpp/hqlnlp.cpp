@@ -716,7 +716,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     doBuildParseSearchText(instance->startctx, expr);
     doBuildParseValidators(instance->nestedctx, expr);
     doBuildParseExtra(instance->startctx, expr);
-    DEBUG_TIMER("EclServer: Generate PARSE: Prepare", msTick()-startPrepareTime);
+    updateTimer("workunit;Generate PARSE: Prepare", msTick()-startPrepareTime);
     
     MemoryBuffer buffer;
     unsigned startCompileTime = msTick();
@@ -726,7 +726,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
         WARNING1(HQLWRN_GrammarIsAmbiguous, instance->activityId);
 
     doBuildParseCompiled(instance->classctx, buffer);
-    DEBUG_TIMER("EclServer: Generate PARSE: Compile", msTick()-startCompileTime);
+    updateTimer("workunit;Generate PARSE: Compile", msTick()-startCompileTime);
 
     nlpParse->buildProductions(*this, instance->classctx, instance->startctx);
 
@@ -759,7 +759,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     nlpParse = NULL;
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
-    DEBUG_TIMER("EclServer: Generate PARSE", msTick()-startTime);
+    updateTimer("workunit;Generate PARSE", msTick()-startTime);
 
     return instance->getBoundActivity();
 }

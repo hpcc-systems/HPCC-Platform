@@ -1657,6 +1657,22 @@ static const char *getNum(const char *s,unsigned &num)
     return s;
 }
 
+
+static void displayGraphTiming(const char * name, unsigned time)
+{
+    unsigned gn;
+    const char *s = getNum(name,gn);
+    unsigned sn;
+    s = getNum(s,sn);
+    if (gn&&sn) {
+        const char *gs = strchr(name,'(');
+        unsigned gid = 0;
+        if (gs)
+            getNum(gs+1,gid);
+        OUTLOG("\"%s\",%d,%d,%d,%d,%d",name,gn,sn,gid,time,(time/60000));
+    }
+}
+
 static void workunittimings(const char *wuid)
 {
     StringBuffer path;
@@ -1667,28 +1683,38 @@ static void workunittimings(const char *wuid)
         return;
     }
     IPropertyTree *wu = conn->queryRoot();
-    Owned<IPropertyTreeIterator> iter = wu->getElements("Timings/Timing");
     StringBuffer name;
     outln("Name,graph,sub,gid,time ms,time min");
-    ForEach(*iter) {
-        if (iter->query().getProp("@name",name.clear())) {
-            if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0)) {
-                unsigned gn;
-                const char *s = getNum(name.str(),gn);
-                unsigned sn;
-                s = getNum(s,sn);
-                if (gn&&sn) {
-                    const char *gs = strchr(name.str(),'(');
-                    unsigned gid = 0;
-                    if (gs)
-                        getNum(gs+1,gid);
-                    unsigned time = iter->query().getPropInt("@duration");
-                    OUTLOG("\"%s\",%d,%d,%d,%d,%d",name.str(),gn,sn,gid,time,(time/60000));
+    if (wu->hasProp("Statistics"))
+    {
+        Owned<IPropertyTreeIterator> iter = wu->getElements("Statistics/Statistic");
+        ForEach(*iter)
+        {
+            if (iter->query().getProp("@desc",name.clear()))
+            {
+                if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0))
+                {
+                    unsigned time = (iter->query().getPropInt64("@value") / 1000000);
+                    displayGraphTiming(name.str(), time);
                 }
             }
         }
     }
-
+    else
+    {
+        Owned<IPropertyTreeIterator> iter = wu->getElements("Timings/Timing");
+        ForEach(*iter)
+        {
+            if (iter->query().getProp("@name",name.clear()))
+            {
+                if ((name.length()>11)&&(memcmp("Graph graph",name.str(),11)==0))
+                {
+                    unsigned time = iter->query().getPropInt("@duration");
+                    displayGraphTiming(name.str(), time);
+                }
+            }
+        }
+    }
 }
 
 //=============================================================================

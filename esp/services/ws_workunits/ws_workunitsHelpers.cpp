@@ -368,20 +368,26 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
         StringBuffer totalThorTimeValue;
         unsigned totalThorTimerCount = 0; //Do we need this?
 
+        //This should be switched to using getStatistics() once backward compatibility is no longer required. (5.0?)
+        //The code inside the #if 0 is equivalent.
         IArrayOf<IEspECLTimer> timers;
-        Owned<IStringIterator> it = &cw->getTimers();
+#if 0
+        Owned<IConstWUStatisticIterator> it = &cw->getStatistics();
         ForEach(*it)
         {
+            IConstWUStatistic & cur = it->query();
+            //Only interested in timings...
+            if (cur.getKind() != SMEASURE_TIME_NS)
+                continue;
+
             SCMStringBuffer name;
-            it->str(name);
-            SCMStringBuffer value;
-            unsigned count = cw->getTimerCount(name.str(), NULL);
-            unsigned duration = cw->getTimerDuration(name.str(), NULL);
+            cur.getDescription(name);
+            name.s.replace('_', ' ');
+
+            unsigned __int64 count = cur.getCount();
+            unsigned __int64 duration = nanoToMilli(cur.getValue());
             StringBuffer fd;
             formatDuration(fd, duration);
-            for (unsigned i = 0; i < name.length(); i++)
-             if (name.s.charAt(i)=='_')
-                 name.s.setCharAt(i, ' ');
 
             if (strieq(name.str(), TOTALTHORTIME))
             {
@@ -397,14 +403,15 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
 
             if (version > 1.19)
             {
-                StringBuffer graphName;
+                StringAttr graphName;
+                unsigned graphNum;
                 unsigned subGraphNum;
-                unsigned __int64 subId;
-                if (parseGraphTimerLabel(name.str(), graphName, subGraphNum, subId))
+                unsigned subId;
+                if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
                 {
                     if (graphName.length() > 0)
                     {
-                        t->setGraphName(graphName.str());
+                        t->setGraphName(graphName);
                     }
                     if (subId > 0)
                     {
@@ -415,6 +422,52 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
 
             timers.append(*t.getLink());
         }
+#else
+        Owned<IStringIterator> it = &cw->getTimers();
+        ForEach(*it)
+        {
+            SCMStringBuffer name;
+            it->str(name);
+            unsigned count = cw->getTimerCount(name.str());
+            unsigned duration = cw->getTimerDuration(name.str());
+            StringBuffer fd;
+            formatDuration(fd, duration);
+            name.s.replace('_', ' ');
+
+            if (strieq(name.str(), TOTALTHORTIME))
+            {
+                totalThorTimeValue = fd;
+                totalThorTimerCount = count;
+                continue;
+            }
+
+            Owned<IEspECLTimer> t= createECLTimer("","");
+            t->setName(name.str());
+            t->setValue(fd.str());
+            t->setCount(count);
+
+            if (version > 1.19)
+            {
+                StringAttr graphName;
+                unsigned graphNum;
+                unsigned subGraphNum;
+                unsigned subId;
+                if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
+                {
+                    if (graphName.length() > 0)
+                    {
+                        t->setGraphName(graphName);
+                    }
+                    if (subId > 0)
+                    {
+                        t->setSubGraphId((int)subId);
+                    }
+                }
+            }
+
+            timers.append(*t.getLink());
+        }
+#endif
 
         if (totalThorTimeValue.length() > 0)
         {
@@ -655,42 +708,21 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
      if (version > 1.01)
      {
         info.setHaveSubGraphTimings(false);
-        StringBuffer xpath("/WorkUnits/");
-        xpath.append(wuid.str());
-        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000);
-        if (!conn)
-        {
-            DBGLOG("Cannot connect to SDS");
-            info.setGraphsDesc("Cannot connect to SDS");
-            return;
-        }
-        IPropertyTree *wpt = conn->queryRoot();
-        if (!wpt)
-        {
-            DBGLOG("Cannot get data from SDS");
-            info.setGraphsDesc("Cannot get data from SDS");
-            return;
-        }
 
-        Owned<IPropertyTreeIterator> iter = wpt->getElements("Timings/Timing");
-        StringBuffer name;
-        IArrayOf<IConstECLTimingData> timingdatarray;
-        ForEach(*iter)
+        Owned<IStringIterator> times = &cw->getTimers();
+        ForEach(*times)
         {
-            if (iter->query().getProp("@name",name.clear()))
+            SCMStringBuffer name;
+            times->str(name);
+
+            StringAttr graphName;
+            unsigned graphNum;
+            unsigned subGraphNum;
+            unsigned subId;
+            if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
             {
-                if ((name.length()>11) && (strncmp("Graph graph", name.str(), 11)==0))
-                {
-                    unsigned gn;
-                    const char *s = getGraphNum(name.str()+11, gn);
-                    unsigned sn;
-                    s = getGraphNum(s,sn);
-                    if (gn && sn)
-                    {
-                        info.setHaveSubGraphTimings(true);
-                        break;
-                    }
-                }
+                info.setHaveSubGraphTimings(true);
+                break;
             }
         }
      }
@@ -756,48 +788,29 @@ void WsWuInfo::getGraphInfo(IEspECLWorkunit &info, unsigned flags)
 
 void WsWuInfo::getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags)
 {
-    StringBuffer xpath("/WorkUnits/");
-    xpath.append(wuid.str());
-
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000);
-    if (!conn)
+    Owned<IStringIterator> times = &cw->getTimers();
+    ForEach(*times)
     {
-        DBGLOG("Could not connect to SDS");
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI, "Cannot connect to dali server.");
-    }
+        SCMStringBuffer name;
+        times->str(name);
 
-    IPropertyTree *wpt = conn->queryRoot();
-    Owned<IPropertyTreeIterator> iter = wpt->getElements("Timings/Timing");
+        StringAttr graphName;
+        unsigned graphNum;
+        unsigned subGraphNum;
+        unsigned subId;
 
-    ForEach(*iter)
-    {
-        StringBuffer name;
-        if (iter->query().getProp("@name", name))
+        if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
         {
-            if ((name.length()>11)&&(strncmp("Graph graph", name.str(), 11)==0))
-            {
-                unsigned gn;
-                const char *s = getGraphNum(name.str(),gn);
-                unsigned sn;
-                s = getGraphNum(s, sn);
-                if (gn && sn)
-                {
-                    const char *gs = strchr(name.str(),'(');
-                    unsigned gid = 0;
-                    if (gs)
-                        getGraphNum(gs+1, gid);
-                    unsigned time = iter->query().getPropInt("@duration");
+            unsigned time = cw->getTimerDuration(name.str());
 
-                    Owned<IEspECLTimingData> g = createECLTimingData();
-                    g->setName(name.str());
-                    g->setGraphNum(gn);
-                    g->setSubGraphNum(sn);
-                    g->setGID(gid);
-                    g->setMS(time);
-                    g->setMin(time/60000);
-                    timingData.append(*g.getClear());
-                }
-            }
+            Owned<IEspECLTimingData> g = createECLTimingData();
+            g->setName(name.str());
+            g->setGraphNum(graphNum);
+            g->setSubGraphNum(subGraphNum);
+            g->setGID(subId);
+            g->setMS(time);
+            g->setMin(time/60000);
+            timingData.append(*g.getClear());
         }
     }
 }
@@ -879,7 +892,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
     if (version > 1.27)
     {
         StringBuffer totalThorTimeStr;
-        unsigned totalThorTimeMS = cw->getTimerDuration(TOTALTHORTIME, NULL);
+        unsigned totalThorTimeMS = cw->getTimerDuration(TOTALTHORTIME);
         formatDuration(totalThorTimeStr, totalThorTimeMS);
         info.setTotalThorTime(totalThorTimeStr.str());
     }

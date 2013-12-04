@@ -1079,7 +1079,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             instance.stats.parseTime = msTick()-startTime;
 
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-                instance.wu->setTimerInfo("EclServer: parse query", NULL, instance.stats.parseTime, 1, 0);
+                updateWorkunitTimeStat(instance.wu, "eclcc", "workunit", "parse time", NULL, milliToNano(instance.stats.parseTime), 1, 0);
 
             if (optIncludeMeta || optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getMetaTree());
@@ -1154,7 +1154,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     unsigned totalTime = msTick() - startTime;
     instance.stats.generateTime = totalTime - instance.stats.parseTime;
     if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-        instance.wu->setTimerInfo("EclServer: totalTime", NULL, totalTime, 1, 0);
+        updateWorkunitTimeStat(instance.wu, "eclcc", "workunit", "totalTime", NULL, milliToNano(totalTime), 1, 0);
 }
 
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)

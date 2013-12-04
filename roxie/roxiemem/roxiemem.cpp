@@ -1213,17 +1213,17 @@ public:
         {
             const char *block = data() + base;
             ChunkHeader * header = (ChunkHeader *)block;
-            unsigned activityId = getActivityId(header->allocatorId);
+            unsigned allocatorId = header->allocatorId;
             //Potential race condition - a block could become allocated between these two lines.
             //That may introduce invalid activityIds (from freed memory) in the memory tracing.
             unsigned rowCount = atomic_read(&header->count);
             if (ROWCOUNT(rowCount) != 0)
             {
-                if (activityId != lastId)
+                if (allocatorId != lastId)
                 {
                     if (lastId)
                         map->noteMemUsage(lastId, running, runningCount);
-                    lastId = activityId;
+                    lastId = allocatorId;
                     running = chunkSize;
                     runningCount = 1;
                 }
@@ -1410,8 +1410,7 @@ public:
         unsigned numAllocs = queryCount()-1;
         if (numAllocs)
         {
-            unsigned activityId = getActivityId(sharedAllocatorId);
-            map->noteMemUsage(activityId, numAllocs * chunkSize, numAllocs);
+            map->noteMemUsage(sharedAllocatorId, numAllocs * chunkSize, numAllocs);
         }
     }
 };
@@ -1539,8 +1538,7 @@ public:
 
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
     {
-        unsigned activityId = getActivityId(allocatorId);
-        map->noteMemUsage(activityId, chunkCapacity, 1);
+        map->noteMemUsage(allocatorId, chunkCapacity, 1);
         map->noteHeapUsage(chunkCapacity, RHFpacked, _sizeInPages(), chunkCapacity);
     }
 
@@ -1564,7 +1562,7 @@ public:
 //
 struct ActivityEntry 
 {
-    unsigned activityId;
+    unsigned allocatorId;
     unsigned allocations;
     memsize_t usage;
 };
@@ -1591,7 +1589,7 @@ class CActivityMemoryUsageMap : public CInterface, implements IActivityMemoryUsa
     CIArrayOf<HeapEntry> heaps;
     memsize_t maxUsed;
     memsize_t totalUsed;
-    unsigned maxActivity;
+    unsigned allocatorIdMax;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1599,13 +1597,13 @@ public:
     {
         maxUsed = 0;
         totalUsed = 0;
-        maxActivity = 0;
+        allocatorIdMax = 0;
     }
 
-    virtual void noteMemUsage(unsigned activityId, memsize_t memUsed, unsigned numAllocs)
+    virtual void noteMemUsage(unsigned allocatorId, memsize_t memUsed, unsigned numAllocs)
     {
         totalUsed += memUsed;
-        ActivityEntry *ret = map.getValue(activityId);
+        ActivityEntry *ret = map.getValue(allocatorId);
         if (ret)
         {
             memUsed += ret->usage;
@@ -1614,13 +1612,13 @@ public:
         }
         else
         {
-            ActivityEntry e = {activityId, numAllocs, memUsed};
-            map.setValue(activityId, e);
+            ActivityEntry e = {allocatorId, numAllocs, memUsed};
+            map.setValue(allocatorId, e);
         }
         if (memUsed > maxUsed)
         {
             maxUsed = memUsed;
-            maxActivity = activityId;
+            allocatorIdMax = allocatorId;
         }
     }
 
@@ -1654,7 +1652,8 @@ public:
             while (j)
             {
                 j--;
-                logctx.CTXLOG("%"I64F"u bytes allocated by activity %u (%u allocations)", (unsigned __int64) results[j]->usage, getRealActivityId(results[j]->activityId, allocatorCache), results[j]->allocations);
+                unsigned activityId = getRealActivityId(results[j]->allocatorId, allocatorCache);
+                logctx.CTXLOG("%"I64F"u bytes allocated by activity %u (%u allocations)", (unsigned __int64) results[j]->usage, activityId, results[j]->allocations);
             }
 
             memsize_t totalHeapPages = 0;
@@ -1689,6 +1688,38 @@ public:
             logctx.CTXLOG("------------------ End of snapshot");
             delete [] results;
         }
+    }
+
+    virtual void reportStatistics(IStatisticTarget & target, unsigned detailtarget, const IRowAllocatorCache *allocatorCache)
+    {
+        ActivityEntry **results = new ActivityEntry *[map.count()];
+        HashIterator i(map);
+        unsigned j = 0;
+        for(i.first();i.isValid();i.next())
+        {
+            IMapping &cur = i.query();
+            results[j] = map.mapToValue(&cur);
+            j++;
+        }
+        qsort(results, j, sizeof(results[0]), sortUsage);
+        StringBuffer activityText;
+        while (j)
+        {
+            j--;
+            unsigned allocatorId = results[j]->allocatorId;
+            unsigned activityId = getRealActivityId(allocatorId, allocatorCache);
+            activityText.clear();
+            if (allocatorId & ACTIVITY_FLAG_ISREGISTERED)
+                activityText.append("ac").append(activityId);
+            else if ((allocatorId & MAX_ACTIVITY_ID) == UNKNOWN_ROWSET_ID)
+                activityText.append("rowset");
+            else
+                activityText.append("ac").append(allocatorId & MAX_ACTIVITY_ID);
+            target.addStatistic(NULL, activityText.str(), "roxiepeakmem", NULL, SMEASURE_MEM_KB, results[j]->usage / 1024, results[j]->allocations, 0, false);
+        }
+        delete [] results;
+
+        target.addStatistic(NULL, NULL, "roxiepeakmem", NULL, SMEASURE_MEM_KB, totalUsed / 1024, 1, 0, false);
     }
 };
 
@@ -3172,6 +3203,18 @@ public:
         return true;
     }
 
+    virtual void reportPeakStatistics(IStatisticTarget & target, unsigned detail)
+    {
+        Owned<IActivityMemoryUsageMap> map;
+        {
+            SpinBlock block(peakSpinLock);
+            map.set(peakUsageMap);
+        }
+        if (map)
+            map->reportStatistics(target, detail, allocatorCache);
+        target.addStatistic(NULL, NULL, "roxiehwm", NULL, SMEASURE_MEM_KB, peakPages * (HEAP_ALIGNMENT_SIZE / 1024), 1, 0, false);
+    }
+
     void restoreLimit(unsigned numRequested)
     {
         atomic_add(&totalHeapPages, -(int)numRequested);
@@ -4135,7 +4178,7 @@ namespace roxiemem {
 class SimpleRowBuffer : implements IBufferedRowCallback
 {
 public:
-    SimpleRowBuffer(IRowManager * rowManager, unsigned _priority) : priority(_priority), rows(rowManager, 0, 1)
+    SimpleRowBuffer(IRowManager * rowManager, unsigned _priority) : priority(_priority), rows(rowManager, 0, 1, UNKNOWN_ROWSET_ID)
     {
     }
 
