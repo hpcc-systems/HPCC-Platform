@@ -93,6 +93,10 @@ bool CTransformer::setPartition(RemoteFilename & remoteInputName, offset_t _star
 {
     CTransformerBase::setPartition(remoteInputName, _startOffset, _length);
     input.setown(inputFile->open(IFOread));
+
+    // if we want spray to not fill page cache
+    input->enable_pcflush();
+
     if (compressedInput) {                          
         Owned<IExpander> expander;
         if (decryptKey&&*decryptKey) {
@@ -822,6 +826,10 @@ processedProgress:
             OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone);
             if (!outio)
                 throwError1(DFTERR_CouldNotCreateOutput, localFilename.str());
+
+            // if we want spray to not fill page cache
+            outio->enable_pcflush();
+
             if (compressOutput) {
                 Owned<ICompressor> compressor;
                 if (!encryptKey.isEmpty()) {

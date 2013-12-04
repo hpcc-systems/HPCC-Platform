@@ -36,6 +36,8 @@
 #include <sys/vfs.h>
 #include <sys/mman.h>
 #include <sys/sendfile.h>
+#include "build-config.h"
+#include "jprop.hpp"
 #endif
 
 #include "time.h"
@@ -645,7 +647,8 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
         handle = NULLFILE;
         throw MakeErrnoException(EISDIR, "CFile::open %s", filename.get());
     }
-    
+
+    // DBGLOG("openHandle(%s) returns %d", filename.get(), handle);
 #endif
     return handle;
 }
@@ -820,8 +823,7 @@ bool CFile::fastCopyFile(CFile &target, size32_t buffersize, ICopyFileProgress *
 #endif
 }
 
-
-void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress)
+void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, bool flush_pgcache)
 {
     // check to see if src and target are remote
 
@@ -845,7 +847,13 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
     OwnedIFileIO sourceIO = open(IFOread);
     if (!sourceIO)
         throw MakeStringException(-1, "copySection: source '%s' not found", queryFilename());
-    
+
+    if (flush_pgcache)
+    {
+        targetIO->enable_pcflush();
+        sourceIO->enable_pcflush();
+    }
+
     offset_t offset = 0;
     offset_t total;
     try
@@ -879,11 +887,10 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
     }
 }
 
-void CFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress,bool usetmp)
+void CFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, bool flush_pgcache)
 {
-    doCopyFile(dest,this,buffersize,progress,NULL,usetmp);
+    doCopyFile(dest,this,buffersize,progress,NULL,usetmp,flush_pgcache);
 }
-
 
 
 void CFile::setReadOnly(bool ro)
@@ -1448,12 +1455,10 @@ public:
 #endif
     }
 
-    void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp)
+    void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, bool flush_pgcache)
     {
-        doCopyFile(dest,this,buffersize,progress,NULL,usetmp);
+        doCopyFile(dest,this,buffersize,progress,NULL,usetmp,flush_pgcache);
     }
-
-
 
     bool createDirectory()
     {
@@ -1503,10 +1508,10 @@ public:
         ifile->setShareMode(shmode);
     }
 
-    void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress)
+    void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, bool flush_pgcache)
     {
         connect();
-        ifile->copySection(dest,toOfs,fromOfs,size,progress);
+        ifile->copySection(dest,toOfs,fromOfs,size,progress,flush_pgcache);
     }
 
 
@@ -1516,13 +1521,12 @@ public:
         return NULL;
     }
 
-    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom, bool usetmp)
+    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom, bool usetmp, bool flush_pgcache)
     {
         // no special action for windows
         GetHostIp(resfrom);
-        copyTo(dest,0x100000,NULL,usetmp);
+        copyTo(dest,0x100000,NULL,usetmp,flush_pgcache);
     }
-
 
 };
 #endif
@@ -1596,6 +1600,7 @@ IFileIO *_createIFileIO(const void *buffer, unsigned sz, bool readOnly)
             return ret;
         }
 
+        virtual void enable_pcflush() { }
     };
 
     return new CMemoryBufferIO(buffer, sz, readOnly);
@@ -1754,6 +1759,7 @@ CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
     throwOnError = false;
     file = handle;
     sharemode = _sharemode;
+    pcflush = false;
 }
 
 CFileIO::~CFileIO()
@@ -1844,6 +1850,9 @@ void CFileIO::setSize(offset_t pos)
 
 //-- Unix implementation ----------------------------------------------------
 
+enum GblFlushEnum { FLUSH_INIT, FLUSH_DISALLOWED, FLUSH_ALLOWED };
+static GblFlushEnum gbl_flush_allowed = FLUSH_INIT;
+
 // More errorno checking TBD
 CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
 {
@@ -1851,6 +1860,8 @@ CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
     throwOnError = false;
     file = handle;
     sharemode = _sharemode;
+    pcflush = false;
+    // DBGLOG("CfileIO(), handle = %d", handle);
 }
 
 CFileIO::~CFileIO()
@@ -1866,9 +1877,33 @@ CFileIO::~CFileIO()
     }
 }
 
+void CFileIO::enable_pcflush()
+{
+    if (gbl_flush_allowed == FLUSH_INIT)
+    {
+        Owned<IProperties> conf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
+        if (conf->getPropBool("allow_pgcache_flush", false))
+            gbl_flush_allowed = FLUSH_ALLOWED;
+        else
+            gbl_flush_allowed = FLUSH_DISALLOWED;
+    }
+    if (gbl_flush_allowed == FLUSH_ALLOWED)
+        pcflush = true;
+    // DBGLOG("enable_pcflush() called, file = %d", file);
+}
+
 void CFileIO::close()
 {
     if (file != NULLFILE) {
+        // DBGLOG("close(), handle = %d", file);
+        if (pcflush)
+        {
+            int oflgs = fcntl(file, F_GETFL);
+            if ((oflgs & O_ACCMODE) != O_RDONLY)
+                sync_file_range(file, 0, 0, SYNC_FILE_RANGE_WAIT_BEFORE |
+                                    SYNC_FILE_RANGE_WRITE | SYNC_FILE_RANGE_WAIT_AFTER);
+            posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+        }
         if (::close(file) < 0)
             throw MakeErrnoException(errno,"CFileIO::close");
         file=NULLFILE;
@@ -1884,6 +1919,8 @@ void CFileIO::flush()
     if (fdatasync(file) != 0)
 #endif
         throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::flush");
+    if (pcflush)
+        posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
 }
 
 
@@ -1899,7 +1936,10 @@ offset_t CFileIO::size()
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
     if (0==len) return 0;
-    return checked_pread(file, data, len, pos);
+    size32_t ret = checked_pread(file, data, len, pos);
+    if ((pcflush) && (ret >= 0x10000))
+        posix_fadvise(file, pos, len, POSIX_FADV_DONTNEED);
+    return ret;
 }
 
 void CFileIO::setPos(offset_t newPos)
@@ -1916,6 +1956,11 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
     }
     if (ret<len)
         throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::write");
+    if ((pcflush) && (ret >= 0x10000))
+    {
+        sync_file_range(file, pos, len, SYNC_FILE_RANGE_WRITE);
+        posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+    }
     return ret;
 }
 
@@ -2720,7 +2765,7 @@ size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer)
     return lenRead;
 }
 
-void copyFile(const char *target, const char *source, size32_t buffersize, ICopyFileProgress *progress)
+void copyFile(const char *target, const char *source, size32_t buffersize, ICopyFileProgress *progress, bool flush_pgcache)
 {
     OwnedIFile src = createIFile(source);
     if (!src)
@@ -2728,15 +2773,15 @@ void copyFile(const char *target, const char *source, size32_t buffersize, ICopy
     OwnedIFile tgt = createIFile(target);
     if (!tgt)
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", target);
-    copyFile(tgt, src, buffersize,progress);
+    copyFile(tgt, src, buffersize, progress, flush_pgcache);
 }
 
-void copyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress)
+void copyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, bool flush_pgcache)
 {
-    source->copyTo(target,buffersize,progress);
+    source->copyTo(target,buffersize,progress,flush_pgcache);
 }
 
-void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp)
+void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp, bool flush_pgcache)
 {
     if (!buffersize)
         buffersize = 0x100000;
@@ -2798,7 +2843,13 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", dest->queryFilename());
     MemoryAttr mb;
     void * buffer = copyintercept?NULL:mb.allocate(buffersize);
-    
+
+    if (flush_pgcache)
+    {
+        sourceIO->enable_pcflush();
+        targetIO->enable_pcflush();
+    }
+
     offset_t offset = 0;
     offset_t total = 0;
     Owned<IException> exc;
@@ -6354,6 +6405,12 @@ public:
         CriticalBlock block(sect);
         Owned<IFileIO> io = open();
         io->setSize(size);
+    }
+    virtual void enable_pcflush()
+    {
+        CriticalBlock block(sect);
+        if (cachedio)
+            cachedio->enable_pcflush();
     }
 
 };

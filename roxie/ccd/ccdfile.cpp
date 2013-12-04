@@ -70,6 +70,7 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data) { THROWNOTOPEN; }
     virtual void setSize(offset_t size) { UNIMPLEMENTED; }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
+    virtual void enable_pcflush() { }
     virtual void close() { }
 } failure;
 
@@ -357,6 +358,7 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data) { throwUnexpected(); }
     virtual void setSize(offset_t size) { throwUnexpected(); }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { throwUnexpected(); return 0; }
+    virtual void enable_pcflush() { }
 
     virtual const char *queryFilename() { return logical->queryFilename(); }
     virtual bool isAlive() const { return CInterface::isAlive(); }
@@ -706,7 +708,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         }
     }
 
-    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg)
+    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg, bool flush_pgcache=false)
     {
         bool fileCopied = false;
         IFile *sourceFile;
@@ -755,16 +757,16 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
                         TimeSection timing(str.str());
                         if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true);
+                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, flush_pgcache);
                         else
-                            sourceFile->copyTo(destFile);
+                            sourceFile->copyTo(destFile,0x100000,NULL,false,flush_pgcache);
                     }
                     else
                     {
                         if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true);
+                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, flush_pgcache);
                         else
-                            sourceFile->copyTo(destFile);
+                            sourceFile->copyTo(destFile,0x100000,NULL,false,flush_pgcache);
                     }
                 }
                 f->setCopying(false);
@@ -822,7 +824,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         return fileCopied;
     }
 
-    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage)
+    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage, bool flush_pgcache=false)
     {
         if (!f->isRemote())
             f->copyComplete();
@@ -846,7 +848,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             
             tempFile.append(".$$$");
             const char *msg = background ? "Background copy" : "Copy";
-            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg);
+            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg, flush_pgcache);
         }
         return false;  // if we get here there was no file copied
     }
@@ -951,7 +953,7 @@ public:
                 {
                     try
                     {
-                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false);
+                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false, false);
                         CriticalBlock b(crit);
                         if (fileCopied)
                             fileCopiedCount++;
@@ -1150,7 +1152,7 @@ public:
                         if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
                         {
                             ret->checkOpen();
-                            doCopy(ret, false, false);
+                            doCopy(ret, false, false, true);
                             return ret.getLink();
                         }
 

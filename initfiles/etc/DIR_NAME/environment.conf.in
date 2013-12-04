@@ -19,3 +19,5 @@ blockname=${DIR_NAME}
 interface=*
 # enable epoll method for notification events (true/false)
 use_epoll=true
+# allow kernel pagecache flushing where enabled (true/false)
+allow_pgcache_flush=false

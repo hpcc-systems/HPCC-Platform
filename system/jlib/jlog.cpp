@@ -2472,6 +2472,7 @@ int CSysLogEventLogger::writeDataLog(size32_t datasize, byte const * data)
     }
 #ifdef __linux__
     fdatasync(dataLogFile);
+    posix_fadvise(dataLogFile, 0, 0, POSIX_FADV_DONTNEED);
 #endif
     return fpos;
 }

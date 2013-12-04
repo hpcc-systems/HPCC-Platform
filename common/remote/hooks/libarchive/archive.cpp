@@ -261,6 +261,9 @@ public:
     {
         throwUnexpected();
     }
+    virtual void enable_pcflush()
+    {
+    }
     virtual void setSize(offset_t size)
     {
         throwUnexpected();
@@ -401,10 +404,10 @@ public:
                                   unsigned checkinterval=60*1000,
                                   unsigned timeout=(unsigned)-1,
                                   Semaphore *abortsem=NULL)  { UNIMPLEMENTED; }
-    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL) { UNIMPLEMENTED; }
-    virtual void copyTo(IFile *dest, size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL, bool usetmp=false) { UNIMPLEMENTED; }
+    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, bool flush_pgcache=false) { UNIMPLEMENTED; }
+    virtual void copyTo(IFile *dest, size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL, bool usetmp=false, bool flush_pgcache=false) { UNIMPLEMENTED; }
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false)  { UNIMPLEMENTED; }
-    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp=false) { UNIMPLEMENTED; }
+    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp=false,bool flush_pgcache=false) { UNIMPLEMENTED; }
 
 
 protected:

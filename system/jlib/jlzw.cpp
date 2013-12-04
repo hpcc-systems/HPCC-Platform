@@ -2098,6 +2098,8 @@ public:
     void setSize(offset_t size) { UNIMPLEMENTED; }
     offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; }
 
+    virtual void enable_pcflush() { }
+
     void close()
     {
         CriticalBlock block(crit);

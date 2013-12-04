@@ -1389,6 +1389,12 @@ public:
         checkOpen();
         return iFileIO->appendFile(file, pos, len);
     }
+    virtual void enable_pcflush()
+    {
+        CriticalBlock b(crit);
+        if (iFileIO)
+            iFileIO->enable_pcflush();
+    }
     virtual void setSize(offset_t size)
     {
         CriticalBlock b(crit);

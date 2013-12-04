@@ -73,18 +73,18 @@ public:
     virtual void setShareMode(IFSHmode shmode);
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime);
 
-    virtual void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress=NULL);
+    virtual void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress=NULL, bool flush_pgcache=false);
     // if toOfs is (offset_t)-1 then copies entire file 
 
-    virtual void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp);
+    virtual void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, bool flush_pgcache=false);
 
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false);
     
-    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp)
+    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp,bool flush_pgcache=false)
     {
         // not really for local but simulate
         GetHostIp(resfrom);
-        copyTo(dest,0x100000,NULL,usetmp);
+        copyTo(dest,0x100000,NULL,usetmp,flush_pgcache);
     }
     
 protected:
@@ -105,12 +105,13 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data);
     virtual void setSize(offset_t size);
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len);
+    virtual void enable_pcflush();
     virtual void flush();
     virtual void close();
 
     bool create(const char * filename, bool replace);
     bool open(const char * filename);
-    
+
     HANDLE queryHandle() { return file; } // for debugging
 
 
@@ -119,6 +120,7 @@ protected:
     HANDLE              file;
     bool                throwOnError;
     IFSHmode            sharemode;
+    bool                pcflush;
 private:
     void setPos(offset_t pos);
 
@@ -135,6 +137,7 @@ public:
     virtual size32_t write(offset_t pos, size32_t len, const void * data);
     virtual void setSize(offset_t size) { UNIMPLEMENTED; }
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { UNIMPLEMENTED; return 0; }
+    virtual void enable_pcflush() { }
     virtual void flush() { io->flush(); }
     virtual void close() { io->close(); }
 
@@ -157,6 +160,7 @@ public:
     virtual offset_t size();
     virtual size32_t write(offset_t pos, size32_t len, const void * data);
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len);
+    virtual void enable_pcflush() { }
     virtual void flush();
     virtual void close();
 
