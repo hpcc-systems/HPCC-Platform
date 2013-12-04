@@ -1578,6 +1578,7 @@ enum {
     JFrightSortedLocally         = 0x08000000,
     JFsmart                      = 0x10000000,
     JFunstable                   = 0x20000000, // can sorts be unstable?
+    JFnevermatchself             = 0x40000000, // for a self join can a record match itself
 };
 
 // FetchFlags

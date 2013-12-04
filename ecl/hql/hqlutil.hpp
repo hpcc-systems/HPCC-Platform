@@ -709,6 +709,8 @@ public:
     inline const HqlExprArray & queryLeftSort() { initSorts(); return leftSorts; }
     inline const HqlExprArray & queryRightSort() { initSorts(); return rightSorts; }
 
+    bool neverMatchSelf(IHqlExpression * left, IHqlExpression * right, IHqlExpression * selSeq);
+
 protected:
     void initSorts();
 
