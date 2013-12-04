@@ -586,24 +586,12 @@ public:
     }
     void setTempDir(const char *name, const char *_tempPrefix, bool clear)
     {
+        assertex(name && *name);
         CriticalBlock block(crit);
         assertex(tempdir.isEmpty()); // should only be called once
         tempPrefix.set(_tempPrefix);
-        StringBuffer base;
-        if (name&&*name) {
-            base.append(name);
-            addPathSepChar(base);
-        }
-        else
-        {
-#ifdef _WIN32
-            base.append("c:\\thortemp");
-#else
-            base.append("/c$/thortemp");
-#endif
-            base.append("_").append(globals->queryProp("@name"));
-            addPathSepChar(base);
-        }
+        StringBuffer base(name);
+        addPathSepChar(base);
         tempdir.set(base.toCharArray());
         recursiveCreateDirectory(tempdir);
 #ifdef _WIN32
@@ -616,7 +604,8 @@ public:
             unsigned d = getPathDrive(tempdir);
             if (d>1)
                 altallowed = false;
-            else {
+            else
+            {
                 StringBuffer p(tempdir);
                 alttempdir.set(setPathDrive(p,d?0:1).str());
                 recursiveCreateDirectory(alttempdir);
