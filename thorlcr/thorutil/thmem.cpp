@@ -217,7 +217,7 @@ public:
     }
 
 // IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         return SPILL_PRIORITY_SPILLABLE_STREAM;
     }
@@ -465,7 +465,7 @@ bool CThorExpandingRowArray::resizeRowTable(void **oldRows, memsize_t newCapacit
 {
     try
     {
-        unsigned spillPriority = roxiemem::RequiredPriority;
+        unsigned spillPriority = roxiemem::SpillAllCost;
         if (oldRows)
             rowManager->resizeRow(oldRows, copy?RoxieRowCapacity(oldRows):0, newCapacity, activity.queryContainer().queryId(), spillPriority, callback);
         else
@@ -1595,7 +1595,7 @@ public:
         options = _options;
     }
 // IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         return spillPriority;
     }

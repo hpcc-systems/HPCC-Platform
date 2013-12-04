@@ -2446,7 +2446,7 @@ class CBucketHandler : public CSimpleInterface, implements IInterface, implement
         {
         }
     // IBufferedRowCallback
-        virtual unsigned getPriority() const
+        virtual unsigned getSpillCost() const
         {
             return HASHDEDUP_BUCKET_POSTSPILL_PRIORITY;
         }
@@ -2525,7 +2525,7 @@ public:
         return (hashValue / div) % numBuckets;
     }
 // IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         return SPILL_PRIORITY_HASHDEDUP;
     }
