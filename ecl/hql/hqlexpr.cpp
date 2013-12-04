@@ -14610,6 +14610,29 @@ bool isPureActivityIgnoringSkip(IHqlExpression * expr)
     return true;
 }
 
+bool assignsContainSkip(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_newtransform:
+    case no_transform:
+    case no_assignall:
+        {
+            ForEachChild(i, expr)
+            {
+                if (assignsContainSkip(expr->queryChild(i)))
+                    return true;
+            }
+            return false;
+        }
+    case no_assign:
+        return containsSkip(expr->queryChild(1));
+    case no_alias_scope:
+        return assignsContainSkip(expr->queryChild(0));
+    default:
+        return false;
+    }
+}
 
 extern HQL_API bool isKnownTransform(IHqlExpression * transform)
 {
