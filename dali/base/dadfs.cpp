@@ -1445,6 +1445,7 @@ public:
     }
     void retryActions()
     {
+        clearFiles(); // clear all previously tracked pending file changes, e.g. renames, super file additions/removals
         while (prepared) // unlock for retry
             actions.item(--prepared).retry();
     }

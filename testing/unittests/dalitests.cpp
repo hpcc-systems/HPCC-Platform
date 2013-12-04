@@ -466,6 +466,7 @@ class DaliTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testDFSRemoveSuperSub);
 // This test requires access to an external IP with dafilesrv running
 //        CPPUNIT_TEST(testDFSRename3);
+        CPPUNIT_TEST(testDFSAddFailReAdd);
         CPPUNIT_TEST(testDFSHammer);
     CPPUNIT_TEST_SUITE_END();
 
@@ -1583,6 +1584,83 @@ public:
         ASSERT(NULL == sfile->querySubFileNamed("regress::clearadd::sub1") && "regress::clearadd::sub1, should NOT be a subfile of super1");
         ASSERT(NULL == sfile->querySubFileNamed("regress::clearadd::sub4") && "regress::clearadd::sub4, should NOT be a subfile of super1");
         ASSERT(1 == sfile->numSubFiles() && "regress::clearadd::super1 should contain 1 subfile");
+    }
+
+    void testDFSAddFailReAdd()
+    {
+        setupDFS("addreadd");
+
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
+
+        logctx.CTXLOG("Creating super1 and supet2, adding sub1 and sub2 to super1 and sub3 to super2");
+        Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::addreadd::super1", user, false, false, transaction);
+        sfile->addSubFile("regress::addreadd::sub1", false, NULL, false, transaction);
+        sfile->addSubFile("regress::addreadd::sub2", false, NULL, false, transaction);
+        sfile.clear();
+        Owned<IDistributedSuperFile> sfile2 = dir.createSuperFile("regress::addreadd::super2", user, false, false, transaction);
+        sfile2->addSubFile("regress::addreadd::sub3", false, NULL, false, transaction);
+        sfile2.clear();
+
+        class CShortLock : implements IThreaded
+        {
+            StringAttr fileName;
+            unsigned secDelay;
+            CThreaded threaded;
+        public:
+            CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
+            virtual void main()
+            {
+                Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
+
+                if (!file)
+                {
+                    PROGLOG("File %s not found", fileName.get());
+                    return;
+                }
+                PROGLOG("Locked file: %s, sleeping (before unlock) for %d secs", fileName.get(), secDelay);
+
+                MilliSleep(secDelay * 1000);
+
+                PROGLOG("Unlocking file: %s", fileName.get());
+            }
+            void start() { threaded.start(); }
+        };
+
+        /* Tests transaction failing, due to lock and retrying after having partial success */
+
+        CShortLock sL("regress::addreadd::sub2", 30); // the 2nd subfile of super1
+        sL.start();
+
+        transaction.setown(createDistributedFileTransaction(user)); // disabled, auto-commit
+        logctx.CTXLOG("Starting transaction");
+        transaction->start();
+
+        logctx.CTXLOG("Adding contents of regress::addreadd::super1 to regress::addreadd::super2, within transaction");
+        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super2"));
+        sfile->addSubFile("regress::addreadd::super1", false, NULL, true, transaction); // add contents of super1 to super2
+        sfile.setown(transaction->lookupSuperFile("regress::addreadd::super1"));
+        sfile->removeSubFile(NULL, false, false, transaction); // clears super1
+        sfile.clear();
+
+        try
+        {
+            transaction->commit();
+        }
+        catch (IException *e)
+        {
+            StringBuffer eStr;
+            e->errorMessage(eStr);
+            CPPUNIT_ASSERT_MESSAGE(eStr.str(), 0);
+            e->Release();
+        }
+        transaction.clear();
+        sfile.setown(dir.lookupSuperFile("regress::addreadd::super2", user));
+        ASSERT(3 == sfile->numSubFiles() && "regress::addreadd::super2 should contain 3 subfiles");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub1") && "regress::addreadd::sub1, should be a subfile of super2");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub2") && "regress::addreadd::sub2, should be a subfile of super2");
+        ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub3") && "regress::addreadd::sub3, should be a subfile of super2");
+        sfile.setown(dir.lookupSuperFile("regress::addreadd::super1", user));
+        ASSERT(0 == sfile->numSubFiles() && "regress::addreadd::super1 should contain 0 subfiles");
     }
 
     void testDFSRename2()
