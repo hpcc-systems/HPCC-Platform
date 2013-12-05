@@ -552,6 +552,7 @@ interface IConstWUClusterInfo : extends IInterface
     virtual IStringVal & getServerQueue(IStringVal & str) const = 0;
     virtual IStringVal & getRoxieProcess(IStringVal & str) const = 0;
     virtual const StringArray & getThorProcesses() const = 0;
+    virtual const StringArray & getPrimaryThorProcesses() const = 0;
     virtual const SocketEndpointArray & getRoxieServers() const = 0;
 };
 
