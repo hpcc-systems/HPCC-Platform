@@ -20,14 +20,17 @@ namesRecord :=
 string20        surname;
 string10        forename;
 integer2        age := 25;
+unsigned8       filepos{virtual(fileposition)} := 0;
             END;
 
-namesTable := dataset('x',namesRecord,FLAT);
-
-namesTable2 := dataset([
+namesTable := dataset([
         {'Hawthorn','Gavin',31},
         {'Hawthorn','Mia',30},
         {'Smithe','Pru',10},
         {'X','Z'}], namesRecord);
 
-output(nofold(namesTable2)(surname[1] in ['0','1','3']),,'out.d00',overwrite);
+output(namesTable,,'result.tmp');
+
+i := index({ string20 name },{}, 'i');
+
+output(i,,'result2.tmp');
