@@ -2683,6 +2683,18 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             methodName.set("submit");
         }
 
+        if(strieq(methodName.str(), "res"))
+        {
+           MemoryBuffer mb;
+           StringBuffer mimetype;
+           getWuResourceByPath(thepath, mb, mimetype);
+
+           response->setContent(mb.length(), mb.toByteArray());
+           response->setContentType(mimetype.str());
+           response->setStatus(HTTP_STATUS_OK);
+           response->send();
+           return 0;
+        }
         if (!stricmp(methodName.str(), "tabview"))
         {
             return getWsEcl2TabView(request, response, thepath);
