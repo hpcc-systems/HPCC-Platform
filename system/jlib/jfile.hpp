@@ -111,14 +111,14 @@ interface IFile :extends IInterface
                                   Semaphore *abortsem=NULL)=0; // returns NULL if timed out or abortsem signalled
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) = 0; // return false if doesn't exist
                                                                             // size is undefined if directory
-    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL) =0;
+    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, bool flush_pgcache=false) = 0;
     // if toOfs is (offset_t)-1 then copies entire file 
 
-    virtual void copyTo(IFile *dest, size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL, bool usetmp=false)=0;
+    virtual void copyTo(IFile *dest, size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL, bool usetmp=false, bool flush_pgcache=false)=0;
 
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false)=0;
 
-    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp=false) = 0;
+    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp=false,bool flush_pgcache=false) = 0;
 
 
 };
@@ -162,6 +162,7 @@ interface IFileIO : public IInterface
     virtual offset_t size() = 0;
     virtual size32_t write(offset_t pos, size32_t len, const void * data) = 0;
     virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=(offset_t)-1) =0;
+    virtual void enable_pcflush() = 0;
     virtual void setSize(offset_t size) = 0;
     virtual void flush() = 0;
     virtual void close() = 0;       // no other access is allowed after this call
@@ -239,8 +240,8 @@ extern jlib_decl void setPasswordProvider(IPasswordProvider * provider);
 
 
 extern jlib_decl size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer);
-extern jlib_decl void copyFile(const char *target, const char *source, size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL);
-extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL);
+extern jlib_decl void copyFile(const char *target, const char *source, size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL, bool flush_pgcache=false);
+extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL, bool flush_pgcache=false);
 extern jlib_decl bool recursiveCreateDirectory(const char * path);              // only works locally, use IFile::createDirectory() for remote
 extern jlib_decl bool recursiveCreateDirectoryForFile(const char *filename);    // only works locally, use IFile::createDirectory() for remote
 
@@ -605,7 +606,7 @@ interface ICopyFileIntercept
 {
     virtual offset_t copy(IFileIO *from, IFileIO *to, offset_t ofs, size32_t sz)=0;
 };
-extern jlib_decl void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp);
+extern jlib_decl void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp, bool flush_pgcache=false);
 extern jlib_decl void makeTempCopyName(StringBuffer &tmpname,const char *destname);
 extern jlib_decl size32_t SendFile(ISocket *target, IFileIO *fileio,offset_t start,size32_t len);
 extern jlib_decl void asyncClose(IFileIO *io);

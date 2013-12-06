@@ -2468,6 +2468,7 @@ NULL
             return sz;
         }
         virtual offset_t appendFile(IFile *file,offset_t pos=0,offset_t len=-1) { UNIMPLEMENTED; return 0; }
+        virtual void enable_pcflush() { }
         virtual void setSize(offset_t size) { UNIMPLEMENTED; }
         virtual void flush() { }
         virtual void close() { }

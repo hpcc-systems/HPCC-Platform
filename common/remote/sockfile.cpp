@@ -797,7 +797,7 @@ static Semaphore                 treeCopySem;
 
 #define DEBUGSAMEIP false
 
-static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const char *net, const char *mask, IpAddress &ip, bool usetmp, CThrottler *throttler)
+static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const char *net, const char *mask, IpAddress &ip, bool usetmp, CThrottler *throttler, bool flush_pgcache=false)
 {
     unsigned start = msTick();
     Owned<IFile> dstfile = createIFile(dstfn);
@@ -873,7 +873,7 @@ static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const cha
                                 PROGLOG("TREECOPY(started) %s to %s",rmtfile->queryFilename(),dstfile->queryFilename());
                             {
                                 CriticalUnblock unblock(treeCopyCrit); // note we have tc linked
-                                rmtfile->copyTo(dstfile,0x100000,NULL,usetmp);
+                                rmtfile->copyTo(dstfile,0x100000,NULL,usetmp,flush_pgcache);
                             }
                             if (TF_TRACE_TREE_COPY)
                                 PROGLOG("TREECOPY(done) %s to %s",rmtfile->queryFilename(),dstfile->queryFilename());
@@ -928,7 +928,7 @@ static void treeCopyFile(RemoteFilename &srcfn, RemoteFilename &dstfn, const cha
         PROGLOG("TREECOPY(started,fallback) %s to %s",srcfile->queryFilename(),dstfile->queryFilename());
     try {
         GetHostIp(ip);
-        srcfile->copyTo(dstfile,0x100000,NULL,usetmp);
+        srcfile->copyTo(dstfile,0x100000,NULL,usetmp,flush_pgcache);
     }
     catch (IException *e) {
         EXCLOG(e,"TREECOPY(done,fallback)");
@@ -2028,7 +2028,7 @@ public:
         return (AsyncCommandStatus)status!=ACScontinue; // should only otherwise be done as errors raised by exception
     }
 
-    void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress)
+    void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, bool flush_pgcache=false)
     {
         StringBuffer uuid;
         genUUID(uuid,true);
@@ -2036,14 +2036,14 @@ public:
         while(!copySectionAsync(uuid.str(),dest,toOfs,fromOfs,size,progress,timeout));
     }
 
-    void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp);
+    void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, bool flush_pgcache=false);
 
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs, memsize_t len, bool write)
     {
         return NULL;
     }
 
-    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp)
+    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp, bool flush_pgcache=false)
     {
         resfrom.ipset(NULL);
         MemoryBuffer sendBuffer;
@@ -2078,7 +2078,7 @@ public:
             resfrom.ipset(ep);
             StringBuffer tmp;
             WARNLOG("dafilesrv on %s does not support treeCopyTo - falling back to copyTo",resfrom.getIpText(tmp).str());
-            copyTo(dest,0x100000,NULL,usetmp);
+            copyTo(dest,0x100000,NULL,usetmp,flush_pgcache);
             status = 0;
         }
         else if (status==0)
@@ -2421,6 +2421,10 @@ public:
         return ret;
     }
 
+    virtual void enable_pcflush()
+    {
+        // send cmd ?
+    }
 
     void setSize(offset_t size) 
     { 
@@ -2474,7 +2478,7 @@ IFileIO * CRemoteFile::open(IFOmode mode)
 
 //---------------------------------------------------------------------------
 
-void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp)
+void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp, bool flush_pgcache)
 {
     CRemoteFile *dstfile = QUERYINTERFACE(dest,CRemoteFile);
     if (dstfile&&!dstfile->queryEp().isLocal()) {
@@ -2490,7 +2494,7 @@ void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *pr
         destf.setown(createIFile(dest));
         try {
             // following may fail if new dafilesrv not deployed on src
-            copySection(dest,(offset_t)-1,0,(offset_t)-1,progress);
+            copySection(dest,(offset_t)-1,0,(offset_t)-1,progress,flush_pgcache);
             if (usetmp) {
                 StringAttr tail(pathTail(dstfile->queryLocalName()));
                 dstfile->remove();
@@ -2542,7 +2546,7 @@ void CRemoteFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *pr
             return got;
         }
     } intercept;
-    doCopyFile(dest,this,buffersize,progress,&intercept,usetmp);
+    doCopyFile(dest,this,buffersize,progress,&intercept,usetmp,flush_pgcache);
 }
 
 
@@ -4075,7 +4079,7 @@ public:
         return true;
     }
 
-    bool cmdTreeCopy(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler, bool usetmp=false)
+    bool cmdTreeCopy(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler, bool usetmp=false, bool flush_pgcache=false)
     {
         IMPERSONATE_USER(client);
         RemoteFilename src;
@@ -4087,7 +4091,7 @@ public:
         msg.read(net).read(mask);
         try {
             IpAddress ip;
-            treeCopyFile(src,dst,net,mask,ip,usetmp,throttler);
+            treeCopyFile(src,dst,net,mask,ip,usetmp,throttler,flush_pgcache);
             unsigned status = 0;
             reply.append((unsigned)RFEnoerror).append((unsigned)status);
             ip.ipserialize(reply);
@@ -4104,7 +4108,7 @@ public:
 
     bool cmdTreeCopyTmp(MemoryBuffer &msg, MemoryBuffer &reply, CRemoteClientHandler &client, CThrottler *throttler)
     {
-        return cmdTreeCopy(msg, reply, client, throttler, true);
+        return cmdTreeCopy(msg, reply, client, throttler, true, false);
     }
 
 
