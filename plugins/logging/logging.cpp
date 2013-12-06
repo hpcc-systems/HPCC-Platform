@@ -31,9 +31,9 @@ static const char * compatibleVersions[] = {
 static const char * EclDefinition =
 "export Logging := SERVICE\n"
 "  dbglog(const string src) : c,action,entrypoint='logDbgLog'; \n"
-"  addWorkunitInformation(const varstring txt, unsigned code=0, unsigned severity=0) : ctxmethod,action,entrypoint='addWuException'; \n"
-"  addWorkunitWarning(const varstring txt, unsigned code=0, unsigned severity=1) : ctxmethod,action,entrypoint='addWuException'; \n"
-"  addWorkunitError(const varstring txt, unsigned code=0, unsigned severity=2) : ctxmethod,action,entrypoint='addWuException'; \n"
+"  addWorkunitInformation(const varstring txt, unsigned code=0, unsigned severity=0, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
+"  addWorkunitWarning(const varstring txt, unsigned code=0, unsigned severity=1, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
+"  addWorkunitError(const varstring txt, unsigned code=0, unsigned severity=2, const varstring source='user') : ctxmethod,action,entrypoint='addWuException'; \n"
 "END;";
 
 LOGGING_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
