@@ -11249,8 +11249,9 @@ static void normalizeCallParameters(HqlExprArray & resolvedActuals, IHqlExpressi
                 else
                 {
                     OwnedHqlExpr actualRecord = getUnadornedRecordOrField(actual->queryRecord());
-                    OwnedHqlExpr formalRecord = getUnadornedRecordOrField(::queryOriginalRecord(type));
-                    if (actualRecord && formalRecord && formalRecord->numChildren() && (formalRecord->queryBody() != actualRecord->queryBody()))
+                    IHqlExpression * formalRecord = ::queryOriginalRecord(type);
+                    OwnedHqlExpr normalFormalRecord = getUnadornedRecordOrField(formalRecord);
+                    if (actualRecord && normalFormalRecord && normalFormalRecord->numChildren() && (normalFormalRecord->queryBody() != actualRecord->queryBody()))
                     {
                         //If the actual dataset is derived from the input dataset, then insert a project so types remain correct
                         //otherwise x+y will change meaning.
