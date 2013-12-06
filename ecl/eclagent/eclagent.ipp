@@ -178,7 +178,7 @@ public:
     {
         return ctx->queryWorkUnit();
     }
-    virtual IWorkUnit *updateWorkUnit()
+    virtual IWorkUnit *updateWorkUnit() const
     {
         return ctx->updateWorkUnit();
     }
@@ -351,7 +351,7 @@ private:
     friend class EclAgentWorkflowMachine;
 
     Owned<EclAgentWorkflowMachine> workflow;
-    Owned<IWorkUnit> wuWrite;
+    mutable Owned<IWorkUnit> wuWrite;
     Owned<IConstWorkUnit> wuRead;
     Owned<roxiemem::IRowManager> rowManager;
     StringAttr wuid;
@@ -370,7 +370,7 @@ private:
     Owned<IUserDescriptor> standAloneUDesc;
     outputFmts outputFmt;
     unsigned __int64 stopAfter;
-    CriticalSection wusect;
+    mutable CriticalSection wusect;
     StringArray tempFiles;
     CriticalSection tfsect;
     Array persistReadLocks;
@@ -501,7 +501,6 @@ public:
 
     virtual bool fileExists(const char * filename);
     virtual char * getExpandLogicalName(const char * logicalName);
-    virtual void addWuException(const char * text, unsigned code, unsigned severity);
     virtual void addWuException(const char * text, unsigned code, unsigned severity, char const * source);
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort);
     virtual IUserDescriptor *queryUserDescriptor();
@@ -576,7 +575,7 @@ public:
     virtual bool isResult(const char * name, unsigned sequence);
     virtual unsigned getWorkflowId();// { return workflow->queryCurrentWfid(); }
     virtual IConstWorkUnit *queryWorkUnit();  // no link
-    virtual IWorkUnit *updateWorkUnit();        // links
+    virtual IWorkUnit *updateWorkUnit() const; // links
     virtual void unlockWorkUnit();      
     virtual void reloadWorkUnit();
     void addTimings();

@@ -953,12 +953,11 @@ public:
 
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
 
-    virtual void addWuException(const char * text, unsigned code, unsigned severity)
+    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source)
     {
         DBGLOG("%s", text);
         Owned<IThorException> e = MakeThorException(code, "%s", text);
-        e->setAction(tea_warning);
-        e->setOrigin("user");
+        e->setOrigin(source);
         e->setAction(tea_warning);
         e->setSeverity((WUExceptionSeverity)severity);
         job.fireException(e);

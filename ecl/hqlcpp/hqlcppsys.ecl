@@ -684,7 +684,6 @@ const char * cppSystemText[]  = {
     "   doNotifyTarget(const varstring name, const varstring text, const varstring _target) : gctxmethod,entrypoint='doNotify';",
     "   setWorkflowCondition(boolean value) : gctxmethod,entrypoint='setWorkflowCondition';",
     "   returnPersistVersion(const varstring name, unsigned4 eclCRC, unsigned8 allCRC, boolean isFile) : gctxmethod,entrypoint='returnPersistVersion';",
-    "   addWorkunitException(const varstring txt, unsigned code, unsigned severity) : ctxmethod,entrypoint='addWuException'; ",
     "   addWorkunitAssertFailure(unsigned4 errNo, const varstring _msg, const varstring _filename, unsigned4 _lineno, unsigned4 _column, boolean _isAbort) : ctxmethod,entrypoint='addWuAssertFailure'; ",
 
     //

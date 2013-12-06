@@ -292,9 +292,9 @@ public:
     {
         return ctx->getExpandLogicalName(logicalName);
     }
-    virtual void addWuException(const char * text, unsigned code, unsigned severity)
+    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char *source)
     {
-        ctx->addWuException(text, code, severity);
+        ctx->addWuException(text, code, severity, source);
     }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
     {
@@ -423,6 +423,10 @@ public:
     virtual char *getDaliServers()
     {
         return ctx->getDaliServers();
+    }
+    virtual IWorkUnit *updateWorkUnit() const
+    {
+        return ctx->updateWorkUnit();
     }
 protected:
     ICodeContext * ctx;
