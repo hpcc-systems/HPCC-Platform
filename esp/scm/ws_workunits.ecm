@@ -1405,6 +1405,7 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     string priority;
     string Comment;
     string SourceProcess;
+    string DestName;
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse

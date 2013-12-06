@@ -1543,16 +1543,20 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     if (!splitQueryPath(source, srcAddress, srcQuerySet, srcQuery))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source query path");
 
+    StringAttr targetQueryName(req.getDestName());
+
     StringBuffer remoteIP;
-    StringBuffer queryName;
     StringBuffer wuid;
     if (srcAddress.length())
     {
         StringBuffer xml;
         MemoryBuffer dll;
         StringBuffer dllname;
+        StringBuffer queryName;
         fetchRemoteWorkunit(context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, queryName, xml, dllname, dll, remoteIP);
-        deploySharedObject(context, wuid, dllname.str(), target, queryName.str(), dll, queryDirectory.str(), xml.str());
+        if (targetQueryName.isEmpty())
+            targetQueryName.set(queryName);
+        deploySharedObject(context, wuid, dllname.str(), target, targetQueryName.get(), dll, queryDirectory.str(), xml.str());
     }
     else
     {
@@ -1564,7 +1568,8 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         if (!query)
             throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Source query %s not found", source);
         wuid.set(query->queryProp("@wuid"));
-        queryName.set(query->queryProp("@name"));
+        if (targetQueryName.isEmpty())
+            targetQueryName.set(query->queryProp("@name"));
     }
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -1573,7 +1578,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     if (!req.getDontCopyFiles())
     {
         const char *reqDali = req.getDaliServer();
-        copyQueryFilesToCluster(context, cw, (reqDali && *reqDali) ? reqDali : remoteIP.str(), target, req.getSourceProcess(), queryName.str(), req.getOverwrite());
+        copyQueryFilesToCluster(context, cw, (reqDali && *reqDali) ? reqDali : remoteIP.str(), target, req.getSourceProcess(), targetQueryName.get(), req.getOverwrite());
     }
 
     WorkunitUpdate wu(&cw->lock());
@@ -1582,7 +1587,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
 
     StringBuffer targetQueryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
-    addQueryToQuerySet(wu, target, queryName.str(), NULL, activate, targetQueryId, context.queryUserId());
+    addQueryToQuerySet(wu, target, targetQueryName.get(), NULL, activate, targetQueryId, context.queryUserId());
     if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull() || req.getPriority())
     {
         Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
