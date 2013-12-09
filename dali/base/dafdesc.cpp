@@ -383,6 +383,10 @@ struct CClusterInfo: public CInterface, implements IClusterInfo
                     {
                         mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
                     }
+                    if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
+                    {
+                        mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));
+                    }
                     return; // ok
                 }
                 name.clear();
