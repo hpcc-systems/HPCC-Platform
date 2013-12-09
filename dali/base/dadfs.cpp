@@ -7035,7 +7035,11 @@ public:
         addFileLock(super);
         // Adds actions to transactions before this one and gets executed only on commit
         if (delSub)
+        {
+            transaction->descend();
             super->removeSubFile(NULL, true, false, transaction);
+            transaction->ascend();
+        }
     }
     virtual ~CRemoveSuperFileAction() {}
     bool prepare()
