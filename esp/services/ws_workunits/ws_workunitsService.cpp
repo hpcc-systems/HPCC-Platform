@@ -1762,15 +1762,20 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                     flags|=WUINFO_IncludeEclSchemas;
                 if (req.getIncludeXmlSchemas())
                     flags|=WUINFO_IncludeXmlSchema;
+                if (req.getIncludeResultsViewNames())
+                    flags|=WUINFO_IncludeResultsViewNames;
+                if (req.getIncludeResourceURLs())
+                    flags|=WUINFO_IncludeResourceURLs;
 
                 WsWuInfo winfo(context, wuid.str());
                 winfo.getInfo(resp.updateWorkunit(), flags);
 
-                if (req.getIncludeResultsViewNames())
+                if (req.getIncludeResultsViewNames()||req.getIncludeResourceURLs())
                 {
-                    StringArray views;
-                    winfo.getResultViews(views, WUINFO_IncludeResultsViewNames);
+                    StringArray views, urls;
+                    winfo.getResourceInfo(views, urls, flags);
                     resp.setResultViews(views);
+                    resp.updateWorkunit().setResourceURLs(urls);
                 }
             }
             catch (IException *e)

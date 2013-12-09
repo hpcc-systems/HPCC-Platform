@@ -705,6 +705,22 @@
       </xsl:if>
 
       <xsl:if test="number(Archived) &lt; 1">
+        <xsl:if test="count(ResourceURLs/URL)">
+          <p>
+            <div class="wugroup">
+              <div class="WuGroupHdrLeft">
+                <A href="javascript:void(0)" onclick="toggleElement('Resources');" id="explinkResources" class="wusectionexpand">
+                  Resources: (<xsl:value-of select="count(ResourceURLs/URL)"/>)
+                </A>
+              </div>
+            </div>
+            <div id="Resources" class="wusectioncontent">
+              <table id="ResourceTable" class="wusectiontable">
+                <xsl:apply-templates select="ResourceURLs"/>
+              </table>
+            </div>
+          </p>
+        </xsl:if>
         <xsl:if test="count(Helpers/ECLHelpFile)">
           <p>
             <div class="wugroup">
@@ -1225,6 +1241,17 @@
         </xsl:if>
       </td>
     </tr>
+  </xsl:template>
+  <xsl:template match="ResourceURLs">
+    <xsl:for-each select="URL">
+    <tr>
+      <td>
+        <a href="{text()}" >
+          <xsl:value-of select="."/>
+        </a>
+      </td>
+    </tr>
+    </xsl:for-each>
   </xsl:template>
   <xsl:template match="ECLHelpFile">
     <tr>

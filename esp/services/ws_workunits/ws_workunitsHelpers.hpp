@@ -117,6 +117,7 @@ private:
 #define WUINFO_IncludeSourceFiles       0x0400
 #define WUINFO_IncludeResultsViewNames  0x0800
 #define WUINFO_IncludeXmlSchema         0x1000
+#define WUINFO_IncludeResourceURLs      0x2000
 #define WUINFO_All                      0xFFFF
 
 class WsWuInfo
@@ -140,7 +141,7 @@ public:
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.", wuid_);
     }
 
-    bool getResultViews(StringArray &resultViews, unsigned flags);
+    bool getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned flags);
 
     void getCommon(IEspECLWorkunit &info, unsigned flags);
     void getInfo(IEspECLWorkunit &info, unsigned flags);
