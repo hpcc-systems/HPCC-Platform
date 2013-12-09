@@ -76,6 +76,7 @@ class CThorKeyArray
     size32_t filerecsize;
     size32_t filerecnum;
     offset_t totalfilesize;
+    bool needFPosExpand;
 
     void split();
     offset_t findLessEqRowPos(const void * row);

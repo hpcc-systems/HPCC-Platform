@@ -77,6 +77,7 @@ void CThorKeyArray::clear()
     totalfilesize = 0;
     filerecsize = 0;
     filerecnum = 0;
+    needFPosExpand = false;
 }
 
 void CThorKeyArray::setSampling(size32_t _maxsamplesize, unsigned _divisor)
@@ -108,6 +109,8 @@ void CThorKeyArray::add(const void *row)
     totalfilesize += recSz;
     if (filerecnum==0)
         filerecsize=recSz;
+    else if (filerecsize!=recSz)
+        needFPosExpand = true;
     filerecnum++;
 
     if (maxsamplesize)
@@ -146,7 +149,7 @@ void CThorKeyArray::add(const void *row)
     }
     if (filepos)
         filepos->append(totalfilesize);
-    else if (filerecsize!=recSz)
+    else if (needFPosExpand)
     {
         expandFPos();
         filepos->append(totalfilesize);
