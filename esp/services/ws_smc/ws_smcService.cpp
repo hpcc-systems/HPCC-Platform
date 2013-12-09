@@ -173,7 +173,7 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
         else if(index)
             stateStr.appendf("queued(%d) [%s]", index, state.str());
         else if(location && *location)
-            stateStr.appendf("%s [on %s]", state.str(), location);
+            stateStr.appendf("%s [%s]", state.str(), location);
         else
             stateStr.set(state.str());
         setStateID(wu->getState());

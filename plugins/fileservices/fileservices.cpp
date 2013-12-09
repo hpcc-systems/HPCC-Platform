@@ -168,28 +168,6 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
     return factory->openWorkUnit(wuid, false);
 }
 
-static IWorkUnit * updateWorkunit(ICodeContext * ctx)
-{
-    // following bit of a kludge, as
-    // 1) eclagent keeps WU locked, and
-    // 2) rtti not available in generated .so's to convert to IAgentContext
-    IAgentContext * actx = dynamic_cast<IAgentContext *>(ctx);
-    if (actx == NULL) { // fall back to pure ICodeContext
-        // the following works for thor only
-        char * platform = ctx->getPlatform();
-        if (strcmp(platform,"thor")==0) {
-            CTXFREE(parentCtx, platform);
-            Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-            StringAttr wuid;
-            wuid.setown(ctx->getWuid());
-            return factory->updateWorkUnit(wuid);
-        }
-        CTXFREE(parentCtx, platform);
-        return NULL;
-    }
-    return actx->updateWorkUnit();
-}
-
 static IPropertyTree *getEnvironment()
 {
     Owned<IPropertyTree> env;
@@ -285,26 +263,11 @@ StringBuffer & constructLogicalName(ICodeContext * ctx, const char * partialLogi
 
 static void WUmessage(ICodeContext *ctx, WUExceptionSeverity sev, const char *fn, const char *msg)
 {
-    StringBuffer s;
-    s.append("fileservices");
+    StringBuffer s("fileservices");
     if (fn)
         s.append(", ").append(fn);
-    IAgentContext * actx = dynamic_cast<IAgentContext *>(ctx); // doesn't work if called from helper .so (no rtti)
-    if (actx)
-        actx->addWuException(msg,0,sev,s.str());
-    else {
-        Owned<IWorkUnit> wu = updateWorkunit(ctx);
-        if (wu.get()) {
-            Owned<IWUException> we = wu->createException();
-            we->setSeverity(sev);
-            we->setExceptionMessage(msg);
-            we->setExceptionSource(s.str());
-        }
-        else {
-            s.append(" : ").append(msg);
-            ctx->addWuException(s.str(),0,sev); // use plain code context
-        }
-    }
+    ctx->addWuException(msg, 0, sev, s.str()); // use plain code context
+    return;
 }
 
 static void AuditMessage(ICodeContext *ctx,
@@ -549,7 +512,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
 
     while(true)
     {
-        Owned<IWorkUnit> wu = updateWorkunit(ctx); // may return NULL
+        Owned<IWorkUnit> wu = ctx->updateWorkUnit(); // may return NULL
 
         Owned<IClientGetDFUWorkunit> req = server.createGetDFUWorkunitRequest();
         req->setWuid(wuid);

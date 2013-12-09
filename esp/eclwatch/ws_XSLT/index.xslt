@@ -830,13 +830,13 @@
                             <col width="250" class="cluster"/>
                         </colgroup>
                         <colgroup>
-                            <col width="200" class="cluster"/>
+                            <col width="300" class="cluster"/>
                         </colgroup>
                         <colgroup>
                             <col width="150" class="cluster"/>
                         </colgroup>
                         <colgroup>
-                            <col width="500" class="cluster"/>
+                            <col width="400" class="cluster"/>
                         </colgroup>
                         <xsl:if test="(position()=1 and $showTitle='1')">
                             <tr>

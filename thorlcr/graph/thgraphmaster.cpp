@@ -750,7 +750,7 @@ class CThorCodeContextMaster : public CThorCodeContextBase
     Linked<IConstWorkUnit> workunit;
     Owned<IDistributedFileTransaction> superfiletransaction;
 
-    IWorkUnit *updateWorkUnit() 
+    virtual IWorkUnit *updateWorkUnit() const
     {
         StringAttr wuid;
         workunit->getWuid(StringAttrAdaptor(wuid));
@@ -1061,7 +1061,7 @@ public:
             throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "Failed to retrieve external data value %s from workunit %s", stepname, wuid);
         }
     }
-    virtual void addWuException(const char * text, unsigned code, unsigned severity)
+    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source)
     {
         DBGLOG("%s", text);
         try
@@ -1070,7 +1070,7 @@ public:
             Owned<IWUException> we = w->createException();
             we->setSeverity((WUExceptionSeverity)severity);
             we->setExceptionMessage(text);
-            we->setExceptionSource("user");
+            we->setExceptionSource(source);
             if (code)
                 we->setExceptionCode(code);
         }

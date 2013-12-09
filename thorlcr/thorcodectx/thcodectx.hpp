@@ -118,6 +118,7 @@ public:
     virtual const void * fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
     virtual IEngineContext *queryEngineContext() { return NULL; }
     virtual char *getDaliServers();
+    virtual IWorkUnit *updateWorkUnit() const { throwUnexpected(); }
 };
 
 #endif

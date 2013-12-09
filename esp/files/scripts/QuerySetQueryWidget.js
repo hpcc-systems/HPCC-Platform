@@ -28,7 +28,7 @@ define([
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
 
-    "dgrid/OnDemandGrid",
+    "dgrid/Grid",
     "dgrid/Keyboard",
     "dgrid/Selection",
     "dgrid/selector",
@@ -64,7 +64,7 @@ define([
     "dojox/layout/TableContainer"
 ], function (declare, lang, dom, domForm, iframe, arrayUtil, on,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
+                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, QuerySetDetailsWidget, WsWorkunits, ESPQuery, ESPUtil,
                 template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
@@ -121,7 +121,6 @@ define([
             });
             this.initQuerySetGrid();
             this.selectChild(this.queriesTab, true);
-            this.refreshGrid();
         },
 
         initTab: function () {
@@ -252,10 +251,12 @@ define([
         initQuerySetGrid: function (params) {
             var context = this;
             var store = ESPQuery.CreateQueryStore();
-            this.querySetGrid = declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper, Pagination,])({
+            this.querySetGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,
+                query: this.getFilter(),
+                sort: [{ attribute: "Id" }],
                 rowsPerPage: 50,
                 pagingLinks: 1,
                 pagingTextBox: true,
@@ -318,7 +319,8 @@ define([
                     },
                     QuerySetId:{
                         width: 180,
-                        label: "Target"
+                        label: "Target",
+                        sortable: false
                     },
                     Wuid: {
                         width: 180,
@@ -330,11 +332,13 @@ define([
                     },
                     Priority: {
                         width: 100,
-                        label: "Priority"
+                        label: "Priority",
+                        sortable: false
                     },
                     IsLibrary: {
                         width: 100,
-                        label: "Is Library"
+                        label: "Is Library",
+                        sortable: false
                     },
                     PublishedBy: {
                         width: 180,
