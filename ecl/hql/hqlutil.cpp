@@ -1162,6 +1162,51 @@ void JoinSortInfo::initSorts()
     }
 }
 
+static bool isSameFieldSelected(IHqlExpression * leftExpr, IHqlExpression * rightExpr, IHqlExpression * left, IHqlExpression * right)
+{
+    if ((leftExpr->getOperator() != no_select) || (rightExpr->getOperator() != no_select))
+        return false;
+    if (leftExpr->queryChild(1) != rightExpr->queryChild(1))
+        return false;
+ 
+    IHqlExpression * leftSelector = leftExpr->queryChild(0);
+    IHqlExpression * rightSelector = rightExpr->queryChild(0);
+    if (leftSelector == left || rightSelector == right)
+        return (leftSelector == left) && (rightSelector == right);
+    if (leftSelector == right || rightSelector == left)
+        return (leftSelector == right) && (rightSelector == left);
+    return isSameFieldSelected(leftSelector, rightSelector, left, right);
+}
+
+
+static bool hasNeverMatchCompare(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right)
+{
+    switch (expr->getOperator())
+    {
+    case no_and:
+        return hasNeverMatchCompare(expr->queryChild(0), left, right) ||
+               hasNeverMatchCompare(expr->queryChild(1), left, right);
+    case no_ne:
+    case no_gt:
+    case no_lt:
+        return isSameFieldSelected(expr->queryChild(0), expr->queryChild(1), left, right);
+    default:
+        return false;
+    }
+}
+
+bool JoinSortInfo::neverMatchSelf(IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * selSeq)
+{
+    if (!extraMatch)
+        return false;
+    if (!recordTypesMatch(leftDs, rightDs))
+        return false;
+
+    OwnedHqlExpr left = createSelector(no_left, leftDs, selSeq);
+    OwnedHqlExpr right = createSelector(no_right, rightDs, selSeq);
+    return hasNeverMatchCompare(extraMatch, left, right);
+}
+
 
 extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch)
 {

@@ -11815,6 +11815,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
     if (isSmartJoin || expr->hasAttribute(unstableAtom))
         flags.append("|JFunstable");
+    if (joinInfo.neverMatchSelf(dataset1, dataset2, selSeq))
+        flags.append("|JFnevermatchself");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getJoinFlags", flags.str()+1);
