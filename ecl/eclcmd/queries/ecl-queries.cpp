@@ -349,6 +349,8 @@ public:
                 continue;
             if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
                 continue;
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -400,6 +402,8 @@ public:
             req->setMemoryLimit(optMemoryLimit);
         if (!optPriority.isEmpty())
             req->setPriority(optPriority);
+        if (!optName.isEmpty())
+            req->setDestName(optName);
         if (optComment.get()) //allow empty
             req->setComment(optComment);
 
@@ -444,6 +448,7 @@ public:
             "   --priority=<val>       Set the priority for this query. Value can be LOW,\n"
             "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
             "   --comment=<string>     Set the comment associated with this query\n"
+            "   -n, --name=<val>       Destination query name for the copied query\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -457,6 +462,7 @@ private:
     StringAttr optMemoryLimit;
     StringAttr optPriority;
     StringAttr optComment;
+    StringAttr optName;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;
