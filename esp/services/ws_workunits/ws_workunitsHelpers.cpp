@@ -1643,15 +1643,20 @@ void WsWuInfo::getSubFiles(IPropertyTreeIterator* f, IEspECLSourceFile* eclSuper
     return;
 }
 
-bool WsWuInfo::getResultViews(StringArray &viewnames, unsigned flags)
+bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned flags)
 {
-    if (!(flags & WUINFO_IncludeResultsViewNames))
+    if (!(flags & (WUINFO_IncludeResultsViewNames | WUINFO_IncludeResourceURLs)))
         return true;
     try
     {
         Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, false);
         if (wv)
-            wv->getResultViewNames(viewnames);
+        {
+            if (flags & WUINFO_IncludeResultsViewNames)
+                wv->getResultViewNames(viewnames);
+            if (flags & WUINFO_IncludeResourceURLs)
+                wv->getResourceURLs(urls, NULL);
+        }
         return true;
     }
     catch(IException* e)

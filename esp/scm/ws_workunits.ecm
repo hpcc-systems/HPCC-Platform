@@ -233,7 +233,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.29")] string WorkflowsDesc;
     [min_ver("1.31")] bool HasArchiveQuery(false);
     [min_ver("1.38")] ESParray<ESPstruct ThorLogInfo> ThorLogList;
-
+    [min_ver("1.47")] ESParray<string, URL> ResourceURLs;
 };
 
 ESPStruct [nil_remove] WUECLAttribute
@@ -592,6 +592,7 @@ ESPrequest WUInfoRequest
     [min_ver("1.16")] bool IncludeApplicationValues(true);
     [min_ver("1.16")] bool IncludeWorkflows(true);
     [min_ver("1.39")] bool IncludeXmlSchemas(false);
+    [min_ver("1.47")] bool IncludeResourceURLs(true);
     [min_ver("1.16")] bool SuppressResultSchemas(false);
     [min_ver("1.25")] string ThorSlaveIP;
 };
@@ -1444,7 +1445,7 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 };
 
 ESPservice [
-    version("1.46"), default_client_version("1.46"),
+    version("1.47"), default_client_version("1.47"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

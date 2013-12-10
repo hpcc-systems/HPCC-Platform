@@ -283,6 +283,7 @@ public:
     IPropertyTree *ensureManifest();
 
     virtual void getResultViewNames(StringArray &names);
+    virtual void getResourceURLs(StringArray &urls, const char *prefix);
     virtual void renderResults(const char *viewName, const char *xml, StringBuffer &html);
     virtual void renderResults(const char *viewName, StringBuffer &html);
     virtual void renderSingleResult(const char *viewName, const char *resultname, StringBuffer &html);
@@ -451,6 +452,25 @@ bool WuWebView::getResourceByPath(const char *path, MemoryBuffer &mb)
     if (!res)
         return false;
     return getResource(res, mb);
+}
+
+void WuWebView::getResourceURLs(StringArray &urls, const char *prefix)
+{
+    SCMStringBuffer wuid;
+    cw->getWuid(wuid);
+    StringBuffer url(prefix);
+    urls.append(url.append("manifest/").append(wuid.str()));
+
+    Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Resource");
+    ForEach(*iter)
+    {
+        IPropertyTree &res = iter->query();
+        url.set(prefix).append("res/").append(wuid.str());
+        if (res.hasProp("@ResourcePath"))
+            urls.append(url.append(res.queryProp("@ResourcePath")));
+        else if (res.hasProp("@filename"))
+            urls.append(url.append('/').append(res.queryProp("@filename")));
+    }
 }
 
 void WuWebView::getResultViewNames(StringArray &names)
