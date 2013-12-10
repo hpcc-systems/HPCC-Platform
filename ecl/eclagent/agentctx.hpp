@@ -75,7 +75,7 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual ICodeContext *queryCodeContext() = 0;
 
     virtual IConstWorkUnit *queryWorkUnit() = 0;
-    virtual IWorkUnit *updateWorkUnit() = 0;
+    virtual IWorkUnit *updateWorkUnit() const = 0;
     virtual void unlockWorkUnit() = 0;
     
     virtual ILocalOrDistributedFile *resolveLFN(const char *logicalName, const char *errorTxt=NULL, bool optional=false, bool noteRead=true, bool write=false, StringBuffer * expandedlfn=NULL) = 0;

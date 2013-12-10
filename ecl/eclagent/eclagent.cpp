@@ -705,7 +705,7 @@ const char *EclAgent::loadResource(unsigned id)
     return reinterpret_cast<const char *>(dll->getResource(id));  // stays loaded as long as dll stays loaded
 }
 
-IWorkUnit *EclAgent::updateWorkUnit()
+IWorkUnit *EclAgent::updateWorkUnit() const
 {
     CriticalBlock block(wusect);
     if (!wuWrite)
@@ -1480,11 +1480,6 @@ char * EclAgent::getExpandLogicalName(const char * logicalName)
     StringBuffer lfn;
     expandLogicalName(lfn, logicalName);
     return lfn.detach();
-}
-
-void EclAgent::addWuException(const char * text, unsigned code, unsigned severity)
-{
-    addException((WUExceptionSeverity)severity, "user", code, text, NULL, 0, 0, false, false);
 }
 
 void EclAgent::addWuException(const char * text, unsigned code, unsigned severity, char const * source)

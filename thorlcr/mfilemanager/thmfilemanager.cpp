@@ -510,6 +510,7 @@ public:
                         if (p == partOffset)
                             p += job.querySlaves();
                         IPartDescriptor *partDesc = fileDesc.queryPart(p);
+                        CDateTime createTime, modifiedTime;
                         unsigned c=0;
                         for (; c<partDesc->numCopies(); c++)
                         {
@@ -522,6 +523,15 @@ public:
                                 ensureDirectoryForFile(path.str());
                                 OwnedIFile iFile = createIFile(path.str());
                                 OwnedIFileIO iFileIO = iFile->open(IFOcreate);
+                                iFileIO.clear();
+                                // ensure copies have matching datestamps, as they would do normally (backupnode expects it)
+                                if (partDesc->numCopies() > 1)
+                                {
+                                    if (0 == c)
+                                        iFile->getTime(&createTime, &modifiedTime, NULL);
+                                    else
+                                        iFile->setTime(&createTime, &modifiedTime, NULL);
+                                }
                             }
                             catch (IException *e)
                             {

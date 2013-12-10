@@ -27,11 +27,12 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
+    "hpcc/LFDetailsWidget",
     "hpcc/WsWorkunits",
     "hpcc/ESPUtil"
 ], function (declare, arrayUtil, lang, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, WsWorkunits, ESPUtil) {
+                GridDetailsWidget, LFDetailsWidget, WsWorkunits, ESPUtil) {
     return declare("QuerySetLogicalFilesWidget", [GridDetailsWidget], {
 
         gridTitle: "Logical Files",
@@ -58,7 +59,7 @@ define([
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Name: { label: "Logical Files", width: 108, sortable: false },
+                    Name: {label: "Logical Files", width: 180, sortable: false}
                 }
             }, domID);
 
@@ -69,6 +70,33 @@ define([
                 }
             });
             return retVal;
+        },
+
+        createDetail: function (id, row, params) {
+            return new LFDetailsWidget.fixCircularDependency({
+                id: id,
+                title: params.Name,
+                closable: true,
+                hpcc: {
+                    params: {
+                        Name: params.Name
+                    }
+                }
+            });
+        },
+
+        _onOpen: function(){
+            var selections = this.grid.getSelected();
+            var firstTab = null;
+            for (var i = selections.length - 1; i >= 0; --i) {
+                var tab = this.ensurePane(this.id + "_" + selections[i].Id, selections[i]);
+                if (i == 0) {
+                    firstTab = tab;
+                }
+            }
+            if (firstTab) {
+                this.selectChild(firstTab);
+            }
         },
 
         refreshGrid: function (args) {

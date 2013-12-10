@@ -106,7 +106,6 @@ IIdAtom * addAggregateRowId;
 IIdAtom * addAllId;
 IIdAtom * addRangeId;
 IIdAtom * addWorkunitAssertFailureId;
-IIdAtom * addWorkunitExceptionId;
 IIdAtom * an2bId;
 IIdAtom * an2fId;
 IIdAtom * an2l4Id;
@@ -743,7 +742,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(addAll);
     MAKEID(addRange);
     MAKEID(addWorkunitAssertFailure);
-    MAKEID(addWorkunitException);
     MAKEID(an2b);
     MAKEID(an2f);
     MAKEID(an2l4);

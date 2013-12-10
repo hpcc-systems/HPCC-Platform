@@ -1201,7 +1201,7 @@ public:
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
 
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
-    virtual void addWuException(const char * text, unsigned code, unsigned severity) { throwUnexpected(); }
+    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source) { throwUnexpected(); }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { throwUnexpected(); }
     virtual IUserDescriptor *queryUserDescriptor() { throwUnexpected(); }
 
@@ -2827,7 +2827,7 @@ public:
         UNIMPLEMENTED;
     }
 
-    virtual void addWuException(const char * text, unsigned code, unsigned _severity)
+    virtual void addWuException(const char * text, unsigned code, unsigned _severity, const char * source)
     {
         WUExceptionSeverity severity = (WUExceptionSeverity) _severity;
         CTXLOG("%s", text);
@@ -2836,7 +2836,7 @@ public:
         if (workUnit)
         {
             WorkunitUpdate wu(&workUnit->lock());
-            addExceptionToWorkunit(wu, severity, "user", code, text, NULL, 0 ,0);
+            addExceptionToWorkunit(wu, severity, source, code, text, NULL, 0 ,0);
         }
     }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort)
@@ -2903,7 +2903,7 @@ public:
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { throwUnexpected(); }
     virtual void fail(int code, const char *text)
     {
-        addWuException(text, code, 2);
+        addWuException(text, code, 2, "user");
     }
 
     virtual unsigned getWorkflowId() { return workflow->queryCurrentWfid(); }

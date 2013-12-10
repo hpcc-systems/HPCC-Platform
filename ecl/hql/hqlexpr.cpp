@@ -11249,8 +11249,9 @@ static void normalizeCallParameters(HqlExprArray & resolvedActuals, IHqlExpressi
                 else
                 {
                     OwnedHqlExpr actualRecord = getUnadornedRecordOrField(actual->queryRecord());
-                    OwnedHqlExpr formalRecord = getUnadornedRecordOrField(::queryOriginalRecord(type));
-                    if (actualRecord && formalRecord && formalRecord->numChildren() && (formalRecord->queryBody() != actualRecord->queryBody()))
+                    IHqlExpression * formalRecord = ::queryOriginalRecord(type);
+                    OwnedHqlExpr normalFormalRecord = getUnadornedRecordOrField(formalRecord);
+                    if (actualRecord && normalFormalRecord && normalFormalRecord->numChildren() && (normalFormalRecord->queryBody() != actualRecord->queryBody()))
                     {
                         //If the actual dataset is derived from the input dataset, then insert a project so types remain correct
                         //otherwise x+y will change meaning.
@@ -14610,6 +14611,29 @@ bool isPureActivityIgnoringSkip(IHqlExpression * expr)
     return true;
 }
 
+bool assignsContainSkip(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_newtransform:
+    case no_transform:
+    case no_assignall:
+        {
+            ForEachChild(i, expr)
+            {
+                if (assignsContainSkip(expr->queryChild(i)))
+                    return true;
+            }
+            return false;
+        }
+    case no_assign:
+        return containsSkip(expr->queryChild(1));
+    case no_alias_scope:
+        return assignsContainSkip(expr->queryChild(0));
+    default:
+        return false;
+    }
+}
 
 extern HQL_API bool isKnownTransform(IHqlExpression * transform)
 {

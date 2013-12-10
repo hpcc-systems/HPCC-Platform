@@ -499,6 +499,7 @@ interface IUserDescriptor;
 interface IHThorArg;
 interface IHThorHashLookupInfo;
 interface IEngineContext;
+interface IWorkUnit;
 
 interface ICodeContext : public IResourceContext
 {
@@ -555,7 +556,7 @@ interface ICodeContext : public IResourceContext
 
     // Exception handling
 
-    virtual void addWuException(const char * text, unsigned code, unsigned severity) = 0; //n.b. this might be better named: it should only be used for adding user-generated exceptions (via the logging plug-in) --- there's a call in IAgentContext which takes a source argument too
+    virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source) = 0;
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) = 0;
 
     // File resolution etc
@@ -596,6 +597,7 @@ interface ICodeContext : public IResourceContext
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) = 0;
     virtual IEngineContext *queryEngineContext() = 0;
     virtual char *getDaliServers() = 0;
+    virtual IWorkUnit *updateWorkUnit() const = 0;
 };
 
 

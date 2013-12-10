@@ -3053,6 +3053,10 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     if (!isPureActivityIgnoringSkip(child) || hasUnknownTransform(child))
                         break;
 
+                    IHqlExpression * childTransform = queryNewColumnProvider(child);
+                    if (assignsContainSkip(childTransform))
+                        break;
+
                     IHqlExpression * childCountProject = child->queryAttribute(_countProject_Atom);
                     //Don't merge two count projects - unless we go through and replace counter instances.
                     if (transformedCountProject && childCountProject)

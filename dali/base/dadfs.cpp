@@ -1445,6 +1445,7 @@ public:
     }
     void retryActions()
     {
+        clearFiles(); // clear all previously tracked pending file changes, e.g. renames, super file additions/removals
         while (prepared) // unlock for retry
             actions.item(--prepared).retry();
     }
@@ -5721,7 +5722,8 @@ private:
         }
         else
             pos = before?0:subfiles.ordinality();
-        unsigned cmppos = (pos==0)?1:0;
+        if (pos > subfiles.ordinality())
+            throw MakeStringException(-1,"addSubFile: Insert position %d out of range for file %s in superfile %s", pos+1, sub->queryLogicalName(), queryLogicalName());
         addItem(pos,sub.getClear());     // remove if failure TBD?
         setModified();
         updateFileAttrs();

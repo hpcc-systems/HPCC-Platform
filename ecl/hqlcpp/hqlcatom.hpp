@@ -106,7 +106,6 @@ extern IIdAtom * addAggregateRowId;
 extern IIdAtom * addAllId;
 extern IIdAtom * addRangeId;
 extern IIdAtom * addWorkunitAssertFailureId;
-extern IIdAtom * addWorkunitExceptionId;
 extern IIdAtom * an2bId;
 extern IIdAtom * an2fId;
 extern IIdAtom * an2l4Id;
