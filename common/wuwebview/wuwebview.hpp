@@ -62,6 +62,8 @@ interface IWuWebView : extends IInterface
 extern WUWEBVIEW_API IWuWebView *createWuWebView(IConstWorkUnit &wu, const char *queryname, const char*dir, bool mapEspDir);
 extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *queryname, const char*dir, bool mapEspDir);
 
+extern WUWEBVIEW_API void getWuResourceByPath(const char *path, MemoryBuffer &mb, StringBuffer &mimetype);
+
 static inline bool isPathSeparator(char sep)
 {
     return (sep=='\\')||(sep=='/');

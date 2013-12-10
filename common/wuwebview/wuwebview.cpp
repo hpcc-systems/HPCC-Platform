@@ -850,3 +850,69 @@ extern WUWEBVIEW_API IWuWebView *createWuWebView(const char *wuid, const char *q
     return NULL;
 }
 
+const char *mimeTypeFromFileExt(const char *ext)
+{
+    if (!ext)
+        return "application/octet-stream";
+    if (*ext=='.')
+        ext++;
+    if (strieq(ext, "html") || strieq(ext, "htm"))
+        return "text/html";
+    if (strieq(ext, "xml") || strieq(ext, "xsl") || strieq(ext, "xslt"))
+       return "application/xml";
+    if (strieq(ext, "js"))
+       return "text/javascript";
+    if (strieq(ext, "css"))
+       return "text/css";
+    if (strieq(ext, "jpeg") || strieq(ext, "jpg"))
+       return "image/jpeg";
+    if (strieq(ext, "gif"))
+       return "image/gif";
+    if (strieq(ext, "png"))
+       return "image/png";
+    if (strieq(ext, "svg"))
+       return "image/svg+xml";
+    if (strieq(ext, "txt") || strieq(ext, "text"))
+       return "text/plain";
+    if (strieq(ext, "zip"))
+       return "application/zip";
+    if (strieq(ext, "pdf"))
+       return "application/pdf";
+    if (strieq(ext, "xpi"))
+       return "application/x-xpinstall";
+    if (strieq(ext, "exe") || strieq(ext, "class"))
+       return "application/octet-stream";
+    return "application/octet-stream";
+}
+
+extern WUWEBVIEW_API void getWuResourceByPath(const char *path, MemoryBuffer &mb, StringBuffer &mimetype)
+{
+    StringBuffer s, wuid, queryname;
+    nextPathNode(path, s);
+    if (strieq(s, "res"))
+        nextPathNode(path, s.clear());
+    if (strieq(s, "query"))
+    {
+        StringBuffer target;
+        nextPathNode(path, target);
+        if (!target.length())
+            throw MakeStringException(WUWEBERR_TargetNotFound, "Target cluster required");
+        nextPathNode(path, queryname);
+        Owned<IPropertyTree> query = resolveQueryAlias(target, queryname, true);
+        if (!query)
+            throw MakeStringException(WUWEBERR_QueryNotFound, "Query not found");
+        wuid.set(query->queryProp("@wuid"));
+    }
+    else
+    {
+        wuid.swapWith(s);
+        queryname.set(wuid);
+    }
+
+    Owned<IWuWebView> web = createWuWebView(wuid, queryname, NULL, true);
+    if (!web)
+        throw MakeStringException(WUWEBERR_WorkUnitNotFound, "Cannot open workunit");
+    mimetype.append(mimeTypeFromFileExt(strrchr(path, '.')));
+    if (!web->getResourceByPath(path, mb))
+        throw MakeStringException(WUWEBERR_ViewResourceNotFound, "Cannot open resource");
+}
