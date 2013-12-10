@@ -22,18 +22,23 @@
 import argparse
 import logging
 import os
+import platform
 import atexit
+import traceback
 
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import checkPqParam
+from hpcc.util.util import checkPqParam,  getVersionNumbers
 
 if __name__ == "__main__":
+    ver = getVersionNumbers()
+    if (ver['main'] >= 2) and (ver['minor'] >= 7):
+        atexit.register(logging.shutdown)
     prog = "regress"
     description = 'HPCC Platform Regression suite'
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('--version', '-v', action='version',
-                        version='%(prog)s 0.0.2')
+                        version='%(prog)s 0.0.3')
     parser.add_argument('--config', help="Config file to use.",
                         nargs='?', default="regress.json")
     parser.add_argument('--loglevel', help="Set the log level.",
@@ -41,6 +46,8 @@ if __name__ == "__main__":
                         choices=['info', 'debug'])
     parser.add_argument('--suiteDir', '-s', help="suiteDir to use.",
                         nargs='?', default=".")
+    parser.add_argument('--timeout', '-t', help="timeout for query execution.",
+                        nargs='?', default="-1")
 
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
@@ -51,7 +58,7 @@ if __name__ == "__main__":
     parser_run.add_argument('cluster', help="Run the cluster suite.",
                             nargs='?', type=str,  default='setup')
     parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. ('-1' can be use to calculate usable thread count on a single node system)",
-                            type=checkPqParam,  default = 1,   metavar="threadNumber")
+                            type=checkPqParam,  default = 0,   metavar="threadNumber")
 
     parser_query = subparsers.add_parser('query', help='query help')
     parser_query.add_argument('query', help="Name of a single ECL query (mandatory).",
@@ -66,6 +73,10 @@ if __name__ == "__main__":
     suiteDir = ""
     if 'suiteDir' in args:
         suiteDir = args.suiteDir
+    timeout = -1
+    if 'timeout' in args:
+        timeout = args.timeout
+    regress = None
     try:
         if 'clusters' in args:
             Clusters = ['setup']
@@ -80,7 +91,7 @@ if __name__ == "__main__":
                 print "\nMissing ECL query file!\n"
                 parser_query.print_help()
                 exit()
-            regress = Regression(args.config, args.loglevel, suiteDir)
+            regress = Regression(args.config, args.loglevel, suiteDir,  timeout)
             ecl = os.path.join(regress.dir_ec, args.query)
             eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex,
                               regress.dir_r)
@@ -91,29 +102,19 @@ if __name__ == "__main__":
             else:
                 targetClusters.append(args.cluster)
             for cluster in targetClusters:
-                logging.warn("Target: %s" % cluster)
-                logging.warn("Queries: %s" % 1)
                 try:
                     if not eclfile.testSkip(cluster)['skip']:
                         if not eclfile.testExclusion(cluster):
-                            report = regress.buildLogging(args.query)
-                            if args.publish or eclfile.testPublish():
-                                regress.runQuery(cluster, eclfile, report, 1, True)
-                            else:
-                                regress.runQuery(cluster, eclfile, report)
-                            Regression.displayReport(report)
+                            regress.runSuiteQ(cluster, eclfile)
                         else:
-                            #print args.query+" excluded on "+cluster+" cluster."
                             logging.warn("%s. %s excluded on this cluster." % (1, args.query))
                     else:
-                        #print args.query+" skipped on "+cluster+" cluster."
                         logging.warn("%s. %s skipped on this cluster." % (1, args.query))
                 except IOError:
-                    #print "Query "+args.query+ " does not exist!"
                     logging.error("%s. Query %s does not exist!" % (1,  args.query))
                     exit()
         elif 'cluster' in args:
-            regress = Regression(args.config, args.loglevel, suiteDir,  args.pq)
+            regress = Regression(args.config, args.loglevel, suiteDir,  timeout,  args.pq)
             regress.bootstrap(args.cluster)
             if 'setup' in args.cluster:
                 regress.runSuite('setup', regress.setup)
@@ -124,5 +125,10 @@ if __name__ == "__main__":
                     regress.runSuite(args.cluster, regress.suites[args.cluster])
     except Exception as e:
         logging.critical(e)
+        logging.critical(traceback.format_exc())
+        print "Abend."
     except KeyboardInterrupt:
         logging.critical("Keyboard Interrupt Caught.")
+        regress.StopTimeoutThread()
+
+    exit()

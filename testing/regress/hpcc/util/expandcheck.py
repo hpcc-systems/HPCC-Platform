@@ -24,7 +24,7 @@ class ExpandCheck:
 
     @staticmethod
     def dir_exists(path, require=False):
-        logging.debug("dir_exists(path: %s, require: %d", path, require)
+        logging.debug("dir_exists(path: %s, require: %s)", path, require)
         if '~' in path:
             path = os.path.expanduser(path)
         else:

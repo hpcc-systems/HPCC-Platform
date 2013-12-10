@@ -14,6 +14,7 @@ Result:
 |
 |       usage: regress [-h] [--version] [--config [CONFIG]]
 |                       [--loglevel [{info,debug}]] [--suiteDir [SUITEDIR]]
+|                       [--timeout [TIMEOUT]]
 |                       {list,run,query} ...
 | 
 |       HPCC Platform Regression suite
@@ -32,6 +33,8 @@ Result:
 |                                  Set the log level.
 |            --suiteDir [SUITEDIR], -s [SUITEDIR]
 |                               suiteDir to use. Default value is the current directory and it can handle relative path.
+|            --timeout [TIMEOUT], -t [TIMEOUT]
+|                               timeout for query execution.
 
 	
 Steps to run Regression Suite
@@ -265,5 +268,32 @@ To skip (similar to exclusion)
 
 To build and publish testcase (e.g.:for libraries)
 //publish
+
+To set individual timeout for test case
+//timeout <timeout value in sec>
+
+7. Configuration setting in regress.json file:
+----------------------------------------------
+
+        "ip": "127.0.0.1",                              - ECl server address
+        "username": "regress",                          - Regression Suite dedicated username and pasword
+        "password": "regress",
+        "roxie": "127.0.0.1:9876",                      - Roxie server addres (not used)
+        "server": "127.0.0.1:8010",                     - EclWatch service server address
+        "suiteDir": "",                                 - default suite directory location - ""-> current directory
+        "eclDir": "ecl",                                - ECL test cases directory source
+        "setupDir": "ecl/setup",                        - ECL setup source directory
+        "keyDir": "ecl/key",                            - XML key files directory to check testcases result
+        "archiveDir": "archives",                       - Archive directory path for testcases generated XML results
+        "resultDir": "results",                         - Current testcases generated XML results
+        "regressionDir": "~/HPCCSystems-regression",    - Regression suite work and log file directory (in user private space)
+        "logDir": "~/HPCCSystems-regression/log",       - Regression suite run log directory
+        "Clusters": [                                   - List of known clusters name
+            "hthor",
+            "thor",
+            "roxie"
+        ],
+        "timeout":"600",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
+        "maxAttemptCount":"3"                           - Max retry count to reset timeout if a testcase in any early stage (compiled, blocked) of execution pipeline.
 
 **Important! Actually regression suite compares the test case result with xml files stored in testing/regression/ecl/key independently from the cluster.**

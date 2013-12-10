@@ -22,7 +22,7 @@ import logging
 from ...common.shell import Shell
 from ...util.ecl.file import ECLFile
 from ...common.error import Error
-
+from ...util.util import queryWuid
 
 class ECLcmd(Shell):
     def __init__(self):
@@ -48,7 +48,8 @@ class ECLcmd(Shell):
             if server:
                 args.append('--server=' + server)
             if not name:
-                name = eclfile.ecl
+                #name = eclfile.ecl
+                name = eclfile.getJobname()
             if username:
                 args.append("--username=" + username)
             if password:
@@ -71,6 +72,8 @@ class ECLcmd(Shell):
                     wuid = i.split()[1]
                 if "state:" in i:
                     state = i.split()[1]
+                if "aborted" in i:
+                    state = "aborted"
                 if cnt > 4:
                     result += i + "\n"
                 cnt += 1
@@ -89,9 +92,12 @@ class ECLcmd(Shell):
                 else:
                     test = False
                     eclfile.diff = 'Error'
-                
             else:
-                test = eclfile.testResults()
+                if queryWuid(eclfile.getJobname())['state'] == 'aborted':
+                    eclfile.diff = eclfile.ecl+'\n\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
+                    test = False
+                else:
+                    test = eclfile.testResults()
             report.addResult(eclfile)
             if not test:
                 return False
