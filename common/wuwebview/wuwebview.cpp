@@ -396,15 +396,17 @@ bool WuWebView::getEspInclude(const char *includename, MemoryBuffer &includebuf,
 
 bool WuWebView::getInclude(const char *includename, MemoryBuffer &includebuf, bool &pathOnly)
 {
-    int len=strlen(includename);
-    if (len<8)
-        return false;
     //eliminate "file://"
-    if (strncmp(includename, "file://", 7)==0)
-        includename+=7;
-    //eliminate extra '/' for windows absolute paths
-    if (len>9 && includename[2]==':')
-        includename++;
+    if (strncmp(includename, "file:", 5)==0)
+        includename+=5;
+    if (*includename=='/')
+    {
+        while (includename[1]=='/')
+            includename++;
+        //eliminate extra '/' for windows absolute paths
+        if (includename[1] && includename[2]==':')
+            includename++;
+    }
     if (mapEspDirectories && !strnicmp(includename, "/esp/", 5))
         return getEspInclude(includename+5, includebuf, pathOnly);
 

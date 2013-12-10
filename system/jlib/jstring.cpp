@@ -1273,6 +1273,41 @@ void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
   }
 }
 
+inline char translateHex(char hex)
+{
+    if(hex >= 'A')
+        return (hex & 0xdf) - 'A' + 10;
+    else
+        return hex - '0';
+}
+
+inline char translateHex(char h1, char h2)
+{
+    return (translateHex(h1) * 16 + translateHex(h2));
+}
+
+StringBuffer &appendDecodedURL(StringBuffer &s, const char *url)
+{
+    if(!url)
+        return s;
+
+    while (*url)
+    {
+        char c = *url++;
+        if (c == '+')
+            c = ' ';
+        else if (c == '%')
+        {
+            if (isxdigit(url[0]) && isxdigit(url[1]))
+            {
+                c = translateHex(url[0], url[1]);
+                url+=2;
+            }
+        }
+        s.append(c);
+    }
+    return s;
+}
 
 static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len, const char * src, bool addBreak, bool isCpp, bool isUtf8)
 {
