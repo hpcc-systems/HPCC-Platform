@@ -83,6 +83,7 @@ static const char * EclDefinition =
 "  UNSIGNED4 StringToDate(const string src, const varstring format) : c, pure,entrypoint='slStringToDate'; \n"
 "  UNSIGNED4 MatchDate(const string src, set of varstring formats) : c, pure,entrypoint='slMatchDate'; \n"
 "  STRING FormatDate(UNSIGNED4 date, const varstring format) : c, pure,entrypoint='slFormatDate'; \n"
+"  STRING StringRepeat(const string src, unsigned4 n) : c, pure,entrypoint='slStringRepeat'; \n"
 "END;";
 
 STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb) 
@@ -976,6 +977,32 @@ STRINGLIB_API void STRINGLIB_CALL slStringGetNthWord(unsigned & tgtLen, char * &
         tgtLen = 0;
     }
 
+}
+
+STRINGLIB_API void STRINGLIB_CALL slStringRepeat(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned n)
+{
+    char * buffer = NULL;
+    if (n == 0 || (srcLen == 0))
+    {
+        tgtLen = 0;
+    }
+    else
+    {
+        tgtLen = srcLen*n;
+        buffer = (char *)CTXMALLOC(parentCtx, tgtLen);
+        if (srcLen == 1)
+        {
+            memset(buffer, *src, n);
+        }
+        else
+        {
+            for (unsigned i = 0; i < n; ++i)
+            {
+                memcpy(buffer + i*srcLen, src, srcLen);
+            }
+        }
+    }
+    tgt = buffer;
 }
 
 STRINGLIB_API unsigned STRINGLIB_CALL slStringWordCount(unsigned srcLen,const char * src)
