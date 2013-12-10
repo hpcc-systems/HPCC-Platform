@@ -1392,6 +1392,8 @@ extern HQL_API void queryRemoveRows(HqlExprCopyArray & tables, IHqlExpression * 
 
 extern HQL_API bool isPureActivity(IHqlExpression * expr);
 extern HQL_API bool isPureActivityIgnoringSkip(IHqlExpression * expr);
+extern HQL_API bool assignsContainSkip(IHqlExpression * expr);
+
 extern HQL_API bool isPureInlineDataset(IHqlExpression * expr);
 extern HQL_API bool transformHasSkipAttr(IHqlExpression * transform);
 extern HQL_API IHqlExpression * queryNewColumnProvider(IHqlExpression * expr);          // what is the transform/newtransform/record?
