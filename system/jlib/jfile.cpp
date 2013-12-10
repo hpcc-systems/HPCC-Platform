@@ -56,6 +56,8 @@
 #include "jregexp.hpp"
 #include "portlist.h"
 
+#include "build-config.h"
+#include "jprop.hpp"
 
 // #define REMOTE_DISCONNECT_ON_DESTRUCTOR  // enable to disconnect on IFile destructor
                                             // this should not be enabled in WindowRemoteDirectory used
@@ -80,8 +82,11 @@
 #define NULLFILE -1
 #endif
 
+// #define CFILEIOTRACE 1
+
 static IFile *createIFileByHook(const RemoteFilename & filename);
 static IFile *createContainedIFileByHook(const char *filename);
+static inline bool isPCFlushAllowed();
 
 static char ShareChar='$';
 
@@ -646,15 +651,19 @@ HANDLE CFile::openHandle(IFOmode mode, IFSHmode sharemode, bool async, int stdh)
         handle = NULLFILE;
         throw MakeErrnoException(EISDIR, "CFile::open %s", filename.get());
     }
-    
+
+#ifdef CFILEIOTRACE
+    DBGLOG("CFile::openHandle(%s,%d) returns %d", filename.get(), mode, handle);
+#endif
+
 #endif
     return handle;
 }
 
-IFileIO * CFile::open(IFOmode mode)
+IFileIO * CFile::open(IFOmode mode,IFEflags extraFlags)
 {
     // we may want mode dependant defaults later 
-    return openShared(mode,(IFSHmode)(flags&(IFSHfull|IFSHread)));
+    return openShared(mode,(IFSHmode)(flags&(IFSHfull|IFSHread)),extraFlags);
 }
 
 
@@ -822,28 +831,33 @@ bool CFile::fastCopyFile(CFile &target, size32_t buffersize, ICopyFileProgress *
 }
 
 
-void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress)
+void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, CFflags copyFlags)
 {
     // check to see if src and target are remote
 
-
     Owned<IFile> target = createIFile(dest);
-    const size32_t buffersize = 0x100000;
+    const size32_t buffersize = DEFAULT_COPY_BLKSIZE;
     IFOmode omode = IFOwrite;
     if (toOfs==(offset_t)-1) {
         if (fromOfs==0) {
-            copyFile(target,this,buffersize,progress);
+            copyFile(target,this,buffersize,progress,copyFlags);
             return;
         }
         omode = IFOcreate;
         toOfs = 0;
     }
-    OwnedIFileIO targetIO = target->open(IFOwrite);
+    IFEflags tgtFlags = IFEnone;
+    if (copyFlags & CFflush_write)
+        tgtFlags = IFEnocache;
+    OwnedIFileIO targetIO = target->open(IFOwrite, tgtFlags);
     if (!targetIO)
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", target->queryFilename());
     MemoryAttr mb;
     void * buffer = mb.allocate(buffersize);
-    OwnedIFileIO sourceIO = open(IFOread);
+    IFEflags srcFlags = IFEnone;
+    if (copyFlags & CFflush_read)
+        srcFlags = IFEnocache;
+    OwnedIFileIO sourceIO = open(IFOread, srcFlags);
     if (!sourceIO)
         throw MakeStringException(-1, "copySection: source '%s' not found", queryFilename());
     
@@ -880,9 +894,9 @@ void CFile::copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fro
     }
 }
 
-void CFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress,bool usetmp)
+void CFile::copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress,bool usetmp,CFflags copyFlags)
 {
-    doCopyFile(dest,this,buffersize,progress,NULL,usetmp);
+    doCopyFile(dest,this,buffersize,progress,NULL,usetmp,copyFlags);
 }
 
 
@@ -1087,7 +1101,8 @@ public:
 
     void unlock()
     {
-        if (handle!=NULLFILE) {
+        if (handle!=NULLFILE)
+        {
 #ifdef _WIN32
             OVERLAPPED overlapped;
             memset(&overlapped,0,sizeof(overlapped));
@@ -1332,15 +1347,15 @@ public:
             ok = ifile->isFile();
         return ok;
     }
-    virtual IFileIO * open(IFOmode mode)
+    virtual IFileIO * open(IFOmode mode,IFEflags extraFlags=IFEnone)
     {
         connect();
-        return ifile->open(mode);
+        return ifile->open(mode,extraFlags);
     }
-    virtual IFileIO * openShared(IFOmode mode,IFSHmode shared)
+    virtual IFileIO * openShared(IFOmode mode,IFSHmode shared,IFEflags extraFlags=IFEnone)
     {
         connect();
-        return ifile->openShared(mode,shared);
+        return ifile->openShared(mode,shared,extraFlags);
     }
     virtual IFileAsyncIO * openAsync(IFOmode mode)
     {
@@ -1449,9 +1464,9 @@ public:
 #endif
     }
 
-    void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp)
+    void copyTo(IFile *dest, size32_t buffersize, ICopyFileProgress *progress, bool usetmp,CFflags copyFlags)
     {
-        doCopyFile(dest,this,buffersize,progress,NULL,usetmp);
+        doCopyFile(dest,this,buffersize,progress,NULL,usetmp,copyFlags);
     }
 
 
@@ -1504,10 +1519,10 @@ public:
         ifile->setShareMode(shmode);
     }
 
-    void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress)
+    void copySection(const RemoteFilename &dest, offset_t toOfs, offset_t fromOfs, offset_t size, ICopyFileProgress *progress, CFflags copyFlags)
     {
         connect();
-        ifile->copySection(dest,toOfs,fromOfs,size,progress);
+        ifile->copySection(dest,toOfs,fromOfs,size,progress,copyFlags);
     }
 
 
@@ -1517,11 +1532,11 @@ public:
         return NULL;
     }
 
-    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom, bool usetmp)
+    void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom, bool usetmp, CFflags copyFlags)
     {
         // no special action for windows
         GetHostIp(resfrom);
-        copyTo(dest,0x100000,NULL,usetmp);
+        copyTo(dest,DEFAULT_COPY_BLKSIZE,NULL,usetmp,copyFlags);
     }
 
 
@@ -1635,8 +1650,8 @@ class jlib_decl CSequentialFileIO : public CFileIO
     }
 
 public:
-    CSequentialFileIO(HANDLE h,IFSHmode _sharemode)
-        : CFileIO(h,_sharemode)
+    CSequentialFileIO(HANDLE h,IFOmode _openmode,IFSHmode _sharemode,IFEflags _extraFlags)
+        : CFileIO(h,_openmode,_sharemode,_extraFlags)
     {
         pos = 0;
     }
@@ -1695,7 +1710,7 @@ public:
 
 };
 
-IFileIO * CFile::openShared(IFOmode mode,IFSHmode share)
+IFileIO * CFile::openShared(IFOmode mode,IFSHmode share,IFEflags extraFlags)
 {
     int stdh = stdIoHandle(filename);
     HANDLE handle = openHandle(mode,share,false, stdh);
@@ -1705,8 +1720,8 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share)
     set_inherit(handle, false);
 #endif
     if (stdh>=0)
-        return new CSequentialFileIO(handle,share);
-    return new CFileIO(handle,share);
+        return new CSequentialFileIO(handle,mode,share,extraFlags);
+    return new CFileIO(handle,mode,share,extraFlags);
 }
 
 
@@ -1714,9 +1729,9 @@ IFileIO * CFile::openShared(IFOmode mode,IFSHmode share)
 //---------------------------------------------------------------------------
 
 
-extern jlib_decl IFileIO *createIFileIO(HANDLE handle)
+extern jlib_decl IFileIO *createIFileIO(HANDLE handle,IFOmode openmode,IFEflags extraFlags)
 {
-    return new CFileIO(handle,IFSHfull);
+    return new CFileIO(handle,openmode,IFSHfull,extraFlags);
 }
 
 offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
@@ -1749,12 +1764,20 @@ offset_t CFileIO::appendFile(IFile *file,offset_t pos,offset_t len)
 #ifdef _WIN32
 
 //-- Windows implementation -------------------------------------------------
-CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
+
+CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
     file = handle;
     sharemode = _sharemode;
+    openmode = _openmode;
+    extraFlags = _extraFlags; // page cache flush option silently ignored on Windows for now
+    if (extraFlags & IFEnocache)
+        if (!isPCFlushAllowed())
+            extraFlags = static_cast<IFEflags>(extraFlags & ~IFEnocache);
+    atomic_set(&bytesRead, 0);
+    atomic_set(&bytesWritten, 0);
 }
 
 CFileIO::~CFileIO()
@@ -1846,12 +1869,23 @@ void CFileIO::setSize(offset_t pos)
 //-- Unix implementation ----------------------------------------------------
 
 // More errorno checking TBD
-CFileIO::CFileIO(HANDLE handle, IFSHmode _sharemode)
+CFileIO::CFileIO(HANDLE handle, IFOmode _openmode, IFSHmode _sharemode, IFEflags _extraFlags)
 {
     assertex(handle != NULLFILE);
     throwOnError = false;
     file = handle;
     sharemode = _sharemode;
+    openmode = _openmode;
+    extraFlags = _extraFlags;
+    if (extraFlags & IFEnocache)
+        if (!isPCFlushAllowed())
+            extraFlags = static_cast<IFEflags>(extraFlags & ~IFEnocache);
+    atomic_set(&bytesRead, 0);
+    atomic_set(&bytesWritten, 0);
+
+#ifdef CFILEIOTRACE
+    DBGLOG("CFileIO::CfileIO(%d,%d,%d,%d)", handle, _openmode, _sharemode, _extraFlags);
+#endif
 }
 
 CFileIO::~CFileIO()
@@ -1869,7 +1903,17 @@ CFileIO::~CFileIO()
 
 void CFileIO::close()
 {
-    if (file != NULLFILE) {
+    if (file != NULLFILE)
+    {
+#ifdef CFILEIOTRACE
+        DBGLOG("CFileIO::close(%d), extraFlags = %d", file, extraFlags);
+#endif
+        if (extraFlags & IFEnocache)
+        {
+            if (openmode != IFOread)
+                fdatasync(file);
+            posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+        }
         if (::close(file) < 0)
             throw MakeErrnoException(errno,"CFileIO::close");
         file=NULLFILE;
@@ -1885,6 +1929,8 @@ void CFileIO::flush()
     if (fdatasync(file) != 0)
 #endif
         throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::flush");
+    if (extraFlags & IFEnocache)
+        posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
 }
 
 
@@ -1900,7 +1946,16 @@ offset_t CFileIO::size()
 size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
 {
     if (0==len) return 0;
-    return checked_pread(file, data, len, pos);
+    size32_t ret = checked_pread(file, data, len, pos);
+    if ( (extraFlags & IFEnocache) && (ret > 0) )
+    {
+        if (atomic_add_and_read(&bytesRead, ret) >= PGCFLUSH_BLKSIZE)
+        {
+            atomic_set(&bytesRead, 0);
+            posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+        }
+    }
+    return ret;
 }
 
 void CFileIO::setPos(offset_t newPos)
@@ -1917,6 +1972,17 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
     }
     if (ret<len)
         throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::write");
+    if ( (extraFlags & IFEnocache) && (ret > 0) )
+    {
+        if (atomic_add_and_read(&bytesWritten, ret) >= PGCFLUSH_BLKSIZE)
+        {
+            atomic_set(&bytesWritten, 0);
+            // non-blocking request to commit dirty pages [or block with fdatasync()]
+            sync_file_range(file, 0, 0, SYNC_FILE_RANGE_WRITE);
+            // flush previously committed dirty pages
+            posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+        }
+    }
     return ret;
 }
 
@@ -2234,7 +2300,8 @@ CFileAsyncIO::CFileAsyncIO(HANDLE handle, IFSHmode _sharemode)
 
 void CFileAsyncIO::close()
 {
-    if (file != NULLFILE) {
+    if (file != NULLFILE)
+    {
         aio_cancel(file,NULL);
         if (_lclose(file) < 0)
             throw MakeErrnoException(errno, "CFileAsyncIO::close");
@@ -2638,6 +2705,26 @@ public:
 
 //-- Helper routines --------------------------------------------------------
 
+enum GblFlushEnum { FLUSH_INIT, FLUSH_DISALLOWED, FLUSH_ALLOWED };
+static GblFlushEnum gbl_flush_allowed = FLUSH_INIT;
+static CriticalSection flushsect;
+
+static inline bool isPCFlushAllowed()
+{
+    CriticalBlock block(flushsect);
+    if (gbl_flush_allowed == FLUSH_INIT)
+    {
+        Owned<IProperties> conf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
+        if (conf->getPropBool("allow_pgcache_flush", true))
+            gbl_flush_allowed = FLUSH_ALLOWED;
+        else
+            gbl_flush_allowed = FLUSH_DISALLOWED;
+    }
+    if (gbl_flush_allowed == FLUSH_ALLOWED)
+        return true;
+    return false;
+}
+
 static inline size32_t doread(IFileIOStream * stream,void *dst, size32_t size)
 {
     size32_t toread=size;
@@ -2721,7 +2808,7 @@ size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer)
     return lenRead;
 }
 
-void copyFile(const char *target, const char *source, size32_t buffersize, ICopyFileProgress *progress)
+void copyFile(const char *target, const char *source, size32_t buffersize, ICopyFileProgress *progress, CFflags copyFlags)
 {
     OwnedIFile src = createIFile(source);
     if (!src)
@@ -2729,18 +2816,18 @@ void copyFile(const char *target, const char *source, size32_t buffersize, ICopy
     OwnedIFile tgt = createIFile(target);
     if (!tgt)
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", target);
-    copyFile(tgt, src, buffersize,progress);
+    copyFile(tgt, src, buffersize, progress, copyFlags);
 }
 
-void copyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress)
+void copyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, CFflags copyFlags)
 {
-    source->copyTo(target,buffersize,progress);
+    source->copyTo(target,buffersize,progress,copyFlags);
 }
 
-void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp)
+void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp, CFflags copyFlags)
 {
     if (!buffersize)
-        buffersize = 0x100000;
+        buffersize = DEFAULT_COPY_BLKSIZE;
 #ifdef _WIN32
     if (!usetmp) { 
         CFile *src = QUERYINTERFACE(source,CFile);
@@ -2770,7 +2857,10 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
         }
     }
 #endif
-    OwnedIFileIO sourceIO = source->open(IFOread);
+    IFEflags srcFlags = IFEnone;
+    if (copyFlags & CFflush_read)
+        srcFlags = IFEnocache;
+    OwnedIFileIO sourceIO = source->open(IFOread, srcFlags);
     if (!sourceIO)
         throw MakeStringException(-1, "copyFile: source '%s' not found", source->queryFilename());
 
@@ -2794,7 +2884,10 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
     }
     else
         dest = target;
-    targetIO.setown(dest->open(IFOcreate));
+    IFEflags tgtFlags = IFEnone;
+    if (copyFlags & CFflush_write)
+        tgtFlags = IFEnocache;
+    targetIO.setown(dest->open(IFOcreate, tgtFlags));
     if (!targetIO)
         throw MakeStringException(-1, "copyFile: target path '%s' could not be created", dest->queryFilename());
     MemoryAttr mb;

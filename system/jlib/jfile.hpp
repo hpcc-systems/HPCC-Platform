@@ -40,7 +40,7 @@ enum IFOmode { IFOcreate, IFOread, IFOwrite, IFOreadwrite, IFOcreaterw };    // 
 enum IFSHmode { IFSHnone, IFSHread=0x8, IFSHfull=0x10};   // sharing modes
 enum IFSmode { IFScurrent = FILE_CURRENT, IFSend = FILE_END, IFSbegin = FILE_BEGIN };    // seek mode
 enum CFPmode { CFPcontinue, CFPcancel, CFPstop };    // modes for ICopyFileProgress::onProgress return
-
+enum IFEflags { IFEnone=0x0, IFEnocache=0x1 };
 class CDateTime;
 
 interface IDirectoryIterator : extends IIteratorOf<IFile> 
@@ -51,6 +51,10 @@ interface IDirectoryIterator : extends IIteratorOf<IFile>
     virtual bool getModifiedTime(CDateTime &ret)=0;
 
 };
+
+#define PGCFLUSH_BLKSIZE      0x200000
+#define DEFAULT_COPY_BLKSIZE  0x100000
+enum CFflags { CFnone=0x0, CFflush_read=0x1, CFflush_write=0x2, CFflush_rdwr=0x3 };
 
 
 #define IDDIunchanged   1
@@ -83,9 +87,9 @@ interface IFile :extends IInterface
     virtual fileBool isDirectory() = 0;
     virtual fileBool isFile() = 0;
     virtual fileBool isReadOnly() = 0;
-    virtual IFileIO * open(IFOmode mode) = 0;
+    virtual IFileIO * open(IFOmode mode,IFEflags extraFlags=IFEnone) = 0;
     virtual IFileAsyncIO * openAsync(IFOmode mode) = 0;
-    virtual IFileIO * openShared(IFOmode mode,IFSHmode shmode) = 0;
+    virtual IFileIO * openShared(IFOmode mode,IFSHmode shmode,IFEflags extraFlags=IFEnone) = 0;
     virtual const char * queryFilename() = 0;
     virtual bool remove() = 0;
     virtual void rename(const char *newTail) = 0;       // tail only preferred but can have full path if exactly matches existing dir
@@ -111,14 +115,14 @@ interface IFile :extends IInterface
                                   Semaphore *abortsem=NULL)=0; // returns NULL if timed out or abortsem signalled
     virtual bool getInfo(bool &isdir,offset_t &size,CDateTime &modtime) = 0; // return false if doesn't exist
                                                                             // size is undefined if directory
-    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL) =0;
+    virtual void copySection(const RemoteFilename &dest, offset_t toOfs=(offset_t)-1, offset_t fromOfs=0, offset_t size=(offset_t)-1, ICopyFileProgress *progress=NULL, CFflags copyFlags=CFnone) = 0;
     // if toOfs is (offset_t)-1 then copies entire file 
 
-    virtual void copyTo(IFile *dest, size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL, bool usetmp=false)=0;
+    virtual void copyTo(IFile *dest, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL, bool usetmp=false, CFflags copyFlags=CFnone)=0;
 
     virtual IMemoryMappedFile *openMemoryMapped(offset_t ofs=0, memsize_t len=(memsize_t)-1, bool write=false)=0;
 
-    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp=false) = 0;
+    virtual void treeCopyTo(IFile *dest,IpSubNet &subnet,IpAddress &resfrom,bool usetmp=false,CFflags copyFlags=CFnone) = 0;
 
 
 };
@@ -239,8 +243,8 @@ extern jlib_decl void setPasswordProvider(IPasswordProvider * provider);
 
 
 extern jlib_decl size32_t read(IFileIO * in, offset_t pos, size32_t len, MemoryBuffer & buffer);
-extern jlib_decl void copyFile(const char *target, const char *source, size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL);
-extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersize=0x100000, ICopyFileProgress *progress=NULL);
+extern jlib_decl void copyFile(const char *target, const char *source, size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);
+extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersize=DEFAULT_COPY_BLKSIZE, ICopyFileProgress *progress=NULL,CFflags copyFlags=CFnone);
 extern jlib_decl bool recursiveCreateDirectory(const char * path);              // only works locally, use IFile::createDirectory() for remote
 extern jlib_decl bool recursiveCreateDirectoryForFile(const char *filename);    // only works locally, use IFile::createDirectory() for remote
 
@@ -258,7 +262,7 @@ extern jlib_decl void createHardLink(const char* fileName, const char* existingF
 
 extern jlib_decl IFile * createIFile(const char * filename);
 extern jlib_decl IFile * createIFile(MemoryBuffer & buffer);
-extern jlib_decl IFileIO * createIFileIO(HANDLE handle);
+extern jlib_decl IFileIO * createIFileIO(HANDLE handle,IFOmode=IFOreadwrite,IFEflags extraFlags=IFEnone);
 extern jlib_decl IDirectoryIterator * createDirectoryIterator(const char * path = NULL, const char * wildcard = NULL);
 extern jlib_decl IDirectoryIterator * createNullDirectoryIterator();
 extern jlib_decl IFileIO * createIORange(IFileIO * file, offset_t header, offset_t length);     // restricts input/output to a section of a file.
@@ -605,7 +609,7 @@ interface ICopyFileIntercept
 {
     virtual offset_t copy(IFileIO *from, IFileIO *to, offset_t ofs, size32_t sz)=0;
 };
-extern jlib_decl void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp);
+extern jlib_decl void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp, CFflags copyFlags=CFnone);
 extern jlib_decl void makeTempCopyName(StringBuffer &tmpname,const char *destname);
 extern jlib_decl size32_t SendFile(ISocket *target, IFileIO *fileio,offset_t start,size32_t len);
 extern jlib_decl void asyncClose(IFileIO *io);

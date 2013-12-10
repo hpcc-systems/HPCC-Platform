@@ -2484,7 +2484,7 @@ NULL
 #else
     out = fileno(stdout);
 #endif
-    Owned<IFileIO> stdOutFileIO = createIFileIO(out);
+    Owned<IFileIO> stdOutFileIO = createIFileIO(out,IFOwrite);
     if (testParams.ordinality())
     {
         newFileName = testParams.item(0);
