@@ -1856,7 +1856,7 @@ public:
         rowProcessor.addBlock(sendItem); // NB: NULL indicates end
     }
 // IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         return SPILL_PRIORITY_LOOKUPJOIN;
     }

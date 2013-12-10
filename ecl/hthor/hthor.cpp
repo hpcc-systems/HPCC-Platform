@@ -3888,7 +3888,7 @@ void CHThorGroupSortActivity::getSorted()
 }
 
 //interface roxiemem::IBufferedRowCallback
-unsigned CHThorGroupSortActivity::getPriority() const
+unsigned CHThorGroupSortActivity::getSpillCost() const
 {
     return 10;
 }

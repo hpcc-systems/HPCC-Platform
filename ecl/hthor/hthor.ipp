@@ -1064,7 +1064,7 @@ public:
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
 
     //interface roxiemem::IBufferedRowCallback
-    virtual unsigned getPriority() const;
+    virtual unsigned getSpillCost() const;
     virtual bool freeBufferedRows(bool critical);
 
 private:

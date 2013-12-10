@@ -7403,7 +7403,7 @@ public:
     }
 
 //interface roxiemem::IBufferedRowCallback
-    virtual unsigned getPriority() const
+    virtual unsigned getSpillCost() const
     {
         //Spill global sorts before grouped sorts
         if (rowMeta->isGrouped())

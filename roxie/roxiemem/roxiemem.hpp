@@ -80,12 +80,12 @@ interface IRowAllocatorCache : extends IInterface
 
 //This interface allows activities that hold on to large numbers of rows to be called back to try and free up
 //memory.  E.g., sorts can spill to disk, read ahead buffers can reduce the number being readahead etc.
-//Lower priority callbacks are called before higher priority.
+//Lower cost callbacks are called before higher cost.
 //The freeBufferedRows will call all callbacks with critical=false, before calling with critical=true
-const static unsigned RequiredPriority = (unsigned)-1;
+const static unsigned SpillAllCost = (unsigned)-1;
 interface IBufferedRowCallback
 {
-    virtual unsigned getPriority() const = 0; // lower values get freed up first.
+    virtual unsigned getSpillCost() const = 0; // lower values get freed up first.
     virtual bool freeBufferedRows(bool critical) = 0; // return true if and only if managed to free something.
 };
 
@@ -427,10 +427,10 @@ interface IRowResizeCallback
 interface IRowManager : extends IInterface
 {
     virtual void *allocate(memsize_t size, unsigned activityId) = 0;
-    virtual void *allocate(memsize_t _size, unsigned activityId, unsigned maxSpillPriority) = 0;
+    virtual void *allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost) = 0;
     virtual const char *cloneVString(const char *str) = 0;
     virtual const char *cloneVString(size32_t len, const char *str) = 0;
-    virtual bool resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillPriority, IRowResizeCallback & callback) = 0;
+    virtual bool resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback) = 0;
     virtual void resizeRow(memsize_t & capacity, void * & original, memsize_t copysize, memsize_t newsize, unsigned activityId) = 0;
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;
     virtual unsigned allocated() = 0;
@@ -441,7 +441,7 @@ interface IRowManager : extends IInterface
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
     virtual void reportLeaks() = 0;
     virtual void checkHeap() = 0;
-    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillPriority = RequiredPriority) = 0;
+    virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags, unsigned maxSpillCost = SpillAllCost) = 0;
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
@@ -453,7 +453,7 @@ interface IRowManager : extends IInterface
 
 //Allow various options to be configured
     virtual void setActivityTracking(bool val) = 0;
-    virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0, unsigned backgroundReleasePriority = RequiredPriority) = 0;  // First size is max memory, second is the limit which will trigger a background thread to reduce memory
+    virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0, unsigned backgroundReleaseCost = SpillAllCost) = 0;  // First size is max memory, second is the limit which will trigger a background thread to reduce memory
 
     //set the number of callbacks that successfully free some memory before deciding it is good enough.
     //Default is 1, use -1 to free all possible memory whenever an out of memory occurs
