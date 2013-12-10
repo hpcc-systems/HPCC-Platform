@@ -480,7 +480,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer); }
         virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract); }
         virtual char * getExpandLogicalName(const char * logicalName) { return ctx->getExpandLogicalName(logicalName); }
-        virtual void addWuException(const char * text, unsigned code, unsigned severity) { ctx->addWuException(text, code, severity); }
+        virtual void addWuException(const char * text, unsigned code, unsigned severity, const char * source) { ctx->addWuException(text, code, severity, source); }
         virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { ctx->addWuAssertFailure(code, text, filename, lineno, column, isAbort); }
         virtual IUserDescriptor *queryUserDescriptor() { return ctx->queryUserDescriptor(); }
         virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) { return ctx->resolveChildQuery(activityId, colocal); }
@@ -526,6 +526,7 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         {
             return ctx->getDaliServers();
         }
+        virtual IWorkUnit *updateWorkUnit() const { return ctx->updateWorkUnit(); }
    } graphCodeContext;
 
 protected:
