@@ -368,26 +368,32 @@ class Regression:
     def runQuery(self, cluster, query, report, cnt=1, publish=False,  th = 0):
         startTime = time.time()
         self.loggermutex.acquire()
-
         self.exitmutexes[th].acquire()
-        logging.debug("runQuery(cluster:'%s', query:'%s', task id:%d, publish: %d, thread id:%d)", cluster, query.ecl,  cnt, publish,  th,  extra={'taskId':cnt})
-        logging.warn("%3d. Test: %s " % (cnt, query.ecl))
-        ECLCC().makeArchive(query)
-        eclCmd = ECLcmd()
+
+        logging.debug("runQuery(cluster:", cluster, ", query:", query, ", report:", report, ", cnt:", cnt, ", publish:", publish, ")")
+        logging.warn("%3d. Test: %s" % (cnt, query.ecl))
+
         self.loggermutex.release()
         res = 0
+        wuid = None
+        if ECLCC().makeArchive(query):
+            eclCmd = ECLcmd()
 
-        if publish:
-            res = eclCmd.runCmd("publish", cluster, query, report[0],
-                              server=self.config.ip,
-                              username=self.config.username,
-                              password=self.config.password)
+            if publish:
+                res = eclCmd.runCmd("publish", cluster, query, report[0],
+                                  server=self.config.ip,
+                                  username=self.config.username,
+                                  password=self.config.password)
+            else:
+                res = eclCmd.runCmd("run", cluster, query, report[0],
+                                  server=self.config.ip,
+                                  username=self.config.username,
+                                  password=self.config.password)
+            wuid = query.getWuid()
         else:
-            res = eclCmd.runCmd("run", cluster, query, report[0],
-                              server=self.config.ip,
-                              username=self.config.username,
-                              password=self.config.password)
-        wuid = query.getWuid()
+            res = False
+            report[0].addResult(query)
+
         if wuid:
             url = "http://" + self.config.server
             url += "/WsWorkunits/WUInfo?Wuid="
