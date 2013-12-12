@@ -20,7 +20,9 @@
 import difflib
 import logging
 import os
+import traceback
 
+from ...util.util import isPositiveIntNum
 
 class ECLFile:
     ecl = None
@@ -35,6 +37,9 @@ class ECLFile:
     diff = ''
     wuid = None
     elapsTime = 0
+    jobname = ''
+    abortReason = ''
+    taskId = -1;
 
     def __init__(self, ecl, dir_a, dir_ex, dir_r):
         self.dir_ec = os.path.dirname(ecl)
@@ -42,11 +47,13 @@ class ECLFile:
         self.dir_r = dir_r
         self.dir_a = dir_a
         baseEcl = os.path.basename(ecl)
-        baseXml = os.path.splitext(baseEcl)[0] + '.xml'
+        self.basename = os.path.splitext(baseEcl)[0]
+        baseXml = self.basename + '.xml'
         self.ecl = baseEcl
         self.xml_e = baseXml
         self.xml_r = baseXml
         self.xml_a = 'archive_' + baseXml
+        self.jobname = self.basename
 
     def getExpected(self):
         return os.path.join(self.dir_ex, self.xml_e)
@@ -105,30 +112,53 @@ class ECLFile:
         # Standard string has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//no' + target.encode()
-        logging.debug("testExclusion (ecl:", self.ecl,", target:", target,", tag: ", tag, ")")
+        logging.debug("testExclusion (ecl:'%s', target: '%s', tag:'%s'", self.ecl, target, tag)
         eclText = open(self.getEcl(), 'rb')
+        retVal = False
         for line in eclText:
             if tag in line:
-                return True
-        return False
+                retVal = True
+                break
+        logging.debug("Exclude %s",  retVal)
+        return retVal
 
     def testPublish(self):
         # Standard string has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//publish'
-        logging.debug("testPublish (ecl:", self.ecl,", tag: ", tag, ")")
+        logging.debug("%3d. testPublish (ecl:'%s', tag:'%s'", self.taskId, self.ecl,  tag)
+        eclText = open(self.getEcl(), 'rb')
+        retVal = False
+        for line in eclText:
+            if tag in line:
+                retVal = True
+                break
+
+        logging.debug("%3d. Publish is %s",  self.taskId,  retVal)
+        return retVal
+
+    def getTimeout(self):
+        timeout = -1
+        # Standard string has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = b'//timeout'
+        logging.debug("%3d. getTimeout (ecl:'%s', tag:'%s')", self.taskId,  self.ecl, tag)
         eclText = open(self.getEcl(), 'rb')
         for line in eclText:
             if tag in line:
-                return True
-        return False
-
+                timeoutParts = line.split()
+                if len(timeoutParts) == 2:
+                    if isPositiveIntNum(timeoutParts[1]):
+                        timeout = int(timeoutParts[1])
+                break
+        logging.debug("%3d. Timeout is :%d sec",  self.taskId,  timeout)
+        return timeout
 
     def testResults(self):
         d = difflib.Differ()
         try:
-            logging.debug("EXP: " + self.getExpected())
-            logging.debug("REC: " + self.getResults())
+            logging.debug("%3d. EXP: " + self.getExpected(),  self.taskId )
+            logging.debug("%3d. REC: " + self.getResults(),  self.taskId )
             if not os.path.isfile(self.getExpected()):
                 self.diff += "KEY FILE NOT FOUND. " + self.getExpected()
                 raise IOError("KEY FILE NOT FOUND. " + self.getExpected())
@@ -143,12 +173,33 @@ class ECLFile:
                                              tofile=self.xml_r):
                 self.diff += line
         except Exception as e:
-            logging.critical(e)
+            logging.critical( e, extra={'taskId':self.taskId})
+            logging.critical("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
+            logging.critical("EXP: %s",  self.getExpected(),  extra={'taskId':self.taskId})
+            logging.critical("REC: %s",  self.getResults(),  extra={'taskId':self.taskId})
             return False
-
-        if not self.diff:
-            return True
-        return False
+        finally:
+            if not self.diff:
+                return True
+            return False
 
     def setElapsTime(self,  time):
         self.elapsTime = time
+
+    def setJobname(self,  timestamp):
+        self.jobname = self.basename +"-"+timestamp
+
+    def getJobname(self):
+        return self.jobname
+
+    def setAborReason(self,  reason):
+        self.abortReason = reason
+
+    def getAbortReason(self):
+        return self.abortReason
+
+    def setTaskId(self, taskId):
+        self.taskId = taskId
+
+    def getTaskId(self):
+        return self.taskId

@@ -17,6 +17,8 @@
             "hthor",
             "thor",
             "roxie"
-        ]
+        ],
+        "timeout":"600",
+        "maxAttemptCount":"3"
     }
 }
