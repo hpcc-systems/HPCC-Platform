@@ -36,9 +36,11 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/ESPQuery",
     "hpcc/WsWorkunits",
+    "hpcc/WsTopology",
     "hpcc/_TabContainerWidget",
     "hpcc/QuerySetLogicalFilesWidget",
     "hpcc/QuerySetErrorsWidget",
+    "hpcc/QueryTestWidget",
 
     "dojo/text!../templates/QuerySetDetailsWidget.html",
 
@@ -58,7 +60,7 @@ define([
 ], function (declare, lang, dom, domAttr, domClass, query, Memory, Observable, all,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                ESPWorkunit, ESPQuery, WsWorkunits, _TabContainerWidget, QuerySetLogicalFilesWidget, QuerySetErrorsWidget,
+                ESPWorkunit, ESPQuery, WsWorkunits, WsTopology, _TabContainerWidget, QuerySetLogicalFilesWidget, QuerySetErrorsWidget, QueryTestWidget,
                 template) {
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -79,7 +81,9 @@ define([
         superFilesTabLoaded: null,
         workunitsTab: null,
         workunitsTabLoaded: false,
-        loaded:false,
+        testPagesTab: null,
+        testPagesLoaded: false,
+        loaded: false,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -89,6 +93,7 @@ define([
             this.logicalFilesTab = registry.byId(this.id + "_QuerySetLogicalFiles");
             this.superFilesTab = registry.byId(this.id + "_QuerySetSuperFiles");
             this.workunitsTab = registry.byId(this.id + "_Workunit");
+            this.testPagesTab = registry.byId(this.id + "_TestPages");
         },
 
         //  Hitched actions  ---
@@ -152,6 +157,13 @@ define([
             } else if (currSel.id == this.logicalFilesTab.id && !this.logicalFilesTabLoaded) {
                 this.logicalFilesTabLoaded = true;
                 this.logicalFilesTab.init({
+                    QueryId: this.query.Id,
+                    QuerySet: this.query.QuerySet,
+                    Query: this.query
+                });
+            } else if (currSel.id == this.testPagesTab.id && !this.testPagesTabLoaded) {
+                this.testPagesTabLoaded = true;
+                this.testPagesTab.init({
                     QueryId: this.query.Id,
                     QuerySet: this.query.QuerySet,
                     Query: this.query

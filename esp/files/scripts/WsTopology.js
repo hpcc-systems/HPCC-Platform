@@ -30,6 +30,46 @@ define([
             });
             return ESPRequest.send("WsTopology", "TpServiceQuery", params);
         },
+        GetESPServiceBaseURL: function (type) {
+            var deferred = new Deferred();
+            var context = this;
+            this.TpServiceQuery({}).then(function (response) {
+                var retVal = "";
+                if (lang.exists("TpServiceQueryResponse.ServiceList.TpEspServers.TpEspServer", response)) {
+                    arrayUtil.forEach(response.TpServiceQueryResponse.ServiceList.TpEspServers.TpEspServer, function (item, idx) {
+                        if (lang.exists("TpBindings.TpBinding", item)) {
+                            arrayUtil.forEach(item.TpBindings.TpBinding, function (binding, idx) {
+                                if (binding.Name === type) {
+                                    retVal = ESPRequest.getURL({
+                                        port: binding.Port,
+                                        pathname: ""
+                                    });
+                                    return true;
+                                }
+                            });
+                        }
+                        if (retVal !== "")
+                            return true;
+                    });
+                }
+                deferred.resolve(retVal);
+            });
+            return deferred.promise;
+        },
+        WsEclURL: "",
+        GetWsEclURL: function (type) {
+            var deferred = new Deferred();
+            if (this.WsEclURL === "") {
+                var context = this;
+                this.GetESPServiceBaseURL("ws_ecl").then(function (response) {
+                    context.WsEclURL = response + "/WsEcl/";
+                    deferred.resolve(context.WsEclURL + type + "/query/");
+                });
+            } else {
+                deferred.resolve(this.WsEclURL + type + "/query/");
+            }
+            return deferred.promise;
+        },
         TpTargetClusterQuery: function (params) {
             return ESPRequest.send("WsTopology", "TpTargetClusterQuery", params);
         },
