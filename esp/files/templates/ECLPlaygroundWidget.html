@@ -16,7 +16,13 @@
         </div>
         <div id="${id}GraphControl" style="width: 240px;" data-dojo-props="minSize:120, region: 'right', splitter:true" data-dojo-type="GraphWidget">
         </div>
-        <div id="${id}_Results" style="height: 240px;" data-dojo-props="minSize:120, region: 'bottom', splitter:true" data-dojo-type="ECLPlaygroundResultsWidget">
+        <div id="${id}StackContainer" style="height: 240px;" data-dojo-props="minSize:120, region: 'bottom', splitter:true" data-dojo-type="dijit.layout.StackContainer">
+            <div id="${id}_ErrWarn" data-dojo-props="iconClass:'iconErrWarn', showTitle: false, disabled: true, title: 'Error/Warning(s)'" data-dojo-type="InfoGridWidget">
+            </div>
+            <div id="${id}_Results" data-dojo-props="iconClass:'iconResult', showTitle: false, selected: true, disabled: true, title: 'Result(s)'" data-dojo-type="ECLPlaygroundResultsWidget">
+            </div>
+            <div id="${id}_Visualize" data-dojo-props="iconClass:'iconChart', showTitle: false, disabled: true, title: 'Visualize'" data-dojo-type="VizWidget">
+            </div>
         </div>
         <div id="${id}SubmitPane" class="edgePanel" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.layout.ContentPane">
             <div style="display: inline-block; vertical-align: middle">
@@ -24,11 +30,12 @@
                 <label for="Target">Target:</label>
                 <div id="${id}TargetSelect" style="display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget">
                 </div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <div id="${id}StackController" data-dojo-props="containerId:'${id}StackContainer'" data-dojo-type="dijit.layout.StackController"></div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
             </div>
             <div style="float: right; display: inline-block; vertical-align: middle">
-                <div id="${id}State">
-                    ...
-                </div>
+                <a id="${id}State" target="_blank">...</a>
             </div>
         </div>
     </div>

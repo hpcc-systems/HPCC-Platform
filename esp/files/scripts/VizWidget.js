@@ -31,6 +31,7 @@ define([
 
     "hpcc/_Widget",
     "hpcc/ESPWorkunit",
+    "hpcc/WsWorkunits",
 
     "dojo/text!../templates/VizWidget.html",
 
@@ -46,13 +47,16 @@ define([
 ], function (declare, lang, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
                 registry, ContentPane, Select,
                 TableContainer,
-                _Widget, ESPWorkunit,
+                _Widget, ESPWorkunit, WsWorkunits,
                 template) {
     return declare("VizWidget", [_Widget], {
         templateString: template,
 
         borderContainer: null,
         grid: null,
+
+        foundMatchingViz: false,
+        foundMatchingFields: false,
 
         loaded: false,
 
@@ -109,27 +113,57 @@ define([
         onErrorClick: function (line, col) {
         },
 
+        reset: function () {
+            this.initalized = false;
+            this.params = null;
+            this.wu = null;
+            this.vizType = null;
+            this.vizSelect.set("options", []);
+        },
+
         init: function (params) {
             if (this.inherited(arguments))
                 return;
 
             this.loading = true;
-            if (params.viz) {
-                this.vizSelect.set("value", params.viz);
-            }
-            if (params.mapping) {
-                this.defaultSelection = ioQuery.queryToObject(params.mapping);
-            }
-            if (params.Wuid) {
-                this.wu = ESPWorkunit.Get(params.Wuid);
-                var context = this;
-                this.wu.fetchResults(function (response) {
-                    context.doFetchAllStructures().then(function (response) {
-                        context.loading = false;
-                        context.vizOnChange(context.vizSelect.get("value"), params.mapping);
+
+            var context = this;
+            WsWorkunits.GetVisualisations().then(function (vizResponse) {
+                context.vizSelect.set("options", vizResponse);
+                if (params.viz) {
+                    context.vizSelect.set("value", params.viz);
+                } else {
+                    context.vizSelect.set("value", vizResponse[0].value);
+                }
+                if (params.mapping) {
+                    context.defaultSelection = ioQuery.queryToObject(params.mapping);
+                }
+                if (params.Wuid) {
+                    context.wu = ESPWorkunit.Get(params.Wuid);
+                    context.wu.fetchResults(function (response) {
+                        var newSel = null;
+                        arrayUtil.forEach(response, function(item, idx) {
+                            arrayUtil.forEach(vizResponse, function(vizItem, idx) {
+                                if (vizItem.value.indexOf(item.Name) >= 0) {
+                                    newSel = vizItem.value;
+                                    return true;
+                                }
+                            });
+                            if (newSel) {
+                                return true;
+                            }
+                        });
+                        if (newSel) {
+                            context.foundMatchingViz = true;
+                            context.vizSelect.set("value", newSel);
+                        }
+                        context.doFetchAllStructures().then(function (response) {
+                            context.loading = false;
+                            context.vizOnChange(context.vizSelect.get("value"), params.mapping);
+                        });
                     });
-                });
-            }
+                }
+            });
         },
 
         doFetchStructure: function (result) {
@@ -184,12 +218,16 @@ define([
             var context = this;
             return this.refreshVizType(value).then(function (vizWidget) {
                 context.refreshMappings();
-                if (autoShow) {
+                if (autoShow || (context.foundMatchingViz && context.foundMatchingFields)) {
                     setTimeout(function () {
                         context.refreshData();
                     }, 1);
                 } else {
-                    context.mappingDropDown.openDropDown();
+                    var isVisible = document.getElementById(context.id).offsetHeight != 0;
+                    if (isVisible) {
+                        context.mappingDropDown.focus();
+                        context.mappingDropDown.loadAndOpenDropDown();
+                    }
                 }
             });
         },
@@ -202,8 +240,12 @@ define([
                 select.datasetMapping.sequence = sequence;
                 select.datasetMapping.result = this.wu.results[sequence];
                 select.datasetMapping.data = null;
+
+                this.foundMatchingFields = false;
+                var foundMatchingFieldCount = 0;
+                var fieldMappings = select.datasetMapping.getFieldMappings();
                 var context = this;
-                arrayUtil.forEach(select.datasetMapping.getFieldMappings(), function (fieldMapping, idx) {
+                arrayUtil.forEach(fieldMappings, function (fieldMapping, idx) {
                     var options = context.getFieldOptions(sequence);
                     fieldMapping.select.set("options", options);
 
@@ -218,6 +260,7 @@ define([
                     } else {
                         arrayUtil.forEach(fieldMapping.select.options, function (optionItem, idx) {
                             if (optionItem.label === fieldMapping.getID()) {
+                                ++foundMatchingFieldCount;
                                 value = optionItem.value;
                                 return true;
                             }
@@ -225,6 +268,9 @@ define([
                     }
                     fieldMapping.select.set("value", value);
                 });
+                if (foundMatchingFieldCount === fieldMappings.length) {
+                    this.foundMatchingFields = true;
+                }
             }
         },
 

@@ -182,6 +182,13 @@ define([
                 this.infoGrid.edit.styleRow(row);
             },
 
+            reset: function () {
+                this.initalized = false;
+                this.params = null;
+                this.wu = null;
+                this.loadExceptions([]);
+            },
+
             init: function (params) {
                 if (this.inherited(arguments))
                     return;

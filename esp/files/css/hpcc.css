@@ -151,7 +151,7 @@ hr.dashedLine {
     cursor: pointer;
 }
 
-.claro .hpccTitlebar .dijitToggleButton .dijitButtonNode {
+.claro .glow .dijitToggleButton .dijitButtonNode {
     background: none;
     border:none;
     box-shadow: none;
@@ -381,6 +381,24 @@ hr.dashedLine {
     width: 16px;
     height: 16px;
     display: inline-block;
+}
+
+.iconChart{
+    background-image: url("../img/chart.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconResult{
+    background-image: url("../img/result.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconErrWarn{
+    background-image: url("../img/errwarn.png"); 
+    width: 16px;
+    height: 16px;
 }
 /*###############################*/
 #appLayout {

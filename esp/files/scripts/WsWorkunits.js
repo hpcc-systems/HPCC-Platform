@@ -17,11 +17,12 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/array",
+    "dojo/_base/Deferred",
     "dojo/promise/all",
     "dojo/store/Observable",
     
     "hpcc/ESPRequest"
-], function (declare, lang, arrayUtil, all, Observable,
+], function (declare, lang, arrayUtil, Deferred, all, Observable,
     ESPRequest) {
 
     return {
@@ -236,6 +237,25 @@ define([
                     }
                 }
             });
+        },
+
+        //  Stub waiting for HPCC-10308
+        visualisations: [
+                {value: "DojoD3ScatterChart", label: "Scatter Chart"},
+                {value: "DojoD3BarChart", label:  "Bar Chart"},
+                {value: "DojoD3PieChart", label:  "Pie Chart"},
+                {value: "DojoD3DonutChart", label:  "Donut Chart"},
+                {value: "DojoD3Choropeth", label:  "Choropeth"},
+                {value: "DojoD3CooccurrenceGraph", label:  "Co-Occurrence Graph"},
+                {value: "DojoD3ForceDirectedGraph", label:  "Force Directed Graph"},
+                {value: "DojoD3Histogram", label:  "Histogram"}
+        ],
+        GetVisualisations:  function() {
+            var deferred = new Deferred();
+            if (this.visualisations) {
+                deferred.resolve(this.visualisations);
+            }
+            return deferred.promise;
         },
 
         //  Helpers  ---

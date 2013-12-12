@@ -74,10 +74,15 @@ define([
             var context = this;
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.targetSelectWidget = registry.byId(this.id + "TargetSelect");
+
+            this.stackController = registry.byId(this.id + "StackController");
+            this.stackContainer = registry.byId(this.id + "StackContainer");
+            this.errWarnWidget = registry.byId(this.id + "_ErrWarn");
             this.resultsWidget = registry.byId(this.id + "_Results");
             this.resultsWidget.onErrorClick = function (line, col) {
                 context.editorControl.setCursor(line, col);
             };
+            this.visualizeWidget = registry.byId(this.id + "_Visualize");
         },
 
         hideTitle: function () {
@@ -164,6 +169,11 @@ define([
             this.graphControl.clear();
             this.resultsWidget.clear();
             this.updateInput("State", null, "...");
+
+            this.stackContainer.selectChild(this.resultsWidget);
+            this.errWarnWidget.set("disabled", true);
+            this.resultsWidget.set("disabled", true);
+            this.visualizeWidget.set("disabled", true);
         },
 
         getTitle: function () {
@@ -177,6 +187,22 @@ define([
             var context = this;
             this.watching = this.wu.watch(function (name, oldValue, newValue) {
                 context.updateInput(name, oldValue, newValue);
+                if (name === "Exceptions" && newValue) {
+                    context.stackContainer.selectChild(context.errWarnWidget);
+                    context.errWarnWidget.set("disabled", false);
+                    context.errWarnWidget.reset();
+                    context.errWarnWidget.init({
+                        Wuid: context.wu.Wuid
+                    });
+                } else if (name === "Results" && newValue) {
+                    context.stackContainer.selectChild(context.resultsWidget);
+                    context.resultsWidget.set("disabled", false);
+                    context.visualizeWidget.set("disabled", false);
+                    context.visualizeWidget.reset();
+                    context.visualizeWidget.init({
+                        Wuid: context.wu.Wuid
+                    });
+                }
             });
             this.wu.monitor();
         },
@@ -191,9 +217,15 @@ define([
                     input.value = newValue;
                 }
             } else {
-                var div = query("div[id=" + this.id + name + "]", this.summaryForm)[0];
-                if (div) {
-                    div.innerHTML = newValue;
+                var a = query("a[id=" + this.id + name + "]", this.summaryForm)[0];
+                if (a) {
+                    a.innerHTML = newValue;
+                    if (newValue === "...") {
+                        a.style.visibility = "hidden"
+                    } else if (this.wu && this.wu.Wuid) {
+                        a.style.visibility = "visible"
+                        a.href = "/esp/files/stub.htm?Widget=WUDetailsWidget&Wuid=" + this.wu.Wuid;
+                    }
                 }
             }
             if (name === "hasCompleted") {

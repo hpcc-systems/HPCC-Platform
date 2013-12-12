@@ -295,13 +295,13 @@ define([
                     },
                     ErrorCount: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='../files/img/error.png'>";
+                            node.innerHTML = "<img src='../files/img/errwarn.png'>";
                         },
                         width: 20,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
-                                return ("<img src='../files/img/error.png'>");
+                                return ("<img src='../files/img/errwarn.png'>");
                             }
                             return "";
                         }
