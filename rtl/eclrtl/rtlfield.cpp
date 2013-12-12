@@ -447,11 +447,11 @@ size32_t RtlVarStringTypeInfo::build(ARowBuilder &builder, size32_t offset, cons
     size32_t size;
     char *value;
     source.getStringResult(field, size, value);
-    byte *dest = builder.getSelf()+offset;
     if (!isFixedSize())
     {
         builder.ensureCapacity(offset+size+1, field->name->str());
         // See notes re EBCDIC conversion in RtlStringTypeInfo code
+        byte *dest = builder.getSelf()+offset;
         memcpy(dest, value, size);
         dest[size] = '\0';
         offset += size+1;
@@ -459,6 +459,7 @@ size32_t RtlVarStringTypeInfo::build(ARowBuilder &builder, size32_t offset, cons
     else
     {
         builder.ensureCapacity(offset+length, field->name->str());
+        byte *dest = builder.getSelf()+offset;
         rtlStrToVStr(length, dest, size, value);
         offset += length;
     }
@@ -526,7 +527,6 @@ size32_t RtlQStringTypeInfo::build(ARowBuilder &builder, size32_t offset, const 
     size32_t size;
     char *value;
     source.getStringResult(field, size, value);
-    byte *dest = builder.getSelf()+offset;
     if (!isFixedSize())
     {
         size32_t sizeInBytes = rtlQStrSize(size) + sizeof(size32_t);
@@ -887,7 +887,7 @@ inline size32_t processFields(const RtlFieldInfo * const * cur, const byte * sel
     return offset;
 }
 
-inline size32_t processFields(const RtlFieldInfo * const * cur, ARowBuilder &builder, size32_t offset, IFieldSource &source)
+inline size32_t buildFields(const RtlFieldInfo * const * cur, ARowBuilder &builder, size32_t offset, IFieldSource &source)
 {
     loop
     {
@@ -952,7 +952,7 @@ size32_t RtlRecordTypeInfo::toXML(const byte * self, const byte * selfrow, const
 size32_t RtlRecordTypeInfo::build(ARowBuilder &builder, size32_t offset, const RtlFieldInfo *field, IFieldSource &source) const
 {
     source.processBeginRow(field);
-    offset = processFields(fields, builder, offset, source);
+    offset = buildFields(fields, builder, offset, source);
     source.processEndRow(field);
     return offset;
 }

@@ -870,13 +870,9 @@ public:
     {
         // You don't really know what size Py_UNICODE is (varies from system to system), so go via utf8
         unsigned unicodeChars;
-        char *unicode;
-        rtlUnicodeToUtf8X(unicodeChars, unicode, len, value);
-        size32_t sizeBytes = rtlUtf8Size(unicodeChars, unicode);
-        PyObject *vval = PyUnicode_FromStringAndSize(unicode, sizeBytes);   // NOTE - requires size in bytes not chars
-        checkPythonError();
-        addArg( vval);
-        rtlFree(unicode);  // MORE - this will leak on exceptions
+        rtlDataAttr unicode;
+        rtlUnicodeToUtf8X(unicodeChars, unicode.refstr(), len, value);
+        processUtf8(unicodeChars, unicode.getstr(), field);
     }
     virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
     {
@@ -1293,7 +1289,6 @@ protected:
         Py_DECREF(arg);
         checkPythonError();
     }
-    StringBuffer delayedScript;
 };
 
 class Python27EmbedImportContext : public Python27EmbedContextBase

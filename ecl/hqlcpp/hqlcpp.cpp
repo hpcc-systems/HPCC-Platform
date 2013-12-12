@@ -11630,11 +11630,11 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             bindFunc = bindDataParamId;
             break;
         case type_row:
-            bindFunc = bindRowParamId; // more
+            bindFunc = bindRowParamId;
             break;
         case type_table:
         case type_groupedtable:
-            bindFunc = bindDatasetParamId; // more
+            bindFunc = bindDatasetParamId;
             break;
         case type_set:
         {
@@ -11731,8 +11731,6 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         funcctx.addGroupPass(pass);
     }
     expandFunctionPrototype(proto, funcdef);
-//    BoundRow * row = bindSelf(deserializectx, dataset, "crSelf");
-
 
     if (bodyCode->getOperator() == no_embedbody)
     {

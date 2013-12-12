@@ -64,3 +64,12 @@ ENDEMBED;
 
 output(streamedNames(d'AA', u'là'));
 output (testGenerator(10));
+
+// Test Python code returning named tuples
+childrec tnamed(string s) := EMBED(Python)
+  import collections;
+  childrec = collections.namedtuple("childrec", "value,name")
+  return childrec(1,s)
+ENDEMBED;
+
+output(tnamed('Yo').name);
