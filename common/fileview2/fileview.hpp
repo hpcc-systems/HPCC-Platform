@@ -60,7 +60,7 @@ enum ResultSetType
 };
 
 
-
+interface IXmlWriter;
 
 interface IResultSetMetaData : extends IInterface
 {
@@ -87,6 +87,7 @@ interface IResultSetMetaData : extends IInterface
 
 typedef double xdouble;
 interface INewResultSet;
+interface IXmlWriter;
 interface IResultSetCursor : extends IInterface
 {
     virtual bool absolute(__int64 row) = 0;
@@ -120,6 +121,10 @@ interface IResultSetCursor : extends IInterface
     virtual IStringVal & getXml(IStringVal & ret, int columnIndex) = 0;
     virtual IStringVal & getXmlRow(IStringVal & ret) = 0;
     virtual IStringVal & getXmlItem(IStringVal & ret) = 0;
+    virtual void beginWriteXmlRows(IXmlWriter & writer) = 0;
+    virtual void writeXmlRow(IXmlWriter & writer) = 0;
+    virtual void endWriteXmlRows(IXmlWriter & writer) = 0;
+    virtual void writeXmlItem(IXmlWriter & writer) = 0;
     virtual __int64 getNumRows() const = 0;
 };
 
@@ -186,6 +191,9 @@ extern FILEVIEW_API int findResultSetColumn(const INewResultSet * results, const
 
 extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
 extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
+extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0);
+extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
+extern FILEVIEW_API unsigned writeResultXml(IXmlWriter & writer, INewResultSet * cursor,  const char* name, unsigned start=0, unsigned count=0, const char * schemaName=NULL);
 
 extern FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start=0, unsigned count=0);
 extern FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * cursor, unsigned start=0, unsigned count=0);
@@ -194,7 +202,9 @@ extern FILEVIEW_API unsigned getResultBin(MemoryBuffer & ret, INewResultSet * cu
 #define WorkUnitXML_NoRoot          0x0002
 #define WorkUnitXML_SeverityTags    0x0004
 
+extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const char *password, const IConstWorkUnit *cw, IXmlWriter &writer, unsigned flags, WUExceptionSeverity minSeverity, const char *rootTag);
 extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, WUExceptionSeverity minSeverity=ExceptionSeverityInformation);
+extern FILEVIEW_API IStringVal& getFullWorkUnitResultsJSON(const char *user, const char *pw, const IConstWorkUnit *wu, IStringVal &str, unsigned flags=0, WUExceptionSeverity minSeverity=ExceptionSeverityInformation);
 
 extern FILEVIEW_API void startRemoteDataSourceServer(const char * queue, const char * cluster);
 extern FILEVIEW_API void stopRemoteDataSourceServer();

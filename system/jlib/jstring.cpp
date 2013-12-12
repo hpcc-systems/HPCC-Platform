@@ -1953,7 +1953,7 @@ jlib_decl StringBuffer &appendfJSONName(StringBuffer &s, const char *format, ...
 }
 
 static char hexchar[] = "0123456789ABCDEF";
-jlib_decl StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned len, const void *_value)
+jlib_decl StringBuffer &appendJSONDataValue(StringBuffer& s, const char *name, unsigned len, const void *_value)
 {
     appendJSONNameOrDelimit(s, name);
     s.append('"');

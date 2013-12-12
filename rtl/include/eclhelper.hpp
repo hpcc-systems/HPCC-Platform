@@ -168,6 +168,8 @@ public:
     virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname) = 0;
     virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname) = 0;
     virtual void outputQString(unsigned len, const char *field, const char *fieldname) = 0;
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren) = 0;
+    virtual void outputEndDataset(const char *dsname) = 0;
     virtual void outputBeginNested(const char *fieldname, bool nestChildren) = 0;
     virtual void outputEndNested(const char *fieldname) = 0;
     virtual void outputSetAll() = 0;

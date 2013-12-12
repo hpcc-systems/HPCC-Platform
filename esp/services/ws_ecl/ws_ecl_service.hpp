@@ -168,7 +168,7 @@ public:
     int onSubmitQueryOutput(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsEclWuInfo &wsinfo, const char *format);
     int onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
 
-    int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, const char *viewname=NULL, const char *xsltname=NULL);
+    int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, TextMarkupFormat fmt=MarkupFmt_XML, const char *viewname=NULL, const char *xsltname=NULL);
 
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
     void handleJSONPost(CHttpRequest *request, CHttpResponse *response);

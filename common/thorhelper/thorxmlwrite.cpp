@@ -241,8 +241,22 @@ void CommonXmlWriter::outputUtf8(unsigned len, const char *field, const char *fi
     }
 }
 
+void CommonXmlWriter::outputBeginDataset(const char *dsname, bool nestChildren)
+{
+    outputBeginNested("Dataset", nestChildren, false); //no indent for backward compatibility
+    if (!dsname || !*dsname)
+        return;
+    out.append(" name='"); //single quote for backward compatibility
+    outputXmlUtf8(strlen(dsname), dsname, NULL, out);
+    out.append("'");
+}
 
-void CommonXmlWriter::outputBeginNested(const char *fieldname, bool nestChildren)
+void CommonXmlWriter::outputEndDataset(const char *dsname)
+{
+    outputEndNested("Dataset", false);
+}
+
+void CommonXmlWriter::outputBeginNested(const char *fieldname, bool nestChildren, bool doIndent)
 {
     const char * sep = strchr(fieldname, '/');
     if (sep)
@@ -254,16 +268,22 @@ void CommonXmlWriter::outputBeginNested(const char *fieldname, bool nestChildren
     }
 
     closeTag();
-    if (!nestLimit)
+    if (!nestLimit && doIndent)
         out.pad(indent);
     out.append('<').append(fieldname);
-    indent += 1;
+    if (doIndent)
+        indent += 1;
     if (!nestChildren && !nestLimit)
         nestLimit = indent;
     tagClosed = false;
 }
 
-void CommonXmlWriter::outputEndNested(const char *fieldname)
+void CommonXmlWriter::outputBeginNested(const char *fieldname, bool nestChildren)
+{
+    outputBeginNested(fieldname, nestChildren, true);
+}
+
+void CommonXmlWriter::outputEndNested(const char *fieldname, bool doIndent)
 {
     const char * sep = strchr(fieldname, '/');
     if (sep)
@@ -289,11 +309,16 @@ void CommonXmlWriter::outputEndNested(const char *fieldname)
     }
     if (indent==nestLimit)
         nestLimit = 0;
-    indent -= 1;
+    if (doIndent)
+        indent -= 1;
     if (!nestLimit)
         out.newline();
 }
 
+void CommonXmlWriter::outputEndNested(const char *fieldname)
+{
+    outputEndNested(fieldname, true);
+}
 void CommonXmlWriter::outputSetAll()
 {
     closeTag();
@@ -351,23 +376,26 @@ void CommonJsonWriter::checkDelimit(int inc)
     checkFormat(true, true, inc);
 }
 
-const char *CommonJsonWriter::checkItemName(CJsonWriterItem *item, const char *name)
+
+const char *CommonJsonWriter::checkItemName(CJsonWriterItem *item, const char *name, bool simpleType)
 {
+    if (simpleType && (!name || !*name))
+        name = "#value"; //xml mixed content
     if (item && item->depth==0 && strieq(item->name, name))
         return NULL;
     return name;
 }
 
-const char *CommonJsonWriter::checkItemName(const char *name)
+const char *CommonJsonWriter::checkItemName(const char *name, bool simpleType)
 {
     CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
-    return checkItemName(item, name);
+    return checkItemName(item, name, simpleType);
 }
 
 const char *CommonJsonWriter::checkItemNameBeginNested(const char *name)
 {
     CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
-    name = checkItemName(item, name);
+    name = checkItemName(item, name, false);
     if (item)
         item->depth++;
     return name;
@@ -378,7 +406,7 @@ const char *CommonJsonWriter::checkItemNameEndNested(const char *name)
     CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
     if (item)
         item->depth--;
-    return checkItemName(item, name);
+    return checkItemName(item, name, false);
 }
 
 void CommonJsonWriter::outputQuoted(const char *text)
@@ -394,7 +422,7 @@ void CommonJsonWriter::outputString(unsigned len, const char *field, const char 
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
     checkDelimit();
-    appendJSONValue(out, checkItemName(fieldname), len, field);
+    appendJSONStringValue(out, checkItemName(fieldname), len, field, true);
 }
 
 void CommonJsonWriter::outputQString(unsigned len, const char *field, const char *fieldname)
@@ -418,7 +446,7 @@ void CommonJsonWriter::outputBool(bool field, const char *fieldname)
 void CommonJsonWriter::outputData(unsigned len, const void *field, const char *fieldname)
 {
     checkDelimit();
-    appendJSONValue(out, checkItemName(fieldname), len, field);
+    appendJSONDataValue(out, checkItemName(fieldname), len, field);
 }
 
 void CommonJsonWriter::outputInt(__int64 field, const char *fieldname)
@@ -468,7 +496,7 @@ void CommonJsonWriter::outputUtf8(unsigned len, const char *field, const char *f
     if ((flags & XWFopt) && (rtlTrimUtf8StrLen(len, field) == 0))
         return;
     checkDelimit();
-    appendJSONValue(out, checkItemName(fieldname), len, field);
+    appendJSONStringValue(out, checkItemName(fieldname), len, field, true);
 }
 
 void CommonJsonWriter::outputBeginArray(const char *fieldname)
@@ -499,8 +527,23 @@ void CommonJsonWriter::outputEndArray(const char *fieldname)
     }
 }
 
+void CommonJsonWriter::outputBeginDataset(const char *dsname, bool nestChildren)
+{
+    if (dsname && *dsname)
+        outputBeginNested(dsname, nestChildren);
+}
+
+void CommonJsonWriter::outputEndDataset(const char *dsname)
+{
+    if (dsname && *dsname)
+        outputEndNested(dsname);
+}
+
 void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildren)
 {
+    if (!fieldname || !*fieldname)
+        return;
+
     flush(false);
     checkFormat(true, false, 1);
     fieldname = checkItemNameBeginNested(fieldname);
@@ -523,6 +566,9 @@ void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildre
 
 void CommonJsonWriter::outputEndNested(const char *fieldname)
 {
+    if (!fieldname || !*fieldname)
+        return;
+
     flush(false);
     checkFormat(false, true, -1);
     fieldname = checkItemNameEndNested(fieldname);
@@ -544,7 +590,7 @@ void CommonJsonWriter::outputSetAll()
 {
     flush(false);
     checkDelimit();
-    appendJSONValue(out, NULL, "All");
+    appendJSONValue(out, "All", true);
 }
 
 //=====================================================================================

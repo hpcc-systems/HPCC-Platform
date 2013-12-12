@@ -1085,7 +1085,7 @@ void FlushingStringBuffer::incrementRowCount()
 void FlushingJsonBuffer::encodeXML(const char *x, unsigned flags, unsigned len, bool utf8)
 {
     CriticalBlock b(crit);
-    appendJSONValue(s, NULL, len, x);
+    appendJSONStringValue(s, NULL, len, x, true);
 }
 
 void FlushingJsonBuffer::startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend)
