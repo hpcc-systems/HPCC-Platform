@@ -1279,13 +1279,15 @@ private:
             splitFilename(thisFile->queryFilename(), NULL, NULL, &tail, &tail);
             StringBuffer destname(destdir);
             destname.append(PATHSEPCHAR).append(tail);
+            Owned<IFile> targetFile = createIFile(destname);
             if (thisFile->isDirectory()==foundYes)
             {
+                if (!optDryRun)
+                    targetFile->createDirectory();
                 copyDirectory(thisFile, destname);
             }
             else
             {
-                Owned<IFile> targetFile = createIFile(destname);
                 if (optDryRun || optVerbose)
                     printf("cp %s %s\n", thisFile->queryFilename(), targetFile->queryFilename());
                 if (!optDryRun)
