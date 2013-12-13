@@ -993,7 +993,7 @@ PyObject* ECLDatasetIterator_iternext(PyObject *self)
     ECLDatasetIterator *p = (ECLDatasetIterator *)self;
     if (p->val)
     {
-        const byte *nextRow = (const byte *) p->val->nextRow();
+        const byte *nextRow = (const byte *) p->val->ungroupedNextRow();
         if (!nextRow)
         {
             p->val->stop();

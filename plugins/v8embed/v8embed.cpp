@@ -229,7 +229,7 @@ class JSObjectBuilder : public CInterfaceOf<IFieldProcessor>
 {
 public:
     JSObjectBuilder(const RtlFieldInfo *_outerRow)
-    : outerRow(_outerRow)
+    : outerRow(_outerRow), idx(0), inDataset(false)
     {
     }
     virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field)
@@ -300,17 +300,22 @@ public:
     virtual bool processBeginSet(const RtlFieldInfo * field)
     {
         push();
+        inDataset = true;
+        obj = v8::Array::New();
         return true;
     }
     virtual bool processBeginDataset(const RtlFieldInfo * field)
     {
         push();
+        inDataset = true;
+        obj = v8::Array::New();
         return true;
     }
     virtual bool processBeginRow(const RtlFieldInfo * field)
     {
         if (field != outerRow)
             push();
+        obj = v8::Object::New();
         return true;
     }
     virtual void processEndSet(const RtlFieldInfo * field)
@@ -335,23 +340,37 @@ public:
 protected:
     void push()
     {
+        idxStack.append(idx);
         stack.push_back(obj);
+        dsStack.append(inDataset);
+        inDataset = false;
+        idx = 0;
+        obj.Clear();
     }
     void pop(const RtlFieldInfo * field)
     {
-        addProp(field, obj);
+        inDataset = dsStack.pop();
+        idx = idxStack.pop();
+        v8::Local<v8::Object> row = obj;
         obj = stack.back();
         stack.pop_back();
+        addProp(field, row);
     }
     void addProp(const RtlFieldInfo * field, v8::Handle<v8::Value> value)
     {
-        if (obj.IsEmpty())
-            obj = v8::Object::New();
-        obj->Set(v8::String::New(field->name->str()), value);
+        assertex(!obj.IsEmpty());
+        if (inDataset)
+            obj->Set(idx++, value);
+        else
+            obj->Set(v8::String::New(field->name->str()), value);
     }
     v8::Local<v8::Object> obj;
     std::vector< v8::Local<v8::Object> > stack;
     const RtlFieldInfo *outerRow;
+    BoolArray dsStack;
+    IntArray idxStack;
+    int idx;
+    bool inDataset;
 };
 
 static size32_t getRowResult(v8::Handle<v8::Value> result, ARowBuilder &builder)
@@ -618,7 +637,22 @@ public:
     }
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
     {
-        UNIMPLEMENTED;
+        v8::HandleScope handle_scope;
+        v8::Local<v8::Array> array = v8::Array::New();
+        const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        int idx = 0;
+        loop
+        {
+            const byte *row = (const byte *) val->ungroupedNextRow();
+            if (!row)
+                break;
+            JSObjectBuilder objBuilder(&dummyField);
+            typeInfo->process(row, row, &dummyField, objBuilder); // Creates a JS object from the incoming ECL row
+            array->Set(idx++, objBuilder.getObject());
+        }
+        context->Global()->Set(v8::String::New(name), array);
     }
 
     virtual bool getBooleanResult()
