@@ -73,7 +73,7 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.query = ESPQuery.Get(params.QueryId);
+            this.query = ESPQuery.Get(params.QuerySet, params.QueryId);
 
             this.selectChild(this.soapTab, true);
         },

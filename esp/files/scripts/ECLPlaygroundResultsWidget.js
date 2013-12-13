@@ -22,7 +22,9 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPWorkunit",
+    "hpcc/ESPQuery",
     "hpcc/ResultWidget",
+    "hpcc/FullResultWidget",
     "hpcc/LFDetailsWidget",
     "hpcc/VizWidget",
 
@@ -31,7 +33,7 @@ define([
     "dijit/layout/TabContainer"
 ], function (declare, lang, dom, 
                 registry,
-                _TabContainerWidget, ESPWorkunit, ResultWidget, LFDetailsWidget, VizWidget,
+                _TabContainerWidget, ESPWorkunit, ESPQuery, ResultWidget, FullResultWidget, LFDetailsWidget, VizWidget,
                 template) {
     return declare("ECLPlaygroundResultsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -59,6 +61,12 @@ define([
                         title: title,
                         params: params
                     });
+                } else if (lang.exists("QuerySetId", params) && lang.exists("Id", params)) {
+                    retVal = new FullResultWidget({
+                        id: id,
+                        title: title,
+                        params: params
+                    });
                 }
                 this.addChild(retVal);
             }
@@ -69,11 +77,11 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            var context = this;
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
 
                 var monitorCount = 4;
-                var context = this;
                 this.wu.monitor(function () {
                     if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
                         context.wu.getInfo({
@@ -97,6 +105,23 @@ define([
                         }
                     }
                 });
+            } else if (params.QuerySetId && params.Id) {
+                this.query = ESPQuery.Get(params.QuerySetId, params.Id);
+                this.query.SubmitXML(params.RequestXml).then(function (response) {
+                    var firstTab = true;
+                    for (var key in response) {
+                        var tab = context.ensurePane(context.id + "_result" + key, key, {
+                            QuerySetId: params.QuerySetId,
+                            Id: params.Id,
+                            FullResult: response[key]
+                        });
+                        if (firstTab) {
+                            context.initTab();
+                        } else {
+                            firstTab = false;
+                        }
+                    }
+                });
             }
         },
 
@@ -106,13 +131,15 @@ define([
             this.initalized = false;
         },
 
-        refresh: function (wu) {
-            if (this.workunit != wu) {
+        refresh: function (params) {
+            if (params.Wuid) {
+                if (this.wu.Wuid != params.Wuid) {
+                    this.clear();
+                    this.init(params);
+                }
+            } else if (params.QuerySetId && params.Id) {
                 this.clear();
-                this.workunit = wu;
-                this.init({
-                    Wuid: wu.Wuid
-                });
+                this.init(params);
             }
         }
     });

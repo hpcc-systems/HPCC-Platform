@@ -23,12 +23,16 @@ define([
     "dojo/store/Observable",
     "dojo/Stateful",
 
+    "dojox/xml/parser",
+
     "hpcc/WsWorkunits",
+    "hpcc/WsEcl",
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit"
 ], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable, Stateful,
-        WsWorkunits, ESPRequest, ESPUtil, ESPWorkunit) {
+        parser,
+        WsWorkunits, WsEcl, ESPRequest, ESPUtil, ESPWorkunit) {
 
     var _logicalFiles = {};
 
@@ -37,14 +41,18 @@ define([
         action: "WUListQueries",
         responseQualifier: "WUListQueriesResponse.QuerysetQueries.QuerySetQuery",
         responseTotalQualifier: "WUListQueriesResponse.NumberOfQueries",
-        idProperty: "Id",
+        idProperty: "__hpcc_id",
         startProperty: "PageStartFrom",
         countProperty: "NumberOfQueries",
 
         _watched: [],
-        create: function (id) {
+
+        create: function (__hpcc_id) {
+            var tmp = __hpcc_id.split(":");
             return new Query({
-                Id: id
+                __hpcc_id: __hpcc_id,
+                QuerySetId: tmp[0],
+                Id: tmp[1]
             });
         },
         update: function (id, item) {
@@ -63,6 +71,7 @@ define([
         preProcessRow: function (item, request, query, options) {
             var ErrorCount = 0;
             var Suspended = false;
+            item[this.idProperty] = item.QuerySetId + ":" + item.Id;
             if (lang.exists("Clusters", item)) {
                 arrayUtil.forEach(item.Clusters.ClusterQueryState, function(cqs, idx){
                     if (lang.exists("Errors", cqs) && cqs.Errors != null && cqs.Errors != "" && cqs.State == "Suspended"){
@@ -84,6 +93,7 @@ define([
             if (args) {
                 declare.safeMixin(this, args);
             }
+            this.queries = {};
         },
         refresh: function (full) {
             return this.getDetails();
@@ -103,6 +113,24 @@ define([
         },
         getWorkunit: function() {
             return ESPWorkunit.Get(this.Wuid);
+        },
+        SubmitXML: function (xml) {
+            var deferred = new Deferred();
+            if (this.queries[xml]) {
+                deferred.resolve(this.queries[xml]);
+            } else {
+                var domXml = parser.parse(xml);
+                var query = {};
+                arrayUtil.forEach(domXml.firstChild.childNodes, function (item, idx) {
+                    query[item.tagName] = item.textContent;
+                });
+                var context = this;
+                WsEcl.Submit(this.QuerySetId, this.Id, query).then(function (response) {
+                    context.queries[xml] = response;
+                    deferred.resolve(response);
+                });
+            }
+            return deferred.promise;
         },
         doAction: function (action) {
             var context = this;
@@ -126,9 +154,21 @@ define([
     });
 
     return {
-        Get: function (Id) {
+        Get: function (QuerySetId, Id) {
             var store = new Store();
-            return store.get(Id);
+            return store.get(QuerySetId + ":" + Id);
+        },
+
+        GetFromRequestXML: function (QuerySetId, requestXml) {
+            try {
+                var domXml = parser.parse(requestXml);
+                //  Not all XML is a "Request"  ---
+                if (lang.exists("firstChild.tagName", domXml) && domXml.firstChild.tagName.indexOf("Request") === domXml.firstChild.tagName.length - 7) {
+                    return this.Get(QuerySetId, domXml.firstChild.tagName.slice(0, -7));
+                }
+            } catch (e) {
+            }
+            return null;
         },
 
         CreateQueryStore: function (options) {

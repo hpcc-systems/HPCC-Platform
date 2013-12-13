@@ -31,11 +31,12 @@ define([
     "hpcc/GraphWidget",
     "hpcc/ECLPlaygroundResultsWidget",
     "hpcc/ESPWorkunit",
+    "hpcc/ESPQuery",
 
     "dojo/text!../templates/ECLPlaygroundWidget.html"
 ], function (declare, xhr, lang, dom, query,
                 BorderContainer, TabContainer, ContentPane, registry,
-                _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit,
+                _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit, ESPQuery,
                 template) {
     return declare("ECLPlaygroundWidget", [_Widget], {
         templateString: template,
@@ -272,25 +273,41 @@ define([
             if (lang.exists("Exceptions.ECLException", this.wu)) {
                 this.editorControl.setErrors(this.wu.Exceptions.ECLException);
             }
-            this.resultsWidget.refresh(this.wu);
+            this.resultsWidget.refresh({
+                Wuid: this.wu.Wuid
+            });
         },
 
         _onSubmit: function (evt) {
             this.resetPage();
-            var context = this;
-            this.wu = ESPWorkunit.Create({
-                onCreate: function () {
-                    context.wu.update({
-                        QueryText: context.editorControl.getText()
-                    });
-                    context.watchWU();
-                },
-                onUpdate: function () {
-                    context.wu.submit(context.targetSelectWidget.getValue());
-                },
-                onSubmit: function () {
-                }
-            });
+
+            var text = this.editorControl.getText();
+            var espQuery = ESPQuery.GetFromRequestXML(this.targetSelectWidget.get("value"), text);
+
+            if (espQuery) {
+                this.stackContainer.selectChild(this.resultsWidget);
+                this.resultsWidget.set("disabled", false);
+                this.resultsWidget.refresh({
+                    QuerySetId: espQuery.QuerySetId,
+                    Id: espQuery.Id,
+                    RequestXml: text
+                });
+            } else {
+                var context = this;
+                this.wu = ESPWorkunit.Create({
+                    onCreate: function () {
+                        context.wu.update({
+                            QueryText: text
+                        });
+                        context.watchWU();
+                    },
+                    onUpdate: function () {
+                        context.wu.submit(context.targetSelectWidget.getValue());
+                    },
+                    onSubmit: function () {
+                    }
+                });
+            }
         }
     });
 });

@@ -207,9 +207,10 @@ define([
     _StoreSingletons = [];
     return {
         getURL: function (_params) {
+            var requestHelper = new RequestHelper();
             var params = lang.mixin({
                 protocol: location.protocol,
-                hostname: location.hostname,
+                hostname: requestHelper.serverIP ? requestHelper.serverIP : location.hostname,
                 port: location.port,
                 pathname: ""
             }, _params);
