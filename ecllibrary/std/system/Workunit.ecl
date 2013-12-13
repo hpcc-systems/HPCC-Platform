@@ -18,6 +18,21 @@ EXPORT FileWrittenRecord := lib_workunitservices.WsFileWritten;
 
 EXPORT TimingRecord := lib_workunitservices.WsTiming;
 
+/**
+The statistic record exported from the plugin has the following format:
+
+WsStatistic := RECORD
+    unsigned8 value;
+    unsigned8 count;
+    unsigned8 maxValue;
+    string creator;
+    string scope;
+    string name;
+    string description;
+    string unit;
+END;
+*/
+
 EXPORT StatisticRecord := lib_workunitservices.WsStatistic;
 
 /*
