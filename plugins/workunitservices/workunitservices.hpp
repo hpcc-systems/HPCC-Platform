@@ -67,7 +67,7 @@ WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitMessages( ICodeContext
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitFilesRead( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitFilesWritten( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
 WORKUNITSERVICES_API void WORKUNITSERVICES_CALL wsWorkunitTimings( ICodeContext *ctx, size32_t & __lenResult, void * & __result, const char *wuid );
-WORKUNITSERVICES_API IRowStream * WORKUNITSERVICES_CALL wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid );
+WORKUNITSERVICES_API IRowStream * WORKUNITSERVICES_CALL wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities);
 
 
 }
