@@ -26,9 +26,9 @@ define([
     "hpcc/WsWorkunits",
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
-    "hpcc/ESPResult"
+    "hpcc/ESPWorkunit"
 ], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable, Stateful,
-        WsWorkunits, ESPRequest, ESPUtil, ESPResult) {
+        WsWorkunits, ESPRequest, ESPUtil, ESPWorkunit) {
 
     var _logicalFiles = {};
 
@@ -101,7 +101,9 @@ define([
                 }
             });
         },
-
+        getWorkunit: function() {
+            return ESPWorkunit.Get(this.Wuid);
+        },
         doAction: function (action) {
             var context = this;
             return WsWorkunits.WUQuerysetQueryAction([{
