@@ -38,7 +38,7 @@ if __name__ == "__main__":
     description = 'HPCC Platform Regression suite'
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('--version', '-v', action='version',
-                        version='%(prog)s 0.0.3')
+                        version='%(prog)s 0.0.4')
     parser.add_argument('--config', help="Config file to use.",
                         nargs='?', default="regress.json")
     parser.add_argument('--loglevel', help="Set the log level.",
@@ -117,7 +117,7 @@ if __name__ == "__main__":
             regress = Regression(args.config, args.loglevel, suiteDir,  timeout,  args.pq)
             regress.bootstrap(args.cluster)
             if 'setup' in args.cluster:
-                regress.runSuite('setup', regress.setup)
+                regress.runSuite('setup', regress.Setup())
             else:
                 if  args.pq :
                     regress.runSuiteP(args.cluster, regress.suites[args.cluster])

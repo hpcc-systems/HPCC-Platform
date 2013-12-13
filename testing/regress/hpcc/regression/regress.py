@@ -114,7 +114,7 @@ class Regression:
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
-        self.setup = self.Setup()
+
         if cluster in self.config.Clusters:
             self.createSuite(cluster)
             self.maxtasks = len(self.suites[cluster].getSuite())
