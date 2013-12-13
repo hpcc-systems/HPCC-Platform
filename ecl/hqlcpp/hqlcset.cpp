@@ -1552,8 +1552,6 @@ IHqlCppSetCursor * HqlCppTranslator::createSetSelector(BuildCtx & ctx, IHqlExpre
 
 IHqlCppDatasetCursor * HqlCppTranslator::createDatasetSelector(BuildCtx & ctx, IHqlExpression * expr, ExpressionFormat format)
 {
-//  OwnedHqlExpr normalized = normalizeDatasetCasts(expr);
-
     switch (expr->getOperator())
     {
     case no_null:

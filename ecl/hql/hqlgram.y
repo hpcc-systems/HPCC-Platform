@@ -578,7 +578,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
 %left '['
 %left HIGHEST_PRECEDENCE
 
-
 %%
 
 //================================== begin of syntax section ==========================

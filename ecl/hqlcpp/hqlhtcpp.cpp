@@ -4432,7 +4432,6 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
         builder.walkRecord(walkctx, dataset, record);
     }
 
-    if (recordRequiresDestructor(record))
     {
         BuildCtx childmetactx(ctx);
         OwnedHqlExpr switchVar = createVariable("i", makeIntType(4, false));
