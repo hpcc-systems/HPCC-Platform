@@ -35,6 +35,7 @@ class ECLCC(Shell):
         try:
             return self.__ECLCC()('-E', file)
         except Error as err:
+            self.makeArchiveError = str(err)
             return repr(err)
 
     def makeArchive(self, ecl):
@@ -45,9 +46,19 @@ class ECLCC(Shell):
             os.mkdir(dirname)
         if os.path.isfile(filename):
             os.unlink(filename)
-        FILE = open(filename, "w")
-        FILE.write(self.getArchive(ecl.getEcl()))
-        FILE.close()
+        result = self.getArchive(ecl.getEcl())
+
+        if result.startswith( 'Error()'):
+           retVal = False
+           ecl.diff += ecl.getEcl() + '\n\t'
+           ecl.diff += self.makeArchiveError.replace('\n',  '\n\t')
+           self.makeArchiveError=''
+        else:
+            FILE = open(filename, "w")
+            FILE.write(result)
+            FILE.close()
+            retVal = True
+        return retVal
 
     def setVerbose(self):
         self.defaults.append("--verbose")
