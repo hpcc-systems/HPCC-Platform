@@ -17,7 +17,7 @@
 
 /* Proxy service header for (EE-only) saltlib plugin version SALTLIB 1.0.04 */
 
-export SaltLib := SERVICE
+export SaltLib := SERVICE : plugin('saltlib')
   boolean UnicodeLocaleWithinEditN(const unicode left, const unicode right, unsigned4 distance,  const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleWithinEditN', hole;
   unsigned4 UnicodeLocaleHyphenMatch(const unicode left, const unicode right, unsigned4 minlen,  const varstring localename) : c, pure,entrypoint='ulUnicodeLocaleHyphenMatch', hole;
   unsigned4 UnicodeHyphenMatch(const unicode left, const unicode right, unsigned4 minlen) : c, pure,entrypoint='ulUnicodeHyphenMatch', hole;
@@ -25,4 +25,3 @@ export SaltLib := SERVICE
   unicode UnicodeLocaleGetRangeOfWords(const unicode text, unsigned4 s_index, unsigned4 e_index, const varstring localename) : c,pure,entrypoint='ulUnicodeLocaleGetRangeOfWords';
   integer4 StringMatchBagofwords(const string left, const string right, unsigned4 mode, unsigned4 score_mode, unsigned fn, unsigned fn_arg1, unsigned fn_arg2) : c, pure,entrypoint='ulStringMatchBagofwords', hole;
 END;
-
