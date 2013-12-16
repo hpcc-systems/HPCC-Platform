@@ -1252,7 +1252,10 @@ IHqlExpression * ResourcerInfo::createSpilledRead(IHqlExpression * spillReason)
     bool loseDistribution = true;
     if (useGraphResult())
     {
-        args.append(*LINK(record));
+        if (spilledDataset)
+            args.append(*LINK(spilledDataset));
+        else
+            args.append(*LINK(record));
         args.append(*LINK(options->graphIdExpr));
         args.append(*createSpillName());
         if (isGrouped(original))
@@ -1265,10 +1268,12 @@ IHqlExpression * ResourcerInfo::createSpilledRead(IHqlExpression * spillReason)
             args.append(*LINK(recordCountAttr));
         if (options->targetThor() && original->isDataset() && !options->isChildQuery)
             args.append(*createAttribute(_distributed_Atom));
+
+        node_operator readOp = spilledDataset ? no_readspill : no_getgraphresult;
         if (original->isDictionary())
-            dataset.setown(createDictionary(no_getgraphresult, args));
+            dataset.setown(createDictionary(readOp, args));
         else
-            dataset.setown(createDataset(no_getgraphresult, args));
+            dataset.setown(createDataset(readOp, args));
         loseDistribution = false;
     }
     else if (useGlobalResult())
@@ -1333,10 +1338,23 @@ IHqlExpression * ResourcerInfo::createSpilledWrite(IHqlExpression * transformed)
     if (useGraphResult())
     {
         assertex(options->graphIdExpr);
-        args.append(*LINK(transformed));
+
+        if (options->createSpillAsDataset && !linkedFromChild)
+        {
+            IHqlExpression * value = LINK(transformed);
+            if (value->isDatarow())
+                value = createDatasetFromRow(value);
+            spilledDataset.setown(createDataset(no_commonspill, value));
+            args.append(*LINK(spilledDataset));
+        }
+        else
+            args.append(*LINK(transformed));
+
         args.append(*LINK(options->graphIdExpr));
         args.append(*createSpillName());
         args.append(*createAttribute(_spill_Atom));
+        if (spilledDataset)
+            return createValue(no_writespill, makeVoidType(), args);
         return createValue(no_setgraphresult, makeVoidType(), args);
     }
     else if (useGlobalResult())
@@ -1891,8 +1909,6 @@ EclResourcer::~EclResourcer()
 void EclResourcer::setChildQuery(bool value) 
 { 
     options.isChildQuery = value; 
-    if (value)
-        options.createSpillAsDataset = false;
 }
 
 void EclResourcer::setNewChildQuery(IHqlExpression * graphIdExpr, unsigned numResults) 
@@ -5247,7 +5263,7 @@ a single splitter.
 class SpillActivityTransformer : public NewHqlTransformer
 {
 public:
-    SpillActivityTransformer();
+    SpillActivityTransformer(bool _createGraphResults);
 
 protected:
     virtual void analyseExpr(IHqlExpression * expr);
@@ -5263,11 +5279,13 @@ protected:
         ANewTransformInfo * info = queryTransformExtra(body);
         info->spareByte1 = true;
     }
+protected:
+    bool createGraphResults;
 };
 
 static HqlTransformerInfo spillActivityTransformerInfo("SpillActivityTransformer");
-SpillActivityTransformer::SpillActivityTransformer() 
-: NewHqlTransformer(spillActivityTransformerInfo)
+SpillActivityTransformer::SpillActivityTransformer(bool _createGraphResults)
+: NewHqlTransformer(spillActivityTransformerInfo), createGraphResults(_createGraphResults)
 { 
 }
 
@@ -5276,21 +5294,23 @@ void SpillActivityTransformer::analyseExpr(IHqlExpression * expr)
     IHqlExpression * body = expr->queryBody();
     if (alreadyVisited(body))
         return;
-    if (body->getOperator() == no_split)
+
+    //If splitters are commoned up ensure unbalanced splitters stay unbalanced.
+    if ((body->getOperator() == no_split) && !body->hasAttribute(balancedAtom))
     {
-        IHqlExpression * input = body->queryChild(0);
-        if (input->getOperator() == no_split)
+        IHqlExpression * splitter = NULL;
+        IHqlExpression * cur = body->queryChild(0);
+        loop
         {
-            loop
-            {
-                IHqlExpression * cur = input->queryChild(0);
-                if (cur->getOperator() != no_split)
-                    break;
-                input = cur;
-            }
-            if (!body->hasAttribute(balancedAtom))
-                setUnbalanced(input->queryBody());
+            node_operator op = cur->getOperator();
+            if (op == no_split)
+                splitter = cur;
+            else if (op != no_commonspill)
+                break;
+            cur = cur->queryChild(0);
         }
+        if (splitter)
+            setUnbalanced(splitter->queryBody());
     }
     NewHqlTransformer::analyseExpr(expr);
 }
@@ -5305,9 +5325,9 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
     {
     case no_split:
         {
-            IHqlExpression * input = expr->queryChild(0);
+            OwnedHqlExpr input = transform(expr->queryChild(0));
             if (input->getOperator() == no_split)
-                return transform(input);
+                return input.getClear();
             OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
             if (transformed->hasAttribute(balancedAtom) && isUnbalanced(expr))
                 return removeAttribute(transformed, balancedAtom);
@@ -5317,6 +5337,8 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
         {
             HqlExprArray args;
             transformChildren(expr, args);
+            if (createGraphResults)
+                return createValue(no_setgraphresult, makeVoidType(), args);
             return createValue(no_output, makeVoidType(), args);
         }
     case no_commonspill:
@@ -5324,9 +5346,14 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
     case no_readspill:
         {
             OwnedHqlExpr ds = transform(expr->queryChild(0));
+            node_operator readOp = createGraphResults ? no_getgraphresult : no_table;
+
             HqlExprArray args;
-            args.append(*transform(expr->queryChild(1)));
+            if (!createGraphResults)
+                args.append(*transform(expr->queryChild(1)));
             args.append(*LINK(ds->queryRecord()));
+            if (createGraphResults)
+                args.append(*transform(expr->queryChild(1)));
             ForEachChildFrom(i, expr, 2)
             {
                 IHqlExpression * cur = expr->queryChild(i);
@@ -5335,15 +5362,22 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
             IHqlExpression * recordCountAttr = queryRecordCountInfo(expr);
             if (recordCountAttr)
                 args.append(*LINK(recordCountAttr));
-            return createDataset(no_table, args);
+
+            OwnedHqlExpr ret;
+            if (ds->isDictionary())
+                ret.setown(createDictionary(readOp, args));
+            else
+                ret.setown(createDataset(readOp, args));
+            const bool loseDistribution = false;
+            return preserveTableInfo(ret, ds, loseDistribution, NULL);
         }
     }
     return NewHqlTransformer::createTransformed(expr);
 }
 
-IHqlExpression * convertSpillsToActivities(IHqlExpression * expr)
+IHqlExpression * convertSpillsToActivities(IHqlExpression * expr, bool createGraphResults)
 {
-    SpillActivityTransformer transformer;
+    SpillActivityTransformer transformer(createGraphResults);
     transformer.analyse(expr, 0);
     return transformer.transformRoot(expr);
 }

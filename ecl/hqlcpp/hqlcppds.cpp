@@ -1685,7 +1685,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         updateTimer("workunit;tree transform: optimize disk read", msTick()-time);
     }
 
-    if (options.optimizeChildGraph)
+    if (options.optimizeGraph)
     {
         unsigned time = msTick();
         traceExpression("BeforeOptimizeSub", resourced);
@@ -1710,35 +1710,11 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     checkNormalized(ctx, resourced);
     traceExpression("AfterResourcing Child", resourced);
     
-    //Convert queries on preloaded into compound activities - before resourcing so keyed gets done correctly
-    // Second attempt to spot compound disk reads - this time of spill files.  Since resourcing has removed
-    // any sharing we don't need to bother about sharing.
-    if (options.optimizeResourcedProjects)
+    resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false));
+    if (options.optimizeSpillProject)
     {
-        cycle_t time = msTick();
-        OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), options.optimizeSpillProject);
-        updateTimer("workunit;child.implicitprojects", msTick()-time);
-        traceExpression("AfterResourcedImplicit", optimized);
-        checkNormalized(ctx, optimized);
-        resourced.set(optimized);
-    }
-
-    {
-        unsigned time = msTick();
-
-        CompoundSourceTransformer transformer(*this, csfFlags);
-        resourced.setown(transformer.process(resourced));
-        updateTimer("workunit;tree transform: optimize disk read", msTick()-time);
-    }
-
-    //Now call the optimizer again - the main purpose is to move projects over limits and into compound index/disk reads
-    if (options.optimizeChildGraph)
-    {
-        unsigned time = msTick();
-        traceExpression("BeforeOptimize2", resourced);
-        resourced.setown(optimizeHqlExpression(resourced, getOptimizeFlags()|HOOcompoundproject));
-        traceExpression("AfterOptimize2", resourced);
-        updateTimer("workunit;optimize graph", msTick()-time);
+        resourced.setown(convertSpillsToActivities(resourced, true));
+        resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false));
     }
 
     if (options.paranoidCheckNormalized || options.paranoidCheckDependencies)

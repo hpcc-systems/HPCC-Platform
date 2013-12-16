@@ -360,8 +360,6 @@ public:
     void setUseGraphResults(bool _useGraphResults) 
     { 
         options.useGraphResults = _useGraphResults; 
-        if (_useGraphResults)
-            options.createSpillAsDataset = false; 
     }
     void tagActiveCursors(HqlExprCopyArray & activeRows);
     inline unsigned numGraphResults() { return options.nextResult; }

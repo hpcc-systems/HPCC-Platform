@@ -626,7 +626,6 @@ struct HqlCppOptions
     bool                foldFilter;
     bool                finalizeAllRows;
     bool                optimizeGraph;
-    bool                optimizeChildGraph ;
     bool                orderDiskFunnel;
     bool                alwaysAllowAllNodes;
     bool                slidingJoins;
@@ -1849,7 +1848,7 @@ protected:
     IHqlExpression * getResourcedGraph(IHqlExpression * expr, IHqlExpression * graphIdExpr);
     IHqlExpression * getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * childQuery, unsigned numResults, node_operator graphKind);
     IHqlExpression * optimizeCompoundSource(IHqlExpression * expr, unsigned flags);
-    IHqlExpression * optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags);
+    IHqlExpression * optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill);
     bool isInlineOk();
     GraphLocalisation getGraphLocalisation(IHqlExpression * expr, bool isInsideChildQuery);
     bool isAlwaysCoLocal();
