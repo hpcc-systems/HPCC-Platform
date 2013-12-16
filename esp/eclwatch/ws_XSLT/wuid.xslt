@@ -749,18 +749,20 @@
                     }
                     function createZAPInfo(wuid, espIP, thorIP, ESPBuildVersion, problemDesciption, history, timingInfo)
                     {
-                        var href = "/WsWorkunits/WUCreateZAPInfo?WUID=" + wuid;
-                        href += "&ESPIPAddress=" + espIP;
+                        document.getElementById("ESPIPAddress").value=espIP;
                         if (thorIP != '')
-                            href += "&ThorIPAddress=" + thorIP;
-                        href += "&BuildVersion=" + ESPBuildVersion;
+                            document.getElementById("ESPIPAddress").value=thorIP;
+                        document.getElementById("BuildVersion").value=ESPBuildVersion;
                         if (problemDesciption != '')
-                            href += "&ProblemDescription=" + problemDesciption;
+                            document.getElementById("ProblemDescription").value=problemDesciption;
                         if (history != '')
-                            href += "&WhatChanged=" + history;
+                            document.getElementById("WhatChanged").value=history;
                         if (timingInfo != '')
-                            href += "&WhereSlow=" + timingInfo;
-                        document.location.href=href;
+                            document.getElementById("WhereSlow").value=timingInfo;
+
+                        document.forms['protect'].action = "/WsWorkunits/WUCreateZAPInfo";
+                        document.forms['protect'].encType="application/x-www-form-urlencoded";
+                        document.forms['protect'].submit();
                     }
                ]]></xsl:text>
           </script>
