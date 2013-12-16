@@ -370,7 +370,7 @@ class Regression:
         self.loggermutex.acquire()
         self.exitmutexes[th].acquire()
 
-        logging.debug("runQuery(cluster:", cluster, ", query:", query, ", report:", report, ", cnt:", cnt, ", publish:", publish, ")")
+        logging.debug("runQuery(cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( cluster, query.ecl, cnt, publish,  th))
         logging.warn("%3d. Test: %s" % (cnt, query.ecl))
 
         self.loggermutex.release()

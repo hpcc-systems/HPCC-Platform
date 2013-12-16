@@ -112,7 +112,7 @@ class ECLFile:
         # Standard string has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//no' + target.encode()
-        logging.debug("testExclusion (ecl:'%s', target: '%s', tag:'%s'", self.ecl, target, tag)
+        logging.debug("testExclusion (ecl:'%s', target: '%s', tag:'%s')", self.ecl, target, tag)
         eclText = open(self.getEcl(), 'rb')
         retVal = False
         for line in eclText:
@@ -126,7 +126,7 @@ class ECLFile:
         # Standard string has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//publish'
-        logging.debug("%3d. testPublish (ecl:'%s', tag:'%s'", self.taskId, self.ecl,  tag)
+        logging.debug("%3d. testPublish (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
         eclText = open(self.getEcl(), 'rb')
         retVal = False
         for line in eclText:
