@@ -70,7 +70,6 @@ define([
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ESPWorkunit, ESPRequest, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget, VizWidget, WsWorkunits,
                 template) {
-    var uniqueID = 0;
     return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "WUDetailsWidget",
@@ -157,7 +156,7 @@ define([
 
         _onCancelDialog: function (){
             this.zapDialog.hide();
-        }, 
+        },
 
         //  Hitched actions  ---
         _onSave: function (event) {
@@ -210,19 +209,12 @@ define([
                     context.updateInput("BuildVersion", null, response.WUGetZAPInfoResponse.BuildVersion);
                     context.updateInput("ESPIPAddress", null, response.WUGetZAPInfoResponse.ESPIPAddress);
                     context.updateInput("ThorIPAddress", null, response.WUGetZAPInfoResponse.ThorIPAddress);
-                    
+
                     context.buildVersion = response.WUGetZAPInfoResponse.BuildVersion;
                     context.espIPAddress = response.WUGetZAPInfoResponse.ESPIPAddress;
                     context.thorIPAddress = response.WUGetZAPInfoResponse.ThorIPAddress;
-                }                
+                }
             });
-        },
-
-        onZapSubmit: function (event) {
-            var frame = iframe.create("ZapDownload" + uniqueID++);
-            var url = ESPRequest.getBaseURL("WsWorkunits") + "/WUCreateZAPInfo?WUID=" + this.wu.Wuid + "&ESPIPAddress=" + this.espIPAddress + "&ThorIPAddress=" + this.thorIPAddress + "&BuildVersion=" + encodeURIComponent(this.buildVersion) + "&ProblemDescription=" + encodeURIComponent(this.zapDescription.value) + "&WhatChanged=" + encodeURIComponent(this.warnHistory.value) + "&WhereSlow=" + encodeURIComponent(this.warnTimings.value);
-            iframe.setSrc(frame, url, true);
-            this.zapDialog.hide();
         },
 
         //  Implementation  ---

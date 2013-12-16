@@ -109,18 +109,18 @@
         </div>
     </div>
     <div id="${id}ZapDialog" data-dojo-type="dijit.Dialog" title="Zipped Analysis Package">
-        <div id="${id}ZapForm" style="width:400px" data-dojo-type="dijit.form.Form">
+        <form id="${id}ZapForm" action="/WsWorkunits/WUCreateZAPInfo" style="width:400px" method="post" encType="application/x-www-form-urlencoded">
             <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                <input id="${id}ZapWUID" title="WUID:" name="WUID" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}ZapWUID" title="WUID:" name="Wuid" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
                 <input id="${id}BuildVersion" title="ESP&nbsp;Build&nbsp;Version:" name="BuildVersion" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
                 <input id="${id}ESPIPAddress" title="ESP&nbsp;Network&nbsp;Address:" name="ESPIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
                 <input id="${id}ThorIPAddress" title="Thor&nbsp;Network&nbsp;Address:" name="ThorIPAddress" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
-                <input id="${id}ZapDescription" title="Description:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
-                <input id="${id}WarnHistory" title="History:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
-                <input id="${id}WarnTimings" title="Timings:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+                <input id="${id}ZapDescription" name="ProblemDescription" title="Description:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+                <input id="${id}WarnHistory" name="WhatChanged" title="History:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
+                <input id="${id}WarnTimings" name="WhereSlow" title="Timings:" cols="22" colspan="2" data-dojo-type="dijit.form.SimpleTextarea"/>
             </div>
-            <button id="${id}onZapSubmit" class="bottomFormButtons" data-dojo-attach-event="onClick:onZapSubmit" data-dojo-type="dijit.form.Button">Apply</button>
+            <button id="${id}onZapSubmit" data-dojo-attach-event="onClick:_onCancelDialog" class="bottomFormButtons" type="submit" data-dojo-type="dijit.form.Button">Apply</button>
             <button class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">Cancel</button>
-        </div>
+        </form>
     </div>
 </div>

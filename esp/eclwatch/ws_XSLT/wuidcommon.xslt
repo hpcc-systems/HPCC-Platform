@@ -794,6 +794,12 @@
               <input type="hidden" name="DescriptionOrig" value="{Description}"/>
               <input type="hidden" name="ClusterOrig" value="{Cluster}"/>
               <input type="hidden" name="ProtectedOrig" value="{Protected}"/>
+              <input type="hidden" id="ESPIPAddress" name="ESPIPAddress" value=""/>
+              <input type="hidden" id="ThorIPAddress" name="ThorIPAddress" value=""/>
+              <input type="hidden" id="BuildVersion" name="BuildVersion" value=""/>
+              <input type="hidden" id="ProblemDescription" name="ProblemDescription" value=""/>
+              <input type="hidden" id="WhatChanged" name="WhatChanged" value=""/>
+              <input type="hidden" id="WhereSlow" name="WhereSlow" value=""/>
               <input type="button" name="Type" value="Save" class="sbutton" onclick="updateWorkunit('{$wuid}');">
                         <xsl:if test="number(AccessFlag) &lt; 7">
                           <xsl:attribute name="disabled">disabled</xsl:attribute>
