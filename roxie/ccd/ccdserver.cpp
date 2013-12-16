@@ -3411,6 +3411,8 @@ private:
                     loggingFlags |= LOGGING_BLIND;
                 if (ctx->queryCheckingHeap())
                     loggingFlags |= LOGGING_CHECKINGHEAP;
+                if (ctx->queryWorkUnit())
+                    loggingFlags |= LOGGING_WUID;
                 if (debugContext)
                 {
                     loggingFlags |= LOGGING_DEBUGGERACTIVE;
