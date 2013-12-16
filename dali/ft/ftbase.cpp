@@ -513,7 +513,7 @@ void OutputProgress::reset()
     compressedPartSize = 0;
 }
 
-MemoryBuffer & OutputProgress::deserialize(MemoryBuffer & in)
+MemoryBuffer & OutputProgress::deserializeCore(MemoryBuffer & in)
 { 
     unsigned _inputCRC, _outputCRC;
     bool hasTime;
@@ -524,9 +524,22 @@ MemoryBuffer & OutputProgress::deserialize(MemoryBuffer & in)
         resultTime.deserialize(in);
     else
         resultTime.clear();
-    in.read(hasCompressed);
-    if (hasCompressed)
-        in.read(compressedPartSize);
+    return in;
+}
+
+MemoryBuffer & OutputProgress::deserializeExtra(MemoryBuffer & in, unsigned version)
+{
+    if (in.remaining())
+    {
+        switch (version)
+        {
+        case 1:
+            in.read(hasCompressed);
+            if (hasCompressed)
+                in.read(compressedPartSize);
+            break;
+        }
+    }
     return in;
 }
 
@@ -537,7 +550,7 @@ void OutputProgress::trace()
     LOG(MCdebugInfoDetail, unknownJob, "[%d] %s  %"I64F"d[%x]->%"I64F"d[%x]", whichPartition, statusText[status], inputLength, inputCRC, outputLength, outputCRC);
 }
 
-MemoryBuffer & OutputProgress::serialize(MemoryBuffer & out)        
+MemoryBuffer & OutputProgress::serializeCore(MemoryBuffer & out)        
 { 
     bool hasTime = !resultTime.isNull();
     unsigned _inputCRC = inputCRC;
@@ -545,12 +558,21 @@ MemoryBuffer & OutputProgress::serialize(MemoryBuffer & out)
     out.append(status).append(whichPartition).append(hasInputCRC).append(_inputCRC).append(inputLength).append(_outputCRC).append(outputLength).append(hasTime);
     if (hasTime)
         resultTime.serialize(out);
-    out.append(hasCompressed);
-    if (hasCompressed )
-        out.append(compressedPartSize);
     return out;
 }
 
+MemoryBuffer & OutputProgress::serializeExtra(MemoryBuffer & out, unsigned version)
+{
+    switch (version)
+    {
+    case 1:
+        out.append(hasCompressed);
+        if (hasCompressed )
+            out.append(compressedPartSize);
+        break;
+    }
+    return out;
+}
 
 void OutputProgress::set(const OutputProgress & other)
 {
