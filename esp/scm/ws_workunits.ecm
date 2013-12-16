@@ -1428,7 +1428,7 @@ ESPresponse [exceptions_inline] WUGetZAPInfoResponse
 
 ESPrequest [nil_remove] WUCreateZAPInfoRequest
 {
-    string WUID;
+    string Wuid;
     string ESPIPAddress;
     string ThorIPAddress;
     string BuildVersion;
