@@ -460,6 +460,7 @@ extern void saveTopology();
 #define LOGGING_TRACELEVELSET   0x10
 #define LOGGING_CHECKINGHEAP    0x20
 #define LOGGING_FLAGSPRESENT    0x40
+#define LOGGING_WUID            0x80
 
 class LogItem : public CInterface
 {
