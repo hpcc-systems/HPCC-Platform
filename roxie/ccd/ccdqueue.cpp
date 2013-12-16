@@ -500,15 +500,18 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 traceInfo += debugLen + sizeof(unsigned short);
                 traceLength -= debugLen + sizeof(unsigned short);
             }
-            // Passing the wuid via the logging context is a bit of a hack...
-            unsigned wuidLen = 0;
-            while (wuidLen < traceLength)
+            // Passing the wuid via the logging context prefix is a bit of a hack...
+            if (loggingFlags & LOGGING_WUID)
             {
-                if (traceInfo[wuidLen]=='@')
-                    break;
-                wuidLen++;
+                unsigned wuidLen = 0;
+                while (wuidLen < traceLength)
+                {
+                    if (traceInfo[wuidLen]=='@')
+                        break;
+                    wuidLen++;
+                }
+                wuid.set((const char *) traceInfo, wuidLen);
             }
-            wuid.set((const char *) traceInfo, wuidLen);
         }
         channel = header.channel;
         StringBuffer s(traceLength, (const char *) traceInfo);
@@ -1286,8 +1289,11 @@ public:
             }
             catch(...)
             {
-                LOG(MCinternalError, unknownJob, "Unexpected exception in Roxie worker thread");
                 CriticalBlock b(actCrit);
+                Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unexpected exception in Roxie worker thread");
+                EXCLOG(E);
+                if (packet)
+                    throwRemoteException(E.getClear(), NULL, packet, false);
                 packet.clear();
             }
         }
