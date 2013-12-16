@@ -70,6 +70,20 @@ define([
             }
             return deferred.promise;
         },
+        WsEclIFrameURL: "",
+        GetWsEclIFrameURL: function (type) {
+            var deferred = new Deferred();
+            if (this.WsEclIFrameURL === "") {
+                var context = this;
+                this.GetESPServiceBaseURL("ws_ecl").then(function (response) {
+                    context.WsEclIFrameURL = response + "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent("/WsEcl/");
+                    deferred.resolve(context.WsEclIFrameURL + encodeURIComponent(type + "/query/"));
+                });
+            } else {
+                deferred.resolve(this.WsEclIFrameURL + encodeURIComponent(type + "/query/"));
+            }
+            return deferred.promise;
+        },
         TpTargetClusterQuery: function (params) {
             return ESPRequest.send("WsTopology", "TpTargetClusterQuery", params);
         },
