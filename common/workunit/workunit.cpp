@@ -4256,7 +4256,7 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     SocketEndpointArray roxieServers;
     StringAttr thorQueue;
     StringArray thorProcesses;
-    StringArray primaryThorProcess;
+    StringArray primaryThorProcesses;
     StringAttr prefix;
     ClusterType platform;
     unsigned clusterWidth;
@@ -4277,12 +4277,12 @@ public:
                 const char* thorName = thor.queryProp("@name");
                 thorProcesses.append(thorName);
                 if (!isMultiThor)
-                    primaryThorProcess.append(thorName);
+                    primaryThorProcesses.append(thorName);
                 else
                 {
                     const char *nodeGroup = thor.queryProp("@nodeGroup");
                     if (!nodeGroup || strieq(nodeGroup, thorName))
-                        primaryThorProcess.append(thorName);
+                        primaryThorProcesses.append(thorName);
                 }
                 unsigned nodes = thor.getCount("ThorSlaveProcess");
                 if (!nodes)
@@ -4364,7 +4364,7 @@ public:
     }
     const StringArray & getPrimaryThorProcesses() const
     {
-        return primaryThorProcess;
+        return primaryThorProcesses;
     }
 
     const SocketEndpointArray & getRoxieServers() const
