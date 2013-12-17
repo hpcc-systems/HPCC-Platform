@@ -73,6 +73,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_RESOURCE "Use resource download in ECLWatch" OFF)
   option(GENERATE_COVERAGE_INFO "Generate coverage info for gcov" OFF)
 
+  option(USE_MYSQL "Enable MySQL support" ON)
   option(USE_SQLITE3 "Enable SqLite3 support" ON)
   option(USE_PYTHON "Enable Python support" ON)
   option(USE_V8 "Enable V8 JavaScript support" ON)

@@ -63,10 +63,7 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 namespace sqlite3embed {
 
-// Use class OwnedPyObject for any objects that are not 'borrowed references'
-// so that the appropriate Py_DECREF call is made when the OwnedPyObject goes
-// out of scope, even if the function returns prematurely (such as via an exception).
-// In particular, checkPythonError is a lot easier to call safely if this is used.
+// Use class OwnedStatement for a sqlite3 stmt object that needs to be released cleanly
 
 class OwnedStatement
 {

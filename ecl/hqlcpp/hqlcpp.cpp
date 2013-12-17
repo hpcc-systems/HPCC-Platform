@@ -11708,6 +11708,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         returnFunc = getTransformResultId;
         newReturnType.set(returnType);
         break;
+    case type_void:
+        return;
     default:
         StringBuffer typeText;
         getFriendlyTypeStr(returnType, typeText);
