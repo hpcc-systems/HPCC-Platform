@@ -12175,9 +12175,8 @@ class CRoxieThreadedConcatReader : public CInterface, implements IRecordPullerCa
 public:
     IMPLEMENT_IINTERFACE;
     CRoxieThreadedConcatReader(InterruptableSemaphore &_ready, bool _grouped)
-    : puller(false), grouped(_grouped), ready(_ready), eof(false)
+    : puller(false), grouped(_grouped), atEog(true), ready(_ready), eof(false)
     {
-
     }
 
     void start(unsigned parentExtractSize, const byte *parentExtract, bool paused, IRoxieSlaveContext *ctx)
@@ -12204,6 +12203,7 @@ public:
             ReleaseRoxieRow(buffer.item(idx));
         buffer.clear();
         eof = false;
+        atEog = true;
     }
 
     void setInput(IRoxieInput *_in)
@@ -12232,8 +12232,7 @@ public:
 
     virtual void processDone()
     {
-        eof = true;
-        ready.signal();
+        processRow(NULL);
     }
 
     virtual bool fireException(IException *e)
@@ -12246,20 +12245,29 @@ public:
 
     bool peek(const void * &row, bool &anyActive)
     {
-        if (buffer.ordinality())
-        {
-            space.signal();
-            row = buffer.dequeue();
-            return true;
-        }
         if (!eof)
+        {
+            if (buffer.ordinality())
+            {
+                space.signal();
+                row = buffer.dequeue();
+                if (row==NULL)
+                {
+                    if (atEog)
+                    {
+                        eof = true;
+                        return false;
+                    }
+                    else
+                        atEog = true;
+                }
+                else if (grouped)
+                    atEog = false;
+                return true;
+            }
             anyActive = true;
+        }
         return false;
-    }
-
-    inline bool atEof() const
-    {
-        return eof;
     }
 
 protected:
@@ -12267,6 +12275,7 @@ protected:
     InterruptableSemaphore space;
     InterruptableSemaphore &ready;
     SafeQueueOf<const void, true> buffer;
+    bool atEog;
     bool eof;
     bool grouped;
 };
@@ -12368,7 +12377,11 @@ public:
         loop
         {
             if (readyPending && !inGroup)
-                readyPending--;
+            {
+                if (readyPending > 1)
+                    ready.signal(readyPending-1);
+                readyPending = 0;
+            }
             else
                 ready.wait();
             bool anyActive = false;
