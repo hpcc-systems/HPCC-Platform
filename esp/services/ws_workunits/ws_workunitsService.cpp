@@ -1130,6 +1130,18 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                 if(!cw)
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
+                //Dont allow resubmit of someone else's workunit
+                if (context.querySecManager())
+                {
+                    IUserDescriptor * owner = cw->queryUserDescriptor();
+                    if (!owner)
+                        throw MakeStringException(ECLWATCH_CANNOT_SUBMIT_WORKUNIT,"Workunit User Descriptor missing on %s", wuid.str());
+                    StringBuffer ownerUserName;
+                    owner->getUserName(ownerUserName);
+                    if (strcmp(context.queryUser()->getName(), ownerUserName.str()))
+                        throw MakeStringException(ECLWATCH_CANNOT_SUBMIT_WORKUNIT,"Cannot resubmit another user's workunit %s.", wuid.str());
+                }
+
                 submitWsWorkunit(context, cw, NULL, NULL, 0, req.getRecompile(), req.getResetWorkflow(), false);
 
                 if (version < 1.40)
