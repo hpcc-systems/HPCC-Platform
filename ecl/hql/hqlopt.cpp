@@ -758,6 +758,54 @@ IHqlExpression * CTreeOptimizer::optimizeDatasetIf(IHqlExpression * transformed)
     return LINK(transformed);
 }
 
+static bool branchesMatch(IHqlExpression * left, IHqlExpression * right)
+{
+    if (left->queryBody() == right->queryBody())
+        return true;
+
+    node_operator leftOp = left->getOperator();
+    if (leftOp != right->getOperator())
+        return false;
+
+    switch (leftOp)
+    {
+    case no_hqlproject:
+    case no_newusertable:
+        break;
+    default:
+        return false;
+    }
+    if (left->numChildren() != right->numChildren())
+        return false;
+
+    //Check for the situation where the only difference between two projects is the selector sequence
+    ForEachChild(i, left)
+    {
+        IHqlExpression * curLeft = left->queryChild(i);
+        if (curLeft->isAttribute() && (curLeft->queryName() == _selectorSequence_Atom))
+            continue;
+        IHqlExpression * curRight = right->queryChild(i);
+        if (curLeft->queryBody() != curRight->queryBody())
+        {
+            //The following code allows LEFT to be referred to within the transform, but I don't think it is worth enabling
+            //because of the potential cost of replacing the selseq within the transform.
+            if (false)
+            {
+                if ((leftOp != no_hqlproject) || !curLeft->isTransform())
+                    return false;
+                if (!recordTypesMatch(curLeft,curRight))
+                    return false;
+                OwnedHqlExpr newTransform = replaceExpression(curLeft, querySelSeq(left), querySelSeq(right));
+                if (newTransform->queryBody() != curRight->queryBody())
+                    return false;
+            }
+
+            return false;
+        }
+    }
+    return true;
+}
+
 IHqlExpression * CTreeOptimizer::optimizeIf(IHqlExpression * expr)
 {
     IHqlExpression * trueExpr = expr->queryChild(1);
@@ -766,7 +814,7 @@ IHqlExpression * CTreeOptimizer::optimizeIf(IHqlExpression * expr)
     if (!falseExpr)
         return NULL;
 
-    if (trueExpr->queryBody() == falseExpr->queryBody())
+    if (branchesMatch(trueExpr, falseExpr))
     {
         noteUnused(trueExpr);       // inherit usage() will increase the usage again
         noteUnused(falseExpr);
@@ -2537,6 +2585,20 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             removeAttribute(args, _countProject_Atom);
             return createDataset(no_hqlproject, args);
         }
+        break;
+    case no_split:
+        node_operator childOp = child->getOperator();
+        if (childOp == no_split)
+        {
+            //Don't convert an unbalanced splitter into a balanced splitter
+            //- best would be to set unbalanced on the child, but that would require more complication.
+            if (transformed->hasAttribute(balancedAtom) || !child->hasAttribute(balancedAtom))
+                return removeParentNode(transformed);
+        }
+
+        //This would remove splits only used once, but dangerous if we ever get the usage counting wrong...
+        //if (queryBodyExtra(transformed)->useCount == 1)
+        //    return removeParentNode(transformed);
         break;
     }
 

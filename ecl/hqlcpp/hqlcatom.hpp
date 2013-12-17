@@ -32,7 +32,6 @@ extern IAtom * activeMatchUtf8Atom;
 extern IAtom * activeProductionMarkerAtom;
 extern IAtom * activeValidateMarkerAtom;
 extern IAtom * activityIdMarkerAtom;
-extern IAtom * balancedAtom;
 extern IAtom * bitfieldOffsetAtom;
 extern IAtom * blobHelperAtom;
 extern IAtom * branchAtom;

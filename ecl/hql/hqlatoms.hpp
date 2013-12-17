@@ -82,6 +82,7 @@ extern HQL_API IAtom * assertConstAtom;
 extern HQL_API IAtom * atmostAtom;
 extern HQL_API IAtom * aveAtom;
 extern HQL_API IAtom * backupAtom;
+extern HQL_API IAtom * balancedAtom;
 extern HQL_API IAtom * bcdAtom;
 extern HQL_API IAtom * beforeAtom;
 extern HQL_API IAtom * bestAtom;

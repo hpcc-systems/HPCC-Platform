@@ -80,6 +80,7 @@ IAtom * assertConstAtom;
 IAtom * atmostAtom;
 IAtom * aveAtom;
 IAtom * backupAtom;
+IAtom * balancedAtom;
 IAtom * bcdAtom;
 IAtom * beforeAtom;
 IAtom * bestAtom;
@@ -485,6 +486,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(atmost);
     MAKEATOM(ave);
     MAKEATOM(backup);
+    MAKEATOM(balanced);
     MAKEATOM(bcd);
     MAKEATOM(before);
     MAKEATOM(best);
