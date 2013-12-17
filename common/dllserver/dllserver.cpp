@@ -28,9 +28,9 @@
 #include "thorplugin.hpp"
 
 #ifdef _WIN32
-#define DEFAULT_SERVER_ROOTDIR          "c:\\dllserver"
+#define DEFAULT_SERVER_ROOTDIR          "c:\\HPCCSystems\\hpcc-data\\temp\\dllserver"
 #else
-#define DEFAULT_SERVER_ROOTDIR          "/c$/dllserver"
+#define DEFAULT_SERVER_ROOTDIR          "/var/lib/HPCCSystems/dllserver/temp"
 #endif
 
 static Owned<IConstDomainInfo> hostDomain;
