@@ -82,8 +82,8 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>Keyboard and mouse actions are shown in small caps, such
-              as: DOUBLE-CLICK, or press the ENTER key. word.</para>
+              <para>Keyboard and mouse actions are shown in all caps, such as:
+              DOUBLE-CLICK, or press the ENTER keyword.</para>
             </listitem>
 
             <listitem>
@@ -106,7 +106,8 @@
           url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
 
           <para>Download the appropriate Client Tools for your Operating
-          System. (available for CentOS, Ubuntu, Mac OSX, or Windows)</para>
+          System. (available for RPM-Based systems, Debian-Based systems, Mac
+          OSX, or Windows)</para>
         </listitem>
 
         <listitem>
@@ -140,6 +141,75 @@
           the prompts to complete the installation.</para>
         </listitem>
       </orderedlist>
+    </sect2>
+
+    <sect2 id="Other_Installs">
+      <title>Other Installations</title>
+
+      <para>It is possible, to install multiple versions of the client tools
+      if you needed to work on multiple versions of the platform. This would
+      be a special use case not typical for most users of the platform.</para>
+
+      <para>To install the client tools, obtain the appropriate installation
+      package for your operating system:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>From the HPCC Systems download page, <ulink
+          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
+
+          <para>Download the appropriate Client Tools for your Operating
+          System.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>NOTE:</term>
+
+              <listitem>
+                <para>There is a link at the bottom of the list "<emphasis
+                role="blue">view older downloads</emphasis>" if you are
+                looking for previous versions of the tools.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+      </itemizedlist>
+
+      <para>Client tool packages starting with 4.2 have built in logic to
+      allow for multiple installations. Prior versions of the client tools
+      package would just overwrite the existing components. The default
+      behavior is that the client tools will use the last one installed,
+      except if you are working directly on the platform. If you are working
+      on the platform then it would be the client tools that gets installed
+      with the platform.</para>
+
+      <para>If you install a version other than the delivered client tools you
+      will have a folder in /opt/HPCCSystems that corresponds to the set of
+      client tools. So you could have a client tools 4.0.x, 4.2.x, 4.4.x,
+      etc.</para>
+
+      <para>For older versions, download the package(s), and install. You need
+      to install them in reverse order from the oldest first, to the newest.
+      Copy to a different folder or Rename the client tools found in
+      /opt/HPCCSystems after installing the older one and before installing
+      the newer one. This is to prevent the newer client tools from
+      overwriting the older one.</para>
+
+      <para>To use the Client tools for the various version number(s)
+      explicitly call the client tool you wish to use, or set up an alias to
+      call the client tool using the proper path or name for the version you
+      intend to use. This would depend on how you chose to save off the older
+      client tools you installed.</para>
+
+      <para><emphasis role="bold">For example</emphasis>, if you wanted to run
+      eclplus:</para>
+
+      <programlisting>eclplus action=view wuid=W12345678</programlisting>
+
+      <para>To run eclplus for an older or another version of client tools,
+      for instance 4.0.x:</para>
+
+      <para><programlisting>/opt/HPCCSystems/4.0.x/clienttools/bin/eclplus action=view wuid=W12345678</programlisting></para>
     </sect2>
   </sect1>
 </chapter>
