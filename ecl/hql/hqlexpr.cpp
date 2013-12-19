@@ -73,7 +73,6 @@
 //#define PARANOID
 //#define SEARCH_NAME1   "v1"
 //#define SEARCH_NAME2   "v2"
-//#define SEARCH_IEXPR 0x0681cb0
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
 #define VERIFY_EXPR_INTEGRITY
@@ -82,6 +81,41 @@
 static void debugMatchedName() {}
 #endif
 
+#ifdef DEBUG_TRACK_INSTANCEID
+static int checkSeqId(unsigned __int64 seqid, unsigned why)
+{
+    switch (seqid)
+    {
+    //Add a case statement here for each expression being tracked.
+    case 0:
+        break;
+    default:
+        return 0;
+    }
+
+    //Return values are here to allow breakpoints to be set - not because they are useful
+    //Add breakpoint on the switch to break on all reasons.
+    switch (why)
+    {
+    case 0:             //Created
+        return 1;
+    case 1:             // Linked
+        return 2;
+    case 2:             // Released
+        return 3;
+    case 3:             // Destroyed
+        return 4;
+    }
+    return 0; // Unknown reason
+}
+
+#define CHECK_EXPR_SEQID(x) checkSeqId(seqid, x)
+
+#else
+#define CHECK_EXPR_SEQID(x)
+#endif
+#else
+#define CHECK_EXPR_SEQID(x)
 #endif
 
 #define STDIO_BUFFSIZE 0x10000     // 64K
@@ -3019,9 +3053,16 @@ extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr)
 
 //==============================================================================================================
 
-/* All parms: linked */
+#ifdef DEBUG_TRACK_INSTANCEID
+static unsigned __int64 exprseqid;
+#endif
+
 CHqlExpression::CHqlExpression(node_operator _op)
 {
+#ifdef DEBUG_TRACK_INSTANCEID
+    //Not thread safe, but not much use if multi threading anyway.
+    seqid = ++exprseqid;
+#endif
     op = _op;
     for (unsigned i=0; i < NUM_PARALLEL_TRANSFORMS; i++)
     {
@@ -3033,6 +3074,8 @@ CHqlExpression::CHqlExpression(node_operator _op)
     attributes = NULL;
 
     initFlagsBeforeOperands();
+
+    CHECK_EXPR_SEQID(0);
 }
 
 void CHqlExpression::appendOperands(IHqlExpression * arg0, ...)
@@ -3088,13 +3131,6 @@ void CHqlExpression::setOperands(HqlExprArray & _ownedOperands)
 
 void CHqlExpression::initFlagsBeforeOperands()
 {
-#ifdef _DEBUG
-#ifdef SEARCH_IEXPR
-    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
-        DBGLOG("initFlags");
-#endif
-#endif
-
     //NB: The following code is not allowed to access queryType()!
     infoFlags = 0;
     infoFlags2 = 0;
@@ -4320,13 +4356,8 @@ void CHqlExpression::Link(void) const
     if (insideCreate)
         numCreateLinks++;
 #endif
-#ifdef _DEBUG
-#ifdef SEARCH_IEXPR
-    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
-        DBGLOG("Link");
-#endif
-#endif
     Parent::Link();
+    CHECK_EXPR_SEQID(1);
 }
 
 bool CHqlExpression::Release(void) const
@@ -4336,18 +4367,14 @@ bool CHqlExpression::Release(void) const
     if (insideCreate)
         numCreateReleases++;
 #endif
-#ifdef _DEBUG
-#ifdef SEARCH_IEXPR
-    if ((memsize_t)(IHqlExpression *)this == SEARCH_IEXPR)
-        DBGLOG("Release");
-#endif
-#endif
+    CHECK_EXPR_SEQID(2);
     return Parent::Release();
 }
 
 
 void CHqlExpression::beforeDispose()
 {
+    CHECK_EXPR_SEQID(3);
 #ifdef CONSISTENCY_CHECK
     if (hashcode)
     {

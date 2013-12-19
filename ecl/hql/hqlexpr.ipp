@@ -22,6 +22,13 @@
 //may be accessed in parallel from multiple threads, causing potential conflicts
 #define THREAD_SAFE_SYMBOLS
 
+//The following flag is to allow tracing when expressions are created, linked, released, destroyed
+//It allocates a unique id to each expression that is created, then add the unique ids into the
+//checkSeqId() function, and add a breakpoint there
+#ifdef _DEBUG
+//#define DEBUG_TRACK_INSTANCEID
+#endif
+
 #include "jexcept.hpp"
 #include "javahash.hpp"
 #include "defvalue.hpp"
@@ -132,6 +139,10 @@ protected:
 
     CHqlDynamicProperty * attributes;
     HqlExprArray operands;
+
+#ifdef DEBUG_TRACK_INSTANCEID
+    unsigned __int64 seqid;
+#endif
 
 protected:
     CHqlExpression(node_operator op);
