@@ -503,7 +503,8 @@ void TransferServer::sendProgress(OutputProgress & curProgress)
 {
     MemoryBuffer msg;
     msg.setEndian(__BIG_ENDIAN);
-    curProgress.serialize(msg.clear().append(false));
+    curProgress.serializeCore(msg.clear().append(false));
+    curProgress.serializeExtra(msg, 1);
     if (!catchWriteBuffer(masterSocket, msg))
         throwError(RFSERR_TimeoutWaitMaster);
 
@@ -618,7 +619,7 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
     for (unsigned i = 0; i < numProgress; i++)
     {
         OutputProgress & next = *new OutputProgress;
-        next.deserialize(msg);
+        next.deserializeCore(msg);
         progress.append(next);
     }
     if (msg.remaining())
@@ -636,6 +637,9 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
         srcFormat.deserializeExtra(msg, 1);
         tgtFormat.deserializeExtra(msg, 1);
     }
+
+    ForEachItemIn(i1, progress)
+        progress.item(i1).deserializeExtra(msg, 1);
 
     LOG(MCdebugProgress, unknownJob, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
     PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
@@ -908,7 +912,8 @@ processedProgress:
                         curProgress.compressedPartSize = output->size();
                         curProgress.hasCompressed = true;
                     }
-                    curProgress.serialize(msg.clear().append(false));
+                    curProgress.serializeCore(msg.clear().append(false));
+                    curProgress.serializeExtra(msg, 1);
                     if (!catchWriteBuffer(masterSocket, msg))
                         throwError(RFSERR_TimeoutWaitMaster);
                 }
