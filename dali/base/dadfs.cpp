@@ -4438,7 +4438,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname,true));
+            parent.setown(transaction->lookupSuperFile(parentlname));
             if (!parent)
                 throw MakeStringException(-1,"removeSubFile: SuperFile %s cannot be found",parentlname.get());
             if (!subfile.isEmpty())
@@ -4530,7 +4530,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname,true));
+            parent.setown(transaction->lookupSuperFile(parentlname));
             if (!parent)
                 throw MakeStringException(-1,"removeOwnedSubFiles: SuperFile %s cannot be found", parentlname.get());
             // Try to lock all files
