@@ -759,7 +759,7 @@ public:
     void unlockRemote(bool closing);
     void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL);
     void abort();
-    void cleanupAndDelete(bool deldll,bool deleteOwned, const StringArray *deleteFilter=NULL);
+    void cleanupAndDelete(bool deldll,bool deleteOwned, const StringArray *deleteExclusions=NULL);
     bool switchThorQueue(const char *cluster, IQueueSwitcher *qs);
     void setAllowedClusters(const char *value);
     IStringVal & getAllowedClusters(IStringVal & str) const;
@@ -2970,7 +2970,7 @@ CLocalWorkUnit::~CLocalWorkUnit()
     catch (IException *E) { LOG(MCexception(E, MSGCLS_warning), E, "Exception during ~CLocalWorkUnit"); E->Release(); }
 }
 
-void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteFilter)
+void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
 {
     TIME_SECTION("WUDELETE cleanupAndDelete total");
     // Delete any related things in SDS etc that might otherwise be forgotten
@@ -3017,7 +3017,7 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const Strin
                 {
                     IConstWUAssociatedFile & cur = iter->query();
                     cur.getNameTail(name);
-                    if (!deleteFilter || (NotFound == deleteFilter->find(name.str())))
+                    if (!deleteExclusions || (NotFound == deleteExclusions->find(name.str())))
                     {
                         Owned<IDllEntry> entry = queryDllServer().getEntry(name.str());
                         if (entry.get())
@@ -3138,7 +3138,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
         return false;   
     }
 
-    StringArray deleteFilter; // associated files not to delete, added if failure to copy
+    StringArray deleteExclusions; // associated files not to delete, added if failure to copy
     Owned<IConstWUAssociatedFileIterator> iter = &q->getAssociatedFiles();
     SCMStringBuffer name;
     Owned<IException> exception;
@@ -3180,7 +3180,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                         if (dstfile->exists())
                         {
                             if (streq(srcfile->queryFilename(), dstfile->queryFilename()))
-                                deleteFilter.append(name.str()); // restored workunit, referencing archive location for query dll
+                                deleteExclusions.append(name.str()); // restored workunit, referencing archive location for query dll
                             // still want to delete if already archived but there are source file copies
                         }
                         else
@@ -3199,7 +3199,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                         EXCLOG(exception.get(), "archiveWorkUnit (copying associated file)");
                         //copy failed, so store original (best) location and don't delete the files
                         filename.getRemotePath(locpath.clear());
-                        deleteFilter.append(name.str());
+                        deleteExclusions.append(name.str());
                     }
                     else
                     {
@@ -3230,7 +3230,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                     VStringBuffer msg("Failed to archive associated file '%s' to destination '%s'", srcFile->queryFilename(), dstFile->queryFilename());
                     EXCLOG(e, msg.str());
                     e->Release();
-                    deleteFilter.append(name.str());
+                    deleteExclusions.append(name.str());
                 }
             }
         }
@@ -3246,7 +3246,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     {
         //setState(WUStateArchived);    // this isn't useful as about to delete it!
         q.clear();
-        cleanupAndDelete(true, deleteOwned, &deleteFilter);
+        cleanupAndDelete(true, deleteOwned, &deleteExclusions);
     }
 
     return true;
