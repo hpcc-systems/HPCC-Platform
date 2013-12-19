@@ -7254,6 +7254,7 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
     case no_trim:
     case no_charlen:
     case no_sorted:
+    case no_not:
         break;
     case no_substring:
         //single character substring - don't create separate items just for this, since likely to have many of them.
