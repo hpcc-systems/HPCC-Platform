@@ -6625,7 +6625,10 @@ public:
             }
             free(buf);
             if (epa.ordinality())
+            {
+                groupType = grp_unknown;
                 return createIGroup(epa);
+            }
         }
         StringBuffer range;
         StringBuffer parent;
