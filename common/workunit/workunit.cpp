@@ -759,7 +759,7 @@ public:
     void unlockRemote(bool closing);
     void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL);
     void abort();
-    void cleanupAndDelete(bool deldll,bool deleteOwned);
+    void cleanupAndDelete(bool deldll,bool deleteOwned, const StringArray *deleteExclusions=NULL);
     bool switchThorQueue(const char *cluster, IQueueSwitcher *qs);
     void setAllowedClusters(const char *value);
     IStringVal & getAllowedClusters(IStringVal & str) const;
@@ -1900,25 +1900,20 @@ mapEnums querySortFields[] =
 class asyncRemoveDllWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveDll
 {
     StringAttr name;
-    bool removeDlls;
-    bool removeDirectory;
 public:
     IMPLEMENT_IINTERFACE;
 
-    asyncRemoveDllWorkItem(const char * _name, bool _removeDlls, bool _removeDirectory)
-        : name(_name)
+    asyncRemoveDllWorkItem(const char * _name) : name(_name)
     {
-        removeDlls = _removeDlls;
-        removeDirectory = _removeDirectory;
     }
     void execute()
     {
-        PROGLOG("WU removeDll %s",name.get());
-        queryDllServer().removeDll(name,removeDlls,removeDirectory);
+        PROGLOG("WU removeDll %s", name.get());
+        queryDllServer().removeDll(name, true, true); // <name>, removeDlls=true, removeDirectory=true
     }
 };      
 
-class asyncRemoveRemoteFileWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveDll
+class asyncRemoveRemoteFileWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveFile
 {
     RemoteFilename name;
 public:
@@ -2555,10 +2550,9 @@ public:
         return numWorkUnitsFiltered(filters,filterbuf,NULL,NULL);
     }
 
-    void asyncRemoveDll(const char * name, bool removeDlls, bool removeDirectory)
+    void asyncRemoveDll(const char * name)
     {
-        const char * tail = pathTail(name);
-        deletedllworkq->post(new asyncRemoveDllWorkItem(tail,removeDlls,removeDirectory));
+        deletedllworkq->post(new asyncRemoveDllWorkItem(name));
     }
 
     void asyncRemoveFile(const char * ip, const char * name)
@@ -2976,7 +2970,7 @@ CLocalWorkUnit::~CLocalWorkUnit()
     catch (IException *E) { LOG(MCexception(E, MSGCLS_warning), E, "Exception during ~CLocalWorkUnit"); E->Release(); }
 }
 
-void CLocalWorkUnit::cleanupAndDelete(bool deldll,bool deleteOwned)
+void CLocalWorkUnit::cleanupAndDelete(bool deldll, bool deleteOwned, const StringArray *deleteExclusions)
 {
     TIME_SECTION("WUDELETE cleanupAndDelete total");
     // Delete any related things in SDS etc that might otherwise be forgotten
@@ -3019,20 +3013,22 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll,bool deleteOwned)
             {
                 Owned<IConstWUAssociatedFileIterator> iter = &q->getAssociatedFiles();
                 SCMStringBuffer name;
-                SCMStringBuffer ip;
                 ForEach(*iter)
                 {
                     IConstWUAssociatedFile & cur = iter->query();
-                    cur.getName(name);
-                    if (cur.getType() == FileTypeDll)
+                    cur.getNameTail(name);
+                    if (!deleteExclusions || (NotFound == deleteExclusions->find(name.str())))
                     {
-                        bool removeDir = true;        // this is to keep the code the same as before, but I don't know why it only does it for the dll.
-                        factory->asyncRemoveDll(name.str(), true, removeDir);
-                    }
-                    else
-                    {
-                        cur.getIp(ip);
-                        factory->asyncRemoveFile(ip.str(), name.str());
+                        Owned<IDllEntry> entry = queryDllServer().getEntry(name.str());
+                        if (entry.get())
+                            factory->asyncRemoveDll(name.str());
+                        else
+                        {
+                            SCMStringBuffer ip, localPath;
+                            cur.getName(localPath);
+                            cur.getIp(ip);
+                            factory->asyncRemoveFile(ip.str(), localPath.str());
+                        }
                     }
                 }
             }
@@ -3142,6 +3138,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
         return false;   
     }
 
+    StringArray deleteExclusions; // associated files not to delete, added if failure to copy
     Owned<IConstWUAssociatedFileIterator> iter = &q->getAssociatedFiles();
     SCMStringBuffer name;
     Owned<IException> exception;
@@ -3160,7 +3157,6 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 Owned<IPropertyTree> generatedDllBranch = createPTree();
                 generatedDllBranch->setProp("@name", entry->queryName());
                 generatedDllBranch->setProp("@kind", entry->queryKind());
-                bool removeDllFiles = true;
                 exception.clear();
                 try
                 {
@@ -3182,7 +3178,11 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                     try
                     {
                         if (dstfile->exists())
-                            removeDllFiles = false; // i.e. previously archived
+                        {
+                            if (streq(srcfile->queryFilename(), dstfile->queryFilename()))
+                                deleteExclusions.append(name.str()); // restored workunit, referencing archive location for query dll
+                            // still want to delete if already archived but there are source file copies
+                        }
                         else
                             copyFile(dstfile,srcfile);
                         makeAbsolutePath(dstfile->queryFilename(), locpath.clear());
@@ -3199,7 +3199,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                         EXCLOG(exception.get(), "archiveWorkUnit (copying associated file)");
                         //copy failed, so store original (best) location and don't delete the files
                         filename.getRemotePath(locpath.clear());
-                        removeDllFiles = false;
+                        deleteExclusions.append(name.str());
                     }
                     else
                     {
@@ -3208,21 +3208,15 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 }
                 generatedDllBranch->setProp("@location", locpath.str());
                 generatedDlls->addPropTree("GeneratedDll", generatedDllBranch.getClear());
-                if (del)
-                {
-                    bool removeDir = (cur.getType() == FileTypeDll); // copied from cleanupAndDelete code, above
-                    if (!p->getPropBool("@isClone", false))         // Leak to protect against cloned WUs
-                        entry->remove(removeDllFiles, removeDir);
-                }
             }
             else // no generated dll entry
             {
-                SCMStringBuffer fname, ip;
-                cur.getName(fname);
+                SCMStringBuffer localPath, ip;
+                cur.getName(localPath);
                 cur.getIp(ip);
                 SocketEndpoint ep(ip.str());
                 RemoteFilename rfn;
-                rfn.setPath(ep, fname.str());
+                rfn.setPath(ep, localPath.str());
                 Owned<IFile> srcFile = createIFile(rfn);
                 addPathSepChar(dst.clear().append(base));
                 rfn.getTail(dst);
@@ -3230,14 +3224,13 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 try
                 {
                     copyFile(dstFile, srcFile);
-                    if (del)
-                        srcFile->remove();
                 }
                 catch (IException *e)
                 {
                     VStringBuffer msg("Failed to archive associated file '%s' to destination '%s'", srcFile->queryFilename(), dstFile->queryFilename());
                     EXCLOG(e, msg.str());
                     e->Release();
+                    deleteExclusions.append(name.str());
                 }
             }
         }
@@ -3253,8 +3246,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     {
         //setState(WUStateArchived);    // this isn't useful as about to delete it!
         q.clear();
-        //deldll false as should have deleted all those we successfully copied, and archived and removed SDS entries, above
-        cleanupAndDelete(false, deleteOwned);
+        cleanupAndDelete(true, deleteOwned, &deleteExclusions);
     }
 
     return true;
