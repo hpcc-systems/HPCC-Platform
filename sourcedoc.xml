@@ -117,21 +117,10 @@
 
                 On Ubuntu 12.04, the following commands will install the required libraries
                 <programlisting>
-                  sudo apt-get install cmake
-                  sudo apt-get install bison
-                  sudo apt-get install flex
-                  sudo apt-get install libicu-dev
-                  sudo apt-get install libboost-regex-dev
-                  sudo apt-get install binutils-dev
-                  sudo apt-get install libxerces-c2-dev
-                  sudo apt-get install libxalan110-dev
-                  sudo apt-get install zlib1g-dev
-                  sudo apt-get install libssl-dev
-                  sudo apt-get install libldap2-dev
-                  sudo apt-get install expect
-                  sudo apt-get install libarchive-dev
-                  sudo apt-get install libapr1-dev
-                  sudo apt-get install libaprutil1-dev
+                  sudo apt-get install cmake bison flex libicu-dev libboost-regex-dev \
+                                       binutils-dev libxerces-c2-dev libxalan110-dev zlib1g-dev \
+                                       libssl-dev libldap2-dev expect libarchive-dev \
+                                       libapr1-dev libaprutil1-dev
                 </programlisting>
 	    </para>
 
