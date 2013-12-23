@@ -92,7 +92,8 @@ size32_t CTransformer::read(size32_t maxLength, void * buffer)
 bool CTransformer::setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey)
 {
     CTransformerBase::setPartition(remoteInputName, _startOffset, _length);
-    input.setown(inputFile->open(IFOread));
+    // if we want spray to not fill page cache use IFEnocache
+    input.setown(inputFile->open(IFOread,IFEnone));
     if (compressedInput) {                          
         Owned<IExpander> expander;
         if (decryptKey&&*decryptKey) {
@@ -823,7 +824,8 @@ processedProgress:
                 throw MakeOsException(GetLastError(), "Failed to create directory for file: %s", localFilename.str());
 
             OwnedIFile outFile = createIFile(localFilename.str());
-            OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone);
+            // if we want spray to not fill page cache use IFEnocache
+            OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone,IFEnone);
             if (!outio)
                 throwError1(DFTERR_CouldNotCreateOutput, localFilename.str());
             if (compressOutput) {
