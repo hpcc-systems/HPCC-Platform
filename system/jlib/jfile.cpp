@@ -1977,9 +1977,9 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
         if (atomic_add_and_read(&bytesWritten, ret) >= PGCFLUSH_BLKSIZE)
         {
             atomic_set(&bytesWritten, 0);
-            // non-blocking request to commit dirty pages [or block with fdatasync()]
-            sync_file_range(file, 0, 0, SYNC_FILE_RANGE_WRITE);
-            // flush previously committed dirty pages
+            // [possibly] non-blocking request to write-out dirty pages
+            sync_file_range(file, 0, 0, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE);
+            // flush written-out pages
             posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
         }
     }

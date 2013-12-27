@@ -52,7 +52,7 @@ interface IDirectoryIterator : extends IIteratorOf<IFile>
 
 };
 
-#define PGCFLUSH_BLKSIZE      0x200000
+#define PGCFLUSH_BLKSIZE      0x400000
 #define DEFAULT_COPY_BLKSIZE  0x100000
 enum CFflags { CFnone=0x0, CFflush_read=0x1, CFflush_write=0x2, CFflush_rdwr=0x3 };
 
