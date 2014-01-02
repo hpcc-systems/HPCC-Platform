@@ -110,7 +110,7 @@ ZBuffer& base64_decode(int inlen, const char *in, ZBuffer& data)
 
     int bc = 0; 
     int estlen = (int)(inlen/4.0*3.0 + 2);
-    unsigned char* buf = new unsigned char[estlen];
+    unsigned char* buf = (unsigned char *) malloc(estlen);
     for(int i = 0; i < inlen; )
     {
         if(in[i] == '\n')
@@ -144,7 +144,7 @@ ZBuffer& base64_decode(int inlen, const char *in, ZBuffer& data)
     if(bc > 0)
         data.setBuffer(bc, buf);
     else
-        delete buf;
+        free(buf);
 
     return data;
 }
