@@ -1164,7 +1164,8 @@ void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inT
     {
         Owned<IWUPlugin> p = workunit->updatePluginByName(dllname.str());
 
-        p->setPluginVersion(version);
+        if (version && *version)
+            p->setPluginVersion(version);
         if (inThor)
             p->setPluginThor(true);
         else
@@ -1178,7 +1179,8 @@ void HqlCppInstance::addPlugin(const char *plugin, const char *version, bool inT
     {
         IPropertyTree * pluginNode = createPTree("Plugin");
         pluginNode->setProp("@dll", dllname.str());
-        pluginNode->setProp("@version", version);
+        if (version && *version)
+            pluginNode->setProp("@version", version);
         plugins->addPropTree("Plugin", pluginNode);
     }
 }
