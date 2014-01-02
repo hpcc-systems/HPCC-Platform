@@ -26,8 +26,8 @@
 project( mysqlembed )
 
 if (USE_MYSQL)
-  ADD_PLUGIN(mysqlembed PACKAGES mysql-client OPTION MAKE_MYSQL)
-  if ( 1 ) # MAKE_MYSQL )
+  ADD_PLUGIN(mysqlembed PACKAGES MYSQL OPTION MAKE_MYSQLEMBED)
+  if ( MAKE_MYSQLEMBED )
     set ( SRCS
           mysqlembed.cpp
         )
@@ -35,6 +35,7 @@ if (USE_MYSQL)
     include_directories (
          ./../../system/include
          ./../../rtl/eclrtl
+         ./../../roxie/roxiemem
          ./../../rtl/include
          ./../../rtl/nbcd
          ./../../common/deftype

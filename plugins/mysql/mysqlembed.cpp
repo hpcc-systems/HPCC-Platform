@@ -26,6 +26,7 @@
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlfield_imp.hpp"
+#include "roxiemem.hpp"
 #include "nbcd.hpp"
 
 #ifdef _WIN32
@@ -291,6 +292,10 @@ public:
     {
         return inputBindings;
     }
+    inline bool hasResult() const
+    {
+        return *res != NULL;
+    }
 protected:
     Linked<MySQLConnection> conn;
     Linked<MySQLStatement> stmt;
@@ -547,42 +552,6 @@ protected:
     int colIdx;
 };
 
-// A MySQL function that returns a dataset will return a MySQLRowStream object that can be
-// interrogated to return each row of the result in turn
-
-class MySQLRowStream : public CInterfaceOf<IRowStream>
-{
-public:
-    MySQLRowStream(MySQLPreparedStatement *_stmtInfo, IEngineRowAllocator *_resultAllocator)
-    : stmtInfo(_stmtInfo), resultAllocator(_resultAllocator)
-    {
-    }
-    virtual const void *nextRow()
-    {
-        if (!stmtInfo->next())
-        {
-            stop();
-            return NULL;
-        }
-        RtlDynamicRowBuilder rowBuilder(resultAllocator);
-        MySQLRowBuilder mysqlRowBuilder(stmtInfo->queryResultBindings());
-        const RtlTypeInfo *typeInfo = resultAllocator->queryOutputMeta()->queryTypeInfo();
-        assertex(typeInfo);
-        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
-        size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, mysqlRowBuilder);
-        return rowBuilder.finalizeRowClear(len);
-    }
-    virtual void stop()
-    {
-        resultAllocator.clear();
-        stmtInfo->stop();
-    }
-
-protected:
-    Linked<MySQLPreparedStatement> stmtInfo;
-    Linked<IEngineRowAllocator> resultAllocator;
-};
-
 // Bind MySQL variables from an ECL record
 
 class MySQLRecordBinder : public CInterfaceOf<IFieldProcessor>
@@ -743,6 +712,7 @@ protected:
 };
 
 //
+
 class MySQLDatasetBinder : public MySQLRecordBinder
 {
 public:
@@ -750,19 +720,92 @@ public:
       : input(_input), MySQLRecordBinder(_typeInfo, _bindings, _firstParam)
     {
     }
+    bool bindNext()
+    {
+        roxiemem::OwnedConstRoxieRow nextRow = (const byte *) input->ungroupedNextRow();
+        if (!nextRow)
+            return false;
+        processRow((const byte *) nextRow.get());   // Bind the variables for the current row
+        return true;
+    }
     void executeAll(MySQLPreparedStatement *stmtInfo)
     {
-        loop
+        while (bindNext())
         {
-            const byte *nextRow = (const byte *) input->ungroupedNextRow();
-            if (!nextRow)
-                break;
-            processRow(nextRow);   // Bind the variables for the current row
             stmtInfo->execute();
         }
     }
 protected:
     Owned<IRowStream> input;
+};
+
+// A MySQL function that returns a dataset will return a MySQLRowStream object that can be
+// interrogated to return each row of the result in turn
+
+class MySQLRowStream : public CInterfaceOf<IRowStream>
+{
+public:
+    MySQLRowStream(MySQLDatasetBinder *_inputStream, MySQLPreparedStatement *_stmtInfo, IEngineRowAllocator *_resultAllocator)
+    : inputStream(_inputStream), stmtInfo(_stmtInfo), resultAllocator(_resultAllocator)
+    {
+        executePending = true;
+        eof = false;
+    }
+    virtual const void *nextRow()
+    {
+        // A little complex when streaming data in as well as out - want to execute for every input record
+        if (eof)
+            return NULL;
+        loop
+        {
+            if (executePending)
+            {
+                executePending = false;
+                if (inputStream && !inputStream->bindNext())
+                {
+                    noteEOF();
+                    return NULL;
+                }
+                stmtInfo->execute();
+            }
+            if (stmtInfo->next())
+                break;
+            if (inputStream)
+                executePending = true;
+            else
+            {
+                noteEOF();
+                return NULL;
+            }
+        }
+        RtlDynamicRowBuilder rowBuilder(resultAllocator);
+        MySQLRowBuilder mysqlRowBuilder(stmtInfo->queryResultBindings());
+        const RtlTypeInfo *typeInfo = resultAllocator->queryOutputMeta()->queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, mysqlRowBuilder);
+        return rowBuilder.finalizeRowClear(len);
+    }
+    virtual void stop()
+    {
+        resultAllocator.clear();
+        stmtInfo->stop();
+    }
+
+protected:
+    void noteEOF()
+    {
+        if (!eof)
+        {
+            eof = true;
+            stop();
+        }
+    }
+    Linked<MySQLDatasetBinder> inputStream;
+    Linked<MySQLPreparedStatement> stmtInfo;
+    Linked<IEngineRowAllocator> resultAllocator;
+    bool executePending;
+    bool eof;
 };
 
 // Each call to a MySQL function will use a new MySQLEmbedFunctionContext object
@@ -859,17 +902,20 @@ public:
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
-        return new MySQLRowStream(stmtInfo, _resultAllocator);
+        return new MySQLRowStream(inputStream, stmtInfo, _resultAllocator);
     }
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
-        MySQLRowStream stream(stmtInfo, _resultAllocator);
-        byte * ret = (byte *) stream.nextRow();
-        byte * ret2 = (byte *) stream.nextRow();
+        if (!stmtInfo->hasResult())
+            typeError("row", NULL);
+        lazyExecute();
+        MySQLRowStream stream(NULL, stmtInfo, _resultAllocator);
+        roxiemem::OwnedConstRoxieRow ret = stream.nextRow();
+        roxiemem::OwnedConstRoxieRow ret2 = stream.nextRow();
         stream.stop();
         if (ret ==  NULL || ret2 != NULL)  // Check for exactly one returned row
             typeError("row", NULL);
-        return ret;
+        return (byte *) ret.getClear();
     }
     virtual size32_t getTransformResult(ARowBuilder & rowBuilder)
     {
@@ -990,15 +1036,23 @@ public:
     {
         if (nextParam != stmtInfo->queryInputBindings().numColumns())
             fail("Not enough parameters");
+        if (!stmtInfo->hasResult())
+            lazyExecute();
+    }
+protected:
+    void lazyExecute()
+    {
         if (inputStream)
             inputStream->executeAll(stmtInfo);
         else
             stmtInfo->execute();
     }
-protected:
     const MYSQL_BIND &getScalarResult()
     {
-        if (!stmtInfo->next() || stmtInfo->queryResultBindings().numColumns() != 1)
+        if (!stmtInfo->hasResult() || stmtInfo->queryResultBindings().numColumns() != 1)
+            typeError("scalar", NULL);
+        lazyExecute();
+        if (!stmtInfo->next())
             typeError("scalar", NULL);
         return stmtInfo->queryResultBindings().queryColumn(0);
     }

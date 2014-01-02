@@ -29,6 +29,14 @@ childrec := RECORD
    UNICODE8 u2
 END;
 
+stringrec := RECORD
+   string name
+END;
+
+stringrec extractName(childrec l) := TRANSFORM
+  SELF := l;
+END;
+
 init := DATASET([{'name1', 1, true, 1.2, 3.4, D'aa55aa55', 1234567.89, U'Straße', U'Straße'},
                  {'name2', 2, false, 5.6, 7.8, D'00', -1234567.89, U'là', U'là'}], childrec);
 
@@ -72,6 +80,10 @@ dataset(childrec) testMySQLStringParam(string filter) := EMBED(mysql : user('rch
   SELECT * from tbl1 where name = ?;
 ENDEMBED;
 
+dataset(childrec) testMySQLDSParam(dataset(stringrec) inrecs) := EMBED(mysql : user('rchapman'),database('test'))
+  SELECT * from tbl1 where name = ?;
+ENDEMBED;
+
 integer testMySQLInt() := EMBED(mysql : user('rchapman'),database('test'))
   SELECT max(value) from tbl1;
 ENDEMBED;
@@ -109,6 +121,7 @@ sequential (
   OUTPUT(testMySQLParms('name1', 1, true, 1.2, 3.4, D'aa55aa55', U'Straße', U'Straße')),
   OUTPUT(testMySQLString()),
   OUTPUT(testMySQLStringParam(testMySqlString())),
+  OUTPUT(testMySQLDSParam(PROJECT(init, extractName(LEFT)))),
   OUTPUT(testMySQLInt()),
   OUTPUT(testMySQLBool()),
   OUTPUT(testMySQLReal8()),
