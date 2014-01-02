@@ -4327,7 +4327,7 @@ void HqlConstantPercolator::doExtractConstantTransform(IHqlExpression * transfor
                 IHqlExpression * self = lhs->queryChild(0);
                 assertex(self->getOperator() == no_self);
 
-                OwnedHqlExpr selected = selector ? createSelectExpr(LINK(selector), LINK(lhs->queryChild(1))) : LINK(lhs);
+                OwnedHqlExpr selected = selector ? createSelectExpr(LINK(selector), LINK(lf)) : LINK(lhs);
                 if (rhs->isConstant())
                     addTransformMapping(selected, rhs);
                 if (lhs->isDatarow())

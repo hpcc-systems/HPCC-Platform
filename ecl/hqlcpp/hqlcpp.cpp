@@ -549,7 +549,6 @@ IHqlExpression * getOptimialListFormat(IHqlExpression * table)
 
 bool canOptimizeAdjust(IHqlExpression * value)
 {
-    ITypeInfo * type = value->queryType();
     switch (value->getOperator())
     {
     case no_constant:
@@ -688,8 +687,6 @@ IHqlExpression * adjustBoundIntegerValues(IHqlExpression * left, IHqlExpression 
                 IHqlExpression * rr = right->queryChild(1);
                 if (rr->getOperator() == no_constant)
                 {
-                    ITypeInfo * rlt = rl->queryType();
-                    ITypeInfo * rrt = rr->queryType();
                     if (queryUnqualifiedType(rl->queryType()) == queryUnqualifiedType(rr->queryType()))
                     {
                         __int64 delta = rr->queryValue()->getIntValue();
@@ -1752,14 +1749,14 @@ void HqlCppTranslator::cacheOptions()
     //Configure the divide by zero action
     options.divideByZeroAction = DBZzero;
     const char * dbz = wu()->getDebugValue("divideByZero",val).str();
-    if (strieq(val.str(), "0") || strieq(val.str(), "zero"))
+    if (strieq(dbz, "0") || strieq(dbz, "zero"))
         options.divideByZeroAction = DBZzero;
-    else if (strieq(val.str(), "nan"))
+    else if (strieq(dbz, "nan"))
         options.divideByZeroAction = DBZnan;
-    else if (strieq(val.str(), "fail") || strieq(val.str(), "throw"))
+    else if (strieq(dbz, "fail") || strieq(dbz, "throw"))
         options.divideByZeroAction = DBZfail;
     else if (val.length())
-        throwError2(HQLERR_UnexpectedOptionValue_XY, "divideByZero", val.str());
+        throwError2(HQLERR_UnexpectedOptionValue_XY, "divideByZero", dbz);
 
     //The following cases handle options whose default values are dependent on other options.  
     //Or where one debug options sets more than one option
@@ -7562,7 +7559,6 @@ void HqlCppTranslator::doBuildExprList(BuildCtx & ctx, IHqlExpression * expr, CH
     case type_array:
         {
             LinkedHqlExpr values = expr;
-            ITypeInfo * childType = type->queryChildType();
             //MORE: Also alien data types and other weird things...
             //if (childType->getSize() == UNKNOWN_LENGTH)
             if (expr->numChildren() == 0)
@@ -8630,7 +8626,6 @@ protected:
 void HqlCppTranslator::doBuildAssignHashCrc(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
-    ITypeInfo * childType = child->queryType();
 
     LinkedHqlExpr initialValue = queryZero();
     node_operator op = expr->getOperator();
@@ -8878,7 +8873,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
             {
                 creator.beginCondition(ctx);
                 BuildCtx iterctx(ctx);
-                BoundRow * row = buildDatasetIterate(iterctx, elem, false);
+                buildDatasetIterate(iterctx, elem, false);
                 doBuildAssignHashElement(iterctx, creator, elem->queryNormalizedSelector(), elem->queryRecord());
                 creator.endCondition(iterctx);
                 return;
@@ -8908,7 +8903,6 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
 void HqlCppTranslator::doBuildAssignHashMd5(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
-    ITypeInfo * childType = child->queryType();
 
     Owned<ITypeInfo> stateType = makeDataType(sizeof(md5_state_s));
     //initialize the state object
@@ -9427,7 +9421,6 @@ void HqlCppTranslator::doBuildAssignSubString(BuildCtx & ctx, const CHqlBoundTar
         CHqlBoundExpr boundSrc;
         buildCachedExpr(ctx, info.src, boundSrc);
         info.bindToFrom(*this, ctx);
-        ITypeInfo * sourceType = boundSrc.queryType();
 
         if (!info.boundFrom.expr)
             info.boundFrom.expr.setown(getSizetConstant(1));
@@ -11782,7 +11775,6 @@ IHqlExpression * HqlCppTranslator::getBoundSize(ITypeInfo * type, IHqlExpression
 {
     type_t tc = type->getTypeCode();
 
-    ITypeInfo * lengthType = length->queryType();
     switch (tc)
     {
     case type_qstring:

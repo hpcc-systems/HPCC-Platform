@@ -563,7 +563,6 @@ void CXmlEclElement::populateChildren()
 
 void CXmlEclElement::expandChildren(IPropertyTree * xml)
 {
-    const char * name = xml->queryProp("@name");
     Owned<IPropertyTreeIterator> modit = xml->getElements("Module");
     ForEach(*modit)
     {

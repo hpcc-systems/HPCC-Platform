@@ -1375,7 +1375,6 @@ void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
     //Remove this line once all engines use the new child queries exclusively
     if (numResults == 0) numResults++;
 
-    IHqlExpression * query = childQuery->queryChild(2);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, childQuery, numResults, no_none);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(graphctx, PETchild, represents, resourced, true);
@@ -1424,7 +1423,6 @@ void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * re
     BuildCtx aliasctx(ctx);
     aliasctx.addGroup();
 
-    IHqlExpression * query = childQuery->queryChild(2);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_none);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETchild, represents, resourced, false);
@@ -1456,7 +1454,6 @@ unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, bool multiInstance)
     BuildCtx subctx(ctx);
     subctx.addGroup();
 
-    IHqlExpression * query = childQuery->queryChild(2);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_loop);
     //Add a flag to indicate multi instance
     if (multiInstance)
@@ -1591,7 +1588,6 @@ unique_id_t ChildGraphBuilder::buildRemoteGraph(BuildCtx & ctx)
     BuildCtx subctx(ctx);
     subctx.addGroup();
 
-    IHqlExpression * query = childQuery->queryChild(2);
     OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_allnodes);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETremote, represents, GraphRemote, false);
@@ -4241,7 +4237,7 @@ void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelec
 
     doBuildRowAssignAggregateClear(ctx, target, expr);
     BuildCtx condctx(ctx);
-    BoundRow * cursor = buildDatasetIterate(condctx, dataset, isSingleExists);
+    buildDatasetIterate(condctx, dataset, isSingleExists);
     doBuildRowAssignAggregateNext(condctx, target, expr, isSingleExists, guard);
 }
 
@@ -5340,7 +5336,7 @@ void HqlCppTranslator::doBuildStmtApply(BuildCtx & ctx, IHqlExpression * expr)
     if (start)
         buildStmt(ctx, start->queryChild(0));
     BuildCtx condctx(ctx);
-    BoundRow * cursor = buildDatasetIterate(condctx, dataset, false);
+    buildDatasetIterate(condctx, dataset, false);
     unsigned max = expr->numChildren();
     for (unsigned i=1; i < max; i++)
     {

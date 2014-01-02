@@ -6487,16 +6487,6 @@ IHqlExpression * HqlGram::checkBuildIndexRecord(IHqlExpression *record, attribut
 
 void HqlGram::checkBuildIndexFilenameFlags(IHqlExpression * dataset, attribute & flags)
 {
-    IHqlExpression * flagExpr = flags.queryExpr();
-    HqlExprArray args;
-    if (flagExpr)
-        flagExpr->unwindList(args, no_comma);
-
-    IHqlDataset * table = dataset->queryDataset()->queryRootTable();
-    IHqlExpression * tableExpr = NULL;
-    if (table)
-       tableExpr = queryExpression(table);
-
 }
 
 
@@ -8984,7 +8974,6 @@ IHqlExpression * HqlGram::attachMetaAttributes(IHqlExpression * ownedExpr, HqlEx
 
 void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults)
 {
-    IHqlScope * exprScope = expr->queryScope();
     IHqlExpression * scopeExpr = queryExpression(scope);
     IIdAtom * moduleName = NULL;
     if (!inType)

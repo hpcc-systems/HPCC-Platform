@@ -1264,7 +1264,7 @@ void GeneralSetCursor::buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExp
             checkNotAll(ctx);
 
         OwnedHqlExpr dsIndexExpr = createDatasetSelect(indexExpr);
-        BoundRow * cursor = dsCursor->buildSelectNth(ctx, dsIndexExpr);
+        dsCursor->buildSelectNth(ctx, dsIndexExpr);
         OwnedHqlExpr select = createSelectExpr(LINK(dsIndexExpr), LINK(element));
         translator.buildExpr(ctx, select, tgt);
     }
@@ -1361,7 +1361,7 @@ void CreateSetCursor::buildIsAll(BuildCtx & ctx, CHqlBoundExpr & tgt)
 
 void CreateSetCursor::buildIterateLoop(BuildCtx & ctx, CHqlBoundExpr & curBound, bool needToBreak)
 {
-    BoundRow * cursor = dsCursor->buildIterateLoop(ctx, needToBreak);
+    dsCursor->buildIterateLoop(ctx, needToBreak);
     translator.buildExpr(ctx, value, curBound);
 }
 
@@ -2003,9 +2003,7 @@ IHqlCppDatasetBuilder * HqlCppTranslator::createLinkedDictionaryBuilder(IHqlExpr
 
 IHqlCppDatasetBuilder * HqlCppTranslator::createSingleRowTempDatasetBuilder(IHqlExpression * record, BoundRow * row)
 {
-//  if (translator.isFixedRecordSize(record))
-        return new SingleRowTempDatasetBuilder(*this, record, row);
-    return createBlockedDatasetBuilder(record);
+    return new SingleRowTempDatasetBuilder(*this, record, row);
 }
 
 IHqlCppDatasetBuilder * HqlCppTranslator::createInlineDatasetBuilder(IHqlExpression * record, IHqlExpression * size, IHqlExpression * address)
@@ -2057,11 +2055,8 @@ void HqlCppTranslator::buildSetAssign(BuildCtx & ctx, IHqlCppSetBuilder * builde
         doBuildSetAssignAndCast(ctx, builder, expr->queryChild(0));
         break;
     case no_addsets:
+        //MORE: Cannot assign left then right because it hneeds to correctly cope with ALL
         doBuildSetAssignAndCast(ctx, builder, expr);
-        break;
-        //MORE: This is wrong because needs to cope with all.
-        buildSetAssign(ctx, builder, expr->queryChild(0));
-        buildSetAssign(ctx, builder, expr->queryChild(1));
         break;
     case no_all:
         builder->setAll(ctx, queryBoolExpr(true));
@@ -2092,7 +2087,7 @@ void HqlCppTranslator::buildSetAssign(BuildCtx & ctx, IHqlCppSetBuilder * builde
             IHqlExpression * value = expr->queryChild(1);
             builder->setAll(ctx, queryBoolExpr(false));
             BuildCtx subctx(ctx);
-            BoundRow * cursor = buildDatasetIterate(subctx, ds, false);
+            buildDatasetIterate(subctx, ds, false);
             Owned<IReferenceSelector> selector = builder->buildCreateElement(subctx);
             selector->set(subctx, value);
             builder->finishElement(subctx);

@@ -2452,7 +2452,6 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                         if ((cur->getOperator() == no_select) && !isNewSelector(cur))
                         {
                             IHqlExpression * ds = queryDatasetCursor(cur);
-                            IHqlExpression * field = cur->queryChild(1);
                             if (ds == queryActiveTableSelector())
                                 processMatchingSelector(extra->outputFields, cur, queryActiveTableSelector());
                             else

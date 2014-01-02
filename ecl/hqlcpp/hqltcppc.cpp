@@ -2709,7 +2709,7 @@ IHqlExpression * CXmlColumnInfo::getXmlDatasetExpr(HqlCppTranslator & translator
     IHqlExpression * path = selector->queryExpr();
     StringBuffer subPrefix;
     BoundRow * selfCursor = translator.bindSelf(loopctx, path, targetRow->queryBound(), targetRow->queryBuilder());
-    BoundRow * srcCursor = translator.bindXmlTableCursor(loopctx, path, subRowExpr, no_none, NULL, false);
+    translator.bindXmlTableCursor(loopctx, path, subRowExpr, no_none, NULL, false);
     OwnedHqlExpr active = ensureActiveRow(path);
     translator.buildAssign(loopctx, selfCursor->querySelector(), active);
     translator.finishSelf(loopctx, selfCursor, targetRow);

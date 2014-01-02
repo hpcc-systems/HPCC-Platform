@@ -490,7 +490,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
 
     public:
         receive_sniffer(CReceiveManager &_parent, unsigned _snifferPort, const IpAddress &_snifferIP, unsigned numNodes)
-          : Thread("udplib::receive_sniffer"), parent(_parent), snifferPort(_snifferPort), snifferIP(_snifferIP)
+          : Thread("udplib::receive_sniffer"), parent(_parent), snifferPort(_snifferPort), snifferIP(_snifferIP), running(false)
         {
             snifferTable = new SnifferEntry[numNodes];
             sniffer_socket = ISocket::multicast_create(snifferPort, snifferIP);

@@ -4518,7 +4518,6 @@ static IHqlExpression * getScalarReplacement(CChildDependent & cur, ResourcerInf
     //Now modify the spilled result depending on how the spilled result was created (see EclHoistLocator::noteScalar() above)
     if (value->getOperator() == no_select)
     {
-        IHqlExpression * field = value->queryChild(1);
         bool isNew;
         IHqlExpression * ds = querySelectorDataset(value, isNew);
         if(isNew || ds->isDatarow())

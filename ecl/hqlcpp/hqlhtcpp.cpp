@@ -1581,7 +1581,6 @@ void HqlCppTranslator::finalizeTempRow(BuildCtx & ctx, BoundRow * row, BoundRow 
     IHqlExpression * rowBuilder = builder->queryBound();
     bool targetIsOwnedRow = hasWrapperModifier(targetRow->queryType());
 
-    IHqlExpression * record = rowBuilder->queryRecord();
     if (builder->queryBuilder() && targetIsOwnedRow)
     {
         OwnedHqlExpr createdRowSize = getRecordSize(builder->querySelector());
@@ -3454,7 +3453,7 @@ bool HqlCppTranslator::buildMetaPrefetcherClass(BuildCtx & ctx, IHqlExpression *
     bool ok;
     {
         BuildCtx prefetchctx(prefetcher.startctx);
-        IHqlStmt * stmt = prefetchctx.addQuotedCompound("virtual void readAhead(IRowDeserializerSource & in)");
+        prefetchctx.addQuotedCompound("virtual void readAhead(IRowDeserializerSource & in)");
         OwnedHqlExpr helper = createVariable("in", makeBoolType());
 
         ok = queryRecordOffsetMap(record)->buildReadAhead(*this, prefetchctx, helper);
@@ -5975,7 +5974,10 @@ IReferenceSelector * HqlCppTranslator::buildReference(BuildCtx & ctx, IHqlExpres
     case no_select:
         {
             IHqlExpression * ds = expr->queryChild(0);
+#ifdef _DEBUG
+            //Here to make tracing easier in a debugger
             IHqlExpression * field = expr->queryChild(1);
+#endif
             Owned<IReferenceSelector> selector;
             if (isNewSelector(expr))
             {
@@ -7606,7 +7608,6 @@ void HqlCppTranslator::doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, 
         return;
 
     IHqlExpression * child = expr->queryChild(0);
-    IHqlExpression * limitExpr = expr->queryChild(1);
     ITypeInfo * type = child->queryType();
     if (expr->hasAttribute(maxAtom))
     {
@@ -7675,6 +7676,7 @@ void HqlCppTranslator::doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, 
     }
 
 #if 0
+    IHqlExpression * limitExpr = expr->queryChild(1);
     if (limitExpr)
     {
         OwnedHqlExpr other = createValue(no_sizeof, expr->getType(), LINK(child));
@@ -8732,7 +8734,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityApply(BuildCtx & ctx, IHqlExpr
 {
     StringBuffer s;
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * action = expr->queryChild(1);
     IHqlExpression * start = expr->queryAttribute(beforeAtom);
     IHqlExpression * end = expr->queryAttribute(afterAtom);
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
@@ -9420,7 +9421,7 @@ void HqlCppTranslator::buildCsvWriteTransform(BuildCtx & subctx, IHqlExpression 
                 buildCsvWriteScalar(subctx, translatedCount, encoding);
 
                 BuildCtx loopctx(subctx);
-                BoundRow * row = cursor->buildIterateLoop(loopctx, false);
+                cursor->buildIterateLoop(loopctx, false);
                 buildCsvWriteTransform(loopctx, expr->queryRecord(), selected, encoding);
                 return;
             }
@@ -9899,7 +9900,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     IHqlExpression * dataset  = expr->queryChild(0);
     IHqlExpression * filename = queryRealChild(expr, 1);
     IHqlExpression * record = dataset->queryRecord();
-    IHqlDataset * baseTable = dataset->queryDataset()->queryRootTable();
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKindexwrite, expr, "IndexWrite");
@@ -10834,7 +10834,6 @@ void HqlCppTranslator::buildXmlSerializeUsingMeta(BuildCtx & ctx, IHqlExpression
 ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * record = dataset->queryRecord();
     IHqlExpression * seq = querySequence(expr);
     IHqlExpression * name = queryResultName(expr);
     int sequence = (int)getIntValue(seq, ResultSequenceInternal);
@@ -10968,7 +10967,6 @@ void HqlCppTranslator::doBuildStmtOutput(BuildCtx & ctx, IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     IHqlExpression * dictionary = expr->queryChild(0);
-    IHqlExpression * record = dictionary->queryRecord();
     IHqlExpression * seq = querySequence(expr);
     IHqlExpression * name = queryResultName(expr);
     int sequence = (int)getIntValue(seq, ResultSequenceInternal);
@@ -11493,7 +11491,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
 
     LinkedHqlExpr dataset1 = expr->queryChild(0);
     LinkedHqlExpr dataset2 = queryJoinRhs(expr);
-    IHqlExpression * condition = expr->queryChild(2);
     IHqlExpression * transform = expr->queryChild(3);
     IHqlExpression * noSortAttr = expr->queryAttribute(noSortAtom);
     IHqlExpression * rowlimit = expr->queryAttribute(rowLimitAtom);
@@ -12102,7 +12099,10 @@ BoundRow * HqlCppTranslator::buildTransformCursors(BuildCtx & ctx, IHqlExpressio
         rightRow = bindTableCursor(ctx, right, "right", no_right, selSeq);
 
     if (options.precalculateFieldOffsets)
+    {
         precalculateFieldOffsets(ctx, transform, leftRow);
+        precalculateFieldOffsets(ctx, transform, rightRow);
+    }
     return bindSelf(ctx, self, "crSelf");
 }
 
@@ -12435,7 +12435,6 @@ void HqlCppTranslator::doBuildAggregateFirstFunc(BuildCtx & ctx, IHqlExpression 
 {
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * tgtRecord = expr->queryChild(1);
-    IHqlExpression * transform = expr->queryChild(2);
 
     BuildCtx funcctx(ctx);
     funcctx.addQuotedCompound("virtual size32_t processFirst(ARowBuilder & crSelf, const void * _src)");
@@ -12607,12 +12606,10 @@ void HqlCppTranslator::doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression 
 
     OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(tgtRecord));
     BoundRow * selfRow = bindSelf(funcctx, resultDataset, "crSelf");
-    BoundRow * leftCursor = bindTableCursor(funcctx, resultDataset, "left", no_left, selSeq);
     BoundRow * rightCursor = bindTableCursor(funcctx, resultDataset, "right", no_right, selSeq);
 
     unsigned numAggregates = transform->numChildren();
     unsigned idx;
-    IHqlExpression * left = leftCursor->querySelector();
     IHqlExpression * right = rightCursor->querySelector();
     OwnedHqlExpr self = getSelf(tgtRecord);
     for (idx = 0; idx < numAggregates; idx++)
@@ -12948,7 +12945,6 @@ public:
     {
         IHqlExpression * dataset = expr->queryChild(0);
         IHqlExpression * selSeq = querySelSeq(expr);
-        IHqlExpression * rowsid = expr->queryAttribute(_rowsid_Atom);
         self.setown(getSelf(expr));
         left.setown(createSelector(no_left, dataset, selSeq));
         right.setown(createSelector(no_right, expr, selSeq));
@@ -13049,9 +13045,6 @@ IHqlExpression * HqlCppTranslator::getUserAggregateMergeTransform(IHqlExpression
 
 void HqlCppTranslator::doBuildUserMergeAggregateFunc(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * mergeTransform)
 {
-    IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * tgtRecord = expr->queryChild(1);
-    IHqlExpression * transform = expr->queryChild(2);
     IHqlExpression * selSeq = querySelSeq(expr);
     if (!mergeTransform)
         throwError(HQLERR_AggregateNeedMergeTransform);
@@ -13121,9 +13114,9 @@ void HqlCppTranslator::doBuildUserAggregateFuncs(BuildCtx & ctx, IHqlExpression 
         ensureRowAllocated(funcctx, "crSelf");
         funcctx.addQuoted("unsigned char * src = (unsigned char *) _src;");
 
-        BoundRow * leftCursor = bindTableCursor(funcctx, dataset, "src", options.mainRowsAreLinkCounted, no_left, selSeq);
         BoundRow * selfCursor = bindSelf(funcctx, expr, "crSelf");
-        BoundRow * rightCursor = bindTableCursor(funcctx, expr, "crSelf.row()", no_right, querySelSeq(expr));
+        bindTableCursor(funcctx, dataset, "src", options.mainRowsAreLinkCounted, no_left, selSeq);
+        bindTableCursor(funcctx, expr, "crSelf.row()", no_right, selSeq);
 
         doBuildUserAggregateProcessTransform(funcctx, selfCursor, expr, nextTransform, queryBoolExpr(true));
         buildReturnRecordSize(funcctx, selfCursor);
@@ -14518,7 +14511,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPrefetchProject(BuildCtx & ctx
         {
             //Generate the extract preparation function
             BuildCtx prectx(instance->startctx);
-            IHqlStmt * preStmt = prectx.addQuotedCompound("virtual bool preTransform(rtlRowBuilder & builder, const void * _left, unsigned __int64 _counter)");
+            prectx.addQuotedCompound("virtual bool preTransform(rtlRowBuilder & builder, const void * _left, unsigned __int64 _counter)");
             associateSkipReturnMarker(prectx, queryBoolExpr(false), NULL);
             prectx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
             if (expr->getOperator() == no_hqlproject)
@@ -14706,7 +14699,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
 
     // Bind left to "left" and right to RIGHT
-    BoundRow * leftCursor = bindTableCursor(funcctx, dataset, "_left");
+    bindTableCursor(funcctx, dataset, "_left");
     BoundRow * selfCursor = bindSelf(funcctx, expr, "crSelf");
 
     //MORE: I don't have any examples that trigger this code as far as I know...
@@ -16366,7 +16359,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityTempTable(BuildCtx & ctx, IHql
 
     OwnedHqlExpr values = normalizeListCasts(expr->queryChild(0));
     IHqlExpression * record = expr->queryChild(1);
-    IHqlExpression * defaults = expr->queryChild(2);
 
     assertex(values->getOperator() != no_recordlist);       // should have been transformed by now.
 
@@ -17669,7 +17661,6 @@ static void expandDistributionFields(IHqlExpression * record, HqlExprArray & sel
             {
                 OwnedHqlExpr selected = selector ? createSelectExpr(LINK(selector), LINK(cur)) : LINK(cur);
 
-                IAtom * name = cur->queryName();
                 if (cur->queryType()->getTypeCode() == type_row)
                 {
                     expandDistributionFields(cur->queryRecord(), selects, selected);
@@ -17696,7 +17687,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribution(BuildCtx & ctx, I
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * fields = queryRealChild(expr, 1);
     IHqlExpression * sequence = expr->queryAttribute(sequenceAtom);
-    IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
 
     if (!sequence)
         throwError(HQLERR_DistributionNoSequence);

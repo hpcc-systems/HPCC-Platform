@@ -2564,6 +2564,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     okToContinue = true;
                     break;
                 }
+                break;
             }
         case no_hqlproject:
             {
@@ -2795,7 +2796,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
     case no_filter:
         {
             node_operator childOp = child->getOperator();
-            IHqlExpression * newGrandchild = child->queryChild(0);
             switch(childOp)
             {
             case no_filter:
@@ -3668,16 +3668,6 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             node_operator childOp = child->getOperator();
             switch (childOp)
             {
-            case no_projectrow:
-                {
-                    break;
-                    IHqlExpression * grand = child->queryChild(0);
-                    IHqlExpression * base = createDatasetFromRow(LINK(grand));
-                    HqlExprArray args;
-                    unwindChildren(args, child);
-                    args.replace(*base, 0);
-                    return createDataset(no_hqlproject, args);
-                }
             case no_createrow:
                 {
                     DBGLOG("Optimizer: Merge %s and %s to Inline table", queryNode0Text(transformed), queryNode1Text(child));

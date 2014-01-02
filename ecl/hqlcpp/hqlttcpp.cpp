@@ -1764,7 +1764,6 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
 static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortIndexPayload, bool alwaysLocal, bool allowImplicitSubSort)
 {
     LinkedHqlExpr dataset = expr->queryChild(0);
-    IHqlExpression * normalizedDs = dataset->queryNormalizedSelector();
     IHqlExpression * buildRecord = dataset->queryRecord();
 
     // If any field types collate differently before and after translation to their hozed
@@ -3129,7 +3128,6 @@ IHqlExpression * ThorHqlTransformer::normalizeSort(IHqlExpression * expr)
 
 IHqlExpression * ThorHqlTransformer::normalizeSubSort(IHqlExpression * expr)
 {
-    IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * sortlist = expr->queryChild(1);
     IHqlExpression * grouping = expr->queryChild(2);
     OwnedHqlExpr newsort = simplifySortlistComplexity(sortlist);
@@ -3163,7 +3161,6 @@ IHqlExpression * ThorHqlTransformer::normalizeSortSteppedIndex(IHqlExpression * 
     node_operator datasetOp = dataset->getOperator();
     if ((datasetOp == no_keyindex) || (datasetOp == no_newkeyindex))
     {
-        IHqlExpression * indexRecord = dataset->queryRecord();
         if (!dataset->hasAttribute(attrName))
         {
             HqlExprArray selects;
@@ -5190,7 +5187,6 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
     }
     else
     {
-        ITypeInfo * ct = type->queryChildType();
         if (type->getTypeCode() == type_set)
             extraSetAttr.setown(createComma(extraSetAttr.getClear(), createAttribute(_original_Atom, createValue(no_implicitcast, LINK(type), LINK(value)))));
         setOutput.setown(createSetValue(value, queryAlias(value)));
@@ -7595,8 +7591,6 @@ IHqlExpression * NewScopeMigrateTransformer::hoist(IHqlExpression * expr, IHqlEx
     if (minimizeWorkunitTemporaries)
         return createWrapper(no_globalscope, LINK(hoisted));
     IHqlExpression * setResult = createSetResult(hoisted);
-    IHqlExpression * seqAttr = setResult->queryAttribute(sequenceAtom);
-    IHqlExpression * aliasAttr = setResult->queryAttribute(namedAtom);
     appendToTarget(*setResult);
 
     return createGetResultFromSetResult(setResult);
@@ -10653,7 +10647,6 @@ IHqlExpression * HqlTreeNormalizer::removeDefaultsFromExpr(IHqlExpression * expr
     IHqlExpression * oldRecord = expr->queryChild(recordChildIndex);
     OwnedHqlExpr newRecord = transform(oldRecord);
 
-    IHqlExpression * ds = expr->queryChild(0);
     HqlExprArray assigns;
     OwnedHqlExpr self = getSelf(newRecord);
     convertRecordToAssigns(assigns, oldRecord, self, false, false);
