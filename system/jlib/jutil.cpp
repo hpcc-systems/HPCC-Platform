@@ -1633,7 +1633,7 @@ bool callExternalProgram(const char *progname, const StringBuffer &input, String
         char buf[4096];
         for(;;)
         {
-            size32_t r=pipe2.Read(buf, sizeof(buf));
+            int r=pipe2.Read(buf, sizeof(buf));
             if(r>0)
             {
                 output.append(r, buf);
