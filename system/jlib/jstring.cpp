@@ -1458,19 +1458,30 @@ void extractItem(StringBuffer & res, const char * src, const char * sep, int whi
 }
 
 
-int utf8CharLen(const unsigned char *ch)
+int utf8CharLen(unsigned char ch)
 {
     //return 1 if this is an ascii character, 
     //or 0 if its not a valid utf-8 character
-    if (*ch < 128)
+    if (ch < 128)
         return 1;
-    if (*ch < 192)
+    if (ch < 192)
         return 0;
     
     unsigned char len = 1;
-    for (unsigned char lead = *ch << 1; (lead & 0x80); lead <<=1)
+    for (unsigned char lead = ch << 1; (lead & 0x80); lead <<=1)
         len++;
     
+    return len;
+}
+
+int utf8CharLen(const unsigned char *ch)
+{
+    //return 1 if this is an ascii character,
+    //or 0 if its not a valid utf-8 character
+    if (*ch < 128)
+        return 1;
+
+    unsigned char len = utf8CharLen(*ch);
     for (unsigned pos = 1; pos < len; pos++)
         if ((ch[pos] < 128) || (ch[pos] >= 192))
             return 0;  //its not a valid utf-8 character after all
