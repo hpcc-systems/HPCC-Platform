@@ -219,6 +219,7 @@ struct da_decl TransactionLog
         va_start(args, formatMsg);
         msg.append(" ");
         msg.valist_appendf(formatMsg, args);
+        va_end(args);
         log();
     }
     inline void markExtra()
@@ -231,6 +232,7 @@ struct da_decl TransactionLog
         va_list args;
         va_start(args, formatMsg);
         msg.valist_appendf(formatMsg, args);
+        va_end(args);
         markExtra();
     }
 };

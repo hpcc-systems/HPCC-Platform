@@ -2783,7 +2783,7 @@ const char* getUniqueName(const IPropertyTree* pEnv, StringBuffer& sName, const 
     StringBuffer num(sName);
     char* pszNum = num.detach();
 
-    char *token;
+    char *token = NULL;
     j_strtok_r(pszNum, "_", &token);
 
     if (strspn(token, "0123456789") == strlen(token))
@@ -2828,7 +2828,7 @@ const char* getUniqueName2(const IPropertyTree* pEnv, StringBuffer& sName, const
     StringBuffer num(sName);
     char* pszNum = num.detach();
 
-    char *token;
+    char *token = NULL;
     j_strtok_r(pszNum, "_", &token);
 
     if (strspn(token, "0123456789") == strlen(token))

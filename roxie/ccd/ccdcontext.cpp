@@ -700,6 +700,9 @@ public:
         checkingHeap = _checkingHeap;
 
         aborted = false;
+        exceptionLogged = false;
+        priority = 0;
+        totSlavesReplyLen = 0;
 
         allocatorMetaCache.setown(createRowAllocatorCache(this));
         rowManager.setown(roxiemem::createRowManager(_memoryLimit, this, logctx, allocatorMetaCache, false));

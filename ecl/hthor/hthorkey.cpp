@@ -3022,7 +3022,6 @@ class DistributedKeyLookupHandler : public CInterface, implements IThreadedExcep
     bool opened;
     IArrayOf<IKeyManager> managers;
     Owned<IRecordLayoutTranslator> trans;
-    unsigned subStart;
     UnsignedArray keyNumParts;
 
     IArrayOf<KeyedLookupPartHandler> parts;
@@ -3089,7 +3088,7 @@ public:
             ForEachItemIn(subno, managers)
             {
                 agent.reportProgress(NULL);
-                subStart = subSizes.item(subno);
+                unsigned subStart = subSizes.item(subno);
                 IKeyManager & manager = managers.item(subno);
                 owner.readyManager(&manager, row);
                 while(manager.lookup(false))

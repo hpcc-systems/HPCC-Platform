@@ -2716,8 +2716,6 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr, bool isProjected)
             return info->containsActivity;
         case no_mapto:
             throwUnexpected();
-            info->containsActivity = findSplitPoints(expr->queryChild(1), false);
-            return info->containsActivity;
         case no_activerow:
             info->isActivity = true;
             info->containsActivity = false;
