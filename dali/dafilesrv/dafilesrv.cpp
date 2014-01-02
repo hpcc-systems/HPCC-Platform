@@ -311,8 +311,8 @@ int initDaemon()
     sigemptyset(&blockset);
     act.sa_mask = blockset;
     act.sa_handler = SIG_IGN;
+    act.sa_flags = 0;
     sigaction(SIGHUP, &act, NULL);
-
 
     act.sa_flags = SA_SIGINFO;
     act.sa_sigaction = &sighandler; 
