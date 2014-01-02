@@ -19,6 +19,7 @@
 
 import argparse
 import platform
+import logging
 
 def isPositiveIntNum(string):
     for i in range(0,  len(string)):
@@ -56,10 +57,20 @@ def setConfig(config):
     global gConfig
     gConfig = config
 
-def queryWuid(jobname):
+def queryWuid(jobname,  taskId):
     server = gConfig.server
     host = "http://"+server+"/WsWorkunits/WUQuery.json?Jobname="+jobname
     wuid="Not found"
+    auth_handler = urllib2.HTTPBasicAuthHandler()
+    auth_handler.add_password(realm='ESP (Authentication: LDAP server process)',
+                              uri=server,
+                              user=gConfig.username,
+                              passwd=gConfig.password)
+#    opener = urllib2.build_opener(auth_handler,  urllib2.HTTPHandler(debuglevel=1))
+    opener = urllib2.build_opener(auth_handler)
+    opener.add_handler(auth_handler)
+    urllib2.install_opener(opener)
+
     try:
         response_stream = urllib2.urlopen(host)
         json_response = response_stream.read()
@@ -71,8 +82,16 @@ def queryWuid(jobname):
             state = jobname+' not found'
     except KeyError as ke:
         state = "Key error:"+ke.str()
+        logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
+    except urllib2.HTTPError as ex:
+        state = "HTTP Error: "+ str(ex.reason)
+        logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
+    except urllib2.URLError as ex:
+        state = "URL Error: "+ str(ex.reason)
+        logging.error("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
     except Exception as ex:
-        state = "Unable to query "+ ex.reason.strerror
+        state = "Unable to query "+ str(ex.reason)
+        logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
     return {'wuid':wuid, 'state':state}
 
 def abortWorkunit(wuid):

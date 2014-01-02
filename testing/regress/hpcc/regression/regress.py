@@ -199,7 +199,7 @@ class Regression:
                             self.loggermutex.release()
                         if self.timeouts[threadId] == 0:
                             # time out occured
-                            wuid =  queryWuid(self.taskParam[threadId]['jobName'])
+                            wuid =  queryWuid(self.taskParam[threadId]['jobName'],  self.taskParam[threadId]['taskId']+1)
                             if ("Not found" in wuid['wuid'] ) or (wuid['state'] in self.goodStates):
                                 #Possible blocked, give it more time if it is possible
                                 self.taskParam[threadId]['retryCount'] -= 1;
@@ -280,7 +280,7 @@ class Regression:
                 sleepTime = 1.0
             if self.timeouts[thread] == 0:
                 # time out, abort tast
-                wuid =  queryWuid(query.getJobname())
+                wuid =  queryWuid(query.getJobname(),  query.getTaskId())
                 abortWorkunit(wuid['wuid'])
                 query.setAborReason('Timeout')
                 self.loggermutex.acquire()
@@ -312,6 +312,7 @@ class Regression:
             self.StartTimeoutThread()
             for query in suite.getSuite():
                 query.setJobname(time.strftime("%y%m%d-%H%M%S"))
+                query.setTaskId(cnt)
                 self.timeouts[th] = self.timeout
                 timeout = query.getTimeout()
                 if timeout != -1:

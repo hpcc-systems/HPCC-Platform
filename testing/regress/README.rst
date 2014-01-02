@@ -371,4 +371,16 @@ So if you have a new test case and it works well on all clusters (or some of the
         "timeout":"600",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
         "maxAttemptCount":"3"                           - Max retry count to reset timeout if a testcase in any early stage (compiled, blocked) of execution pipeline.
 
+
+8. Authentication:
+------------------
+
+If your HPCC System is configured to use LDAP authentication you should change value of "username" and "password" fields in regress.json file to yours.
+
+Alternatively, ensure that your test system has a user "regress" with password "regress" and appropriate rights to be able to run the suite.
+
+
+Misc.
+-----
+
 **Important! Actually regression suite compares the test case result with xml files stored in testing/regression/ecl/key independently from the cluster.**
