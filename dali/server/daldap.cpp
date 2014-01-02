@@ -38,6 +38,7 @@ static void ignoreSigPipe()
     sigemptyset(&blockset);
     act.sa_mask = blockset;
     act.sa_handler = SIG_IGN;
+    act.sa_flags = 0;
     sigaction(SIGPIPE, &act, NULL);
 #endif
 }
