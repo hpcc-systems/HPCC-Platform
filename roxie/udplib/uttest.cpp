@@ -435,6 +435,7 @@ public:
 
     ~SortMaster()
     {
+        delete [] nodeData;
         delete [] nextNode;
         delete [] receiveSem;
         delete [] receivesCompleted;

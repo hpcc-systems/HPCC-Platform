@@ -247,7 +247,7 @@ struct cDirDesc
     {
         size32_t sl = strlen(_name);
         if (sl>255) {
-            WARNLOG(LOGPFX "Directory name %s longer than 255 chars, truncating",name);
+            WARNLOG(LOGPFX "Directory name %s longer than 255 chars, truncating",_name);
             sl = 255;
         }
         name = (byte *)mem.alloc(sl+1);

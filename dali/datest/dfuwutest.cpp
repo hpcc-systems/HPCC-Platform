@@ -39,8 +39,6 @@ void testProgressUpdate()
 
 void testAbort(const char *wuid)
 {
-    getDFUWorkUnitFactory();
-
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IConstDFUWorkUnit> wu = factory->openWorkUnit(wuid,false);
     if (wu) {
@@ -58,8 +56,6 @@ StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
 
 void testProgressMonitor(const char *wuid)
 {
-    getDFUWorkUnitFactory();
-
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IConstDFUWorkUnit> wu = factory->openWorkUnit(wuid,false);
     class cProgressMon: public CInterface, implements IDFUprogressSubscriber

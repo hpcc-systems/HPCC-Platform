@@ -2797,6 +2797,8 @@ const char* getUniqueName(const IPropertyTree* pEnv, StringBuffer& sName, const 
       if (len > 0 && endsWith(sPrefix.str(), "_")) //ends with '_'
         sPrefix = sPrefix.remove(sPrefix.length() - 1, 1); //lose it
     }
+
+    free(pszNum);
   }
 
   StringBuffer xpath;
@@ -2840,6 +2842,8 @@ const char* getUniqueName2(const IPropertyTree* pEnv, StringBuffer& sName, const
       if (len > 0 && endsWith(sPrefix.str(), "_")) //ends with '_'
         sPrefix = sPrefix.remove(sPrefix.length() - 1, 1); //lose it
     }
+
+    free(pszNum);
   }
 
   StringBuffer xpath;
