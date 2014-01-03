@@ -29,12 +29,12 @@ class HqlStmt : public CInterfaceOf<IHqlStmt>
 public:
     HqlStmt(StmtKind _kind, HqlStmts * _container);
     
-    virtual StmtKind                getStmt();
-    virtual StringBuffer &          getTextExtra(StringBuffer & out);
+    virtual StmtKind                getStmt() const;
+    virtual StringBuffer &          getTextExtra(StringBuffer & out) const;
     virtual bool                    isIncluded() const;
     virtual unsigned                numChildren() const;
     virtual IHqlStmt *              queryChild(unsigned index) const;
-    virtual IHqlExpression *        queryExpr(unsigned index);
+    virtual IHqlExpression *        queryExpr(unsigned index) const;
     virtual HqlStmts *              queryContainer();
 
             void                    addExpr(IHqlExpression * expr);
@@ -45,6 +45,7 @@ public:
     virtual void                    setIncomplete(bool _incomplete) { incomplete = _incomplete; }
     virtual void                    setIncluded(bool _included) { included = _included; }
             void                    setPriority(unsigned _prio) { priority = _prio; }
+    virtual void                    finishedFramework() { throwUnexpected(); }
 
 protected:
     bool hasChildren() const;
@@ -140,21 +141,35 @@ class HqlCompoundStmt : public HqlStmt
 public:
     HqlCompoundStmt(StmtKind _kind, HqlStmts * _container);
 
+    virtual bool                    isIncluded() const;
     virtual unsigned                numChildren() const;
     virtual void                    mergeScopeWithContainer();
     virtual IHqlStmt *              queryChild(unsigned index) const;
+    virtual void                    finishedFramework();
 
 protected:
     HqlStmts                         code;
+    unsigned                         frameworkCount;
 };
 
+
+class HqlConditionalGroupStmt : public HqlCompoundStmt
+{
+public:
+    HqlConditionalGroupStmt(HqlStmts * _container, IHqlStmt * _stmt) : HqlCompoundStmt(group_stmt, _container), stmt(_stmt) {}
+
+    virtual bool                    isIncluded() const;
+
+protected:
+    IHqlStmt * stmt;
+};
 
 class HqlQuoteStmt : public HqlCompoundStmt
 {
 public:
     HqlQuoteStmt(StmtKind _kind, HqlStmts * _container, const char * _text) : HqlCompoundStmt(_kind, _container), text(_text) {}
 
-    virtual StringBuffer &          getTextExtra(StringBuffer & out);
+    virtual StringBuffer &          getTextExtra(StringBuffer & out) const;
 
 protected:
   StringAttr text;

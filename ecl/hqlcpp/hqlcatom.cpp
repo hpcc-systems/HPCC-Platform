@@ -25,6 +25,7 @@
 #include "hqlatoms.hpp"
 #include "hqlcatom.hpp"
 
+IAtom * _accessedFromChild_Atom;
 IAtom * activeActivityMarkerAtom;
 IAtom * activeMatchTextAtom;
 IAtom * activeMatchUnicodeAtom;
@@ -328,6 +329,7 @@ IIdAtom * freeExceptionId;
 IIdAtom * getBytesFromBuilderId;
 IIdAtom * getChildQueryDictionaryResultId;
 IIdAtom * getChildQueryLinkedResultId;
+IIdAtom * getChildQueryLinkedRowResultId;
 IIdAtom * getClusterSizeId;
 IIdAtom * getDatasetHashId;
 IIdAtom * getECLId;
@@ -343,6 +345,7 @@ IIdAtom * getLocalDictionaryResultId;
 IIdAtom * getLocalFailMessageId;
 IIdAtom * getLocalFilePositionId;
 IIdAtom * getLocalLinkedResultId;
+IIdAtom * getLocalLinkedRowResultId;
 IIdAtom * getMatchedId;
 IIdAtom * getMatchLengthId;
 IIdAtom * getMatchPositionId;
@@ -971,6 +974,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(getBytesFromBuilder);
     MAKEID(getChildQueryDictionaryResult);
     MAKEID(getChildQueryLinkedResult);
+    MAKEID(getChildQueryLinkedRowResult);
     MAKEID(getClusterSize);
     MAKEID(getDatasetHash);
     MAKEID(getECL);
@@ -986,6 +990,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(getLocalFailMessage);
     MAKEID(getLocalFilePosition);
     MAKEID(getLocalLinkedResult);
+    MAKEID(getLocalLinkedRowResult);
     MAKEID(getMatched);
     MAKEID(getMatchLength);
     MAKEID(getMatchPosition);
@@ -1460,6 +1465,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(xmlColumnProvider);
     MAKEATOM(xmlReadMarker);
 
+    MAKESYSATOM(accessedFromChild);
     MAKESYSATOM(conditionalRowMarker);
     MAKESYSATOM(loop);
     MAKESYSATOM(loopFirst);

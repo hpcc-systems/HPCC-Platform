@@ -120,6 +120,7 @@ interface IThorResult : extends IInterface
     virtual bool isDistributed() const = 0;
     virtual void serialize(MemoryBuffer &mb) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
+    virtual const void * getLinkedRowResult() = 0;
 };
 
 class CActivityBase;
@@ -696,6 +697,7 @@ public:
 // IEclGraphResults
     virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
+    virtual const void * getLinkedRowResult(unsigned id);
 
 // IThorChildGraph
 //  virtual void getResult(size32_t & retSize, void * & ret, unsigned id);
@@ -1034,6 +1036,7 @@ protected:
         virtual void getResult(size32_t & retSize, void * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getLinkedResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getDictionaryResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual const void * getLinkedRowResult() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
     };
     IArrayOf<IThorResult> results;
     CriticalSection cs;
@@ -1091,6 +1094,12 @@ public:
         Owned<IThorResult> result = getResult(id, true);
         result->getLinkedResult(count, ret);
     }
+    virtual const void * getLinkedRowResult(unsigned id)
+    {
+        Owned<IThorResult> result = getResult(id, true);
+        return result->getLinkedRowResult();
+    }
+
     virtual void setOwner(activity_id _ownerId) { ownerId = _ownerId; }
     virtual activity_id queryOwnerId() const { return ownerId; }
 };

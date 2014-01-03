@@ -730,6 +730,8 @@ struct HqlCppOptions
     bool                expirePersists;
     bool                actionLinkInNewGraph;
     bool                optimizeMax;
+    bool                useResultsForChildSpills;
+    bool                alwaysUseGraphResults;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -950,6 +952,7 @@ public:
     void popMemberFunction();
     unsigned getConsistentUID(IHqlExpression * ptr);
     bool insideOnCreate(BuildCtx & ctx);
+    bool insideOnStart(BuildCtx & ctx);
     bool tempRowRequiresFinalize(IHqlExpression * record) const;
     void convertBoundDatasetToFirstRow(IHqlExpression * expr, CHqlBoundExpr & bound);
     void convertBoundRowToDataset(BuildCtx & ctx, CHqlBoundExpr & bound, const BoundRow * row, ExpressionFormat preferredFormat);
@@ -1688,6 +1691,7 @@ public:
     IHqlExpression * getCurrentActivityId(BuildCtx & ctx);          // can be variable
     void associateSkipReturnMarker(BuildCtx & ctx, IHqlExpression * value, BoundRow * self);
     IHqlExpression * createClearRowCall(BuildCtx & ctx, BoundRow * self);
+    bool insideActivityRemoteSerialize(BuildCtx & ctx);
 
     EvalContext * queryEvalContext(BuildCtx & ctx)          { return (EvalContext *)ctx.queryFirstAssociation(AssocExtractContext); }
     inline unsigned nextActivityId()                        { return ++curActivityId; }
@@ -1746,6 +1750,7 @@ public:
     void filterExpandAssignments(BuildCtx & ctx, TransformBuilder * builder, HqlExprArray & assigns, IHqlExpression * expr);
 
 protected:
+    bool shouldEvaluateSelectAsAlias(BuildCtx & ctx, IHqlExpression * expr);
     IWUResult * createWorkunitResult(int sequence, IHqlExpression * nameExpr);
     void noteFilename(ActivityInstance & instance, const char * name, IHqlExpression * expr, bool isDynamic);
     bool checkGetResultContext(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

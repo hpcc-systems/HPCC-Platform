@@ -35,6 +35,8 @@
 
 #define CLEAR_COPY_THRESHOLD            100
 
+static unsigned doCalcTotalChildren(const IHqlStmt * stmt);
+
 //---------------------------------------------------------------------------
 
 struct HQLCPP_API HqlBoundDefinedValue : public HqlDefinedValue
@@ -194,6 +196,15 @@ IHqlStmt * BuildCtx::addCase(IHqlStmt * _owner, IHqlExpression * source)
 
     HqlCompoundStmt * next = new HqlCompoundStmt(case_stmt, curStmts);
     next->addExpr(LINK(source));
+    return appendCompound(next);
+}
+
+
+IHqlStmt * BuildCtx::addConditionalGroup(IHqlStmt * stmt)
+{
+    if (ignoreInput)
+        return NULL;
+    HqlCompoundStmt * next = new HqlConditionalGroupStmt(curStmts, stmt);
     return appendCompound(next);
 }
 
@@ -1038,12 +1049,12 @@ void HqlStmt::addExpr(IHqlExpression * expr)
     exprs.append(*expr);
 }
 
-StmtKind HqlStmt::getStmt()
+StmtKind HqlStmt::getStmt() const
 {
     return (StmtKind)kind;
 }
 
-StringBuffer & HqlStmt::getTextExtra(StringBuffer & out)
+StringBuffer & HqlStmt::getTextExtra(StringBuffer & out) const
 {
     return out;
 }
@@ -1108,7 +1119,7 @@ HqlStmts * HqlStmt::queryContainer()
     return container;
 }
 
-IHqlExpression * HqlStmt::queryExpr(unsigned index)
+IHqlExpression * HqlStmt::queryExpr(unsigned index) const
 {
     if (exprs.isItem(index))
         return &exprs.item(index);
@@ -1124,11 +1135,27 @@ IHqlExpression * HqlStmt::queryExpr(unsigned index)
 #endif
 HqlCompoundStmt::HqlCompoundStmt(StmtKind _kind, HqlStmts * _container) : HqlStmt(_kind, _container), code(this)
 {
+    frameworkCount = 0;
 }
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 
+
+void HqlCompoundStmt::finishedFramework()
+{
+    frameworkCount = doCalcTotalChildren(this);
+}
+
+
+bool HqlCompoundStmt::isIncluded() const
+{
+    if (!HqlStmt::isIncluded())
+        return false;
+    if (frameworkCount == 0)
+        return true;
+    return frameworkCount != doCalcTotalChildren(this);
+}
 
 void HqlCompoundStmt::mergeScopeWithContainer()
 {
@@ -1148,9 +1175,14 @@ IHqlStmt * HqlCompoundStmt::queryChild(unsigned index) const
 }
 
 
+bool HqlConditionalGroupStmt::isIncluded() const
+{
+    return HqlCompoundStmt::isIncluded() && stmt->isIncluded();
+}
+
 //---------------------------------------------------------------------------
 
-StringBuffer & HqlQuoteStmt::getTextExtra(StringBuffer & out)
+StringBuffer & HqlQuoteStmt::getTextExtra(StringBuffer & out) const
 {
     return out.append(text);
 }
@@ -1904,10 +1936,8 @@ bool RowAssociationIterator::doNext()
 };
 
 
-unsigned calcTotalChildren(IHqlStmt * stmt)
+unsigned doCalcTotalChildren(const IHqlStmt * stmt)
 {
-    if (!stmt->isIncluded())
-        return 0;
     unsigned num = stmt->numChildren();
     unsigned total = 1;
     switch (stmt->getStmt())
@@ -1925,3 +1955,9 @@ unsigned calcTotalChildren(IHqlStmt * stmt)
     return total;
 }
 
+unsigned calcTotalChildren(const IHqlStmt * stmt)
+{
+    if (!stmt->isIncluded())
+        return 0;
+    return doCalcTotalChildren(stmt);
+}

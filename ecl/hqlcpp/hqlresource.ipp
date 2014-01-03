@@ -65,6 +65,8 @@ public:
     bool     combineSiblings;
     bool     actionLinkInNewGraph;
     bool     convertCompoundToExecuteWhen;
+    bool     useResultsForChildSpills;
+    bool     alwaysUseGraphResults;
 
     IHqlExpression * graphIdExpr;
     unsigned nextResult;

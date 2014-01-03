@@ -1733,6 +1733,8 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.multiplePersistInstances,"multiplePersistInstances",true),
         DebugOption(options.defaultNumPersistInstances,"defaultNumPersistInstances",-1),
         DebugOption(options.optimizeMax,"optimizeMax",false),
+        DebugOption(options.useResultsForChildSpills,"useResultsForChildSpills",false),
+        DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
     };
 
     //get options values from workunit
@@ -2393,6 +2395,13 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
                 buildExprAssign(ctx, target, aggregate);
                 return;
             }
+            if (shouldEvaluateSelectAsAlias(ctx, expr) && !insideOnStart(ctx))
+            {
+                CHqlBoundExpr temp;
+                doBuildAliasValue(ctx, expr, temp);
+                assign(ctx, target, temp);
+                return;
+            }
             Owned<IReferenceSelector> selector = buildReference(ctx, expr);
             selector->assignTo(ctx, target);
             return;
@@ -2816,6 +2825,24 @@ void HqlCppTranslator::buildAnyExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlB
         buildExpr(ctx, expr, tgt);
 }
 
+bool HqlCppTranslator::shouldEvaluateSelectAsAlias(BuildCtx & ctx, IHqlExpression * expr)
+{
+    //If we're inside an activity that serializes onStart data, then the code to serialize fields
+    //selected from a row are generally simpler than the code to serialize the row itself.
+    if (insideActivityRemoteSerialize(ctx) && !expr->isList())
+    {
+        bool isNew;
+        IHqlExpression * ds = querySelectorDataset(expr, isNew);
+        if (isNew && ds->getOperator() == no_getgraphresult)
+        {
+            IHqlExpression * graphId = ds->queryChild(1);
+            if (isCurrentActiveGraph(ctx, graphId))
+                return true;
+        }
+    }
+    return false;
+}
+
 void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
     node_operator op = expr->getOperator();
@@ -3224,6 +3251,11 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
             if (aggregate && canProcessInline(&ctx, aggregate->queryChild(0)))
             {
                 buildExpr(ctx, aggregate, tgt);
+                return;
+            }
+            if (shouldEvaluateSelectAsAlias(ctx, expr))
+            {
+                doBuildAliasValue(ctx, expr, tgt);
                 return;
             }
             Owned<IReferenceSelector> selector = buildReference(ctx, expr);

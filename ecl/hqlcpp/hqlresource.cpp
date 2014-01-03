@@ -1206,11 +1206,18 @@ IHqlExpression * ResourcerInfo::createAggregation(IHqlExpression * expr)
 
 bool ResourcerInfo::useGraphResult()
 {
+    if (options->useResultsForChildSpills && linkedFromChild)
+        return true;
+
+    if (options->alwaysUseGraphResults)
+        return true;
+
     if (!options->useGraphResults)
         return false;
 
     if (linkedFromChild)
         return true;
+
     //Roxie converts spills into splitters, so best to retain them
     if (options->targetClusterType == RoxieCluster)
         return false;
@@ -1270,7 +1277,9 @@ IHqlExpression * ResourcerInfo::createSpilledRead(IHqlExpression * spillReason)
             args.append(*createAttribute(_distributed_Atom));
 
         node_operator readOp = spilledDataset ? no_readspill : no_getgraphresult;
-        if (original->isDictionary())
+        if (original->isDatarow())
+            dataset.setown(createRow(readOp, args));
+        else if (original->isDictionary())
             dataset.setown(createDictionary(readOp, args));
         else
             dataset.setown(createDataset(readOp, args));
@@ -1353,6 +1362,8 @@ IHqlExpression * ResourcerInfo::createSpilledWrite(IHqlExpression * transformed)
         args.append(*LINK(options->graphIdExpr));
         args.append(*createSpillName());
         args.append(*createAttribute(_spill_Atom));
+        if (linkedFromChild)
+            args.append(*createAttribute(_accessedFromChild_Atom));
         if (spilledDataset)
             return createValue(no_writespill, makeVoidType(), args);
         return createValue(no_setgraphresult, makeVoidType(), args);
@@ -1819,7 +1830,7 @@ bool ResourcerInfo::isSpilledWrite()
 
 IHqlExpression * ResourcerInfo::wrapRowOwn(IHqlExpression * expr)
 {
-    if (!original->isDataset() && !original->isDictionary())
+    if (!original->isDataset() && !original->isDictionary() && !expr->isDatarow())
         expr = createRow(no_selectnth, expr, getSizetConstant(1));
     return expr;
 }
@@ -1885,6 +1896,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     spotThroughAggregate = _translatorOptions.spotThroughAggregate && (targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster);
     options.noConditionalLinks = (targetClusterType != HThorCluster);
     options.hoistResourced = _translatorOptions.hoistResourced;
+    options.alwaysUseGraphResults = _translatorOptions.alwaysUseGraphResults;
     options.useGraphResults = false;        // modified by later call
     options.groupedChildIterators = _translatorOptions.groupedChildIterators;
     options.allowSplitBetweenSubGraphs = false;//(targetClusterType == RoxieCluster);
@@ -1898,6 +1910,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.optimizeSharedInputs = _translatorOptions.optimizeSharedGraphInputs && options.combineSiblings;
     options.actionLinkInNewGraph = _translatorOptions.actionLinkInNewGraph || (targetClusterType == HThorCluster);
     options.convertCompoundToExecuteWhen = false;
+    options.useResultsForChildSpills = _translatorOptions.useResultsForChildSpills;// && (targetClusterType != HThorCluster);
 }
 
 EclResourcer::~EclResourcer()               
@@ -4933,7 +4946,7 @@ void EclResourcer::createResourced(ResourceGraphInfo * graph, HqlExprArray & tra
         graph->isDead = true;
     else
     {
-        if (options.useGraphResults)
+        if (options.useGraphResults || options.alwaysUseGraphResults)
             args.append(*createAttribute(childAtom));
         graph->createdGraph.setown(createValue(no_subgraph, makeVoidType(), args));
         transformed.append(*LINK(graph->createdGraph));
@@ -5367,7 +5380,9 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
                 args.append(*LINK(recordCountAttr));
 
             OwnedHqlExpr ret;
-            if (ds->isDictionary())
+            if (ds->isDatarow())
+                ret.setown(createRow(readOp, args));
+            else if (ds->isDictionary())
                 ret.setown(createDictionary(readOp, args));
             else
                 ret.setown(createDataset(readOp, args));

@@ -97,6 +97,7 @@ public:
     IHqlStmt *                  addBlock();
     IHqlStmt *                  addBreak();
     IHqlStmt *                  addCase(IHqlStmt * owner, IHqlExpression * condition);
+    IHqlStmt *                  addConditionalGroup(IHqlStmt * stmt); // generated if stmt->isIncluded() is true
     IHqlStmt *                  addContinue();
     IHqlStmt *                  addDeclare(IHqlExpression * name, IHqlExpression * value=NULL);
     IHqlStmt *                  addDeclareExternal(IHqlExpression * name);
@@ -199,17 +200,18 @@ enum StmtKind {
 interface IHqlStmt : public IInterface
 {
 public:
-    virtual StringBuffer &  getTextExtra(StringBuffer & out) = 0;
+    virtual StringBuffer &  getTextExtra(StringBuffer & out) const = 0;
     virtual bool            isIncluded() const = 0;
-    virtual StmtKind        getStmt() = 0;
-    virtual unsigned                numChildren() const = 0;
-    virtual IHqlStmt *          queryChild(unsigned index) const = 0;
-    virtual IHqlExpression *queryExpr(unsigned index) = 0;
+    virtual StmtKind        getStmt() const = 0;
+    virtual unsigned        numChildren() const = 0;
+    virtual IHqlStmt *      queryChild(unsigned index) const = 0;
+    virtual IHqlExpression *queryExpr(unsigned index) const = 0;
 
 //used when creating the statement graph
     virtual void            mergeScopeWithContainer() = 0;
     virtual void            setIncomplete(bool incomplete) = 0;
     virtual void            setIncluded(bool _included) = 0;
+    virtual void            finishedFramework() = 0;
 };
 
 class HqlCppTranslator;
@@ -268,7 +270,7 @@ public:
 };
 
 
-unsigned calcTotalChildren(IHqlStmt * stmt);
+unsigned calcTotalChildren(const IHqlStmt * stmt);
 
 IHqlExpression * stripTranslatedCasts(IHqlExpression * e);
 IHqlExpression * peepholeAddExpr(IHqlExpression * left, IHqlExpression * right);

@@ -201,6 +201,7 @@ void ExpandComplexityMonitor::onExpand(IHqlExpression * select, IHqlExpression *
         case no_null:
         case no_select:
         case no_getresult:
+        case no_getgraphresult:
         case no_id2blob:
             //MORE: Should be a common list somewhere...
             break;
@@ -2396,6 +2397,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                             case no_select:
                             case no_null:
                             case no_getresult:
+                            case no_getgraphresult:
                                 DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
                                 noteUnused(child);
                                 return match.getClear();
@@ -2430,6 +2432,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 case no_select:
                                 case no_null:
                                 case no_getresult:
+                                case no_getgraphresult:
                                 case no_inlinetable:
                                 case no_left:
                                 case no_right:
@@ -2475,6 +2478,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 case no_select:
                                 case no_null:
                                 case no_getresult:
+                                case no_getgraphresult:
                                     {
                                         DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
                                         noteUnused(child);

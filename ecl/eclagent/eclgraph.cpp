@@ -1085,6 +1085,11 @@ void EclSubGraph::getDictionaryResult(unsigned & count, byte * * & ret, unsigned
     localResults->queryResult(id)->getLinkedResult(count, ret);
 }
 
+const void * EclSubGraph::getLinkedRowResult(unsigned id)
+{
+    return localResults->queryResult(id)->getLinkedRowResult();
+}
+
 
 EclGraphElement * EclSubGraph::idToActivity(unsigned id)
 {
@@ -1310,6 +1315,12 @@ void UninitializedGraphResult::getLinkedResult(unsigned & count, byte * * & ret)
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
 }
 
+const void * UninitializedGraphResult::getLinkedRowResult()
+{
+    throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
+}
+
+
 
 void GraphResult::addRowOwn(const void * row)
 {
@@ -1347,6 +1358,14 @@ void GraphResult::getLinkedResult(unsigned & count, byte * * & ret)
 
     count = max;
     ret = rowset;
+}
+
+const void * GraphResult::getLinkedRowResult()
+{
+    assertex(rows.ordinality() == 1);
+    const void * next = rows.item(0);
+    LinkRoxieRow(next);
+    return next;
 }
 
 //---------------------------------------------------------------------------
@@ -1421,6 +1440,8 @@ IThorChildGraph * EclGraph::resolveChildQuery(unsigned subgraphId)
 //NB: resolveLocalQuery (unlike children) can't link otherwise you get a cicular dependency.
 IEclGraphResults * EclGraph::resolveLocalQuery(unsigned subgraphId)
 {
+    if (subgraphId == 0)
+        return &globalResults;
     return idToGraph(subgraphId);
 }
 

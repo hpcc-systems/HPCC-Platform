@@ -4347,6 +4347,7 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, BoundRow * targetRow, IHql
         //MORE could support no_null, no_if, no_translated, constant no_createrow etc.
         case no_call:
         case no_externalcall:
+        case no_getgraphresult:
             buildExprAssign(ctx, target, expr);
             return;
         case no_comma:
@@ -4960,6 +4961,8 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
         args.append(*LINK(resultNum));
         if (expr->isDictionary())
             return bindFunctionCall(getChildQueryDictionaryResultId, args, exprType);
+        if (expr->isDatarow())
+            return bindFunctionCall(getChildQueryLinkedRowResultId, args, exprType);
         return bindFunctionCall(getChildQueryLinkedResultId, args, exprType);
     }
 
@@ -4982,6 +4985,8 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
     args.append(*LINK(resultNum));
     if (expr->isDictionary())
         return bindFunctionCall(getLocalDictionaryResultId, args, exprType);
+    if (expr->isDatarow())
+        return bindFunctionCall(getLocalLinkedRowResultId, args, exprType);
     return bindFunctionCall(getLocalLinkedResultId, args, exprType);
 }
 
@@ -5019,7 +5024,7 @@ void HqlCppTranslator::doBuildAssignGetGraphResult(BuildCtx & ctx, const CHqlBou
 
 void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format)
 {
-    if (!expr->hasAttribute(externalAtom))
+    if (!expr->hasAttribute(externalAtom) && (!isCurrentActiveGraph(ctx, expr->queryChild(1)) || !insideOnStart(ctx)))
     {
         doBuildAliasValue(ctx, expr, tgt);
         return;
@@ -5035,8 +5040,6 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
     OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
     switch (expr->queryType()->getTypeCode())
     {
-    case type_row:
-        throwUnexpected();
     case type_dictionary:
     case type_table:
     case type_groupedtable:
@@ -5179,6 +5182,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx,
     }
 
     instance->addAttributeBool("_isSpill", isSpill);
+    instance->addAttributeBool("_fromChild", expr->hasAttribute(_accessedFromChild_Atom));
     if (targetRoxie())
         addGraphIdAttribute(instance, ctx, graphId);
 
