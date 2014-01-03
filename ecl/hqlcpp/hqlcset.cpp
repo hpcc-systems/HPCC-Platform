@@ -2055,7 +2055,7 @@ void HqlCppTranslator::buildSetAssign(BuildCtx & ctx, IHqlCppSetBuilder * builde
         doBuildSetAssignAndCast(ctx, builder, expr->queryChild(0));
         break;
     case no_addsets:
-        //MORE: Cannot assign left then right because it hneeds to correctly cope with ALL
+        //NOTE: Cannot assign left then right because it needs to correctly cope with ALL
         doBuildSetAssignAndCast(ctx, builder, expr);
         break;
     case no_all:
