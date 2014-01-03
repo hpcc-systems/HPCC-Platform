@@ -515,7 +515,7 @@ void HqlCppWriter::generateType(ITypeInfo * type, const char * name)
             //recurse to child type
             break;
         case type_void:
-        case no_any:
+        case type_any:
             prefix = "void";
             break;
         case type_set:
