@@ -144,14 +144,14 @@
     </sect2>
 
     <sect2 id="Other_Installs">
-      <title>Other Installations</title>
+      <title>Multiple Version Installations</title>
 
-      <para>It is possible, to install multiple versions of the client tools
-      if you needed to work on multiple versions of the platform. This would
-      be a special use case not typical for most users of the platform.</para>
+      <para>It is possible to install multiple versions of the client tools if
+      you need to work with multiple versions of the platform. </para>
 
       <para>To install the client tools, obtain the appropriate installation
-      package for your operating system:</para>
+      package for your operating system and the version to match your HPCC
+      Systems server:</para>
 
       <itemizedlist>
         <listitem>
@@ -168,7 +168,7 @@
               <listitem>
                 <para>There is a link at the bottom of the list "<emphasis
                 role="blue">view older downloads</emphasis>" if you are
-                looking for previous versions of the tools.</para>
+                looking for previous versions.</para>
               </listitem>
             </varlistentry>
           </variablelist>
