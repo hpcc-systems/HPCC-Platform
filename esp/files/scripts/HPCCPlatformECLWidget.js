@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/HPCCPlatformECLWidget",
 
     "dijit/registry",
 
@@ -28,13 +32,14 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
 
-], function (declare,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific,
                 registry,
                 _TabContainerWidget, WUQueryWidget, ECLPlaygroundWidget,
                 template) {
     return declare("HPCCPlatformECLWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformECLWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -45,7 +50,7 @@ define([
         },
 
         getTitle: function () {
-            return "HPCC Platform - ECL";
+            return this.i18n.title;
         },
 
         //  Hitched actions  ---

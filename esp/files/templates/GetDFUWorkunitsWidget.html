@@ -3,24 +3,24 @@
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
             <div id="${id}_Workunits" style="width: 100%; height: 100%" data-dojo-props='title:"Workunits"' data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
-                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">Open</div>
-                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
-                    <div id="${id}SetToFailed" data-dojo-attach-event="onClick:_onSetToFailed" data-dojo-type="dijit.form.Button">Set To Failed</div>
+                    <div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">${i18n.Open}</div>
+                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
+                    <div id="${id}SetToFailed" data-dojo-attach-event="onClick:_onSetToFailed" data-dojo-type="dijit.form.Button">${i18n.SetToFailed}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}Protect" data-dojo-attach-event="onClick:_onProtect" data-dojo-type="dijit.form.Button">Protect</div>
-                    <div id="${id}Unprotect" data-dojo-attach-event="onClick:_onUnprotect" data-dojo-type="dijit.form.Button">Unprotect</div>
+                    <div id="${id}Protect" data-dojo-attach-event="onClick:_onProtect" data-dojo-type="dijit.form.Button">${i18n.Protect}</div>
+                    <div id="${id}Unprotect" data-dojo-attach-event="onClick:_onUnprotect" data-dojo-type="dijit.form.Button">${i18n.Unprotect}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Filter" data-dojo-type="FilterDropDownWidget">
-                        <input id="${id}Owner" title="Owner:" name="Owner" colspan="2" data-dojo-props="trim: true, placeHolder:'jsmi*'" data-dojo-type="dijit.form.TextBox" />
-                        <input id="${id}Jobname" title="Jobname:" name="Jobname" colspan="2" data-dojo-props="trim: true, placeHolder:'log_analysis_1*'" data-dojo-type="dijit.form.TextBox" />
-                        <input id="${id}ClusterTargetSelect" title="Cluster:" name="Cluster" colspan="2" data-dojo-props="trim: true, placeHolder:'r?x*'" data-dojo-type="TargetSelectWidget" />
-                        <input id="${id}StateSelect" title="State" name="StateReq" colspan="2" data-dojo-props="trim: true, placeHolder:'Created'" data-dojo-type="TargetSelectWidget" />
-                        <input id="${id}Type" title="Archived&nbsp;Only" name="Type" value="archived workunits" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                        <input id="${id}Owner" title="${i18n.Owner}:" name="Owner" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.JSmith}'" data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}Jobname" title="${i18n.Jobname}:" name="Jobname" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.log_analysis_1}'" data-dojo-type="dijit.form.TextBox" />
+                        <input id="${id}ClusterTargetSelect" title="${i18n.Cluster}:" name="Cluster" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.roxie}'" data-dojo-type="TargetSelectWidget" />
+                        <input id="${id}StateSelect" title="${i18n.State}" name="StateReq" colspan="2" data-dojo-props="trim: true, placeHolder:'${i18n.Created}'" data-dojo-type="TargetSelectWidget" />
+                        <input id="${id}Type" title="${i18n.ArchivedOnly}" name="Type" value="archived workunits" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                 </div>
                 <div id="${id}WorkunitsGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}WorkunitsGrid">

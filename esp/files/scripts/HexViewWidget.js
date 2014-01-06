@@ -16,8 +16,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/array",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/HexViewWidget",
+    "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/request/iframe",
@@ -33,13 +36,14 @@ define([
     "dijit/form/NumberSpinner",
     "dijit/form/CheckBox"
 ],
-    function (declare, arrayUtil, lang, Memory, Observable, iframe,
+    function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Memory, Observable, iframe,
             registry,
             _Widget, ESPWorkunit, ECLSourceWidget,
             template) {
         return declare("HexViewWidget", [_Widget], {
             templateString: template,
             baseClass: "HexViewWidget",
+            i18n: lang.mixin(nlsCommon, nlsSpecific),
 
             borderContainer: null,
             widthField: null,
@@ -140,7 +144,7 @@ define([
                             }
                             break;
                         case "State":
-                            context.hexView.setText("..." + (context.wu.isComplete() ? "fetching results" : newValue) + "...");
+                            context.hexView.setText("..." + (context.wu.isComplete() ? context.i18n.fetchingresults : newValue) + "...");
                             break;
                     }
                 });

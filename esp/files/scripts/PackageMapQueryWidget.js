@@ -44,7 +44,6 @@ define([
 
     "dojo/text!../templates/PackageMapQueryWidget.html",
 
-    "dojox/layout/TableContainer",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",

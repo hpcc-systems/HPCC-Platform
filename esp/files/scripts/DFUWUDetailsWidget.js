@@ -16,6 +16,10 @@
 define([
     "exports",
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/DFUWUDetailsWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -38,17 +42,17 @@ define([
     "hpcc/ECLSourceWidget",
     "hpcc/LFDetailsWidget",
 
-    "dojo/text!../templates/DFUWUDetailsWidget.html",
+    "dojo/text!../templates/DFUWUDetailsWidget.html"
 
-    "dojox/layout/TableContainer"
-
-], function (exports, declare, arrayUtil, dom, domAttr, domClass, domStyle, query,
+], function (exports, declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domClass, domStyle, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
                 _TabContainerWidget, FileSpray, ESPDFUWorkunit, ECLSourceWidget, LFDetailsWidget,
                 template) {
     exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "DFUWUDetailsWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+
         summaryWidget: null,
         xmlWidget: null,
 
@@ -75,7 +79,7 @@ define([
         },
 
         getTitle: function () {
-            return "DFU Workunit";
+            return this.i18n.title;
         },
 
         //  Hitched actions  ---
@@ -257,12 +261,12 @@ define([
                     this.refreshActionState();
                     break;
                 case "SourceLogicalName":
-                    this.ensurePane(this.id + "_SourceLogicalName", "Source", {
+                    this.ensurePane(this.id + "_SourceLogicalName", this.i18n.Source, {
                         Name: newValue
                     });
                     break;
                 case "DestLogicalName":
-                    this.ensurePane(this.id + "_DestLogicalName", "Target", {
+                    this.ensurePane(this.id + "_DestLogicalName", this.i18n.Target, {
                         Name: newValue
                     });
                     break;

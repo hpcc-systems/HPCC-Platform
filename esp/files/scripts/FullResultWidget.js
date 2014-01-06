@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/FullResultWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/request/iframe",
@@ -44,7 +47,7 @@ define([
     "dijit/Toolbar",
     "dijit/form/Button",
     "dijit/ToolbarSeparator"
-], function (declare, lang, arrayUtil, dom, iframe, Memory, Observable,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, iframe, Memory, Observable,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, ESPUtil,
@@ -52,6 +55,7 @@ define([
     return declare("FullResultWidget", [_Widget], {
         templateString: template,
         baseClass: "FullResultWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         borderContainer: null,
         grid: null,
@@ -167,7 +171,7 @@ define([
                             }
                     ]
                 }, this.id + "Grid");
-                this.grid.set("noDataMessage", "[undefined]");
+                this.grid.set("noDataMessage", "<span class='dojoxGridNoData'>[" + this.i18n.undefined + "]</span>");
                 this.grid.startup();
             }
         },

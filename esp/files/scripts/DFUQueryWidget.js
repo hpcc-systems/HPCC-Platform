@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/DFUQueryWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -66,9 +69,9 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog",
 
-    "dojox/layout/TableContainer"
+    "hpcc/TableContainer"
 
-], function (declare, lang, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -76,6 +79,7 @@ define([
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "DFUQueryWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         addToSuperFileForm: null,
         desprayDialog: null,
@@ -111,7 +115,7 @@ define([
         },
 
         getTitle: function () {
-            return "Logical Files";
+            return this.i18n.title;
         },
 
         //  Hitched actions  ---
@@ -134,9 +138,9 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm('Delete selected files?')) {
+            if (confirm(this.i18n.DeleteSelectedFiles)) {
                 var context = this;
-                WsDfu.DFUArrayAction(this.workunitsGrid.getSelected(), "Delete", {
+                WsDfu.DFUArrayAction(this.workunitsGrid.getSelected(), this.i18n.Delete, {
                     load: function (response) {
                         context.refreshGrid(response);
                     }
@@ -238,18 +242,18 @@ define([
             this.menuFilterCluster.set("disabled", false);
 
             if (item) {
-                this.menuFilterOwner.set("label", "Owner:  " + item.Owner);
+                this.menuFilterOwner.set("label", this.i18n.Owner + ":  " + item.Owner);
                 this.menuFilterOwner.set("hpcc_value", item.Owner);
-                this.menuFilterCluster.set("label", "Cluster:  " + item.ClusterName);
+                this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + item.ClusterName);
                 this.menuFilterCluster.set("hpcc_value", item.ClusterName);
             }
             if (item.Owner == "") {
                 this.menuFilterOwner.set("disabled", true);
-                this.menuFilterOwner.set("label", "Owner:  " + "N/A");
+                this.menuFilterOwner.set("label", this.i18n.Owner + ":  " + this.i18n.NA);
             }
             if (item.ClusterName == "") {
                 this.menuFilterCluster.set("disabled", true);
-                this.menuFilterCluster.set("label", "Cluster:  " + "N/A");
+                this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + this.i18n.NA);
             }
         },
 
@@ -330,20 +334,20 @@ define([
                 targetNodeIds: [this.id + "WorkunitsGrid"]
             });
             pMenu.addChild(new MenuItem({
-                label: "Refresh",
+                label: this.i18n.Refresh,
                 onClick: function(args){context._onRefresh();}
             }));
             pMenu.addChild(new MenuSeparator());
             pMenu.addChild(new MenuItem({
-                label: "Open",
+                label: this.i18n.Open,
                 onClick: function(args){context._onOpen();}
             }));
             pMenu.addChild(new MenuItem({
-                label: "Delete",
+                label: this.i18n.Delete,
                 onClick: function(args){context._onDelete();}
             }));
             pMenu.addChild(new MenuItem({
-                label: "Add To Superfile",
+                label: this.i18n.AddToSuperfile,
                 onClick: function(args){dijit.byId(context.id+"AddtoDropDown").openDropDown()}
             }));
             pMenu.addChild(new MenuSeparator());
@@ -365,7 +369,7 @@ define([
                 });
                 pSubMenu.addChild(new MenuSeparator());
                 this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
-                    label: "Clear",
+                    label: this.i18n.Clear,
                     onClick: function () {
                         context.filter.clear();
                         context.refreshGrid();
@@ -373,7 +377,7 @@ define([
                 });
 
                 pMenu.addChild(new PopupMenuItem({
-                    label: "Filter",
+                    label: this.i18n.Filter,
                     popup: pSubMenu
                 }));
             }
@@ -423,21 +427,22 @@ define([
                             return "";
                         }
                     },
-                    Name: { label: "Logical Name",
+                    Name: {
+                        label: this.i18n.LogicalName,
                         formatter: function (name, idx) {
                             return "<a href='#' rowIndex=" + idx + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
                         }
                     },
-                    Owner: { label: "Owner", width: 72 },
-                    Description: { label: "Description", width: 153 },
-                    ClusterName: { label: "Cluster", width: 108 },
-                    RecordCount: { label: "Records", width: 72, sortable: false },
-                    Totalsize: { label: "Size", width: 72, sortable: false },
-                    Parts: { label: "Parts", width: 45, sortable: false },
-                    Modified: { label: "Modified (UTC/GMT)", width: 155, sortable: false }
+                    Owner: { label: this.i18n.Owner, width: 72 },
+                    Description: { label: this.i18n.Description, width: 153 },
+                    ClusterName: { label: this.i18n.Cluster, width: 108 },
+                    RecordCount: { label: this.i18n.Records, width: 72, sortable: false },
+                    Totalsize: { label: this.i18n.Size, width: 72, sortable: false },
+                    Parts: { label: this.i18n.Parts, width: 45, sortable: false },
+                    Modified: { label: this.i18n.ModifiedUTCGMT, width: 155, sortable: false }
                 }
             }, this.id + "WorkunitsGrid");
-            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Logical Files(check filter).</span>";
+            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
 
             var context = this;
             on(document, "." + context.id + "LogicalNameClick:click", function (evt) {
@@ -472,8 +477,8 @@ define([
 
         initFilter: function () {
             this.validateDialog = new Dialog({
-                title: "Filter",
-                content: "No filter criteria specified."
+                title: this.i18n.Filter,
+                content: this.i18n.NoFilterCriteriaSpecified
             });
         },
 

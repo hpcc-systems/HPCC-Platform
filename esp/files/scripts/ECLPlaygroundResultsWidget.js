@@ -133,7 +133,7 @@ define([
 
         refresh: function (params) {
             if (params.Wuid) {
-                if (this.wu.Wuid != params.Wuid) {
+                if (!this.wu || (this.wu.Wuid != params.Wuid)) {
                     this.clear();
                     this.init(params);
                 }

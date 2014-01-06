@@ -6,13 +6,13 @@
         </div>
         <div id="${id}Filter" class="edgePanel" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.layout.ContentPane">
             <input id="${id}Errors" data-dojo-attach-event="onClick:_onErrors" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
-            <label for="${id}Errors">Errors</label>
+            <label for="${id}Errors">${i18n.Errors}</label>
             &nbsp;
             <input id="${id}Warnings" data-dojo-attach-event="onClick:_onWarnings" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
-            <label for="${id}Warnings">Warnings</label>
+            <label for="${id}Warnings">${i18n.Warnings}</label>
             &nbsp;
             <input id="${id}Info" data-dojo-attach-event="onClick:_onInfo" data-dojo-props="checked: true" data-dojo-type="dijit.form.CheckBox" />
-            <label for="${id}Info">Info</label>
+            <label for="${id}Info">${i18n.Info}</label>
         </div>
     </div>
 </div>

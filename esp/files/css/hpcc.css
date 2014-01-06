@@ -416,7 +416,14 @@ hr.dashedLine {
 }
 
 #loadingOverlay {
-    background: url("/esp/files/img/loadingAnimation.gif") no-repeat 10px 23px rgb(255, 255, 255);
+    background: url("/esp/files/img/loadingBar.gif") no-repeat 10px 23px;
+    background-position: center center;
+    background-attachment:fixed;
+    font-family: Arial, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    z-index:999;
+    position:absolute;
 }
 
 #loadingOverlay .loadingMessage {

@@ -17,6 +17,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/TimingGridWidget",
     "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
@@ -36,7 +39,7 @@ define([
 
     "dojo/text!../templates/TimingGridWidget.html"
 ],
-    function (declare, lang, arrayUtil, Memory, Observable,
+    function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Memory, Observable,
             registry,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
             _Widget, ESPUtil, ESPWorkunit,
@@ -44,10 +47,10 @@ define([
         return declare("TimingGridWidget", [_Widget], {
             templateString: template,
             baseClass: "TimingGridWidget",
+            i18n: lang.mixin(nlsCommon, nlsSpecific),
+
             timingGrid: null,
-
             dataStore: null,
-
             lastSelection: null,
 
             buildRendering: function (args) {
@@ -69,8 +72,8 @@ define([
                 this.timingGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                     columns: {
                         id: { label: "##", width: 45 },
-                        Name: { label: "Component" },
-                        Seconds: { label: "Time (Seconds)", width: 124 }
+                        Name: { label: this.i18n.Component },
+                        Seconds: { label: this.i18n.TimeSeconds, width: 124 }
                     },
                     store: this.timingStore
                 }, this.id + "TimingGrid");

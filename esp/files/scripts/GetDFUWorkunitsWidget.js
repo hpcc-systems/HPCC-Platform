@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/GetDFUWorkunitsWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-class",
@@ -56,11 +60,8 @@ define([
     "dijit/form/Button",
     "dijit/form/Select",
     "dijit/Toolbar",
-    "dijit/TooltipDialog",
-
-    "dojox/layout/TableContainer"
-
-], function (declare, arrayUtil,dom, domClass, domForm, date, on,
+    "dijit/TooltipDialog"
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil,dom, domClass, domForm, date, on,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -68,6 +69,7 @@ define([
     return declare("GetDFUWorkunitsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GetDFUWorkunitsWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         workunitsTab: null,
         workunitsGrid: null,
@@ -88,7 +90,7 @@ define([
         },
 
         getTitle: function () {
-            return "DFU Workunits";
+            return this.i18n.title;
         },
 
         //  Hitched actions  ---
@@ -113,9 +115,9 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm('Delete selected workunits?')) {
+            if (confirm(this.i18n.DeleteSelectedWorkunits)) {
                 var context = this;
-                FileSpray.DFUWorkunitsAction(this.workunitsGrid.getSelected(), "Delete", {
+                FileSpray.DFUWorkunitsAction(this.workunitsGrid.getSelected(), this.i18n.Delete, {
                     load: function (response) {
                         context.refreshGrid(response);
                     }
@@ -148,28 +150,28 @@ define([
             this.menuFilterState.set("disabled", false);
 
             if (item) {
-                this.menuFilterJobname.set("label", "Jobname:  " + item.JobName);
+                this.menuFilterJobname.set("label", this.i18n.Jobname + ":  " + item.JobName);
                 this.menuFilterJobname.set("hpcc_value", item.JobName);
-                this.menuFilterCluster.set("label", "Cluster:  " + item.ClusterName);
+                this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + item.ClusterName);
                 this.menuFilterCluster.set("hpcc_value", item.ClusterName);
-                this.menuFilterState.set("label", "State:  " + item.StateMessage);
+                this.menuFilterState.set("label", this.i18n.State + ":  " + item.StateMessage);
                 this.menuFilterState.set("hpcc_value", item.StateMessage);
             }
             if (item.Owner == "") {
                 this.menuFilterOwner.set("disabled", true);
-                this.menuFilterOwner.set("label", "Owner:  " + "N/A");
+                this.menuFilterOwner.set("label", this.i18n.Owner + ":  " + this.i18n.NA);
             }
             if (item.JobName == "") {
                 this.menuFilterJobname.set("disabled", true);
-                this.menuFilterJobname.set("label", "Jobname:  " + "N/A");
+                this.menuFilterJobname.set("label", this.i18n.Jobname + ":  " + this.i18n.NA);
             }
             if (item.ClusterName == "") {
                 this.menuFilterCluster.set("disabled", true);
-                this.menuFilterCluster.set("label", "Cluster:  " + "N/A");
+                this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + this.i18n.NA);
             }
             if (item.StateMessage == "") {
                 this.menuFilterState.set("disabled", true);
-                this.menuFilterState.set("label", "State:  " + "N/A");
+                this.menuFilterState.set("label", this.i18n.State + ":  " + this.i18n.NA);
             }
         },
 
@@ -224,24 +226,24 @@ define([
                 targetNodeIds: [this.id + "WorkunitsGrid"]
             });
             pMenu.addChild(new MenuItem({
-                label: "Open",
+                label: this.i18n.Open,
                 onClick: function () { context._onOpen(); }
             }));
             pMenu.addChild(new MenuItem({
-                label: "Delete",
+                label: this.i18n.Delete,
                 onClick: function () { context._onDelete(); }
             }));
             pMenu.addChild(new MenuItem({
-                label: "Set To Failed",
+                label: this.i18n.SetToFailed,
                 onClick: function () { context._onRename(); }
             }));
             pMenu.addChild(new MenuSeparator());
             pMenu.addChild(new MenuItem({
-                label: "Protect",
+                label: this.i18n.Protect,
                 onClick: function () { context._onProtect(); }
             }));
             pMenu.addChild(new MenuItem({
-                label: "Unprotect",
+                label: this.i18n.Unprotect,
                 onClick: function () { context._onUnprotect(); }
             }));
             pMenu.addChild(new MenuSeparator());
@@ -284,7 +286,7 @@ define([
                 });
                 pSubMenu.addChild(new MenuSeparator());
                 this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
-                    label: "Clear",
+                    label: this.i18n.Clear,
                     onClick: function () {
                         context.filter.clear();
                         context.refreshGrid();
@@ -292,7 +294,7 @@ define([
                 });
 
                 pMenu.addChild(new PopupMenuItem({
-                    label: "Filter",
+                    label: this.i18n.Filter,
                     popup: pSubMenu
                 }));
             }
@@ -329,7 +331,7 @@ define([
                         }
                     },
                     ID: {
-                        label: "ID",
+                        label: this.i18n.ID,
                         width: 180,
                         formatter: function (ID, idx) {
                             var wu = ESPDFUWorkunit.Get(ID);
@@ -337,7 +339,7 @@ define([
                         }
                     },
                     Command: {
-                        label: "Type",
+                        label: this.i18n.Type,
                         width: 117,
                         formatter: function (command) {
                             if (command in FileSpray.CommandMessages) {
@@ -346,14 +348,14 @@ define([
                             return "Unknown";
                         }
                     },
-                    Owner: { label: "Owner", width: 90 },
-                    JobName: { label: "Job Name" },
-                    ClusterName: { label: "Cluster", width: 126 },
-                    StateMessage: { label: "State", width: 72 },
-                    PercentDone: { label: "% Complete", width: 90, sortable: false}
+                    Owner: { label: this.i18n.Owner, width: 90 },
+                    JobName: { label: this.i18n.JobName },
+                    ClusterName: { label: this.i18n.Cluster, width: 126 },
+                    StateMessage: { label: this.i18n.State, width: 72 },
+                    PercentDone: { label: this.i18n.PctComplete, width: 90, sortable: false }
                 }
             }, this.id + "WorkunitsGrid");
-            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
+            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
 
             var context = this;
             on(document, "." + context.id + "IDClick:click", function (evt) {

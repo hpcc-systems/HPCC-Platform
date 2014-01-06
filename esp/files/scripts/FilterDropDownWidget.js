@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/FilterDropDownWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-form",
@@ -31,15 +35,16 @@ define([
     "dijit/form/Form",
     "dijit/form/Button",
 
-    "dojox/layout/TableContainer"
+    "hpcc/TableContainer"
 
-], function (declare, arrayUtil, dom, domForm, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domForm, on,
                 registry,
                 _Widget,
                 template) {
     return declare("FilterDropDownWidget", [_Widget], {
         templateString: template,
         baseClass: "FilterDropDownWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         iconFilter: null,
         filterDropDown: null,

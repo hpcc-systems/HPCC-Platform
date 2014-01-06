@@ -13,8 +13,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ############################################################################## */
-require([
+define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/GraphWidget",
     "dojo/aspect",
     "dojo/has",
     "dojo/dom",
@@ -27,16 +31,20 @@ require([
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
 
-    "dojo/text!./templates/GraphWidget.html",
+    "dojo/text!../templates/GraphWidget.html",
 
-    "dijit/Toolbar", "dijit/ToolbarSeparator", "dijit/form/Button"
-],
-    function (declare, aspect, has, dom, domConstruct, domClass,
+    "dijit/Toolbar", 
+    "dijit/ToolbarSeparator", 
+    "dijit/form/Button"
+    
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, aspect, has, dom, domConstruct, domClass,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, ContentPane,
             template) {
         return declare("GraphWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
             baseClass: "GraphWidget",
+            i18n: lang.mixin(nlsCommon, nlsSpecific),
+
             borderContainer: null,
             graphContentPane: null,
             _isPluginInstalled: false,
@@ -61,7 +69,7 @@ require([
             },
 
             _onClickRefresh: function () {
-                this.setMessage("Performing Layout...");
+                this.setMessage(this.i18n.PerformingLayout);
                 this.startLayout("dot");
             },
 
@@ -135,12 +143,12 @@ require([
             loadXGMML: function (xgmml, merge) {
                 this.registerEvents();
                 if (this._plugin && this.xgmml != xgmml) {
-                    this.setMessage("Loading Data...");
+                    this.setMessage(this.i18n.LoadingData);
                     if (merge)
                         this._plugin.mergeXGMML(xgmml);
                     else
                         this._plugin.loadXGMML(xgmml);
-                    this.setMessage("Performing Layout...");
+                    this.setMessage(this.i18n.PerformingLayout);
                     this._plugin.startLayout("dot");
                     this.xgmml = xgmml;
                 }
@@ -162,9 +170,9 @@ require([
             load: function (dot, layout) {
                 this.registerEvents();
                 if (this._plugin && this.dot != dot) {
-                    this.setMessage("Loading Data...");
+                    this.setMessage(this.i18n.LoadingData);
                     this._plugin.loadDOT(dot);
-                    this.setMessage("Performing Layout...");
+                    this.setMessage(this.i18n.PerformingLayout);
                     this._plugin.startLayout(layout);
                     this.dot = dot;
                 }
@@ -172,7 +180,7 @@ require([
 
             setLayout: function (layout) {
                 if (this._plugin) {
-                    this.setMessage("Performing Layout...");
+                    this.setMessage(this.i18n.PerformingLayout);
                     this._plugin.startLayout(layout);
                 }
             },
@@ -226,7 +234,7 @@ require([
                     if (props.count) {
                         var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, place);
                         var tr = domConstruct.create("tr", null, table);
-                        var td = domConstruct.create("td", { innerHTML: "Count" }, tr);
+                        var td = domConstruct.create("td", { innerHTML: this.i18n.Count }, tr);
                         var td = domConstruct.create("td", {
                             align: "right",
                             innerHTML: props.count
@@ -238,16 +246,16 @@ require([
                         var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, place);
                         var tr = domConstruct.create("tr", null, table);
                         domConstruct.create("th", { innerHTML: "    " }, tr);
-                        domConstruct.create("th", { innerHTML: "Skew" }, tr);
-                        domConstruct.create("th", { innerHTML: "Node" }, tr);
-                        domConstruct.create("th", { innerHTML: "Rows" }, tr);
+                        domConstruct.create("th", { innerHTML: this.i18n.Skew }, tr);
+                        domConstruct.create("th", { innerHTML: this.i18n.Node }, tr);
+                        domConstruct.create("th", { innerHTML: this.i18n.Rows }, tr);
                         tr = domConstruct.create("tr", null, table);
-                        domConstruct.create("td", { innerHTML: "Max" }, tr);
+                        domConstruct.create("td", { innerHTML: this.i18n.Max }, tr);
                         domConstruct.create("td", { innerHTML: props.maxskew }, tr);
                         domConstruct.create("td", { innerHTML: props.maxEndpoint }, tr);
                         domConstruct.create("td", { innerHTML: props.max }, tr);
                         tr = domConstruct.create("tr", null, table);
-                        domConstruct.create("td", { innerHTML: "Min" }, tr);
+                        domConstruct.create("td", { innerHTML: this.i18n.Min }, tr);
                         domConstruct.create("td", { innerHTML: props.minskew }, tr);
                         domConstruct.create("td", { innerHTML: props.minEndpoint }, tr);
                         domConstruct.create("td", { innerHTML: props.min }, tr);
@@ -262,9 +270,9 @@ require([
                     if (props.slaves) {
                         var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, place);
                         var tr = domConstruct.create("tr", null, table);
-                        domConstruct.create("th", { innerHTML: "Slaves" }, tr);
-                        domConstruct.create("th", { innerHTML: "Started" }, tr);
-                        domConstruct.create("th", { innerHTML: "Stopped" }, tr);
+                        domConstruct.create("th", { innerHTML: this.i18n.Slaves }, tr);
+                        domConstruct.create("th", { innerHTML: this.i18n.Started }, tr);
+                        domConstruct.create("th", { innerHTML: this.i18n.Stopped }, tr);
                         tr = domConstruct.create("tr", null, table);
                         domConstruct.create("td", { innerHTML: props.slaves }, tr);
                         domConstruct.create("td", { innerHTML: props.started }, tr);
@@ -285,8 +293,8 @@ require([
                             first = false;
                             table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, place);
                             tr = domConstruct.create("tr", null, table);
-                            domConstruct.create("th", { innerHTML: "Property" }, tr);
-                            domConstruct.create("th", { innerHTML: "Value" }, tr);
+                            domConstruct.create("th", { innerHTML: this.i18n.Property }, tr);
+                            domConstruct.create("th", { innerHTML: this.i18n.Value }, tr);
                         }
                         tr = domConstruct.create("tr", null, table);
                         domConstruct.create("td", { innerHTML: key }, tr);
@@ -339,8 +347,8 @@ require([
                         var context = this;
                     } else {
                         domConstruct.create("div", {
-                            innerHTML: "<h4>Graph View</h4>" +
-                                        "<p>To enable graph views, please install the Graph View Control plugin:</p>" +
+                            innerHTML: "<h4>" + this.i18n.GraphView + "</h4>" +
+                                        "<p>" + this.i18n.Toenablegraphviews + ":</p>" +
                                         this.getResourceLinks()
                         }, this.graphContentPane.domNode);
                     }
@@ -348,9 +356,9 @@ require([
             },
 
             getResourceLinks: function () {
-                return "<a href=\"http://hpccsystems.com/download/free-community-edition/graph-control\" target=\"_blank\">Binary Installs</a><br/>" +
-                "<a href=\"https://github.com/hpcc-systems/GraphControl\" target=\"_blank\">Source Code</a><br/><br/>" +
-                "<a href=\"http://hpccsystems.com\" target=\"_blank\">HPCC Systems</a>"
+                return "<a href=\"http://hpccsystems.com/download/free-community-edition/graph-control\" target=\"_blank\">" + this.i18n.BinaryInstalls + "</a><br/>" +
+                "<a href=\"https://github.com/hpcc-systems/GraphControl\" target=\"_blank\">" + this.i18n.SourceCode + "</a><br/><br/>" +
+                "<a href=\"http://hpccsystems.com\" target=\"_blank\">" + this.i18n.HPCCSystems + "</a>"
             },
 
             setMessage: function (message) {

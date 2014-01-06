@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/HPCCPlatformOpsWidget",
 
     "dijit/registry",
 
@@ -27,13 +31,14 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
 
-], function (declare,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific,
                 registry,
                 _TabContainerWidget, ESPRequest,
                 template) {
     return declare("HPCCPlatformOpsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformOpsWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -44,7 +49,7 @@ define([
         },
 
         getTitle: function () {
-            return "HPCC Platform - Operations";
+            return this.i18n.title;
         },
 
         //  Hitched actions  ---
@@ -62,37 +67,37 @@ define([
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.id + "_Resources") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: ESPRequest.getBaseURL("WsSMC") + "/BrowseResources",
+                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsSMC") + "/BrowseResources"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.id === this.id + "_Users") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: ESPRequest.getBaseURL("ws_access") + "/Users",
+                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("ws_access") + "/Users"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.id === this.id + "_Groups") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: ESPRequest.getBaseURL("ws_access") + "/Groups",
+                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("ws_access") + "/Groups"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.id === this.id + "_Permissions") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: ESPRequest.getBaseURL("ws_access") + "/Permissions",
+                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("ws_access") + "/Permissions"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.id === this.id + "_TargetClusters") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: ESPRequest.getBaseURL("WsTopology") + "/TpTargetClusterQuery?Type=ROOT",
+                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsTopology") + "/TpTargetClusterQuery?Type=ROOT"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.id === this.id + "_ClusterProcesses") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: ESPRequest.getBaseURL("WsTopology") + "/TpClusterQuery?Type=ROOT",
+                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsTopology") + "/TpClusterQuery?Type=ROOT"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.id === this.id + "_SystemServers") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: ESPRequest.getBaseURL("WsTopology") + "/TpServiceQuery?Type=ALLSERVICES",
+                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsTopology") + "/TpServiceQuery?Type=ALLSERVICES"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.init) {

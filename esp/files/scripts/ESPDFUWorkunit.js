@@ -15,8 +15,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/array",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/GetDFUWorkunitsWidget",
+    "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/data/ObjectStore",
     "dojo/store/util/QueryResults",
@@ -26,8 +29,10 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Deferred, ObjectStore, QueryResults, Observable,
     FileSpray, ESPUtil, ESPRequest, ESPResult) {
+
+    var i18n = lang.mixin(nlsCommon, nlsSpecific);
 
     var Store = declare([ESPRequest.Store], {
         service: "FileSpray",
@@ -79,7 +84,7 @@ define([
         //  Asserts  ---
         _assertHasWuid: function () {
             if (!this.Wuid) {
-                throw new Error("Wuid cannot be empty.");
+                throw new Error(i18n.Wuidcannotbeempty);
             }
         },
         //  Attributes  ---
@@ -105,7 +110,7 @@ define([
             if (command in FileSpray.CommandMessages) {
                 this.set("CommandMessage", FileSpray.CommandMessages[command]);
             } else {
-                this.set("CommandMessage", "Unknown (" + command + ")");
+                this.set("CommandMessage", i18n.Unknown + " (" + command + ")");
             }
         },
 
@@ -114,7 +119,7 @@ define([
             if (format in FileSpray.FormatMessages) {
                 this.set("SourceFormatMessage", FileSpray.FormatMessages[format]);
             } else {
-                this.set("SourceFormatMessage", "Unknown (" + format + ")");
+                this.set("SourceFormatMessage", i18n.Unknown + " (" + format + ")");
             }
         },
 
@@ -123,7 +128,7 @@ define([
             if (format in FileSpray.FormatMessages) {
                 this.set("DestFormatMessage", FileSpray.FormatMessages[format]);
             } else {
-                this.set("DestFormatMessage", "Unknown (" + format + ")");
+                this.set("DestFormatMessage", i18n.Unknown + " (" + format + ")");
             }
         },
 

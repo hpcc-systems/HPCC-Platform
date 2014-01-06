@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/ECLSourceWidget",
     "dojo/dom",
 
     "dijit/layout/BorderContainer",
@@ -29,13 +32,15 @@ define([
 
     "dijit/Toolbar", "dijit/ToolbarSeparator", "dijit/form/Button"
 ],
-    function (declare, lang, dom,
+    function (declare, lang, i18n, nlsCommon, nlsSpecific, dom,
             BorderContainer, ContentPane, registry,
             _Widget, ESPWorkunit,
             template) {
         return declare("ECLSourceWidget", [_Widget], {
             templateString: template,
             baseClass: "ECLSourceWidget",
+            i18n: lang.mixin(nlsCommon, nlsSpecific),
+
             borderContainer: null,
             eclSourceContentPane: null,
             wu: null,

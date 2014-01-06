@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/GraphPageWidget",
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/dom",
@@ -59,7 +62,7 @@ define([
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton"
-], function (declare, lang, arrayUtil, Deferred, dom, domConstruct, on, html, Memory, Observable,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Deferred, dom, domConstruct, on, html, Memory, Observable,
             BorderContainer, TabContainer, ContentPane, registry, Dialog,
             entities,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
@@ -68,6 +71,8 @@ define([
     return declare("GraphPageWidget", [_Widget], {
         templateString: template,
         baseClass: "GraphPageWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+
         borderContainer: null,
         rightBorderContainer: null,
         graphName: "",
@@ -299,7 +304,7 @@ define([
         },
 
         _onMainRefresh: function () {
-            this.main.setMessage("Performing Layout...");
+            this.main.setMessage(this.i18n.PerformingLayout);
             this.main.startLayout("dot");
         },
 
@@ -341,14 +346,14 @@ define([
         },
 
         _onAbout: function () {
-            html.set(dom.byId(this.id + "InfoDialogContent"), "<div style='width: 320px; height: 120px; text-align: center;'><p>Version:  " + this.main.getVersion() + "</p><p>" + this.main.getResourceLinks() + "</p>");
-            this.infoDialog.set("title", "About HPCC Systems Graph Control");
+            html.set(dom.byId(this.id + "InfoDialogContent"), "<div style='width: 320px; height: 120px; text-align: center;'><p>" + this.i18n.Version + ":  " + this.main.getVersion() + "</p><p>" + this.main.getResourceLinks() + "</p>");
+            this.infoDialog.set("title", this.i18n.AboutHPCCSystemsGraphControl);
             this.infoDialog.show();
         },
 
         _onGetSVG: function () {
             html.set(dom.byId(this.id + "InfoDialogContent"), "<textarea rows='25' cols='80'>" + entities.encode(this.main.getSVG()) + "</textarea>");
-            this.infoDialog.set("title", "SVG Source");
+            this.infoDialog.set("title", this.i18n.SVGSource);
             this.infoDialog.show();
         },
 
@@ -356,27 +361,27 @@ define([
             var context = this
             this.main.localLayout(function (svg) {
                 html.set(dom.byId(context.id + "InfoDialogContent"), "<div style='border: 1px inset grey; width: 640px; height: 480px; overflow : auto; '>" + svg + "</div>");
-                context.infoDialog.set("title", "Rendered SVG");
+                context.infoDialog.set("title", this.i18n.RenderedSVG);
                 context.infoDialog.show();
             });
         },
 
         _onGetXGMML: function () {
-            this.xgmmlDialog.set("title", "XGMML");
+            this.xgmmlDialog.set("title", this.i18n.XGMML);
             this.xgmmlDialog.set("hpccMode", "XGMML");
             this.xgmmlTextArea.set("value", this.main.getXGMML());
             this.xgmmlDialog.show();
         },
 
         _onEditDOT: function () {
-            this.xgmmlDialog.set("title", "DOT");
+            this.xgmmlDialog.set("title", this.i18n.DOT);
             this.xgmmlDialog.set("hpccMode", "DOT");
             this.xgmmlTextArea.set("value", this.main.getDOT());
             this.xgmmlDialog.show();
         },
 
         _onGetGraphAttributes: function () {
-            this.xgmmlDialog.set("title", "DOT Attributes");
+            this.xgmmlDialog.set("title", this.i18n.DOTAttributes);
             this.xgmmlDialog.set("hpccMode", "DOTATTRS");
             this.xgmmlTextArea.set("value", this.global.getDotMetaAttributes());
             this.xgmmlDialog.show();
@@ -493,9 +498,9 @@ define([
 
         loadGraphFromWu: function (wu, graphName) {
             var deferred = new Deferred();
-            this.overview.setMessage("Fetching Data...");
-            this.main.setMessage("Fetching Data...");
-            this.local.setMessage("Fetching Data...");
+            this.overview.setMessage(this.i18n.FetchingData);
+            this.main.setMessage(this.i18n.FetchingData);
+            this.local.setMessage(this.i18n.FetchingData);
             var context = this;
             wu.fetchGraphXgmmlByName(graphName, function (xgmml, svg) {
                 context.overview.setMessage("");
@@ -515,9 +520,9 @@ define([
         },
 
         loadGraphFromQuery: function (targetQuery, queryId, graphName) {
-            this.overview.setMessage("Fetching Data...");
-            this.main.setMessage("Fetching Data...");
-            this.local.setMessage("Fetching Data...");
+            this.overview.setMessage(this.i18n.FetchingData);
+            this.main.setMessage(this.i18n.FetchingData);
+            this.local.setMessage(this.i18n.FetchingData);
             var context = this;
             WsWorkunits.WUQueryGetGraph({
                 request: {
@@ -574,7 +579,7 @@ define([
             }
 
             var layout = [
-                { label: "ID", field: "id", width: 50 }
+                { label: this.i18n.ID, field: "id", width: 50 }
             ];
 
             for (var key in layoutMap) {
@@ -602,14 +607,14 @@ define([
             }
 
             var layout = [
-                { label: "ID", field: "id", width: 50 },
-                { label: "Label", field: "label", width: 150 }
+                { label: this.i18n.ID, field: "id", width: 50 },
+                { label: this.i18n.Label, field: "label", width: 150 }
             ];
 
             for (var key in layoutMap) {
                 layout.push({ label: key, field: key, width: 200 });
             }
-            layout.push({ label: "ECL", field: "ecl", width: 1024 });
+            layout.push({ label: this.i18n.ECL, field: "ecl", width: 1024 });
 
             this.verticesStore.setData(vertices);
             this.verticesGrid.set("columns", layout);
@@ -632,7 +637,7 @@ define([
             }
 
             var layout = [
-                { label: "ID", field: "id", width: 50 }
+                { label: this.i18n.ID, field: "id", width: 50 }
             ];
 
             for (var key in layoutMap) {

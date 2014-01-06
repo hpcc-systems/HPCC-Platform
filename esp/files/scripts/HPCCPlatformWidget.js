@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/HPCCPlatformWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-style",
@@ -26,7 +29,6 @@ define([
     "dojox/widget/UpgradeBar",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPRequest",
     "hpcc/WsAccount",
     "hpcc/ws_access",
     "hpcc/WsSMC",
@@ -40,27 +42,29 @@ define([
     "dijit/layout/StackController",
     "dijit/layout/ContentPane",
     "dijit/form/DropDownButton",
-    "dijit/form/ComboButton",
     "dijit/form/TextBox",
-    "dijit/Menu",
+    "dijit/form/Textarea",
+    "dijit/Dialog",
     "dijit/MenuSeparator",
-    "dijit/Toolbar",
-    "dijit/TooltipDialog",
+
+    "dojox/layout/TableContainer",
 
     "hpcc/HPCCPlatformMainWidget",
     "hpcc/HPCCPlatformECLWidget",
     "hpcc/HPCCPlatformFilesWidget",
     "hpcc/HPCCPlatformRoxieWidget",
-    "hpcc/HPCCPlatformOpsWidget"
+    "hpcc/HPCCPlatformOpsWidget",
+    "hpcc/InfoGridWidget"
 
-], function (declare, lang, arrayUtil, dom, domStyle,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domStyle,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPRequest, WsAccount, WsAccess, WsSMC, GraphWidget,
+                _TabContainerWidget, WsAccount, WsAccess, WsSMC, GraphWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         banner: "",
         upgradeBar: null,
@@ -138,10 +142,10 @@ define([
                 context.refreshActivityResponse(response);
             });
 
-            this.createStackControllerTooltip(this.id + "_ECL", "ECL");
-            this.createStackControllerTooltip(this.id + "_Files", "Files");
-            this.createStackControllerTooltip(this.id + "_Queries", "Published Queries");
-            this.createStackControllerTooltip(this.id + "_OPS", "Operations");
+            this.createStackControllerTooltip(this.id + "_ECL", this.i18n.ECL);
+            this.createStackControllerTooltip(this.id + "_Files", this.i18n.files);
+            this.createStackControllerTooltip(this.id + "_Queries", this.i18n.publishedQueries);
+            this.createStackControllerTooltip(this.id + "_OPS", this.i18n.operations);
             this.initTab();
         },
 
