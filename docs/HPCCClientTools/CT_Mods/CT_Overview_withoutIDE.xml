@@ -147,19 +147,22 @@
       <title>Multiple Version Installations</title>
 
       <para>It is possible to install multiple versions of the client tools if
-      you need to work with multiple versions of the platform. </para>
+      you need to work with multiple versions of the platform.</para>
 
       <para>To install the client tools, obtain the appropriate installation
       package for your operating system and the version to match your HPCC
       Systems server:</para>
 
-      <itemizedlist>
+      <orderedlist>
         <listitem>
-          <para>From the HPCC Systems download page, <ulink
-          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
-
           <para>Download the appropriate Client Tools for your Operating
-          System.</para>
+          System and version.</para>
+
+          <para>Client tools can be found at the HPCC Systems download page:
+          </para>
+
+          <para><ulink
+          url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
 
           <variablelist>
             <varlistentry>
@@ -173,7 +176,12 @@
             </varlistentry>
           </variablelist>
         </listitem>
-      </itemizedlist>
+
+        <listitem>
+          <para>Install the Client Tools on to your system. Take note of the
+          following considerations. </para>
+        </listitem>
+      </orderedlist>
 
       <para>Client tool packages starting with 4.2 have built in logic to
       allow for multiple installations. Prior versions of the client tools
@@ -188,12 +196,11 @@
       client tools. So you could have a client tools 4.0.x, 4.2.x, 4.4.x,
       etc.</para>
 
-      <para>For older versions, download the package(s), and install. You need
-      to install them in reverse order from the oldest first, to the newest.
-      Copy to a different folder or Rename the client tools found in
-      /opt/HPCCSystems after installing the older one and before installing
-      the newer one. This is to prevent the newer client tools from
-      overwriting the older one.</para>
+      <para>For older versions, download the package(s), and install. Install
+      the one you want to use last. Copy to a different folder or Rename the
+      client tools found in /opt/HPCCSystems after installing the older
+      version and before installing the newer version. This is to prevent the
+      newer client tools from overwriting the older one.</para>
 
       <para>To use the Client tools for the various version number(s)
       explicitly call the client tool you wish to use, or set up an alias to
