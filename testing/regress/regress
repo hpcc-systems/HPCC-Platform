@@ -76,6 +76,11 @@ if __name__ == "__main__":
     timeout = -1
     if 'timeout' in args:
         timeout = args.timeout
+    # Resolve Regression Suite starting path for regress.json config file
+    # It is necessary when Regression Suite doesn't started from its home directory
+    regressionSuiteMainDir = os.path.dirname(__file__)
+    regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
+    args.config = str(os.path.join(regressionSuiteFullPath, args.config))
     regress = None
     try:
         if 'clusters' in args:
