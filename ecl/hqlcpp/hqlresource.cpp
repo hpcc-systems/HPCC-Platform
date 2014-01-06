@@ -4824,9 +4824,15 @@ IHqlExpression * EclResourcer::createResourced(IHqlExpression * expr, ResourceGr
             }
             else
             {
-                IHqlExpression * uid = info->transformed->queryAttribute(_uid_Atom);
-                source = createValue(no_callsideeffect, makeVoidType(), LINK(uid));
-                //source = LINK(info->transformed);
+                IHqlExpression * transformed = info->transformed;
+                if (transformed->getOperator() == no_definesideeffect)
+                {
+                    IHqlExpression * uid = info->transformed->queryAttribute(_uid_Atom);
+                    assertex(uid);
+                    source = createValue(no_callsideeffect, makeVoidType(), LINK(uid));
+                }
+                else
+                    source = LINK(transformed);
             }
         }
 
