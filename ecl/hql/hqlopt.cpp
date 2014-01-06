@@ -1906,7 +1906,7 @@ IHqlExpression * CTreeOptimizer::expandFields(TableProjectMapper * mapper, IHqlE
 {
     OwnedHqlExpr expandedFilter = mapper->expandFields(expr, oldDataset, newDataset, _expandCallback);
     if (options & HOOfold)
-        expandedFilter.setown(foldHqlExpression(expandedFilter));
+        expandedFilter.setown(foldScopedHqlExpression(newDataset, expandedFilter));
     return expandedFilter.getClear();
 }
 

@@ -6067,7 +6067,8 @@ IHqlExpression * foldScopedHqlExpression(IHqlExpression * dataset, IHqlExpressio
 
     CExprFolderTransformer folder(NULL, foldOptions);
 
-    folder.setScope(dataset);
+    if (dataset)
+        folder.setScope(dataset);
 
     IHqlExpression * ret = folder.transformRoot(expr);
 
