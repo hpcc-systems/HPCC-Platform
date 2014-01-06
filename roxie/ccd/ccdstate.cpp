@@ -408,8 +408,6 @@ public:
 
         const IResolvedFile *result = lookupExpandedFileName(fileName, cache, false, false);
         if (!result)
-            result = resolveLFNusingDaliOrLocal(fileName, cache, false, false);
-        if (!result)
         {
             if (!opt)
                 throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s", fileName.str());
