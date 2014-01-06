@@ -9006,7 +9006,7 @@ IHqlExpression * HqlCppTranslator::optimizeCompoundSource(IHqlExpression * expr,
     return ret.getClear();
 }
 
-IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags)
+IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags, bool projectBeforeSpill)
 {
     LinkedHqlExpr resourced = expr;
     // Second attempt to spot compound disk reads - this time of spill files for thor.
@@ -9016,7 +9016,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     if (options.optimizeResourcedProjects)
     {
         cycle_t time = msTick();
-        OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), options.optimizeSpillProject);
+        OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), projectBeforeSpill);
         updateTimer("workunit;implicit projects", msTick()-time);
         traceExpression("AfterResourcedImplicit", resourced);
         checkNormalized(optimized);
@@ -9100,11 +9100,12 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
 
     checkNormalized(resourced);
 
-    resourced.setown(optimizeGraphPostResource(resourced, csfFlags));
+    bool createGraphResults = (outputLibraryId != 0);
+    resourced.setown(optimizeGraphPostResource(resourced, csfFlags, options.optimizeSpillProject && !createGraphResults));
     if (options.optimizeSpillProject)
     {
-        resourced.setown(convertSpillsToActivities(resourced));
-        resourced.setown(optimizeGraphPostResource(resourced, csfFlags));
+        resourced.setown(convertSpillsToActivities(resourced, createGraphResults));
+        resourced.setown(optimizeGraphPostResource(resourced, csfFlags, false));
     }
 
     checkNormalized(resourced);
