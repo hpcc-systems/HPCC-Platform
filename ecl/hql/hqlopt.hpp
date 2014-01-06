@@ -31,6 +31,7 @@ enum
     HOOhascompoundaggregate     = 0x0040,
     HOOfoldconstantdatasets     = 0x0080,
     HOOalwayslocal              = 0x0100,
+    HOOexpensive                = 0x0200,   // include potentially expensive optimizations
 };
 
 extern HQL_API IHqlExpression * optimizeHqlExpression(IHqlExpression * expr, unsigned options);

@@ -725,6 +725,7 @@ struct HqlCppOptions
     bool                expandPersistInputDependencies;
     bool                expirePersists;
     bool                actionLinkInNewGraph;
+    bool                optimizeMax;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

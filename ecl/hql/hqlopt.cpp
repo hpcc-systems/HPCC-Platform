@@ -758,7 +758,7 @@ IHqlExpression * CTreeOptimizer::optimizeDatasetIf(IHqlExpression * transformed)
     return LINK(transformed);
 }
 
-static bool branchesMatch(IHqlExpression * left, IHqlExpression * right)
+static bool branchesMatch(unsigned options, IHqlExpression * left, IHqlExpression * right)
 {
     if (left->queryBody() == right->queryBody())
         return true;
@@ -789,7 +789,7 @@ static bool branchesMatch(IHqlExpression * left, IHqlExpression * right)
         {
             //The following code allows LEFT to be referred to within the transform, but I don't think it is worth enabling
             //because of the potential cost of replacing the selseq within the transform.
-            if (false)
+            if (options & HOOexpensive)
             {
                 if ((leftOp != no_hqlproject) || !curLeft->isTransform())
                     return false;
@@ -814,7 +814,7 @@ IHqlExpression * CTreeOptimizer::optimizeIf(IHqlExpression * expr)
     if (!falseExpr)
         return NULL;
 
-    if (branchesMatch(trueExpr, falseExpr))
+    if (branchesMatch(options, trueExpr, falseExpr))
     {
         noteUnused(trueExpr);       // inherit usage() will increase the usage again
         noteUnused(falseExpr);

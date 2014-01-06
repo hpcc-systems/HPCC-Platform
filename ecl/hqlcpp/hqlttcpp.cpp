@@ -12879,8 +12879,10 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         if (options.foldConstantDatasets) foldOptions |= HFOconstantdatasets;
         if (options.percolateConstants) foldOptions |= HFOpercolateconstants;
         if (options.percolateFilters) foldOptions |= HFOpercolatefilters;
+        if (options.optimizeMax) foldOptions |= HFOx_op_not_x;
         if (options.globalFoldOptions != (unsigned)-1)
             foldOptions = options.globalFoldOptions;
+
         foldHqlExpression(folded, exprs, foldOptions);
         replaceArray(exprs, folded);
         updateTimer("workunit;tree transform: global fold", msTick()-startTime);
