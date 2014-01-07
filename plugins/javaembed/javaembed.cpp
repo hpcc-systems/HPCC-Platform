@@ -723,7 +723,18 @@ public:
     {
         sharedCtx->getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
     }
-
+    virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual size32_t getTransformResult(ARowBuilder & builder)
+    {
+        UNIMPLEMENTED;
+    }
     virtual void bindBooleanParam(const char *name, bool val)
     {
         if (*argsig != 'B')
@@ -1026,6 +1037,14 @@ public:
         }
         argsig++;
         addArg(v);
+    }
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    {
+        UNIMPLEMENTED;
+    }
+    virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
+    {
+        UNIMPLEMENTED;
     }
 
     virtual void importFunction(size32_t lenChars, const char *utf)

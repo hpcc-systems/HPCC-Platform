@@ -562,6 +562,8 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
 %left OR
 %left AND
 
+%left reduceAttrib
+
 %left ORDER UNICODEORDER
 %left SHIFTL SHIFTR
 %left '+' '-'
@@ -800,6 +802,29 @@ explicitDictionaryType
     | userTypedefDictionary
     ;
 
+explicitRowType
+    : explicitRowType1
+    | LINKCOUNTED explicitRowType1
+                        {
+                            $$.setType(setLinkCountedAttr($2.getType(), true));
+                            $$.setPosition($1);
+                        }
+    ;
+
+explicitRowType1
+    : ROW               {
+                            IHqlExpression* record = queryNullRecord();
+                            $$.setType(makeRowType(record->getType()));
+                            $$.setPosition($1);
+                        }
+    | ROW '(' recordDef ')'
+                        {
+                            OwnedHqlExpr record = $3.getExpr();
+                            $$.setType(makeRowType(record->getType()));
+                            $$.setPosition($1);
+                        }
+    ;
+
 
 transformType
     : TRANSFORM '(' recordDef ')'
@@ -862,17 +887,7 @@ paramType
                         }
     | explicitDatasetType
     | explicitDictionaryType
-    | ROW               {
-                            IHqlExpression* record = queryNullRecord();
-                            $$.setType(makeRowType(record->getType()));
-                            $$.setPosition($1);
-                        }
-    | LINKCOUNTED ROW {
-                            IHqlExpression* record = queryNullRecord();
-                            Owned<ITypeInfo> rowType = makeRowType(record->getType());
-                            $$.setType(setLinkCountedAttr(rowType, true));
-                            $$.setPosition($1);
-                        }
+    | explicitRowType
     | abstractModule
                         {
                             OwnedHqlExpr scope = $1.getExpr();
@@ -3806,19 +3821,20 @@ attrib
                             parser->reportWarning(WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
                             $$.setExpr(createAttribute($1.getId()->lower(), createConstant(*$3.getId())));
                         }
-    | knownOrUnknownId EQ const
+    | knownOrUnknownId EQ expr %prec reduceAttrib
                         {
-                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr()), $1);
+                            //NOTE %prec is there to prevent a s/r error from the "SERVICE : attrib" production
+                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr()), $1);
                         }
     | knownOrUnknownId                  
                         {   $$.setExpr(createAttribute($1.getId()->lower()));  }
-    | knownOrUnknownId '(' const ')'
+    | knownOrUnknownId '(' expr ')'
                         {
-                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr()), $1);
+                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr()), $1);
                         }
-    | knownOrUnknownId '(' const ',' const ')'
+    | knownOrUnknownId '(' expr ',' expr ')'
                         {
-                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr(), $5.getExpr()), $1);
+                            $$.setExpr(createExprAttribute($1.getId()->lower(), $3.getExpr(), $5.getExpr()), $1);
                         }
     ;
 

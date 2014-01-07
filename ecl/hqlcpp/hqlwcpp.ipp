@@ -85,7 +85,7 @@ protected:
     StringBuffer & generateChildExpr(StringBuffer & out, IHqlExpression * expr, unsigned childIndex);
     bool generateFunctionPrototype(IHqlExpression * funcdef, const char * name);
     void generateInitializer(IHqlExpression * expr);
-    void generateParamCpp(IHqlExpression * expr);
+    void generateParamCpp(IHqlExpression * expr, IHqlExpression * attrs);
     void generateSimpleAssign(IHqlExpression * target, IHqlExpression * source);
     void generateStmt(IHqlStmt * stmt);
     void generateStmtAssign(IHqlStmt * assign);

@@ -5677,6 +5677,47 @@ bool RtlCInterface::Release(void) const
 
 //---------------------------------------------------------------------------
 
+class RtlRowStream : implements IRowStream, public RtlCInterface
+{
+public:
+    RtlRowStream(size32_t _count, byte * * _rowset) : count(_count), rowset(_rowset)
+    {
+        rtlLinkRowset(rowset);
+        cur = 0;
+    }
+    ~RtlRowStream()
+    {
+        rtlReleaseRowset(count, rowset);
+    }
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual const void *nextRow()
+    {
+        if (cur >= count)
+            return NULL;
+        byte * ret = rowset[cur];
+        cur++;
+        rtlLinkRow(ret);
+        return ret;
+    }
+    virtual void stop()
+    {
+        cur = count;
+    }
+
+protected:
+    size32_t cur;
+    size32_t count;
+    byte * * rowset;
+
+};
+
+ECLRTL_API IRowStream * createRowStream(size32_t count, byte * * rowset)
+{
+    return new RtlRowStream(count, rowset);
+}
+
+
 
 #if 0
 void PrintExtract(StringBuffer & s, const char * tag)

@@ -32,8 +32,8 @@ public:
     virtual void buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual void buildExistsDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
 
+    using IHqlCppDatasetCursor::buildIterateClass;
 protected:
-    virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) = 0;
     IHqlExpression * createRow(BuildCtx & ctx, const char * prefix, StringBuffer & rowName, bool conditional);
 
 protected:
@@ -71,6 +71,21 @@ class InlineLinkedDatasetCursor : public BaseDatasetCursor
 {
 public:
     InlineLinkedDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs);
+
+    virtual void buildCount(BuildCtx & ctx, CHqlBoundExpr & tgt);
+    virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt);
+    virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) { return doBuildIterateLoop(ctx, needToBreak, false); }
+    virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr);
+    virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx);
+
+protected:
+    BoundRow * doBuildIterateLoop(BuildCtx & ctx, bool needToBreak, bool checkForNull);
+};
+
+class StreamedDatasetCursor : public BaseDatasetCursor
+{
+public:
+    StreamedDatasetCursor(HqlCppTranslator & _translator, IHqlExpression * _ds, CHqlBoundExpr & _boundDs);
 
     virtual void buildCount(BuildCtx & ctx, CHqlBoundExpr & tgt);
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt);

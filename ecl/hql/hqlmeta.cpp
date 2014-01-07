@@ -2959,7 +2959,7 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
         }
     case no_translated:
         type.setown(parms.item(0).getType());
-        assertex(parms.ordinality()>1);     // should have a count or a length
+        assertex(parms.ordinality()>1 || hasStreamedModifier(type));     // should have a count or a length
         break;
     case no_inlinetable:
     case no_dataset_from_transform:

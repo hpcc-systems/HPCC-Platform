@@ -640,9 +640,9 @@ public:
     virtual void updateWULogfile();
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
-        return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+        return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
 };
 
@@ -670,6 +670,7 @@ public:
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 };
 
 class EclBoundLoopGraph : public CInterface, implements IHThorBoundLoopGraph

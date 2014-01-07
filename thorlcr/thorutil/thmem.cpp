@@ -1954,9 +1954,9 @@ public:
         allocatorMetaCache.clear();
     }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
-        return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+        return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
 // IThorAllocator
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
@@ -1985,9 +1985,9 @@ public:
 // IThorAllocator
     virtual bool queryCrc() const { return true; }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned cacheId, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned cacheId, roxiemem::RoxieHeapFlags flags) const
     {
-        return createCrcRoxieRowAllocator(*rowManager, meta, activityId, cacheId, flags);
+        return createCrcRoxieRowAllocator(cache, *rowManager, meta, activityId, cacheId, flags);
     }
 };
 
@@ -2159,6 +2159,10 @@ public:
         //GH: I think this is what it should do, please check
         visitor.visitRow(*(const byte **)(self+extraSz)); 
     }
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return childMeta->queryChildMeta(i);
+    }
 };
 
 IOutputMetaData *createOutputMetaDataWithChildRow(IEngineRowAllocator *childAllocator, size32_t extraSz)
@@ -2302,6 +2306,10 @@ public:
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
     {
         meta->walkIndirectMembers(self, visitor);
+    }
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return meta->queryChildMeta(i);
     }
 };
 

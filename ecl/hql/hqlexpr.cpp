@@ -11616,6 +11616,8 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
         {
             IHqlExpression & record = args.item(1);
             type = makeRowType(LINK(record.queryRecordType()));
+            if (queryAttribute(_linkCounted_Atom, args))
+                type = makeAttributeModifier(type, getLinkCountedAttr());
             break;
         }
     case no_typetransfer:

@@ -1498,14 +1498,11 @@ BoundRow * HqlCppTranslator::createRowBuilder(BuildCtx & ctx, BoundRow * targetR
     }
 }
 
-BoundRow * HqlCppTranslator::declareLinkedRow(BuildCtx & ctx, IHqlExpression * expr, bool isMember)
+IHqlExpression * HqlCppTranslator::declareLinkedRowExpr(BuildCtx & ctx, IHqlExpression * record, bool isMember)
 {
-    assertex(expr->isDatarow());
-
     StringBuffer rowName;
     getUniqueId(rowName.append('r'));
 
-    IHqlExpression * record = expr->queryRecord();
     Owned<ITypeInfo> rowType = makeRowType(record->getType());
     rowType.setown(makeAttributeModifier(makeWrapperModifier(rowType.getClear()), getLinkCountedAttr()));
     if (isMember)
@@ -1518,6 +1515,13 @@ BoundRow * HqlCppTranslator::declareLinkedRow(BuildCtx & ctx, IHqlExpression * e
     //this the outer most scope (within a function)
     ctx.setNextPriority(BuildCtx::OutermostScopePrio);
     ctx.addDeclare(boundRow);
+    return boundRow.getClear();
+}
+
+BoundRow * HqlCppTranslator::declareLinkedRow(BuildCtx & ctx, IHqlExpression * expr, bool isMember)
+{
+    assertex(expr->isDatarow());
+    OwnedHqlExpr boundRow = declareLinkedRowExpr(ctx, expr->queryRecord(), isMember);
     return createBoundRow(expr, boundRow);
 }
 
@@ -2992,6 +2996,7 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
 {
     bool returnByReference = false;
     CHqlBoundTarget target;
+    OwnedHqlExpr returnValue;
 
     switch (type->getTypeCode())
     {
@@ -3008,10 +3013,29 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-    case type_row:
-        initBoundStringTarget(target, type, "__lenResult", "__result");
-        returnByReference = true;
+        if (!hasStreamedModifier(type))
+        {
+            initBoundStringTarget(target, type, "__lenResult", "__result");
+            returnByReference = true;
+        }
         break;
+    case type_row:
+        if (!hasLinkCountedModifier(type))
+        {
+            initBoundStringTarget(target, type, "__lenResult", "__result");
+            returnByReference = true;
+        }
+        break;
+    case type_transform:
+        {
+            OwnedHqlExpr dataset = createDataset(no_anon, LINK(::queryRecord(type)));
+            BoundRow * row = bindSelf(ctx, dataset, "__self");
+            target.expr.set(row->querySelector());
+            returnByReference = true;
+            //A transform also returns the size that was generated (which will be bound to a local variable)
+            returnValue.setown(getRecordSize(row->querySelector()));
+            break;
+        }
     case type_set:
         target.isAll.setown(createVariable("__isAllResult", makeBoolType()));
         target.length.setown(createVariable("__lenResult", LINK(sizetType)));
@@ -3021,7 +3045,11 @@ void HqlCppTranslator::doBuildFunctionReturn(BuildCtx & ctx, ITypeInfo * type, I
     }
 
     if (returnByReference)
+    {
         buildExprAssign(ctx, target, value);
+        if (returnValue)
+            buildReturn(ctx, returnValue);
+    }
     else
         buildReturn(ctx, value, type);
 }
@@ -3896,6 +3924,9 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
             childType = buildRtlType(arguments, ::queryRecordType(type));
             if (hasLinkCountedModifier(type))
                 fieldType |= RFTMlinkcounted;
+            StringBuffer lookupHelperName;
+            buildDictionaryHashClass(::queryRecord(type), lookupHelperName);
+            arguments.append(",&").append(lookupHelperName.str());
             break;
         }
     case type_set:
@@ -4314,6 +4345,70 @@ protected:
 
 
 
+class MetaChildMetaCallback
+{
+public:
+    MetaChildMetaCallback(HqlCppTranslator & _translator, IHqlStmt * _switchStmt)
+        : translator(_translator), switchStmt(_switchStmt)
+    {
+        nextIndex = 0;
+    }
+
+    void walkRecord(BuildCtx & ctx, IHqlExpression * record)
+    {
+        ForEachChild(i, record)
+        {
+            IHqlExpression * cur = record->queryChild(i);
+            switch (cur->getOperator())
+            {
+            case no_record:
+                walkRecord(ctx, cur);
+                break;
+            case no_ifblock:
+                walkRecord(ctx, cur->queryChild(1));
+                break;
+            case no_field:
+                {
+                    ITypeInfo * type = cur->queryType();
+                    switch (type->getTypeCode())
+                    {
+                    case type_row:
+                        walkRecord(ctx, queryRecord(cur));
+                        break;
+                    case type_dictionary:
+                    case type_table:
+                    case type_groupedtable:
+                        {
+                            IHqlExpression * record = cur->queryRecord()->queryBody();
+                            if (!visited.contains(*record))
+                            {
+                                BuildCtx condctx(ctx);
+                                OwnedHqlExpr branch = getSizetConstant(nextIndex++);
+                                OwnedHqlExpr childMeta = translator.buildMetaParameter(record);
+                                OwnedHqlExpr ret = createValue(no_address, makeBoolType(), LINK(childMeta));
+
+                                condctx.addCase(switchStmt, branch);
+                                condctx.addReturn(ret);
+                                visited.append(*record);
+                            }
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+protected:
+    HqlCppTranslator & translator;
+    IHqlStmt * switchStmt;
+    HqlExprCopyArray visited;
+    unsigned nextIndex;
+};
+
+
+
 void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpression * record, const char * diskSerializerName, const char * diskDeserializerName, const char * internalSerializerName, const char * internalDeserializerName, const char * prefetcherName)
 {
     OwnedHqlExpr dataset = createDataset(no_null, LINK(record));
@@ -4335,6 +4430,22 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
         bindTableCursor(walkctx, dataset, "self");
         MetaWalkIndirectCallback builder(*this, visitor);
         builder.walkRecord(walkctx, dataset, record);
+    }
+
+    {
+        BuildCtx childmetactx(ctx);
+        OwnedHqlExpr switchVar = createVariable("i", makeIntType(4, false));
+        IHqlStmt * child = childmetactx.addQuotedCompound("virtual IOutputMetaData * queryChildMeta(unsigned i)");
+
+        BuildCtx switchctx(childmetactx);
+        IHqlStmt * switchStmt = switchctx.addSwitch(switchVar);
+        unsigned prevChildren = calcTotalChildren(child);
+        MetaChildMetaCallback builder(*this, switchStmt);
+        builder.walkRecord(childmetactx, record);
+        if (prevChildren != calcTotalChildren(child))
+            childmetactx.addReturn(queryQuotedNullExpr());
+        else
+            child->setIncluded(false);
     }
 
     if (diskSerializerName && *diskSerializerName)
@@ -5346,9 +5457,9 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBu
         appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
 
         BuildCtx classctx(declarectx);
-        //I suspect all the priorities should be killed.  This is here because you can have meta functions accessing the
+        //I suspect all the priorities should be killed.  This is here because you can have type info constructors accessing the
         //dictionary hash functions.
-        classctx.setNextPriority(RowMetaPrio);
+        classctx.setNextPriority(HashFunctionPrio);
 
         beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
         OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
@@ -7223,7 +7334,6 @@ void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildC
                 buildFunctionCall(serializectx, serializeRowId, serializeArgs);
 
 
-                deserializeArgs.append(*createRowAllocator(deserializectx, record));
                 deserializeArgs.append(*createSerializer(deserializectx, record, serializeForm, deserializerAtom));
                 deserializeArgs.append(*createVariable(inBufferName, makeBoolType()));
                 Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
@@ -13400,9 +13510,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityStreamedCall(BuildCtx & ctx, I
 
     BuildCtx createctx(instance->startctx);
     createctx.addQuotedCompound("virtual IRowStream * createInput()");
-    CHqlBoundExpr bound;
-    doBuildExprCall(createctx, expr, bound);
-    createctx.addReturn(bound.expr);
+    buildReturn(createctx, expr);
 
     buildInstanceSuffix(instance);
     return instance->getBoundActivity();
@@ -14216,12 +14324,18 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
     // INormalizeChildIterator * queryIterator();
     {
         bool outOfLine = true;
+        bool streamed = false;
         if (childDataset->isDatarow())
             childDataset.setown(createDatasetFromRow(childDataset.getClear()));
         if (childDataset->getOperator() == no_select)
             outOfLine = isArrayRowset(childDataset->queryType());
         if (hasLinkCountedModifier(childDataset))
             outOfLine = true;
+        if (isStreamed(childDataset))
+        {
+            outOfLine = true;
+            streamed = true;
+        }
 
         BuildCtx iterclassctx(instance->nestedctx);
         StringBuffer memberName, className;
@@ -14229,7 +14343,12 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
         getMemberClassName(className, memberName.str());
 
         ExpressionFormat format;
-        if (outOfLine)
+        if (streamed)
+        {
+            beginNestedClass(iterclassctx, memberName, "CNormalizeStreamedChildIterator");
+            format = FormatStreamedDataset;
+        }
+        else if (outOfLine)
         {
             beginNestedClass(iterclassctx, memberName, "CNormalizeLinkedChildIterator");
             format = FormatLinkedDataset;
@@ -14283,17 +14402,25 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
         s.clear();
         if (callFromActivity)
             s.append(memberName).append(".");
+
         s.append("setDataset(");
-        if (outOfLine)
+        if (streamed)
         {
-            generateExprCpp(s, bound.count).append(",");
             generateExprCpp(s, bound.expr).append(");");
         }
         else
         {
-            OwnedHqlExpr length = getBoundLength(bound);
-            generateExprCpp(s, length).append(",");
-            generateExprCpp(s, bound.expr).append(");");
+            if (outOfLine)
+            {
+                generateExprCpp(s, bound.count).append(",");
+                generateExprCpp(s, bound.expr).append(");");
+            }
+            else
+            {
+                OwnedHqlExpr length = getBoundLength(bound);
+                generateExprCpp(s, length).append(",");
+                generateExprCpp(s, bound.expr).append(");");
+            }
         }
         if (callFromActivity)
             activityinitctx.addQuoted(s);
@@ -14368,45 +14495,31 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeLinkedChild(BuildCtx 
     instance->evalContext->getInvariantMemberContext(NULL, &declarectx, NULL, false, true);
     assertex(declarectx);
 
-    CHqlBoundTarget childTarget;
-    CHqlBoundExpr boundChild;
-    CHqlBoundTarget boundActive;
-    createTempFor(*declarectx, value->queryType(), childTarget, typemod_none, FormatLinkedDataset);
-    boundChild.setFromTarget(childTarget);
-    assertex(boundChild.count != NULL);
-
-    OwnedHqlExpr test;
-    OwnedHqlExpr ret;
+    StringBuffer iterName;
     //virtual byte * first(const void * parentRecord) = 0;
     {
         BuildCtx firstctx(instance->startctx);
         firstctx.addQuotedCompound("virtual byte * first(const void * parentRecord)");
         firstctx.addQuoted("const byte * left = (const byte *)parentRecord;");
         bindTableCursor(firstctx, dataset, "left", selectorOp, selSeq);
-        buildDatasetAssign(firstctx, childTarget, value);
 
-        OwnedHqlExpr zero = getSizetConstant(0);
-        buildTempExpr(firstctx, *declarectx, boundActive, zero, FormatNatural, false);
+        ExpressionFormat format = !hasLinkCountedModifier(value) ? FormatLinkedDataset : FormatNatural;
+        Owned<IHqlCppDatasetCursor> dsCursor = createDatasetSelector(firstctx, value, format);
+        dsCursor->buildIterateClass(instance->startctx, iterName, &firstctx);
 
-        test.setown(createValue(no_lt, makeBoolType(), LINK(boundActive.expr), LINK(boundChild.count)));
-        ret.setown(createValue(no_index, expr->getType(), LINK(boundChild.expr), LINK(boundActive.expr)));
-
-        BuildCtx subctx(firstctx);
-        subctx.addFilter(test);
-        subctx.addReturn(ret);
-        firstctx.addReturn(queryQuotedNullExpr());
+        StringBuffer s;
+        OwnedHqlExpr callFirst = createQuoted(s.clear().append("(byte *)").append(iterName).append(".first()"), makeBoolType());
+        firstctx.addReturn(callFirst);
     }
 
     {
         //virtual byte * next() = 0;
         BuildCtx nextctx(instance->startctx);
         nextctx.addQuotedCompound("virtual byte * next()");
-        OwnedHqlExpr inc = createValue(no_postinc, LINK(sizetType), LINK(boundActive.expr));
-        nextctx.addExpr(inc);
-        BuildCtx subctx(nextctx);
-        subctx.addFilter(test);
-        subctx.addReturn(ret);
-        nextctx.addReturn(queryQuotedNullExpr());
+
+        StringBuffer s;
+        OwnedHqlExpr callNext = createQuoted(s.clear().append("(byte *)").append(iterName).append(".next()"), makeBoolType());
+        nextctx.addReturn(callNext);
     }
 
     buildInstanceSuffix(instance);

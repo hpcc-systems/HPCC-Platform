@@ -84,6 +84,7 @@ public:
     RtlFixedDatasetBuilder(unsigned _recordSize, unsigned _initRows);
 
     byte * createSelf();
+    virtual IEngineRowAllocator *queryAllocator() const { return NULL; }
 
 protected:
     unsigned recordSize;
@@ -112,6 +113,7 @@ public:
 
     void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
     virtual byte * createSelf();
+    virtual IEngineRowAllocator *queryAllocator() const { return NULL; }
 
 protected:
     IRecordSize * recordSize;
@@ -227,6 +229,10 @@ public:
             maxLength = 0;
         }
     }
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return rowAllocator;
+    }
     inline RtlDynamicRowBuilder(IEngineRowAllocator * _rowAllocator, bool createInitial) : rowAllocator(_rowAllocator) 
     {
         if (rowAllocator && createInitial)
@@ -284,6 +290,10 @@ public:
     }
 
     virtual byte * ensureCapacity(size32_t required, const char * fieldName);
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return NULL;
+    }
 
     inline void clear() { self = NULL; maxLength = 0; }
     inline void set(size32_t _maxLength, void * _self) { self = static_cast<byte *>(_self); maxLength = _maxLength; }
@@ -309,6 +319,10 @@ public:
     {
         self = container.ensureCapacity(offset+required+suffix, fieldName) + offset;
         return self;
+    }
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return container.queryAllocator();
     }
 
 protected:
@@ -574,6 +588,39 @@ protected:
     byte * * rows;
     unsigned numRows;
     unsigned cur;
+};
+
+//MORE: The inheritance for this class is wrong.  Both classes should derive from a common
+//base with no parameterised constructor or init.  But that needs to wait until 5.0 so prevent breaking binary
+//compatibility
+class ECLRTL_API RtlSafeLinkedDatasetCursor : public RtlLinkedDatasetCursor
+{
+public:
+    RtlSafeLinkedDatasetCursor(unsigned _numRows, byte * * _rows);
+    RtlSafeLinkedDatasetCursor() {}
+    ~RtlSafeLinkedDatasetCursor();
+
+    void setDataset(unsigned _numRows, byte * * _rows) { init(_numRows, _rows); }
+    void init(unsigned _numRows, byte * * _rows);
+
+};
+
+class ECLRTL_API RtlStreamedDatasetCursor : public ARtlDatasetCursor
+{
+public:
+    RtlStreamedDatasetCursor(IRowStream * _stream);
+    RtlStreamedDatasetCursor();
+
+    void init(IRowStream * _stream);
+
+    const byte * next();
+    const byte * first();
+    const byte * get() { return cur.getbytes(); }
+    inline bool isValid() { return cur.getbytes() != NULL; }
+
+protected:
+    Owned<IRowStream> stream;
+    rtlRowAttr cur;
 };
 
 

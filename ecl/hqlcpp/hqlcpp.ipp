@@ -20,6 +20,7 @@
 #include <stdio.h>
 
 #include "jfile.hpp"
+#include "hqlattr.hpp"
 #include "hqlcpp.hpp"
 #include "hqlstmt.ipp"
 #include "hqlcppc.hpp"
@@ -48,6 +49,7 @@ enum GraphLocalisation {
 
 enum { 
     EclTextPrio = 1000,         // has no dependencies on anything else
+    HashFunctionPrio = 1100,
     TypeInfoPrio = 1200,
     RowMetaPrio = 1500,         
     XmlTransformerPrio = 1700,
@@ -61,6 +63,7 @@ enum ExpressionFormat {
     FormatBlockedDataset, 
     FormatLinkedDataset,
     FormatArrayDataset,
+    FormatStreamedDataset,
     FormatMax,
 };
 
@@ -171,6 +174,7 @@ interface IHqlCppDatasetCursor : public IInterface
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt) = 0;
     virtual BoundRow * buildIterateLoop(BuildCtx & ctx, bool needToBreak) = 0;
     virtual void buildIterateClass(BuildCtx & ctx, SharedHqlExpr & iter, SharedHqlExpr & row) = 0;
+    virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) = 0;
     virtual BoundRow * buildSelectNth(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
     virtual BoundRow * buildSelectMap(BuildCtx & ctx, IHqlExpression * indexExpr) = 0;
     virtual void buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt) = 0;
@@ -185,7 +189,6 @@ interface IHqlCppSetCursor : public IInterface
     virtual void buildExists(BuildCtx & ctx, CHqlBoundExpr & tgt) = 0;
     virtual void buildIsAll(BuildCtx & ctx, CHqlBoundExpr & tgt) = 0;
     virtual void buildIterateLoop(BuildCtx & ctx, CHqlBoundExpr & tgt, bool needToBreak) = 0;
-//  virtual void buildIterateClass(BuildCtx & ctx, HqlExprAttr & iter, CHqlBoundExpr & tgt) = 0;
     virtual void buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHqlBoundExpr & tgt) = 0;
     virtual void buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * indexExpr) = 0;
     virtual bool isSingleValued() = 0;
@@ -248,6 +251,7 @@ public:
     IHqlExpression * getIsAll() const;
     IHqlExpression * getComplexExpr() const;
     IHqlExpression * getTranslatedExpr() const;
+    inline bool isStreamed() const              { return hasStreamedModifier(queryType()); }
 
     ITypeInfo * queryType() const               { return expr->queryType(); }
     void set(const CHqlBoundExpr & src)         { expr.set(src.expr); length.set(src.length); count.set(src.count); isAll.set(src.isAll); }
@@ -833,6 +837,7 @@ public:
     IReferenceSelector * buildActiveRow(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * buildNewRow(BuildCtx & ctx, IHqlExpression * expr);
     IReferenceSelector * buildNewOrActiveRow(BuildCtx & ctx, IHqlExpression * expr, bool isNew);
+    void buildRowAssign(BuildCtx & ctx, BoundRow * target, IHqlExpression * expr);
     void buildRowAssign(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void buildRowAssign(BuildCtx & ctx, IReferenceSelector * target, IReferenceSelector * source);
     BoundRow * ensureLinkCountedRow(BuildCtx & ctx, BoundRow * row);
@@ -1074,6 +1079,7 @@ public:
     void finalizeTempRow(BuildCtx & ctx, BoundRow * targetRow, BoundRow * rowBuilder);
     BoundRow * declareTempAnonRow(BuildCtx & ctx, BuildCtx & codectx, IHqlExpression * record);
 
+    IHqlExpression * declareLinkedRowExpr(BuildCtx & ctx, IHqlExpression * record, bool isMember);
     BoundRow * declareLinkedRow(BuildCtx & ctx, IHqlExpression * expr, bool isMember);
     BoundRow * declareStaticRow(BuildCtx & ctx, IHqlExpression * expr);
 
@@ -1106,7 +1112,7 @@ public:
     IHqlCppSetBuilder * createTempSetBuilder(ITypeInfo * type, IHqlExpression * allVar);
     IHqlCppSetBuilder * createInlineSetBuilder(ITypeInfo * type, IHqlExpression * allVar, IHqlExpression * size, IHqlExpression * address);
 
-    IHqlCppDatasetCursor * createDatasetSelector(BuildCtx & ctx, IHqlExpression * expr);
+    IHqlCppDatasetCursor * createDatasetSelector(BuildCtx & ctx, IHqlExpression * expr, ExpressionFormat format = FormatNatural);
     IHqlCppDatasetBuilder * createBlockedDatasetBuilder(IHqlExpression * record);
     IHqlCppDatasetBuilder * createSingleRowTempDatasetBuilder(IHqlExpression * record, BoundRow * row);
     IHqlCppDatasetBuilder * createInlineDatasetBuilder(IHqlExpression * record, IHqlExpression * size, IHqlExpression * address);

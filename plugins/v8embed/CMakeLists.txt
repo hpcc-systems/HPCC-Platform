@@ -36,6 +36,7 @@ if (USE_V8)
              ${V8_INCLUDE_DIR}
              ./../../system/include
              ./../../rtl/eclrtl
+             ./../../rtl/nbcd
              ./../../rtl/include
              ./../../common/deftype
              ./../../system/jlib

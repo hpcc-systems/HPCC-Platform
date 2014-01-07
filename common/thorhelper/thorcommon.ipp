@@ -99,6 +99,10 @@ public:
             return meta->querySerializedDiskMeta();
         return meta;
     }
+    inline IOutputMetaData * queryChildMeta(unsigned i) const
+    {
+        return meta->queryChildMeta(i);
+    }
 
 //cast operators.
     inline IOutputMetaData * queryOriginal() const          { return meta; }
@@ -143,6 +147,10 @@ public:
         self = NULL;
         reserved = 0;
     }
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return NULL;
+    }
 
 protected:
     virtual byte * createSelf()
@@ -181,6 +189,10 @@ public:
         return self;
     }
 
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return builder->queryAllocator();
+    }
 protected:
     size32_t offset;
     Linked<ARowBuilder> builder;
@@ -394,7 +406,11 @@ public:
     {
         original->walkIndirectMembers(self+offset, visitor);
     }
-        
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return original->queryChildMeta(i);
+    }
+
 protected:
     size32_t offset;
     IOutputMetaData *original;
@@ -525,7 +541,11 @@ public:
     {
         original->walkIndirectMembers(self, visitor);
     }
-        
+    virtual IOutputMetaData * queryChildMeta(unsigned i)
+    {
+        return original->queryChildMeta(i);
+    }
+
 protected:
     size32_t offset;
     Linked<IOutputMetaData> original;

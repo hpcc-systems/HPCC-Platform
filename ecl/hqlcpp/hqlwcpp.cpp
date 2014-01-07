@@ -688,7 +688,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
             firstParam = false;
 
         IHqlExpression * param = formals->queryChild(i);
-        generateParamCpp(param);
+        generateParamCpp(param, body);
     }
     out.append(")");
     return true;
@@ -781,7 +781,7 @@ void HqlCppWriter::generateInitializer(IHqlExpression * expr)
 }
 
 
-void HqlCppWriter::generateParamCpp(IHqlExpression * param)
+void HqlCppWriter::generateParamCpp(IHqlExpression * param, IHqlExpression * attrs)
 {
     ITypeInfo *paramType = param->queryType();
     
@@ -808,6 +808,22 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
 
     switch (paramType->getTypeCode())
     {
+    case type_dictionary:
+    case type_table:
+    case type_groupedtable:
+    case type_row:
+        if (getBoolAttribute(attrs, passParameterMetaAtom, false))
+        {
+            out.append("IOutputMetaData & ");
+            if (paramName)
+                appendCapital(out.append(" meta"), paramNameText);
+            out.append(",");
+        }
+        break;
+    }
+
+    switch (paramType->getTypeCode())
+    {
     case type_string:
     case type_qstring:
     case type_data:
@@ -816,7 +832,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     case type_dictionary:
     case type_table:
     case type_groupedtable:
-        if (paramType->getSize() == UNKNOWN_LENGTH)
+        if ((paramType->getSize() == UNKNOWN_LENGTH) && !hasStreamedModifier(paramType))
         {
             out.append("size32_t");
             if (isOut)
@@ -852,7 +868,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     case type_row:
         isConst = true;
         break;
-    } 
+    }
     
     bool nameappended = false;
     switch (paramType->getTypeCode())
@@ -865,7 +881,9 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     case type_groupedtable:
         if (isConst)
             out.append("const ");
-        if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
+        if (hasStreamedModifier(paramType))
+            out.append("IRowStream *");
+        else if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
             out.append("byte * *");
         else
             out.append("void *");
@@ -1024,8 +1042,17 @@ void HqlCppWriter::generateFunctionReturnType(StringBuffer & params, ITypeInfo *
             break;
         }
     case type_row:
-        out.append("void");
-        params.append("byte * __result");
+        if (hasLinkCountedModifier(retType))
+        {
+            out.append("byte *");
+            if (hasNonNullRecord(retType) && getBoolAttribute(attrs, allocatorAtom, true))
+                params.append("IEngineRowAllocator * _resultAllocator");
+        }
+        else
+        {
+            out.append("void");
+            params.append("byte * __result");
+        }
         break;
     default:
         generateType(retType, NULL);
@@ -1186,7 +1213,9 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                     case type_dictionary:
                     case type_table:
                     case type_groupedtable:
-                        if (hasLinkCountedModifier(type))
+                        if (hasStreamedModifier(type))
+                            out.append("get()");
+                        else if (hasLinkCountedModifier(type))
                             out.append("queryrows()");
                         else
                             out.append("getbytes()");
@@ -1350,7 +1379,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
             generateExprCpp(expr->queryChild(0));
             break;
         case no_param:
-            generateParamCpp(expr);
+            generateParamCpp(expr, NULL);
             break;
         case no_callback:
             {
@@ -1756,7 +1785,7 @@ void HqlCppWriter::generateStmtAssign(IHqlStmt * assign)
         case type_groupedtable:
             if (hasWrapperModifier(type))
             {
-                if (hasLinkCountedModifier(type))
+                if (hasLinkCountedModifier(type) && !hasStreamedModifier(type))
                 {
                     assertex(source->getOperator() == no_complex);
                     indent();

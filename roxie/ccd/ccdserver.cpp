@@ -14540,6 +14540,7 @@ public:
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 };
 
 class CRoxieServerLoopActivityFactory : public CRoxieServerActivityFactory
@@ -25937,6 +25938,7 @@ public:
     virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
+    virtual IOutputMetaData * queryChildMeta(unsigned i) { return NULL; }
 } testMeta;
 
 class TestInput : public CInterface, implements IRoxieInput

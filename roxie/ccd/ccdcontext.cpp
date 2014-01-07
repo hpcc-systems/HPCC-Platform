@@ -1256,12 +1256,12 @@ public:
     }
 
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
+    virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
         if (checkingHeap)
-            return createCrcRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+            return createCrcRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
         else
-            return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+            return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
     }
 
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
@@ -2320,7 +2320,7 @@ public:
             size32_t oldCount;
             rowset_t oldData;
             resultStore.queryResult(oldId, oldCount, oldData);
-            Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, 0, 0, roxiemem::RHFnone);
+            Owned<IEngineRowAllocator> allocator = getRowAllocator(meta, 0);
             RtlLinkedDatasetBuilder builder(allocator);
             builder.appendRows(oldCount, oldData);
             builder.appendRows(count, data);

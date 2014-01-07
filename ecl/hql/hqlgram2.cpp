@@ -862,14 +862,21 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     if (!type)
         type.setown(makeVoidType());
 
+    if (type->getTypeCode() == type_record)
+        type.setown(makeRowType(LINK(type)));
+
     IHqlExpression * record = queryOriginalRecord(type);
     OwnedHqlExpr result;
     if (record)
     {
         args.add(*LINK(record),1);
-        if (hasLinkCountedModifier(type))
+        if (hasLinkCountedModifier(type) || language)
+        {
+            //MORE: Recursively set link counted on the records. for language != NULL
             args.append(*getLinkCountedAttr());
-        if (hasStreamedModifier(type))
+        }
+        //All non C++ dataset embedded functions must return streamed datasets
+        if (hasStreamedModifier(type) || (language && isDatasetType(type)))
             args.append(*getStreamedAttr());
         switch (type->getTypeCode())
         {
@@ -894,7 +901,18 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     result.setown(createLocationAnnotation(result.getClear(), errpos.pos));
 
     if (queryParametered())
-        return createWrapper(no_outofline, result.getClear());
+    {
+        HqlExprArray args;
+        args.append(*LINK(result));
+        if (language)
+        {
+            args.append(*createAttribute(contextAtom));
+            if (result->isDatarow())
+                args.append(*createAttribute(allocatorAtom));
+        }
+
+        return createWrapper(no_outofline, result->queryType(), args);
+    }
     return result.getClear();
 }
 
@@ -2441,6 +2459,10 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
 
+    //An explicitly link counted dataset type should ensure the field is linkcounted
+    if (isLinkedRowset(dsType) && !queryAttributeInList(_linkCounted_Atom, attrs))
+        attrs = createComma(attrs, getLinkCountedAttr());
+
     IHqlExpression *newField = createField(name, LINK(dsType), value, attrs);
     addToActiveRecord(newField);
 }
@@ -2468,6 +2490,9 @@ void HqlGram::addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeI
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
+
+    if (isLinkedRowset(dictType) && !queryAttributeInList(_linkCounted_Atom, attrs))
+        attrs = createComma(attrs, getLinkCountedAttr());
 
     IHqlExpression *newField = createField(name, dictType.getClear(), value, attrs);
     addToActiveRecord(newField);
@@ -3494,6 +3519,8 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         {
             IHqlExpression* attr = &attrArray.item(i);
             IAtom * name = attr->queryName();
+            if (attr->queryChild(0) && !attr->queryChild(0)->queryValue())
+                reportError(ERR_EXPECTED_CONST, errpos.pos, "Expected a constant argument for service attribute: '%s';", name->str());
 
             // check duplication
             unsigned j;
@@ -3517,7 +3544,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                     invalid = true;
                 else
                 {
-                    attr->queryChild(0)->queryValue()->getStringValue(buf);
+                    getStringValue(buf, attr->queryChild(0));
                     if (!isCIdentifier(buf.str()))
                         invalid = true;
                 }
@@ -3545,7 +3572,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 else
                 {
                     StringBuffer buf;
-                    attr->queryChild(0)->queryValue()->getStringValue(buf);
+                    getStringValue(buf, attr->queryChild(0));
                     
                     // can we do better?
                     if (*buf.str() == 0)
@@ -3562,7 +3589,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 if (attr->numChildren()!=0)
                 {
                     StringBuffer buf;
-                    attr->queryChild(0)->queryValue()->getStringValue(buf);
+                    getStringValue(buf, attr->queryChild(0));
                     
                     // can we do better?
                     if (*buf.str() == 0)
@@ -3597,7 +3624,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
             {
                 checkSvcAttrNoValue(attr, errpos);
             }
-            else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom))
+            else if ((name == userMatchFunctionAtom) || (name == costAtom) || (name == allocatorAtom) || (name == extendAtom) || (name == passParameterMetaAtom))
             {
             }
             else if (name == holeAtom)
@@ -3619,9 +3646,6 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
 
     if (!hasEntrypoint)
     {
-        // may change from warning to error in the future
-        reportWarning(ERR_SVC_NOENTRYPOINT, errpos.pos, "Entrypoint is not defined; default to %s", name->str());
-
         IHqlExpression *nameAttr = createAttribute(entrypointAtom, createConstant(name->str()));
         attrs = createComma(attrs, nameAttr);
     }

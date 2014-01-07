@@ -623,6 +623,10 @@ public:
     }
     IMPLEMENT_IINTERFACE
 
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return dynamicBuilder.queryAllocator();
+    }
     virtual byte * createSelf()
     {
         if (useDynamic)
@@ -715,7 +719,10 @@ public:
     {
         useDynamic = meta.isVariableSize();
     }
-
+    virtual IEngineRowAllocator *queryAllocator() const
+    {
+        return dynamicBuilder.queryAllocator();
+    }
     virtual byte * createSelf()
     {
         if (useDynamic)
