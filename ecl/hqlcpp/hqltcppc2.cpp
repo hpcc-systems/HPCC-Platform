@@ -278,7 +278,7 @@ void CChildDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, Bu
         if (serializeForm == diskAtom)
         {
             //If we ever generate the meta definition for an internal serialization format then the following needs to be implemented
-            // UNIMPLEMENTED_X("deserialize serialized dictionary from disk");
+            UNIMPLEMENTED_X("deserialize serialized dictionary from disk");
             return;
         }
     }
@@ -314,7 +314,7 @@ void CChildDatasetColumnInfo::buildSerialize(HqlCppTranslator & translator, Buil
         if (serializeForm == diskAtom)
         {
             //If we ever generate the meta definition for an internal serialization format then the following needs to be implemented
-            return; //UNIMPLEMENTED_X("deserialize serialized dictionary from disk");
+            UNIMPLEMENTED_X("deserialize serialized dictionary from disk");
         }
     }
 
