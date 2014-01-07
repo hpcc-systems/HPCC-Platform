@@ -1126,8 +1126,25 @@ public:
             throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid.get());
         SCMStringBuffer target;
         wu->getClusterName(target);
-        Owned<IQueryFactory> queryFactory = createServerQueryFactoryFromWu(wu);
         Owned<StringContextLogger> logctx = new StringContextLogger(wuid.get());
+        Owned<IQueryFactory> queryFactory;
+        try
+        {
+            queryFactory.setown(createServerQueryFactoryFromWu(wu));
+        }
+        catch (IException *E)
+        {
+            reportException(wu, E, *logctx);
+            throw E;
+        }
+#ifndef _DEBUG
+        catch(...)
+        {
+            reportUnknownException(wu, *logctx);
+            throw;
+        }
+#endif
+
         doMain(wu, queryFactory, *logctx);
         sendUnloadMessage(queryFactory->queryHash(), wuid.get(), *logctx);
         queryFactory.clear();
@@ -1201,9 +1218,7 @@ public:
 #ifndef _DEBUG
         catch(...)
         {
-            IException *E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception");
-            reportException(wu, E, logctx);
-            E->Release();
+            reportUnknownException(wu, logctx);
         }
 #endif
         unsigned elapsed = msTick() - qstart;
@@ -1217,6 +1232,13 @@ public:
     }
 
 private:
+#ifndef _DEBUG
+    void reportUnknownException(IConstWorkUnit *wu, const IRoxieContextLogger &logctx)
+    {
+        Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception");
+        reportException(wu, E, logctx);
+    }
+#endif
     void reportException(IConstWorkUnit *wu, IException *E, const IRoxieContextLogger &logctx)
     {
         logctx.CTXLOG("FAILED: %s", wuid.get());
