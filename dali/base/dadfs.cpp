@@ -3623,7 +3623,7 @@ public:
                 reliter.setown(iter);
             }
             catch (IException *e) {
-                EXCLOG(e,"CDistributedFileDirectory::rename");
+                EXCLOG(e,"CDistributedFile::rename");
                 e->Release();
             }
             detachLogical();
