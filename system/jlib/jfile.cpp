@@ -2821,7 +2821,7 @@ void copyFile(const char *target, const char *source, size32_t buffersize, ICopy
 
 void copyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, CFflags copyFlags)
 {
-    source->copyTo(target,buffersize,progress,copyFlags);
+    source->copyTo(target, buffersize, progress, copyFlags);
 }
 
 void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFileProgress *progress, ICopyFileIntercept *copyintercept, bool usetmp, CFflags copyFlags)
