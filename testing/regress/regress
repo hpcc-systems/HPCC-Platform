@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser_run = subparsers.add_parser('run', help='run help')
     parser_run.add_argument('cluster', help="Run the cluster suite. Default value is setup.",
                             nargs='?', type=str,  default='setup')
-    parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. ('-1' can be use to calculate usable thread count on a single node system)",
+    parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )",
                             type=checkPqParam,  default = 0,   metavar="threadNumber")
 
     parser_query = subparsers.add_parser('query', help='query help')

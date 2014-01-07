@@ -36,9 +36,6 @@ Result:
 |            --timeout [TIMEOUT], -t [TIMEOUT]
 |                                  timeout for query execution in sec. Use -1 to disable timeout. Default value defined in regress.json config file (see: 7.)
 
-The timeout measurement always started when the preparation for executing started. In other words from 'ecl run...' or 'ecl publish ...' comand entered. Exactly when the archive generated from the ECL file. Every time when timeout occurred the Regression suite checks the state  of test case (not compiled yet or blocked). If it is blocked in any level of execution pipeline the Regression Suite reset the timeout counter to give a chance to completion. The parameter, called maxAttemptCount from config file controls how many times Regression Suite can reset the test case individual timeout counter.
-This timeout doesn't have any relation to workunit timings and graphs. From Regression Suite point of view the whole testcase execution is a black box approach except some workunit status information.
-
 
 Parameters of Regression Suite list sub-command:
 ------------------------------------------------
@@ -76,7 +73,7 @@ Result:
 |
 |       optional arguments:
 |         -h, --help         show this help message and exit
-|         --pq threadNumber  Parallel query execution with threadNumber threads. ('-1' can be use to calculate usable thread count on a single node system)
+|         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2)
 |
 
 
@@ -181,7 +178,7 @@ The result is a list of test cases and their result.
 The first and last couple of lines look like this:
 
 |
-|        [Action] SuiHPCC-10522 Regression Suite --timeout and --pq (parallel query) parameters don't documented wellte: thor
+|        [Action] Suite: thor
 |        [Action] Queries: 257
 |        [Action]
 |        [Action]   1. Test: agglist.ecl
@@ -340,15 +337,15 @@ The format of result is same as above:
 7. Key file generation:
 ------------------------------
 
-The regression suite stores every test case output into ~/HPCCSystems-regression/result directory. This is the latest version of result. (Previous version can be found in ~/HPCCSystems-regression/archives directory.) When a test case execution finished Regression Suite compares this output file with the relevant key file to determine the result.
+The regression suite stores every test case output into ~/HPCCSystems-regression/result directory. This is the latest version of result. (The previous version can be found in ~/HPCCSystems-regression/archives directory.) When a test case execution finished Regression Suite compares this output file with the relevant key file to verify the result.
 
 So if you have a new test case and it works well on all clusters (or some of them and excluded from all others by //no<cluster> tag inside it See: 6. ) then you can get key file in 2 steps:
 
-1. Run test case with ./regress [suitedir] query <testcase.ecl> <cluster> and ignore the result report (wich will be fail, based on no key file).
+1. Run test case with ./regress [suitedir] query <testcase.ecl> <cluster> .
 
 2. Copy the output (testcase.xml) file from ~/HPCCSystems-regression/result to the relevant key file directory.
 
-(To check everything is fine, repeat the step 1. and you shuld get pass result. )
+(To check everything is fine, repeat the step 1 and the query should now pass. )
 
 8. Configuration setting in regress.json file:
 -------------------------------------------------------------
