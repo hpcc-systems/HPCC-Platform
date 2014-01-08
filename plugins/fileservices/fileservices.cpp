@@ -87,6 +87,7 @@ static const char * EclDefinition =
 "  RemoveSuperFile(const varstring lsuperfn,const varstring lfn,boolean del=false,boolean remcontents=false) : c,action,globalcontext,entrypoint='fsRemoveSuperFile'; \n"
 "  ClearSuperFile(const varstring lsuperfn,boolean del=false) : c,action,globalcontext,entrypoint='fsClearSuperFile'; \n"
 "  RemoveOwnedSubFiles(const varstring lsuperfn,boolean del=false) : c,action,globalcontext,entrypoint='fsRemoveOwnedSubFiles'; \n"
+"  DeleteOwnedSubFiles(const varstring lsuperfn) : c,action,globalcontext,entrypoint='fsDeleteOwnedSubFiles'; // Obsolete, use RemoveOwnedSubFiles\n"
 "  SwapSuperFile(const varstring lsuperfn1,const varstring lsuperfn2) : c,action,globalcontext,entrypoint='fsSwapSuperFile'; \n"
 "  ReplaceSuperFile(const varstring lsuperfn,const varstring lfn,const varstring bylfn) : c,action,globalcontext,entrypoint='fsReplaceSuperFile'; \n"
 "  FinishSuperFileTransaction(boolean rollback=false) : c,action,globalcontext,entrypoint='fsFinishSuperFileTransaction'; \n"
@@ -1244,6 +1245,11 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
 FILESERVICES_API void FILESERVICES_CALL fsClearSuperFile(IGlobalCodeContext *gctx, const char *lsuperfn,bool del)
 {
     fsRemoveSuperFile(gctx,lsuperfn,NULL,del);
+}
+
+FILESERVICES_API void FILESERVICES_CALL fsDeleteOwnedSubFiles(IGlobalCodeContext *gctx, const char *lsuperfn) // Obsolete
+{
+    fslRemoveOwnedSubFiles(gctx->queryCodeContext(), lsuperfn, false);
 }
 
 FILESERVICES_API void FILESERVICES_CALL fsRemoveOwnedSubFiles(IGlobalCodeContext *gctx, const char *lsuperfn, bool del)
