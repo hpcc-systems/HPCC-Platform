@@ -33,6 +33,8 @@
 #define DEFAULT_SERVER_ROOTDIR          "/c$/dllserver"
 #endif
 
+#define CONNECTION_TIMEOUT     30000
+
 static Owned<IConstDomainInfo> hostDomain;
 
 IConstDomainInfo * getDomainFromIp(const char * ip)
@@ -224,7 +226,7 @@ void DllLocation::remove(bool removeFiles, bool removeDirectory)
 
     StringBuffer path;
     getPath(path, entryRoot->queryProp("@name"));
-    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, 5000);
+    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
     Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("location");
     ForEach(*iter)
     {
@@ -406,7 +408,7 @@ void DllEntry::remove(bool removeFiles, bool removeDirectory)
     {
         StringBuffer path;
         getPath(path, root->queryProp("@name"));
-        Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, 5000);
+        Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
         conn->close(true);
     }
 }
@@ -501,7 +503,7 @@ void DllServer::copyFileLocally(RemoteFilename & targetName, RemoteFilename & so
 
 IIterator * DllServer::createDllIterator()
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("/GeneratedDlls", myProcessSession(), 0, 5000);
+    Owned<IRemoteConnection> conn = querySDS().connect("/GeneratedDlls", myProcessSession(), 0, CONNECTION_TIMEOUT);
     IPropertyTree * root = conn->queryRoot();
     return conn ? (IIterator *)new DllIterator(root, root->getElements("GeneratedDll"), rootDir) : (IIterator *)new CNullIterator;
 }
@@ -510,7 +512,7 @@ DllEntry * DllServer::doGetEntry(const char * name)
 {
     StringBuffer path;
     getPath(path, name);
-    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), 0, 5000);
+    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), 0, CONNECTION_TIMEOUT);
     if (conn)
         return new DllEntry(conn->queryRoot(), rootDir, NULL);
     return NULL;
@@ -523,7 +525,7 @@ IDllEntry * DllServer::createEntry(IPropertyTree *owner, IPropertyTree *entry)
 
 void DllServer::doRegisterDll(const char * name, const char * kind, const char * dllPath, const char * libPath)
 {
-    Owned<IRemoteConnection> lock = querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE, 5000);
+    Owned<IRemoteConnection> lock = querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
 
     RemoteFilename dllRemote;
     StringBuffer ipText, dllText;
@@ -533,7 +535,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
 
     StringBuffer path;
     getPath(path, name);
-    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, 5000);
+    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
     if (conn)
     {
         //check the entry doesn't exist already....
@@ -548,11 +550,11 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
     }
     else
     {
-        conn.setown(querySDS().connect("/GeneratedDlls/GeneratedDll", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, 5000));
+        conn.setown(querySDS().connect("/GeneratedDlls/GeneratedDll", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
         if (!conn)
         {
-            ::Release(querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, 5000));
-            conn.setown(querySDS().connect("/GeneratedDlls/GeneratedDll", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, 5000));
+            ::Release(querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
+            conn.setown(querySDS().connect("/GeneratedDlls/GeneratedDll", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
         }
 
         IPropertyTree * entry = conn->queryRoot();
