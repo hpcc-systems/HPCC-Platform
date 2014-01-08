@@ -1112,6 +1112,11 @@ void EclAgentQueryLibrary::updateProgress()
         graph->updateLibraryProgress(); 
 }
 
+void EclAgentQueryLibrary::destroyGraph()
+{
+    graph.clear();
+}
+
 void EclGraph::associateSubGraph(EclSubGraph * subgraph)
 {
     subgraphMap.setValue(subgraph->id, subgraph);
