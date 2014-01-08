@@ -120,7 +120,7 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.query = ESPQuery.Get(params.Id);
+            this.query = ESPQuery.Get(params.QuerySetId, params.Id);
 
             var context = this;
             var data = this.query.getData();
