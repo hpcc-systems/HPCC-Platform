@@ -68,9 +68,9 @@ static void getMangledTag(StringBuffer & path, const char * name)
     path.ensureCapacity(len);
     for (unsigned i=0; i < len; i++)
     {
-        byte next = name[i];
-        if (isalnum(next))
-            path.append((char)next);
+        char next = name[i];
+        if (isalnum((byte)next))
+            path.append(next);
         else
             path.append("_");
     }
@@ -584,7 +584,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
         conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
         if (!conn)
         {
-            ::Release(querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
+            ::Release(querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, CONNECTION_TIMEOUT));
             conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
         }
 
