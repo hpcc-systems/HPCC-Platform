@@ -574,6 +574,7 @@ public:
     void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args);
     void reportError(int errNo, const char *msg, int lineno, int column, int position=0);
     void reportWarning(int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
+    void reportWarning(ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 5, 6)));
     void reportWarningVa(int errNo, const attribute& a, const char* format, va_list args);
     void reportWarning(int warnNo, const char *msg, int lineno, int column);
     void addResult(IHqlExpression *query, const attribute& errpos);

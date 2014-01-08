@@ -904,6 +904,7 @@ public:
     Owned<IPropertyTree> nestedDependTree;
     Owned<IPropertyTree> globalDependTree;
     Owned<IPropertyTree> metaTree;
+    IECLErrorArray orphanedWarnings;
     HqlExprArray defaultFunctionCache;
     CIArrayOf<ForwardScopeItem> forwardLinks;
     bool expandCallsWhenBound;

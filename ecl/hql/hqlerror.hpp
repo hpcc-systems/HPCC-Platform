@@ -54,6 +54,7 @@ public:
     virtual ErrorSeverity getSeverity() const = 0;
     virtual IECLError * cloneSetSeverity(ErrorSeverity _severity) const = 0;
 };
+inline bool isError(IECLError * error) { return isError(error->getSeverity()); }
 inline bool isFatal(IECLError * error) { return isFatal(error->getSeverity()); }
 
 interface HQL_API IErrorReceiver : public IInterface
