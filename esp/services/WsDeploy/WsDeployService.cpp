@@ -4300,12 +4300,10 @@ bool CWsDeployFileInfo::handleComponentCopy(IPropertyTree *pComponents, IPropert
   bool bError = false;
   StringBuffer errMsg;
 
-  char targetName[255] = "";
   iterComp->first();
-  strncpy(targetName, iterComp->query().queryProp("@target"), 255);  //get the copy target configuration file name
 
   StringBuffer filePath;
-  CWsDeployFileInfo::setFilePath(filePath, targetName);
+  CWsDeployFileInfo::setFilePath(filePath, iterComp->query().queryProp("@target"));
 
   Owned<CWsDeployFileInfo> fi = new CWsDeployFileInfo(m_pService, filePath, false);
 
