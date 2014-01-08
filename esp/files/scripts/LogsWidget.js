@@ -36,7 +36,14 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPWorkunit",
 
-    "dojo/text!../templates/LogsWidget.html"
+    "dojo/text!../templates/LogsWidget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
+    "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
+    "dijit/form/Button",
+    "dijit/layout/ContentPane"
 ],
     function (declare, array, lang, Memory, Observable, iframe,
             registry,
@@ -99,6 +106,10 @@ define([
                 this.inherited(arguments);
             },
 
+            _onRefresh: function (evt) {
+                this.fetchLogs();
+            },
+
             _doDownload: function (option) {
                 var selection = this.logsGrid.getSelected();
 
@@ -149,38 +160,39 @@ define([
                 if (this.inherited(arguments))
                     return;
 
-                this.logData = [];
                 var context = this;
-                if (params.wu) {
-                    this.wu = params.wu;
-                    this.wu.fetchLogs(function (logs) {
-                        context.loadLogs(logs);
-                        context.logsStore.setData(context.logData);
-                        context.logsGrid.refresh();
-                    });
-                } else {
+                if (params.Wuid) {
                     this.wu = ESPWorkunit.Get(params.Wuid);
+                    var monitorCount = 4;
                     this.wu.monitor(function () {
-                        context.wu.getInfo({
-                            onAfterSend: function (response) {
-                                if (response.HasArchiveQuery) {
-                                    context.logData.push({
-                                        id: "A:0",
-                                        Type: "Archive Query"
-                                    });
-                                }
-                                if (response.Helpers && response.Helpers.ECLHelpFile) {
-                                    context.loadHelpers(response.Helpers.ECLHelpFile);
-                                }
-                                if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
-                                    context.loadThorLogInfo(response.ThorLogList.ThorLogInfo);
-                                }
-                                context.logsStore.setData(context.logData);
-                                context.logsGrid.refresh();
-                            }
-                        });
+                        if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
+                            context.fetchLogs();
+                        }
                     });
                 }
+            },
+
+            fetchLogs: function () {
+                var context = this;
+                this.wu.getInfo({
+                    onAfterSend: function (response) {
+                        context.logData = [];
+                        if (response.HasArchiveQuery) {
+                            context.logData.push({
+                                id: "A:0",
+                                Type: "Archive Query"
+                            });
+                        }
+                        if (response.Helpers && response.Helpers.ECLHelpFile) {
+                            context.loadHelpers(response.Helpers.ECLHelpFile);
+                        }
+                        if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
+                            context.loadThorLogInfo(response.ThorLogList.ThorLogInfo);
+                        }
+                        context.logsStore.setData(context.logData);
+                        context.logsGrid.refresh();
+                    }
+                });
             },
 
             loadLogs: function (logs) {
