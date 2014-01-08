@@ -5845,7 +5845,6 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModePersist, queryDirectDependencies(setValue), conts, info.queryCluster());
             setWorkflowPersist(wf, persistName.str(), persistWfid, info.queryMaxPersistCopies());
 
-            Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(persistWfid, WFTypeNormal, WFModeNormal, NULL);
             DependenciesUsed dependencies(false);
             UnsignedArray visited;
             extractDependentInputs(visited, dependencies, queryDirectDependencies(setValue));
@@ -5854,15 +5853,23 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
 
             HqlExprArray checkArgs;
             checkArgs.append(*createExprAttribute(_files_Atom, dependencies.tablesRead));
+            inheritDependencies(&checkArgs.item(0));
             if (dependencies.resultsRead.ordinality())
+            {
                 checkArgs.append(*createExprAttribute(_results_Atom, dependencies.resultsRead));
+                inheritDependencies(&checkArgs.item(1));
+            }
             checkArgs.append(*createAttribute(_codehash_Atom, LINK(codehash)));
             checkArgs.append(*createAttribute(namedAtom, LINK(info.storedName)));
             if (expr->isDataset())
                 checkArgs.append(*createAttribute(fileAtom));
             OwnedHqlExpr check = createValue(no_persist_check, makeVoidType(), checkArgs);
+            inheritDependencies(check);
+
             workflowOut->append(*createWorkflowItem(check, persistWfid, no_actionlist));
             workflowOut->append(*createWorkflowItem(setValue, wfid, no_persist));
+
+            Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(persistWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(check), NULL);
         }
         else
         {

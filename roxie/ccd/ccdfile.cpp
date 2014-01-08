@@ -1598,7 +1598,7 @@ CRoxieFileCache * fileCache;
 class CResolvedFile : public CInterface, implements IResolvedFileCreator
 {
 protected:
-    const IRoxiePackage *cached;
+    IResolvedFileCache *cached;
     StringAttr lfn;
     StringAttr physicalName;
     Owned<IDistributedFile> dFile; // NULL on copies serialized to slaves. Note that this implies we keep a lock on dali file for the lifetime of this object.
@@ -2063,9 +2063,15 @@ public:
         addSubFile(fdesc.getClear(), NULL);
     }
 
-    virtual void setCache(const IRoxiePackage *cache)
+    virtual void setCache(IResolvedFileCache *cache)
     {
-        assertex (!cached);
+        if (cached)
+        {
+            if (cache==NULL)
+                cached->removeCache(this);
+            else
+                throwUnexpected();
+        }
         cached = cache;
     }
 

@@ -85,7 +85,7 @@ interface IDefRecordMeta;
 interface IFilePartMap;
 class TranslatorArray;
 interface IInMemoryIndexManager ;
-interface IRoxiePackage;
+interface IResolvedFileCache;
 
 interface IResolvedFile : extends ISimpleSuperFileEnquiry
 {
@@ -102,7 +102,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
 
     virtual const char *queryPhysicalName() const = 0; // Returns NULL unless in local file mode.
     virtual const char *queryFileName() const = 0;
-    virtual void setCache(const IRoxiePackage *cache) = 0;
+    virtual void setCache(IResolvedFileCache *cache) = 0;
     virtual bool isAlive() const = 0;
     virtual const IPropertyTree *queryProperties() const = 0;
 
