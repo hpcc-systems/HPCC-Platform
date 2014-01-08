@@ -2076,6 +2076,9 @@ void EclAgent::runProcess(IEclProcess *process)
     ForEachItemIn(i, queryLibraries)
         queryLibraries.item(i).updateProgress();
 
+    ForEachItemIn(i2, queryLibraries)
+        queryLibraries.item(i2).destroyGraph();
+
     if (rowManager)
     {
         WorkunitUpdate wu = updateWorkUnit();

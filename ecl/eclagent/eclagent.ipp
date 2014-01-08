@@ -312,6 +312,7 @@ private:
 class EclAgentQueryLibrary : public CInterface
 {
 public:
+    void destroyGraph();
     void updateProgress();
 
 public:
