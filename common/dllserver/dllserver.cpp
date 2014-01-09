@@ -85,6 +85,7 @@ static void getNewXPath(StringBuffer & path, const char * name)
 {
     path.append("/GeneratedDlls/");
     getMangledTag(path, name);
+    //The following qualifier is here in case two different characters were mapped to _ - creating an ambiguous tag.
     path.append("[@name=\"").append(name).append("\"]");
 }
 
@@ -582,11 +583,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
         getMangledTag(xpath, name);
 
         conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
-        if (!conn)
-        {
-            ::Release(querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, CONNECTION_TIMEOUT));
-            conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
-        }
+        assertex(conn); // RTM_CREATE_ADD will create GeneratedDlls parent node if it doesn't exist.
 
         IPropertyTree * entry = conn->queryRoot();
         entry->setProp("@name", name);
