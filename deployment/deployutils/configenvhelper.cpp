@@ -708,13 +708,30 @@ void CConfigEnvHelper::addComponent(const char* pszBuildSet, StringBuffer& sbNew
   {
     // NOTE - we are assuming buildSet is unique in a build.
     StringBuffer xPath, value;
+    Owned<IPropertyTreeIterator> buildSet;
+    const char* buildName = NULL;
+
     xPath.appendf("./Programs/Build/BuildSet[@name=\"%s\"]", pszBuildSet);
-    Owned<IPropertyTreeIterator> buildSet = CConfigHelper::getInstance()->getBuildSetTree()->getElements(xPath.str());
+
+    CConfigHelper *pConfigHelper = CConfigHelper::getInstance();
+
+    if (pConfigHelper != NULL)
+    {
+        buildSet.set(pConfigHelper->getBuildSetTree()->getElements(xPath.str()));
+        buildName = pConfigHelper->getBuildSetTree()->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
+    }
+    else
+    {
+        buildSet.set(m_pRoot->getElements(xPath.str()));
+        buildName = m_pRoot->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
+    }
+
     buildSet->first();
     IPropertyTree* pBuildSet = &buildSet->query();
     const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
     const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
-    const char* buildName = CConfigHelper::getInstance()->getBuildSetTree()->queryPropTree("./Programs/Build[1]")->queryProp(XML_ATTR_NAME);
+
+
     if (!processName) //support non-generic components as well
       processName = buildSetName;
 
