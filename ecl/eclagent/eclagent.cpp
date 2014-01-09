@@ -70,6 +70,7 @@ static const char XMLHEADER[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 //#define DEFAULT_REALTHOR_HOST "localhost"
 #define PERSIST_LOCK_TIMEOUT 10000
+#define PERSIST_LOCK_MAXSLEEP 5000
 
 #define ABORT_CHECK_INTERVAL 30     // seconds
 #define ABORT_DEADMAN_INTERVAL (60*5)  // seconds
@@ -2503,7 +2504,7 @@ bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mo
     {
         try
         {
-            persistLock->changeMode(mode, PERSIST_LOCK_TIMEOUT);
+            persistLock->changeMode(mode, 0);
             reportProgress("Changed persist lock");
             return true;
         }
@@ -2597,7 +2598,7 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
 
         //failed to get a write lock, so release our read lock
         persistLock.clear();
-        MilliSleep(getRandom()%2000);
+        MilliSleep(getRandom()%PERSIST_LOCK_MAXSLEEP);
         persistLock.setown(getPersistReadLock(logicalName));
     }
     setRunning();
@@ -2739,7 +2740,7 @@ void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
                 while (!changePersistLockMode(persistLock, RTM_LOCK_WRITE, goer, false))
                 {
                     persistLock.clear();
-                    MilliSleep(getRandom()%2000);
+                    MilliSleep(getRandom()%PERSIST_LOCK_MAXSLEEP);
                     persistLock.setown(getPersistReadLock(goer));
                 }
                 Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
