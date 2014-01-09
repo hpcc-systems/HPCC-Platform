@@ -228,7 +228,7 @@ public:
     }
 };
 
-// Note - we use a separate cache for the misses s rather than any clever attempts to overload
+// Note - we use a separate cache for the misses rather than any clever attempts to overload
 // the one cache with a "special" value, since (among other reasons) the misses are cleared
 // prior to a package reload, but the hits need not be (as the file will be locked as long as it
 // is in the cache)
@@ -466,6 +466,7 @@ public:
                 if (extend)
                     UNIMPLEMENTED; // How does extend fit in with the clusterwritemanager stuff? They can't specify cluster and extend together...
                 resolved->setCache(NULL);
+                resolved->remove();
             }
             if (resolved->queryPhysicalName())
                 fileName.clear().append(resolved->queryPhysicalName());
