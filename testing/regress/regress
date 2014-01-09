@@ -39,32 +39,32 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('--version', '-v', action='version',
                         version='%(prog)s 0.0.4')
-    parser.add_argument('--config', help="Config file to use.",
+    parser.add_argument('--config', help="config file to use. Default: regress.json",
                         nargs='?', default="regress.json")
-    parser.add_argument('--loglevel', help="Set the log level.",
+    parser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
                         nargs='?', default="info",
                         choices=['info', 'debug'])
-    parser.add_argument('--suiteDir', '-s', help="suiteDir to use.",
+    parser.add_argument('--suiteDir', '-s', help="suiteDir to use. Default value is the current directory and it can handle relative path.",
                         nargs='?', default=".")
-    parser.add_argument('--timeout', '-t', help="timeout for query execution.",
+    parser.add_argument('--timeout', '-t', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in regress.json config file.",
                         nargs='?', default="-1")
 
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
-    parser_list.add_argument('clusters', help="Print clusters from config.",
+    parser_list.add_argument('clusters', help="Print clusters from config (regress.json by default).",
                              action='store_true')
 
     parser_run = subparsers.add_parser('run', help='run help')
-    parser_run.add_argument('cluster', help="Run the cluster suite.",
+    parser_run.add_argument('cluster', help="Run the cluster suite. Default value is setup.",
                             nargs='?', type=str,  default='setup')
-    parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. ('-1' can be use to calculate usable thread count on a single node system)",
+    parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )",
                             type=checkPqParam,  default = 0,   metavar="threadNumber")
 
     parser_query = subparsers.add_parser('query', help='query help')
     parser_query.add_argument('query', help="Name of a single ECL query (mandatory).",
                               nargs='?', metavar="ECL query")
-    parser_query.add_argument('cluster', help="Cluster for single query run. If cluster = 'all' then run single query on all clusters.",
-                            nargs='?', default='thor', metavar="target cluster | all")
+    parser_query.add_argument('cluster', help="Cluster for single query run. If cluster = 'all' then run single query on all clusters. Default value is thor.",
+                            nargs='?', default='thor', metavar="target_cluster | all")
     parser_query.add_argument('--publish', help="Publish compiled query instead of run.",
                             action='store_true')
 

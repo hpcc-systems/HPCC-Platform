@@ -7,7 +7,7 @@ Parameters of Regression Suite:
 
 Command:
  
- ./regress --help
+    ./regress <-h|--help>
 
 Result:
 
@@ -28,15 +28,77 @@ Result:
 |       optional arguments:
 |            -h, --help            show this help message and exit
 |            --version, -v         show program's version number and exit
-|            --config [CONFIG]     Config file to use.
+|            --config [CONFIG]     config file to use. Default: regress.json.
 |            --loglevel [{info,debug}]
-|                                  Set the log level.
+|                                  set the log level. Use debug for more detailed logfile.
 |            --suiteDir [SUITEDIR], -s [SUITEDIR]
-|                               suiteDir to use. Default value is the current directory and it can handle relative path.
+|                                  suiteDir to use. Default value is the current directory and it can handle relative path.
 |            --timeout [TIMEOUT], -t [TIMEOUT]
-|                               timeout for query execution.
+|                                  timeout for query execution in sec. Use -1 to disable timeout. Default value defined in regress.json config file (see: 7.)
 
-	
+
+Parameters of Regression Suite list sub-command:
+------------------------------------------------
+
+Command:
+
+    ./regress list <-h|--help>
+
+Result:
+
+|
+|       usage: regress list [-h]
+|
+|       positional arguments:
+|         clusters    Print clusters from config (regress.json by default).
+|
+|       optional arguments:
+|         -h, --help  show this help message and exit
+|
+
+Parameters of Regression Suite run sub-command:
+-----------------------------------------------
+
+Command:
+
+    ./regress run <-h|--help>
+
+Result:
+
+|
+|       usage: regress run [-h] [--pq threadNumber] [cluster]
+|
+|       positional arguments:
+|         cluster            Run the cluster suite. Default value is setup.
+|
+|       optional arguments:
+|         -h, --help         show this help message and exit
+|         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2)
+|
+
+
+Parameters of Regression Suite query sub-command:
+-------------------------------------------------
+
+Command:
+
+    ./regress query <-h|--help>
+
+Result:
+
+|
+|       usage: regress query [-h] [--publish] [ECL query] [target cluster | all]
+|
+|       positional arguments:
+|         ECL query             Name of a single ECL query (mandatory).
+|         target cluster | all  Cluster for single query run. If cluster = 'all' then run single query on all clusters. Default value is thor.
+|
+|       optional arguments:
+|         -h, --help            show this help message and exit
+|         --publish             Publish compiled query instead of run.
+
+
+
 Steps to run Regression Suite
 =============================
 
@@ -95,7 +157,7 @@ The result:
 |            `-------------------------------------------------`
 
 
-	    
+
 
 4. To run Regression Suite on a selected cluster (e.g. Thor):
 -------------------------------------------------------------
@@ -126,7 +188,7 @@ The first and last couple of lines look like this:
 |        [Pass]   2. Pass W20131119-173527 (1 sec)
 |        [Pass]   2. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-173527
 |        [Action]   3. Test: aggsq1.ecl
-
+|
 |        .
 |        .
 |        .
@@ -136,7 +198,7 @@ The first and last couple of lines look like this:
 |        [Action] 257. Test: xmlparse.ecl
 |        [Pass] Pass W20131119-182537 (1 sec)
 |        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-182537
-|        
+|
 |         Results
 |         `-------------------------------------------------`
 |         Passing: 257
@@ -260,20 +322,33 @@ The format of result is same as above:
 6. Tags used in testcases:
 --------------------------
 
-To exclude testcase from cluster or clusters, the tag is:
+    To exclude testcase from cluster or clusters, the tag is:
 //no<cluster_name>
 
-To skip (similar to exclusion)
+    To skip (similar to exclusion)
 //skip type==<cluster> <reason>
 
-To build and publish testcase (e.g.:for libraries)
+    To build and publish testcase (e.g.:for libraries)
 //publish
 
-To set individual timeout for test case
-//timeout <timeout value in sec>
+    To set individual timeout for test case
+//timeout <timeout_value_in_sec>
 
-7. Configuration setting in regress.json file:
-----------------------------------------------
+7. Key file generation:
+------------------------------
+
+The regression suite stores every test case output into ~/HPCCSystems-regression/result directory. This is the latest version of result. (The previous version can be found in ~/HPCCSystems-regression/archives directory.) When a test case execution finished Regression Suite compares this output file with the relevant key file to verify the result.
+
+So if you have a new test case and it works well on all clusters (or some of them and excluded from all others by //no<cluster> tag inside it See: 6. ) then you can get key file in 2 steps:
+
+1. Run test case with ./regress [suitedir] query <testcase.ecl> <cluster> .
+
+2. Copy the output (testcase.xml) file from ~/HPCCSystems-regression/result to the relevant key file directory.
+
+(To check everything is fine, repeat the step 1 and the query should now pass. )
+
+8. Configuration setting in regress.json file:
+-------------------------------------------------------------
 
         "ip": "127.0.0.1",                              - ECl server address
         "username": "regress",                          - Regression Suite dedicated username and pasword
