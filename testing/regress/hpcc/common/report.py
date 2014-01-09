@@ -48,6 +48,7 @@ class Report:
         self.name = name
 
     def display(self, log=None,  elapsTime = 0):
+        logging.debug("Report::display(log='%s', elapsTime:%d",  log,  elapsTime)
         reportStr = "\n"
         reportStr += "Results\n"
         reportStr += "-------------------------------------------------\n"
@@ -56,7 +57,11 @@ class Report:
         reportStr += "-------------------------------------------------\n"
         if self.report._fail:
             for result in self.report._fail:
-                reportStr += result.Diff
+                try:
+                    reportStr += result.Diff
+                except Exception as ex:
+#                   logging.debug("Exception:'%s'",  str(ex))
+                    reportStr += str(result.Diff)
                 reportStr += "\n"
             reportStr += "-------------------------------------------------\n"
         if log:

@@ -37,23 +37,27 @@ class ECLcmd(Shell):
         args.append(cmd)
         args.append('-v')
         args.append('--cluster=' + cluster)
+
+        username = kwargs.pop('username', False)
+        if username:
+                args.append("--username=" + username)
+
+        password = kwargs.pop('password', False)
+        if password:
+            args.append("--password=" + password)
+
         if cmd == 'publish':
             args.append(eclfile.getEcl())
         else:
             args.append('--noroot')
-            name = kwargs.pop('name', False)
-            username = kwargs.pop('username', False)
-            password = kwargs.pop('password', False)
             server = kwargs.pop('server', False)
             if server:
                 args.append('--server=' + server)
+
+            name = kwargs.pop('name', False)
             if not name:
-                #name = eclfile.ecl
                 name = eclfile.getJobname()
-            if username:
-                args.append("--username=" + username)
-            if password:
-                args.append("--password=" + password)
+
             args.append("--name=" + name)
             args.append(eclfile.getArchive())
         data = ""
@@ -93,7 +97,7 @@ class ECLcmd(Shell):
                     test = False
                     eclfile.diff = 'Error'
             else:
-                if queryWuid(eclfile.getJobname())['state'] == 'aborted':
+                if queryWuid(eclfile.getJobname(), eclfile.getTaskId())['state'] == 'aborted':
                     eclfile.diff = eclfile.ecl+'\n\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
                     test = False
                 else:
