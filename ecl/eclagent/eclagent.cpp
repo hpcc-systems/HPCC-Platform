@@ -2500,11 +2500,12 @@ bool EclAgent::checkPersistUptoDate(const char * logicalName, unsigned eclCRC, u
 bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat)
 {
     LOG(MCrunlock, unknownJob, "Waiting to change persist lock to %s for %s", (mode == RTM_LOCK_WRITE) ? "write" : "read", name);
+    unsigned timeout = repeat ? PERSIST_LOCK_TIMEOUT : 0;
     loop
     {
         try
         {
-            persistLock->changeMode(mode, 0);
+            persistLock->changeMode(mode, timeout);
             reportProgress("Changed persist lock");
             return true;
         }
