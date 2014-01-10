@@ -119,6 +119,7 @@ extern unsigned myNodeIndex;
 #endif
 
 #define ROXIE_DALI_CONNECT_TIMEOUT 5000
+#define ABORT_POLL_PERIOD 5000
 
 class RemoteActivityId
 {
@@ -359,6 +360,7 @@ extern unsigned socketCheckInterval;
 extern memsize_t defaultMemoryLimit;
 extern unsigned defaultTimeLimit[3];
 extern unsigned defaultWarnTimeLimit[3];
+extern unsigned defaultThorConnectTimeout;
 extern bool pretendAllOpt;
 extern ClientCertificate clientCert;
 extern bool useHardLink;

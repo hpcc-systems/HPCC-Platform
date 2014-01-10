@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "jlib.hpp"
 
+#include "wujobq.hpp"
 #include "nbcd.hpp"
 #include "rtlread_imp.hpp"
 #include "thorplugin.hpp"
@@ -1042,38 +1043,44 @@ public:
         if (queryTraceLevel() > 8)
             CTXLOG("Executing graph %s", name);
 
-        assertex(!realThor);
-        bool created = false;
-        cycle_t startCycles = get_cycles_now();
-        try
+        if (realThor)
         {
-            beginGraph(name);
-            created = true;
-            runGraph();
+            executeThorGraph(name);
         }
-        catch (IException *e)
+        else
         {
-            if (e->errorAudience() == MSGAUD_operator)
-                EXCLOG(e, "Exception thrown in query - cleaning up");  // if an IException is throw let EXCLOG determine if a trap should be generated
-            else
+            bool created = false;
+            cycle_t startCycles = get_cycles_now();
+            try
             {
-                StringBuffer s;
-                CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
+                beginGraph(name);
+                created = true;
+                runGraph();
             }
-            if (created)
-                endGraph(startCycles, true);
-            CTXLOG("Done cleaning up");
-            throw;
+            catch (IException *e)
+            {
+                if (e->errorAudience() == MSGAUD_operator)
+                    EXCLOG(e, "Exception thrown in query - cleaning up");  // if an IException is throw let EXCLOG determine if a trap should be generated
+                else
+                {
+                    StringBuffer s;
+                    CTXLOG("Exception thrown in query - cleaning up: %d: %s", e->errorCode(), e->errorMessage(s).str());
+                }
+                if (created)
+                    endGraph(startCycles, true);
+                CTXLOG("Done cleaning up");
+                throw;
+            }
+            catch (...)
+            {
+                CTXLOG("Exception thrown in query - cleaning up");
+                if (created)
+                    endGraph(startCycles, true);
+                CTXLOG("Done cleaning up");
+                throw;
+            }
+            endGraph(startCycles, false);
         }
-        catch (...)
-        {
-            CTXLOG("Exception thrown in query - cleaning up");
-            if (created)
-                endGraph(startCycles, true);
-            CTXLOG("Done cleaning up");
-            throw;
-        }
-        endGraph(startCycles, false);
     }
 
     virtual IActivityGraph * queryChildGraph(unsigned  id)
@@ -1675,6 +1682,246 @@ protected:
             throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
         }
         throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
+    }
+
+    // Copied from eclgraph.cpp, in the hope that we will be deleting that code soon
+    void executeThorGraph(const char *graphName)
+    {
+        assertex(workUnit);
+        SCMStringBuffer wuid;
+        workUnit->getWuid(wuid);
+
+        SCMStringBuffer cluster;
+        SCMStringBuffer owner;
+        workUnit->getClusterName(cluster);
+        workUnit->getUser(owner);
+        int priority = workUnit->getPriorityValue();
+        unsigned timelimit = workUnit->getDebugValueInt("thorConnectTimeout", defaultThorConnectTimeout);
+        Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
+        if (!c)
+            throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
+        SCMStringBuffer queueName;
+        c->getThorQueue(queueName);
+        Owned<IJobQueue> jq = createJobQueue(queueName.str());
+
+        bool resubmit;
+        do // loop if pause interrupted graph and needs resubmitting on resume
+        {
+            resubmit = false; // set if job interrupted in thor
+            class CWorkunitResumeHandler : public CInterface, implements ISDSSubscription
+            {
+                IConstWorkUnit &wu;
+                StringBuffer xpath;
+                StringAttr wuid;
+                SubscriptionId subId;
+                CriticalSection crit;
+                Semaphore sem;
+
+                void unsubscribe()
+                {
+                    CriticalBlock b(crit);
+                    if (subId)
+                    {
+                        SubscriptionId _subId = subId;
+                        subId = 0;
+                        querySDS().unsubscribe(_subId);
+                    }
+                }
+            public:
+                IMPLEMENT_IINTERFACE;
+                CWorkunitResumeHandler(IConstWorkUnit &_wu) : wu(_wu)
+                {
+                    xpath.append("/WorkUnits/");
+                    SCMStringBuffer istr;
+                    wu.getWuid(istr);
+                    wuid.set(istr.str());
+                    xpath.append(wuid.get()).append("/Action");
+                    subId = 0;
+                }
+                ~CWorkunitResumeHandler()
+                {
+                    unsubscribe();
+                }
+                void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+                {
+                    CriticalBlock b(crit);
+                    if (0 == subId) return;
+                    if (valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
+                        sem.signal();
+                }
+                bool wait()
+                {
+                    subId = querySDS().subscribe(xpath.str(), *this, false, true);
+                    assertex(subId);
+                    PROGLOG("Job %s paused, waiting for resume/abort", wuid.get());
+                    bool ret = true;
+                    while (!sem.wait(10000))
+                    {
+                        wu.forceReload();
+                        if (WUStatePaused != wu.getState() || wu.aborting())
+                        {
+                            SCMStringBuffer str;
+                            wu.getStateDesc(str);
+                            PROGLOG("Aborting pause job %s, state : %s", wuid.get(), str.str());
+                            ret = false;
+                            break;
+                        }
+                    }
+                    unsubscribe();
+                    return ret;
+                }
+            } workunitResumeHandler(*workUnit);
+
+            if (WUStatePaused == workUnit->getState()) // check initial state - and wait if paused
+            {
+                if (!workunitResumeHandler.wait())
+                    throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+            }
+            setWUState(WUStateBlocked);
+
+            class cPollThread: public Thread  // MORE - why do we ned a thread here?
+            {
+                Semaphore sem;
+                bool stopped;
+                IJobQueue *jq;
+                IConstWorkUnit *wu;
+            public:
+
+                bool timedout;
+                CTimeMon tm;
+                cPollThread(IJobQueue *_jq, IConstWorkUnit *_wu, unsigned timelimit)
+                    : tm(timelimit)
+                {
+                    stopped = false;
+                    jq = _jq;
+                    wu = _wu;
+                    timedout = false;
+                }
+                ~cPollThread()
+                {
+                    stop();
+                }
+                int run()
+                {
+                    while (!stopped) {
+                        sem.wait(ABORT_POLL_PERIOD);
+                        if (stopped)
+                            break;
+                        if (tm.timedout()) {
+                            timedout = true;
+                            stopped = true;
+                            jq->cancelInitiateConversation();
+                        }
+                        else if (wu->aborting()) {
+                            stopped = true;
+                            jq->cancelInitiateConversation();
+                        }
+
+                    }
+                    return 0;
+                }
+                void stop()
+                {
+                    stopped = true;
+                    sem.signal();
+                }
+            } pollthread(jq, workUnit, timelimit*1000);
+
+            pollthread.start();
+
+            PROGLOG("Enqueuing on %s to run wuid=%s, graph=%s, timelimit=%d seconds, priority=%d", queueName.str(), wuid.str(), graphName, timelimit, priority);
+            IJobQueueItem* item = createJobQueueItem(wuid.str());
+            item->setOwner(owner.str());
+            item->setPriority(priority);
+            Owned<IConversation> conversation = jq->initiateConversation(item);
+            bool got = conversation.get()!=NULL;
+            pollthread.stop();
+            pollthread.join();
+            if (!got)
+            {
+                if (pollthread.timedout)
+                    throw MakeStringException(0, "Query %s failed to start within specified timelimit (%d) seconds", wuid.str(), timelimit);
+                throw MakeStringException(0, "Query %s cancelled (1)",wuid.str());
+            }
+            // get the thor ep from whoever picked up
+
+            SocketEndpoint thorMaster;
+            MemoryBuffer msg;
+            if (!conversation->recv(msg,1000*60)) {
+                throw MakeStringException(0, "Query %s cancelled (2)",wuid.str());
+            }
+            thorMaster.deserialize(msg);
+            msg.clear().append(graphName);
+            SocketEndpoint myep;
+            myep.setLocalHost(0);
+            myep.serialize(msg);  // only used for tracing
+            if (!conversation->send(msg)) {
+                StringBuffer s("Failed to send query to Thor on ");
+                thorMaster.getUrlStr(s);
+                throw MakeStringExceptionDirect(-1, s.str()); // maybe retry?
+            }
+
+            StringBuffer eps;
+            PROGLOG("Thor on %s running %s",thorMaster.getUrlStr(eps).str(),wuid.str());
+            MemoryBuffer reply;
+            try
+            {
+                if (!conversation->recv(reply,INFINITE))
+                {
+                    StringBuffer s("Failed to receive reply from thor ");
+                    thorMaster.getUrlStr(s);
+                    throw MakeStringExceptionDirect(-1, s.str());
+                }
+            }
+            catch (IException *e)
+            {
+                StringBuffer s("Failed to receive reply from thor ");
+                thorMaster.getUrlStr(s);
+                s.append("; (").append(e->errorCode()).append(", ");
+                e->errorMessage(s).append(")");
+                throw MakeStringExceptionDirect(-1, s.str());
+            }
+            ThorReplyCodes replyCode;
+            reply.read((unsigned &)replyCode);
+            switch (replyCode)
+            {
+                case DAMP_THOR_REPLY_PAUSED:
+                {
+                    bool isException ;
+                    reply.read(isException);
+                    if (isException)
+                    {
+                        Owned<IException> e = deserializeException(reply);
+                        VStringBuffer str("Pausing job %s caused exception", wuid.str());
+                        EXCLOG(e, str.str());
+                    }
+                    WorkunitUpdate w(&workUnit->lock());
+                    w->setState(WUStatePaused); // will trigger executeThorGraph to pause next time around.
+                    WUAction action = w->getAction();
+                    switch (action)
+                    {
+                        case WUActionPause:
+                        case WUActionPauseNow:
+                            w->setAction(WUActionUnknown);
+                    }
+                    resubmit = true; // JCSMORE - all subgraph _could_ be done, thor will check though and not rerun
+                    break;
+                }
+                case DAMP_THOR_REPLY_GOOD:
+                    break;
+                case DAMP_THOR_REPLY_ERROR:
+                {
+                    throw deserializeException(reply);
+                }
+                case DAMP_THOR_REPLY_ABORT:
+                    throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
+                default:
+                    throwUnexpected();
+            }
+            workUnit->forceReload();
+        }
+        while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
+
     }
 };
 

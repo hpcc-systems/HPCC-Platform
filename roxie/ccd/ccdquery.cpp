@@ -284,6 +284,7 @@ protected:
 
     bool isSuspended;
     bool enableFieldTranslation;
+    ClusterType targetClusterType;
     unsigned timeLimit;
     unsigned warnTimeLimit;
     memsize_t memoryLimit;
@@ -928,6 +929,8 @@ public:
             warnTimeLimit = (unsigned) wu->getDebugValueInt("warnTimeLimit", 0);
             SCMStringBuffer bStr;
             enableFieldTranslation = strToBool(wu->getDebugValue("layoutTranslationEnabled", bStr).str());
+            bStr.clear();
+            targetClusterType = getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster);
 
             // MORE - does package override stateInfo, or vice versa?
 
@@ -939,26 +942,28 @@ public:
                 timeLimit = (unsigned) stateInfo->getPropInt("@timeLimit", timeLimit);
                 warnTimeLimit = (unsigned) stateInfo->getPropInt("@warnTimeLimit", warnTimeLimit);
             }
-
-            Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
-            SCMStringBuffer graphNameStr;
-            ForEach(*graphs)
+            if (targetClusterType == RoxieCluster)
             {
-                graphs->query().getName(graphNameStr);
-                const char *graphName = graphNameStr.s.str();
-                Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
-                try
+                Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
+                SCMStringBuffer graphNameStr;
+                ForEach(*graphs)
                 {
-                    ActivityArray *activities = loadGraph(*graphXgmml, graphName);
-                    graphMap.setValue(graphName, activities);
-                }
-                catch (IException *E)
-                {
-                    StringBuffer m;
-                    E->errorMessage(m);
-                    suspend(true, m.str(), NULL, false);
-                    ERRLOG("Query %s suspended: %s", id.get(), m.str());
-                    E->Release();
+                    graphs->query().getName(graphNameStr);
+                    const char *graphName = graphNameStr.s.str();
+                    Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
+                    try
+                    {
+                        ActivityArray *activities = loadGraph(*graphXgmml, graphName);
+                        graphMap.setValue(graphName, activities);
+                    }
+                    catch (IException *E)
+                    {
+                        StringBuffer m;
+                        E->errorMessage(m);
+                        suspend(true, m.str(), NULL, false);
+                        ERRLOG("Query %s suspended: %s", id.get(), m.str());
+                        E->Release();
+                    }
                 }
             }
         }
