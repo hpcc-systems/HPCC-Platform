@@ -18,6 +18,8 @@
 '''
 
 import os
+import logging
+
 from ...common.error import Error
 from ...common.shell import Shell
 from ...util.ecl.file import ECLFile
@@ -49,10 +51,20 @@ class ECLCC(Shell):
         result = self.getArchive(ecl.getEcl())
 
         if result.startswith( 'Error()'):
-           retVal = False
-           ecl.diff += ecl.getEcl() + '\n\t'
-           ecl.diff += self.makeArchiveError.replace('\n',  '\n\t')
-           self.makeArchiveError=''
+            retVal = False
+            ecl.diff += ecl.getEcl() + '\n  eclcc returns with:\n\t'
+            try:
+                lines = repr(self.makeArchiveError).replace('\\n',  '\n\t').splitlines(True)
+                for line in lines:
+                    if  "Error" in line:
+                        ecl.diff += line.replace("'",  "")
+                    if "): error " in  line:
+                        ecl.diff += line
+                #ecl.diff += repr(self.makeArchiveError).replace('\\n',  '\n\t')
+            except Exception as ex:
+                logging.debug("Exception:'%s'",  str(ex))
+                ecl.diff += repr(self.makeArchiveError)
+            self.makeArchiveError=''
         else:
             FILE = open(filename, "w")
             FILE.write(result)

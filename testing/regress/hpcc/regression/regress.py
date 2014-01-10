@@ -179,7 +179,7 @@ class Regression:
                         # Start a new test case with a reused thread id
                         self.taskParam[threadId]['taskId']=cnt
                         cnt += 1
-                        if timeout != -1:
+                        if timeout != 0:
                             self.timeouts[threadId] = timeout
                         else:
                             self.timeouts[threadId] = self.timeout
@@ -273,6 +273,7 @@ class Regression:
 
     def CheckTimeout(self, cnt,  thread,  query):
         while  self.exitmutexes[thread].locked():
+            sleepTime = 1.0
             if self.timeouts[thread] >= 0:
                 self.loggermutex.acquire()
                 logging.debug("%3d. timeout counter:%d" % (cnt, self.timeouts[thread]))
@@ -354,7 +355,7 @@ class Regression:
             eclfile.setJobname(time.strftime("%y%m%d-%H%M%S"))
             self.timeouts[threadId] = self.timeout
             timeout = eclfile.getTimeout()
-            if timeout != -1:
+            if timeout != 0:
                self.timeouts[threadId] = timeout
             sysThreadId = thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
             time.sleep(0.1)
