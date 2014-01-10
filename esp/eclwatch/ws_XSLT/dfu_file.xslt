@@ -229,7 +229,7 @@
                     <tr><th>Job Name:</th><td><xsl:value-of select="JobName"/></td></tr>
                 </xsl:if>
                 <tr><th>Size:</th><td><xsl:value-of select="Filesize"/>
-                    <xsl:if test="number(ZipFile)">
+                    <xsl:if test="IsCompressed=1">
                         (This is a compressed file.)
                     </xsl:if>
                 </td></tr>
