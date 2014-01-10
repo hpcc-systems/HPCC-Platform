@@ -32,8 +32,8 @@ SET OF UNICODE testStringArray7(SET OF UNICODE s)
 add1(10);
 add2('Hello');
 add3('World');
-add4(U'Leovena�es');
-add5(U'?????');
+add4(U'Leovenaðes');
+add5(U'你好世界');
 addChar('A');
 
 cat('Hello', ' world');
