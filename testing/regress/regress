@@ -108,7 +108,8 @@ if __name__ == "__main__":
                 targetClusters.append(args.cluster)
             for cluster in targetClusters:
                 try:
-                    if not eclfile.testSkip(cluster)['skip']:
+                    # Check if this query is not skip on this cluster and not part of setup
+                    if (not eclfile.testSkip(cluster)['skip']) and (not eclfile.testSkip('setup')['skip'] ):
                         if not eclfile.testExclusion(cluster):
                             regress.runSuiteQ(cluster, eclfile)
                         else:
@@ -118,6 +119,7 @@ if __name__ == "__main__":
                 except IOError:
                     logging.error("%s. Query %s does not exist!" % (1,  args.query))
                     exit()
+            print("End.")
         elif 'cluster' in args:
             regress = Regression(args.config, args.loglevel, suiteDir,  timeout,  args.pq)
             regress.bootstrap(args.cluster)
@@ -128,6 +130,7 @@ if __name__ == "__main__":
                     regress.runSuiteP(args.cluster, regress.suites[args.cluster])
                 else:
                     regress.runSuite(args.cluster, regress.suites[args.cluster])
+            print("End.")
     except Exception as e:
         logging.critical(e)
         logging.critical(traceback.format_exc())

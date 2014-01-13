@@ -82,9 +82,12 @@ class ECLFile:
         FILE.close()
 
     def __checkSkip(self, skipText, skip):
+        skipText = skipText.lower()
+        skip = skip.lower()
         eclText = open(self.getEcl(), 'r')
         skipLines = []
         for line in eclText:
+            line = line.lower()
             if skipText in line:
                 skipLines.append(line.rstrip('\n'))
         if len(skipLines) > 0:
@@ -102,6 +105,18 @@ class ECLFile:
                     return {'skip': True, 'type' : skipType, 'reason': skipReason}
         return {'skip': False}
 
+    def __checkTag(self,  tag):
+        tag = tag.lower()
+        logging.debug("__checkTag (ecl:'%s', tag:'%s')", self.ecl, tag)
+        retVal = False
+        eclText = open(self.getEcl(), 'rb')
+        for line in eclText:
+            if tag in line.lower():
+                retVal = True
+                break
+        logging.debug("__checkTag() returns with %s",  retVal)
+        return retVal
+
     def testSkip(self, skip=None):
         return self.__checkSkip("//skip", skip)
 
@@ -113,12 +128,7 @@ class ECLFile:
         # use byte arrays and binary file open instead
         tag = b'//no' + target.encode()
         logging.debug("testExclusion (ecl:'%s', target: '%s', tag:'%s')", self.ecl, target, tag)
-        eclText = open(self.getEcl(), 'rb')
-        retVal = False
-        for line in eclText:
-            if tag in line:
-                retVal = True
-                break
+        retVal = self.__checkTag(tag)
         logging.debug("Exclude %s",  retVal)
         return retVal
 
@@ -127,18 +137,12 @@ class ECLFile:
         # use byte arrays and binary file open instead
         tag = b'//publish'
         logging.debug("%3d. testPublish (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
-        eclText = open(self.getEcl(), 'rb')
-        retVal = False
-        for line in eclText:
-            if tag in line:
-                retVal = True
-                break
-
+        retVal = self.__checkTag(tag)
         logging.debug("%3d. Publish is %s",  self.taskId,  retVal)
         return retVal
 
     def getTimeout(self):
-        timeout = -1
+        timeout = 0
         # Standard string has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//timeout'
