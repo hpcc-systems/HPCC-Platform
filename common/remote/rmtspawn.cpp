@@ -392,12 +392,11 @@ void CRemoteSlave::run(int argc, char * argv[])
     CRemoteParentInfo info;
 
     bool paramsok = info.processCommandLine(argc, argv, logFile);
-    if (logFile.length()==0) { // not expected!
+    if (logFile.length()==0) { // not expected! Caller queries logfile location via getConfigurationDirectory
 #ifdef _WIN32
-        //logFile.append("c:\\");   // don't write to root on windows!
+        logFile.append("c:\\HPCCSystems\\logs\\ftslave");
 #else
-        if (checkDirExists("/c$"))
-            logFile.append("/c$/");
+        logFile.append("/var/log/HPCCSystems/ftslave");
 #endif
     }
     if (logFile.length())
