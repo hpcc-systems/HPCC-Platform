@@ -228,6 +228,33 @@ public:
     }
 };
 
+// Note - we use a separate cache for the misses rather than any clever attempts to overload
+// the one cache with a "special" value, since (among other reasons) the misses are cleared
+// prior to a package reload, but the hits need not be (as the file will be locked as long as it
+// is in the cache)
+
+static CriticalSection daliMissesCrit;
+static Owned<KeptLowerCaseAtomTable> daliMisses;
+
+static void noteDaliMiss(const char *filename)
+{
+    CriticalBlock b(daliMissesCrit);
+    daliMisses->addAtom(filename);
+}
+
+static bool checkCachedDaliMiss(const char *filename)
+{
+    CriticalBlock b(daliMissesCrit);
+    return daliMisses->find(filename) != NULL;
+}
+
+static void clearDaliMisses()
+{
+    CriticalBlock b(daliMissesCrit);
+    daliMisses.setown(new KeptLowerCaseAtomTable);
+}
+
+
 class CRoxiePackageNode : extends CPackageNode, implements IRoxiePackage
 {
 protected:
@@ -263,49 +290,57 @@ protected:
         IResolvedFile* result = daliFiles.lookupCache(fileName);
         if (result)
             return result;
-        Owned<IRoxieDaliHelper> daliHelper = connectToDali();
-        if (daliHelper)
+        if (!checkCachedDaliMiss(fileName))
         {
-            if (daliHelper->connected())
+            Owned<IRoxieDaliHelper> daliHelper = connectToDali();
+            if (daliHelper)
             {
-                Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheIt, writeAccess);
-                if (dFile)
-                    result = createResolvedFile(fileName, NULL, dFile.getClear(), daliHelper, cacheIt, writeAccess);
-            }
-            else if (!writeAccess)  // If we need write access and expect a dali, but don't have one, we should probably fail
-            {
-                // we have no dali, we can't lock..
-                Owned<IFileDescriptor> fd = daliHelper->resolveCachedLFN(fileName);
-                if (fd)
+                if (daliHelper->connected())
                 {
-                    Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, NULL, false);
-                    Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt);
-                    creator->addSubFile(fd.getClear(), remoteFDesc.getClear());
+                    Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheIt, writeAccess);
+                    if (dFile)
+                        result = createResolvedFile(fileName, NULL, dFile.getClear(), daliHelper, cacheIt, writeAccess);
+                }
+                else if (!writeAccess)  // If we need write access and expect a dali, but don't have one, we should probably fail
+                {
+                    // we have no dali, we can't lock..
+                    Owned<IFileDescriptor> fd = daliHelper->resolveCachedLFN(fileName);
+                    if (fd)
+                    {
+                        Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, NULL, false);
+                        Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt);
+                        creator->addSubFile(fd.getClear(), remoteFDesc.getClear());
+                        result = creator.getClear();
+                    }
+                }
+            }
+            if (!result)
+            {
+                StringBuffer useName;
+                if (strstr(fileName,"::"))
+                {
+                    bool wasDFS;
+                    makeSinglePhysicalPartName(fileName, useName, true, wasDFS);
+                }
+                else
+                    useName.append(fileName);
+                bool exists = checkFileExists(useName);
+                if (exists || alwaysCreate)
+                {
+                    Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, useName, false);
+                    if (exists)
+                        creator->addSubFile(useName);
                     result = creator.getClear();
                 }
             }
         }
-        if (!result)
+        if (cacheIt)
         {
-            StringBuffer useName;
-            if (strstr(fileName,"::"))
-            {
-                bool wasDFS;
-                makeSinglePhysicalPartName(fileName, useName, true, wasDFS);
-            }
+            if (result)
+                daliFiles.addCache(fileName, result);
             else
-                useName.append(fileName);
-            bool exists = checkFileExists(useName);
-            if (exists || alwaysCreate)
-            {
-                Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, useName, false);
-                if (exists)
-                    creator->addSubFile(useName);
-                result = creator.getClear();
-            }
+                noteDaliMiss(fileName);
         }
-        if (result && cacheIt)
-            daliFiles.addCache(fileName, result);
         return result;
     }
 
@@ -381,8 +416,6 @@ public:
 
     CRoxiePackageNode(IPropertyTree *p) : CPackageNode(p)
     {
-        if (!fileNameServiceDali.length())
-            node->setPropBool("@localFiles", true);
     }
 
     ~CRoxiePackageNode()
@@ -433,6 +466,7 @@ public:
                 if (extend)
                     UNIMPLEMENTED; // How does extend fit in with the clusterwritemanager stuff? They can't specify cluster and extend together...
                 resolved->setCache(NULL);
+                resolved->remove();
             }
             if (resolved->queryPhysicalName())
                 fileName.clear().append(resolved->queryPhysicalName());
@@ -1507,6 +1541,7 @@ private:
 
     void reload()
     {
+        clearDaliMisses();
         // We want to kill the old packages, but not until we have created the new ones
         // So that the query/dll caching will work for anything that is not affected by the changes
         Owned<CRoxiePackageSetWatcher> newPackages;
