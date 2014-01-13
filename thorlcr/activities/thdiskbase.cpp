@@ -74,7 +74,7 @@ void CDiskReadMasterBase::init()
                 }
             }
         }
-        validateFile(file);
+        validateFile();
         void *ekey;
         size32_t ekeylen;
         helper->getEncryptKey(ekeylen,ekey);
