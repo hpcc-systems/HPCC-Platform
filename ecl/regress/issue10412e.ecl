@@ -1,0 +1,20 @@
+T := 0
+#IF (FALSE)
+  + 1
+#ELSEIF (FALSE)
+  + 2
+#ELSEIF (FALSE)
+  + 4
+#ELSEIF (FALSE)
+  + 8
+#ELSE
+#IF (FALSE)
+  + 16
+#ELSEIF (FALSE)
+  + 32
+#ELSEIF (FALSE)
+  + 64
+#END
+#END
+;
+OUTPUT(T);

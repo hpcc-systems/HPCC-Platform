@@ -172,7 +172,7 @@ void HqlLex::init(IFileContents * _text)
     hasHashbreak = false;
     encrypted = false;
     loopTimes = 0;
-    skipping = 0;
+    skipNesting = 0;
     macroGathering = 0;
     forLoop = NULL;
 
@@ -666,7 +666,24 @@ bool HqlLex::getParameter(StringBuffer &curParam, const char* for_what, int* sta
     }
 }
 
-void HqlLex::doIf(YYSTYPE & returnToken)
+void HqlLex::doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat)
+{
+    while (skipNesting)
+    {
+        int tok = yyLex(returnToken, false,0);
+        returnToken.release();
+        if (tok == EOF)
+        {
+            StringBuffer msg;
+            msg.appendf("Unexpected EOF in %s: #END expected",forwhat);
+            reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
+            clearNestedHash();      // prevent unnecessary more error messages
+            break;
+        }
+    }
+}
+
+void HqlLex::doIf(YYSTYPE & returnToken, bool isElseIf)
 {
     StringBuffer forwhat; 
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
@@ -684,25 +701,16 @@ void HqlLex::doIf(YYSTYPE & returnToken)
             ;
     }
     curParam.append(')');
-    IValue *value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),line,col);
+    Owned<IValue> value = parseConstExpression(returnToken, curParam, queryTopXmlScope(),line,col);
     if (value && !value->getBoolValue())
     {
-        skipping = 1;
-        while (skipping)
-        {
-            int tok = yyLex(returnToken, false,0);
-            returnToken.release();
-            if (tok == EOF)
-            {
-                StringBuffer msg;
-                msg.appendf("Unexpected EOF in %s: #END expected",forwhat.str());
-                reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
-                clearNestedHash();      // prevent unnecessary more error messages
-                break;
-            }
-        }
+        setHashEndFlags(0);
+        skipNesting = 1;
+        if (!isElseIf)
+            doSkipUntilEnd(returnToken, forwhat);
     }
-    ::Release(value);
+    else
+        setHashEndFlags(HEFhadtrue);
 }
 
 int HqlLex::doElse(YYSTYPE & returnToken, bool lookup, const short * activeState, bool isElseIf)
@@ -716,36 +724,54 @@ int HqlLex::doElse(YYSTYPE & returnToken, bool lookup, const short * activeState
         return SKIPPED;
     }
 
-    if (isElseIf)
-        hashendDepths.append(hashendDepths.pop()+1);
+    unsigned flags = hashendFlags.tos();
+    if (!isElseIf)
+    {
+        if (flags & HEFhadelse)
+            reportError(returnToken, ERR_TMPLT_EXTRAELSE,"Multiple #ELSE for the same #IF");
+        setHashEndFlags(flags|HEFhadelse);
+    }
 
-    switch (skipping)
+    switch (skipNesting)
     {
     case 0:
-        skipping = hashendDepths.tos();
-        while (skipping)
-        {
-            int tok = yyLex(returnToken, lookup, activeState);
-            returnToken.release();
-            if (tok == EOF)
-            {
-                forwhat.insert(0,"Unexpected EOF in ").append(": #END expected");
-                reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", forwhat.str());
-                clearNestedHash();      // prevent unnecessary more error messages
-                return tok;
-            }
-        }
+        skipNesting = 1;
+        doSkipUntilEnd(returnToken, forwhat);
         return yyLex(returnToken, lookup, activeState);
     case 1:
-        skipping = 0;
-        if (isElseIf)
-            doIf(returnToken);
+        if (flags & HEFhadtrue)
+        {
+            //Don't need to do anything
+        }
+        else
+        {
+            skipNesting = 0;
+            if (isElseIf)
+                doIf(returnToken, true);
+            else
+                setHashEndFlags(HEFhadtrue|HEFhadelse);
+        }
         return SKIPPED;     // looks wrong, but called within a doIf() loop, and first return is ignored
     default:
-        if (isElseIf)
-            skipping++;
         return SKIPPED;
     }
+}
+
+int HqlLex::doEnd(YYSTYPE & returnToken, bool lookup, const short * activeState)
+{
+    if (hashendKinds.ordinality() != 0)
+    {
+        endNestedHash();
+        if (skipNesting)
+        {
+            skipNesting -= 1;
+            return(HASHEND);
+        }
+    }
+    else
+        reportError(returnToken, ERR_TMPLT_EXTRAEND,"#END doesn't match a # command");
+
+    return yyLex(returnToken, lookup, activeState);
 }
 
 void HqlLex::doDeclare(YYSTYPE & returnToken)
@@ -1098,7 +1124,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
 
     StringBuffer forFilterText;
     // Note - we gather the for filter and body in skip mode (deferring evaluation of #if etc) since the context will be different each time...
-    skipping = 1;
+    skipNesting = 1;
     int tok = yyLex(returnToken, false,0);
     if (tok == '(')
     {
@@ -1134,7 +1160,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
             clearNestedHash();      // prevent unnecessary more error messages
             return;
         }
-        if (tok == HASHEND && !skipping)
+        if (tok == HASHEND && !skipNesting)
             break;
         forBodyText.append(' ');
         getTokenText(forBodyText);
@@ -1162,7 +1188,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
     // Now gather the tokens we are going to repeat...
     StringBuffer forBodyText;
     // Note - we gather the for filter and body in skip mode (deferring evaluation of #if etc) since the context will be different each time...
-    skipping = 1;
+    skipNesting = 1;
     hasHashbreak = false;
     for (;;)
     {
@@ -1179,7 +1205,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
             clearNestedHash();      // prevent unnecessary more error messages
             return;
         }
-        if (tok == HASHEND && !skipping)
+        if (tok == HASHEND && !skipNesting)
             break;
         forBodyText.append(' ');
         getTokenText(forBodyText);
@@ -2148,12 +2174,12 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"Comment is not terminated");
             else if (inCpp)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"BEGINC++ or EMBED is not terminated");
-            if (hashendDepths.ordinality())
+            if (hashendKinds.ordinality())
             {
                 StringBuffer msg("Unexpected EOF: ");
-                msg.append(hashendDepths.ordinality()).append(" more #END needed");
+                msg.append(hashendKinds.ordinality()).append(" more #END needed");
                 reportError(returnToken, ERR_TMPLT_HASHENDEXPECTED, "%s", msg.str());
-                hashendDepths.kill(); // prevent unnecessary more error messages
+                clearNestedHash();
             }
         }
 

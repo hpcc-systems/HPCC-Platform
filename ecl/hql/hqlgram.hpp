@@ -998,6 +998,12 @@ protected:
 typedef void* yyscan_t;
 #endif
 
+enum
+{
+    HEFhadtrue = 0x0001,
+    HEFhadelse = 0x0002,
+};
+
 class HqlLex
 {
     public:
@@ -1097,9 +1103,10 @@ class HqlLex
         void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
         void reportWarning(const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
 
-        void beginNestedHash(unsigned kind) { hashendKinds.append(kind); hashendDepths.append(1); }
-        unsigned endNestedHash() { hashendKinds.pop(); return hashendDepths.pop(); }
-        void clearNestedHash() { hashendKinds.kill(); hashendDepths.kill(); }
+        void beginNestedHash(unsigned kind) { hashendKinds.append(kind); hashendFlags.append(0); }
+        void endNestedHash() { hashendKinds.pop(); hashendFlags.pop(); }
+        void clearNestedHash() { hashendKinds.kill(); hashendFlags.kill(); }
+        void setHashEndFlags(unsigned i) { if (hashendFlags.ordinality()) { hashendFlags.pop(); hashendFlags.append(i); } }
 
         inline bool parserExpecting(int tok, const short * activeState)
         {
@@ -1131,6 +1138,7 @@ class HqlLex
         void doPreprocessorLookup(const YYSTYPE & errpos, bool stringify, int extra);
         void doApply(YYSTYPE & returnToken);
         int doElse(YYSTYPE & returnToken, bool lookup, const short * activeState, bool isElseIf);
+        int doEnd(YYSTYPE & returnToken, bool lookup, const short * activeState);
         void doExpand(YYSTYPE & returnToken);
         void doTrace(YYSTYPE & returnToken);
         void doError(YYSTYPE & returnToken, bool isError);
@@ -1138,7 +1146,7 @@ class HqlLex
         void doFor(YYSTYPE & returnToken, bool doAll);
         int doHashText(YYSTYPE & returnToken);
         void doLoop(YYSTYPE & returnToken);
-        void doIf(YYSTYPE & returnToken);
+        void doIf(YYSTYPE & returnToken, bool isElseIf);
         void doSet(YYSTYPE & returnToken, bool _append);
         void doLine(YYSTYPE & returnToken);
         void doDeclare(YYSTYPE & returnToken);
@@ -1149,6 +1157,8 @@ class HqlLex
         void doInModule(YYSTYPE & returnToken);
         void doMangle(YYSTYPE & returnToken, bool de);
         void doUniqueName(YYSTYPE & returnToken);
+        void doSkipUntilEnd(YYSTYPE & returnToken, const char * forwhat);
+
         void processEncrypted();
 
         void declareUniqueName(const char* name, const char * pattern);
@@ -1179,8 +1189,8 @@ private:
         enum { HashStmtNone, HashStmtFor, HashStmtForAll, HashStmtLoop, HashStmtIf };
         int lastToken;
         int macroGathering;
-        int skipping;
-        UnsignedArray hashendDepths;
+        int skipNesting;
+        UnsignedArray hashendFlags;
         UnsignedArray hashendKinds;
         bool hasHashbreak;
         int loopTimes;
