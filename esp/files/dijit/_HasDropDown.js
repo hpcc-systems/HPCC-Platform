@@ -4,7 +4,9 @@ return _1("dijit._HasDropDown",_f,{_buttonNode:null,_arrowWrapperNode:null,_popu
 if(this.disabled||this.readOnly){
 return;
 }
+if(e.type!="MSPointerDown"&&e.type!="pointerdown"){
 e.preventDefault();
+}
 this._docHandler=this.own(on(this.ownerDocument,_b.release,_a.hitch(this,"_onDropDownMouseUp")))[0];
 this.toggleDropDown();
 },_onDropDownMouseUp:function(e){
@@ -40,7 +42,7 @@ return;
 }
 }
 if(this._opened){
-if(_10.focus&&_10.autoFocus!==false){
+if(_10.focus&&(_10.autoFocus!==false||(e.type=="mouseup"&&!this.hovering))){
 this._focusDropDownTimer=this.defer(function(){
 _10.focus();
 delete this._focusDropDownTimer;

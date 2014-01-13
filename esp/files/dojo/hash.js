@@ -55,7 +55,7 @@ location.replace("#"+_15);
 function _18(){
 var ifr=document.createElement("iframe"),_19="dojo-hash-iframe",_1a=_3.dojoBlankHtmlUrl||_2.toUrl("./resources/blank.html");
 if(_3.useXDomain&&!_3.dojoBlankHtmlUrl){
-console.warn("dojo.hash: When using cross-domain Dojo builds,"+" please save dojo/resources/blank.html to your domain and set djConfig.dojoBlankHtmlUrl"+" to the path on your domain to blank.html");
+console.warn("dojo/hash: When using cross-domain Dojo builds,"+" please save dojo/resources/blank.html to your domain and set djConfig.dojoBlankHtmlUrl"+" to the path on your domain to blank.html");
 }
 ifr.id=_19;
 ifr.src=_1a+"?"+_b();
@@ -82,7 +82,7 @@ _1e=this.iframe.document.title=document.title;
 }
 catch(e){
 _1f=true;
-console.error("dojo.hash: Error adding history entry. Server unreachable.");
+console.error("dojo/hash: Error adding history entry. Server unreachable.");
 }
 }
 var _23=_b();

@@ -2063,7 +2063,8 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 }
 .dj_gecko .claro .dijitTextBox .dijitInputInner,
 .dj_webkit .claro .dijitTextBox .dijitInputInner {
-  padding: 1px;
+  padding-left: 1px;
+  padding-right: 1px;
 }
 .claro .dijitSelect,
 .claro .dijitSelect .dijitButtonContents,
@@ -2922,7 +2923,7 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .claro .dijitDialogCloseIconHover {
   background-position: -21px;
 }
-.claro .dijitDialogCloseIconActive {
+.claro .dijitDialogCloseIcon:active {
   background-position: -42px;
 }
 .claro .dijitTooltip,
@@ -4955,14 +4956,6 @@ div.dijitNumberTextBoxRtl {
 }
 .claro .dijitCalendarRtl .dijitCalendarArrowActive .dijitCalendarDecrease {
   background-position: -91px 0;
-}
-.dj_ie .claro .dijitTimePickerRtl .dijitTimePickerTickHover,
-.dj_ie .claro .dijitTimePickerRtl .dijitTimePickerMarkerHover,
-.dj_ie .claro .dijitTimePickerRtl .dijitTimePickerMarkerSelected,
-.dj_ie .claro .dijitTimePickerRtl .dijitTimePickerTickSelected {
-  margin-left: -6px;
-  margin-right: -8px;
-  width: 114%;
 }
 .claro .dijitToolbar .dijitComboButtonRtl .dijitButtonNode {
   border-width: 0;

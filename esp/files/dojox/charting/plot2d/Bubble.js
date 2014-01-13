@@ -1,7 +1,7 @@
 //>>built
 define("dojox/charting/plot2d/Bubble",["dojo/_base/lang","dojo/_base/declare","dojo/_base/array","dojo/has","./CartesianBase","./_PlotEvents","./common","dojox/lang/functional","dojox/lang/functional/reversed","dojox/lang/utils","dojox/gfx/fx"],function(_1,_2,_3,_4,_5,_6,dc,df,_7,du,fx){
 var _8=_7.lambda("item.purgeGroup()");
-return _2("dojox.charting.plot2d.Bubble",[_5,_6],{defaultParams:{animate:null},optionalParams:{stroke:{},outline:{},shadow:{},fill:{},filter:{},styleFunc:null,font:"",fontColor:""},constructor:function(_9,_a){
+return _2("dojox.charting.plot2d.Bubble",[_5,_6],{defaultParams:{animate:null},optionalParams:{stroke:{},outline:{},shadow:{},fill:{},filter:{},styleFunc:null,font:"",fontColor:"",labelFunc:null},constructor:function(_9,_a){
 this.opt=_1.clone(_1.mixin(this.opt,this.defaultParams));
 du.updateWithObject(this.opt,_a);
 du.updateWithPattern(this.opt,_a,this.optionalParams);

@@ -375,7 +375,7 @@ this.onItemRollOut({renderer:_79,item:_7a,triggerEvent:e});
 },_onMouseUp:function(e){
 var _7b=this._getRendererFromTarget(e.target);
 if(_7b.item){
-this.selectFromEvent(e,_7b.item,e.currentTarget,true);
+this.selectFromEvent(e,_7b.item,_7b,true);
 }
 },onRendererUpdated:function(){
 },onItemRollOver:function(){

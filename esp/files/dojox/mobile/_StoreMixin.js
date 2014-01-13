@@ -24,14 +24,14 @@ return null;
 }
 var _c=this;
 var _d=this.store.query(this.query,this.queryOptions);
-if(this._observe_h){
-this._observe_h.remove();
-}
 _1.when(_d,function(_e){
 if(_e.items){
 _e=_e.items;
 }
 if(_d.observe){
+if(_c._observe_h){
+_c._observe_h.remove();
+}
 _c._observe_h=_d.observe(function(_f,_10,_11){
 if(_10!=-1){
 if(_11!=_10){
@@ -57,5 +57,10 @@ _c.onComplete(_e);
 _c.onError(_12);
 });
 return _d;
+},destroy:function(){
+if(this._observe_h){
+this._observe_h=this._observe_h.remove();
+}
+this.inherited(arguments);
 }});
 });

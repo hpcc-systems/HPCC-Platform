@@ -22,11 +22,10 @@
     margin-top: 0.6em;
   }
   
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.TextArea"],
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.TextBox"],
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.ComboBox"],
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.SearchBox"] {
+  .mblFormLayout.mblFormLayoutAuto .mblTextArea,
+  .mblFormLayout.mblFormLayoutAuto .mblExpandingTextArea,
+  .mblFormLayout.mblFormLayoutAuto .mblTextBox,
+  .mblFormLayout.mblFormLayoutAuto .mblSearchBox {
     width: 100%;
     box-sizing: border-box;
   }
@@ -38,11 +37,10 @@
 .mblFormLayout.mblFormLayoutSingleCol > * + * {
   margin-top: 0.6em;
 }
-.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.TextArea"],
-.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
-.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.TextBox"],
-.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.ComboBox"],
-.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.SearchBox"] {
+.mblFormLayout.mblFormLayoutSingleCol .mblTextArea,
+.mblFormLayout.mblFormLayoutSingleCol .mblExpandingTextArea,
+.mblFormLayout.mblFormLayoutSingleCol .mblTextBox,
+.mblFormLayout.mblFormLayoutSingleCol .mblSearchBox {
   width: 100%;
   box-sizing: border-box;
 }
@@ -72,16 +70,15 @@
     text-align: right;
   }
   
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.Button"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ToggleButton"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.CheckBox"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.Switch"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.RadioButton"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ComboBox"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.TextArea"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ExpandingTextArea"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.TextBox"]:last-child,
-  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.SearchBox"]:last-child {
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblButton:last-child,
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblToggleButton:last-child,
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblCheckBox:last-child,
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblSwitch:last-child,
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblRadioButton:last-child,
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblTextArea:last-child,
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblExpandingTextArea:last-child,
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblTextBox:last-child,
+  .mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblSearchBox:last-child {
     margin-right: 0;
   }
   
@@ -91,11 +88,10 @@
     margin-top: 0px;
   }
   
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.TextArea"],
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.TextBox"],
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.ComboBox"],
-  .mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.SearchBox"] {
+  .mblFormLayout.mblFormLayoutAuto .mblTextArea,
+  .mblFormLayout.mblFormLayoutAuto .mblExpandingTextArea,
+  .mblFormLayout.mblFormLayoutAuto .mblTextBox,
+  .mblFormLayout.mblFormLayoutAuto .mblSearchBox {
     width: 50%;
     box-sizing: border-box;
   }
@@ -119,16 +115,15 @@
 .mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child {
   text-align: right;
 }
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.Button"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ToggleButton"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.CheckBox"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.Switch"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.RadioButton"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ComboBox"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.TextArea"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ExpandingTextArea"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.TextBox"]:last-child,
-.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.SearchBox"]:last-child {
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblButton:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblToggleButton:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblCheckBox:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblSwitch:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblRadioButton:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblTextArea:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblExpandingTextArea:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblTextBox:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblSearchBox:last-child {
   margin-right: 0;
 }
 .mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblSlider:last-child {
@@ -136,11 +131,10 @@
   margin-right: 10px;
   margin-top: 0px;
 }
-.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.TextArea"],
-.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
-.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.TextBox"],
-.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.ComboBox"],
-.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.SearchBox"] {
+.mblFormLayout.mblFormLayoutTwoCol .mblTextArea,
+.mblFormLayout.mblFormLayoutTwoCol .mblExpandingTextArea,
+.mblFormLayout.mblFormLayoutTwoCol .mblTextBox,
+.mblFormLayout.mblFormLayoutTwoCol .mblSearchBox {
   width: 50%;
   box-sizing: border-box;
 }
@@ -151,26 +145,24 @@
 .mblFormLayout > * > *:first-child {
   font-weight: bold;
 }
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.Button"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.ToggleButton"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.CheckBox"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.Switch"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.RadioButton"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.ComboBox"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.TextArea"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.ExpandingTextArea"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.TextBox"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.SearchBox"]:first-child,
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.Button"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.ToggleButton"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.CheckBox"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.Switch"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.RadioButton"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.ComboBox"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.TextArea"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.TextBox"],
-.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.SearchBox"] {
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblButton:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblToggleButton:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblCheckBox:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblSwitch:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblRadioButton:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblTextArea:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblExpandingTextArea:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblTextBox:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblSearchBox:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblButton,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblToggleButton,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblCheckBox,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblSwitch,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblRadioButton,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblTextArea,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblExpandingTextArea,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblTextBox,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + .mblSearchBox {
   margin-left: 0;
 }
 .mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblSlider:first-child {

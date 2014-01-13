@@ -269,7 +269,9 @@ var _30=this.panelNodes[1].childNodes;
 if(_30.length>0&&!_7("windows-theme")){
 this._itemHeight=_30[0].offsetHeight;
 this.centerPos=this.getParent().centerPos;
+if(!this.panelNodes[0].style.top){
 this.adjust();
+}
 }
 if(this._pendingValue){
 this.set("value",this._pendingValue);

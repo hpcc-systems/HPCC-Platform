@@ -26,6 +26,7 @@ return false;
 }
 });
 _3.add("MSPointer",navigator.msPointerEnabled);
+_3.add("pointer-events",navigator.pointerEnabled);
 var _10=g.canvasWithEvents={};
 _10.Shape=_2("dojox.gfx.canvasWithEvents.Shape",_a.Shape,{_testInputs:function(ctx,pos){
 if(this.clip||(!this.canvasFill&&this.strokeStyle)){
@@ -224,7 +225,7 @@ _21=null;
 }
 Object.defineProperty(_28,"bubbles",{value:_2d,configurable:true,enumerable:true});
 };
-var _2f={out:[{type:"mouseout",bubbles:true},{type:"MSPointerOut",bubbles:true},{type:"mouseleave",bubbles:false},{type:"dojotouchout",bubbles:true}],over:[{type:"mouseover",bubbles:true},{type:"MSPointerOver",bubbles:true},{type:"mouseenter",bubbles:false},{type:"dojotouchover",bubbles:true}]},_30=_28.target,_31=this._elementUnderPointer,_a=this.getEventSource();
+var _2f={out:[{type:"mouseout",bubbles:true},{type:"MSPointerOut",bubbles:true},{type:"pointerout",bubbles:true},{type:"mouseleave",bubbles:false},{type:"dojotouchout",bubbles:true}],over:[{type:"mouseover",bubbles:true},{type:"MSPointerOver",bubbles:true},{type:"pointerover",bubbles:true},{type:"mouseenter",bubbles:false},{type:"dojotouchover",bubbles:true}]},_30=_28.target,_31=this._elementUnderPointer,_a=this.getEventSource();
 if(_31!==_30){
 if(_31&&_31!==_a){
 _29(_2f.out,_31,_30);
@@ -255,11 +256,15 @@ _39.style.position="absolute";
 _39.style.left=_39.style.top="-99999px";
 _38.parentNode.appendChild(_39);
 var _3a="mousemove";
+if(_3("pointer-events")){
+_3a="pointermove";
+}else{
 if(_3("MSPointer")){
 _3a="MSPointerMove";
 }else{
 if(_3("touch")){
 _3a="touchmove";
+}
 }
 }
 on(_38,_3a,_1.hitch(this,"_checkPointer"));

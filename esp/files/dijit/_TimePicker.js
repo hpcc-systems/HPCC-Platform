@@ -51,8 +51,10 @@ this.constraints={};
 this.inherited(arguments);
 this._setConstraintsAttr(this.constraints);
 },_setConstraintsAttr:function(_1f){
-for(var key in _1f){
-this._set(key,_1f[key]);
+for(var key in {clickableIncrement:1,visibleIncrement:1}){
+if(key in _1f){
+this[key]=_1f[key];
+}
 }
 if(!_1f.locale){
 _1f.locale=this.lang;
@@ -60,7 +62,7 @@ _1f.locale=this.lang;
 },_createOption:function(_20){
 var _21=new Date(this._refDate);
 var _22=this._clickableIncrementDate;
-_21.setTime(_21.getTime()+_22.getHours()*_20*3600000+_22.getMinutes()*_20*60000+_22.getSeconds()*_20*1000);
+_21.setHours(_21.getHours()+_22.getHours()*_20,_21.getMinutes()+_22.getMinutes()*_20,_21.getSeconds()+_22.getSeconds()*_20);
 if(this.constraints.selector=="time"){
 _21.setFullYear(1970,0,1);
 }

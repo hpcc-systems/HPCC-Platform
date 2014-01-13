@@ -27,7 +27,7 @@ _7+=_7<0?l:0;
 var p=Math.min(_7,l),_8=this.slice(_7,_7+n),_9=_1._toArray(arguments).slice(2);
 [].splice.apply(this,[_7,n].concat(new Array(_9.length)));
 for(var i=0;i<_9.length;i++){
-this.set(p+i,_9[i]);
+this[p+i]=_9[i];
 }
 if(this._watchElementCallbacks){
 this._watchElementCallbacks(_7,_8,_9);
@@ -83,7 +83,7 @@ var old=this.get("length");
 if(old<_17){
 this.splice.apply(this,[old,0].concat(new Array(_17-old)));
 }else{
-if(_17>old){
+if(_17<old){
 this.splice.apply(this,[_17,old-_17]);
 }
 }

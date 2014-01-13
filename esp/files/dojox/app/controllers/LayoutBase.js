@@ -32,6 +32,7 @@ var _13=_11.view;
 if(!_13){
 return;
 }
+this.app.log("in LayoutBase layoutView called for event.view.id="+_11.view.id);
 var _14=_9.getSelectedChild(_12,_13.constraint);
 if(_11.removeView){
 _13.viewShowing=false;
@@ -43,16 +44,24 @@ _9.setSelectedChild(_12,_13.constraint,null);
 if(_13!==_14){
 if(_14){
 _14.viewShowing=false;
+if(_11.transition=="none"||_11.currentLastSubChildMatch!==_14){
 this.hideView(_14);
+}
 }
 _13.viewShowing=true;
 this.showView(_13);
 _9.setSelectedChild(_12,_13.constraint,_13);
+}else{
+_13.viewShowing=true;
 }
 }
 },hideView:function(_15){
+this.app.log("logTransitions:","LayoutBase"+" setting domStyle display none for view.id=["+_15.id+"], visibility=["+_15.domNode.style.visibility+"]");
 _8.set(_15.domNode,"display","none");
 },showView:function(_16){
+if(_16.domNode){
+this.app.log("logTransitions:","LayoutBase"+" setting domStyle display to display for view.id=["+_16.id+"], visibility=["+_16.domNode.style.visibility+"]");
 _8.set(_16.domNode,"display","");
+}
 }});
 });

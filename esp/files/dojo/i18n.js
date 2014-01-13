@@ -26,7 +26,7 @@ return (/root/i.test(_18))?(_16+"/nls/"+_17):(_16+"/nls/"+_18+"/"+_17);
 return _1a=_9.id+"!"+_15(_1a,_1b,_1c);
 },_1d=function(_1e,_1f,_20,_21,_22,_23){
 _1e([_1f],function(_24){
-var _25=_6.clone(_24.root),_26=_c(!_24._v1x&&_24,_22,_20,_21);
+var _25=_6.clone(_24.root||_24.ROOT),_26=_c(!_24._v1x&&_24,_22,_20,_21);
 _1e(_26,function(){
 for(var i=1;i<_26.length;i++){
 _25=_6.mixin(_6.clone(_25),arguments[i]);

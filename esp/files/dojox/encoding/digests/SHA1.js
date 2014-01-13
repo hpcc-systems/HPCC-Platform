@@ -94,9 +94,9 @@ s.push(tab.charAt((t>>6*(3-j))&63));
 }
 return s.join("");
 };
-var _15=function(_16,_17){
-var out=_17||_1.outputTypes.Base64;
-var wa=_4(_e(_16),_16.length*_2);
+_1.SHA1=function(_15,_16){
+var out=_16||_1.outputTypes.Base64;
+var wa=_4(_e(_15),_15.length*_2);
 switch(out){
 case _1.outputTypes.Raw:
 return wa;
@@ -108,9 +108,9 @@ default:
 return _14(wa);
 }
 };
-_15._hmac=function(_18,key,_19){
-var out=_19||_1.outputTypes.Base64;
-var wa=_b(_18,key);
+_1.SHA1._hmac=function(_17,key,_18){
+var out=_18||_1.outputTypes.Base64;
+var wa=_b(_17,key);
 switch(out){
 case _1.outputTypes.Raw:
 return wa;
@@ -122,5 +122,5 @@ default:
 return _14(wa);
 }
 };
-return _15;
+return _1.SHA1;
 });

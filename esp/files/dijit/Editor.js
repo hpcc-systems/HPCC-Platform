@@ -6,7 +6,7 @@ this.plugins=["undo","redo","|","cut","copy","paste","|","bold","italic","underl
 }
 this._plugins=[];
 this._editInterval=this.editActionInterval*1000;
-if(_c("ie")){
+if(_c("ie")||_c("trident")){
 this.events.push("onBeforeDeactivate");
 this.events.push("onBeforeActivate");
 }

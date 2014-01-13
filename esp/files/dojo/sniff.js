@@ -25,12 +25,13 @@ _1.add("ios",os);
 }
 _1.add("android",parseFloat(_2.split("Android ")[1])||undefined);
 _1.add("bb",(_2.indexOf("BlackBerry")>=0||_2.indexOf("BB10")>=0)&&parseFloat(_2.split("Version/")[1])||undefined);
+_1.add("trident",parseFloat(_3.split("Trident/")[1])||undefined);
 _1.add("svg",typeof SVGAngle!=="undefined");
 if(!_1("webkit")){
 if(_2.indexOf("Opera")>=0){
 _1.add("opera",tv>=9.8?parseFloat(_2.split("Version/")[1])||tv:tv);
 }
-if(_2.indexOf("Gecko")>=0&&!_1("khtml")&&!_1("webkit")){
+if(_2.indexOf("Gecko")>=0&&!_1("khtml")&&!_1("webkit")&&!_1("trident")){
 _1.add("mozilla",tv);
 }
 if(_1("mozilla")){

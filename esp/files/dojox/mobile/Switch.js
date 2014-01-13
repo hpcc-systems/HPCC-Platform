@@ -93,7 +93,7 @@ return;
 if(this._moved){
 return;
 }
-this.value=this.input.value=(this.value=="on")?"off":"on";
+this._set("value",this.input.value=(this.value=="on")?"off":"on");
 this._changeState(this.value,true);
 this.onStateChanged(this.value);
 },onClick:function(){
@@ -147,7 +147,7 @@ var _19=(this.inner.offsetLeft<-(this._width/2))?"off":"on";
 _19=this._newState(_19);
 this._changeState(_19,true);
 if(_19!=this.value){
-this.value=this.input.value=_19;
+this._set("value",this.input.value=_19);
 this.onStateChanged(_19);
 }
 },_newState:function(_1a){
@@ -159,9 +159,9 @@ this.labelNode.innerHTML=_1b=="off"?this.rightLabel:this.leftLabel;
 },_setValueAttr:function(_1c){
 this._changeState(_1c,false);
 if(this.value!=_1c){
+this._set("value",this.input.value=_1c);
 this.onStateChanged(_1c);
 }
-this.value=this.input.value=_1c;
 },_setLeftLabelAttr:function(_1d){
 this.leftLabel=_1d;
 this.left.firstChild.innerHTML=this._cv?this._cv(_1d):_1d;

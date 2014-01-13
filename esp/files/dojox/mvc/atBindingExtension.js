@@ -11,6 +11,9 @@ _1.before(w,"postscript",function(_6,_7){
 this._dbpostscript(_6,_7);
 });
 _1.before(w,"startup",function(){
+if(this._started){
+return;
+}
 this._startAtWatchHandles();
 });
 _1.before(w,"destroy",function(){

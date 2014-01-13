@@ -67,9 +67,11 @@ define([
 					mainLayer = l;
 					break;
 				}
-			}
-			if(!mainLayer && !bc.layers[argv.args.appConfigLayer]){
-				bc.layers[mainLayer = argv.args.appConfigLayer] = { include: [], exclude: [ "dojo/dojo"] };
+			}else{
+				mainLayer = argv.args.appConfigLayer;
+				if(!bc.layers[mainLayer]){
+					bc.layers[mainLayer] = { include: [], exclude: [ "dojo/dojo"] };
+				}
 			}
 			if(config.dependencies){
 				mids = mids.concat(config.dependencies);

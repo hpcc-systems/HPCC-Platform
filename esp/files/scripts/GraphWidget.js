@@ -55,7 +55,7 @@ require([
             constructor: function() {
                 if (has("ie")) {
                     this.isIE = true;
-                } else if (window.ActiveXObject !== undefined) {
+                } else if (has("trident")) {
                     this.isIE11 = true;
                 }
             },
@@ -616,10 +616,8 @@ require([
 
             registerEvent: function (evt, func) {
                 if (this._plugin) {
-                    if (this.isIE11) {
-                        this._plugin["on" + evt] = func;
-                    } else if (this.isIE) {
-                        return this._plugin.attachEvent("on" + evt, func, false);
+                    if (this._plugin.attachEvent !== undefined) {
+                        return this._plugin.attachEvent("on" + evt, func);
                     } else {
                         return this._plugin.addEventListener(evt, func, false);
                     }

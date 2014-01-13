@@ -24,7 +24,7 @@ var t=e.target;
 if(t.nodeType==3){
 t=t.parentNode;
 }
-return " button textarea input select option ".indexOf(" "+t.tagName.toLowerCase()+" ")>=0;
+return " a button textarea input select option ".indexOf(" "+t.tagName.toLowerCase()+" ")>=0;
 };
 return _5;
 });

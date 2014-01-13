@@ -21,7 +21,7 @@ if(this.focusNode&&this.focusNode.value&&!isNaN(this.value)){
 this.set("value",this.value);
 }
 },_onFocus:function(){
-if(this.disabled){
+if(this.disabled||this.readOnly){
 return;
 }
 var _9=this.get("value");

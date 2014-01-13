@@ -80,6 +80,7 @@ this._set("constraints",_18);
 this._refreshState();
 },_setPatternAttr:function(_19){
 this._set("pattern",_19);
+this._refreshState();
 },_computeRegexp:function(_1a){
 var p=this.pattern;
 if(typeof p=="function"){

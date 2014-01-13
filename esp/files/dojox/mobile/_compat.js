@@ -1,7 +1,7 @@
 //>>built
 define("dojox/mobile/_compat",["dojo/_base/array","dojo/_base/config","dojo/_base/connect","dojo/_base/fx","dojo/_base/lang","dojo/sniff","dojo/_base/window","dojo/dom-class","dojo/dom-construct","dojo/dom-geometry","dojo/dom-style","dojo/dom-attr","dojo/fx","dojo/fx/easing","dojo/ready","dojo/uacss","dijit/registry","dojox/fx","dojox/fx/flip","./EdgeToEdgeList","./IconContainer","./ProgressIndicator","./RoundRect","./RoundRectList","./ScrollableView","./Switch","./View","./Heading","require"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,fx,_d,_e,_f,_10,xfx,_11,_12,_13,_14,_15,_16,_17,_18,_19,_1a,_1b){
 var dm=_5.getObject("dojox.mobile",true);
-if(!(_6("webkit")||_6("ie")>=10)){
+if(!(_6("webkit")||_6("ie")===10||(!_6("ie")&&_6("trident")>6))){
 _5.extend(_19,{_doTransition:function(_1c,_1d,_1e,dir){
 var _1f;
 this.wakeUp(_1d);

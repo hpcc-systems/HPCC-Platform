@@ -167,9 +167,9 @@ case _5.DELETE:
 case "W".charCodeAt(0):
 if(this._currentChild.closable&&(e.keyCode==_5.DELETE||e.ctrlKey)){
 this.onCloseButtonClick(this._currentChild);
-}
 e.stopPropagation();
 e.preventDefault();
+}
 break;
 case _5.TAB:
 if(e.ctrlKey){

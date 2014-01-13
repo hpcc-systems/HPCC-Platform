@@ -104,8 +104,8 @@ return _16;
 },_formatTime:function(rd,d){
 if(this.owner){
 var f=this.owner.get("formatItemTimeFunc");
-if(f!=null){
-return this.owner.formatItemTimeFunc(d,rd);
+if(f!=null&&typeof f==="function"){
+return f(d,rd);
 }
 }
 return rd.dateLocaleModule.format(d,{selector:"time"});

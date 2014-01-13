@@ -73,12 +73,9 @@ rd.endTime=new rd.dateClassObj(_19[_19.length-1]);
 rd.endTime=rd.dateModule.add(rd.endTime,"day",1);
 rd.maxDayCount=_18;
 rd.sheetHeight=rd.daySize*_18;
-if(this.displayedItemsInvalidated){
+if(this.displayedItemsInvalidated&&!this._isEditing){
 this.displayedItemsInvalidated=false;
 this._computeVisibleItems(rd);
-if(this._isEditing){
-this._endItemEditing(null,false);
-}
 }else{
 if(this.renderData){
 rd.items=this.renderData.items;
