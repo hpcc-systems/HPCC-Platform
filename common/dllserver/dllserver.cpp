@@ -61,9 +61,45 @@ IConstDomainInfo * cachedHostDomain()
     return hostDomain;
 }
 
-void getPath(StringBuffer & path, const char * name)
+static void getMangledTag(StringBuffer & path, const char * name)
+{
+    path.append("Dll");
+    unsigned len = strlen(name);
+    path.ensureCapacity(len);
+    for (unsigned i=0; i < len; i++)
+    {
+        char next = name[i];
+        if (isalnum((byte)next))
+            path.append(next);
+        else
+            path.append("_");
+    }
+}
+
+static void getOldXPath(StringBuffer & path, const char * name)
 {
     path.append("/GeneratedDlls/GeneratedDll[@uid=\"").append(name).append("\"]");
+}
+
+static void getNewXPath(StringBuffer & path, const char * name)
+{
+    path.append("/GeneratedDlls/");
+    getMangledTag(path, name);
+    //The following qualifier is here in case two different characters were mapped to _ - creating an ambiguous tag.
+    path.append("[@name=\"").append(name).append("\"]");
+}
+
+IRemoteConnection * getEntryConnection(const char * name, unsigned mode)
+{
+    StringBuffer xpath;
+    getNewXPath(xpath, name);
+    Owned<IRemoteConnection> connection = querySDS().connect(xpath.str(), myProcessSession(), mode, CONNECTION_TIMEOUT);
+    if (connection)
+        return connection.getClear();
+
+    //Retain backwards compatibility for the moment
+    getOldXPath(xpath.clear(), name);
+    return querySDS().connect(xpath.str(), myProcessSession(), mode, CONNECTION_TIMEOUT);
 }
 
 //---------------------------------------------------------------------------
@@ -224,9 +260,7 @@ void DllLocation::remove(bool removeFiles, bool removeDirectory)
         }
     }
 
-    StringBuffer path;
-    getPath(path, entryRoot->queryProp("@name"));
-    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
+    Owned<IRemoteConnection> conn = getEntryConnection(entryRoot->queryProp("@name"), RTM_LOCK_WRITE);
     Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("location");
     ForEach(*iter)
     {
@@ -406,9 +440,7 @@ void DllEntry::remove(bool removeFiles, bool removeDirectory)
         owner->removeTree(root);
     else
     {
-        StringBuffer path;
-        getPath(path, root->queryProp("@name"));
-        Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
+        Owned<IRemoteConnection> conn = getEntryConnection(root->queryProp("@name"), RTM_LOCK_WRITE);
         conn->close(true);
     }
 }
@@ -505,14 +537,12 @@ IIterator * DllServer::createDllIterator()
 {
     Owned<IRemoteConnection> conn = querySDS().connect("/GeneratedDlls", myProcessSession(), 0, CONNECTION_TIMEOUT);
     IPropertyTree * root = conn->queryRoot();
-    return conn ? (IIterator *)new DllIterator(root, root->getElements("GeneratedDll"), rootDir) : (IIterator *)new CNullIterator;
+    return conn ? (IIterator *)new DllIterator(root, root->getElements("*"), rootDir) : (IIterator *)new CNullIterator;
 }
 
 DllEntry * DllServer::doGetEntry(const char * name)
 {
-    StringBuffer path;
-    getPath(path, name);
-    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), 0, CONNECTION_TIMEOUT);
+    Owned<IRemoteConnection> conn = getEntryConnection(name, 0);
     if (conn)
         return new DllEntry(conn->queryRoot(), rootDir, NULL);
     return NULL;
@@ -533,9 +563,7 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
     dllRemote.queryIP().getIpText(ipText);
     dllRemote.getLocalPath(dllText);
 
-    StringBuffer path;
-    getPath(path, name);
-    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
+    Owned<IRemoteConnection> conn = getEntryConnection(name, RTM_LOCK_WRITE);
     if (conn)
     {
         //check the entry doesn't exist already....
@@ -550,12 +578,12 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
     }
     else
     {
-        conn.setown(querySDS().connect("/GeneratedDlls/GeneratedDll", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
-        if (!conn)
-        {
-            ::Release(querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
-            conn.setown(querySDS().connect("/GeneratedDlls/GeneratedDll", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
-        }
+        StringBuffer xpath;
+        xpath.append("/GeneratedDlls/");
+        getMangledTag(xpath, name);
+
+        conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
+        assertex(conn); // RTM_CREATE_ADD will create GeneratedDlls parent node if it doesn't exist.
 
         IPropertyTree * entry = conn->queryRoot();
         entry->setProp("@name", name);
@@ -566,8 +594,6 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
         StringBufferAdaptor strval(nowText);
         now->getString(strval);
         entry->setProp("@created", nowText.str());
-
-        conn->queryRoot()->setProp("@uid", name);
     }
 
     IPropertyTree * locationTree = createPTree("location");
