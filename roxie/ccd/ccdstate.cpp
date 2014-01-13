@@ -374,18 +374,20 @@ protected:
             {
                 StringBuffer subFileName;
                 subFileInfo->getSubFileName(idx, subFileName);
-                assertex(subFilename.length());
-                if (subFileName.charAt(0)=='~')
+                if (subFileName.length())  // Empty subfile names can come from package file - just ignore
                 {
-                    // implies that a package file had ~ in subfile names - shouldn;t really, but we allow it (and just strip the ~
-                    subFileName.remove(0,1);
-                }
-                Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, cache, false, false);  // NOTE - overwriting a superfile does NOT require write access to subfiles
-                if (subFileInfo)
-                {
-                    if (!super)
-                        super.setown(createResolvedFile(fileName, NULL, true));
-                    super->addSubFile(subFileInfo);
+                    if (subFileName.charAt(0)=='~')
+                    {
+                        // implies that a package file had ~ in subfile names - shouldn;t really, but we allow it (and just strip the ~
+                        subFileName.remove(0,1);
+                    }
+                    Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, cache, false, false);  // NOTE - overwriting a superfile does NOT require write access to subfiles
+                    if (subFileInfo)
+                    {
+                        if (!super)
+                            super.setown(createResolvedFile(fileName, NULL, true));
+                        super->addSubFile(subFileInfo);
+                    }
                 }
             }
             if (super && cache)
