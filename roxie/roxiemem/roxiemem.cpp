@@ -4636,6 +4636,7 @@ protected:
 #ifdef __64BIT__
     enum { numBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // Test larger range - in case we ever reduce the granularity
 #else
+    // Restrict heap sizes on 32-bit systems
     enum { numBitmapThreads = 20, maxBitmapSize = (unsigned)(I64C(0xFFFFFFFF) / HEAP_ALIGNMENT_SIZE / UNSIGNED_BITS) };      // 4Gb
 #endif
     class BitmapAllocatorThread : public Thread

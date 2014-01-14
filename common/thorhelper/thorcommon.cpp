@@ -1314,7 +1314,7 @@ IExtRowStream *createRowStream(IFile *file, IRowInterfaces *rowIf, unsigned rwFl
     return createRowStreamEx(file, rowIf, 0, (offset_t)-1, (unsigned __int64)-1, rwFlags, eexp);
 }
 
-
+// Memory map sizes can be big, restrict to 64-bit platforms.
 void useMemoryMappedRead(bool on)
 {
 #if defined(_DEBUG) || defined(__64BIT__)

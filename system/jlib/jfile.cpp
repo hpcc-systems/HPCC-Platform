@@ -70,6 +70,7 @@
 #ifdef __64BIT__
 #define DEFAULT_STREAM_BUFFER_SIZE 0x100000
 #else
+// Restrict buffer sizes on 32-bit systems
 #define DEFAULT_STREAM_BUFFER_SIZE 0x10000
 #endif
 

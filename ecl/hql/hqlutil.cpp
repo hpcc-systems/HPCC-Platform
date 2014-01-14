@@ -7082,6 +7082,7 @@ class Vs6CppNameMangler
 public:
     Vs6CppNameMangler()
     {
+// Assuming Windows on ARM64 will have the same mangling
 #ifdef __64BIT__
         pointerBaseCode.set("E");
 #endif

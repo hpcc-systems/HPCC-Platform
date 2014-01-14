@@ -819,7 +819,7 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
     PrintLog( "SS:ESP:%04X:%08X  EBP:%08X",
         pCtx->SegSs, pCtx->Esp, pCtx->Ebp );
 #else
-    // ARMFIX
+    // ARMFIX: Implement register bank dump for ARM.
     PrintLog("Register bank not implemented for your platform");
 #endif
     
@@ -831,7 +831,7 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
 #elif defined(_ARCH_X86_)
     doPrintStackReport(pCtx->Eip, pCtx->Ebp,pCtx->Esp);
 #else
-    // ARMFIX
+    // ARMFIX: Implement stack dump for ARM.
     PrintLog("Stack report not implemented for your platform");
 #endif
     if (SEHtermOnSystemDLLs || SEHtermAlways) {
@@ -885,7 +885,7 @@ public:
 #elif defined(_ARCH_X86_)
         sprintf(s,"SEH Exception(%08X) at %04X:%08X\n",u,pExp->ContextRecord->SegCs,pExp->ContextRecord->Eip);
 #else
-        // ARMFIX
+        // ARMFIX: Implement exception dump for ARM.
         sprintf(s,"SEH Exception");
 #endif
 #endif
@@ -1052,7 +1052,7 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
         bp = nextbp;
     }
 #else
-    // ARMFIX
+    // ARMFIX: Implement signal dump for ARM.
     PROGLOG("================================================");
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("More information unavailable on your platform");

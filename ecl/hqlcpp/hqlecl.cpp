@@ -514,6 +514,8 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
             compiler->setOptimizeLevel(optimizeLevel);
     }
 #ifdef __64BIT__
+    // ARMFIX: Map all the uses of this property and make sure
+    // they're not used to mean x86_64 (it shouldn't, though)
     bool target64bit = wu->getDebugValueBool("target64bit", true);
 #else
     bool target64bit = wu->getDebugValueBool("target64bit", false);
@@ -678,8 +680,21 @@ void setWorkunitHash(IWorkUnit * wu, IHqlExpression * expr)
 #ifdef _WIN32
     cacheCRC++; // make sure CRC is different in windows/linux
 #endif
-#ifdef __64BIT__
-    cacheCRC += 2; // make sure CRC is different for different host platform (shouldn't really matter if cross-compiling working properly, but fairly harmless)
+// make sure CRC is different for different host platform
+// shouldn't really matter if cross-compiling working properly,
+// but fairly harmless.
+#ifdef _ARCH_X86_
+    cacheCRC += 1;
+#endif
+#ifdef _ARCH_X86_64_
+    cacheCRC += 2;
+#endif
+// In theory, ARM and x86 workunits should be totally different, but...
+#ifdef _ARCH_ARM32_
+    cacheCRC += 3;
+#endif
+#ifdef _ARCH_ARM64_
+    cacheCRC += 4;
 #endif
     IExtendedWUInterface *ewu = queryExtendedWU(wu);
     cacheCRC = ewu->calculateHash(cacheCRC);

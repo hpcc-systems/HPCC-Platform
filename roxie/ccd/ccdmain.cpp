@@ -458,6 +458,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #endif
 
 #ifndef __64BIT__
+    // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
 #endif
     srand( (unsigned)time( NULL ) );

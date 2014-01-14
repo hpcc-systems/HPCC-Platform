@@ -263,6 +263,7 @@ int main(int argc, const char* argv[])
     sashaProgramName = argv[0];
 
 #ifndef __64BIT__
+    // Restrict stack sizes on 32-bit systems
     Thread::setDefaultStackSize(0x20000);
 #endif
     setDaliServixSocketCaching(true);

@@ -773,7 +773,10 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
     // Get the length and address of the stack
     unsigned len = fstack.getSp();
+// ARMFIX: All 5 __64BIT__ usages in this file could be replaced by one at the top
+// regarding the type of a few local variables via typedef
 #ifdef __64BIT__
+    // ARMFIX: This will have to change for ARM. See info below.
     while (len<6*REGSIZE) 
         len = fstack.pushPtr(NULL);         // ensure enough to fill 6 registers
 #endif

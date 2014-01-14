@@ -68,6 +68,7 @@ static unsigned memArea[32];
 #endif
 #endif
 
+// FIXME: Make sure this is still relevant, and if not, delete
 #ifndef _WIN32
 #ifndef __64BIT__
 #define USE_OLD_PU
