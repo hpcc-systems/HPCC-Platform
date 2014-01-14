@@ -70,6 +70,7 @@ static const char XMLHEADER[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
 //#define DEFAULT_REALTHOR_HOST "localhost"
 #define PERSIST_LOCK_TIMEOUT 10000
+#define PERSIST_LOCK_SLEEP 5000
 
 #define ABORT_CHECK_INTERVAL 30     // seconds
 #define ABORT_DEADMAN_INTERVAL (60*5)  // seconds
@@ -2499,11 +2500,15 @@ bool EclAgent::checkPersistUptoDate(const char * logicalName, unsigned eclCRC, u
 bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat)
 {
     LOG(MCrunlock, unknownJob, "Waiting to change persist lock to %s for %s", (mode == RTM_LOCK_WRITE) ? "write" : "read", name);
+    //When converting a read lock to a write lock so the persist can be rebuilt hold onto the lock as short as
+    //possible.  Otherwise lots of workunits each trying to convert read locks to write locks will mean
+    //that the read lock is never released by all the workunits at the same time, so no workunit can progress.
+    unsigned timeout = repeat ? PERSIST_LOCK_TIMEOUT : 0;
     loop
     {
         try
         {
-            persistLock->changeMode(mode, PERSIST_LOCK_TIMEOUT);
+            persistLock->changeMode(mode, timeout);
             reportProgress("Changed persist lock");
             return true;
         }
@@ -2518,6 +2523,8 @@ bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mo
             reportProgress("Failed to convert persist lock"); // gives a chance to abort
             return false;
         }
+        //This is only executed when converting write->read.  There is significant doubt whether the changeMode()
+        //can ever fail - and whether the execution can ever get here.
         reportProgress("Waiting to convert persist lock"); // gives a chance to abort
     }
 }
@@ -2597,7 +2604,7 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
 
         //failed to get a write lock, so release our read lock
         persistLock.clear();
-        MilliSleep(getRandom()%2000);
+        MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
         persistLock.setown(getPersistReadLock(logicalName));
     }
     setRunning();
@@ -2739,7 +2746,7 @@ void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
                 while (!changePersistLockMode(persistLock, RTM_LOCK_WRITE, goer, false))
                 {
                     persistLock.clear();
-                    MilliSleep(getRandom()%2000);
+                    MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
                     persistLock.setown(getPersistReadLock(goer));
                 }
                 Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
