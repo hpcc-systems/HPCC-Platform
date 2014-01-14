@@ -59,6 +59,7 @@ interface IDFUhelper: extends IInterface
                          const char *srcCluster,
                          const char *dstname,               // dst LFN
                          const char *cluster1,              // group name of roxie cluster
+                         const char *prefix,
                          DFUclusterPartDiskMapping clustmap, // how the nodes are mapped
                          bool repeattlk,                    // repeat last part on all nodes if key
                          const char *cluster2,              // servers cluster (for just tlk)
