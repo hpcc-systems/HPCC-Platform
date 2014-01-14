@@ -56,9 +56,15 @@
   <para>The <emphasis role="bold">BEGINC++ </emphasis>structure makes it
   possible to add in-line C++ code to your ECL. This is useful where string or
   bit processing would be complicated in ECL, and would be more easily done in
-  C++, typically for a one-off use. For more commonly used C++ code, writing a
-  plugin would be a better solution (see the <emphasis role="bold">External
-  Service Implementation</emphasis> discussion).</para>
+  C++, typically for a one-off use. </para>
+
+  <para>An embedded C++ function returns a fixed-length object via the
+  __result pointer. The function does not need to allocate any additional
+  memory. Conversely, the function must allocate memory in other cases.</para>
+
+  <para>For more commonly used C++ code, writing a plugin would be a better
+  solution (see the <emphasis role="bold">External Service
+  Implementation</emphasis> discussion).</para>
 
   <para><emphasis role="bold">WARNING: This feature could create memory
   corruption and/or security issues, so great care and forethought are
