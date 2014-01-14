@@ -161,7 +161,7 @@ class ECLFile:
             if tag in line:
                 timeoutParts = line.split()
                 if len(timeoutParts) == 2:
-                    if isPositiveIntNum(timeoutParts[1]):
+                    if (timeoutParts[1] == '-1') or isPositiveIntNum(timeoutParts[1]) :
                         timeout = int(timeoutParts[1])
                 break
         logging.debug("%3d. Timeout is :%d sec",  self.taskId,  timeout)

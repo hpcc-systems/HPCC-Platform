@@ -38,7 +38,7 @@ if __name__ == "__main__":
     description = 'HPCC Platform Regression suite'
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('--version', '-v', action='version',
-                        version='%(prog)s 0.0.6')
+                        version='%(prog)s 0.0.7')
     parser.add_argument('--config', help="config file to use. Default: regress.json",
                         nargs='?', default="regress.json")
     parser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     parser.add_argument('--suiteDir', '-s', help="suiteDir to use. Default value is the current directory and it can handle relative path.",
                         nargs='?', default=".")
     parser.add_argument('--timeout', '-t', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in regress.json config file.",
-                        nargs='?', default="-1")
+                        nargs='?', default="0")
 
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
