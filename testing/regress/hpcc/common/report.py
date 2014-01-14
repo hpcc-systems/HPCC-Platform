@@ -55,13 +55,28 @@ class Report:
         reportStr += "Passing: %i\n" % len(self.report._pass)
         reportStr += "Failure: %i\n" % len(self.report._fail)
         reportStr += "-------------------------------------------------\n"
+        if self.report._pass:
+            passStr = ''
+            for result in self.report._pass:
+                try:
+                    if result.Diff !=  '':
+                        passStr += repr(result.Diff)
+                        passStr += "\n"
+                except AttributeError as ae:
+                    logging.debug("AttributeError Exception:'%s'",  repr(ae))
+                except Exception as ex:
+                    logging.debug("Exception:'%s'",  str(ex))
+                    #reportStr += str(result.Diff)
+            if len(passStr):
+                reportStr += passStr
+                reportStr += "-------------------------------------------------\n"
         if self.report._fail:
             for result in self.report._fail:
                 try:
-                    reportStr += result.Diff
+                    reportStr += result.Diff.replace('\\n',  '\n').replace('"',  '')
                 except Exception as ex:
-#                   logging.debug("Exception:'%s'",  str(ex))
-                    reportStr += str(result.Diff)
+                    logging.debug("Exception:'%s'",  str(ex))
+                    reportStr += repr(result.Diff).replace('\\n',  '\n').replace('"',  '')
                 reportStr += "\n"
             reportStr += "-------------------------------------------------\n"
         if log:
@@ -103,9 +118,15 @@ class Report:
         result = {}
         result['File'] = eclfile.ecl
         if eclfile.diff:
-            result['Result'] = 'Fail'
-            result['Diff'] = eclfile.diff
-            self.report._fail.append(_dict(result))
+            if eclfile.testNoKey():
+                result['Result'] = 'Pass'
+                result['Diff'] = eclfile.diff
+                self.report._pass.append(_dict(result))
+            else:
+                result['Result'] = 'Fail'
+                result['Diff'] = eclfile.diff
+                self.report._fail.append(_dict(result))
         else:
             result['Result'] = 'Pass'
+            result['Diff'] = ''
             self.report._pass.append(_dict(result))

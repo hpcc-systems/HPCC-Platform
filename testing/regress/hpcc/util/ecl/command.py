@@ -100,6 +100,10 @@ class ECLcmd(Shell):
                 if queryWuid(eclfile.getJobname(), eclfile.getTaskId())['state'] == 'aborted':
                     eclfile.diff = eclfile.ecl+'\n\t'+'Aborted ( reason: '+eclfile.getAbortReason()+' )'
                     test = False
+                elif eclfile.testNoKey():
+                    # keyfile comparaison disabled with //nokey tag
+                    eclfile.diff = 'Output of '+eclfile.ecl +' test is:\n\t'+ data
+                    test = True
                 else:
                     test = eclfile.testResults()
             report.addResult(eclfile)
