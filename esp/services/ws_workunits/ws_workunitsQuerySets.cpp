@@ -433,7 +433,7 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
     }
 }
 
-void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *target, const char *srcCluster, const char *queryname, bool overwrite)
+void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *remotePrefix, const char *target, const char *srcCluster, const char *queryname, bool overwrite)
 {
     if (!target || !*target)
         return;
@@ -451,7 +451,7 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
         if (queryname && *queryname)
             queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
         wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryname);
-        wufiles->resolveFiles(process.str(), remoteIP, srcCluster, !overwrite, true);
+        wufiles->resolveFiles(process.str(), remoteIP, remotePrefix, srcCluster, !overwrite, true);
         Owned<IDFUhelper> helper = createIDFUhelper();
         wufiles->cloneAllInfo(helper, overwrite, true);
     }
@@ -527,16 +527,19 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Cluster name not defined for publishing workunit %s", wuid.str());
     if (!isValidCluster(target.str()))
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", target.str());
-    const char *srcCluster = req.getSourceProcess();
-    const char *daliIP = req.getRemoteDali();
-    if (srcCluster && *srcCluster)
+    StringBuffer daliIP;
+    StringBuffer srcCluster;
+    StringBuffer srcPrefix;
+    splitDerivedDfsLocation(req.getRemoteDali(), srcCluster, daliIP, srcPrefix, req.getSourceProcess(),req.getSourceProcess(), NULL, NULL);
+
+    if (srcCluster.length())
     {
         if (!isProcessCluster(daliIP, srcCluster))
-            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s DALI", srcCluster, daliIP ? daliIP : "local");
+            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Process cluster %s not found on %s DALI", srcCluster.str(), daliIP.length() ? daliIP.str() : "local");
     }
 
     if (!req.getDontCopyFiles())
-        copyQueryFilesToCluster(context, cw, req.getRemoteDali(), target.str(), req.getSourceProcess(), queryName.str(), false);
+        copyQueryFilesToCluster(context, cw, daliIP, srcPrefix, target.str(), srcCluster, queryName.str(), false);
 
     WorkunitUpdate wu(&cw->lock());
     if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))
@@ -1577,8 +1580,11 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
 
     if (!req.getDontCopyFiles())
     {
-        const char *reqDali = req.getDaliServer();
-        copyQueryFilesToCluster(context, cw, (reqDali && *reqDali) ? reqDali : remoteIP.str(), target, req.getSourceProcess(), targetQueryName.get(), req.getOverwrite());
+        StringBuffer daliIP;
+        StringBuffer srcCluster;
+        StringBuffer srcPrefix;
+        splitDerivedDfsLocation(req.getDaliServer(), srcCluster, daliIP, srcPrefix, req.getSourceProcess(), req.getSourceProcess(), remoteIP.str(), NULL);
+        copyQueryFilesToCluster(context, cw, daliIP.str(), srcPrefix, target, srcCluster, targetQueryName.get(), req.getOverwrite());
     }
 
     WorkunitUpdate wu(&cw->lock());

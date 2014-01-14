@@ -4612,9 +4612,21 @@ extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *pr
     Owned<INode> remote = createINode(remoteDali, 7070);
     if (!remote)
         return false;
+
     VStringBuffer xpath("Environment/Software/*Cluster[@name=\"%s\"]/@name", process);
-    Owned<IPropertyTreeIterator> clusters = querySDS().getElementsRaw(xpath, remote, 1000*60*1);
-    return clusters->first();
+    try
+    {
+        Owned<IPropertyTreeIterator> clusters = querySDS().getElementsRaw(xpath, remote, 1000*60*1);
+        return clusters->first();
+    }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        E->errorMessage(msg);
+        DBGLOG("Exception validating cluster %s/%s: %s", remoteDali, xpath.str(), msg.str());
+        E->Release();
+    }
+    return true;
 }
 
 IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyTree *cluster)
