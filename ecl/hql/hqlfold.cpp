@@ -788,14 +788,19 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     float floatresult = 0.0;
     double doubleresult = 0.0;
 
-#ifdef __64BIT__
+#ifdef _ARCH_X86_64_
 //  __asm__ ("\tint $0x3\n"); // for debugging
 #endif
+
+    try{
+// X86/X86_64 Procedure Call Standard
+#if defined (_ARCH_X86_) || defined(_ARCH_X86_64_)
     // Assembly code that does the dynamic function call. The calling convention is a combination of 
     // Pascal and C, that is the parameters are pushed from left to right, the stack goes downward(i.e.,
     // the stack pointer decreases as you push), and the caller is responsible for restoring the 
     // stack pointer.
-    try{
+
+// **** Windows ****
 #ifdef _WIN32
 #ifdef _WIN64
         UNIMPLEMENTED;
@@ -852,8 +857,10 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         pop    ecx
     }
 #endif
-#else
-#ifdef __64BIT__  // ---------------------------------------------------
+#else // WIN32
+
+// **** Linux/Mac ****
+#ifdef _ARCH_X86_64_
 
         __int64 dummy1, dummy2,dummy3,dummy4;
 
@@ -919,8 +926,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         else {
             intresult = (int)int64result;
         }
-#else 
-        // 32-bit -------------------------------------------------
+#else // _ARCH_X86_
         int dummy1, dummy2,dummy3;
         __asm__ __volatile__(
             "push   %%ebx \n\t"
@@ -959,6 +965,18 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         }
 #endif
 
+#endif
+
+// AARCH32/64 Procedure Call Standard
+#elif defined(_ARCH_ARM32_) || defined(_ARCH_ARM64_)
+        // ARMFIX: ARM AAPCS is different than X86 in that it uses registers for
+        // both arguments and returns values.
+        // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0042e/IHI0042E_aapcs.pdf
+        // http://infocenter.arm.com/help/topic/com.arm.doc.ihi0055c/IHI0055C_beta_aapcs64.pdf
+        UNIMPLEMENTED;
+#else
+        // Unknown architecture
+        UNIMPLEMENTED;
 #endif
     }
     catch (...) {
