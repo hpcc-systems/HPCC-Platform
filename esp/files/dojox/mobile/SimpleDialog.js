@@ -87,6 +87,7 @@ if(this.modal){
 this.addCover();
 }
 this.domNode.style.display="";
+this.resize();
 this.refresh();
 var _e;
 if(this.domNode.getElementsByClassName){

@@ -36,7 +36,7 @@ this._attachPoints.push("_phspan");
 this._phspan=_2.create("span",{onmousedown:function(e){
 e.preventDefault();
 },className:"dijitPlaceHolder dijitInputField"},this.textbox,"after");
-this.own(on(this._phspan,"touchend, MSPointerUp",_5.hitch(this,function(){
+this.own(on(this._phspan,"touchend, pointerup, MSPointerUp",_5.hitch(this,function(){
 this.focus();
 })));
 }
@@ -77,7 +77,7 @@ return;
 this.inherited(arguments);
 this._updatePlaceHolder();
 }});
-if(_6("ie")){
+if(_6("ie")<9){
 _b.prototype._isTextSelected=function(){
 var _13=this.ownerDocument.selection.createRange();
 var _14=_13.parentElement();

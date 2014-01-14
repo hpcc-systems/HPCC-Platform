@@ -25,7 +25,7 @@ e.preventDefault();
 }
 }
 })));
-if(_5("ie")>=9){
+if(_5("ie")>=9&&_5("ie")<=10){
 this.own(on(_d.document,"paste",_4.hitch(this,function(e){
 setTimeout(_4.hitch(this,function(){
 var r=this.editor.document.selection.createRange();

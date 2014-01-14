@@ -57,6 +57,9 @@ _15.unhighlight();
 },_14*1000);
 }
 },unhighlight:function(){
+if(!_4("ie")&&_4("trident")===7){
+_9.set(this.iconDivNode,"animation-name","");
+}
 _6.remove(this.iconDivNode,"mblVibrate");
 },isOpen:function(e){
 return this.paneWidget.isOpen();

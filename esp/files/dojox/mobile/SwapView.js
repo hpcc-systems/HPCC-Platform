@@ -42,7 +42,7 @@ this._setSiblingViewsInMotion(true);
 this.inherited(arguments);
 },onTouchEnd:function(e){
 if(e){
-if(!this._fingerMovedSinceTouchStart()){
+if(!this._moved){
 this._setSiblingViewsInMotion(false);
 }else{
 this._endOfTransitionTimeoutHandle=this.defer(function(){

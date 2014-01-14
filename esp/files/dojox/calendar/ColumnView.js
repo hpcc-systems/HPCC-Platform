@@ -18,10 +18,10 @@ this.inherited(arguments);
 if(this.secondarySheet){
 this.secondarySheet._setVisibility(_13);
 }
-},resize:function(e){
+},resize:function(_14){
 this.inherited(arguments);
 if(this.secondarySheet){
-this.secondarySheet.resize(e);
+this.secondarySheet.resize();
 }
 },invalidateLayout:function(){
 this._layoutRenderers(this.renderData);
@@ -29,60 +29,60 @@ if(this.secondarySheet){
 this.secondarySheet._layoutRenderers(this.secondarySheet.renderData);
 }
 },onRowHeaderClick:function(e){
-},resizeSecondarySheet:function(_14){
+},resizeSecondarySheet:function(_15){
 if(this.secondarySheetNode){
-var _15=_8.getMarginBox(this.header).h;
-_7.set(this.secondarySheetNode,"height",_14+"px");
+var _16=_8.getMarginBox(this.header).h;
+_7.set(this.secondarySheetNode,"height",_15+"px");
 this.secondarySheet._resizeHandler(null,true);
-var top=(_14+_15+this.headerPadding)+"px";
+var top=(_15+_16+this.headerPadding)+"px";
 _7.set(this.scrollContainer,"top",top);
 if(this.vScrollBar){
 _7.set(this.vScrollBar,"top",top);
 }
 }
-},updateRenderers:function(obj,_16){
+},updateRenderers:function(obj,_17){
 this.inherited(arguments);
 if(this.secondarySheet){
-this.secondarySheet.updateRenderers(obj,_16);
+this.secondarySheet.updateRenderers(obj,_17);
 }
-},_setItemsAttr:function(_17){
+},_setItemsAttr:function(_18){
 this.inherited(arguments);
 if(this.secondarySheet){
-this.secondarySheet.set("items",_17);
+this.secondarySheet.set("items",_18);
 }
-},_setStartDateAttr:function(_18){
+},_setStartDateAttr:function(_19){
 this.inherited(arguments);
 if(this.secondarySheet){
-this.secondarySheet.set("startDate",_18);
+this.secondarySheet.set("startDate",_19);
 }
-},_setColumnCountAttr:function(_19){
+},_setColumnCountAttr:function(_1a){
 this.inherited(arguments);
 if(this.secondarySheet){
-this.secondarySheet.set("columnCount",_19);
+this.secondarySheet.set("columnCount",_1a);
 }
-},_setHorizontalRendererAttr:function(_1a){
+},_setHorizontalRendererAttr:function(_1b){
 if(this.secondarySheet){
-this.secondarySheet.set("horizontalRenderer",_1a);
+this.secondarySheet.set("horizontalRenderer",_1b);
 }
 },_getHorizontalRendererAttr:function(){
 if(this.secondarySheet){
 return this.secondarySheet.get("horizontalRenderer");
 }
 return null;
-},_setExpandRendererAttr:function(_1b){
+},_setExpandRendererAttr:function(_1c){
 if(this.secondarySheet){
-this.secondarySheet.set("expandRenderer",_1b);
+this.secondarySheet.set("expandRenderer",_1c);
 }
 },_getExpandRendererAttr:function(){
 if(this.secondarySheet){
 return this.secondarySheet.get("expandRenderer");
 }
 return null;
-},_setTextDirAttr:function(_1c){
-this.secondarySheet.set("textDir",_1c);
-this._set("textDir",_1c);
-},_defaultItemToRendererKindFunc:function(_1d){
-return _1d.allDay?null:"vertical";
+},_setTextDirAttr:function(_1d){
+this.secondarySheet.set("textDir",_1d);
+this._set("textDir",_1d);
+},_defaultItemToRendererKindFunc:function(_1e){
+return _1e.allDay?null:"vertical";
 },getSecondarySheet:function(){
 return this.secondarySheet;
 },_onGridTouchStart:function(e){
@@ -91,12 +91,12 @@ this._doEndItemEditing(this.secondarySheet,"touch");
 },_onGridMouseDown:function(e){
 this.inherited(arguments);
 this._doEndItemEditing(this.secondarySheet,"mouse");
-},_configureScrollBar:function(_1e){
+},_configureScrollBar:function(_1f){
 this.inherited(arguments);
 if(this.secondarySheetNode){
-var _1f=this.isLeftToRight()?true:this.scrollBarRTLPosition=="right";
-_7.set(this.secondarySheetNode,_1f?"right":"left",_1e.scrollbarWidth+"px");
-_7.set(this.secondarySheetNode,_1f?"left":"right","0");
+var _20=this.isLeftToRight()?true:this.scrollBarRTLPosition=="right";
+_7.set(this.secondarySheetNode,_20?"right":"left",_1f.scrollbarWidth+"px");
+_7.set(this.secondarySheetNode,_20?"left":"right","0");
 }
 },_refreshItemsRendering:function(){
 this.inherited(arguments);
@@ -105,7 +105,7 @@ var rd=this.secondarySheet.renderData;
 this.secondarySheet._computeVisibleItems(rd);
 this.secondarySheet._layoutRenderers(rd);
 }
-},_layoutRenderers:function(_20){
+},_layoutRenderers:function(_21){
 if(!this.secondarySheet._domReady){
 this.secondarySheet._domReady=true;
 this.secondarySheet._layoutRenderers(this.secondarySheet.renderData);

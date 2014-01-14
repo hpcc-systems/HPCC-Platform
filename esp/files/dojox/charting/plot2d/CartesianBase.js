@@ -1,6 +1,6 @@
 //>>built
 define("dojox/charting/plot2d/CartesianBase",["dojo/_base/lang","dojo/_base/declare","dojo/_base/connect","dojo/has","./Base","../scaler/primitive","dojox/gfx","dojox/gfx/fx","dojox/lang/utils"],function(_1,_2,_3,_4,_5,_6,_7,fx,du){
-return _2("dojox.charting.plot2d.CartesianBase",_5,{baseParams:{hAxis:"x",vAxis:"y",labels:false,labelOffset:10,fixed:true,precision:1,labelStyle:"inside",htmlLabels:true,omitLabels:true},constructor:function(_8,_9){
+return _2("dojox.charting.plot2d.CartesianBase",_5,{baseParams:{hAxis:"x",vAxis:"y",labels:false,labelOffset:10,fixed:true,precision:1,labelStyle:"inside",htmlLabels:true,omitLabels:true,labelFunc:null},constructor:function(_8,_9){
 this.axes=["hAxis","vAxis"];
 this.zoom=null;
 this.zoomQueue=[];

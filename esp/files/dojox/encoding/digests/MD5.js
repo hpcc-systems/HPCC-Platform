@@ -115,10 +115,10 @@ r[i]=wa[i]^1549556828;
 var h=_3(l.concat(_1.stringToWord(_a)),512+_a.length*_2);
 return _3(r.concat(h),640);
 };
-var _c=function(_d,_e){
-var _f=_e||_1.outputTypes.Base64;
-var wa=_3(_1.stringToWord(_d),_d.length*_2);
-switch(_f){
+_1.MD5=function(_c,_d){
+var _e=_d||_1.outputTypes.Base64;
+var wa=_3(_1.stringToWord(_c),_c.length*_2);
+switch(_e){
 case _1.outputTypes.Raw:
 return wa;
 case _1.outputTypes.Hex:
@@ -129,9 +129,9 @@ default:
 return _1.wordToBase64(wa);
 }
 };
-_c._hmac=function(_10,key,_11){
-var out=_11||_1.outputTypes.Base64;
-var wa=_9(_10,key);
+_1.MD5._hmac=function(_f,key,_10){
+var out=_10||_1.outputTypes.Base64;
+var wa=_9(_f,key);
 switch(out){
 case _1.outputTypes.Raw:
 return wa;
@@ -143,5 +143,5 @@ default:
 return _1.wordToBase64(wa);
 }
 };
-return _c;
+return _1.MD5;
 });

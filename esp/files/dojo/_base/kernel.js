@@ -26,8 +26,8 @@ _7.scopeMap=_8;
 _7.baseUrl=_7.config.baseUrl=_3.baseUrl;
 _7.isAsync=!1||_3.async;
 _7.locale=_2.locale;
-var _b="$Rev: 43d05c6 $".match(/\d+/);
-_7.version={major:1,minor:9,patch:1,flag:"",revision:_b?+_b[0]:NaN,toString:function(){
+var _b="$Rev: f774568 $".match(/[0-9a-f]{7,}/);
+_7.version={major:1,minor:9,patch:2,flag:"",revision:_b?_b[0]:NaN,toString:function(){
 var v=_7.version;
 return v.major+"."+v.minor+"."+v.patch+v.flag+" ("+v.revision+")";
 }};

@@ -45,7 +45,7 @@ var doc=_17.ownerDocument||_3.doc,_18=_3.body(doc),_19=doc.documentElement||_18.
 if(_17==_18||_17==_19){
 return;
 }
-if(!(_2("mozilla")||_1a||_1b||_2("opera"))&&("scrollIntoView" in _17)){
+if(!(_2("mozilla")||_1a||_1b||_2("opera")||_2("trident"))&&("scrollIntoView" in _17)){
 _17.scrollIntoView(false);
 return;
 }

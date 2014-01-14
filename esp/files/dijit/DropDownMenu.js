@@ -9,7 +9,7 @@ this.focusNext();
 this._moveToPopup(_6);
 _6.stopPropagation();
 _6.preventDefault();
-},_onLeftArrow:function(){
+},_onLeftArrow:function(_7){
 if(this.parentMenu){
 if(this.parentMenu._isMenuBar){
 this.parentMenu.focusPrev();
@@ -17,8 +17,8 @@ this.parentMenu.focusPrev();
 this.onCancel(false);
 }
 }else{
-evt.stopPropagation();
-evt.preventDefault();
+_7.stopPropagation();
+_7.preventDefault();
 }
 }});
 });

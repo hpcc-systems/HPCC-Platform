@@ -82,7 +82,7 @@ this.textbox.value=_17;
 this._lastDisplayedValue=_17;
 this._set("displayedValue",_17);
 var _1a=this;
-var _1b={ignoreCase:this.ignoreCase,deep:true};
+var _1b={queryOptions:{ignoreCase:this.ignoreCase,deep:true}};
 _2.mixin(_1b,this.fetchProperties);
 this._fetchHandle=this.store.query(_19,_1b);
 _3(this._fetchHandle,function(_1c){

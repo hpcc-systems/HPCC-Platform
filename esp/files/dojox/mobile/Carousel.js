@@ -67,7 +67,7 @@ return _16.isVisible();
 },resizeItems:function(){
 var idx=0,i;
 var h=this.domNode.offsetHeight-(this.headerNode?this.headerNode.offsetHeight:0);
-var m=_6("ie")?5/this.numVisible-1:5/this.numVisible;
+var m=(_6("ie")<10)?5/this.numVisible-1:5/this.numVisible;
 var _17,_18;
 _1.forEach(this.getChildren(),function(_19){
 if(!(_19 instanceof _11)){

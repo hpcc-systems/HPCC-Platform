@@ -51,8 +51,8 @@ this.onStartView();
 _3.publish("/dojox/mobile/startView",[this]);
 });
 }
-if(this.domNode.style.visibility!="visible"){
-this.domNode.style.visibility="visible";
+if(this.domNode.style.visibility==="hidden"){
+this.domNode.style.visibility="inherit";
 }
 this.inherited(arguments);
 var _1d=this.getParent();
@@ -175,7 +175,7 @@ var _42=(_3b.transitionDir==1)?0:(_3d._scrollTop||0);
 _3d.style.top="0px";
 if(_41>1||_42!==0){
 _3e.style.top=_42-_41+"px";
-if(_2["mblHideAddressBar"]!==false){
+if(!(_6("ios")>=7)&&_2["mblHideAddressBar"]!==false){
 this.defer(function(){
 _7.global.scrollTo(0,(_42||1));
 });
@@ -188,7 +188,7 @@ _40.onBeforeTransitionIn.apply(_40,this._arguments);
 _3.publish("/dojox/mobile/beforeTransitionIn",[_40].concat(_5._toArray(this._arguments)));
 }
 _3d.style.display="none";
-_3d.style.visibility="visible";
+_3d.style.visibility="inherit";
 _13.fromView=this;
 _13.toView=_40;
 this._doTransition(_3e,_3d,_3b.transition,_3b.transitionDir);

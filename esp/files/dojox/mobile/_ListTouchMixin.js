@@ -2,7 +2,7 @@
 define("dojox/mobile/_ListTouchMixin",["dojo/_base/declare","dojo/touch","./sniff","dijit/form/_ListBase"],function(_1,_2,_3,_4){
 return _1("dojox.mobile._ListTouchMixin",_4,{postCreate:function(){
 this.inherited(arguments);
-if(!(_3("ie")>=10&&typeof (MSGesture)!=="undefined")){
+if(!((_3("ie")===10||(!_3("ie")&&_3("trident")>6))&&typeof (MSGesture)!=="undefined")){
 this._listConnect("click","_onClick");
 }else{
 this._listConnect(_2.press,"_onPress");

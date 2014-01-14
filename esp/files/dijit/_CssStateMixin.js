@@ -15,22 +15,27 @@ if(!this.disabled){
 switch(_e.type){
 case "mouseover":
 case "MSPointerOver":
+case "pointerover":
 this._set("hovering",true);
 this._set("active",this._mouseDown);
 break;
 case "mouseout":
 case "MSPointerOut":
+case "pointerout":
 this._set("hovering",false);
 this._set("active",false);
 break;
 case "mousedown":
 case "touchstart":
 case "MSPointerDown":
+case "pointerdown":
 case "keydown":
 this._set("active",true);
 break;
 case "mouseup":
 case "dojotouchend":
+case "MSPointerUp":
+case "pointerup":
 case "keyup":
 this._set("active",false);
 break;
@@ -111,21 +116,25 @@ _4.toggle(_15,_16+"Focused",_1c);
 switch(evt.type){
 case "mouseover":
 case "MSPointerOver":
+case "pointerover":
 _17(true);
 break;
 case "mouseout":
 case "MSPointerOut":
+case "pointerout":
 _17(false);
 _19(false);
 break;
 case "mousedown":
 case "touchstart":
 case "MSPointerDown":
+case "pointerdown":
 case "keydown":
 _19(true);
 break;
 case "mouseup":
 case "MSPointerUp":
+case "pointerup":
 case "dojotouchend":
 case "keyup":
 _19(false);

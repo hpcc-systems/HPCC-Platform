@@ -6,7 +6,7 @@ this._doResize(this.app);
 this.resizeSelectedChildren(this.app);
 },resizeSelectedChildren:function(w){
 for(var _f in w.selectedChildren){
-if(w.selectedChildren[_f]){
+if(w.selectedChildren[_f]&&w.selectedChildren[_f].domNode){
 this.app.log("in Layout resizeSelectedChildren calling resizeSelectedChildren calling _doResize for w.selectedChildren[hash].id="+w.selectedChildren[_f].id);
 this._doResize(w.selectedChildren[_f]);
 _3.forEach(w.selectedChildren[_f].domNode.children,function(_10){
@@ -20,7 +20,9 @@ this.resizeSelectedChildren(w.selectedChildren[_f]);
 },initLayout:function(_11){
 this.app.log("in app/controllers/Layout.initLayout event=",_11);
 this.app.log("in app/controllers/Layout.initLayout event.view.parent.name=[",_11.view.parent.name,"]");
+if(!_11.view.domNode.parentNode){
 _11.view.parent.domNode.appendChild(_11.view.domNode);
+}
 _7.set(_11.view.domNode,"data-app-constraint",_11.view.constraint);
 this.inherited(arguments);
 },_doResize:function(_12){
@@ -47,8 +49,10 @@ this.inherited(arguments);
 },layoutView:function(_14){
 if(_14.view){
 this.inherited(arguments);
+if(_14.doResize){
 this._doResize(_14.parent||this.app);
 this._doResize(_14.view);
+}
 }
 },_doLayout:function(_15){
 if(!_15){

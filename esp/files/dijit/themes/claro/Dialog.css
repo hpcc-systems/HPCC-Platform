@@ -71,7 +71,7 @@
 .claro .dijitDialogCloseIconHover {
   background-position: -21px;
 }
-.claro .dijitDialogCloseIconActive {
+.claro .dijitDialogCloseIcon:active {
   background-position: -42px;
 }
 .claro .dijitTooltip,

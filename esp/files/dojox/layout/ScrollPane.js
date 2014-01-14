@@ -48,7 +48,7 @@ this._hideAnim.play();
 }
 _3.style(this.wrapper,"overflow","hidden");
 },_set:function(n){
-if(!this._size){
+if(!this._size||n==="focused"){
 return;
 }
 this.wrapper[this._scroll]=Math.floor(this._line.getValue(n));

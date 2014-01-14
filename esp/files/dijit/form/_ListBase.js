@@ -5,7 +5,9 @@ var _5=this;
 return _5.own(on(_5.containerNode,on.selector(function(_6,_7,_8){
 return _6.parentNode==_8;
 },_3),function(_9){
+if(!/^touch/.test(_9.type)){
 _9.preventDefault();
+}
 _5[_4](_9,this);
 }));
 },selectFirstNode:function(){

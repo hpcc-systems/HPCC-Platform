@@ -14,7 +14,7 @@ _c[_b.idProperty]=_a.id;
 _c[this.summaryAttr]=_a.summary;
 _c[this.startTimeAttr]=(this.encodeDate&&this.encodeDate(_a.startTime))||_a.startTime;
 _c[this.endTimeAttr]=(this.encodeDate&&this.encodeDate(_a.endTime))||_a.endTime;
-return _4.mixin(_b.get(_a.id),_c);
+return this.getItemStoreState(_a)=="unstored"?_c:_4.mixin(_a._item,_c);
 },_computeVisibleItems:function(_d){
 var _e=_d.startTime;
 var _f=_d.endTime;
@@ -47,6 +47,18 @@ _4.mixin(_17,_18);
 }
 }else{
 if(_15!=-1){
+var _19=_13.temporaryId;
+if(_19){
+var l=this.items.length;
+for(var i=l-1;i>=0;i--){
+if(this.items[i].id==_19){
+this.items[i]=_18;
+break;
+}
+}
+this._cleanItemStoreState(_19);
+this._setItemStoreState(_18,"storing");
+}
 var s=this._getItemStoreStateObj(_18);
 if(s){
 if(this.items[_15].id!=_18.id){
@@ -74,72 +86,82 @@ this._refreshItemsRendering();
 this.updateRenderers(_17);
 }
 }
-},_setStoreAttr:function(_19){
+},_setStoreAttr:function(_1a){
 this.displayedItemsInvalidated=true;
 var r;
 if(this._observeHandler){
 this._observeHandler.remove();
 this._observeHandler=null;
 }
-if(_19){
-var _1a=_19.query(this.query,this.queryOptions);
-if(_1a.observe){
-this._observeHandler=_1a.observe(_4.hitch(this,this._updateItems),true);
+if(_1a){
+var _1b=_1a.query(this.query,this.queryOptions);
+if(_1b.observe){
+this._observeHandler=_1b.observe(_4.hitch(this,this._updateItems),true);
 }
-_1a=_1a.map(_4.hitch(this,function(_1b){
-var _1c=this.itemToRenderItem(_1b,_19);
-_1c._item=_1b;
-return _1c;
+_1b=_1b.map(_4.hitch(this,function(_1c){
+var _1d=this.itemToRenderItem(_1c,_1a);
+_1d._item=_1c;
+return _1d;
 }));
-r=_7(_1a,_4.hitch(this,this._initItems));
+r=_7(_1b,_4.hitch(this,this._initItems));
 }else{
 r=this._initItems([]);
 }
-this._set("store",_19);
+this._set("store",_1a);
 return r;
-},_getItemStoreStateObj:function(_1d){
+},_getItemStoreStateObj:function(_1e){
 if(this.owner){
-return this.owner._getItemStoreStateObj(_1d);
+return this.owner._getItemStoreStateObj(_1e);
 }
-var _1e=this.get("store");
-if(_1e!=null&&this._itemStoreState!=null){
-var id=_1d.id==undefined?_1e.getIdentity(_1d):_1d.id;
+var _1f=this.get("store");
+if(_1f!=null&&this._itemStoreState!=null){
+var id=_1e.id==undefined?_1f.getIdentity(_1e):_1e.id;
 return this._itemStoreState[id];
 }
 return null;
-},getItemStoreState:function(_1f){
+},getItemStoreState:function(_20){
 if(this.owner){
-return this.owner.getItemStoreState(_1f);
+return this.owner.getItemStoreState(_20);
 }
 if(this._itemStoreState==null){
 return "stored";
 }
-var _20=this.get("store");
-var id=_1f.id==undefined?_20.getIdentity(_1f):_1f.id;
+var _21=this.get("store");
+var id=_20.id==undefined?_21.getIdentity(_20):_20.id;
 var s=this._itemStoreState[id];
-if(_20!=null&&s!=undefined){
+if(_21!=null&&s!=undefined){
 return s.state;
 }
 return "stored";
-},_setItemStoreState:function(_21,_22){
+},_setItemStoreState:function(_22,_23){
 if(this.owner){
-this.owner._setItemStoreState(_21,_22);
+this.owner._setItemStoreState(_22,_23);
 return;
 }
 if(this._itemStoreState==undefined){
 this._itemStoreState={};
 }
-var _23=this.get("store");
-var id=_21.id==undefined?_23.getIdentity(_21):_21.id;
+var _24=this.get("store");
+var id=_22.id==undefined?_24.getIdentity(_22):_22.id;
 var s=this._itemStoreState[id];
-if(_22=="stored"||_22==null){
+if(_23=="stored"||_23==null){
 if(s!=undefined){
 delete this._itemStoreState[id];
 }
 return;
 }
-if(_23){
-this._itemStoreState[id]={id:id,item:_21,renderItem:this.itemToRenderItem(_21,_23),state:_22};
+if(_24){
+this._itemStoreState[id]={id:id,item:_22,renderItem:this.itemToRenderItem(_22,_24),state:_23};
 }
+},_cleanItemStoreState:function(id){
+if(this.owner){
+return this.owner._cleanItemStoreState(id);
+}
+var s=this._itemStoreState[id];
+if(s){
+delete this._itemStoreState[id];
+return true;
+}
+return false;
 }});
 });

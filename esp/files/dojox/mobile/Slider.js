@@ -62,11 +62,11 @@ this.set("value",this.value,true);
 e.preventDefault();
 var _17=e.type=="mousedown";
 var box=_9.position(_1f,false);
-var _20=_6("ie")?1:(_a.get(_5.body(),"zoom")||1);
+var _20=(_6("ie")||_6("trident")>6)?1:(_a.get(_5.body(),"zoom")||1);
 if(isNaN(_20)){
 _20=1;
 }
-var _21=_6("ie")?1:(_a.get(_1f,"zoom")||1);
+var _21=(_6("ie")||_6("trident")>6)?1:(_a.get(_1f,"zoom")||1);
 if(isNaN(_21)){
 _21=1;
 }

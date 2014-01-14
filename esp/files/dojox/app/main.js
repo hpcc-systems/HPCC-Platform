@@ -126,34 +126,18 @@ _12.register(this.params.constraints);
 this.constraint="center";
 }
 var _2b=function(){
-this.emit("app-load",{viewId:this.defaultView,params:this._startParams,callback:_3.hitch(this,function(){
-var _2c=this.defaultView.split("+"),_2d,_2e;
-if(_2c.length>0){
-while(_2c.length>0){
-var _2f=_2c.shift();
-_2d=_2f.split(",").shift();
-if(!this.children[this.id+"_"+_2d].hasOwnProperty("constraint")){
-this.children[this.id+"_"+_2d].constraint=_d.get(this.children[this.id+"_"+_2d].domNode,"data-app-constraint")||"center";
-}
-_12.register(_2e=this.children[this.id+"_"+_2d].constraint);
-_12.setSelectedChild(this,_2e,this.children[this.id+"_"+_2d]);
-}
-}else{
-var _2d=this.defaultView.split(",").shift();
-if(!this.children[this.id+"_"+_2d].hasOwnProperty("constraint")){
-this.children[this.id+"_"+_2d].constraint=_d.get(this.children[this.id+"_"+_2d].domNode,"data-app-constraint")||"center";
-}
-_12.register(_2e=this.children[this.id+"_"+_2d].constraint);
-_12.setSelectedChild(this,_2e,this.children[this.id+"_"+_2d]);
-}
+this.emit("app-load",{viewId:this.defaultView,initLoad:true,params:this._startParams,callback:_3.hitch(this,function(){
+this.emit("app-transition",{viewId:this.defaultView,forceTransitionNone:true,opts:{params:this._startParams}});
+if(this.defaultView!==this._startView){
 this.emit("app-transition",{viewId:this._startView,opts:{params:this._startParams}});
+}
 this.setStatus(this.lifecycle.STARTED);
 })});
 };
 _9(_2a,_3.hitch(this,function(){
 if(this.template){
-this.emit("app-init",{app:this,name:this.name,type:this.type,parent:this,templateString:this.templateString,controller:this.controller,callback:_3.hitch(this,function(_30){
-this.setDomNode(_30.domNode);
+this.emit("app-init",{app:this,name:this.name,type:this.type,parent:this,templateString:this.templateString,controller:this.controller,callback:_3.hitch(this,function(_2c){
+this.setDomNode(_2c.domNode);
 _2b.call(this);
 })});
 }else{
@@ -161,48 +145,48 @@ _2b.call(this);
 }
 }));
 }});
-function _31(_32,_33){
-var _34;
-_32=_13.configProcessHas(_32);
-if(!_32.loaderConfig){
-_32.loaderConfig={};
+function _2d(_2e,_2f){
+var _30;
+_2e=_13.configProcessHas(_2e);
+if(!_2e.loaderConfig){
+_2e.loaderConfig={};
 }
-if(!_32.loaderConfig.paths){
-_32.loaderConfig.paths={};
+if(!_2e.loaderConfig.paths){
+_2e.loaderConfig.paths={};
 }
-if(!_32.loaderConfig.paths["app"]){
-_34=window.location.pathname;
-if(_34.charAt(_34.length)!="/"){
-_34=_34.split("/");
-_34.pop();
-_34=_34.join("/");
+if(!_2e.loaderConfig.paths["app"]){
+_30=window.location.pathname;
+if(_30.charAt(_30.length)!="/"){
+_30=_30.split("/");
+_30.pop();
+_30=_30.join("/");
 }
-_32.loaderConfig.paths["app"]=_34;
+_2e.loaderConfig.paths["app"]=_30;
 }
-_1(_32.loaderConfig);
-if(!_32.modules){
-_32.modules=[];
+_1(_2e.loaderConfig);
+if(!_2e.modules){
+_2e.modules=[];
 }
-_32.modules.push("./module/lifecycle");
-var _35=_32.modules.concat(_32.dependencies?_32.dependencies:[]);
-if(_32.template){
-_34=_32.template;
-if(_34.indexOf("./")==0){
-_34="app/"+_34;
+_2e.modules.push("./module/lifecycle");
+var _31=_2e.modules.concat(_2e.dependencies?_2e.dependencies:[]);
+if(_2e.template){
+_30=_2e.template;
+if(_30.indexOf("./")==0){
+_30="app/"+_30;
 }
-_35.push("dojo/text!"+_34);
+_31.push("dojo/text!"+_30);
 }
-_1(_35,function(){
-var _36=[_14];
-for(var i=0;i<_32.modules.length;i++){
-_36.push(arguments[i]);
+_1(_31,function(){
+var _32=[_14];
+for(var i=0;i<_2e.modules.length;i++){
+_32.push(arguments[i]);
 }
-if(_32.template){
+if(_2e.template){
 var ext={templateString:arguments[arguments.length-1]};
 }
-App=_4(_36,ext);
+App=_4(_32,ext);
 _b(function(){
-var app=new App(_32,_33||_6.body());
+var app=new App(_2e,_2f||_6.body());
 if(_a("app-log-api")){
 app.log=function(){
 var msg="";
@@ -218,33 +202,33 @@ catch(e){
 app.log=function(){
 };
 }
-app.transitionToView=function(_37,_38,_39){
-var _3a={bubbles:true,cancelable:true,detail:_38,triggerEvent:_39||null};
-on.emit(_37,"startTransition",_3a);
+app.transitionToView=function(_33,_34,_35){
+var _36={bubbles:true,cancelable:true,detail:_34,triggerEvent:_35||null};
+on.emit(_33,"startTransition",_36);
 };
 app.setStatus(app.lifecycle.STARTING);
-var _3b=app.id;
-if(window[_3b]){
-_3.mixin(app,window[_3b]);
+var _37=app.id;
+if(window[_37]){
+_3.mixin(app,window[_37]);
 }
-window[_3b]=app;
+window[_37]=app;
 app.start();
 });
 });
 };
-return function(_3c,_3d){
-if(!_3c){
+return function(_38,_39){
+if(!_38){
 throw new Error("App Config Missing");
 }
-if(_3c.validate){
-_1(["dojox/json/schema","dojox/json/ref","dojo/text!dojox/application/schema/application.json"],function(_3e,_3f){
-_3e=dojox.json.ref.resolveJson(_3e);
-if(_3e.validate(_3c,_3f)){
-_31(_3c,_3d);
+if(_38.validate){
+_1(["dojox/json/schema","dojox/json/ref","dojo/text!dojox/application/schema/application.json"],function(_3a,_3b){
+_3a=dojox.json.ref.resolveJson(_3a);
+if(_3a.validate(_38,_3b)){
+_2d(_38,_39);
 }
 });
 }else{
-_31(_3c,_3d);
+_2d(_38,_39);
 }
 };
 });

@@ -7,10 +7,10 @@ this.own(on(this.domNode,"mousedown",function(_4){
 _4.preventDefault();
 }));
 this._listConnect("click","_onClick");
-this._listConnect(_2.press,"_onMouseDown");
-this._listConnect(_2.release,"_onMouseUp");
-this._listConnect(_2.over,"_onMouseOver");
-this._listConnect(_2.out,"_onMouseOut");
+this._listConnect("mousedown","_onMouseDown");
+this._listConnect("mouseup","_onMouseUp");
+this._listConnect("mouseover","_onMouseOver");
+this._listConnect("mouseout","_onMouseOut");
 },_onClick:function(_5,_6){
 this._setSelectedAttr(_6);
 if(this._deferredClick){

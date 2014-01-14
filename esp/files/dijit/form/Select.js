@@ -190,7 +190,6 @@ delete this.dropDown;
 this.inherited(arguments);
 },_onFocus:function(){
 this.validate(true);
-this.inherited(arguments);
 },_onBlur:function(){
 _e.hide(this.domNode);
 this.inherited(arguments);

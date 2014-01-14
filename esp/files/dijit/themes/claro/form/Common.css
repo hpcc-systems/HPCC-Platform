@@ -28,7 +28,8 @@
 }
 .dj_gecko .claro .dijitTextBox .dijitInputInner,
 .dj_webkit .claro .dijitTextBox .dijitInputInner {
-  padding: 1px;
+  padding-left: 1px;
+  padding-right: 1px;
 }
 .claro .dijitSelect,
 .claro .dijitSelect .dijitButtonContents,
