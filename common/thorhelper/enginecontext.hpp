@@ -24,6 +24,7 @@
 interface IEngineContext
 {
     virtual DALI_UID getGlobalUniqueIds(unsigned num, SocketEndpoint *_foreignNode) = 0;
+    virtual bool allowDaliAccess() const = 0;
 };
 
 #endif // ENGINECONTEXT_HPP
