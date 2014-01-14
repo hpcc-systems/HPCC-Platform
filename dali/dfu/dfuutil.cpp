@@ -133,6 +133,7 @@ public:
     Linked<IUserDescriptor> foreignuserdesc;
     StringAttr srcCluster;
     StringAttr cluster1;
+    StringAttr prefix;
     Owned<IGroup> grp1;
     ClusterPartDiskMapSpec spec1;
     StringAttr cluster2;
@@ -461,6 +462,8 @@ public:
             dstfdesc->queryProperties().setProp("@cloneFromDir", srcfdesc->queryDefaultDir());
             if (srcCluster && *srcCluster) //where to copy from has been explicity set to a remote location, don't copy from local sources
                 dstfdesc->queryProperties().setProp("@cloneFromPeerCluster", "-");
+            if (prefix.length())
+                dstfdesc->queryProperties().setProp("@cloneFromPrefix", prefix.get());
             unsigned numClusters = srcfdesc->numClusters();
             for (unsigned clusterNum = 0; clusterNum < numClusters; clusterNum++)
             {
@@ -971,6 +974,7 @@ public:
                          const char *srcCluster,            // optional specific cluster to copy data from
                          const char *dstname,               // dst LFN
                          const char *cluster1,              // group name of roxie cluster
+                         const char *prefix,
                          DFUclusterPartDiskMapping clustmap, // how the nodes are mapped
                          bool repeattlk,                    // repeat last part on all nodes if key
                          const char *cluster2,              // servers cluster (for just tlk)
@@ -984,6 +988,7 @@ public:
         CFileCloner cloner;
         cloner.init(cluster1,clustmap,repeattlk,cluster2,userdesc,foreigndali,foreignuserdesc,NULL,overwrite,dophysicalcopy);
         cloner.srcCluster.set(srcCluster);
+        cloner.prefix.set(prefix);
         cloner.cloneFile(srcname,dstname);
     }
 

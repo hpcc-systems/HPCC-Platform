@@ -54,11 +54,11 @@ interface IReferencedFileList : extends IInterface
     virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)=0;
     virtual void addFilesFromPackageMap(IPropertyTree *pm)=0;
 
-    virtual void addFile(const char *ln, const char *daliip=NULL, const char *sourceProcessCluster=NULL)=0;
+    virtual void addFile(const char *ln, const char *daliip=NULL, const char *sourceProcessCluster=NULL, const char *remotePrefix=NULL)=0;
     virtual void addFiles(StringArray &files)=0;
 
     virtual IReferencedFileIterator *getFiles()=0;
-    virtual void resolveFiles(const char *process, const char *remoteIP, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool resolveForeign=false)=0;
+    virtual void resolveFiles(const char *process, const char *remoteIP, const char * remotePrefix, const char *srcCluster, bool checkLocalFirst, bool addSubFiles, bool resolveForeign=false)=0;
     virtual void cloneAllInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign=false)=0;
     virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo, bool cloneForeign=false)=0;
     virtual void cloneRelationships()=0;
@@ -67,5 +67,8 @@ interface IReferencedFileList : extends IInterface
 extern WORKUNIT_API const char *skipForeign(const char *name, StringBuffer *ip=NULL);
 
 extern WORKUNIT_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw);
+
+extern WORKUNIT_API void splitDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster);
+extern WORKUNIT_API void splitDerivedDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster, const char *baseCluster, const char *baseIP, const char *basePrefix);
 
 #endif //REFFILE_LIST_HPP
