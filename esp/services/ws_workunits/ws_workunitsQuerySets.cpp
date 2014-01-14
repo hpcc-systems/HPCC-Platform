@@ -433,7 +433,7 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
     }
 }
 
-void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *remotePrefix, const char *target, const char *srcCluster, const char *queryname, bool overwrite)
+void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *remotePrefix, const char *srcCluster, const char *target, const char *queryname, bool overwrite)
 {
     if (!target || !*target)
         return;
@@ -530,7 +530,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     StringBuffer daliIP;
     StringBuffer srcCluster;
     StringBuffer srcPrefix;
-    splitDerivedDfsLocation(req.getRemoteDali(), srcCluster, daliIP, srcPrefix, req.getSourceProcess(),req.getSourceProcess(), NULL, NULL);
+    splitDerivedDfsLocation(req.getRemoteDali(), daliIP, srcPrefix, srcCluster, NULL, NULL, req.getSourceProcess(),req.getSourceProcess());
 
     if (srcCluster.length())
     {
@@ -539,7 +539,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     }
 
     if (!req.getDontCopyFiles())
-        copyQueryFilesToCluster(context, cw, daliIP, srcPrefix, target.str(), srcCluster, queryName.str(), false);
+        copyQueryFilesToCluster(context, cw, daliIP, srcPrefix, srcCluster, target.str(), queryName.str(), false);
 
     WorkunitUpdate wu(&cw->lock());
     if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))
@@ -1583,8 +1583,8 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         StringBuffer daliIP;
         StringBuffer srcCluster;
         StringBuffer srcPrefix;
-        splitDerivedDfsLocation(req.getDaliServer(), srcCluster, daliIP, srcPrefix, req.getSourceProcess(), req.getSourceProcess(), remoteIP.str(), NULL);
-        copyQueryFilesToCluster(context, cw, daliIP.str(), srcPrefix, target, srcCluster, targetQueryName.get(), req.getOverwrite());
+        splitDerivedDfsLocation(req.getDaliServer(), daliIP, srcPrefix, srcCluster, remoteIP.str(), NULL, req.getSourceProcess(), req.getSourceProcess());
+        copyQueryFilesToCluster(context, cw, daliIP.str(), srcPrefix, srcCluster, target, targetQueryName.get(), req.getOverwrite());
     }
 
     WorkunitUpdate wu(&cw->lock());
