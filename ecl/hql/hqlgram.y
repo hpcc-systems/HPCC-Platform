@@ -1042,7 +1042,10 @@ embedBody
                         {
                             OwnedHqlExpr language = $1.getExpr();
                             OwnedHqlExpr embedText = $2.getExpr();
-                            $$.setExpr(parser->processEmbedBody($2, embedText, language, NULL), $1);
+                            if (language->getOperator()==no_comma)
+                                $$.setExpr(parser->processEmbedBody($2, embedText, language->queryChild(0), language->queryChild(1)), $1);
+                            else
+                                $$.setExpr(parser->processEmbedBody($2, embedText, language, NULL), $1);
                         }
     | EMBED '(' abstractModule ',' expression ')'
                         {
@@ -1063,10 +1066,10 @@ embedBody
     ;
 
 embedPrefix
-    : EMBED '(' abstractModule ')'
+    : EMBED '(' abstractModule attribs ')'
                         {
                             parser->getLexer()->enterEmbeddedMode();
-                            $$.inherit($3);
+                            $$.setExpr(createComma($3.getExpr(), $4.getExpr()), $1);
                         }
     ;
 

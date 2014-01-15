@@ -73,6 +73,8 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_RESOURCE "Use resource download in ECLWatch" OFF)
   option(GENERATE_COVERAGE_INFO "Generate coverage info for gcov" OFF)
 
+  option(USE_MYSQL "Enable MySQL support" ON)
+  option(USE_SQLITE3 "Enable SqLite3 support" ON)
   option(USE_PYTHON "Enable Python support" ON)
   option(USE_V8 "Enable V8 JavaScript support" ON)
   option(USE_JNI "Enable Java JNI support" ON)
@@ -80,7 +82,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
-  if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE )
+  if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE OR USE_SQLITE3)
       set( WITH_PLUGINS ON )
   endif()
 
