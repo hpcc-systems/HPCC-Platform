@@ -736,19 +736,19 @@ static void StackWalk( size_t pc, size_t bp )
 static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
 {
     if (_bp==0) {
-#ifdef _AMD64_
-        PrintLog("inline assembler is not supported in 64bit AMD compiler; StackReport incomplete bp tend to not be used");
-#else
+#ifdef _ARCH_X86_
         __asm { 
             mov eax,ebp
             mov _bp,eax
         }
+#else
+        PrintLog("inline assembler is only supported for x86_32; StackReport incomplete bp tend to not be used");
 #endif
     }
     
     for (unsigned i=0;i<8;i++) {
         StringBuffer s;
-#ifdef _AMD64_
+#ifdef __64BIT__
         s.appendf("Stack[%016X]:",sp);
 #else
         s.appendf("Stack[%08X]:",sp);
@@ -758,7 +758,7 @@ static void doPrintStackReport( size_t ip, size_t _bp, size_t sp )
                 break;
             size_t v = *(size_t *)sp;
             sp += sizeof(unsigned);
-#ifdef _AMD64_
+#ifdef __64BIT__
             s.appendf(" %016X",v);
 #else
             s.appendf(" %08X",v);
@@ -804,29 +804,35 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
     
     PrintLog( "\nRegisters:" );
     
-#ifdef _AMD64_
+#ifdef _ARCH_X86_64_
     PrintLog("RAX:%016" I64F "X  RBX:%016" I64F "X  RCX:%016" I64F "X  RDX:%016" I64F "X  RSI:%016" I64F "X  RDI:%016" I64F "X",
         pCtx->Rax, pCtx->Rbx, pCtx->Rcx, pCtx->Rdx, pCtx->Rsi, pCtx->Rdi );
     
     PrintLog( "CS:RIP:%04X:%016" I64F "X", pCtx->SegCs, pCtx->Rip );
     PrintLog( "SS:PSP:%04X:%016" I64F "X  PBP:%016" I64F "X",
         pCtx->SegSs, pCtx->Rsp, pCtx->Rbp );
-#else
+#elif defined(_ARCH_X86_)
     PrintLog("EAX:%08X  EBX:%08X  ECX:%08X  EDX:%08X  ESI:%08X  EDI:%08X",
         pCtx->Eax, pCtx->Ebx, pCtx->Ecx, pCtx->Edx, pCtx->Esi, pCtx->Edi );
     
     PrintLog( "CS:EIP:%04X:%08X", pCtx->SegCs, pCtx->Eip );
     PrintLog( "SS:ESP:%04X:%08X  EBP:%08X",
         pCtx->SegSs, pCtx->Esp, pCtx->Ebp );
+#else
+    // ARMFIX: Implement register bank dump for ARM.
+    PrintLog("Register bank not implemented for your platform");
 #endif
     
     PrintLog( "DS:%04X  ES:%04X  FS:%04X  GS:%04X",
         pCtx->SegDs, pCtx->SegEs, pCtx->SegFs, pCtx->SegGs );
     PrintLog( "Flags:%08X", pCtx->EFlags );
-#ifdef _AMD64_
+#ifdef _ARCH_X86_64_
     doPrintStackReport(pCtx->Rip, pCtx->Rbp,pCtx->Rsp);
-#else
+#elif defined(_ARCH_X86_)
     doPrintStackReport(pCtx->Eip, pCtx->Ebp,pCtx->Esp);
+#else
+    // ARMFIX: Implement stack dump for ARM.
+    PrintLog("Stack report not implemented for your platform");
 #endif
     if (SEHtermOnSystemDLLs || SEHtermAlways) {
         char *s = szFaultingModule;
@@ -874,10 +880,13 @@ public:
             pExp->ContextRecord->SegFs, pExp->ContextRecord->SegGs);
 #else
         char s[80];
-#ifdef _AMD64_
+#ifdef _ARCH_X86_64_
         sprintf(s,"SEH Exception(%08X) at %04X:%016" I64F "X\n",u,pExp->ContextRecord->SegCs,pExp->ContextRecord->Rip);
-#else
+#elif defined(_ARCH_X86_)
         sprintf(s,"SEH Exception(%08X) at %04X:%08X\n",u,pExp->ContextRecord->SegCs,pExp->ContextRecord->Eip);
+#else
+        // ARMFIX: Implement exception dump for ARM.
+        sprintf(s,"SEH Exception");
 #endif
 #endif
         msg.set(s);
@@ -954,7 +963,8 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
     signal(SIGFPE, SIG_DFL);
 #endif
     StringBuffer s;
-#if __WORDSIZE == 64
+
+#ifdef _ARCH_X86_64_
 #define I64X "%016" I64F "X"
     ucontext_t *uc = (ucontext_t *)extra;
 #ifdef __APPLE__
@@ -985,8 +995,8 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RCX], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDX], 
         (unsigned __int64) uc->uc_mcontext.gregs[REG_RSI], (unsigned __int64) uc->uc_mcontext.gregs[REG_RDI] );
     PROGLOG( "CS:EIP:%04X:"I64X"", ((unsigned) uc->uc_mcontext.gregs[REG_CSGSFS])&0xffff, ip );
-    PROGLOG( "   ESP:"I64X"  EBP:"I64X"", sp, (unsigned __int64) uc->uc_mcontext.gregs[REG_RBP] );  
-#endif    
+    PROGLOG( "   ESP:"I64X"  EBP:"I64X"", sp, (unsigned __int64) uc->uc_mcontext.gregs[REG_RBP] );
+#endif
     
     for (unsigned i=0;i<8;i++) {
         StringBuffer s;
@@ -998,7 +1008,8 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
         }
         PROGLOG( "%s",s.str());
     }
-#elif defined (__linux__)
+
+#elif defined (__linux__) && defined (_ARCH_X86_)
     ucontext_t *uc = (ucontext_t *)extra;
     unsigned ip = uc->uc_mcontext.gregs[REG_EIP];
     unsigned sp = uc->uc_mcontext.gregs[REG_ESP];
@@ -1039,8 +1050,14 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
             break;
         PROGLOG("%2d  %08X  %08X",n+1,fip,(unsigned) bp);
         bp = nextbp;
-    }   
+    }
+#else
+    // ARMFIX: Implement signal dump for ARM.
+    PROGLOG("================================================");
+    PROGLOG("Signal:    %d %s",signum,strsignal(signum));
+    PROGLOG("More information unavailable on your platform");
 #endif
+
 #ifdef _EXECINFO_H
     PrintStackReport();
 #endif  

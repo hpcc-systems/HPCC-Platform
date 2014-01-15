@@ -1330,6 +1330,8 @@ void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallbac
         StringBuffer ln;
         ln.append(path).append(SharedObjectPrefix).append(trailing).append(LibraryExtension);
 #ifdef __64BIT__
+        // ARMFIX: Map all the uses of this property and make sure
+        // they're not used to mean x86_64 (it shouldn't, though)
         bool target64bit = workunit->getDebugValueBool("target64bit", true);
 #else
         bool target64bit = workunit->getDebugValueBool("target64bit", false);

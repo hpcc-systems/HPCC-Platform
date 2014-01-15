@@ -20,8 +20,37 @@
 
 #define _TESTING // this should remain set for the near future
 
+// **** Architecture detection ****
+// Ref: http://sourceforge.net/p/predef/wiki/Architectures/
+// Following GNU, ARMCC, ICC and MSVS macros only
+
+// Identify all possible flags that mean ARM32, even when in Thumb mode
+// further separation could be tested via #ifdef __thumb__
+#if defined(__arm__) || defined(__thumb__) \
+ || defined(_M_ARM) || defined(_M_ARMT) \
+ || defined(__TARGET_ARCH_ARM) || defined(__TARGET_ARCH_THUMB)
+#define _ARCH_ARM32_
+#endif
+
+// ARM64 has only one which all compilers follow
+#ifdef __aarch64__
+#define _ARCH_ARM64_
+#endif
+
+// Identify all possible flags that mean x86_64
+#if defined(__amd64__) || defined(__x86_64__) \
+ || defined(_M_X64) || defined(_M_AMD64)
+ #define _ARCH_X86_64_
+#else
+ // Identify all possible flags that mean x86
+ #if defined(__i386__) || defined(_M_IX86)
+  #define _ARCH_X86_
+ #endif
+#endif
+
 // **** START OF X-PLATFORM SECTION ****
-#if defined(_M_X64) || defined ( __x86_64) || __WORDSIZE==64
+
+#if defined(_ARCH_X86_64_) || defined(_ARCH_ARM64_) || __WORDSIZE==64
 #define __64BIT__
 #endif
 

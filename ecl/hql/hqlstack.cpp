@@ -24,6 +24,7 @@ FuncCallStack::FuncCallStack() {
     stackbuf = (char *)malloc(tos);
     numToFree = 0;
 #ifdef __64BIT__
+    // ARMFIX: See the header file for more comments
     numFpRegs = 0;
     for (unsigned i=0;i<MAXFPREGS;i++)
         fpRegs[i] = 0.0;

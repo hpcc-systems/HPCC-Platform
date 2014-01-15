@@ -68,6 +68,7 @@ static unsigned memArea[32];
 #endif
 #endif
 
+// FIXME: Make sure this is still relevant, and if not, delete
 #ifndef _WIN32
 #ifndef __64BIT__
 #define USE_OLD_PU
@@ -289,6 +290,7 @@ static double cycleToNanoScale;
 
 void calibrate_timing()
 {
+#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC) {
         unsigned long eax;
         unsigned long ebx; 
@@ -310,6 +312,7 @@ void calibrate_timing()
         if ((edx&0x10)==0)
             useRDTSC = false;
     }
+#endif
     if (useRDTSC) {
         unsigned startu = usTick();
         cycle_t start = getTSC();

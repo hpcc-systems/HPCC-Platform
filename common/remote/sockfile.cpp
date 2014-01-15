@@ -3328,7 +3328,7 @@ public:
         selecthandler.setown(createSocketSelectHandler(NULL));
         threads.setown(createThreadPool("CRemoteFileServerPool",this,NULL,MAX_THREADS,60*1000,
 #ifdef __64BIT__
-            0,
+            0, // Unlimited stack size
 #else
             0x10000,
 #endif

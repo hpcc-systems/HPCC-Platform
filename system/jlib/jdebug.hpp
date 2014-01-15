@@ -32,7 +32,10 @@ cycle_t jlib_decl get_cycles_now();  // equivalent to getTSC when available
 double jlib_decl getCycleToNanoScale();
 void jlib_decl display_time(const char * title, cycle_t diff);
 
-#if defined(_WIN32) && ! defined (_AMD64_)
+// X86 / X86_64
+#if defined(_ARCH_X86_64_) || defined(_ARCH_X86_)
+
+#if defined(_WIN32) && defined (_ARCH_X86_)
 #pragma warning(push)
 #pragma warning(disable:4035)
 inline cycle_t getTSC() { __asm { __asm _emit 0x0f __asm _emit 0x31 } }
@@ -47,8 +50,15 @@ inline volatile __int64 getTSC()
 }
 #else
 #include <intrin.h>
-inline cycle_t getTSC() { return __rdtsc(); }   
-#endif
+inline cycle_t getTSC() { return __rdtsc(); }
+#endif // WIN32
+
+#else
+// ARMFIX: cycle-count is not always available in user mode
+// http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0338g/Bihbeabc.html
+// http://neocontra.blogspot.co.uk/2013/05/user-mode-performance-counters-for.html
+inline cycle_t getTSC() { return 0; }
+#endif // X86
 
 struct HardwareInfo
 {
