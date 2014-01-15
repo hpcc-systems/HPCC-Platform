@@ -108,7 +108,7 @@ define([
         },
 
         refreshState: function () {
-            this.iconFilter.src = this.exists() ? "img/filter.png" : "img/noFilter.png";
+            this.iconFilter.src = this.exists() ? "/esp/files/img/filter.png" : "/esp/files/img/noFilter.png";
         }
     });
 });

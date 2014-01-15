@@ -140,7 +140,7 @@ public:
     void addQueryNavLink(IPropertyTree &data, IPropertyTree *query, const char *setname, const char *qname=NULL);
     void getQueryNames(IPropertyTree* settree, const char *id, const char *qname, StringArray& qnames);
 
-    virtual const char* getRootPage() {return "files/esp_app_tree.html";}
+    virtual const char* getRootPage(IEspContext* ctx) {return "files/esp_app_tree.html";}
 
     int onGet(CHttpRequest* request, CHttpResponse* response);
     void xsltTransform(const char* xml, unsigned int len, const char* xslFileName, IProperties *params, StringBuffer& ret);

@@ -69,7 +69,7 @@ define([
                         label: "File", width: 180, sortable: true,
                         formatter: function (Wuid, row) {
                             var wu = row.Server === "DFUserver" ? ESPDFUWorkunit.Get(Wuid) : ESPWorkunit.Get(Wuid);
-                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp;<a href='#' class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                            return "<img src='" + wu.getStateImage() + "'>&nbsp;<a href='#' class='" + context.id + "WuidClick'>" + Wuid + "</a>";
                         }
 
                     },*/

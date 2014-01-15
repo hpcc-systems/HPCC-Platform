@@ -195,7 +195,7 @@ define([
         },
 
         _onOpenLegacy: function (evt) {
-            var win = window.open("\\", "_blank");
+            var win = window.open("/?legacy", "_blank");
             win.focus();
         },
 

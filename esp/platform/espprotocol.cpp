@@ -99,7 +99,7 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
         EspHttpBinding *httpbind = dynamic_cast<EspHttpBinding *>(bindingentry->queryBinding());
         if(httpbind)
         {
-            const char* rootpage = httpbind->getRootPage();
+            const char* rootpage = httpbind->getRootPage(ctx);
             if(rootpage && *rootpage)
             {
                 html.loadFile(StringBuffer(getCFD()).append(rootpage).str());

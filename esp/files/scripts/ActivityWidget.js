@@ -295,17 +295,17 @@ define([
                             return true;
                         },
                         formatter: function (_name, row) {
-                            var img = "../files/";
+                            var img;
                             var name = "";
                             if (context.activity.isInstanceOfQueue(row)) {
                                 if (row.isPaused()) {
-                                    img += "img/server_paused.png";
+                                    img += "/esp/files/img/server_paused.png";
                                 } else {
-                                    img += "img/server.png";
+                                    img += "/esp/files/img/server.png";
                                 }
                                 name = row.getDisplayName();
                             } else {
-                                img += row.getStateImage();
+                                img = row.getStateImage();
                                 name = "<a href='#' class='" + context.id + "WuidClick'>" + row.Wuid + "</a>";
                             }
                             return "<img src='" + img + "'/>&nbsp;" + name;
