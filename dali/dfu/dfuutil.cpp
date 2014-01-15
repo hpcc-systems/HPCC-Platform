@@ -985,6 +985,7 @@ public:
                          bool dophysicalcopy                // NB *not* using DFU server
                          )
     {
+        DBGLOG("createSingleFileClone src=%s@%s, dst=%s@%s, prefix=%s, ow=%d, docopy=%d", srcname, srcCluster, dstname, cluster1, prefix, overwrite, dophysicalcopy);
         CFileCloner cloner;
         cloner.init(cluster1,clustmap,repeattlk,cluster2,userdesc,foreigndali,foreignuserdesc,NULL,overwrite,dophysicalcopy);
         cloner.srcCluster.set(srcCluster);
