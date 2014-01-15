@@ -1069,7 +1069,7 @@ embedPrefix
     : EMBED '(' abstractModule attribs ')'
                         {
                             parser->getLexer()->enterEmbeddedMode();
-                            $$.setExpr(createComma($3.getExpr(), $4.getExpr()));
+                            $$.setExpr(createComma($3.getExpr(), $4.getExpr()), $1);
                         }
     ;
 

@@ -36,7 +36,12 @@
 #endif
 
 
-#define UNSUPPORTED throw MakeStringException(-1, "UNSUPPORTED feature at %s(%d)", __FILE__, __LINE__)
+static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+
+static void UNSUPPORTED(const char *feature)
+{
+    throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in mysql plugin", feature);
+}
 
 static const char * compatibleVersions[] = {
     "MySQL Embed Helper 1.0.0",
@@ -347,7 +352,10 @@ static void getDataResult(const RtlFieldInfo *field, const MYSQL_BIND &bound, si
     if (bound.buffer_type == MYSQL_TYPE_TINY_BLOB ||
         bound.buffer_type == MYSQL_TYPE_MEDIUM_BLOB ||
         bound.buffer_type == MYSQL_TYPE_LONG_BLOB ||
-        bound.buffer_type == MYSQL_TYPE_BLOB)
+        bound.buffer_type == MYSQL_TYPE_BLOB ||
+        bound.buffer_type == MYSQL_TYPE_STRING ||
+        bound.buffer_type == MYSQL_TYPE_VAR_STRING
+       )
         rtlStrToDataX(chars, result, *bound.length, bound.buffer);   // This feels like it may not work to me - will preallocate rather larger than we want
     else
         typeError("blob", field);
@@ -508,7 +516,7 @@ public:
 
     virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("SET fields");
     }
     virtual bool processNextSet(const RtlFieldInfo * field)
     {
@@ -516,14 +524,14 @@ public:
     }
     virtual void processBeginDataset(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("Nested datasets");
     }
     virtual void processBeginRow(const RtlFieldInfo * field)
     {
     }
     virtual bool processNextRow(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        throwUnexpected();
     }
     virtual void processEndSet(const RtlFieldInfo * field)
     {
@@ -661,7 +669,7 @@ public:
     }
     virtual void processSetAll(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("ALL sets");
     }
     virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
     {
@@ -676,11 +684,11 @@ public:
 
     virtual bool processBeginSet(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("SET fields");
     }
     virtual bool processBeginDataset(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("Nested datasets");
     }
     virtual bool processBeginRow(const RtlFieldInfo * field)
     {
@@ -688,11 +696,11 @@ public:
     }
     virtual void processEndSet(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        throwUnexpected();
     }
     virtual void processEndDataset(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        throwUnexpected();
     }
     virtual void processEndRow(const RtlFieldInfo * field)
     {
@@ -898,7 +906,7 @@ public:
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("SET results");
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
@@ -987,7 +995,7 @@ public:
         rtlStrToUtf8X(utf8chars, utf8, len, val);
         MYSQL_BIND &bindInfo = findParameter(name, MYSQL_TYPE_STRING, 0);
         bindInfo.buffer = utf8;
-        bindInfo.buffer_length = len;
+        bindInfo.buffer_length = rtlUtf8Size(utf8chars, utf8);
         bindInfo.length = &bindInfo.buffer_length;
     }
     virtual void bindVStringParam(const char *name, const char *val)
@@ -1016,12 +1024,12 @@ public:
     }
     virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
     {
-        UNSUPPORTED;  // MySQL does support sets, so MIGHT be possible...
+        UNSUPPORTED("SET parameters");  // MySQL does support sets, so MIGHT be possible...
     }
 
     virtual void importFunction(size32_t lenChars, const char *text)
     {
-        UNSUPPORTED;
+        throwUnexpected();
     }
     virtual void compileEmbeddedScript(size32_t len, const char *script)
     {
@@ -1080,7 +1088,7 @@ public:
     virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
     {
         if (isImport)
-            UNSUPPORTED;
+            UNSUPPORTED("IMPORT");
         else
             return new MySQLEmbedFunctionContext(options);
     }

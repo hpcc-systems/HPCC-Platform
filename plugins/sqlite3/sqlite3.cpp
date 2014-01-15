@@ -34,8 +34,12 @@
 #define EXPORT
 #endif
 
+static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
 
-#define UNSUPPORTED throw MakeStringException(-1, "UNSUPPORTED feature at %s(%d)", __FILE__, __LINE__)
+static void UNSUPPORTED(const char *feature)
+{
+    throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in sqlite3 plugin", feature);
+}
 
 static const char * compatibleVersions[] = {
     "SqLite3 Embed Helper 1.0.0",
@@ -232,7 +236,7 @@ public:
 
     virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("SET fields");
     }
     virtual bool processNextSet(const RtlFieldInfo * field)
     {
@@ -240,14 +244,14 @@ public:
     }
     virtual void processBeginDataset(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("Nested datasets");
     }
     virtual void processBeginRow(const RtlFieldInfo * field)
     {
     }
     virtual bool processNextRow(const RtlFieldInfo * field)
     {
-        UNSUPPORTED;
+        throwUnexpected();
     }
     virtual void processEndSet(const RtlFieldInfo * field)
     {
@@ -382,7 +386,7 @@ public:
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("SET results");
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
@@ -408,11 +412,11 @@ public:
     }
     virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
     {
-        UNSUPPORTED;  // Not sure it ever makes sense
+        UNSUPPORTED("Row parameters");  // Probably SHOULD support - see MySQL plugin
     }
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
     {
-        UNSUPPORTED;   // Would need some thought, if it ever made sense
+        UNSUPPORTED("Dataset parameters");   // Should support...
     }
 
     virtual void bindBooleanParam(const char *name, bool val)
@@ -458,12 +462,12 @@ public:
     }
     virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
     {
-        UNSUPPORTED;
+        UNSUPPORTED("SET parameters");
     }
 
     virtual void importFunction(size32_t lenChars, const char *text)
     {
-        UNSUPPORTED;
+        throwUnexpected();
     }
     virtual void compileEmbeddedScript(size32_t len, const char *script)
     {
@@ -505,7 +509,7 @@ public:
     virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
     {
         if (isImport)
-            UNSUPPORTED;
+            UNSUPPORTED("IMPORT");
         else
             return new SqLite3EmbedFunctionContext(options);
     }
