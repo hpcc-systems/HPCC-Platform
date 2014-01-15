@@ -32,7 +32,6 @@ IAtom * activeMatchUtf8Atom;
 IAtom * activeProductionMarkerAtom;
 IAtom * activeValidateMarkerAtom;
 IAtom * activityIdMarkerAtom;
-IAtom * balancedAtom;
 IAtom * bitfieldOffsetAtom;
 IAtom * blobHelperAtom;
 IAtom * branchAtom;
@@ -1408,7 +1407,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(activeProductionMarker);
     MAKEATOM(activeValidateMarker);
     MAKEATOM(activityIdMarker);
-    MAKEATOM(balanced);
     MAKEATOM(bitfieldOffset);
     MAKEATOM(blobHelper);
     MAKEATOM(branch);

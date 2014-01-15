@@ -1735,6 +1735,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.expandPersistInputDependencies,"expandPersistInputDependencies",true),
         DebugOption(options.multiplePersistInstances,"multiplePersistInstances",true),
         DebugOption(options.defaultNumPersistInstances,"defaultNumPersistInstances",-1),
+        DebugOption(options.optimizeMax,"optimizeMax",false),
     };
 
     //get options values from workunit
@@ -1807,6 +1808,14 @@ void HqlCppTranslator::cacheOptions()
 
 void HqlCppTranslator::postProcessOptions()
 {
+    if (options.optimizeMax)
+    {
+        //Enable any extra potentially expensive optimizations options here...
+        options.foldConstantDatasets = true;
+        options.percolateConstants = true;
+        options.percolateFilters = true;
+    }
+
 //Any post processing - e.g., dependent flags goes here...
     options.optimizeDiskFlag = 0;
     if (options.optimizeInlineSource) 
@@ -1857,6 +1866,8 @@ unsigned HqlCppTranslator::getOptimizeFlags() const
         optFlags |= HOOhascompoundaggregate;
     if (options.foldConstantDatasets)
         optFlags |= HOOfoldconstantdatasets;
+    if (options.optimizeMax)
+        optFlags |= HOOexpensive;
     return optFlags;
 }
 
