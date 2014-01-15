@@ -33,9 +33,10 @@ define([
 
     var initUi = function () {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
+        var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
         require(
-            ["hpcc/" + params.Widget],
+            ["hpcc/" + hpccWidget],
             function (WidgetClass) {
                 var webParams = {
                     id: "stub",

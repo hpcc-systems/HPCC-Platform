@@ -273,39 +273,39 @@ define([
                     }),
                     Suspended: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='../files/img/suspended.png'>";
+                            node.innerHTML = "<img src='/esp/files/img/suspended.png'>";
                         },
                         width: 20,
                         sortable: false,
                         formatter: function (suspended) {
                             if (suspended == true) {
-                                return ("<img src='../files/img/suspended.png'>");
+                                return ("<img src='/esp/files/img/suspended.png'>");
                             }
                             return "";
                         }
                     },
                     Activated: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='../files/img/active.png'>";
+                            node.innerHTML = "<img src='/esp/files/img/active.png'>";
                         },
                         width: 20,
                         sortable: false,
                         formatter: function (activated) {
                             if (activated == true) {
-                                return ("<img src='../files/img/active.png'>");
+                                return ("<img src='/esp/files/img/active.png'>");
                             }
                             return "";
                         }
                     },
                     ErrorCount: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='../files/img/errwarn.png'>";
+                            node.innerHTML = "<img src='/esp/files/img/errwarn.png'>";
                         },
                         width: 20,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
-                                return ("<img src='../files/img/errwarn.png'>");
+                                return ("<img src='/esp/files/img/errwarn.png'>");
                             }
                             return "";
                         }

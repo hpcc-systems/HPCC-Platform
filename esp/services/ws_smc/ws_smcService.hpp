@@ -171,7 +171,12 @@ public:
     }
 
     virtual ~CWsSMCSoapBindingEx(){}
-
+    virtual const char* getRootPage(IEspContext* ctx)
+    {
+        if (ctx->queryRequestParameters()->hasProp("legacy"))
+            return NULL;
+        return "files/stub.htm";
+    }
     virtual int onGetRoot(IEspContext &context, CHttpRequest* request,  CHttpResponse* response)
     {
         return  onGetInstantQuery(context, request, response, "WsSMC", "Activity");

@@ -57,7 +57,7 @@ public:
         return onGetInstantQuery(context, request, response, "WsDeploy", "Init");
     }
 
-    virtual const char* getRootPage()
+    virtual const char* getRootPage(IEspContext* ctx)
     {
         return "files/configmgr.html";
     }

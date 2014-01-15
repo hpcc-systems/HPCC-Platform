@@ -97,13 +97,13 @@ define([
                             return true;
                         },
                         formatter: function (_name, row) {
-                            var img = "../files/";
+                            var img;
                             var name = "";
                             if (row.__hpcc_type === "TargetCluster") {
-                                img += "img/server.png";
+                                img = "/esp/files/img/server.png";
                                 name = row.__hpcc_id;
                             } else {
-                                img += row.getStateImage();
+                                img = row.getStateImage();
                                 name = "<a href='#' class='" + context.id + "WuidClick'>" + row.Wuid + "</a>";
                             }
                             return "<img src='" + img + "'/>&nbsp;" + name;

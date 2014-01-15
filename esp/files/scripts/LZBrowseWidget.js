@@ -394,7 +394,7 @@ define([
                         collapseOnRefresh: true,
                         sortable: false,
                         formatter: function (name, row) {
-                            var img = "../files/img/";
+                            var img = "/esp/files/img/";
                             if (row.isDir === undefined) {
                                 img += "server.png";
                             } else if (row.isDir) {

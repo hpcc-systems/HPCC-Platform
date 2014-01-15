@@ -236,9 +236,9 @@ define([
         },
         getProtectedImage: function () {
             if (this.isProtected) {
-                return "img/locked.png"
+                return "/esp/files/img/locked.png"
             }
-            return "img/unlocked.png"
+            return "/esp/files/img/unlocked.png"
         },
         getStateIconClass: function () {
             switch (this.StateID) {
@@ -266,23 +266,23 @@ define([
         getStateImage: function () {
             switch (this.State) {
                 case 1:
-                    return "img/workunit_warning.png";
+                    return "/esp/files/img/workunit_warning.png";
                 case 2:
-                    return "img/workunit_submitted.png";
+                    return "/esp/files/img/workunit_submitted.png";
                 case 3:
-                    return "img/workunit_running.png";
+                    return "/esp/files/img/workunit_running.png";
                 case 4:
-                    return "img/workunit_failed.png";
+                    return "/esp/files/img/workunit_failed.png";
                 case 5:
-                    return "img/workunit_failed.png";
+                    return "/esp/files/img/workunit_failed.png";
                 case 6:
-                    return "img/workunit_completed.png";
+                    return "/esp/files/img/workunit_completed.png";
                 case 7:
-                    return "img/workunit_running.png";
+                    return "/esp/files/img/workunit_running.png";
                 case 8:
-                    return "img/workunit_aborting.png";
+                    return "/esp/files/img/workunit_aborting.png";
             }
-            return "img/workunit.png";
+            return "/esp/files/img/workunit.png";
         }
     });
 
