@@ -12,8 +12,12 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 		if(typeof err !== "object"){
 			// Ensure we actually have an error object, so we can attach a reference.
 			err = new Error(err);
+		}else if(err.dojoType === "cancel"){
+			// Don't fire dgrid-error events for errors due to canceled requests
+			// (unfortunately, the Deferred instrumentation will still log them)
+			return;
 		}
-		// TODO: remove this @ 1.0 (prefer grid property directly on event object)
+		// TODO: remove this @ 0.4 (prefer grid property directly on event object)
 		err.grid = this;
 		
 		if(listen.emit(this.domNode, "dgrid-error", {
@@ -70,6 +74,20 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			}));
 		},
 		
+		postCreate: function(){
+			this.inherited(arguments);
+			if(this.store){
+				this._updateNotifyHandle(this.store);
+			}
+		},
+		
+		destroy: function(){
+			this.inherited(arguments);
+			if(this._notifyHandle){
+				this._notifyHandle.remove();
+			}
+		},
+		
 		_configColumn: function(column){
 			// summary:
 			//		Implements extension point provided by Grid to store references to
@@ -79,10 +97,29 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			}
 		},
 		
+		_updateNotifyHandle: function(store){
+			// summary:
+			//		Unhooks any previously-existing store.notify handle, and
+			//		hooks up a new one for the given store.
+			
+			if(this._notifyHandle){
+				// Unhook notify handler from previous store
+				this._notifyHandle.remove();
+				delete this._notifyHandle;
+			}
+			if(store && typeof store.notify === "function"){
+				this._notifyHandle = aspect.after(store, "notify",
+					lang.hitch(this, "_onNotify"), true);
+			}
+		},
+		
 		_setStore: function(store, query, queryOptions){
 			// summary:
 			//		Assigns a new store (and optionally query/queryOptions) to the list,
 			//		and tells it to refresh.
+			
+			this._updateNotifyHandle(store);
+			
 			this.store = store;
 			this.dirty = {}; // discard dirty map, as it applied to a previous store
 			this.set("query", query, queryOptions);
@@ -103,11 +140,11 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			sort ? this.set("sort", sort) : this.refresh();
 		},
 		setStore: function(store, query, queryOptions){
-			kernel.deprecated("setStore(...)", 'use set("store", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setStore(...)", 'use set("store", ...) instead', "dgrid 0.4");
 			this.set("store", store, query, queryOptions);
 		},
 		setQuery: function(query, queryOptions){
-			kernel.deprecated("setQuery(...)", 'use set("query", ...) instead', "dgrid 1.0");
+			kernel.deprecated("setQuery(...)", 'use set("query", ...) instead', "dgrid 0.4");
 			this.set("query", query, queryOptions);
 		},
 		
@@ -140,6 +177,20 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			this.inherited(arguments);
 		},
 		
+		_onNotify: function(object, existingId){
+			// summary:
+			//		Method called when the store's notify method is called.
+			
+			// Call inherited in case anything was mixed in earlier
+			this.inherited(arguments);
+			
+			// For adds/puts, check whether any observers are hooked up;
+			// if not, force a refresh to properly hook one up now that there is data
+			if(object && this._numObservers < 1){
+				this.refresh({ keepScrollPosition: true });
+			}
+		},
+		
 		insertRow: function(object, parent, beforeNode, i, options){
 			var store = this.store,
 				dirty = this.dirty,
@@ -167,7 +218,7 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 			dirtyObj[field] = value;
 		},
 		setDirty: function(id, field, value){
-			kernel.deprecated("setDirty(...)", "use updateDirty() instead", "dgrid 1.0");
+			kernel.deprecated("setDirty(...)", "use updateDirty() instead", "dgrid 0.4");
 			this.updateDirty(id, field, value);
 		},
 		
@@ -193,11 +244,16 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 					var colsWithSet = self._columnsWithSet,
 						updating = self._updating,
 						key, data;
-					// Copy dirty props to the original, applying setters if applicable
-					for(key in dirtyObj){
-						object[key] = dirtyObj[key];
+
+					if (typeof object.set === "function") {
+						object.set(dirtyObj);
+					} else {
+						// Copy dirty props to the original, applying setters if applicable
+						for(key in dirtyObj){
+							object[key] = dirtyObj[key];
+						}
 					}
-					
+
 					// Apply any set methods in column definitions.
 					// Note that while in the most common cases column.set is intended
 					// to return transformed data for the key in question, it is also
@@ -270,11 +326,14 @@ function(kernel, declare, lang, Deferred, listen, aspect, put){
 		
 		newRow: function(){
 			// Override to remove no data message when a new row appears.
+			// Run inherited logic first to prevent confusion due to noDataNode
+			// no longer being present as a sibling.
+			var row = this.inherited(arguments);
 			if(this.noDataNode){
 				put(this.noDataNode, "!");
 				delete this.noDataNode;
 			}
-			return this.inherited(arguments);
+			return row;
 		},
 		removeRow: function(rowElement, justCleanup){
 			var row = {element: rowElement};
