@@ -864,7 +864,7 @@ int CHttpMessage::send()
                 break;
             }
         }
-        delete buffer;
+        delete [] buffer;
     }
 
     return retcode;

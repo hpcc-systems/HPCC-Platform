@@ -631,8 +631,8 @@ public:
                 translator.ensureRowAllocated(transformctx, "crSelf");
                 transformctx.addQuoted("const byte * pr = (const byte *)_projected;");
 
-                BoundRow * self = translator.bindTableCursor(transformctx, rawStepping.ds, "crSelf.row()");
-                BoundRow * pr = translator.bindTableCursor(transformctx, outputStepping.ds, "pr");
+                translator.bindTableCursor(transformctx, rawStepping.ds, "crSelf.row()");
+                translator.bindTableCursor(transformctx, outputStepping.ds, "pr");
                 StringBuffer s;
                 ForEachChild(i, outputStepping.fields)
                 {
@@ -6856,7 +6856,7 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
     xmlUsesContents = false;
     //MORE: If this becomes a compound activity
     BoundRow * rootSelfRow = bindSelf(funcctx, dataset, "crSelf");
-    BoundRow * xmlCursor = bindXmlTableCursor(funcctx, dataset, "row", no_none, NULL, true);
+    bindXmlTableCursor(funcctx, dataset, "row", no_none, NULL, true);
     OwnedHqlExpr activityId = createVariable("activityId", LINK(sizetType));
     funcctx.associateExpr(queryActivityIdMarker(), activityId);
 
@@ -6892,7 +6892,7 @@ unsigned HqlCppTranslator::buildCsvReadTransform(BuildCtx & subctx, IHqlExpressi
 
     //MORE: If this becomes a compound activity
     BoundRow * rootSelfRow = bindSelf(funcctx, dataset, "crSelf");
-    BoundRow * xmlCursor = bindCsvTableCursor(funcctx, dataset, "Src", no_none, NULL, true, queryCsvEncoding(csvAttr));
+    bindCsvTableCursor(funcctx, dataset, "Src", no_none, NULL, true, queryCsvEncoding(csvAttr));
     ensureRowAllocated(funcctx, rootSelfRow);
 
     if (newInterface)

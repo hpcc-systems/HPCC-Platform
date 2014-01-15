@@ -517,7 +517,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
     {
         if (outfile&&*outfile) {
             int outh = open(outfile, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR);
-            if(outh > 0)
+            if(outh >= 0)
             {
                 dup2(outh, STDOUT_FILENO);
                 dup2(outh, STDERR_FILENO);

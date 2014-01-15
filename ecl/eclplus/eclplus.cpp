@@ -139,9 +139,12 @@ IEclPlusHelper * createEclPlusHelper(IProperties * globals)
         }
         else
         {
+            ::Release(format);
             throw MakeStringException(-1, "unknown action");
         }
     }
+    else
+        ::Release(format);
     return helper;
 }
 

@@ -751,9 +751,6 @@ void TomRule::getFeatures(TomFeatureArray & target)
 
 StringBuffer & TomRule::getName(StringBuffer & out)
 {
-    IHqlExpression * expr = def;
-    if (expr && expr->isAttribute())
-        expr = expr->queryChild(0);
     if (cachedName)
         out.append(cachedName);
     else if (id)

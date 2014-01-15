@@ -182,10 +182,10 @@ bool CHttpProtocol::notifySelected(ISocket *sock,unsigned selected)
                             if(ci && ci->IsShared())
                                 accepted->Release();
                         }
-                        delete holder;
+                        delete [] holder;
                         throw;
                     }
-                    delete holder;
+                    delete [] holder;
                 }
                 else
                 {
@@ -346,7 +346,7 @@ bool CSecureHttpProtocol::notifySelected(ISocket *sock,unsigned selected)
                         holder[3] = (void*)&useSSL;
                         holder[4] = (void*)m_ssctx.get();
                         http_thread_pool->start((void*)holder);
-                        delete holder;
+                        delete [] holder;
                     }
                     else
                     {

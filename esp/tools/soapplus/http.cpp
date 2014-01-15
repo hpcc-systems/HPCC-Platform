@@ -1006,6 +1006,7 @@ int HttpClient::sendStressRequests(HttpStat* overall_stat)
                 overall_stat->slowest = stat->slowest;
         }
     }
+    delete [] thrdlist;
 
     return 0;
 }

@@ -291,6 +291,7 @@ void outf(const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
+    va_end(args);
 }
 
 void outf(int indents, const char *fmt, ...)
@@ -300,6 +301,7 @@ void outf(int indents, const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
+    va_end(args);
 }
 
 // ------------------------------------
@@ -335,6 +337,7 @@ void indentOutf(const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
+    va_end(args);
 }
 
 void indentOutf(int inc, const char* fmt, ...)
@@ -345,6 +348,7 @@ void indentOutf(int inc, const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
+    va_end(args);
 }
 
 void indentOutf1(int inc, const char* fmt, ...)
@@ -354,6 +358,7 @@ void indentOutf1(int inc, const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
+    va_end(args);
 }
 
 //-------------------------------------------------------------------------------------------------------------

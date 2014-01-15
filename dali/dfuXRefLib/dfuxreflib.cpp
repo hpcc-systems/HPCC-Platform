@@ -1114,6 +1114,7 @@ public:
             }
             out.append('[').append(pna.item(sorted[i2])+1).append(']');
         }
+        delete [] sorted;
     }
 
     IPropertyTree *addFileBranch(IPropertyTree *dst,unsigned flags)
@@ -1562,6 +1563,8 @@ void loadFromDFS(CXRefManagerBase &manager,IGroup *grp,unsigned numdirs,const ch
                                     oldentry->crosslink.setown(entry);
 #endif
                                 }
+                                else
+                                    entry->Release();
                             }
                             else {
                                 manager.filemap.add(*entry);

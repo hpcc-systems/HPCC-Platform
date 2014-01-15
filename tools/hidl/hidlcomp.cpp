@@ -2006,6 +2006,8 @@ void ParamInfo::write_esp_unmarshall(const char *rpcvar, bool useBasePath, int i
         indent(indents);
         outf("hasValue |= m_%s.unmarshall(%s, \"%s%s\"%s%s);\n", name, rpcvar, isAttr ? "@" : "",getXmlTag(), (useBasePath) ? ", basepath" : "", getOptionalParam());
     }
+
+    free(path);
 }
 
 void ParamInfo::write_esp_unmarshall_properties(const char *propvar, const char *attachvar, int indents)
@@ -4927,7 +4929,7 @@ void EspMessageInfo::write_esp()
     if (parent)
     {
         outf("\nbool C%s::unserialize(IEspContext* ctx, CSoapValue& soapval, bool localOnly)\n{\n", name_);
-        outf("bool hasValue = false;\n");
+        outf("\tbool hasValue = false;\n");
         outf("\tif(!localOnly)\n");
         outf("\t\thasValue |= C%s::unserialize(ctx,soapval);\n", parent);
     }
@@ -6681,6 +6683,11 @@ HIDLcompiler::~HIDLcompiler()
     close(cppo);
     //close(xsvo);
     close(clwo);
+    close(espx);
+    close(espng);
+    close(espngc);
+    close(espi);
+    close(espc);
     free(packagename);
     free(filename);
 

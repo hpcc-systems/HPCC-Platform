@@ -197,6 +197,7 @@ extern HQL_API IEclRepository * createCompoundRepositoryF(IEclRepository * repos
             break;
         compound->addRepository(*next);
     }
+    va_end(args);
     return compound.getClear();
 }
 

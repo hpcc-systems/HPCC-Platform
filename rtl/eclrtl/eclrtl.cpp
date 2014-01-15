@@ -636,14 +636,6 @@ void rtl_ls82en(size32_t l, char * t, __int64 val)
 //=============================================================================
 // Numeric conversion functions... - unknown length ebcdic target
 
-#define intToUnknownEbcdicStringBody() \
-    unsigned alen = numtostr(astr, val); \
-    rtlStrToEStrX(elen,estr,alen,astr); \
-    char * result = (char *)rtlMalloc(elen); \
-    memcpy(result, estr, elen); \
-    l = elen; \
-    t = result;
-
 #if defined _MSC_VER
 #pragma warning(push)
 #pragma warning(disable:4700)
@@ -651,33 +643,29 @@ void rtl_ls82en(size32_t l, char * t, __int64 val)
 void rtl_l42ex(size32_t & l, char * & t, unsigned val)
 {
     char astr[20];
-    char * estr;
-    unsigned elen;
-    intToUnknownEbcdicStringBody();
+    unsigned alen = numtostr(astr, val);
+    rtlStrToEStrX(l,t,alen,astr);
 }
 
 void rtl_l82ex(size32_t & l, char * & t, unsigned __int64 val)
 {
     char astr[40];
-    char * estr;
-    unsigned elen;
-    intToUnknownEbcdicStringBody();
+    unsigned alen = numtostr(astr, val);
+    rtlStrToEStrX(l,t,alen,astr);
 }
 
 void rtl_ls42ex(size32_t & l, char * & t, int val)
 {
     char astr[20];
-    char * estr;
-    unsigned elen;
-    intToUnknownEbcdicStringBody();
+    unsigned alen = numtostr(astr, val);
+    rtlStrToEStrX(l,t,alen,astr);
 }
 
 void rtl_ls82ex(size32_t & l, char * & t, __int64 val)
 {
     char astr[40];
-    char * estr;
-    unsigned elen;
-    intToUnknownEbcdicStringBody();
+    unsigned alen = numtostr(astr, val);
+    rtlStrToEStrX(l,t,alen,astr);
 }
 #ifdef _MSC_VER
 #pragma warning(pop)

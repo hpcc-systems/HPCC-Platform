@@ -320,8 +320,6 @@ CThorException *_ThorWrapException(IException *e, const char *format, va_list ar
 IThorException *MakeThorFatal(IException *e, int code, const char *format, ...)
 {
     CThorException *te = QUERYINTERFACE(e, CThorException);
-    va_list args;
-    va_start(args, format);
     if (te)
         te->Link();
     else

@@ -153,7 +153,7 @@ void substituteParameters(const IPropertyTree* pEnv, const char *xpath, IPropert
         StringBuffer sb(xpath2);
         int pos = xpath2.indexOf(']');
         if (pos != -1)
-          sb.clear().append(xpath2.substring(0, pos)->toCharArray());
+          sb.clear().append(xpath2.toCharArray(), 0, pos);
 
         result.append('\"');
         result.append(pNode->queryProp(sb.str()));
@@ -3853,7 +3853,7 @@ bool CWsDeployFileInfo::getBuildServerDirs(IEspContext &context, IEspGetBuildSer
   else 
   {
     Owned<IFile> inFiles = NULL;
-    IPropertyTree* pParentNode = createPTree("BuildServerComps");
+    Owned<IPropertyTree> pParentNode = createPTree("BuildServerComps");
 
     if (!strcmp(cmd, "Release"))
       sourceDir.append(PATHSEPCHAR).append("release");

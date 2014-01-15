@@ -939,7 +939,7 @@ public:
     EclSubGraph(IAgentContext & _agent, EclGraph &parent, EclSubGraph * _owner, unsigned subGraphSeqNo, bool enableProbe, CHThorDebugContext * _debugContext, IProbeManager * _probeManager);
     IMPLEMENT_IINTERFACE
 
-    void createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IPropertyTree * xgmml, unsigned * subGraphSeqNo, EclSubGraph * resultsGraph);
+    void createFromXGMML(EclGraph * graph, ILoadedDllEntry * dll, IPropertyTree * xgmml, unsigned & subGraphSeqNo, EclSubGraph * resultsGraph);
     void execute(const byte * parentExtract);
     void executeChild(const byte * parentExtract, IHThorGraphResults * results, IHThorGraphResults * _graphLoopResults);
     void executeLibrary(const byte * parentExtract, IHThorGraphResults * results);

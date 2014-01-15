@@ -11653,7 +11653,6 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
     case no_deserialize:
         {
             assertex(args.ordinality() >= 3);
-            ITypeInfo * childType = args.item(0).queryType();
             IHqlExpression & record = args.item(1);
             IHqlExpression & form = args.item(2);
             assertex(form.isAttribute());
@@ -11663,6 +11662,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
 
 #ifdef _DEBUG
             OwnedITypeInfo serializedType = getSerializedForm(type, form.queryName());
+            ITypeInfo * childType = args.item(0).queryType();
             assertex(recordTypesMatch(serializedType, childType));
 #endif
             break;
@@ -12937,7 +12937,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
             IPropertyTree *end = createPTree("Field", ipt_caseInsensitive);
             end->setPropBool("@isEnd", true);
             end->setProp("@name", field->queryName()->getAtomNamePtr());
-            end = table->addPropTree(end->queryName(), end);
+            table->addPropTree(end->queryName(), end);
         }
         else
             thisSize = exportRecord(f, record, flatten);

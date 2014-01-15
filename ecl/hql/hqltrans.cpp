@@ -2019,7 +2019,6 @@ IHqlExpression * replaceExpression(IHqlExpression * expr, IHqlExpression * origi
     //specially update selectors in nested expressions.
     if (original->isDataset())
     {
-        IHqlExpression * table = queryTable(original);
         if (!definesColumnList(original) && definesColumnList(replacement))
         {
             HqlMapDatasetTransformer simpleTransformer;
@@ -4475,8 +4474,6 @@ bool ScopedDependentTransformer::setLeft(IHqlExpression * _left, IHqlExpression 
 {
     ScopedTransformer::setLeft(_left, seq);
     return false;
-    pushChildContext(cachedLeft, cachedLeft);
-    return true;
 }
 
 
@@ -4484,8 +4481,6 @@ bool ScopedDependentTransformer::setLeftRight(IHqlExpression * _left, IHqlExpres
 {
     ScopedTransformer::setLeftRight(_left, _right, seq);
     return false;
-    pushChildContext(cachedRight, cachedRight);
-    return true;
 }
 
 

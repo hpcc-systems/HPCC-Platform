@@ -929,6 +929,7 @@ void TestRemoteFile(unsigned part,unsigned of)
 
     infile->Release();
     outfile->Release();
+    free(buffer);
 }
 
 

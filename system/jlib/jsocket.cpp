@@ -2525,7 +2525,10 @@ bool isInterfaceIp(const IpAddress &ip, const char *ifname)
     ifc.ifc_len = 1024;
     ifc.ifc_buf = buf;
     if(ioctl(fd, SIOCGIFCONF, &ifc) < 0) // query interfaces
+    {
+        close(fd);
         return false;
+    }
     struct ifreq *ifr = ifc.ifc_req;
     unsigned n = ifc.ifc_len/sizeof(struct ifreq);
     bool match = false;
@@ -2562,7 +2565,10 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
     ifc.ifc_len = 1024;
     ifc.ifc_buf = buf;
     if(ioctl(fd, SIOCGIFCONF, &ifc) < 0) // query interfaces
+    {
+        close(fd);
         return false;
+    }
     struct ifreq *ifr = ifc.ifc_req;
     unsigned n = ifc.ifc_len/sizeof(struct ifreq);
     for (int loopback = 0; loopback <= 1; loopback++)
@@ -5385,8 +5391,8 @@ void multiConnect(const SocketEndpointArray &eps,ISocketConnectNotify &inotify,u
                     break;
             }
         }
-        delete [] elems;
     }
+    delete [] elems;
 }
 
 void multiConnect(const SocketEndpointArray &eps, PointerIArrayOf<ISocket> &retsockets,unsigned timeout)

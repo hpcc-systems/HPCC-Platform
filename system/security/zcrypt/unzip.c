@@ -488,7 +488,7 @@ extern unzFile ZEXPORT unzOpen2 (path, pzlib_filefunc_def)
     us.central_pos = central_pos;
     us.pfile_in_zip_read = NULL;
     us.encrypted = 0;
-
+    us.num_file = 0;
 
     s=(unz_s*)ALLOC(sizeof(unz_s));
     *s=us;

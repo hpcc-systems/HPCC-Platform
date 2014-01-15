@@ -346,6 +346,7 @@ public:
             newgrp->nodes[i] = LINK(nodes[i]);
         for (rank_t k=0;k<j; k++)
             newgrp->nodes[i++] = tmp[k];
+        free(tmp);
         return newgrp;
     }
 

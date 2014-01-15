@@ -932,7 +932,7 @@ pid_is_exec(pid_t pid, const struct stat *esb)
     struct stat sb;
 
     sprintf(lname, "/proc/%d/exe", pid);
-    nread = readlink(lname, lcontents, sizeof(lcontents));
+    nread = readlink(lname, lcontents, sizeof(lcontents)-1);
     if (nread == -1)
         return false;
 
@@ -1332,6 +1332,7 @@ run_stop_schedule(void)
     else
         fatal("internal error, please report");
 
+    n_killed = 0;
     anykilled = 0;
     retry_nr = 0;
 
