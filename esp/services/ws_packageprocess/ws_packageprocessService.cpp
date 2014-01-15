@@ -236,7 +236,10 @@ void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry
                     IPropertyTree &subtree = sub_iter->query();
                     const char *subid = subtree.queryProp("@value");
                     if (subid && *subid == '~')
-                        subtree.setProp("@value", subid+1);
+                    {
+                        StringAttr value(subid+1);
+                        subtree.setProp("@value", value.get());
+                    }
                 }
             }
             mapTree->addPropTree("Package", LINK(&item));
