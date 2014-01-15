@@ -655,7 +655,7 @@
           <img id="mn{position()}" class="menu1" src="/esp/files/img/menu1.png" onclick="{$popup}"></img>
       </td>
             <td>
-              <xsl:if test="isZipfile=1">
+              <xsl:if test="IsCompressed=1">
                 <img border="0" src="/esp/files/img/zip.gif" title="Compressed" width="16" height="16"/>
               </xsl:if>
             </td>
