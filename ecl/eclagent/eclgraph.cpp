@@ -1520,7 +1520,7 @@ void EclAgent::executeThorGraph(const char * graphName)
             {
                 CriticalBlock b(crit);
                 if (0 == subId) return;
-                if (valueLen && valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
+                if (valueLen==strlen("resume") && (0 == strncmp("resume", (const char *)valueData, valueLen)))
                     sem.signal();
             }
             bool wait()
@@ -1562,7 +1562,6 @@ void EclAgent::executeThorGraph(const char * graphName)
         {
             Semaphore sem;
             bool stopped;
-            unsigned starttime;
             IJobQueue *jq;
             IConstWorkUnit *wu;
         public:
