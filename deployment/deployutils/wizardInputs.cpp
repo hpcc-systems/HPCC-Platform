@@ -214,8 +214,8 @@ void CWizardInputs::setWizardRules()
           if (type == 0)
             continue;
 
-          if (type > 0 && type < 4)
-            m_roxieAgentRedType.clear().append(roxieRedTypes[type]);
+          if (type > 0 && type < 5)
+            m_roxieAgentRedType.clear().append(roxieRedTypes[type-1]);
           else
             continue;
 
