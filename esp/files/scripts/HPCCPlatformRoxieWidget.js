@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/HPCCPlatformRoxieWidget",
 
     "dijit/registry",
 
@@ -28,13 +32,14 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
 
-], function (declare,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific,
                 registry,
                 _TabContainerWidget, QuerySetQueryWidget, PackageMapQueryWidget,
                 template) {
     return declare("HPCCPlatformRoxieWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformRoxieWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -45,7 +50,7 @@ define([
         },
 
         getTitle: function () {
-            return "HPCC Platform - Roxie";
+            return this.i18n.title;
         },
 
         //  Hitched actions  ---

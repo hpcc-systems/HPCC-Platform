@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/LZBrowseWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -67,11 +70,11 @@ define([
     "dijit/TooltipDialog",
     "dijit/form/DropDownButton",
 
-    "dojox/layout/TableContainer",
     "dojox/form/Uploader",
-    "dojox/form/uploader/FileList"
+    "dojox/form/uploader/FileList",
 
-], function (declare, lang, arrayUtil, dom, domAttr, domClass, domForm, iframe, date, on,
+    "hpcc/TableContainer"
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domClass, domForm, iframe, date, on,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 OnDemandGrid, tree, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, HexViewWidget, DFUWUDetailsWidget, TargetSelectWidget,
@@ -79,6 +82,7 @@ define([
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "LZBrowseWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         sprayFixedDialog: null,
         sprayVariableDialog: null,
@@ -113,7 +117,7 @@ define([
             });
             //  Workaround for HPCC-9414  --->
             this.connect(this.uploader, "onError", function (msg, e) {
-                if (msg === "Error parsing server result:") {   
+                if (msg === context.i18n.Errorparsingserverresult + ":") {   
                     context.fileListDialog.hide();
                     context.refreshGrid();
                 }
@@ -126,7 +130,7 @@ define([
         },
 
         getTitle: function () {
-            return "Landing Zones";
+            return this.i18n.title;
         },
 
         _handleResponse: function (wuidQualifier, response) {
@@ -163,7 +167,7 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm('Delete selected files?')) {
+            if (confirm(this.i18n.Deleteselectedfiles)) {
                 var context = this;
                 arrayUtil.forEach(this.landingZonesGrid.getSelected(), function(item, idx) {
                     FileSpray.DeleteDropZoneFile({
@@ -352,7 +356,7 @@ define([
                         sortable: false
                     }),
                     displayName: tree({
-                        label: "Name",
+                        label: this.i18n.Name,
                         collapseOnRefresh: true,
                         sortable: false,
                         formatter: function (name, row) {
@@ -367,8 +371,8 @@ define([
                             return "<img src='" + img + "'/>&nbsp;" + name;
                         }
                     }),
-                    filesize: { label: "Size", width: 108, sortable: false },
-                    modifiedtime: { label: "Date", width: 180, sortable: false }
+                    filesize: { label: this.i18n.Size, width: 108, sortable: false },
+                    modifiedtime: { label: this.i18n.Date, width: 180, sortable: false }
                 },
                 getSelected: function () {
                     var retVal = [];
@@ -379,7 +383,7 @@ define([
                     return retVal;
                 }
             }, this.id + "LandingZonesGrid");
-            this.landingZonesGrid.set("noDataMessage", "<span>Zero Files (Upload Some Files).</span>");
+            this.landingZonesGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
 
             var context = this;
             on(document, ".WuidClick:click", function (evt) {

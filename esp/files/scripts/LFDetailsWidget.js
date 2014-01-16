@@ -17,6 +17,9 @@ define([
     "exports",
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/LFDetailsWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -50,13 +53,15 @@ define([
     "dojo/text!../templates/LFDetailsWidget.html",
 
     "dijit/TooltipDialog"
-], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query,
+], function (exports, declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domClass, domForm, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit,
                 template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "LFDetailsWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+
         borderContainer: null,
 
         copyDialog: null,
@@ -107,7 +112,7 @@ define([
         },
 
         getTitle: function () {
-            return "Logical File Details";
+            return this.i18n.title;
         },
 
         _handleResponse: function (wuidQualifier, response) {

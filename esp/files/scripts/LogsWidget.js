@@ -16,8 +16,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/array",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/LogsWidget",
+    "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/request/iframe",
@@ -45,7 +48,7 @@ define([
     "dijit/form/Button",
     "dijit/layout/ContentPane"
 ],
-    function (declare, array, lang, Memory, Observable, iframe,
+    function (declare, lang, i18n, nlsCommon, nlsSpecific, array, Memory, Observable, iframe,
             registry,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
             _Widget, ESPUtil, ESPRequest, ESPWorkunit,
@@ -53,6 +56,8 @@ define([
         return declare("LogsWidget", [_Widget], {
             templateString: template,
             baseClass: "LogsWidget",
+            i18n: lang.mixin(nlsCommon, nlsSpecific),
+
             borderContainer: null,
             logsGrid: null,
 
@@ -82,15 +87,15 @@ define([
                     columns: {
                         sel: selector({
                             width: 27,
-                            selectorType: 'checkbox'
+                            selectorType: "checkbox"
                         }),
                         Type: {
-                            field: "Type",
+                            label: this.i18n.Type,
                             width: 117
                         },
                         Description: {
-                            field: "Description"
-                        }
+                            label: this.i18n.Description
+            }
                     },
                     store: this.logsStore
                 }, this.id + "LogsGrid");

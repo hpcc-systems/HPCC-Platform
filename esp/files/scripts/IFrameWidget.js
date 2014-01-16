@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/IFrameWidget",
     "dojo/dom-construct",
 
     "dijit/registry",
@@ -28,13 +32,14 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/form/Button",
     "dijit/layout/ContentPane"
-], function (declare, domConstruct,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, domConstruct,
                 registry,
                 _Widget,
                 template) {
     return declare("IFrameWidget", [_Widget], {
         templateString: template,
         baseClass: "IFrameWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         postCreate: function (args) {
             this.inherited(arguments);

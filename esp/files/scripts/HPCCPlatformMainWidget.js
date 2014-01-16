@@ -15,27 +15,28 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-
-    "dijit/registry",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/HPCCPlatformMainWidget",
 
     "hpcc/_TabContainerWidget",
 
     "dojo/text!../templates/HPCCPlatformMainWidget.html",
 
     "dijit/layout/BorderContainer",
-    "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
 
     "hpcc/ActivityWidget",
     "hpcc/SearchResultsWidget"
 
-], function (declare,
-                registry,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific,
                 _TabContainerWidget,
                 template) {
     return declare("HPCCPlatformMainWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformMainWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -46,7 +47,7 @@ define([
         },
 
         getTitle: function () {
-            return "HPCC Platform - Home";
+            return this.i18n.title;
         },
 
         //  Hitched actions  ---

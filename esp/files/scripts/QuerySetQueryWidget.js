@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/QuerySetQueryWidget",
     "dojo/dom",
     "dojo/dom-form",
     "dojo/request/iframe",
@@ -61,8 +64,8 @@ define([
     "dijit/form/DropDownButton",
     "dijit/TooltipDialog",
 
-    "dojox/layout/TableContainer"
-], function (declare, lang, dom, domForm, iframe, arrayUtil, on,
+    "hpcc/TableContainer"
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domForm, iframe, arrayUtil, on,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, QuerySetDetailsWidget, WsWorkunits, ESPQuery, ESPUtil,
@@ -70,6 +73,7 @@ define([
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QuerySetQueryWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         borderContainer: null,
         queriesTab: null,
@@ -145,29 +149,29 @@ define([
                 targetNodeIds: [this.id + "QuerySetGrid"]
             });
              this.menuOpen = this.addMenuItem(pMenu, {
-                label: "Open",
+                label: this.i18n.Open,
                 onClick: function () { context._onOpen(); }
             });
             this.menuDelete = this.addMenuItem(pMenu, {
-                label: "Delete",
+                label: this.i18n.Delete,
                 onClick: function () { context._onDelete(); }
             });
              pMenu.addChild(new MenuSeparator());
             this.menuUnsuspend = this.addMenuItem(pMenu, {
-                label: "Unsuspend",
+                label: this.i18n.Unsuspend,
                 onClick: function () { context._onUnsuspend(); }
             });
             this.menuSuspend= this.addMenuItem(pMenu, {
-                label: "Suspend",
+                label: this.i18n.Suspend,
                 onClick: function () { context._onSuspend(); }
             });
              pMenu.addChild(new MenuSeparator());
             this.menuActivate = this.addMenuItem(pMenu, {
-                label: "Activate",
+                label: this.i18n.Activate,
                 onClick: function () { context._onActivate(); }
             });
             this.menuDeactivate = this.addMenuItem(pMenu, {
-                label: "Deactivate",
+                label: this.i18n.Deactivate,
                 onClick: function () { context._onDeactivate(); }
             });
             pMenu.addChild(new MenuSeparator());
@@ -190,13 +194,13 @@ define([
                 });
                 pSubMenu.addChild(new MenuSeparator());
                 this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
-                    label: "Clear",
+                    label: this.i18n.Clear,
                     onClick: function () {
                         context._onFilterClear();
                     }
                 });
                 pMenu.addChild(new PopupMenuItem({
-                    label: "Filter",
+                    label: this.i18n.Filter,
                     popup: pSubMenu
                 }));
             }
@@ -214,7 +218,7 @@ define([
             if (item) {
                 /*this.menuFilterCluster.set("label", "Cluster: " + item.QuerySetName);
                 this.menuFilterCluster.set("hpcc_value", item.QuerySetName);*/
-                this.menuFilterSuspend.set("label", "Suspend:  " + item.Suspended);
+                this.menuFilterSuspend.set("label", this.i18n.Suspend + ":  " + item.Suspended);
                 this.menuFilterSuspend.set("hpcc_value", item.Suspended);
                 /*
                 this.menuFilterUnsuspend.set("label", "Unsuspend:  " + item.Suspend);
@@ -231,7 +235,7 @@ define([
 
             if (item.Suspend == "") {
                 this.menuFilterSuspend.set("disabled", true);
-                this.menuFilterSuspend.set("label", "Suspend: " + "N/A");
+                this.menuFilterSuspend.set("label", this.i18n.Suspend + ": " + this.i18n.NA);
             }
             /*
             if (item.Suspend == true) {
@@ -308,46 +312,46 @@ define([
                     },
                     Id: {
                         width: 220,
-                        label: "Id",
+                        label: this.i18n.ID,
                         formatter: function (Id, idx) {
                             return "<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Id + "</a>";
                         }
                     },
                     Name: {
                         width: 180,
-                        label: "Name"
+                        label: this.i18n.Name
                     },
                     QuerySetId:{
                         width: 180,
-                        label: "Target",
+                        label: this.i18n.Target,
                         sortable: false
                     },
                     Wuid: {
                         width: 180,
-                        label: "Wuid"
+                        label: this.i18n.WUID
                     },
                      Dll: {
                         width: 180,
-                        label: "Dll"
+                        label: this.i18n.Dll
                     },
                     Priority: {
                         width: 100,
-                        label: "Priority",
+                        label: this.i18n.Priority,
                         sortable: false
                     },
                     IsLibrary: {
                         width: 100,
-                        label: "Is Library",
+                        label: this.i18n.IsLibrary,
                         sortable: false
                     },
                     PublishedBy: {
                         width: 180,
-                        label: "Published By"
+                        label: this.i18n.PublishedBy
                     },
                 },
             },
             this.id + "QuerySetGrid");
-            //this.querySetGrid.set("noDataMessage", "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>");
+            //this.querySetGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
             on(document, "." + context.id + "WuidClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.querySetGrid.row(evt).data;
@@ -421,7 +425,7 @@ define([
         },
 
         _onDelete:function(){
-            if (confirm('Delete Selected Queries?')) {
+            if (confirm(this.i18n.DeleteSelectedQueries)) {
                 var context = this;
                 WsWorkunits.WUQuerysetQueryAction(this.querySetGrid.getSelected(), "Delete").then(function (response) {
                     context.refreshGrid();

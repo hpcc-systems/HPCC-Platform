@@ -15,8 +15,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/array",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/QuerySetErrorsWidget",
+    "dojo/_base/array",
     "dojo/on",
 
     "dgrid/OnDemandGrid",
@@ -29,12 +32,13 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/WsWorkunits",
     "hpcc/ESPUtil"
-], function (declare, arrayUtil, lang, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, WsWorkunits, ESPUtil) {
     return declare("QuerySetErrorsWidget", [GridDetailsWidget], {
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
-        gridTitle: "Errors",
+        gridTitle: nlsSpecific.title,
         idProperty: "Name",
 
         queryId: null,
@@ -57,10 +61,9 @@ define([
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Cluster: { label: "Cluster", width: 108, sortable: false },
-                    Errors: { label: "Error", width: 108, sortable: false },
-                    State: { label: "State", width: 108, sortable: false },
-
+                    Cluster: { label: this.i18n.Cluster, width: 108, sortable: false },
+                    Errors: { label: this.i18n.Error, width: 108, sortable: false },
+                    State: { label: this.i18n.State, width: 108, sortable: false }
                 }
             }, domID);
 

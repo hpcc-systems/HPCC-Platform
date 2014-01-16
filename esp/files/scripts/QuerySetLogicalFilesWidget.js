@@ -15,8 +15,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/array",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/QuerySetLogicalFilesWidget",
+    "dojo/_base/array",
     "dojo/on",
 
     "dgrid/OnDemandGrid",
@@ -30,12 +33,13 @@ define([
     "hpcc/LFDetailsWidget",
     "hpcc/WsWorkunits",
     "hpcc/ESPUtil"
-], function (declare, arrayUtil, lang, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, LFDetailsWidget, WsWorkunits, ESPUtil) {
     return declare("QuerySetLogicalFilesWidget", [GridDetailsWidget], {
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
-        gridTitle: "Logical Files",
+        gridTitle: nlsSpecific.title,
         idProperty: "Name",
 
         queryId: null,
@@ -59,7 +63,7 @@ define([
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Name: {label: "Logical Files", width: 180, sortable: false}
+                    Name: {label: this.i18n.LogicalFiles, width: 180, sortable: false}
                 }
             }, domID);
 

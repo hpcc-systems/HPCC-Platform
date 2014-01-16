@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/QuerySetSuperFilesWidget",
     "dojo/_base/array",
     "dojo/on",
 
@@ -32,13 +36,14 @@ define([
     "hpcc/ESPQuery",
     "hpcc/ESPUtil"
 
-], function (declare, arrayUtil, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
                 Button,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, ESPWorkunit, ESPQuery, ESPUtil) {
     return declare("QuerySetSuperFilesWidget", [GridDetailsWidget], {
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
-        gridTitle: "Super Files",
+        gridTitle: nlsSpecific.title,
         idProperty: "Name",
 
         wu: null,
@@ -68,7 +73,7 @@ define([
                         }
 
                     },*/
-                    LogicalFiles: { label: "Logical Files", width: 108, sortable: false },
+                    LogicalFiles: { label: this.i18n.LogicalFiles, width: 108, sortable: false },
                     /*State: {
                         label: "State", width: 180, sortable: true, formatter: function (state, row) {
                             return state + (row.Duration ? " (" + row.Duration + ")" : "");

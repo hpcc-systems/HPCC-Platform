@@ -15,8 +15,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/array",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/ResultsWidget",
+    "dojo/_base/array",
     "dojo/on",
 
     "dijit/layout/ContentPane",
@@ -36,12 +39,14 @@ define([
     "hpcc/SFDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, arrayUtil, lang, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
                 ContentPane,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, ESPRequest, ESPWorkunit, ResultWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
     return declare("ResultsWidget", [GridDetailsWidget], {
-        gridTitle: "Outputs",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+
+        gridTitle: nlsSpecific.title,
         idProperty: "Sequence",
 
         wu: null,
@@ -89,24 +94,24 @@ define([
                         selectorType: 'checkbox'
                     }),
                     Name: {
-                        label: "Name", width: 180, sortable: true,
+                        label: this.i18n.Name, width: 180, sortable: true,
                         formatter: function (Name, idx) {
                             return "<a href='#' rowIndex=" + idx + " class='" + context.id + "ResultClick'>" + Name + "</a>";
                         }
                     },
                     FileName: {
-                        label: "File Name", sortable: true,
+                        label: this.i18n.FileName, sortable: true,
                         formatter: function (FileName, idx) {
                             return "<a href='#' rowIndex=" + idx + " class='" + context.id + "FileClick'>" + FileName + "</a>";
                         }
                     },
                     Value: {
-                        label: "Value",
+                        label: this.i18n.Value,
                         width: 360,
                         sortable: true
                     },
                     ResultViews: {
-                        label: "Views", sortable: true,
+                        label: this.i18n.Views, sortable: true,
                         formatter: function (ResultViews, idx) {
                             var retVal = "";
                             arrayUtil.forEach(ResultViews, function (item, idx) {

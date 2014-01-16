@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/HPCCPlatformFilesWidget",
 
     "dijit/registry",
 
@@ -30,13 +34,14 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
 
-], function (declare,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific,
                 registry,
                 _TabContainerWidget, ESPRequest, GetDFUWorkunitsWidget, DFUQueryWidget, LZBrowseWidget,
                 template) {
     return declare("HPCCPlatformFilesWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformFilesWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -47,8 +52,9 @@ define([
         },
 
         getTitle: function () {
-            return "HPCC Platform - Files";
+            return this.i18n.title;
         },
+
         //  Hitched actions  ---
 
         //  Implementation  ---
@@ -64,7 +70,7 @@ define([
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.id + "_XRef") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: ESPRequest.getBaseURL("WsDFUXRef") + "/DFUXRefList",
+                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsDFUXRef") + "/DFUXRefList"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.init) {

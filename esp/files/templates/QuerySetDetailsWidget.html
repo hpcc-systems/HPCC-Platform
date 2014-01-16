@@ -1,88 +1,88 @@
 <div class="${baseClass}">
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
-            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props='title:"Summary", iconClass:"iconLogicalFile"' data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.Summary}', iconClass:'iconLogicalFile'" data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
-                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props='iconClass:"iconRefresh"' data-dojo-type="dijit.form.Button">Refresh</div>
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props='iconClass:"iconRefresh"' data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}Save" data-dojo-attach-event="onClick:_onSave" data-dojo-type="dijit.form.Button">Save</div>
-                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
+                    <div id="${id}Save" data-dojo-attach-event="onClick:_onSave" data-dojo-type="dijit.form.Button">${i18n.Save}</div>
+                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
                 </div>
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <h2>
-                        <img id="${id}SuspendImg" src="img/unsuspended.png" alt="Unsuspended"/>&nbsp;<img id="${id}ActiveImg" src="img/inactive.png"/>&nbsp;<span id="${id}QueryId" class="bold">Query Details for</span>
+                        <img id="${id}SuspendImg" src="img/unsuspended.png" alt="${i18n.Unsuspended}"/>&nbsp;<img id="${id}ActiveImg" src="img/inactive.png"/>&nbsp;<span id="${id}QueryId" class="bold">${i18n.QueryDetailsfor}</span>
                     </h2>
                     <form id="${id}SummaryForm">
                         <ul>
                             <li>
-                                <label class="Prompt" for="${id}QueryName">Name:</label>
+                                <label class="Prompt" for="${id}QueryName">${i18n.Name}:</label>
                                 <div id="${id}QueryName"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}QuerySet">Query Set:</label>
+                                <label class="Prompt" for="${id}QuerySet">${i18n.QuerySet}:</label>
                                 <div id="${id}QuerySet"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}Priority">Priority:</label>
+                                <label class="Prompt" for="${id}Priority">${i18n.Priority}:</label>
                                 <div id="${id}Priority"></div>
                             </li>
                             <li> 
-                                <label class="Prompt" for="${id}PublishedBy">Published By:</label>
+                                <label class="Prompt" for="${id}PublishedBy">${i18n.PublishedBy}:</label>
                                 <div id="${id}PublishedBy"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}Suspended">Suspended:</label>
+                                <label class="Prompt" for="${id}Suspended">${i18n.Suspended}:</label>
                                 <div><input id="${id}Suspended" data-dojo-type="dijit.form.CheckBox"/></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}SuspendedBy">Suspended By:</label>
+                                <label class="Prompt" for="${id}SuspendedBy">${i18n.SuspendedBy}:</label>
                                 <div id="${id}SuspendedBy"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}Activated">Activated:</label>
+                                <label class="Prompt" for="${id}Activated">${i18n.Activated}:</label>
                                 <div><input id="${id}Activated" data-dojo-type="dijit.form.CheckBox"/></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}Comment">Comment:</label>
+                                <label class="Prompt" for="${id}Comment">${i18n.Comment}:</label>
                                 <div id="${id}Comment"></div>
                             </li>
                             <hr class="dashedLine">
                             <li>
-                                <label class="Prompt" for="${id}Wuid">WUID:</label>
+                                <label class="Prompt" for="${id}Wuid">${i18n.WUID}:</label>
                                 <div id="${id}Wuid"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}Dll">Dll:</label>
+                                <label class="Prompt" for="${id}Dll">${i18n.Dll}:</label>
                                 <div id="${id}Dll"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}WUSnapShot">WU Snap Shot:</label>
+                                <label class="Prompt" for="${id}WUSnapShot">${i18n.WUSnapShot}:</label>
                                 <div id="${id}WUSnapShot"></div>
                             </li>
                              <hr class="dashedLine">
                             <li>
-                                <label class="Prompt" for="${id}IsLibrary">Is Library:</label>
+                                <label class="Prompt" for="${id}IsLibrary">${i18n.IsLibrary}:</label>
                                 <div id="${id}IsLibrary"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="${id}LibrariesUsed">Libraries Used:</label>
+                                <label class="Prompt" for="${id}LibrariesUsed">${i18n.LibrariesUsed}:</label>
                                 <div id="${id}LibrariesUsed"></div>
                             </li>
                         </ul>
                     </form>
                 </div>
             </div>
-            <div id="${id}_Errors" title="Errors" data-dojo-type="QuerySetErrorsWidget">
+            <div id="${id}_Errors" title="${i18n.Errors}" data-dojo-type="QuerySetErrorsWidget">
             </div>
-            <div id="${id}_Graphs" title="Graphs" data-dojo-type="GraphsWidget">
+            <div id="${id}_Graphs" title="${i18n.Graphs}" data-dojo-type="GraphsWidget">
             </div>
-            <div id="${id}_QuerySetLogicalFiles" title="Logical Files" data-dojo-type="QuerySetLogicalFilesWidget">
+            <div id="${id}_QuerySetLogicalFiles" title="${i18n.LogicalFiles}" data-dojo-type="QuerySetLogicalFilesWidget">
             </div>
-            <div id="${id}_TestPages" title="Test Pages" data-dojo-type="QueryTestWidget">
+            <div id="${id}_TestPages" title="${i18n.TestPages}" data-dojo-type="QueryTestWidget">
             </div>
-            <div id="${id}_Workunit" title="WUDetailsWidget" data-dojo-type="WUDetailsWidget">
+            <div id="${id}_Workunit" title="${i18n.Workunit}" data-dojo-type="WUDetailsWidget">
             </div>
         </div>
     </div>

@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/GraphsWidget",
     "dojo/_base/array",
     "dojo/on",
 
@@ -34,13 +37,14 @@ define([
     "hpcc/TimingTreeMapWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, arrayUtil, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
                 Button,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, ESPWorkunit, GraphPageWidget, TimingTreeMapWidget, ESPUtil) {
     return declare("GraphsWidget", [GridDetailsWidget], {
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
-        gridTitle: "Graphs",
+        gridTitle: nlsSpecific.title,
         idProperty: "Name",
 
         wu: null,
@@ -92,7 +96,7 @@ define([
         createGrid: function (domID) {
             var context = this;
             this.openSafeMode = new Button({
-                label: "Open (safe mode)",
+                label: this.i18n.OpenSafeMode,
                 onClick: function (event) {
                     context._onOpen(event, {
                         safeMode: true
@@ -110,15 +114,15 @@ define([
                         selectorType: 'checkbox'
                     }),
                     Name: {
-                        label: "Name", width: 72, sortable: true,
+                        label: this.i18n.Name, width: 72, sortable: true,
                         formatter: function (Name, idx) {
                             return "<a href='#' rowIndex=" + idx + " class='" + context.id + "GraphClick'>" + Name + "</a>";
                         }
                     },
-                    Label: { label: "Label", sortable: true },
-                    Complete: { label: "Completed", width: 72, sortable: true },
+                    Label: { label: this.i18n.Label, sortable: true },
+                    Complete: { label: this.i18n.Completed, width: 72, sortable: true },
                     Time: {
-                        label: "Time", width: 90, sortable: true,
+                        label: this.i18n.Time, width: 90, sortable: true,
                         formatter: function (totalSeconds, idx) {
                             var hours = Math.floor(totalSeconds / 3600);
                             totalSeconds %= 3600;
@@ -127,7 +131,7 @@ define([
                             return (hours < 10 ? "0" : "") + hours + ":" + (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
                         }
                     },
-                    Type: { label: "Type", width: 72, sortable: true }
+                    Type: { label: this.i18n.Type, width: 72, sortable: true }
                 }
             }, domID);
 

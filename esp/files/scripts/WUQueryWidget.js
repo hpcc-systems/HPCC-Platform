@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/WUQueryWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-class",
@@ -57,11 +60,9 @@ define([
     "dijit/form/RadioButton",
     "dijit/form/Select",
     "dijit/Toolbar",
-    "dijit/TooltipDialog",
+    "dijit/TooltipDialog"
 
-    "dojox/layout/TableContainer"
-
-], function (declare, lang, arrayUtil, dom, domClass, domForm, date, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domClass, domForm, date, on,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, WUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -69,6 +70,7 @@ define([
     return declare("WUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "WUQueryWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         workunitsTab: null,
         workunitsGrid: null,
@@ -91,7 +93,7 @@ define([
         },
 
         getTitle: function () {
-            return "ECL Workunits";
+            return this.i18n.title;
         },
 
         //  Hitched actions  ---
@@ -116,7 +118,7 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm('Delete selected workunits?')) {
+            if (confirm(this.i18n.DeleteSelectedWorkunits)) {
                 var context = this;
                 var selection = this.workunitsGrid.getSelected();
                 WsWorkunits.WUAction(selection, "Delete", {
@@ -175,19 +177,19 @@ define([
 
             if (item.Owner == "") {
                 this.menuFilterOwner.set("disabled", true);
-                this.menuFilterOwner.set("label", "Owner:  " + "N/A");
+                this.menuFilterOwner.set("label", this.i18n.Owner + ":  " + this.i18n.NA);
             }
             if (item.Jobname == "") {
                 this.menuFilterJobname.set("disabled", true);
-                this.menuFilterJobname.set("label", "Jobname:  " + "N/A");
+                this.menuFilterJobname.set("label", this.i18n.JobName + ":  " + this.i18n.NA);
             }
             if (item.Cluster == "") {
                 this.menuFilterCluster.set("disabled", true);
-                this.menuFilterCluster.set("label", "Cluster:  " + "N/A");
+                this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + this.i18n.NA);
             }
             if (item.State == "") {
                 this.menuFilterState.set("disabled", true);
-                this.menuFilterState.set("label", "State:  " + "N/A");
+                this.menuFilterState.set("label", this.i18n.State + ":  " + this.i18n.NA);
             }
         },
 
@@ -266,33 +268,33 @@ define([
                 targetNodeIds: [this.id + "WorkunitsGrid"]
             });
             this.menuOpen = this.addMenuItem(pMenu, {
-                label: "Open",
+                label: this.i18n.Open,
                 onClick: function () { context._onOpen(); }
             });
             this.menuDelete = this.addMenuItem(pMenu, {
-                label: "Delete",
+                label: this.i18n.Delete,
                 onClick: function () { context._onDelete(); }
             });
             this.menuSetToFailed = this.addMenuItem(pMenu, {
-                label: "Set To Failed",
+                label: this.i18n.SetToFailed,
                 onClick: function () { context._onSetToFailed(); }
             });
             pMenu.addChild(new MenuSeparator());
             this.menuProtect = this.addMenuItem(pMenu, {
-                label: "Protect",
+                label: this.i18n.Protect,
                 onClick: function () { context._onProtect(); }
             });
             this.menuUnprotect = this.addMenuItem(pMenu, {
-                label: "Unprotect",
+                label: this.i18n.Unprotect,
                 onClick: function () { context._onUnprotect(); }
             });
             pMenu.addChild(new MenuSeparator());
             this.menuReschedule = this.addMenuItem(pMenu, {
-                label: "Reschedule",
+                label: this.i18n.Reschedule,
                 onClick: function () { context._onReschedule(); }
             });
             this.menuDeschedule = this.addMenuItem(pMenu, {
-                label: "Deschedule",
+                label: this.i18n.Deschedule,
                 onClick: function () { context._onDeschedule(); }
             });
             pMenu.addChild(new MenuSeparator());
@@ -328,14 +330,14 @@ define([
                 });
                 pSubMenu.addChild(new MenuSeparator());
                 this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
-                    label: "Clear",
+                    label: this.i18n.Clear,
                     onClick: function () {
                         context.filter.clear();
                         context.refreshGrid();
                     }
                 });
                 pMenu.addChild(new PopupMenuItem({
-                    label: "Filter",
+                    label: this.i18n.Filter,
                     popup: pSubMenu
                 }));
             }
@@ -373,21 +375,21 @@ define([
                         }
                     },
                     Wuid: {
-                        label: "Wuid", width: 180,
+                        label: this.i18n.WUID, width: 180,
                         formatter: function (Wuid, idx) {
                             var wu = ESPWorkunit.Get(Wuid);
                             return "<img src='../files/" + wu.getStateImage() + "'>&nbsp;<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
                         }
                     },
-                    Owner: { label: "Owner", width: 90 },
-                    Jobname: { label: "Job Name"},
-                    Cluster: { label: "Cluster", width: 90 },
-                    RoxieCluster: { label: "Roxie Cluster", width: 99 },
-                    State: { label: "State", width: 90 },
-                    TotalThorTime: { label: "Total Thor Time", width: 117 }
+                    Owner: { label: this.i18n.Owner, width: 90 },
+                    Jobname: { label: this.i18n.JobName},
+                    Cluster: { label: this.i18n.Cluster, width: 90 },
+                    RoxieCluster: { label: this.i18n.RoxieCluster, width: 99 },
+                    State: { label: this.i18n.State, width: 90 },
+                    TotalThorTime: { label: this.i18n.TotalThorTime, width: 117 }
                 }
             }, this.id + "WorkunitsGrid");
-            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
+            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
 
             var context = this;
             on(document, "." + context.id + "WuidClick:click", function (evt) {

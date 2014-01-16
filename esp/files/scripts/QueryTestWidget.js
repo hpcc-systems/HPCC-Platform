@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/QueryTestWidget",
     "dojo/_base/array",
 
     "dijit/registry",
@@ -29,7 +33,7 @@ define([
 
     "dojo/text!../templates/QueryTestWidget.html"
 
-], function (declare, arrayUtil,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil,
             registry,
             _TabContainerWidget, WsTopology, ESPQuery,
             BorderContainer, TabContainer, ContentPane,
@@ -37,7 +41,8 @@ define([
     return declare("QueryTestWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QueryTestWidget",
-        
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+
         initalized: false,
         soapTab: null,
         jsonTab: null,
@@ -84,7 +89,7 @@ define([
                 var src = response + encodeURIComponent(context.params.QuerySet + "/" + context.params.QueryId + (postfix ? postfix : ""));
                 target.set("content", dojo.create("iframe", {
                     src: src,
-                    style: "border:1px solid lightgray; width: 100%; height: 100%"
+                    style: "border: 0; width: 100%; height: 100%"
                 }));
             });
         },

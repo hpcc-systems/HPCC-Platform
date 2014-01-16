@@ -17,6 +17,9 @@ define([
     "exports",
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/SFDetailsWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -59,7 +62,7 @@ define([
     "dojo/text!../templates/SFDetailsWidget.html",
 
     "dijit/TooltipDialog"
-], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable,
+], function (exports, declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget,
@@ -68,6 +71,8 @@ define([
     exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "SFDetailsWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+
         borderContainer: null,
         tabContainer: null,
         summaryWidget: null,
@@ -95,7 +100,7 @@ define([
             this.logicalFile.save(dom.byId(context.id + "Description").value);
         },
         _onDelete: function (event) {
-            if (confirm('Delete Superfile?')) {
+            if (confirm(this.i18n.DeleteSuperfile)) {
                 this.logicalFile.removeSubfiles(this.subfilesGrid.store.objectStore.data, true);
             }
         },
@@ -192,14 +197,14 @@ define([
                             return "";
                         }
                     },
-                    Name: { label: "Logical Name" },
-                    Owner: { label: "Owner", width: 72 },
-                    Description: { label: "Description", width: 153 },
-                    ClusterName: { label: "Cluster", width: 108 },
-                    RecordCount: { label: "Records", width: 72, sortable: false },
-                    Totalsize: { label: "Size", width: 72, sortable: false },
-                    Parts: { label: "Parts", width: 45, sortable: false },
-                    Modified: { label: "Modified (UTC/GMT)", width: 155, sortable: false }
+                    Name: { label: this.i18n.LogicalName },
+                    Owner: { label: this.i18n.Owner, width: 72 },
+                    Description: { label: this.i18n.Description, width: 153 },
+                    ClusterName: { label: this.i18n.Cluster, width: 108 },
+                    RecordCount: { label: this.i18n.Records, width: 72, sortable: false },
+                    Totalsize: { label: this.i18n.Size, width: 72, sortable: false },
+                    Parts: { label: this.i18n.Parts, width: 45, sortable: false },
+                    Modified: { label: this.i18n.ModifiedUTCGMT, width: 155, sortable: false }
                 },
                 store: this.subfilesStore
             }, this.id + "SubfilesGrid");

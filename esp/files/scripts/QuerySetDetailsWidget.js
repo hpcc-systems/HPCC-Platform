@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/QuerySetDetailsWidget",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
@@ -57,7 +60,7 @@ define([
 
     "hpcc/WUDetailsWidget"
 
-], function (declare, lang, dom, domAttr, domClass, query, Memory, Observable, all,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domAttr, domClass, query, Memory, Observable, all,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 ESPWorkunit, ESPQuery, WsWorkunits, WsTopology, _TabContainerWidget, QuerySetLogicalFilesWidget, QuerySetErrorsWidget, QueryTestWidget,
@@ -65,7 +68,8 @@ define([
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QuerySetDetailsWidget",
-        
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+
         query: null,
 
         initalized: false,
@@ -107,7 +111,7 @@ define([
             });
         },
         _onDelete: function (event) {
-            if (confirm('Delete selected workunits?')) {
+            if (confirm(this.i18n.DeleteSelectedWorkunits)) {
                 this.query.doDelete();
             }
         },
@@ -204,9 +208,9 @@ define([
             }
 
             else if (name === "CountGraphs" && newValue) {
-                this.graphsTab.set("title", "Graphs " + "(" + newValue + ")");
+                this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue + ")");
             } else if (name === "graphs") {
-                this.graphsTab.set("title", "Graphs " + "(" + newValue.length + ")");
+                this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue.length + ")");
                 var tooltip = "";
                 for (var i = 0; i < newValue.length; ++i) {
                     if (tooltip != "")
@@ -219,7 +223,7 @@ define([
             }
             else if (name === "LogicalFiles") {
                 if (lang.exists("Item.length", newValue)) {
-                    this.logicalFilesTab.set("title", "Logical Files " + "(" + newValue.Item.length + ")");
+                    this.logicalFilesTab.set("title", this.i18n.LogicalFiles + " (" + newValue.Item.length + ")");
                     var tooltip = "";
                     for (var i = 0; i < newValue.Item.length; ++i) {
                         if (tooltip != "")
@@ -231,7 +235,7 @@ define([
             }
             else if (name === "Clusters") {
                 if (lang.exists("ClusterQueryState.length", newValue)) {
-                    this.errorsTab.set("title", "Errors / Status " + "(" + newValue.ClusterQueryState.length + ")");
+                    this.errorsTab.set("title", this.i18n.ErrorsStatus + " (" + newValue.ClusterQueryState.length + ")");
                     var tooltip = "";
                     for (var i = 0; i < newValue.ClusterQueryState.length; ++i) {
                         if (tooltip != "")

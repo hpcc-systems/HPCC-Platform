@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/ActivityWidget",
     "dojo/_base/array",
     "dojo/on",
 
@@ -36,13 +39,14 @@ define([
     "hpcc/DFUWUDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, arrayUtil, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
                 Button,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, ESPWorkunit, ESPDFUWorkunit, WsSMC, WUDetailsWidget, DFUWUDetailsWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
-        gridTitle: "Activity",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        gridTitle: nlsSpecific.title,
         idProperty: "Wuid",
 
         doSearch: function (searchText) {
@@ -58,10 +62,6 @@ define([
             this._refreshActionState();
         },
 
-        getTitle: function () {
-            return "Activity";
-        },
-
         createGrid: function (domID) {
             var context = this;
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
@@ -71,21 +71,21 @@ define([
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
                     Wuid: {
-                        label: "Active workunit", width: 180, sortable: true,
+                        label: this.i18n.ActiveWorkunit, width: 180, sortable: true,
                         formatter: function (Wuid, row) {
                             var wu = row.Server === "DFUserver" ? ESPDFUWorkunit.Get(Wuid) : ESPWorkunit.Get(Wuid);
                             return "<img src='../files/" + wu.getStateImage() + "'>&nbsp;<a href='#' class='" + context.id + "WuidClick'>" + Wuid + "</a>";
                         }
 
                     },
-                    ClusterName: { label: "Target", width: 108, sortable: true },
+                    ClusterName: { label: this.i18n.Target, width: 108, sortable: true },
                     State: {
-                        label: "State", width: 180, sortable: true, formatter: function (state, row) {
+                        label: this.i18n.State, width: 180, sortable: true, formatter: function (state, row) {
                             return state + (row.Duration ? " (" + row.Duration + ")" : "");
                         }
                     },
-                    Owner: { label: "Owner", width: 90, sortable: true },
-                    Jobname: { label: "Job Name", sortable: true }
+                    Owner: { label: this.i18n.Owner, width: 90, sortable: true },
+                    Jobname: { label: this.i18n.JobName, sortable: true }
                 }
             }, domID);
 
@@ -149,21 +149,6 @@ define([
             var context = this;
             this.grid.set("query", {
             });
-            /*
-            WsSMC.Activity({
-                request: {
-                }
-            }).then(function (response) {
-                var items = lang.getObject("ActivityResponse.Running.ActiveWorkunit", false, response);
-                arrayUtil.forEach(items, function (item, idx) {
-                    lang.mixin(item, {
-                        State: item.State + " (" + item.Duration + ")"
-                    });
-                });
-                context.store.setData(items);
-                context.grid.refresh();
-            });
-            */
         },
 
         refreshActionState: function (selection) {

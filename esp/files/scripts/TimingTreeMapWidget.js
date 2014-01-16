@@ -17,6 +17,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/TimingTreeMapWidget",
     "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/dom",
@@ -31,7 +34,7 @@ define([
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
-    function (declare, lang, arrayUtil, Memory, dom, domClass,
+    function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Memory, dom, domClass,
             registry, 
             TreeMap,
             _Widget, ESPWorkunit,
@@ -39,8 +42,9 @@ define([
         return declare("TimingTreeMapWidget", [_Widget], {
             templateString: template,
             baseClass: "TimingTreeMapWidget",
-            treeMap: null,
+            i18n: lang.mixin(nlsCommon, nlsSpecific),
 
+            treeMap: null,
             store: null,
 
             buildRendering: function (args) {

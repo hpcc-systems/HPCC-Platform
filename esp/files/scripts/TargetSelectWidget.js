@@ -13,9 +13,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ############################################################################## */
-require([
+define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/TargetSelectWidget",
     "dojo/_base/array",
     "dojo/_base/xhr",
     "dojo/data/ItemFileReadStore",
@@ -27,10 +30,11 @@ require([
     "hpcc/WsTopology",
     "hpcc/WsWorkunits",
     "hpcc/FileSpray"
-], function (declare, lang, arrayUtil, xhr, ItemFileReadStore, on,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, xhr, ItemFileReadStore, on,
     Select, registry,
     WsTopology, WsWorkunits, FileSpray) {
     return declare("TargetSelectWidget", [Select], {
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         loading: false,
         defaultValue: "",

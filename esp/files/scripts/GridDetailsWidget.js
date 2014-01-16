@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/GridDetailsWidget",
     "dojo/store/Memory",
     "dojo/store/Observable",
 
@@ -36,13 +39,14 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane"
 
-], function (declare, lang, Memory, Observable,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, Memory, Observable,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 _TabContainerWidget,
                 template) {
     return declare("GridDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GridDetailsWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         gridTitle: "Change Me",
         idProperty: "Change Me",
@@ -116,12 +120,16 @@ define([
                 context._refreshActionState();
             });
             if (!this.grid.get("noDataMessage")) {
-                this.grid.set("noDataMessage", "<span class='dgridInfo'>Zero Rows...</span>");
+                this.grid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
             }
             if (!this.grid.get("loadingMessage")) {
-                this.grid.set("loadingMessage", "<span class='dgridInfo'>Loading...</span>");
+                this.grid.set("loadingMessage", "<span class='dojoxGridNoData'>" + this.i18n.loadingMessage + "</span>");
             }
             this.grid.startup();
+        },
+
+        getTitle: function () {
+            return this.gridTitle;
         },
 
         appendMenuItem: function (menu, label, onClick) {
@@ -142,11 +150,11 @@ define([
             this.contextMenu = new Menu({
                 targetNodeIds: [this.id + "Grid"]
             });
-            this.appendContextMenuItem("Refresh", function () {
+            this.appendContextMenuItem(this.i18n.Refresh, function () {
                 context._onRefresh();
             });
             this.contextMenu.addChild(new MenuSeparator());
-            this.appendContextMenuItem("Open", function () {
+            this.appendContextMenuItem(this.i18n.Open, function () {
                 context._onOpen();
             });
             if (this.appendContextMenu) {

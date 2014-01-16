@@ -126,32 +126,19 @@ define([
                 }
 
                 document.title = widget.getTitle ? widget.getTitle() : params.Widget;
-                /*
-                dojo.publish("hpccMessageTopic", {
-                    type: "warning",
-                    message:  "testing"
-                });
-                */
+                stopLoading();
             }
         );
     },
 
     startLoading = function (targetNode) {
-        var overlayNode = dom.byId("loadingOverlay");
-        if ("none" == domStyle.get(overlayNode, "display")) {
-            var coords = domGeometry.getMarginBox(targetNode || baseWindow.body());
-            domGeometry.setMarginBox(overlayNode, coords);
-            domStyle.set(dom.byId("loadingOverlay"), {
-                display: "block",
-                opacity: 1
-            });
-        }
+        domStyle.set(dom.byId("loadingOverlay"), "display", "block");
+        domStyle.set(dom.byId("loadingOverlay"), "opacity", "255");
     },
 
-    endLoading = function () {
+    stopLoading = function () {
         fx.fadeOut({
             node: dom.byId("loadingOverlay"),
-            duration: 175,
             onEnd: function (node) {
                 domStyle.set(node, "display", "none");
             }
@@ -160,10 +147,8 @@ define([
 
     return {
         init: function () {
-            startLoading();
             ready(function () {
                 initUi();
-                endLoading();
             });
         }
     };

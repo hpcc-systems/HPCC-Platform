@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/SearchResultsWidget",
     "dojo/_base/array",
     "dojo/on",
     "dojo/promise/all",
@@ -41,7 +44,7 @@ define([
     "hpcc/SFDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, arrayUtil, on, all,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on, all,
                 Button,
                 Standby,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
@@ -50,6 +53,7 @@ define([
 
         gridTitle: "Search Results",
         idProperty: "id",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         doSearch: function (searchText) {
             this.params = {
@@ -80,8 +84,8 @@ define([
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: this.store,
-                loadingMessage: "Loading data...",
-                noDataMessage: "No results found.",
+                loadingMessage: "<span class='dojoxGridNoData'>" + this.i18n.loadingMessage + "</span>",
+                noDataMessage: "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>",
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
                     Type: { label: "What", width: 108, sortable: true },
@@ -103,7 +107,11 @@ define([
                 }
             });
 
-            this.standby = new Standby({ target: domID });
+            this.standby = new Standby({
+                target: domID,
+                image: "/esp/files/img/loadingBar.gif",
+                color: null
+            });
             document.body.appendChild(this.standby.domNode);
             this.standby.startup();
 

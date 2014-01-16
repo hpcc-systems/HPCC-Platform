@@ -15,8 +15,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/xhr",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/ECLPlaygroundWidget",
+    "dojo/_base/xhr",
     "dojo/dom",
     "dojo/query",
 
@@ -34,13 +37,15 @@ define([
     "hpcc/ESPQuery",
 
     "dojo/text!../templates/ECLPlaygroundWidget.html"
-], function (declare, xhr, lang, dom, query,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, xhr, dom, query,
                 BorderContainer, TabContainer, ContentPane, registry,
                 _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit, ESPQuery,
                 template) {
     return declare("ECLPlaygroundWidget", [_Widget], {
         templateString: template,
         baseClass: "ECLPlaygroundWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
+
         wu: null,
         editorControl: null,
         graphControl: null,
@@ -71,6 +76,10 @@ define([
         },
 
         //  Implementation  ---
+        getTitle: function () {
+            return this.i18n.title;
+        },
+
         _initControls: function () {
             var context = this;
             this.borderContainer = registry.byId(this.id + "BorderContainer");
@@ -175,10 +184,6 @@ define([
             this.errWarnWidget.set("disabled", true);
             this.resultsWidget.set("disabled", true);
             this.visualizeWidget.set("disabled", true);
-        },
-
-        getTitle: function () {
-            return "ECL Playground";
         },
 
         watchWU: function () {

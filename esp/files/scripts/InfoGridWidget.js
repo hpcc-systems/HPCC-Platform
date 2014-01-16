@@ -17,6 +17,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/InfoGridWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-construct",
@@ -46,7 +49,7 @@ define([
     "dijit/layout/ContentPane",
     "dijit/form/CheckBox"
 ],
-    function (declare, lang, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic,
+    function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic,
             registry, 
             AndOrReadStore, entities,
             OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
@@ -55,6 +58,8 @@ define([
         return declare("InfoGridWidget", [_Widget], {
             templateString: template,
             baseClass: "InfoGridWidget",
+            i18n: lang.mixin(nlsCommon, nlsSpecific),
+
             borderContainer: null,
             infoGrid: null,
             errorsCheck: null,
@@ -91,7 +96,7 @@ define([
                     selectionMode: "single",
                     columns: {
                         Severity: {
-                            label: "Severity", field: "", width: 72, sortable: false,
+                            label: this.i18n.Severity, field: "", width: 72, sortable: false,
                             renderCell: function (object, value, node, options) {
                                 switch (value) {
                                     case "Error":
@@ -105,12 +110,12 @@ define([
                                 node.innerText = value;
                             }
                         }, 
-                        Source: { label: "Source", field: "", width: 144, sortable: false },
-                        Code: { label: "Code", field: "", width: 45, sortable: false },
-                        Message: { label: "Message", field: "", sortable: false },
-                        Column: { label: "Col", field: "", width: 36, sortable: false },
-                        LineNo: { label: "Line", field: "", width: 36, sortable: false },
-                        FileName: { label: "FileName", field: "", width: 360, sortable: false }
+                        Source: { label: this.i18n.Source, field: "", width: 144, sortable: false },
+                        Code: { label: this.i18n.Code, field: "", width: 45, sortable: false },
+                        Message: { label: this.i18n.Message, field: "", sortable: false },
+                        Column: { label: this.i18n.Col, field: "", width: 36, sortable: false },
+                        LineNo: { label: this.i18n.Line, field: "", width: 36, sortable: false },
+                        FileName: { label: this.i18n.FileName, field: "", width: 360, sortable: false }
                     },
                     store: this.infoStore
                 }, this.id + "InfoGrid");
@@ -290,7 +295,7 @@ define([
                     this.errWarnCount.innerHTML = this.infoData.length;
                 }
                 if (this.errWarnMenuItem) {
-                    this.errWarnMenuItem.set("label", "Error/Warnings (" + this.infoData.length + ")");
+                    this.errWarnMenuItem.set("label", this.i18n.ErrorWarnings + " (" + this.infoData.length + ")");
                 }
             }
         });
