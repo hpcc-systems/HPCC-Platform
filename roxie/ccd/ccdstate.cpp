@@ -239,18 +239,25 @@ static Owned<KeptLowerCaseAtomTable> daliMisses;
 static void noteDaliMiss(const char *filename)
 {
     CriticalBlock b(daliMissesCrit);
+    if (traceLevel > 4)
+        DBGLOG("noteDaliMiss %s", filename);
     daliMisses->addAtom(filename);
 }
 
 static bool checkCachedDaliMiss(const char *filename)
 {
     CriticalBlock b(daliMissesCrit);
-    return daliMisses->find(filename) != NULL;
+    bool ret = daliMisses->find(filename) != NULL;
+    if (traceLevel > 4)
+        DBGLOG("checkCachedDaliMiss %s returns %d", filename, ret);
+    return ret;
 }
 
 static void clearDaliMisses()
 {
     CriticalBlock b(daliMissesCrit);
+    if (traceLevel)
+        DBGLOG("Clearing dali misses cache");
     daliMisses.setown(new KeptLowerCaseAtomTable);
 }
 

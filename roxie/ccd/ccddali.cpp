@@ -435,6 +435,8 @@ public:
         }
         else // Legacy mode - recently cloned files should have the extra info
         {
+            if (traceLevel > 1)
+                DBGLOG("checkClonedFromRemote: Resolving %s in legacy mode", _lfn);
             SocketEndpoint cloneFrom;
             cloneFrom.set(fdesc->queryProperties().queryProp("@cloneFrom"));
             if (cloneFrom.isNull())
@@ -488,6 +490,8 @@ public:
                 xpath.append(lcname.append(logicalName).toLowerCase());
                 writeCache(xpath.str(), xpath.str(), pt);
             }
+            if (traceLevel > 1)
+                DBGLOG("Dali lookup %s returned %d", logicalName, dfsFile != NULL);
             return dfsFile.getClear();
         }
         else
