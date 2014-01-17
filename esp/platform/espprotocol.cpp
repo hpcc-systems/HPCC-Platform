@@ -90,24 +90,8 @@ void CEspApplicationPort::appendBinding(CEspBindingEntry* entry, bool isdefault)
     }
 }
 
-
 const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const char *inner, StringBuffer &html, IEspContext* ctx)
 {
-    CEspBindingEntry* bindingentry = getDefaultBinding();
-    if(bindingentry)
-    {
-        EspHttpBinding *httpbind = dynamic_cast<EspHttpBinding *>(bindingentry->queryBinding());
-        if(httpbind)
-        {
-            const char* rootpage = httpbind->getRootPage(ctx);
-            if(rootpage && *rootpage)
-            {
-                html.loadFile(StringBuffer(getCFD()).append(rootpage).str());
-                return html;
-            }
-        }
-    }
-
     if (!xslp)
        throw MakeStringException(0,"Error - CEspApplicationPort XSLT processor not initialized");
 

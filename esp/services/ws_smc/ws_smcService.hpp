@@ -175,7 +175,7 @@ public:
     {
         if (ctx->queryRequestParameters()->hasProp("legacy"))
             return NULL;
-        return "files/stub.htm";
+        return "stub.htm";
     }
     virtual int onGetRoot(IEspContext &context, CHttpRequest* request,  CHttpResponse* response)
     {
