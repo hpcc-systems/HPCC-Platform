@@ -237,12 +237,15 @@ class graphmaster_decl CMasterActivity : public CActivityBase, implements IThrea
     bool asyncStart;
     MemoryBuffer *data;
     CriticalSection progressCrit;
+    IArrayOf<IDistributedFile> readFiles;
 
 protected:
     ProgressInfoArray progressInfo;
     CTimingInfo timingInfo;
     IBitSet *notedWarnings;
 
+    void addReadFile(IDistributedFile *file, bool temp=false);
+    IDistributedFile *queryReadFile(unsigned f);
     virtual void process() { }
 public:
     IMPLEMENT_IINTERFACE;
@@ -253,7 +256,7 @@ public:
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb);
     virtual void getXGMML(unsigned idx, IPropertyTree *edge);
     virtual void getXGMML(IWUGraphProgress *progress, IPropertyTree *node);
-    virtual void init() { }
+    virtual void init();
     virtual void handleSlaveMessage(CMessageBuffer &msg) { }
     virtual void reset();
     virtual MemoryBuffer &queryInitializationData(unsigned slave) const;
@@ -263,8 +266,11 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave) { }
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb) { }
 
+    virtual void preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void startProcess(bool async=true);
     virtual bool wait(unsigned timeout);
+    virtual void done();
+    virtual void kill();
 
 // IExceptionHandler
     virtual bool fireException(IException *e);

@@ -34,6 +34,7 @@ public:
     }
     virtual void done()
     {
+        CMasterActivity::done();
         IHThorPipeWriteArg *helper = (IHThorPipeWriteArg *)queryHelper();
         Owned<IWUResult> r;
         Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();

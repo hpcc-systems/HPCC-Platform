@@ -44,15 +44,16 @@ public:
     GlobalMergeActivityMaster(CMasterGraphElement *info) : CMasterActivity(info)
     {
     }
-    void init()
+    virtual void init()
     {
+        CMasterActivity::init();
         replyTag = createReplyTag();
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         dst.append(replyTag);
     }
-    void process()
+    virtual void process()
     {
         ActPrintLog("GlobalMergeActivityMaster::process");
         CMasterActivity::process();     
@@ -118,8 +119,7 @@ public:
         delete [] intertags;
         ActPrintLog("GlobalMergeActivityMaster::process exit");
     }
-
-    void abort()
+    virtual void abort()
     {
         CMasterActivity::abort();
         cancelReceiveMsg(RANK_ALL, replyTag);
@@ -134,5 +134,3 @@ CActivityBase *createMergeActivityMaster(CMasterGraphElement *container)
     else
         return new GlobalMergeActivityMaster(container);
 }
-
-

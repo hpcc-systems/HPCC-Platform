@@ -86,7 +86,7 @@ public:
             mpTag = container.queryJob().allocateMPTag();
         loopGraph = NULL;
     }
-    bool fireException(IException *e)
+    virtual bool fireException(IException *e)
     {
         EXCLOG(e, "Loop master passed exception, aborting loop graph(s)");
         try
@@ -100,25 +100,26 @@ public:
         }
         return CMasterActivity::fireException(e);
     }
-    void doinit()
+    virtual void init()
     {
+        CMasterActivity::init();
         loopGraph = queryContainer().queryLoopGraph()->queryGraph();
         global = !loopGraph->isLocalOnly();
         if (container.queryLocalOrGrouped())
             return;
         maxEmptyLoopIterations = getOptUInt(THOROPT_LOOP_MAX_EMPTY, 1000);
     }
-    void process()
+    virtual void process()
     {
         CMasterActivity::process();
         emptyIterations = 0;
     }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         if (!container.queryLocalOrGrouped())
             serializeMPtag(dst, mpTag);
     }
-    void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
+    virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
     {
         CMasterGraph *graph = (CMasterGraph *)loopGraph;
         graph->handleSlaveDone(slaveIdx, mb);
@@ -186,20 +187,20 @@ public:
         if (!container.queryLocalOrGrouped())
             barrier.setown(container.queryJob().createBarrier(mpTag));
     }
-    void init()
+    virtual void init()
     {
+        CLoopActivityMasterBase::init();
         helper = (IHThorLoopArg *) queryHelper();
         flags = helper->getFlags();
         if (TAKloopdataset == container.getKind())
             assertex(flags & IHThorLoopArg::LFnewloopagain);
-        CLoopActivityMasterBase::doinit();
         if (!global && (flags & IHThorLoopArg::LFnewloopagain))
         {
             if (container.queryOwner().isGlobal())
                 global = true;
         }
     }
-    void process()
+    virtual void process()
     {
         CLoopActivityMasterBase::process();
         if (container.queryLocalOrGrouped())
@@ -262,9 +263,9 @@ public:
     CGraphLoopActivityMaster(CMasterGraphElement *info) : CLoopActivityMasterBase(info)
     {
     }
-    void init()
+    virtual void init()
     {
-        CLoopActivityMasterBase::doinit();
+        CLoopActivityMasterBase::init();
         if (!global)
             return;
         IHThorGraphLoopArg *helper = (IHThorGraphLoopArg *) queryHelper();
@@ -273,7 +274,7 @@ public:
             queryContainer().queryLoopGraph()->prepareCounterResult(*this, results, 1, 0);
         loopGraph->setResults(results);
     }
-    void process()
+    virtual void process()
     {
         CLoopActivityMasterBase::process();
         if (container.queryLocalOrGrouped())
@@ -319,6 +320,7 @@ public:
     }
     virtual void init()
     {
+        CMasterActivity::init();
         reset();
     }
     virtual void createResult() = 0;
