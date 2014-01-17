@@ -330,6 +330,7 @@ interface IDistributedSuperFile: extends IDistributedFile
                                 // returns file for part (not linked) NULL if not found
 };
 
+extern da_decl unsigned getSuperFileSubs(IDistributedSuperFile *super, IArrayOf<IDistributedFile> &subFiles, bool superSub=false);
 
 interface ISimpleSuperFileEnquiry: extends IInterface // lightweight local
 {

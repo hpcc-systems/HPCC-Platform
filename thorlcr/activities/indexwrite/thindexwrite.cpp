@@ -58,6 +58,7 @@ public:
     }
     virtual void init()
     {
+        CMasterActivity::init();
         OwnedRoxieString fname(helper->getFileName());
         dlfn.set(fname);
         isLocal = 0 != (TIWlocal & helper->getFlags());
@@ -267,6 +268,7 @@ public:
             if (!dlfn.isExternal())
                 queryThorFileManager().publish(container.queryJob(), fname, false, *fileDesc);
         }
+        CMasterActivity::done();
     }
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
     {
