@@ -59,7 +59,7 @@ public:
 
     virtual const char* getRootPage(IEspContext* ctx)
     {
-        return "files/configmgr.html";
+        return "configmgr.html";
     }
 
 
