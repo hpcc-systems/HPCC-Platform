@@ -1554,6 +1554,13 @@ FILESERVICES_API void FILESERVICES_CALL fsRemoteDirectory(size32_t & __lenResult
 
 FILESERVICES_API void FILESERVICES_CALL fsLogicalFileList(ICodeContext *ctx, size32_t & __lenResult,void * & __result, const char *mask, bool includenormal, bool includesuper, bool unknownszero, const char *foreigndali)
 {
+    IEngineContext *engineCtx = ctx->queryEngineContext();
+    if (engineCtx && !engineCtx->allowDaliAccess())
+    {
+        Owned<IException> e = MakeStringException(-1, "FileServices.LogicalFileList cannot access Dali in this context - this normally means it is being called from a thor slave");
+        EXCLOG(e, NULL);
+        throw e.getClear();
+    }
     MemoryBuffer mb;
     if (!mask||!*mask)
         mask ="*";

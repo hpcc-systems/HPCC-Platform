@@ -435,6 +435,8 @@ public:
         }
         else // Legacy mode - recently cloned files should have the extra info
         {
+            if (traceLevel > 1)
+                DBGLOG("checkClonedFromRemote: Resolving %s in legacy mode", _lfn);
             SocketEndpoint cloneFrom;
             cloneFrom.set(fdesc->queryProperties().queryProp("@cloneFrom"));
             if (cloneFrom.isNull())
@@ -462,8 +464,7 @@ public:
     {
         if (isConnected)
         {
-            if (traceLevel > 1)
-                DBGLOG("Dali lookup %s", logicalName);
+            unsigned start = msTick();
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
             Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt);
@@ -488,6 +489,8 @@ public:
                 xpath.append(lcname.append(logicalName).toLowerCase());
                 writeCache(xpath.str(), xpath.str(), pt);
             }
+            if (traceLevel > 1)
+                DBGLOG("Dali lookup %s returned %s in %u ms", logicalName, dfsFile != NULL ? "match" : "NO match", msTick()-start);
             return dfsFile.getClear();
         }
         else
