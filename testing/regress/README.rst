@@ -334,6 +334,11 @@ The format of result is same as above:
     To set individual timeout for test case
 //timeout <timeout_value_in_sec>
 
+    To switch off the test case output matching with key file
+    (If this tag exists in the test case source then its output stored into the result log file.)
+//nokey
+
+
 7. Key file generation:
 ------------------------------
 

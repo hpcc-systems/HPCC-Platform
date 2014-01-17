@@ -206,7 +206,7 @@ class Regression:
                                 if self.taskParam[threadId]['retryCount'] > 0:
                                     self.timeouts[threadId] =  self.taskParam[threadId]['timeoutValue']
                                     self.loggermutex.acquire()
-                                    logging.info("%3d. Does not started yet. Reset timeout to %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']))
+                                    logging.warn("%3d. Does not started yet. Reset timeout to %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']))
                                     logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (self.taskParam[threadId]['taskId']+1, threadId,  suiteItems[self.taskParam[threadId]['taskId']].ecl,   wuid['state'],  self.taskParam[threadId]['retryCount'] ),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                     self.loggermutex.release()
                                 else:

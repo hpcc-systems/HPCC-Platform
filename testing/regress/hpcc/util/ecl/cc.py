@@ -59,7 +59,7 @@ class ECLCC(Shell):
                     if  "Error" in line:
                         ecl.diff += line.replace("'",  "")
                     if "): error " in  line:
-                        ecl.diff += line
+                        ecl.diff += line.replace("\\'", "'")
                 #ecl.diff += repr(self.makeArchiveError).replace('\\n',  '\n\t')
             except Exception as ex:
                 logging.debug("Exception:'%s'",  str(ex))

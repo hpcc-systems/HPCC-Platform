@@ -141,6 +141,15 @@ class ECLFile:
         logging.debug("%3d. Publish is %s",  self.taskId,  retVal)
         return retVal
 
+    def testNoKey(self):
+        # Standard string has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = b'//nokey'
+        logging.debug("%3d. testNoKey (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+        retVal = self.__checkTag(tag)
+        logging.debug("%3d. No key is %s",  self.taskId,  retVal)
+        return retVal
+
     def getTimeout(self):
         timeout = 0
         # Standard string has a problem with unicode characters
