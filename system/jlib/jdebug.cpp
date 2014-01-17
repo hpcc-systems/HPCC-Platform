@@ -285,7 +285,9 @@ double getCycleToNanoScale()
 #else
 
 static bool use_gettimeofday=false;
+#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
 static bool useRDTSC = _USE_RDTSC;
+#endif
 static double cycleToNanoScale; 
 
 void calibrate_timing()
@@ -296,7 +298,7 @@ void calibrate_timing()
         unsigned long ebx; 
         unsigned long ecx;
         unsigned long edx;
-#ifdef __64BIT__
+#if defined(_ARCH_X86_64_)
         __asm__ ("cpuid\n\t" : "=a" (eax), "=b" (ebx), "=c" (ecx), "=d" (edx)   : "0" (1));
 
 #else
@@ -312,7 +314,6 @@ void calibrate_timing()
         if ((edx&0x10)==0)
             useRDTSC = false;
     }
-#endif
     if (useRDTSC) {
         unsigned startu = usTick();
         cycle_t start = getTSC();
@@ -333,14 +334,17 @@ void calibrate_timing()
         ERRLOG("calibrate_timing failed using RDTSC");
         useRDTSC = false;
     }
+#endif
     cycleToNanoScale = 1.0;
 }
 
 
 cycle_t jlib_decl get_cycles_now()
 {
+#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC)
         return getTSC();
+#endif
 #ifndef __APPLE__
     if (!use_gettimeofday) {
         timespec tm;
@@ -357,15 +361,19 @@ cycle_t jlib_decl get_cycles_now()
 
 __int64 jlib_decl cycle_to_nanosec(cycle_t cycles)
 {
+#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC)
         return (__int64)((double)cycles * cycleToNanoScale);
+#endif
     return cycles;
 }
 
 cycle_t nanosec_to_cycle(__int64 ns)
 {
+#if defined(_ARCH_X86_) || defined(_ARCH_X86_64_)
     if (useRDTSC)
         return (__int64)((double)ns / cycleToNanoScale);
+#endif
     return ns;
 }
 
