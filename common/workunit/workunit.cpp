@@ -4328,6 +4328,7 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     SocketEndpointArray roxieServers;
     StringAttr thorQueue;
     StringArray thorProcesses;
+    StringArray primaryThorProcesses;
     StringAttr prefix;
     ClusterType platform;
     unsigned clusterWidth;
@@ -4341,10 +4342,20 @@ public:
         {
             thorQueue.set(getClusterThorQueueName(queue.clear(), name));
             clusterWidth = 0;
+            bool isMultiThor = (thors.length() > 1);
             ForEachItemIn(i,thors) 
             {
                 IPropertyTree &thor = thors.item(i);
-                thorProcesses.append(thor.queryProp("@name"));
+                const char* thorName = thor.queryProp("@name");
+                thorProcesses.append(thorName);
+                if (!isMultiThor)
+                    primaryThorProcesses.append(thorName);
+                else
+                {
+                    const char *nodeGroup = thor.queryProp("@nodeGroup");
+                    if (!nodeGroup || strieq(nodeGroup, thorName))
+                        primaryThorProcesses.append(thorName);
+                }
                 unsigned nodes = thor.getCount("ThorSlaveProcess");
                 if (!nodes)
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: Thor cluster can not have 0 slave processes");
@@ -4422,6 +4433,10 @@ public:
     const StringArray & getThorProcesses() const
     {
         return thorProcesses;
+    }
+    const StringArray & getPrimaryThorProcesses() const
+    {
+        return primaryThorProcesses;
     }
 
     const SocketEndpointArray & getRoxieServers() const
