@@ -46,15 +46,16 @@ class Regression:
             self.timeoutThread = threading.Timer(1.0,  self.timeoutHandler)
             self.timeoutThread.start()
 
-    def __init__(self, config="regress.json", level='info', suiteDir=None,  timeout=-1,  numOfThreads=1):
+    def __init__(self, config="regress.json", level='info', suiteDir=None,  timeout=0,  numOfThreads=1):
         self.config = Config(config).configObj
         setConfig(self.config)
         self.suites = {}
         self.log = Logger(level)
-        if timeout == '-1':
+        if timeout == '0':
             self.timeout = int(self.config.timeout);
         else:
             self.timeout = int(timeout)
+        logging.debug("Suite timeout: %d sec / testcase", self.timeout)
         if numOfThreads == 0:
             numOfThreads = 1;
         if not suiteDir:
@@ -316,8 +317,10 @@ class Regression:
                 query.setTaskId(cnt)
                 self.timeouts[th] = self.timeout
                 timeout = query.getTimeout()
-                if timeout != -1:
+                if timeout != 0:
                    self.timeouts[th] = timeout
+                else:
+                    self.timeouts[th] = self.timeout
 
                 thread.start_new_thread(self.runQuery, (cluster, query, report, cnt, suite.testPublish(query.ecl),  th))
                 time.sleep(0.1)
@@ -356,7 +359,9 @@ class Regression:
             self.timeouts[threadId] = self.timeout
             timeout = eclfile.getTimeout()
             if timeout != 0:
-               self.timeouts[threadId] = timeout
+                self.timeouts[threadId] = timeout
+            else:
+                self.timeouts[threadId] = self.timeout
             sysThreadId = thread.start_new_thread(self.runQuery, (cluster, eclfile, report, cnt, eclfile.testPublish(),  threadId))
             time.sleep(0.1)
             self.CheckTimeout(cnt, threadId,  eclfile)
