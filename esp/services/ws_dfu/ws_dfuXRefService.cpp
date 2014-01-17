@@ -455,6 +455,24 @@ bool CWsDfuXRefEx::onDFUXRefBuildCancel(IEspContext &context, IEspDFUXRefBuildCa
     return true;
 }
 
+void CWsDfuXRefEx::addXRefNode(const char* name, IPropertyTree* pXRefNodeTree)
+{
+    IPropertyTree* XRefTreeNode = pXRefNodeTree->addPropTree("XRefNode", createPTree(ipt_caseInsensitive));
+    XRefTreeNode->setProp("Name",name);
+    Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(name);
+    if (!xRefNode)
+    {
+        XRefTreeNode->setProp("Modified","");
+        XRefTreeNode->setProp("Status","Not Run");
+    }
+    else
+    {
+        StringBuffer modified, status;
+        XRefTreeNode->setProp("Modified",xRefNode->getLastModified(modified).str());
+        XRefTreeNode->setProp("Status",xRefNode->getStatus(status).str());
+    }
+}
+
 bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &req, IEspDFUXRefListResponse &resp)
 {
     try
@@ -467,39 +485,25 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
         DBGLOG("CWsDfuXRefEx::onDFUXRefList User=%s",username.str());
 
 
-        //Firstly we need to get a list of the available Thor Cluster....
-        IArrayOf<IEspTpCluster> clusters;
-        CTpWrapper _topology;
-        _topology.getClusterProcessList(eqThorCluster,clusters,false,true);
-        ///_topology.getClusterList(eqRoxieCluster,clusters,false,true);
+        CConstWUClusterInfoArray clusters;
+        getEnvironmentClusterInfo(clusters);
 
+        BoolHash uniqueProcesses;
         Owned<IPropertyTree> pXRefNodeTree = createPTree("XRefNodes");
-        //DBGLOG("CWsDfuXRefEx::onDFUXRefList1\n");
-
-        for (unsigned x=0;x<=clusters.ordinality();x++)
+        ForEachItemIn(c, clusters)
         {
-            IPropertyTree* XRefTreeNode = pXRefNodeTree->addPropTree("XRefNode", createPTree(ipt_caseInsensitive));
-            
-            IEspTpCluster* cluster = x<clusters.ordinality()?&clusters.item(x):NULL;        
-            const char *clustername = cluster?cluster->getName():"SuperFiles";
-
-            XRefTreeNode->setProp("Name",clustername);
-            //create the node if it doesn;t exist
-            Owned<IXRefNode> xRefNode = XRefNodeManager->getXRefNode(clustername);
-            if (xRefNode == 0)
+            IConstWUClusterInfo &cluster = clusters.item(c);
+            const StringArray &primaryThorProcesses = cluster.getPrimaryThorProcesses();
+            ForEachItemIn(i,primaryThorProcesses)
             {
-                XRefTreeNode->setProp("Modified","");
-                XRefTreeNode->setProp("Status","Not Run");
-            }
-            else
-            {
-                  StringBuffer buf;
-                XRefTreeNode->setProp("Modified",xRefNode->getLastModified(buf).str());
-                    buf.clear();
-                XRefTreeNode->setProp("Status",xRefNode->getStatus(buf).str());
+                const char *thorProcess = primaryThorProcesses.item(i);
+                if (uniqueProcesses.getValue(thorProcess))
+                    continue;
+                uniqueProcesses.setValue(thorProcess, true);
+                addXRefNode(thorProcess, pXRefNodeTree);
             }
         }
-        
+        addXRefNode("SuperFiles", pXRefNodeTree);
 
         StringBuffer buf;
         resp.setDFUXRefListResult(toXML(pXRefNodeTree, buf).str());

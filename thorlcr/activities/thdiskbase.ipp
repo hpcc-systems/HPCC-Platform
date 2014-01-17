@@ -40,7 +40,7 @@ public:
     void init();
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave);
     void done();
-    virtual void validateFile(IDistributedFile *file) { }
+    virtual void validateFile() { }
     void deserializeStats(unsigned node, MemoryBuffer &mb);
     void getXGMML(unsigned idx, IPropertyTree *edge);
 };

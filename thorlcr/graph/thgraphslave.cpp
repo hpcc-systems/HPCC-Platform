@@ -1020,6 +1020,11 @@ public:
             foreignNode.set(globals->queryProp("@DALISERVERS"));
         return ::getGlobalUniqueIds(num, &foreignNode);
     }
+    virtual bool allowDaliAccess() const
+    {
+        // NB. includes access to foreign Dalis.
+        return globals->getPropBool("Debug/@slaveDaliClient");
+    }
 };
 
 class CSlaveGraphTempHandler : public CGraphTempHandler
