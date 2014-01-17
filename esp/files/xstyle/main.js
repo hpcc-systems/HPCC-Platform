@@ -1,4 +1,4 @@
-define("xstyle/main", ["require", "xstyle/core/parser", "xstyle/core/ruleModel", "xstyle/core/elemental"], function (require, parser, ruleModel, elemental) {
+define("xstyle/main", ["require", "xstyle/core/parser", "xstyle/core/base", "xstyle/core/elemental"], function (require, parser, ruleModel, elemental) {
 	"use strict";
 	function search(tag){
 		// used to search for link and style tags
@@ -25,6 +25,21 @@ define("xstyle/main", ["require", "xstyle/core/parser", "xstyle/core/ruleModel",
 				});
 			});
 		}
+		function checkForInlinedExtensions(sheet){
+			var cssRules = sheet.cssRules;
+			for(var i = 0; i < cssRules.length; i++){								
+				var rule = cssRules[i];
+				if(rule.selectorText && rule.selectorText.substring(0,2) == "x-"){
+					// an extension is used, needs to be parsed
+					needsParsing = true;
+					if(/^'/.test(rule.style.content)){
+						// this means we are in a built sheet, and can directly parse it
+						parse(eval(rule.style.content), sheet, callback);
+						return true;
+					}
+				}
+			}
+		}
 		if((sheet.href || (sheet.imports && sheet.imports.length)) && !fixedImports){
 			// this is how we check for imports in IE
 			return fixImports();
@@ -34,15 +49,10 @@ define("xstyle/main", ["require", "xstyle/core/parser", "xstyle/core/ruleModel",
 				var rule = cssRules[i];
 				if(rule.href && !fixedImports){
 					// it's an import (for non-IE browsers)
-					return fixImports();
-				}
-				if(rule.selectorText && rule.selectorText.substring(0,2) == "x-"){
-					// an extension is used, needs to be parsed
-					needsParsing = true;
-					if(/^'/.test(rule.style.content)){
-						// this means we are in a built sheet, and can directly parse it
-						// TODO: parse here
+					if(!checkForInlinedExtensions(rule.styleSheet)){
+						return fixImports();
 					}
+					return;
 				}
 			}
 		}

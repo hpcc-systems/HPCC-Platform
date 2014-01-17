@@ -131,10 +131,10 @@ based on absolute positioning:
 
 We could then style a class by mixing in our new definition. We do this simply by including 
 the using the definition as a property in our rule. If we want to simply mix in the properties
-as defined in the base definition, we set the value to "default":
+as defined in the base definition, we set the value to "defaults":
 	
 	.my-class {
-		absolutely: default;
+		absolutely: defaults;
 	}
 
 We can also override properties from our definition:
@@ -195,8 +195,9 @@ we can create our own big-header definition that inherits from an h1:
 
 ## Element Generation
 
-With xstyle, you can declare the creation of elements within rules, allowing for the creation
-of complex presentation components without abusing HTML for presentation. This not only 
+With xstyle, you can declare the creation of DOM elements within rules, allowing for the creation
+of complex presentation components. This can be thought of as templating functionality 
+(using CSS selector syntax, similar to jade), with reactive capabilities. This not only 
 simplifies the creation and composition of UI components, it helps to keep cleaner semantics in HTML, 
 and provides better encapsulation.
 
@@ -216,14 +217,31 @@ This will create a div with an id of "help" and a title of "Information":
 		=> div#help[title=Information];
 	}
 
-Element generation can also take advantage of a few CSS selector combinators as well.
-We can use spaces to create child elements and use commas to separate different
-elements to create. For example, we could create a two row table:
+Element generation can also generate multiple elements, and take advantage of indentation 
+to indicate the hierarchy of the elements. Deeper indentation indicates child elements,
+and shallower indentation can be used to generate parents. For example, we could 
+create a simple hierarchy:
+
+	.simple {
+		=>
+			div.parent1
+				div.child
+					div.grandchild
+			div.parent2
+				div.another-child
+	} 
+
+
+Or, we could create a two by two table:
 
 	table.two-row {
 		=>
-			tr td,
-			tr td;
+			tr 
+				td
+				td
+			tr 
+				td
+				td;
 	}  
 
 We could also generate text nodes inside elements with quoted strings. We could create
@@ -276,7 +294,7 @@ synchronize an element identifier or selector with another CSS rule.
 		=> 
 			h1 {
 				color: green;
-			},
+			}
 			p 'Blue Paragraph' {
 				color: blue;
 			};
@@ -329,14 +347,14 @@ WebKit browsers, -moz- for Firefox, and -ms- for IE. A typical usage is:
 
 (functionality has been implemented)
 
-### contents - Insertion Point
+### content - Insertion Point
 
 This definition represents a reference to the contents of node prior to element generation.
 This can be used within element generation to bring in the contents of the target.
 For example:
 
 	.greeting {
-		=> h1 'Welcome:', contents;
+		=> h1 'Welcome:', content;
 	}
 
 We could then have some HTML that starts as:
@@ -470,7 +488,9 @@ items in the array, and the second column corresponds to the "age" property:
 	.content {
 		=> table(array-of-people) {
 			each: tr {
-				=> td(item/name), td(item/age);
+				=> 
+					td(item/name), 
+					td(item/age);
 			};
 		};
 	}
@@ -587,6 +607,40 @@ has not already been provided by the browser. For example, if wanted to shim sup
 for the :enabled pseudo, we could implement a shim module and conditionally load it:
 
 	:enabled =? module('my-package/enabled');
+
+## Scoped Blocks Xstyle and Disabling Parsing
+
+With xstyle, you can define blocks of CSS that have their own nested scope (without
+a nested rule), to declare definitions without affecting other stylesheets. A new scope
+can be started by using the <code>@xstyle start</code> directive to start a scoped block
+and the <code>@xstyle end</code> to end a scoped block:
+
+	@xstyle start;
+	box-shadow = prefix;
+	/* box-shadow will have vendor-prefixing applied */
+	@xstyle end;
+	/* box-shadow will be ignored again */
+
+Also, you may wish to completely disable xstyle, or import a stylesheet that should not be parsed
+by xstyle. This may be due to conflicts with properties, or other issues. Xstyle parsing can be
+turned off by using:
+
+	@xstyle end;
+
+And it can be turned back on with:
+
+	@xstyle start;
+
+You can also use the <code>@xstyle start</code> and <code>end</code> directives to
+create nested scopes. For example, you might wish to apply to a shim to all CSS (without 
+nesting it in an inner rule), and you can do so by using this directive:
+
+	@xstyle start;
+	some-variable=var: some value;
+	@import 'stylesheet-that-uses-some-variable.css';
+	@xstyle end;
+	/* any definition above won't affect CSS below */
+	
 
 ### Included Shim Stylesheets
 
@@ -724,7 +778,7 @@ than inlined in the JavaScript build layer. One
 can still use the #inline URL directive to inline resources in combination with the AMD
 build plugin.
  
-## Import Fixing
+## Import Correction
 
 Another feature Xstyle provides is reliable @import behavior. Internet Explorer is not
 capable of loading multiples levels deep @imports. Xstyle provides @import "flattening"

@@ -292,15 +292,28 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 	// using delegation, listen for any input changes in the document and "put" the value  
 	// TODO: add a hook so one could add support for IE8, or maybe this event delegation isn't really that useful
 	var doc = document;
-	doc.addEventListener('change', function(event){
+	var nextId = 1;
+	var hasAddEventListener = !!doc.addEventListener;
+	on(doc, 'change', null, function(event){
 		var element = event.target;
 		// get the variable computation so we can put the value
 		var variable = element['-x-variable'];
-		if(variable.put){ // if it can be put, we do so
+		if(variable && variable.put){ // if it can be put, we do so
 			variable.put(element.value);
 		}
 	});
-
+	function on(target, event, selector, listener){
+		// this function can be overriden to provide better event handling
+		hasAddEventListener ? 
+			target.addEventListener(event, select, false) :
+			target.attachEvent(event, select);
+		function select(event){
+			// do event delegation
+			if(!selector || matchesSelector.call(event.target, selector)){
+				listener(event);	
+			}
+		}
+	}
 
 	// elemental section, this code is for property handlers that need to mutate the DOM for elements
 	// that match it's rule
@@ -427,20 +440,23 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 					// use matchesSelector if available
 					matchesSelector.call(element, renderer.selector) : // TODO: determine if it is higher specificity that other  same name properties
 					// else use IE's custom css property inheritance mechanism
-					element.currentStyle[renderer.name] == renderer.propertyValue)){
+					element.currentStyle[renderer.id])){
 				renderer.render(element);
 			}
 		}
 	}
 	return {
 		ready: domReady,
-		addRenderer: function(propertyName, propertyValue, rule, handler){
+		on: on,
+		addRenderer: function(rule, handler){
 			var renderer = {
 				selector: rule.selector,
-				propertyValue: propertyValue,
-				name: propertyName,
 				render: handler
 			};
+			if(!matchesSelector){
+				// so we can match this rule by checking inherited styles
+				rule.setStyle(renderer.id = ('x' + nextId++), 'true'); 
+			}
 			// the main entry point for adding elemental handlers for a selector. The handler
 			// will be called for each element that is created that matches a given selector
 			selectorRenderers.push(renderer);
@@ -478,9 +494,25 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 		'{': '}',
 		'[': ']',
 		'(': ')'
-	}
+	};
+	var styleSubstitutes = {
+		display: ['none',''],
+		visibility: ['hidden', 'visible'],
+		'float': ['none', 'left']
+	};
+	var truthyConversion = {
+		'': 0,
+		'false': 0,
+		'true': 1
+	};
+	var inputs = {
+		"INPUT": 1,
+		"TEXTAREA": 1,
+		"SELECT": 1
+	};
 	var doc = document, styleSheet;
-	var undef, testDiv = doc.createElement("div");
+	var currentEvent;
+	var undefined, testDiv = doc.createElement("div");
 	// some utility functions
 	function when(value, callback){
 		return value && value.then ? 
@@ -503,7 +535,7 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			if(name){
 				return get(target[name], path.slice(1), callback);
 			}
-			callback(target);
+			return callback(target);
 		});
 	}
 	function set(target, path, value){
@@ -514,7 +546,19 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 				target[property] = value;
 		});
 	}
-
+	function receive(target, callback, rule, name){
+		if(target && target.receive){
+			target.receive(callback, rule, name);
+		}else{
+			callback(target);
+		}
+	}
+	var create = Object.create || function(base){
+		function Base(){}
+		Base.prototype = base;
+		return new Base;
+	}
+	
 	var ua = navigator.userAgent;
 	var vendorPrefix = ua.indexOf("WebKit") > -1 ? "-webkit-" :
 		ua.indexOf("Firefox") > -1 ? "-moz-" :
@@ -550,19 +594,35 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			if(cssText &&
 				selector.charAt(0) != '@'){ // for now just ignore and don't add at-rules
 				try{
-					var ruleNumber = this.styleSheet.addRule(selector, cssText, this.ruleIndex);
-					if(ruleNumber == -1){
-						ruleNumber = this.styleSheet.cssRules.length - 1;
-					}
-					return styleSheet.cssRules[ruleNumber];
+					var styleSheet = this.styleSheet;
+					var cssRules = styleSheet.cssRules || styleSheet.rules;
+					var ruleNumber = this.ruleIndex > -1 ? this.ruleIndex : cssRules.length;
+					styleSheet.addRule(selector, cssText, ruleNumber);
+					return cssRules[ruleNumber];
 				}catch(e){
-					console.warn("Unable to add rule", e);
+					console.warn("Unable to add rule", e.message);
 				}
 			}
 		},
 		onRule: function(){
 			// called by parser once a rule is finished parsing
-			this.getCssRule();
+			var cssRule = this.getCssRule();
+			if(this.installStyles){
+				for(var i = 0; i < this.installStyles.length;i++){
+					var pair = this.installStyles[i];
+					cssRule.style[pair[0]] = pair[1];
+				}
+			}
+		},
+		setStyle: function(name, value){
+			if(this.cssRule){
+				this.cssRule.style[name] = value;
+			}/*else if("ruleIndex" in this){
+				// TODO: inline this
+				this.getCssRule().style[name] = value;
+			}*/else{
+				(this.installStyles || (this.installStyles = [])).push([name, value]);
+			}
 		},
 		getCssRule: function(){
 			if(!this.cssRule){
@@ -576,27 +636,41 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 		},
 		declareProperty: function(name, value, conditional){
 			// called by the parser when a variable assignment is encountered
-			if(value[0].toString().charAt(0) == '>'){
-				// this is used to indicate that generation should be triggered
-				if(!name){
-					this.generator = value;
-					value = generate(value, this);
-					elemental.addRenderer("", value, this, value);
-					return;
-				}
-			}else{
-				// add it to the properties for this rule
-				var propertyExists = name in testDiv.style || resolveProperty(this, name);
-				if(!conditional || !propertyExists){
-					var properties = (this.properties || (this.properties = {}));
-					properties[name] = evaluateExpression(this, name, value);
-					if(propertyExists){
-						console.warn('Overriding existing property "' + name + '"');
+			if(value.length){
+				if(value[0].toString().charAt(0) == '>'){
+					// this is used to indicate that generation should be triggered
+					if(!name){
+						this.generator = value;
+						value = generate(value, this);
+						elemental.addRenderer(this, value);
+						return;
+					}
+				}else{
+					// add it to the definitions for this rule
+					var propertyExists = name in testDiv.style || this.getDefinition(name, true);
+					if(!conditional || !propertyExists){
+						var definitions = (this.definitions || (this.definitions = {}));
+						var first = value[0];
+						if(first.indexOf && first.indexOf(',') > -1){
+							// handle multiple values
+							var parts = value.join('').split(/\s*,\s*/);
+							var definition = [];
+							for(var i = 0;i < parts.length; i++){
+								definition[i] = evaluateExpression(this, name, parts[i]);
+							}
+						}
+						definitions[name] = definition || evaluateExpression(this, name, value);
+						if(propertyExists){
+							console.warn('Overriding existing property "' + name + '"');
+						}
 					}
 				}
+			}else{
+				var definitions = (this.definitions || (this.definitions = {}));
+				definitions[name] = value;
 			}
 		},
-		setValue: function(name, value){
+		setValue: function(name, value, scopeRule){
 			// called by the parser when a property is encountered
 			var values = (this.values || (this.values = []));
 			values.push(name);
@@ -618,25 +692,26 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 				var propertyName = name;
 				do{
 					// check for the handler
-					var target = resolveProperty(this, name);
+					var target = (scopeRule || this).getDefinition(name, true);
 					if(target){
 						var rule = this;
 						// call the handler to handle this rule
-						when(target, function(target){
-							target = target.splice ? target : [target];
-							for(var i = 0; i < target.length; i++){
-								var segment = target[i];
-								var returned = segment.put && segment.put(value, rule, propertyName);
-								if(returned){
-									if(returned.then){
-										returned.then(function(){
-											// TODO: anything we want to do after loading?
-										});
-									}
-									break;
+						target = target.splice ? target : [target];
+						for(var i = 0; i < target.length; i++){
+							var segment = target[i];
+							var returned;
+							when(segment, function(segment){
+								returned = segment.put && segment.put(value, rule, propertyName);
+							});
+							if(returned){
+								if(returned.then){
+									returned.then(function(){
+										// TODO: anything we want to do after loading?
+									});
 								}
+								break;
 							}
-						});
+						}
 						break;
 					}
 					// we progressively go through parent property names. For example if the 
@@ -646,6 +721,72 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 					// try shorter name
 				}while(name);
 			}
+		},
+		put: function(value, rule){
+			// rules can be used as properties, in which case they act as mixins
+			// first extend
+			this.extend(rule);
+			if(value == 'default'){
+				// this indicates that we should leave the mixin properties as is.
+				return;
+			}
+			if(value && typeof value == 'string' && this.values){
+				// then apply properties with comma delimiting
+				var parts = value.toString().split(/,\s*/);
+				for(var i = 0; i < parts.length; i++){
+					// TODO: take the last part and don't split on spaces
+					var name = this.values[i];
+					name && rule.setValue(name, parts[i], this);
+				}
+			}
+		},
+		extend: function(derivative, fullExtension){
+			console.log("extending ", derivative);
+			// we might consider removing this if it is only used from put
+			var base = this;
+			var newText = base.cssText;
+			derivative.cssText += newText;
+			'values,variables,calls'.replace(/\w+/g, function(property){
+				var set = base[property];
+				if(set){
+					// TODO: need to mixin this in, if it already exists
+					derivative[property] = create(set);
+				}
+			});
+			if(fullExtension){
+				var definitions = base.definitions;
+				if(definitions){
+					// TODO: need to mixin this in, if it already exists
+					derivative.definitions = create(definitions);
+				}
+				derivative.tagName = base.tagName || derivative.tagName;
+			}			
+	//		var ruleStyle = derivative.getCssRule().style;
+			base.eachProperty(function(name, value){
+				derivative.setValue(name, value);
+		/*		if(name){
+					name = convertCssNameToJs(name);
+					if(!ruleStyle[name]){
+						ruleStyle[name] = value;
+					}
+				}*/
+			});
+			if(base.generator){
+				derivative.declareProperty(null, base.generator);
+			}
+			
+		},
+		getDefinition: function(name){
+			// lookup a definition by name, which used for handling properties and other thingsss
+			var parentRule = this;
+			do{
+				var target = parentRule.definitions && parentRule.definitions[name];
+				parentRule = parentRule.parent;
+			}while(!target && parentRule);
+			return target;
+		},
+		appendTo: function(target, beforeElement){
+			return put(beforeElement || target, (beforeElement ? '-' : '') + (this.tagName || '') + this.selector);
 		},
 		cssText: ""
 	};
@@ -672,12 +813,27 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 		// normalize to array
 		generatingSelector = generatingSelector.sort ? generatingSelector : [generatingSelector];
 		// return a function that can do the generation for each element that matches
-		return function(element, item){
+		return function(element, item, beforeElement){
 			var lastElement = element;
 			var subId = 0;
+			if(beforeElement === undefined){
+				var childNodes = element.childNodes;
+				var childNode = childNodes[0], contentFragment;
+				// move the children out and record the contents in a fragment
+				if(childNode){
+					contentFragment = document.createDocumentFragment();
+					do{
+						contentFragment.appendChild(childNode);
+					}while(childNode = childNodes[0]);
+				}
+			}
+			// temporarily store it on the element, so it can be accessed as an element-property
+			// TODO: remove it after completion
+			element.content = contentFragment;
 			for(var i = 0, l = generatingSelector.length;i < l; i++){
 				// go through each part in the selector/generation sequence
-				var part = generatingSelector[i];
+				var lastPart = part,
+					part = generatingSelector[i];
 				try{
 					if(part.eachProperty){
 						// it's a rule or call
@@ -690,16 +846,16 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 								}
 								// TODO: make sure we only do this only once
 								var expression = part.args.toString();
-								var apply = evaluateExpression(part, 0, expression);
-								(function(element, lastElement){
+								var apply = evaluateExpression(part.parent, 0, expression);
+								(function(element, nextPart){
 									when(apply, function(apply){
 										// TODO: assess how we could propagate changes categorically
 										if(apply.forElement){
-											apply = apply.forElement(lastElement);
+											apply = apply.forElement(element);
 											// now apply.element should indicate the element that it is actually keying or varying on
 										}
 										var textNode = element.appendChild(doc.createTextNode("Loading"));
-										apply.receive(function(value){
+										receive(apply, function(value){
 											if(value && value.sort){
 												// if it is an array, we do iterative rendering
 												if(textNode){
@@ -707,22 +863,34 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 													textNode.parentNode.removeChild(textNode);
 													textNode = null;
 												}
-												var eachHandler = nextPart && nextPart.eachProperty && nextPart.get('each');
+												var eachHandler = nextPart && nextPart.eachProperty && nextPart.each;
 												// if "each" is defined, we will use it render each item 
 												if(eachHandler){
 													eachHandler = generate(eachHandler, nextPart);
-												}
-												value.forEach(eachHandler ?
-													function(value){
-														// TODO: do this inside generate
-														eachHandler(element, value);
-													} :
-													function(value){
+												}else{
+													eachHandler = function(element, value, beforeElement){
 														// if there no each handler, we use the default tag name for the parent 
-														put(element, childTagForParent[element.tagName] || 'div', value);
-													});
+														return put(beforeElement || element, (beforeElement ? '-' : '') + childTagForParent[element.tagName] || 'div', value);
+													}
+												}
+												var rows = value.map(function(value){
+													// TODO: do this inside generate
+													return eachHandler(element, value, null);
+												});
+												if(value.observe){
+													value.observe(function(object, previousIndex, newIndex){
+														if(previousIndex > -1){
+															var oldElement = rows[previousIndex];
+															oldElement.parentNode.removeChild(oldElement);
+															rows.splice(previousIndex, 1);
+														}
+														if(newIndex > -1){
+															rows.splice(newIndex, 0, eachHandler(element, object, rows[newIndex] || null));
+														}
+													}, true);
+												}
 											}else{
-												if("value" in element){
+												if(element.tagName in inputs){
 													// add the text
 													element.value= value;
 													// we are going to store the variable computation on the element
@@ -739,7 +907,7 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 											}
 										}, rule, expression);
 									});
-								})(lastElement, element);
+								})(lastElement, nextPart);
 							}else{// brackets
 								put(lastElement, part.toString());
 							}
@@ -754,30 +922,55 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 						if(part.charAt(0) == '='){
 							part = part.slice(1); // remove the '=' at the beginning					
 						}
-						
-						var children = part.split(',');
-						for(var j = 0, cl = children.length;j < cl; j++){
-							var child = children[j].trim();
-							var reference = null;
-							if(child){
-								// TODO: inline our own put-selector code, and handle bindings
-								child = child.replace(/\([^)]*\)/, function(expression){
+				
+						// TODO: inline our own put-selector code, and handle bindings
+/*								child = child.replace(/\([^)]*\)/, function(expression){
 									reference = expression;
 								});
-								var nextElement = put(j == 0 ? lastElement : element, child);
-								if(item){
-									// set the item property, so the item reference will work
-									nextElement.item = item;
-								}
-								var nextPart = generatingSelector[i + 1];
-								if(nextElement != lastElement && // avoid infinite loop if it is a nop selector
-									(!nextPart || !nextPart.eachProperty) // if the next part is a rule, than it should be extending it already, so we don't want to double apply
-									){
-									elemental.update(nextElement);
-								}
-								lastElement = nextElement;
+								/*if(!/^\w/.test(child)){
+									// if it could be interpreted as a modifier, make sure we change it to really create a new element
+									child = '>' + child;
+								}*/
+						var nextElement = lastElement;
+						var nextPart = generatingSelector[i + 1];
+						// parse for the sections of the selector
+						part.replace(/(,\s*)?(\.|#)?([-\w%$|\.\#]+)(?:\[([^\]=]+)=?['"]?([^\]'"]*)['"]?\])?/g, function(t, commaOperator, prefix, value, attrName, attrValue){
+							if(commaOperator){
+								nextElement = element;
 							}
-						}
+							var selector;
+							if(prefix){// we don't want to modify the current element, we need to create a new one
+									selector = (lastPart && lastPart.args ?
+										'' : // if the last part was brackets or a call, we can continue modifying the same element
+										'span') + prefix + value;
+							}else{
+								var target = rule.getDefinition(value);
+								// see if we have a definition for the element
+								if(target){
+									nextElement = target.appendTo(nextElement, beforeElement);
+								}else{
+									selector = value;
+								}
+							}
+							if(selector){
+								nextElement = put(beforeElement || nextElement, (beforeElement ? '-' : '') + selector);
+							}
+							beforeElement = null;
+							if(attrName){
+								attrValue = attrValue === '' ? attrName : attrValue;
+								nextElement.setAttribute(attrName, attrValue);
+							}
+							if(item){
+								// set the item property, so the item reference will work
+								nextElement.item = item;
+							}
+							if(nextElement != lastElement && nextElement != element &&// avoid infinite loop if it is a nop selector
+								(!nextPart || !nextPart.eachProperty) // if the next part is a rule, than it should be extending it already, so we don't want to double apply
+								){
+								elemental.update(nextElement);
+							}
+							lastElement = nextElement;
+						});
 					}else{
 						// a string literal
 						lastElement.appendChild(doc.createTextNode(part.value));
@@ -790,6 +983,9 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			return lastElement;
 		}
 	}
+	var jsKeywords = {
+		'true': true, 'false': false, 'null': 'null', 'typeof': 'typeof', or: '||', and: '&&'
+	};
 	function evaluateExpression(rule, name, value){
 		// evaluate a binding
 		var binding = rule["var-expr-" + name];
@@ -806,6 +1002,9 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			// find all the variables in the expression
 		expression = expression.replace(/("[^\"]*")|([\w_$\.\/-]+)/g, function(t, string, variable){
 			if(variable){
+				if(jsKeywords.hasOwnProperty(variable)){
+					return jsKeywords[variable];
+				}
 				// for each reference, we break apart into variable reference and property references after each dot				
 				attributeParts = variable.split('/');
 				var parameterName = attributeParts.join('_');
@@ -813,7 +1012,7 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 				variables.push(attributeParts);
 				// first find the rule that is being referenced
 				var firstReference = attributeParts[0];
-				var target = resolveProperty(rule, firstReference);
+				var target = rule.getDefinition(firstReference);
 				if(typeof target == 'string' || target instanceof Array){
 					target = evaluateExpression(rule, firstReference, target);
 				}else if(!target){
@@ -855,16 +1054,19 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			}
 		}else{
 			// it's a full expression, so we create a time-varying bound function with the expression
-			var reactiveFunction = Function.apply(this, parameters.concat(['return xstyleReturn(' + expression + ')']));
+			var reactiveFunction = Function.apply(this, parameters.concat(['return (' + expression + ')']));
 		}
 		variables.func = reactiveFunction;
 		rule["var-expr-" + name] = variables;
 		function getComputation(){
 			var waiting = variables.length + 1;
 			var values = [], callbacks = [];
-			var result, isResolved;
+			var result, isResolved, stopped;
 			var done = function(i){
 				return function(value){
+					if(stopped){
+						return;
+					}
 					values[i] = value;
 					waiting--;
 					if(waiting <= 0){
@@ -885,7 +1087,9 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 				var variable = variables[0];
 				var value = {
 					then: function(callback){
-						callbacks.push(callback);
+						callbacks ? 
+							callbacks.push(callback) :
+							callback(value); // immediately available
 					}
 				}
 				when(variable[0], function(resolved){
@@ -908,6 +1112,8 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 					for(var j = 0; j < callbacks.length; j++){
 						callbacks[j](value);
 					}
+					// accept no more callbacks, since we have resolved
+					callbacks = null;
 				});
 				return value;
 				if(first && first.then){
@@ -932,6 +1138,11 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 					if(isResolved){
 						callback(result);
 					}
+				},
+				stop: function(){
+					// TODO: this is not the right way to do this, we need to remove
+					// all the variable listeners and properly destroy this
+					stopped = true;
 				}
 			}
 		}
@@ -942,27 +1153,25 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 				var mostSpecificElement;
 				var elementVariables = [];
 				// now find the element that matches that rule, in case we are dealing with a child
-				var parentElement = element;
-				while(!matchesSelector.call(element, rule.selector)){
-					element = element.parentNode;
-				}
+				var parentElement;
 				for(var i = 0; i < variables.length; i++){
 					var variable = variables[i];
 					var target = variable[0];
 					// now find the element that is keyed on
 					if(target.forElement){
-						target = variable[0] = target.forElement(parentElement);
+						target = variable[0] = target.forElement(element);
 					}
 					// we need to find the most parent element that we need to vary on for this computation 
-					var varyOnElement = target.element;
-					if(parentElement != mostSpecificElement){
-						while(parentElement != varyOnElement){
-							if(parentElement == mostSpecificElement){
-								return;
-							}
+					var varyOnElement = parentElement = target.element;
+					if(mostSpecificElement){
+						// check to see if one its parent is the mostSpecificElement
+						while(parentElement && parentElement != mostSpecificElement){
 							parentElement = parentElement.parentNode;
 						}
-						mostSpecificElement = parentElement;
+						// if so, we have a new most specific
+					}	
+					if(parentElement){
+						mostSpecificElement = varyOnElement;
 					}
 				}
 				// make sure we indicate the store we are keying off of
@@ -975,23 +1184,34 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			}
 		} : getComputation();
 	}
-	function resolveProperty(rule, name, includeRules){
-		var parentRule = rule;
-		do{
-			var target = parentRule.properties && parentRule.properties[name]
-				|| (includeRules && parentRule.rules && parentRule.rules[name]);
-			parentRule = parentRule.parent;
-		}while(!target && parentRule);
-		return target;
-	}
-	var hasAddEventListener = !!doc.addEventListener;
 	var matchesSelector = testDiv.matches || testDiv.webkitMatchesSelector || testDiv.msMatchesSelector || testDiv.mozMatchesSelector;
 	
 	// we treat the stylesheet as a "root" rule; all normal rules are children of it
 	var target, root = new Rule;
 	root.root = true;
+	function elementProperty(property, appendTo){
+		// definition bound to an element's property
+		return {
+			forElement: function(element){
+				// we find the parent element with an item property, and key off of that 
+				while(!element[property]){
+					element = element.parentNode;
+					if(!element){
+						throw new Error(property + " not found");
+					}
+				}
+				return {
+					element: element, // indicates the key element
+					receive: function(callback){// handle requests for the data
+						callback(element[property]);
+					},
+					appendTo: appendTo
+				};
+			}
+		};
+	}
 	// the root has it's own intrinsic variables that provide important base and bootstrapping functionality 
-	root.properties = {
+	root.definitions = {
 		Math: Math, // just useful
 		module: function(mid){
 			// require calls can be used to load in data in
@@ -1002,19 +1222,34 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			};
 		},
 		// TODO: add url()
-		item: {
-			// adds support for referencing each item in a list of items when rendering arrays 
+		// adds support for referencing each item in a list of items when rendering arrays 
+		item: elementProperty('item'),
+		// adds referencing to the prior contents of an element
+		contents: elementProperty('contents', function(target){
+			target.appendChild(this.element);
+		}),
+		element: {
+			// definition to reference the actual element
 			forElement: function(element){
-				// we find the parent element with an item property, and key off of that 
-				while(!element.item){
-					element = element.parentNode;
-				}
 				return {
 					element: element, // indicates the key element
 					receive: function(callback){// handle requests for the data
-						callback(element.item);
+						callback(element);
+					},
+					get: function(property){
+						return this.element[property];
 					}
-				}
+				};				
+			}
+		},
+		event: {
+			receive: function(callback){
+				callback(currentEvent);
+			}
+		},
+		each: {
+			put: function(value, rule, name){
+				rule.each = value;
 			}
 		},
 		prefix: {
@@ -1024,7 +1259,8 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 				if(typeof testDiv.style[vendorPrefix + name] == "string"){
 					// if so, handle the prefixing right here
 					// TODO: switch to using getCssRule, but make sure we have it fixed first
-					return rule.addSheetRule(rule.selector, vendorPrefix + name +':' + value);
+					rule.setStyle(vendorPrefix + name, value);
+					return true;
 				}
 			}
 		},
@@ -1043,15 +1279,28 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			// referencing variables
 			call: function(call, rule, name, value){
 				this.receive(function(resolvedValue){
-					rule.addSheetRule(rule.selector, name + ': ' + value.toString().replace(/var\([^)]+\)/g, resolvedValue));
+					var resolved = value.toString().replace(/var\([^)]+\)/g, resolvedValue);
+					// now check if the value if we should do subsitution for truthy values
+					var truthy = truthyConversion[resolved];
+					if(truthy > -1){
+						var substitutes = styleSubstitutes[name];
+						if(substitutes){
+							resolved = substitutes[truthy];
+						}
+					}					rule.setStyle(name, resolved);
 				}, rule, call.args[0]);
 			},
 			// variable properties can also be referenced in property expressions
 			receive: function(callback, rule, name){
 				var parentRule = rule;
 				do{
-					var target = parentRule.variables && parentRule.variables[name];
+					var target = parentRule.variables && parentRule.variables[name] || 
+						(parentRule.definitions && parentRule.definitions[name]); // we can reference definitions as well
 					if(target){
+						if(target.receive){
+							// if it has its own receive capabilities, use that
+							return target.receive(callback, rule, name);
+						}
 						var variableListeners = parentRule.variableListeners || (parentRule.variableListeners = {});
 						(variableListeners[name] || (variableListeners[name] = [])).push(callback);
 						return callback(target);
@@ -1063,48 +1312,22 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 		},
 		on: {
 			put: function(value, rule, name){
-				// apply event listening
-				var on = this.on;
-				// first evaluate value as expression
-				get(evaluateExpression(rule, name, value), 0, function(value){
-					// add listener	
-					on(document, name.slice(3), rule.selector, value);
-				});
-			},
-			on: function(target, event, selector, listener){
-				// this function can be overriden to provide better event handling
-				hasAddEventListener ? 
-					target.addEventListener(event, select, false) :
-					target.attachEvent(event, select);
-				function select(event){
-					// do event delegation
-					selector = selector || rule.fullSelector();
-					if(matchesSelector.call(event.target, selector)){
-						listener(event);	
+				// add listener
+				elemental.on(document, name.slice(3), rule.selector, function(event){
+					currentEvent = event;
+					var computation = evaluateExpression(rule, name, value);
+					if(computation.forElement){
+						computation = computation.forElement(event.target);
 					}
-				}
+					computation.stop();
+					currentEvent = null;
+				});
 			}
-			
 		}
 	};
-	xstyleReturn = function(first){
-		// global function used by the reactive functions to separate out comma-separated expressions into an array
-		if(arguments.length == 1){
-			// one arg, just return that
-			return first;
-		}
-		// if it is a comma separated list of values, return them as an array
-		return [].slice.call(arguments);
-	};
-	root.setStyleSheet = function(nextStyleSheet){
-		styleSheet = nextStyleSheet;
-	};
-	root.resolveProperty = resolveProperty;
 	return root;	
 });define("xstyle/core/parser", [], function(){
 	// regular expressions used to parse CSS
-	var cssScan = /\s*((?:[^{\}\[\]\(\)\\'":=;]|\[(?:[^\]'"]|'(?:\\.|[^'])*'|"(?:\\.|[^"])*")\])*)([=:]\??\s*([^{\}\[\]\(\)\\'":;]*))?([{\}\[\]\(\)\\'":;]|$)/g;
-									// name: value 	operator
 	var singleQuoteScan = /((?:\\.|[^'])*)'/g;
 	var doubleQuoteScan = /((?:\\.|[^"])*)"/g;
 	var commentScan = /\/\*[\w\W]*?\*\//g; // preserve carriage returns to retain line numbering once we do line based error reporting 
@@ -1138,41 +1361,27 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			return firstLetter.toUpperCase();
 		});
 	}
-	function extend(base, derivative){
-		var newText = base.cssText;
-		derivative.cssText += newText;
-		'values,properties,variables,calls'.replace(/\w+/g, function(property){
-			if(base[property]){
-				derivative[property] = Object.create(base[property]);
-			}
-		});
-//		var ruleStyle = derivative.getCssRule().style;
-		base.eachProperty(function(name, value){
-			derivative.setValue(name, value);
-	/*		if(name){
-				name = convertCssNameToJs(name);
-				if(!ruleStyle[name]){
-					ruleStyle[name] = value;
-				}
-			}*/
-		});
-		if(base.generator){
-			derivative.declareProperty(null, base.generator);
+	var supportedTags = {};
+	function isTagSupported(tag){
+		// test to see if a tag is supported by the browser
+		if(tag in supportedTags){
+			return supportedTags[tag];
 		}
-		
+		var elementString = (element = document.createElement(tag)).toString();
+		return supportedTags[tag] = !(elementString == "[object HTMLUnknownElement]" || elementString == "[object]");
 	}
 	
 	function parse(model, textToParse, styleSheet){
+		var mainScan;
+		var cssScan = mainScan = /\s*((?:[^{\}\[\]\(\)\\'":=;]|\[(?:[^\]'"]|'(?:\\.|[^'])*'|"(?:\\.|[^"])*")\])*)([=:]\??\s*([^{\}\[\]\(\)\\'":;]*))?([{\}\[\]\(\)\\'":;]|$)/g;
+									// name: value 	operator
 		// tracks the stack of rules as they get nested
 		var stack = [model];
 		model.parse = parseSheet;
 		parseSheet(textToParse, styleSheet);
 		function parseSheet(textToParse, styleSheet){
 			// parse the CSS, finding each rule
-			function addInSequence(operand, dontAddToSelector){
-				if(!dontAddToSelector){
-					selector += operand;
-				}
+			function addInSequence(operand){
 				if(sequence){
 					// we had a string so we are accumulated sequences now
 					sequence.push ?
@@ -1208,13 +1417,13 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 					// we are at the beginning of a new property
 					if(assignment){
 						// remember the name, so can assign to it
-						selector = name = first;
+						name = first;
 						//	selector = match[1] + assignment;
 						// remember the operator (could be ':' for a property assignment or '=' for a property declaration)
 						assignmentOperator = assignment.charAt(0);
 						conditionalAssignment = assignment.charAt(1) == '?';
 					}else{
-						selector = value = first;
+						value = first;
 					}
 					// store in the sequence, the sequence can contain values from multiple rounds of parsing
 					sequence = value;
@@ -1222,9 +1431,12 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 					assignNextName = false;
 				}else{
 					// subsequent part of a property
-					value = value ? first + assignment : first;
+					value = assignment ? first + assignment : first;
 					// add to the current sequence
 					addInSequence(value);	
+				}
+				if(operator != '{'){
+					selector += match[0];
 				}
 				switch(operator){
 					case "'": case '"':
@@ -1240,6 +1452,7 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 						cssScan.lastIndex = quoteScan.lastIndex; 
 						// push the string on the current value and keep parsing
 						addInSequence(new LiteralString(str));
+						selector += parsed[0];
 						continue;
 					case '\\':
 						// escaping
@@ -1255,63 +1468,77 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 							// it's a rule
 							assignNextName = true; // enter into the beginning of property mode
 							// normalize the selector
-							selector = trim(selector.replace(/\s+/g, ' ').replace(/([\.#:])\S+|\w+/g,function(t, operator){
+							if(assignmentOperator == ':'){
+								first += assignment;
+							}
+							selector = trim((selector + first).replace(/\s+/g, ' ').replace(/([\.#:])\S+|\w+/g,function(t, operator){
 								// make tag names be lower case 
 								return operator ? t : t.toLowerCase();
 							}));	
 							// add this new rule to the current parent rule
-							addInSequence(newTarget = target.newRule(selector), true);
+							addInSequence(newTarget = target.newRule(selector));
 							
 							// todo: check the type
 							if(assignmentOperator == '='){
 								browserUnderstoodRule = false;
-								if(!assignment || assignment.charAt(1) == '>'){
-									sequence.creating = true;
-								}
+								sequence.creating = true;
 								if(value){
 									// extend the referenced target value
-									// TODO: create auto-generate class?
 									doExtend = true;
 								}
 							}
+							if(assignmentOperator == ':' && !target.root){
+								// we will assume that we are in a property in this case. We will need to do some adjustments to support nested pseudo selectors
+								sequence.creating = true;
+							}
+							var nextRule = null;
+							var lastRuleIndex = ruleIndex;
 							if(target.root && browserUnderstoodRule){
 								// we track the native CSSOM rule that we are attached to so we can add properties to the correct rule
-								var lastRuleIndex = ruleIndex;
-								var nextRule;
-								while((nextRule = styleSheet.cssRules[ruleIndex++])){									
+								var cssRules = styleSheet.cssRules || styleSheet.rules;
+								while((nextRule = cssRules[ruleIndex++])){									
 									if(nextRule.selectorText == selector){
 										// found it
 										newTarget.cssRule = nextRule;
 										break;
 									}
 								}
-								if(!nextRule){
-									// didn't find it
-									newTarget.ruleIndex = ruleIndex = lastRuleIndex;
-									newTarget.styleSheet = styleSheet;									
-									//console.warn("Unable to find rule ", selector, "existing rule did not match", nextRule.selectorText); 
-								}
 							}
+							if(!nextRule){
+								// didn't find it
+								newTarget.ruleIndex = ruleIndex = lastRuleIndex;
+								newTarget.styleSheet = styleSheet;									
+								//console.warn("Unable to find rule ", selector, "existing rule did not match", nextRule.selectorText); 
+							}
+							if(sequence.creating){
+								// in generation, we auto-generate selectors so we can reference them
+								newTarget.selector = '.' + (assignmentOperator == '=' ? first.replace(/[^\w-]/g,'') : '') + '-x-' + nextId++;
+							}else{							
+								newTarget.selector = target.root ? selector : target.selector + ' ' + selector;
+							}
+							selector = '';
 						}else{
 							// it's a call, add it in the current sequence
 							var callParts = value.match(/(.*?)([\w-]*)$/);
 							addInSequence(newTarget = target.newCall(callParts[2], sequence, target));
-							newTarget.ref = model.resolveProperty(target, callParts[2]);
+							newTarget.ref = target.getDefinition(callParts[2]);
 							(sequence.calls || (sequence.calls = [])).push(newTarget);
 						}
 						// make the parent reference
 						newTarget.parent = target;
-						if(sequence.creating){
-							// in generation, we auto-generate selectors so we can reference them
-							newTarget.selector = '.x-generated-' + nextId++;
-						}else{							
-							newTarget.selector = target.root ? selector : target.selector + ' ' + selector;
-						}
 						if(doExtend){
-							var ref = model.resolveProperty(target, value.match(/[^\s]+$/)[0], true);
-							if(ref){
-								extend(ref, newTarget);
-							}
+							value.replace(/(?:^|,|>)\s*([\w-]+)/g, function(t, base){
+								var ref = target.getDefinition(base);
+								if(ref){
+									ref.extend(newTarget, true);
+								}else{
+									// extending a native element
+									newTarget.tagName = base;
+									if(!isTagSupported(base)){
+										error("Extending undefined definition " + base);
+									}
+								}
+							});
 						}
 						
 						// store the current state information so we can restore it when exiting this rule or call
@@ -1319,9 +1546,9 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 						target.currentSequence = sequence;
 						target.assignmentOperator = assignmentOperator;
 						// if it has a pseudo, call the pseudo handler
-						if(assignmentOperator == ':'){
+						if(assignmentOperator == ':' && operator == '{'){
 							// TODO: use when()
-							var pseudoHandler = model.resolveProperty(target, value);
+							var pseudoHandler = target.getDefinition(':' + value);
 							if(pseudoHandler && pseudoHandler.pseudo){
 								pseudoHandler.pseudo(target, value);
 							}
@@ -1331,19 +1558,19 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 						stack.push(target = newTarget);
 						target.operator = operator;
 						target.start = cssScan.lastIndex;
-						selector = '';
 						name = null;
 						sequence = null;
 						continue;
 				}
 				if(sequence){
 					// now see if we need to process an assignment or directive
-					var first = sequence[0];
+					var first = sequence[0] || sequence;
 					if(first.charAt && first.charAt(0) == "@"){
 						// it's a directive
-						if(sequence[0].slice(1,7) == "import"){
+						var directiveFirst6 = sequence[0].slice(1,7);
+						if(directiveFirst6 == "import"){
 							// get the stylesheet
-							var importedSheet = parse.getStyleSheet(styleSheet.cssRules[ruleIndex++], sequence, styleSheet);
+							var importedSheet = parse.getStyleSheet((styleSheet.cssRules || styleSheet.imports)[ruleIndex++], sequence, styleSheet);
 							//waiting++;
 							// preserve the current index, as we are using a single regex to be shared by all parsing executions
 							var currentIndex = cssScan.lastIndex;
@@ -1351,13 +1578,16 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 							parseSheet(importedSheet.localSource, importedSheet);
 							// now restore our state
 							cssScan.lastIndex = currentIndex;
+						}else if(directiveFirst6 == 'xstyle'){
+							cssScan = sequence[0].slice(8,10) == 'on' ? 
+								mainScan : /(@[\w\s])/g;
 						}
 					}else if(assignmentOperator){
 						// need to do an assignment
 						try{
 							target[assignmentOperator == ':' ? 'setValue' : 'declareProperty'](name, sequence, conditionalAssignment);
 						}catch(e){
-							console.error("Error on line ", textToParse.slice(0, cssScan.lastIndex).split('\n').length, "in", styleSheet.href, e.stack || e);
+							error(e);
 						}
 					}
 				}
@@ -1376,7 +1606,7 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 						// end of a rule or function call
 						// clear the name now
 						if(operatorMatch[target.operator] != operator){
-							console.error('Incorrect opening operator ' + target.operator + ' with closing operator ' + operator); 
+							error('Incorrect opening operator ' + target.operator + ' with closing operator ' + operator); 
 						}
 						name = null;
 						// record the cssText
@@ -1385,6 +1615,14 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 							target.cssText + ';' + ruleCssText : ruleCssText;
 							
 						if(operator == '}'){
+							
+							if(lastOperator == '}'){
+								var parentSelector = target.parent.selector;
+								if(parentSelector && !parentSelector.charAt(0) == '@'){
+									// we throw an error for this because it so catastrophically messes up the browser's CSS parsing, not because we can't handle it fine
+									error("A nested rule must end with a semicolon");
+								}
+							}
 							// if it is rule, call the rule handler 
 							target.onRule(target.selector, target);
 							// TODO: remove this conditional, now that we use assignment
@@ -1405,6 +1643,14 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 						assignmentOperator = target.assignmentOperator;
 						if(target.root && operator == '}'){
 							// CSS ASI
+							if(assignmentOperator){
+								// may still need to do an assignment
+								try{
+									target[assignmentOperator == ':' ? 'setValue' : 'declareProperty'](name, sequence[1] || sequence, conditionalAssignment);
+								}catch(e){
+									error(e);
+								}
+							}
 							assignNextName = true;
 							assignmentOperator = false;
 						}
@@ -1420,7 +1666,14 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 						assignmentOperator = false;
 						selector = '';
 				}
+				var lastOperator = operator;
 			}
+		}
+		function error(e){
+			console.error(e.message || e, "line " + textToParse.slice(0, cssScan.lastIndex).split('\n').length + " in " + (styleSheet.href || "in-page stylesheet"));
+			if(e.stack){
+				console.error(e.stack);
+			}			
 		}
 	}
 	return parse;
@@ -1451,7 +1704,7 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 				});
 			});
 		}
-		if(sheet.imports && !fixedImports && sheet.imports.length){
+		if((sheet.href || (sheet.imports && sheet.imports.length)) && !fixedImports){
 			// this is how we check for imports in IE
 			return fixImports();
 		}
@@ -1473,10 +1726,10 @@ define("xstyle/core/elemental", ["put-selector/put"], function(put){
 			}
 		}
 		// ok, determined that CSS extensions are in the CSS, need to get the source and really parse it
-		parse(sheet.localSource || (sheet.ownerNode || sheet.ownerElement).innerHTML, sheet, callback);
+		parse(sheet.localSource || (sheet.ownerNode || sheet.owningElement).innerHTML, sheet, callback);
 	}
 	parser.getStyleSheet = function(importRule, sequence){
-		return importRule.styleSheet;
+		return importRule.styleSheet || importRule;
 	};
 	function parse(textToParse, styleSheet, callback) {
 		// this function is responsible for parsing a stylesheet with all of xstyle's syntax rules

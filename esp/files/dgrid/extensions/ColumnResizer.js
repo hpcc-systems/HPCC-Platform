@@ -83,7 +83,7 @@ function resizeColumnWidth(grid, colId, width, parentType){
 		event.parentType = parentType;
 	}
 	
-	if(grid._resizedColumns && listen.emit(grid.headerNode, "dgrid-columnresize", event)){
+	if(!grid._resizedColumns || listen.emit(grid.headerNode, "dgrid-columnresize", event)){
 		// Update width on column object, then convert value for CSS
 		if(width === "auto"){
 			delete column.width;
@@ -105,6 +105,7 @@ function resizeColumnWidth(grid, colId, width, parentType){
 
 		// keep a reference for future removal
 		grid._columnSizes[colId] = rule;
+		grid.resize();
 		return true;
 	}
 }
@@ -375,7 +376,6 @@ return declare(null, {
 					resizeColumnWidth(this, lastCol, this.minWidth, e.type);
 				}
 			}
-			this.resize();
 		}
 		resizer.hide();
 		

@@ -27,11 +27,12 @@ navigator = {
 };
 
 var pseudoDefine = function(id, deps, factory){
-		function pseudoRequire(deps){
-			[].push.apply(requiredModules, deps);
-		}
-		pseudoRequire.isBuild = true;
-		parse = factory(pseudoRequire);
+		parse = factory({
+				isBuild: true,
+				isTagSupported: function(){
+					return true;					
+				}
+		});
 	};
 var requiredModules = [], base64Module;
 
@@ -103,57 +104,92 @@ var mimeTypes = {
 }
 function processCss(cssText, basePath, inlineAllResources){
 	function XRule(){
-		
 	}
+	var ruleCount = 0;
 	XRule.prototype = {
 		newCall: function(name){
 			return new Call(name);
 		},
-		newRule: function(){
-			return new XRule();
+		childRules: 0,
+		newRule: function(name){
+			var rule = (this.rules || (this.rules = {}))[name] = new XRule();
+			rule.ruleIndex = this.childRules++;
+			return rule;
 		},
 		getDefinition: function(name, includeRules){
 			var parentRule = this;
 			do{
-				var target = parentRule.properties && parentRule.properties[name]
+				var target = parentRule.definitions && parentRule.definitions[name]
 					|| (includeRules && parentRule.rules && parentRule.rules[name]);
 				parentRule = parentRule.parent;
 			}while(!target && parentRule);
+			if(target){
+				target.name = name;
+			}
 			return target;
 		},
 		declareProperty: function(name, value, conditional){
 			// TODO: access staticHasFeatures to check conditional
-			xstyleCss.push(name + '=' + value);
-			var properties = (this.properties || (this.properties = {}));
-			properties[name] = true;
+			var valueString = {
+				toString: function(){
+					return value.toString(2);
+				}
+			};
+			(this.xstyleCss = this.xstyleCss || []).push(name + '=', valueString, ';');
+			var definitions = (this.definitions || (this.definitions = {}));
+			definitions[name] = value || new XRule;
 		},
 		setValue: function(name, value){
 			var target = this.getDefinition(name);
-			if(!target || !this.xstyleStarted){
-				if(!this.ruleStarted){
-					this.ruleStarted = true;
-					this.selectorIndex = browserCss.push(this.selector);
-					browserCss.push('{');
-				}
-				if(!target){
-					browserCss.push(name, ':', value, ';');
-				}
+			var browserCss = this.browserCss = this.browserCss || [];
+			if(!this.ruleStarted && !this.root){
+				this.ruleStarted = true;
+				browserCss.push(this.selector) - 1;
+				browserCss.push('{');
 			}
-			if(target){
+			if(!target){
+				browserCss.push(name, ':', value, ';');
+			}
+			if(target || !this.cssRule){
 				if(!this.xstyleStarted){
 					this.xstyleStarted = true;
-					var starter = '/' + (this.id = nextId++) + '{';
-					browserCss[this.selectorIndex] += ',#' + this.id;
+					this.xstyleCss = this.xstyleCss || [];
 				}
-				
-				xstyleCss.push((starter || '') + name + ':' + value, '}');
+			}
+			if(target || typeof value == 'object'){
+				this.xstyleCss.push(name + ':' + value + ';');
 			}
 		},
-		onRule: function(){
-			browserCss.push('}');
-			if(this.xstyleStarted){
-				xstyleCss.push('}')
+		onCall: function(){},
+		toString: function(mode){
+			var str = ''
+			str += this.xstyleCss ? this.xstyleCss.join('') : '';
+			for(var i in this.rules){
+				var rule = this.rules[i];
+				if(rule.ref && !rule.creating){
+					str += rule.toString(1);
+				}
 			}
+			if(!this.root && (str || mode != 1)){
+				str = ((mode == 2 && this.bases) || this.tagName || '') + '{' + this.ref + str.replace(/\s+/g, ' ') + '}'; 
+			}
+			return str;
+		},
+		onRule: function(){
+			if(this.browserCss){
+				this.browserCss.push('}');
+				this.ref=  '/' + ruleCount;
+				ruleCount++;
+				browserCss.push(this.browserCss.join(''));
+			}
+		},
+		extend: function(derivative, fullExtension){
+			var definitions = this.definitions;
+			if(definitions && fullExtension){
+				// TODO: need to mixin this in, if it already exists
+				derivative.definitions = Object.create(definitions);
+			}
+			(derivative.bases = derivative.bases || []).push(this.name);
 		}
 	};
 	// a class representing function calls
@@ -233,11 +269,10 @@ function processCss(cssText, basePath, inlineAllResources){
 		}
 	};
 	var browserCss = [];//[correctUrls(cssText, basePath + "placeholder.css")];
-	var xstyleCss = [];
 	var rootRule = new XRule;
 	rootRule.root = true;
 	parse(rootRule, cssText, {href:basePath || '.', cssRules:[], insertRule: insertRule});
-	rootRule.properties = {
+	rootRule.definitions = {
 		Math:1,
 		require:1,
 		item: 1,
@@ -253,10 +288,9 @@ function processCss(cssText, basePath, inlineAllResources){
 		}*/
 	}
 	visit(rootRule);
-	//console.log('browserCss', browserCss);
 	return {
 		standardCss: minify(browserCss.join('')),
-		xstyleCss: xstyleCss.join(';'),
+		xstyleCss: rootRule.toString(),
 		requiredModules: requiredModules
 	};
 }

@@ -1,5 +1,5 @@
 define(["dojo/json", "build/fs", "../build"], function(json, fs, buildModule){
-	var targetStylesheet, inLayer, targetStylesheetContents = '';
+	var targetStylesheet, inLayer, targetDestStylesheetUrl, targetStylesheetContents = '';
 	return {
 		start:function(
 			mid,
@@ -14,7 +14,7 @@ define(["dojo/json", "build/fs", "../build"], function(json, fs, buildModule){
 				xstyleModuleInfo = bc.getSrcModuleInfo("xstyle/core/parser", referenceModule, true),
 				xstyleText = fs.readFileSync(xstyleModuleInfo.url + '.js', "utf8"),
 				xstyleProcess = buildModule(xstyleText),
-				targetStylesheetUrl;				
+				targetStylesheetUrl;		
 				
 			if(!bc.fixedUpLayersToDetect){
 				bc.fixedUpLayersToDetect = true;
@@ -28,11 +28,14 @@ define(["dojo/json", "build/fs", "../build"], function(json, fs, buildModule){
 								inLayer = true;
 								targetStylesheet = layer.targetStylesheet;
 								if(targetStylesheet){
-									var targetStylesheetModule = bc.getSrcModuleInfo(targetStylesheet, null, true);
+									var layerModule = layer.name && bc.getSrcModuleInfo(layer.name);
+									var targetStylesheetModule = bc.getSrcModuleInfo(targetStylesheet, layerModule, true);
+									var targetDestStylesheetModule = bc.getDestModuleInfo(targetStylesheet, null, true);
 									targetStylesheetModule.getText = function(){
 										return targetStylesheetContents;
 									};
 									targetStylesheetUrl = targetStylesheetModule.url;
+									targetDestStylesheetUrl = targetDestStylesheetModule.url;
 									// initialize the target stylesheet
 									targetStylesheetContents = '';
 									try{
@@ -40,7 +43,8 @@ define(["dojo/json", "build/fs", "../build"], function(json, fs, buildModule){
 									}catch(e){
 										console.error(e);
 									}
-								}
+									console.log("targetStylesheetContents" + targetStylesheetContents);
+						}
 								oldInclude.forEach(callback);
 							}
 						};
@@ -85,19 +89,25 @@ define(["dojo/json", "build/fs", "../build"], function(json, fs, buildModule){
 							json.stringify(processed.standardCss +"");
 					},
 					internStrings:function(){
+						console.log("interning css" + targetStylesheet + inLayer + this.mid);
 						if(targetStylesheet){
 							// accumulate all the stylesheets in our target stylesheet
 							var processed = processCss(this.module);//, targetStylesheetUrl);
 							targetStylesheetContents += processed.standardCss;
 							// in case the file doesn't exist
-							var targetDestStylesheetModule = bc.getDestModuleInfo(targetStylesheet, null, true);
-							fs.writeFileSync(targetDestStylesheetModule.url, targetStylesheetContents);
-							return ['','0'];
+							//var targetDestStylesheetModule = bc.getDestModuleInfo(targetStylesheet, null, true);
+							// the dojo buildcontrol module has a bug where it will leave the /x on the end of the string, have to remove it
+							var url = targetDestStylesheetUrl.replace(/\/x$/,'');
+							console.log('writing stylesheet ' + url);
+							
+							fs.writeFileSync(url, targetStylesheetContents);
+							return ['', '0'];
 						}
-						if(inLayer){
+				//		if(inLayer){
 							return ["url:" + this.mid, this.getText()];
-						}
-						return ['','0'];
+					//	}
+						return ["url:" + this.mid, "0"];
+						return ['url:dfa', '0'];
 					}
 				});
 			}
@@ -107,12 +117,17 @@ define(["dojo/json", "build/fs", "../build"], function(json, fs, buildModule){
 					// the module likely did not go through the read transform; therefore, just read it manually
 					text= fs.readFileSync(this.module.src, "utf8");
 				}
-				var processed = xstyleProcess(text, stylesheetInfo.url, inlineAllResource);
-				//for(var i = 0; i < processed.requiredModules.length; i++){
-					// TODO: at some point, we may add an option to include the modules that
-					// are required by the stylesheet, but at least by default these should 
-					// probably be async lazy loaded
-				//}
+				try{
+					var processed = xstyleProcess(text, stylesheetInfo.url, inlineAllResource);
+					//for(var i = 0; i < processed.requiredModules.length; i++){
+						// TODO: at some point, we may add an option to include the modules that
+						// are required by the stylesheet, but at least by default these should 
+						// probably be async lazy loaded
+					//}
+				}catch(e){
+					console.error(e);
+					processed = {standardCss: text};
+				}
 				return processed;
 			}
 			return result;
