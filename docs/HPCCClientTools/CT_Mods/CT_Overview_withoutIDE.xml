@@ -158,8 +158,8 @@
           <para>Download the appropriate Client Tools for your Operating
           System and version.</para>
 
-          <para>Client tools can be found at the HPCC Systems download page:
-          </para>
+          <para>Client tools can be found at the HPCC Systems download
+          page:</para>
 
           <para><ulink
           url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink></para>
@@ -179,7 +179,7 @@
 
         <listitem>
           <para>Install the Client Tools on to your system. Take note of the
-          following considerations. </para>
+          following considerations.</para>
         </listitem>
       </orderedlist>
 
@@ -188,8 +188,8 @@
       package would just overwrite the existing components. The default
       behavior is that the client tools will use the last one installed,
       except if you are working directly on the platform. If you are working
-      on the platform then it would be the client tools that gets installed
-      with the platform.</para>
+      directly on the platform then it would use the client tools package that
+      gets installed with the platform.</para>
 
       <para>If you install a version other than the delivered client tools you
       will have a folder in /opt/HPCCSystems that corresponds to the set of
