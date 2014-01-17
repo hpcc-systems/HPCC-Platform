@@ -1807,7 +1807,7 @@ public:
 
     CHThorDistributionActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDistributionArg &_arg, ThorActivityKind _kind);
     virtual void execute();
-    virtual bool needsAllocator() const { return true; }    
+    virtual bool needsAllocator() const { return false; }
 };
 
 class CHThorDiskReadActivity;
