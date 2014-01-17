@@ -1889,8 +1889,14 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
 {
     try
     {
+        const char* wuid = req.getWuid();
+        if (!wuid || !*wuid)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit ID not specified.");
+
         Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
-        Owned<IWorkUnit> lw = factory->updateWorkUnit(req.getWuid());
+        Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
+        if (!lw)
+            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cannot update Workunit %s", wuid);
 
         if(stricmp(req.getPriority(),"high")==0)
             lw->setPriority(PriorityClassHigh);
