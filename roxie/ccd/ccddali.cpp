@@ -464,8 +464,7 @@ public:
     {
         if (isConnected)
         {
-            if (traceLevel > 1)
-                DBGLOG("Dali lookup %s", logicalName);
+            unsigned start = msTick();
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
             Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt);
@@ -491,7 +490,7 @@ public:
                 writeCache(xpath.str(), xpath.str(), pt);
             }
             if (traceLevel > 1)
-                DBGLOG("Dali lookup %s returned %d", logicalName, dfsFile != NULL);
+                DBGLOG("Dali lookup %s returned %s in %u ms", logicalName, dfsFile != NULL ? "match" : "NO match", msTick()-start);
             return dfsFile.getClear();
         }
         else
