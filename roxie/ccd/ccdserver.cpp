@@ -4999,6 +4999,72 @@ IRoxieServerActivityFactory *createRoxieServerNewChildThroughNormalizeActivityFa
 
 //=================================================================================
 
+class CRoxieServerDistributionActivity : public CRoxieServerInternalSinkActivity
+{
+    IHThorDistributionArg &helper;
+
+public:
+    CRoxieServerDistributionActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerInternalSinkActivity(_factory, _probeManager), helper((IHThorDistributionArg &)basehelper)
+    {
+    }
+
+    virtual void onExecute()
+    {
+        MemoryAttr ma;
+        IDistributionTable * * accumulator = (IDistributionTable * *)ma.allocate(helper.queryInternalRecordSize()->getMinRecordSize());
+        helper.clearAggregate(accumulator);
+
+        OwnedConstRoxieRow nextrec(input->nextInGroup());
+        loop
+        {
+            if (!nextrec)
+            {
+                nextrec.setown(input->nextInGroup());
+                if (!nextrec)
+                    break;
+            }
+            helper.process(accumulator, nextrec);
+            nextrec.setown(input->nextInGroup());
+        }
+        StringBuffer result;
+        result.append("<XML>");
+        helper.gatherResult(accumulator, result);
+        result.append("</XML>");
+        helper.sendResult(result.length(), result.str());
+        helper.destruct(accumulator);
+    }
+};
+
+class CRoxieServerDistributionActivityFactory : public CRoxieServerActivityFactory
+{
+    bool isRoot;
+public:
+    CRoxieServerDistributionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
+    {
+    }
+
+    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
+    {
+        return new CRoxieServerDistributionActivity(this, _probeManager);
+    }
+
+    virtual bool isSink() const
+    {
+        return isRoot;
+    }
+};
+
+IRoxieServerActivityFactory *createRoxieServerDistributionActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
+{
+    return new CRoxieServerDistributionActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _isRoot);
+}
+
+
+
+//=================================================================================
+
 class CRoxieServerLinkedRawIteratorActivity : public CRoxieServerActivity
 {
     IHThorLinkedRawIteratorArg &helper;
