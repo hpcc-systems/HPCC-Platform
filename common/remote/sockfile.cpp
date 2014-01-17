@@ -2260,7 +2260,8 @@ public:
         MemoryBuffer replyBuffer;
         const char *localname = parent->queryLocalName();
         localname = skipSpecialPath(localname);
-        sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode);
+        // also send _extraFlags
+        sendBuffer.append((RemoteFileCommandType)RFCopenIO).append(localname).append((byte)_mode).append((byte)_compatmode).append((byte)_extraFlags);
         parent->sendRemoteCommand(sendBuffer, replyBuffer);
 
         replyBuffer.read(handle);
@@ -3421,6 +3422,10 @@ public:
         byte mode;
         byte share;
         msg.read(name->text).read(mode).read(share);  
+        // also try to recv extra
+        byte extra = 0;
+        if (msg.remaining() >= sizeof(byte))
+            msg.read(extra);
         try {
             Owned<IFile> file = createIFile(name->text);
             switch ((compatIFSHmode)share) {
@@ -3443,8 +3448,8 @@ public:
                 break;
             }
             if (TF_TRACE_PRE_IO)
-                PROGLOG("before open file '%s',  (%d,%d)",name->text.get(),(int)mode,(int)share);
-            IFileIO *fileio = file->open((IFOmode)mode);
+                PROGLOG("before open file '%s',  (%d,%d,%d)",name->text.get(),(int)mode,(int)share,(int)extra);
+            IFileIO *fileio = file->open((IFOmode)mode,(IFEflags)extra);
             int handle;
             if (fileio) {
                 CriticalBlock block(sect);
