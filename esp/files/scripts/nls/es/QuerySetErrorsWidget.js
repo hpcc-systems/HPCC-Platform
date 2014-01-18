@@ -1,9 +1,9 @@
 define(
 ({
-    title: "Errors",
+    title: "Errores",
 
-    Cluster: "Cluster",
+    Cluster: "Sistema",
     Error: "Error",
-    State: "State"
+    State: "Estado"
 })
 );

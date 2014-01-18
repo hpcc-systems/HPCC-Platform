@@ -1,12 +1,12 @@
 define(
 ({
-    title: "Graphs",
+    title: "Gráficos",
 
-    Completed: "Completed",
-    Label: "Label",
-    Name: "Name",
-    OpenSafeMode: "Open (safe mode)",
-    Time: "Time",
-    Type: "Type"
+    Completed: "Completado",
+    Label: "Etiqueta",
+    Name: "Nombre",
+    OpenSafeMode: "Abrir (modo seguro)",
+    Time: "Tiempo",
+    Type: "Tipo"
 })
 );

@@ -1,8 +1,8 @@
 define(
 ({
-    title: "HPCC Platform - Home",
+    title: "Plataforma HPCC - Hogar",
 
-    Activity: "Activity",
-    SearchResults: "Search Results",
+    Activity: "Actividad",
+    SearchResults: "Resultados de búsqueda",
 })
 );
