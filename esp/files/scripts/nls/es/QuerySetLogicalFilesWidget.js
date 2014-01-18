@@ -1,7 +1,7 @@
 define(
 ({
-    title: "Logical Files",
+    title: "Archivos lógicos",
 
-    LogicalFiles: "Logical Files"
+    LogicalFiles: "Archivos lógicos"
 })
 );

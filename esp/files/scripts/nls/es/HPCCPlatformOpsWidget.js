@@ -1,13 +1,13 @@
 define(
 ({
-    title: "HPCC Platform - Operations",
+    title: "Plataforma HPCC - Operaciones",
 
-    TargetClusters: "Target Clusters",
-    ClusterProcesses: "Cluster Processes",
-    SystemServers: "System Servers",
-    Users: "Users",
-    Groups: "Groups",
-    Permissions: "Permissions",
-    Resources: "Resources"
+    TargetClusters: "Sistemas de destino",
+    ClusterProcesses: "Procesos de sistema",
+    SystemServers: "Servidores de sistema",
+    Users: "Usuarios",
+    Groups: "Grupos",
+    Permissions: "Permisos",
+    Resources: "Recursos"
 })
 );
