@@ -75,11 +75,11 @@ define([
             return ESPRequest.send("WsDfu", "SuperfileAction", {
                 request: request,
                 load: function (response) {
-                    if (lang.exists("SuperfileActionResponse", response)) {
+                    if (lang.exists("SuperfileActionResponse", response) && response.SuperfileActionResponse.retcode) {
                         dojo.publish("hpcc/brToaster", {
                             Severity: "Error",
                             Source: "WsDfu.SuperfileAction",
-                            Exceptions: [{ Message: response.AddtoSuperfileResponse.Subfiles }]
+                            Exceptions: [{ Message: dojo.toJson(response.SuperfileActionResponse) }]
                         });
                     }
 

@@ -21,15 +21,13 @@ define([
     "dojo/i18n!./nls/GetDFUWorkunitsWidget",
     "dojo/_base/array",
     "dojo/_base/Deferred",
-    "dojo/data/ObjectStore",
-    "dojo/store/util/QueryResults",
     "dojo/store/Observable",
 
     "hpcc/FileSpray",
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Deferred, ObjectStore, QueryResults, Observable,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Deferred, Observable,
     FileSpray, ESPUtil, ESPRequest, ESPResult) {
 
     var i18n = lang.mixin(nlsCommon, nlsSpecific);
@@ -298,13 +296,6 @@ define([
             var store = new Store(options);
             store = Observable(store);
             return store;
-        },
-
-        CreateWUQueryObjectStore: function (options) {
-            var objStore = new ObjectStore({
-                objectStore: this.CreateWUQueryStore()
-            });
-            return objStore;
         }
     };
 });

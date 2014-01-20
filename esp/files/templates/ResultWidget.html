@@ -1,7 +1,7 @@
 <div class="${baseClass}">
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-props="splitter: false" data-dojo-type="dijit.layout.BorderContainer">
-        <div id="${id}Toolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
-            <span class="bold">${i18n.Download}:</span>
+        <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+            <b>${i18n.Download}:</b>
             <div data-dojo-attach-event="onClick:_onDownloadZip" data-dojo-type="dijit.form.Button">${i18n.Zip}</div>
             <div data-dojo-attach-event="onClick:_onDownloadGZip" data-dojo-type="dijit.form.Button">${i18n.GZip}</div>
             <div data-dojo-attach-event="onClick:_onDownloadXLS" data-dojo-type="dijit.form.Button">${i18n.XLS}</div>
