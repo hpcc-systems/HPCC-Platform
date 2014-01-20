@@ -3475,6 +3475,12 @@ outputWuFlag
                             $$.setPosition($1);
                         }
     | commonAttribute
+    | MAXSIZE '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, false);
+                            $$.setExpr(createExprAttribute(maxSizeAtom, $3.getExpr()));
+                            $$.setPosition($1);
+                        }
     ;
 
 optCommaTrim

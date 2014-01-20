@@ -1869,6 +1869,7 @@ class CThorWorkUnitWriteArg : public CThorArg, implements IHThorWorkUnitWriteArg
     virtual const char * queryName()                        { return NULL; }
     virtual unsigned getFlags()                             { return 0; }
     virtual void serializeXml(const byte * self, IXmlWriter & out) { rtlSysFail(1, "serializeXml not implemented"); }
+    virtual unsigned getMaxSize()                           { return 0; }
 };
 
 class CThorXmlWorkunitWriteArg : public CThorArg, implements IHThorXmlWorkunitWriteArg

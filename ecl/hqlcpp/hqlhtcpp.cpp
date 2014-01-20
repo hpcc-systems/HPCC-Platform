@@ -10947,6 +10947,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * seq = querySequence(expr);
     IHqlExpression * name = queryResultName(expr);
+    IHqlExpression * maxsize = expr->queryAttribute(maxSizeAtom);
     int sequence = (int)getIntValue(seq, ResultSequenceInternal);
 
     if (expr->hasAttribute(diskAtom))
@@ -10970,7 +10971,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
 
     StringBuffer graphLabel;
-    bool useImplementationClass = options.minimizeActivityClasses && (sequence == ResultSequenceInternal);
+    bool useImplementationClass = options.minimizeActivityClasses && (sequence == ResultSequenceInternal) && !maxsize;
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKworkunitwrite, expr, "WorkUnitWrite");
     if (useImplementationClass)
         instance->setImplementationClass(newWorkUnitWriteArgId);
@@ -10990,6 +10991,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
         flags.append("|POFextend");
     if (expr->hasAttribute(groupedAtom))
         flags.append("|POFgrouped");
+    if (maxsize)
+        flags.append("|POFmaxsize");
 
     if (!useImplementationClass)
     {
@@ -11000,6 +11003,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
             namectx.addQuotedCompound("virtual const char * queryName()");
             buildReturn(namectx, name, constUnknownVarStringType);
         }
+        if (maxsize)
+            doBuildUnsignedFunction(instance->createctx, "getMaxSize", maxsize->queryChild(0));
 
         IHqlExpression * outputRecord = instance->meta.queryRecord();
         Owned<IWUResult> result = createDatasetResultSchema(seq, name, outputRecord, true, false);
