@@ -41,5 +41,6 @@ define({ root:
 //end v1.x content
 ,
 "es": true,
-"zh": true
+"zh": true,
+"hu": true
 });

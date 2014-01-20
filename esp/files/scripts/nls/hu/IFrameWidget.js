@@ -1,0 +1,5 @@
+define(
+({
+    Reset: "Alaphelyzet"
+})
+);
