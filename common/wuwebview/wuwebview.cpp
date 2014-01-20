@@ -691,7 +691,7 @@ void WuWebView::applyResultsXSLT(const char *filename, StringBuffer &out)
 
 ILoadedDllEntry *WuWebView::loadDll(bool force)
 {
-    if (!dll && (force || delayedDll))
+    if (!dll && dllname.length() && (force || delayedDll))
     {
         try
         {
@@ -714,9 +714,12 @@ void WuWebView::setWorkunit(IConstWorkUnit &_cw)
         name.s.replace(' ','_');
     }
     Owned<IConstWUQuery> q = cw->getQuery();
-    q->getQueryDllName(dllname);
-    if (!delayedDll)
-        loadDll(true);
+    if (q)
+    {
+        q->getQueryDllName(dllname);
+        if (!delayedDll)
+            loadDll(true);
+    }
 }
 
 void WuWebView::setWorkunit(const char *wuid)
