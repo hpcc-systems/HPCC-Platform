@@ -6640,6 +6640,12 @@ char* getTargetBase(const char* outDir, const char* src)
         return strdup(src);
 }
 
+static void safeclose(int fh)
+{
+    if (fh >= 0)
+        close(fh);
+}
+
 HIDLcompiler::HIDLcompiler(const char * sourceFile,const char *outDir)
 {
     modules = NULL;
@@ -6683,11 +6689,11 @@ HIDLcompiler::~HIDLcompiler()
     close(cppo);
     //close(xsvo);
     close(clwo);
-    close(espx);
-    close(espng);
-    close(espngc);
-    close(espi);
-    close(espc);
+    safeclose(espx);
+    safeclose(espng);
+    safeclose(espngc);
+    safeclose(espi);
+    safeclose(espc);
     free(packagename);
     free(filename);
 
