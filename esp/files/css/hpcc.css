@@ -68,21 +68,8 @@ form {
 }
 
 form label{
-    float: left;
-    width: 14%;
-    margin: 0 15px 0 0;
-    text-align: left;
-    padding-top: 4px;
+    margin: 0 8px 0 0;
     font-weight:bold;
-    height:20px;
-}
-
-form textarea{
-    font-size: 13px;
-    font-family: Arial;
-    width:auto;
-    height:auto;
-    float:left;
 }
 
 form ul{
@@ -99,13 +86,27 @@ form li{
     height:20px;
 }
 
-form div{
-    margin:4px 0 0 0;
+form li label{
+    float: left;
+    width: 14%;
+    margin: 0 15px 0 0;
+    text-align: left;
+    padding-top: 4px;
 }
+
+form li textarea{
+    font-size: 13px;
+    font-family: Arial;
+    width:auto;
+    height:auto;
+    float:left;
+}
+
 form h1{
     font-size: 1.5em;
     margin-left:15px;
 }
+
 form h2{
     padding:5px 0;
     color:rgb(22, 22, 22);

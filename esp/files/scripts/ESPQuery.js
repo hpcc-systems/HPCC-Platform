@@ -18,8 +18,6 @@ define([
     "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/_base/Deferred",
-    "dojo/data/ObjectStore",
-    "dojo/store/util/QueryResults",
     "dojo/store/Observable",
     "dojo/Stateful",
 
@@ -30,7 +28,7 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit"
-], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable, Stateful,
+], function (declare, arrayUtil, lang, Deferred, Observable, Stateful,
         parser,
         WsWorkunits, WsEcl, ESPRequest, ESPUtil, ESPWorkunit) {
 

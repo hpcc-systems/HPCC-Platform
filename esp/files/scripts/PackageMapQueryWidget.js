@@ -30,7 +30,6 @@ define([
     "dijit/registry",
     "dojox/form/Uploader",
     "dojox/form/uploader/FileList",
-    "dojox/form/uploader/plugins/Flash",
     "dojox/grid/EnhancedGrid",
     "dojox/grid/enhanced/plugins/Pagination",
     "dojox/grid/enhanced/plugins/IndirectSelection",
@@ -54,7 +53,7 @@ define([
     "dijit/TooltipDialog"
 ], function (declare, lang, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-    Uploader, FileUploader, Flash, EnhancedGrid, Pagination, IndirectSelection, ItemFileWriteStore,
+    Uploader, FileUploader, EnhancedGrid, Pagination, IndirectSelection, ItemFileWriteStore,
     PackageMapDetailsWidget, PackageMapValidateWidget,
     WsPackageMaps, ESPPackageProcess, SFDetailsWidget,
     template) {
