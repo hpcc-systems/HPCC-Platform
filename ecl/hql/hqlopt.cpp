@@ -2383,7 +2383,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 {
                 case no_createrow:
                     {
-                        OwnedHqlExpr match = getExtractSelect(child->queryChild(0), transformed->queryChild(1));
+                        OwnedHqlExpr match = getExtractSelect(child->queryChild(0), transformed->queryChild(1), false);
                         if (match)
                         {
                             IHqlExpression * cur = match;
@@ -2418,7 +2418,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         if (values->numChildren() == 1) 
                         {
                             IHqlExpression * transform = values->queryChild(0);
-                            OwnedHqlExpr match = getExtractSelect(transform, transformed->queryChild(1));
+                            OwnedHqlExpr match = getExtractSelect(transform, transformed->queryChild(1), false);
                             if (match)
                             {
                                 IHqlExpression * cur = match;
@@ -2463,7 +2463,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         if (values->numChildren() == 1) 
                         {
                             IHqlExpression * transform = values->queryChild(0);
-                            OwnedHqlExpr match = getExtractSelect(transform, extracted->queryChild(1));
+                            OwnedHqlExpr match = getExtractSelect(transform, extracted->queryChild(1), false);
                             if (match)
                             {
                                 IHqlExpression * cur = match;

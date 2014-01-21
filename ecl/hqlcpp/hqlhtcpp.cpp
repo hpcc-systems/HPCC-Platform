@@ -9190,7 +9190,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
 
     traceExpression("BeforeResourcing", resourced);
 
-    cycle_t time = msTick();
+    unsigned time = msTick();
     if (outputLibraryId)
     {
         unsigned numResults = outputLibrary->numResultsUsed();
