@@ -1964,6 +1964,15 @@ void CFileIO::setPos(offset_t newPos)
         _llseek(file,newPos,SEEK_SET);
 }
 
+static void sync_file_region(int fd, offset_t offset, offset_t nbytes, unsigned flags)
+{
+#if defined(__NR_sync_file_range) && (defined(_ARCH_X86_) || defined(_ARCH_X86_64_))
+    (void)syscall(__NR_sync_file_range, fd, offset, nbytes, flags);
+#else
+    fdatasync(fd);
+#endif
+}
+
 size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
 {
     size32_t ret = pwrite(file,data,len,pos);
@@ -1978,7 +1987,7 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
         {
             atomic_set(&bytesWritten, 0);
             // [possibly] non-blocking request to write-out dirty pages
-            sync_file_range(file, 0, 0, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE);
+            sync_file_region(file, 0, 0, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE);
             // flush written-out pages
             posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
         }

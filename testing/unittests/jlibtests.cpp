@@ -106,7 +106,7 @@ public:
         rs = 65536;
         unsigned nr = (unsigned)(1024.0 * (1024.0 * (double)hdwInfo.totalMemory / (double)rs));
         nr10pct = nr / 10;
-        nr150pct = nr * 1.5;
+        nr150pct = (unsigned)((double)nr * 1.5);
         record = (char *)malloc(rs);
         for (int i=0;i<rs;i++)
             record[i] = 'a';
