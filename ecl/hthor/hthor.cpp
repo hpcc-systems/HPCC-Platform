@@ -6670,8 +6670,8 @@ CHThorDistributionActivity::CHThorDistributionActivity(IAgentContext &_agent, un
 
 void CHThorDistributionActivity::execute()
 {
-    IRecordSize *m = helper.queryInternalRecordSize();
-    IDistributionTable * * accumulator = (IDistributionTable * *)rowAllocator->createRow();  //meta: PG MORE --- distribution --- helper.queryInternalRecordSize()
+    MemoryAttr ma;
+    IDistributionTable * * accumulator = (IDistributionTable * *)ma.allocate(helper.queryInternalRecordSize()->getMinRecordSize());
     helper.clearAggregate(accumulator); 
 
     OwnedConstRoxieRow nextrec(input->nextInGroup());
@@ -6692,7 +6692,6 @@ void CHThorDistributionActivity::execute()
     result.append("</XML>");
     helper.sendResult(result.length(), result.str());
     helper.destruct(accumulator);
-    rowAllocator->releaseRow(accumulator);
 }
 
 //---------------------------------------------------------------------------
