@@ -1,6 +1,6 @@
 define(
 ({
-    Mappings: "Mappings",
-    Show: "Show"
+    Mappings: "映像",
+    Show: "显示"
 })
 );

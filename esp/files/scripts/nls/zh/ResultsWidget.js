@@ -1,10 +1,10 @@
 define(
 ({
-    title: "Outputs",
+    title: "输出",
 
-    FileName: "File Name",
-    Name: "Name",
-    Value: "Value",
-    Views: "Views"
+    FileName: "文件名称",
+    Name: "名称",
+    Value: "值",
+    Views: "显示"
 })
 );

@@ -1,12 +1,12 @@
 define(
 ({
-    title: "ECL Playground",
+    title: "ECL操作平台",
 
-    ErrorWarnings: "Error/Warning(s)",
-    Results: "Result(s)",
-    Sample: "Sample",
-    Submit: "Submit",
-    Target: "Target",
-    Visualize: "Visualize"
+    ErrorWarnings: "错误/警告",
+    Results: "结果",
+    Sample: "样本",
+    Submit: "提交",
+    Target: "集群系统",
+    Visualize: "可视化"
 })
 );

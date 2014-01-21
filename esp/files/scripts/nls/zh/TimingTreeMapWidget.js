@@ -1,5 +1,5 @@
 define(
 ({
-    help: "This area displays the treemap for the graph(s) in this workunit. The size and hue indicate the duration of each graph (Larger and darker indicates a greater percentage of the time taken.)"
+    help: "本区域显示工作单元的树状图.一个图形的大小和颜色表明该图形所代表的活动的时间跨度 (较大的图形和较暗的颜色表明该图形所代表的活动时间较长.)"
 })
 );

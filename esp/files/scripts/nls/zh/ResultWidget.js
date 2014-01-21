@@ -1,8 +1,8 @@
 define(
 ({
-    title: "Activity",
+    title: "活动",
 
-    Download: "Download",
+    Download: "下载",
     GZip: "GZip",
     XLS: "XLS",
     Zip: "Zip"

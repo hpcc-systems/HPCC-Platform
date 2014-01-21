@@ -1,15 +1,15 @@
 define(
 ({
-    Code: "Code",
-    Col: "Col",
-    Errors: "Errors",
-    ErrorWarnings: "Error/Warnings",
-    FileName: "File Name",
-    Info: "Info",
-    Line: "Line",
-    Message: "Message",
+    Code: "代码",
+    Col: "列",
+    Errors: "错误",
+    ErrorWarnings: "错误/警告",
+    FileName: "文件名称",
+    Info: "信息",
+    Line: "行",
+    Message: "信息",
     Reset: "Source",
-    Severity: "Severity",
-    Warnings: "Warnings"
+    Severity: "严重性",
+    Warnings: "警告"
 })
 );

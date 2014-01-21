@@ -1,8 +1,8 @@
 define(
 ({
-    title: "HPCC Platform - Home",
+    title: "HPCC平台 - 首页",
 
-    Workunits: "Workunits",
-    Playground: "Playground"
+    Workunits: "工作单元",
+    Playground: "操作平台"
 })
 );
