@@ -27,7 +27,7 @@ define([
 
     "hpcc/WsPackageMaps",
 
-    "dojo/text!../templates/PackageSourceWidget.html",
+    "dojo/text!../templates/PackageSourceWidget.html"
 ],
     function (declare, lang, dom,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,

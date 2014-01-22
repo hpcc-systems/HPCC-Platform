@@ -24,7 +24,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/QuerySetQueryWidget",
-    "hpcc/PackageMapQueryWidget",
+    //"hpcc/PackageMapQueryWidget",
 
     "dojo/text!../templates/HPCCPlatformRoxieWidget.html",
 
@@ -34,7 +34,7 @@ define([
 
 ], function (declare, lang, i18n, nlsCommon, nlsSpecific,
                 registry,
-                _TabContainerWidget, QuerySetQueryWidget, PackageMapQueryWidget,
+                _TabContainerWidget, QuerySetQueryWidget, /*PackageMapQueryWidget,*/
                 template) {
     return declare("HPCCPlatformRoxieWidget", [_TabContainerWidget], {
         templateString: template,
