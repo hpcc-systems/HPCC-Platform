@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/PackageMapValidateWidget",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
@@ -35,12 +38,13 @@ define([
     "dijit/form/RadioButton",
     "dijit/form/Select",
     "dijit/form/SimpleTextarea"
-], function (declare, lang, dom, domAttr, domClass, topic,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domAttr, domClass, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     WsPackageMaps, template) {
     return declare("PackageMapValidateWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "PackageMapValidateWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
         validateForm: null,
         targetSelect: null,
         packageContent: null,
@@ -109,7 +113,7 @@ define([
 
         updateProcessSelections: function (targetName) {
             this.processSelect.removeOption(this.processSelect.getOptions());
-            this.processSelect.options.push({label: 'ANY', value: '' });
+            this.processSelect.options.push({label: this.i18n.ANY, value: '' });
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
                 if ((target.Processes != undefined) && ((targetName == '') || (targetName == target.Name)))
@@ -131,18 +135,18 @@ define([
         validateResponseToText: function (response) {
             var text = "";
             if (!lang.exists("Errors", response) || (response.Errors.length < 1))
-                text += "No errors found\n";
+                text += this.i18n.NoErrorFound;
             else
-                text = this.addArrayToText("Error(s)", response.Errors, text);
+                text = this.addArrayToText(this.i18n.Errors, response.Errors, text);
             if (!lang.exists("Warnings", response) || (response.Warnings.length < 1))
-                text += "No warnings found\n";
+                text += this.i18n.Warnings;
             else
-                text = this.addArrayToText("Warning(s)", response.Warnings, text);
+                text = this.addArrayToText(this.i18n.Warnings, response.Warnings, text);
 
             text += "\n";
-            text = this.addArrayToText("Queries without matching package", response.queries.Unmatched, text);
-            text = this.addArrayToText("Packages without matching queries", response.packages.Unmatched, text);
-            text = this.addArrayToText("Files without matching package definitions", response.files.Unmatched, text);
+            text = this.addArrayToText(this.i18n.QueriesNoPackage, response.queries.Unmatched, text);
+            text = this.addArrayToText(this.i18n.PackagesNoQuery, response.packages.Unmatched, text);
+            text = this.addArrayToText(this.i18n.FilesNoPackage, response.files.Unmatched, text);
             return text;
         },
 
@@ -161,7 +165,7 @@ define([
             } else {
                 var content = this.packageContent.getValue();
                 if (content == '') {
-                    alert('Package content not set');
+                    alert(this.i18n.PackageContentNotSet);
                     return;
                 }
                 request['content'] = content;
@@ -173,9 +177,9 @@ define([
                 load: function (response) {
                     var responseText = context.validateResponseToText(response);
                     if (responseText == '')
-                        context.validateResult.setValue("(Empty)");
+                        context.validateResult.setValue(context.i18n.Empty);
                     else {
-                        responseText = '=====Validate Result=====\n\n' + responseText;
+                        responseText = context.i18n.ValidateResult + responseText;
                         context.validateResult.setValue(responseText);
                     }
                     context.validateResult.set('style', 'visibility:visible');
