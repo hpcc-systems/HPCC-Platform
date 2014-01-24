@@ -843,6 +843,8 @@ bool isGlobalActivity(CGraphElementBase &container)
         {
             Owned<IHThorCsvReadArg> helper = (IHThorCsvReadArg *)container.helperFactory();
             // if header lines, then [may] need to co-ordinate across slaves
+            if (container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
+                return false;
             return helper->queryCsvParameters()->queryHeaderLen() > 0;
         }
 // dependent on child acts?
