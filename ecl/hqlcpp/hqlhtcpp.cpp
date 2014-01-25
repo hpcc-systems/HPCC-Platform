@@ -6374,6 +6374,8 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                             if (extract)
                                 canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
                         }
+                        else if (getTargetClusterType() == HThorCluster)
+                            canAccessResultDirectly = true;
                     }
                     if (canAccessResultDirectly)
                         result = doBuildActivityGetGraphResult(ctx, expr);

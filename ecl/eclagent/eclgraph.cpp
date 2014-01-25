@@ -260,7 +260,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKxmlread:
         return createXmlReadActivity(agent, activityId, subgraphId, (IHThorXmlReadArg &)arg, kind);
     case TAKlocalresultread:
-        return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, graphId);
+        return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, node->getPropInt("att[@name='_graphId']/@value"));
     case TAKlocalresultwrite:
         return createLocalResultWriteActivity(agent, activityId, subgraphId, (IHThorLocalResultWriteArg &)arg, kind, graphId);
     case TAKdictionaryresultwrite:
@@ -1394,6 +1394,11 @@ IHThorGraphResult * GraphResults::queryResult(unsigned id)
     CriticalBlock procedure(cs);
     ensureAtleast(id+1);
     return &results.item(id);
+}
+
+IHThorGraphResult * GraphResults::queryGraphLoopResult(unsigned id)
+{
+    throwUnexpected();
 }
 
 IHThorGraphResult * GraphResults::createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator)

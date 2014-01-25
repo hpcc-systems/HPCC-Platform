@@ -808,8 +808,11 @@ public:
 
     virtual void clear();
     virtual IHThorGraphResult * queryResult(unsigned id);
+    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id);
     virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator);
     virtual IHThorGraphResult * createResult(IEngineRowAllocator * ownedRowsetAllocator);
+    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) { throwUnexpected(); }
+
     virtual void setResult(unsigned id, IHThorGraphResult * result);
 
 //interface IEclGraphResults
