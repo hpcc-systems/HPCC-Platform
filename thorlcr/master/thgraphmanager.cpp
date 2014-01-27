@@ -816,7 +816,7 @@ public:
         {
             poll.wait(pollDelay);
             if (stopped) break;
-            if (!verifyCovenConnection(pollDelay)) // use poll delay time for verify connection timeout
+            if (!queryDefaultDali() || !queryDefaultDali()->verifyCovenConnection(pollDelay)) // use poll delay time for verify connection timeout
             {
                 abortThor(MakeThorOperatorException(TE_AbortException, "Detected lost connectivity with dali server, aborting thor"));
                 break;

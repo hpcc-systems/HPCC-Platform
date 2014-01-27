@@ -854,7 +854,7 @@ public:
         // now we can create name
         StringBuffer newroxieprefix;
         constructDestinationName(dstlfn,ftree->queryProp("Attr/@roxiePrefix"),ctx.superdestination,dlfn,newroxieprefix);
-        if (!srcdali.get()||queryCoven().inCoven(srcdali)) {
+        if (!srcdali.get()||queryDefaultDali()->queryCoven().inCoven(srcdali)) {
             // if dali is local and filenames same
             if (strcmp(slfn.get(),dlfn.get())==0) {
                 PROGLOG("File copy of %s not done as file local",slfn.get());

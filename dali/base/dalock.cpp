@@ -237,7 +237,7 @@ public:
 
     int run()
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         ICommunicator &comm=coven.queryComm();
         CMessageHandler<CLockRequestServer> handler("CLockRequestServer",this,&CLockRequestServer::processMessage);
         stopped = false;
@@ -262,7 +262,7 @@ public:
 
     void processMessage(CMessageBuffer &mb)
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         ICommunicator &comm=coven.queryComm();
 
         DistributedLockId id;
@@ -318,7 +318,7 @@ public:
     {
         if (!stopped) {
             stopped = true;
-            queryCoven().queryComm().cancel(RANK_ALL, MPTAG_DALI_LOCK_REQUEST);
+            queryDefaultDali()->queryCoven().queryComm().cancel(RANK_ALL, MPTAG_DALI_LOCK_REQUEST);
         }
         join();
     }
@@ -340,7 +340,7 @@ public:
     {
         CMessageBuffer mb;
         mb.append((int)MLR_ALLOC_LOCK_ID);
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_LOCK_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_LOCK_REQUEST);
         DistributedLockId ret;
         mb.read(ret);
         return ret;
@@ -352,7 +352,7 @@ public:
         CMessageBuffer mb;
         mb.append((int)MLR_FREE_LOCK_ID).append(id);
         try {
-            ICoven &coven=queryCoven();
+            ICoven &coven=queryDefaultDali()->queryCoven();
             coven.queryComm().send(mb,coven.chooseServer(id),MPTAG_DALI_LOCK_REQUEST,MP_ASYNC_SEND);
         }
         catch (IMP_Exception *e) // ignore if fails
@@ -368,7 +368,7 @@ public:
     {
         CMessageBuffer mb;
         mb.append((int)MLR_PRIMARY_LOCK_REQUEST).append(id).append(owner).append(exclusive).append(timeout);
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         coven.sendRecv(mb,coven.chooseServer(id),MPTAG_DALI_LOCK_REQUEST);
         bool ret;
         mb.read(ret);
@@ -379,7 +379,7 @@ public:
     {
         CMessageBuffer mb;
         mb.append((int)MLR_PRIMARY_UNLOCK_REQUEST).append(id).append(owner);
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         coven.sendRecv(mb,coven.chooseServer(id),MPTAG_DALI_LOCK_REQUEST);
     }
 
@@ -428,7 +428,7 @@ public:
         else {
             CMessageBuffer mb;
             mb.append((int)MLR_FREE_LOCK_ID).append(id);
-            queryCoven().send(mb,coven.getServerRank(dst),MPTAG_DALI_LOCK_REQUEST,MP_ASYNC_SEND);
+            queryDefaultDali()->queryCoven().send(mb,coven.getServerRank(dst),MPTAG_DALI_LOCK_REQUEST,MP_ASYNC_SEND);
         }
 #endif
     }
@@ -437,7 +437,7 @@ public:
     {
         CMessageBuffer mb;
         mb.append((int)MLR_SECONDARY_LOCK_REQUEST).append(id).append(owner).append(exclusive).append(timeout);
-        queryCoven().sendRecv(mb,dst,MPTAG_DALI_LOCK_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,dst,MPTAG_DALI_LOCK_REQUEST);
         bool ret;
         mb.read(ret);
         return ret;
@@ -447,7 +447,7 @@ public:
     {
         CMessageBuffer mb;
         mb.append((int)MLR_SECONDARY_UNLOCK_REQUEST).append(id).append(owner);
-        queryCoven().sendRecv(mb,dst,MPTAG_DALI_LOCK_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,dst,MPTAG_DALI_LOCK_REQUEST);
     }
 
     bool localLock(DistributedLockId id,SessionId owner,bool exclusive=true,long timeout=-1)
@@ -474,7 +474,7 @@ public:
         else if (!remoteLock(ownerrank,id,owner,exclusive,timeout))
             return false;
         // all others should succeed quickly
-        IGroup &grp = queryCoven().queryComm().queryGroup();
+        IGroup &grp = queryDefaultDali()->queryCoven().queryComm().queryGroup();
         ForEachOtherNodeInGroup(r,grp) {
             if (r!=ownerrank)
                 remoteLock(r,id,owner,exclusive);
@@ -521,7 +521,7 @@ public:
 IDistributedLockManager &queryDistributedLockManager()
 {
     if (!DistributedLockManager) {
-        assertex(!queryCoven().inCoven()); // Check not Coven server (if occurs - not initialized correctly;
+        assertex(!queryDefaultDali()->queryCoven().inCoven()); // Check not Coven server (if occurs - not initialized correctly;
         DistributedLockManager = new CClientDistributedLockManager();
     }
     return *DistributedLockManager;
@@ -594,7 +594,7 @@ public:
 
     void start()
     {
-        ICoven  &coven=queryCoven();
+        ICoven  &coven=queryDefaultDali()->queryCoven();
         assertex(coven.inCoven()); // must be member of coven
         DistributedLockManager = new CCovenDistributedLockManager(coven);
         DistributedLockManager->start();

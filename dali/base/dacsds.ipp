@@ -27,6 +27,7 @@
 #include "jptree.ipp"
 
 #include "dasds.ipp"
+#include "daclient.hpp"
   
 
 class CSubscriberContainerBase : public CInterface, implements IInterface
@@ -168,7 +169,7 @@ public:
     CSDSConnectionSubscriberProxy(ISDSConnectionSubscription &_sdsNotify, ConnectionId connId) : sdsNotify(&_sdsNotify)
     {
         INIT_NAMEDCOUNT;
-        id = queryCoven().getUniqueId();
+        id = queryDefaultDali()->queryCoven().getUniqueId();
         MemoryBuffer mb; mb.append(connId);
         data.set(mb.length(), mb.toByteArray());
     }
@@ -234,7 +235,7 @@ public:
         MemoryBuffer _data;
         _data.append(xpath).append(sub).append(sendValue);
         data.set(_data.length(), _data.toByteArray());
-        id = queryCoven().getUniqueId();
+        id = queryDefaultDali()->queryCoven().getUniqueId();
     }
     SubscriptionId getId() const { return id; }
 

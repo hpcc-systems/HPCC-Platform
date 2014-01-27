@@ -25,20 +25,31 @@
 #include "jlib.hpp"
 #include "mpcomm.hpp"
 #include "dasds.hpp"
-
-extern da_decl bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport=0, const char *clientVersion=NULL, const char *minServerVersion=NULL, unsigned timeout=MP_WAIT_FOREVER);
-extern da_decl bool reinitClientProcess(IGroup *servergrp, DaliClientRole role, const char *clientVersion=NULL, const char *minServerVersion=NULL, unsigned timeout=MP_WAIT_FOREVER); 
-extern da_decl void closedownClientProcess();
-extern da_decl bool daliClientActive();
-
-#define DALI_SERVER_PORT     7070 // default Dali server port
+#include "dacoven.hpp"
 
 interface IDaliClientShutdown : extends IInterface
 {
     virtual void clientShutdown() = 0;
 };
-extern da_decl void addShutdownHook(IDaliClientShutdown &shutdown);
-extern da_decl void removeShutdownHook(IDaliClientShutdown &shutdown);
+
+interface IDaliClient : public IInterface
+{
+    virtual void addShutdownHook(IDaliClientShutdown &shutdown) = 0;
+    virtual void removeShutdownHook(IDaliClientShutdown &shutdown) = 0;
+    //MOE: These should be in a different interface
+    virtual void connectLogMsgManagerToDali() = 0;
+    virtual void disconnectLogMsgManagerFromDali() = 0;
+    virtual ICoven &queryCoven() = 0;
+    virtual bool verifyCovenConnection(unsigned timeout) = 0;
+};
+
+extern da_decl IDaliClient * queryDefaultDali();
+
+extern da_decl bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport=0, const char *clientVersion=NULL, const char *minServerVersion=NULL, unsigned timeout=MP_WAIT_FOREVER);
+extern da_decl void closedownClientProcess();
+extern da_decl bool daliClientActive();
+
+#define DALI_SERVER_PORT     7070 // default Dali server port
 
 interface IDaliClient_Exception: extends IException
 {
@@ -54,8 +65,6 @@ enum DaliClientError
 
 extern da_decl IDaliClient_Exception *createClientException(DaliClientError err, const char *msg=NULL);
 
-extern da_decl void connectLogMsgManagerToDali();
-extern da_decl void disconnectLogMsgManagerFromDali();
 extern da_decl void connectLogMsgListenerToDali();
 extern da_decl void disconnectLogMsgListenerFromDali();
 

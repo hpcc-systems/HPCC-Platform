@@ -770,7 +770,7 @@ public:
     {
         if (!stopping) {
             stopping = true;
-            queryCoven().queryComm().cancel(RANK_ALL, MPTAG_TEST);
+            queryDefaultDali()->queryCoven().queryComm().cancel(RANK_ALL, MPTAG_TEST);
         }
         join();
     }

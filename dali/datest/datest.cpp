@@ -2294,10 +2294,7 @@ public:
 
         if (7 == action)
         {
-            Sleep(1000);
-            WriteLockBlock b(*reinitLock);
-            PROGLOG("shutdown / reinit test");
-            reinitClientProcess(group, DCR_Other);
+            UNIMPLEMENTED;
         }
         else
         {
@@ -2670,7 +2667,9 @@ void TestServerShutdown(IGroup *group)
         catch (IException *e) {
             pexception("Exception",e);
         }
-        reinitClientProcess(group, DCR_Other);
+        //MORE: Closedown and restarted
+        UNIMPLEMENTED;
+        //reinitClientProcess(group, DCR_Other);
     }
 }
 

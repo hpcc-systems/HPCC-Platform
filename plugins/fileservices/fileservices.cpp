@@ -1795,7 +1795,7 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull(ICodeContext *ctx,
     if (wrap)
         req->setWrap(true);
     StringBuffer sourceDali;
-    queryCoven().queryComm().queryGroup().queryNode(0).endpoint().getUrlStr(sourceDali);
+    queryDefaultDali()->queryCoven().queryComm().queryGroup().queryNode(0).endpoint().getUrlStr(sourceDali);
     req->setSourceDali(sourceDali);
     req->setOverwrite(overwrite);
     req->setReplicate(replicate);

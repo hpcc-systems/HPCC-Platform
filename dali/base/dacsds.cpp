@@ -1149,7 +1149,7 @@ bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
         if (!avail)
             WARNLOG("Excessive concurrent Dali SDS client transactions. Transaction delayed.");
         bool res;
-        try { res = queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST); }
+        try { res = queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST); }
         catch (IException *)
         {
             if (avail)
@@ -1161,7 +1161,7 @@ bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
         return res;
     }
     else
-        return queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST);
+        return queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST);
 }
 
 CRemoteTreeBase *CClientSDSManager::get(CRemoteConnection &connection, __int64 serverId)
@@ -1676,7 +1676,7 @@ StringBuffer &CClientSDSManager::getInfo(SdsDiagCommand cmd, StringBuffer &out)
     mb.append((int)DAMP_SDSCMD_DIAGNOSTIC);
     mb.append((int)cmd);
 
-    if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+    if (!queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnositc info");
 
     SdsReply replyMsg;  
@@ -1744,7 +1744,7 @@ IPropertyTree &CClientSDSManager::queryProperties() const
         throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= 3.1 for getProperties usage");
     CMessageBuffer mb;
     mb.append((int)DAMP_SDSCMD_GETPROPS);
-    if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+    if (!queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnostic info");
     SdsReply replyMsg;  
     mb.read((int &)replyMsg);
@@ -2004,7 +2004,7 @@ bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroup
     newEnv->serialize(mb);
     mb.append(forceGroupUpdate);
 
-    if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+    if (!queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnositc info");
 
     bool result = false;
@@ -2035,7 +2035,7 @@ ISDSManager &querySDS()
     CriticalBlock block(SDScrit);
     if (SDSManager)
         return *SDSManager;
-    else if (!queryCoven().inCoven())
+    else if (!queryDefaultDali()->queryCoven().inCoven())
     {
         if (!SDSManager)
             SDSManager = new CClientSDSManager();
@@ -2053,7 +2053,7 @@ void closeSDS()
 {
     CriticalBlock block(SDScrit);
     if (SDSManager) {
-        assertex(!queryCoven().inCoven()); // only called by client
+        assertex(!queryDefaultDali()->queryCoven().inCoven()); // only called by client
         try {
             delete SDSManager;
         }

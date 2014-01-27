@@ -255,14 +255,14 @@ public:
     {
         if (!stopped) {
             stopped = true;
-            queryCoven().cancel(RANK_ALL,MPTAG_DALI_AUDIT_REQUEST);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL,MPTAG_DALI_AUDIT_REQUEST);
         }
         join();
     }
 
     int run()
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         CMessageBuffer mb;
         stopped = false;
         while (!stopped) {
@@ -288,7 +288,7 @@ public:
     void processMessage(CMessageBuffer &mb)
     {
         CriticalBlock block(handlemessagesect);
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         int fn;
         mb.read(fn);
         unsigned ret = 0;
@@ -351,7 +351,7 @@ unsigned queryAuditLogs(const CDateTime &from,const CDateTime &to, const char *m
         match = "";
     bool fixlocal = true; 
     mb.append(match).append(start).append(max).append(fixlocal);
-    queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_AUDIT_REQUEST);
+    queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_AUDIT_REQUEST);
     unsigned ret;
     mb.read(ret);
     if (ret) {

@@ -280,13 +280,13 @@ public:
 
     bool inCoven(INode *node)
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         return (coven.queryGroup().rank(node)!=RANK_NULL);
     }
 
     bool inCoven(SocketEndpoint &ep)
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         return (coven.queryGroup().rank(ep)!=RANK_NULL);
     }
 
@@ -351,7 +351,7 @@ protected:
 
     void processMessage(CMessageBuffer &mb) 
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         int fn;
         mb.read(fn);
         switch (fn) {
@@ -653,7 +653,7 @@ public:
 
     void main() 
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         CMessageHandler<CCovenServer> handler("CCovenServer",this,&CCovenServer::processMessage);
         stopped = false;
         CMessageBuffer mb;
@@ -680,7 +680,7 @@ public:
         if (!stopped) {
             stopped = true;
             PROGLOG("Stopping server");
-            queryCoven().cancel(RANK_ALL, MPTAG_DALI_COVEN_REQUEST);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL, MPTAG_DALI_COVEN_REQUEST);
         }
         done.wait();
         done.signal();  // in case anyone else calls stop
@@ -908,28 +908,8 @@ public:
 
 };
 
-static CCovenServer *covenServer=NULL;
-static ICoven *coven=NULL;
-
-ICoven &queryCoven()
+ICoven * initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,const char *minServerVersion)
 {
-    if (coven==NULL)
-    {
-        Owned<IException> e = MakeStringException(-1, "No access to Dali - this normally means a plugin call is being called from a thorslave");
-        EXCLOG(e, NULL);
-        throw e.getClear();
-    }
-    return *coven;
-}
-
-bool isCovenActive()
-{
-    return coven != NULL;
-}
-
-void initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,const char *minServerVersion)
-{
-    assertex(!coven);
     if (clientVersion) ClientVersion.set(clientVersion);
     if (minServerVersion) MinServerVersion.set(minServerVersion);
     if (config&&(grp->rank()!=RANK_NULL) )
@@ -956,33 +936,24 @@ void initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,const
             s = covenPath.str();
         }
 
-        covenServer = new CCovenServer(grp,s,b.str());
-        coven = covenServer;
+        return new CCovenServer(grp,s,b.str());
     }
     else {
-        covenServer = NULL;
-        coven = new CCovenClient(grp);
+        return new CCovenClient(grp);
     }
 }
 
-bool verifyCovenConnection(unsigned timeout)
-{
-    if (!coven) return false;
-    return coven->verifyAll(true, timeout);
-}
-
-void covenMain()
+void covenMain(ICoven * coven)
 { 
-    assertex(covenServer);
-    covenServer->main();
+    assertex(coven);
+    static_cast<CCovenServer *>(coven)->main();
 }
 
-void closeCoven()
+void closeCoven(ICoven * coven)
 {
     if (coven) {
         closedownDFS();                 // TBD convert DFS to IDaliProcess
         ::Release(coven);
-        coven = NULL;
     }
 }
 
@@ -996,8 +967,8 @@ DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
 {
     if (num==0)
         return 0;
-    if (coven)
-        return coven->getUniqueIds(num,_foreignnode);
+    if (queryDefaultDali())
+        return queryDefaultDali()->queryCoven().getUniqueIds(num,_foreignnode);
     if (!_foreignnode||_foreignnode->isNull())
         throw MakeStringException(99,"getUniqueIds: Not connected to dali");
     SocketEndpoint foreignnode;

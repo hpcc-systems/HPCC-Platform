@@ -2984,10 +2984,10 @@ IDistributedFileTransaction *EclAgent::querySuperFileTransaction()
 
 char * EclAgent::getDaliServers()
 {
-    if (!isCovenActive())
+    if (!queryDefaultDali())
         return strdup("");
     StringBuffer dali;
-    IGroup &group = queryCoven().queryComm().queryGroup();
+    IGroup &group = queryDefaultDali()->queryCoven().queryComm().queryGroup();
     Owned<INodeIterator> coven = group.getIterator();
     bool first = true;
     ForEach(*coven)
@@ -3330,7 +3330,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             }
             PrintLog("ECLAGENT build %s", BUILD_TAG);
             startLogMsgParentReceiver();    
-            connectLogMsgManagerToDali();
+            queryDefaultDali()->connectLogMsgManagerToDali();
 
             StringBuffer baseDir;
             if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"data","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))

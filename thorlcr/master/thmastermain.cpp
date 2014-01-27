@@ -724,7 +724,7 @@ int main( int argc, char *argv[]  )
         recursiveCreateDirectory(soPath.str());
 
         startLogMsgParentReceiver();    
-        connectLogMsgManagerToDali();
+        queryDefaultDali()->connectLogMsgManagerToDali();
         if (globals->getPropBool("@cache_dafilesrv_master",false))
             setDaliServixSocketCaching(true); // speeds up deletes under linux
 
@@ -790,7 +790,7 @@ int main( int argc, char *argv[]  )
         FLLOG(MCexception(e), thorJob, e,"ThorMaster");
         e->Release();
     }
-    disconnectLogMsgManagerFromDali();
+    queryDefaultDali()->disconnectLogMsgManagerFromDali();
     closeThorServerStatus();
     if (globals) globals->Release();
     PROGLOG("Thor closing down 6");

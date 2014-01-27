@@ -172,7 +172,7 @@ int main(int argc, const char *argv[])
             setDaliServixSocketCaching(true); // speeds up lixux operations
 
             startLogMsgParentReceiver();    // for auditing
-            connectLogMsgManagerToDali();
+            queryDefaultDali()->connectLogMsgManagerToDali();
 
             engine.setown(createDFUengine());
             engine->setDFUServerName(name);

@@ -66,8 +66,8 @@ public:
     StringBuffer &toString(StringBuffer &str) const;
 };
 
-extern da_decl ICoven &queryCoven();
-extern da_decl bool isCovenActive();
+//extern da_decl ICoven &queryCoven();
+//extern da_decl bool isCovenActive();
 extern da_decl const CDaliVersion &queryDaliServerVersion();
 extern da_decl bool verifyCovenConnection(unsigned timeout=5*60*1000);
 extern da_decl DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode);

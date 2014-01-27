@@ -1352,7 +1352,7 @@ extern ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory()
     if (!factory)
     {
         factory = new CEnvironmentFactory();
-        addShutdownHook(*factory);
+        queryDefaultDali()->addShutdownHook(*factory);
     }
     return LINK(factory);
 }
@@ -1373,7 +1373,7 @@ extern ENVIRONMENT_API void closeEnvironment()
         clearPasswordsFromSDS();
         if (pFactory)
         {
-            removeShutdownHook(*pFactory);
+            queryDefaultDali()->removeShutdownHook(*pFactory);
             pFactory->close();
             pFactory->Release();
         }

@@ -181,7 +181,7 @@ public:
     {
         if (!stopped) {
             stopped = true;
-            queryCoven().cancel(RANK_ALL,MPTAG_DALI_SUBSCRIPTION_REQUEST);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL,MPTAG_DALI_SUBSCRIPTION_REQUEST);
         }
         processlock.unlockWrite();
         join();
@@ -189,7 +189,7 @@ public:
 
     int run()
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         CMessageHandler<CDaliPublisherServer> handler("CDaliPublisherServer",this,&CDaliPublisherServer::processMessage,NULL, 100);
         CMessageBuffer mb;
         stopped = false;
@@ -220,7 +220,7 @@ public:
         ReadLockBlock block(processlock);
         if (stopped)
             return;
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         int fn;
         mb.read(fn);
         SubscriptionId sid;
@@ -460,7 +460,7 @@ public:
         mb.append(dlen);
         mb.append(dlen,data.get());
         try {
-            queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SUBSCRIPTION_REQUEST);
+            queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SUBSCRIPTION_REQUEST);
         }
         catch (IDaliClient_Exception *e) {
             PrintExceptionLog(e,"Dali CDaliSubscriptionManagerStub::add");
@@ -480,7 +480,7 @@ public:
         mb.append(tag);
         mb.append(id);
         try {
-            queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SUBSCRIPTION_REQUEST);
+            queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SUBSCRIPTION_REQUEST);
         }
         catch (IDaliClient_Exception *e) {
             PrintExceptionLog(e,"Dali CDaliSubscriptionManagerStub::remove");
@@ -554,7 +554,7 @@ public:
 
     int run()
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         CMessageHandler<CDaliPublisherClient> handler("CDaliPublisherClientMessages",this,&CDaliPublisherClient::processMessage);
         stopped = false;
         CMessageBuffer mb;
@@ -583,7 +583,7 @@ public:
 
     void processMessage(CMessageBuffer &mb)
     {
-        //ICoven &coven=queryCoven();
+        //ICoven &coven=queryDefaultDali()->queryCoven();
         //ICommunicator &comm=coven.queryComm();
         unsigned tag;
         mb.read(tag);
@@ -608,7 +608,7 @@ public:
     {
         if (!stopped) {
             stopped = true;
-            queryCoven().cancel(RANK_ALL,MPTAG_DALI_SUBSCRIPTION_FULFILL);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL,MPTAG_DALI_SUBSCRIPTION_FULFILL);
         }
         join();
     }
@@ -631,7 +631,7 @@ ISubscriptionManager *querySubscriptionManager(unsigned tag)
 {
     CriticalBlock block(subscriptionCrit);
     if (!DaliPublisher) {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         assertex(!coven.inCoven()); // Check not Coven server (if occurs - not initialized correctly;
         DaliPublisher = new CDaliPublisherClient();
     }

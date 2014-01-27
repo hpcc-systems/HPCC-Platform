@@ -2030,12 +2030,12 @@ public:
         sdsManager = &querySDS();
         session = myProcessSession();
         deletedllworkq.setown(createWorkQueueThread());
-        addShutdownHook(*this);
+        queryDefaultDali()->addShutdownHook(*this);
     }
 
     ~CWorkUnitFactory()
     {
-        removeShutdownHook(*this);
+        queryDefaultDali()->removeShutdownHook(*this);
         // deletepool->joinAll();
     }
     void clientShutdown();
