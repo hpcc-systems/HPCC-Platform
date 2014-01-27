@@ -115,7 +115,7 @@ define([
         },
 
         go: function (path, replace, noHash) {
-            console.log(this.id + ".go(" + path + ", " + replace + ", " + noHash + ")");
+            //console.log(this.id + ".go(" + path + ", " + replace + ", " + noHash + ")");
             if (noHash) {
                 var d = 0;
             } else {

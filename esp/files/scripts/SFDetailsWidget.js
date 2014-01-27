@@ -101,7 +101,7 @@ define([
         },
         _onDelete: function (event) {
             if (confirm(this.i18n.DeleteSuperfile)) {
-                this.logicalFile.removeSubfiles(this.subfilesGrid.store.objectStore.data, true);
+                this.logicalFile.removeSubfiles(this.subfilesGrid.store.data, true);
             }
         },
         _onRemove: function (event) {

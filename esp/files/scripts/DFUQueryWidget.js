@@ -35,10 +35,12 @@ define([
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
     "dijit/form/Textarea",
+    "dijit/form/ValidationTextBox",
 
     "dgrid/Grid",
     "dgrid/Keyboard",
     "dgrid/Selection",
+    "dgrid/editor",
     "dgrid/selector",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
@@ -55,6 +57,7 @@ define([
     "hpcc/DFUWUDetailsWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
+    "hpcc/SelectionGridWidget",
 
     "dojo/text!../templates/DFUQueryWidget.html",
 
@@ -72,9 +75,9 @@ define([
     "hpcc/TableContainer"
 
 ], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
-                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea,
-                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
+                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
+                Grid, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
+                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -82,10 +85,7 @@ define([
         i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         addToSuperFileForm: null,
-        desprayDialog: null,
-        sprayFixedDialog: null,
-        sprayVariableDialog: null,
-        sprayXmlDialog: null,
+        desprayForm: null,
 
         workunitsTab: null,
         workunitsGrid: null,
@@ -94,18 +94,15 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this.addToSuperFileForm = registry.byId(this.id + "AddToSuperfileForm");
-            this.desprayDialog = registry.byId(this.id + "DesprayDialog");
-            this.sprayFixedDialog = registry.byId(this.id + "SprayFixedDialog");
-            this.sprayVariableDialog = registry.byId(this.id + "SprayVariableDialog");
-            this.sprayXmlDialog = registry.byId(this.id + "SprayXmlDialog");
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.filter = registry.byId(this.id + "Filter");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
+            this.copyForm = registry.byId(this.id + "CopyForm");
+            this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
+            this.renameForm = registry.byId(this.id + "RenameForm");
+            this.addToSuperFileForm = registry.byId(this.id + "AddToSuperfileForm");
+            this.desprayForm = registry.byId(this.id + "DesprayForm");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
-            this.sprayFixedDestinationSelect = registry.byId(this.id + "SprayFixedDestination");
-            this.sprayVariableDestinationSelect = registry.byId(this.id + "SprayVariableDestination");
-            this.sprayXmlDestinationSelect = registry.byId(this.id + "SprayXmlDestinationSelect");
         },
 
         startup: function (args) {
@@ -148,20 +145,6 @@ define([
             }
         },
 
-        _onAddToSuperfileOk: function (event) {
-            if (this.addToSuperFileForm.validate()) {
-                var context = this;
-                var formData = domForm.toObject(this.id + "AddToSuperfileForm");
-                WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
-                    load: function (response) {
-                        context.refreshGrid(response);
-                    }
-                });
-                var d = registry.byId(this.id + "AddtoDropDown");
-                registry.byId(this.id + "AddtoDropDown").closeDropDown();
-            }
-        },
-
         _handleResponse: function (wuidQualifier, response) {
             if (lang.exists(wuidQualifier, response)) {
                 var wu = ESPDFUWorkunit.Get(lang.getObject(wuidQualifier, false, response));
@@ -175,60 +158,71 @@ define([
             }
         },
 
-        _onDesprayOk: function (event) {
-            if (this.desprayDialog.validate()) {
+        _onCopyOk: function (event) {
+            if (this.copyForm.validate()) {
                 var context = this;
-                arrayUtil.forEach(this.workunitsGrid.getSelected(), function (item, idx) {
-                    item.refresh().then(function (response) {
-                        var request = domForm.toObject(context.id + "DesprayDialog");
-                        request.destPath += item.Filename;
-                        item.despray({
-                            request: request
-                        }).then(function (response) {
-                            context._handleResponse("DesprayResponse.wuid", response);
-                        });
+                arrayUtil.forEach(this.copyGrid.store.data, function (item, idx) {
+                    var logicalFile = ESPLogicalFile.Get(item.Name);
+                    var request = domForm.toObject(context.id + "CopyForm");
+                    request.RenameSourceName = item.Name;
+                    request.destLogicalName = item.targetCopyName;
+                    logicalFile.copy({
+                        request: request
+                    }).then(function (response) {
+                        context._handleResponse("CopyResponse.result", response);
+                    });
+                });
+                registry.byId(this.id + "CopyDropDown").closeDropDown();
+            }
+        },
+
+        _onRenameOk: function (event) {
+            if (this.renameForm.validate()) {
+                var context = this;
+                arrayUtil.forEach(this.renameGrid.store.data, function (item, idx) {
+                    var logicalFile = ESPLogicalFile.Get(item.Name);
+                    var request = domForm.toObject(context.id + "RenameForm");
+                    request.RenameSourceName = item.Name;
+                    request.dstname = item.targetRenameName;
+                    logicalFile.rename({
+                        request: request
+                    }).then(function (response) {
+                        context._handleResponse("RenameResponse.wuid", response);
+                    });
+                });
+                registry.byId(this.id + "RenameDropDown").closeDropDown();
+            }
+        },
+
+        _onAddToSuperfileOk: function (event) {
+            if (this.addToSuperFileForm.validate()) {
+                var context = this;
+                var formData = domForm.toObject(this.id + "AddToSuperfileForm");
+                WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
+                    load: function (response) {
+                        context.refreshGrid(response);
+                    }
+                });
+                registry.byId(this.id + "AddtoDropDown").closeDropDown();
+            }
+        },
+
+        _onDesprayOk: function (event) {
+            if (this.desprayForm.validate()) {
+                var context = this;
+                arrayUtil.forEach(this.desprayGrid.store.data, function (item, idx) {
+                    var request = domForm.toObject(context.id + "DesprayForm");
+                    if (!context.endsWith(request.destPath, "/")) {
+                        request.destPath += "/";
+                    }
+                    request.destPath += item.targetName;
+                    item.despray({
+                        request: request
+                    }).then(function (response) {
+                        context._handleResponse("DesprayResponse.wuid", response);
                     });
                 });
                 registry.byId(this.id + "DesprayDropDown").closeDropDown();
-            }
-        },
-
-        _onSprayFixed: function (event) {
-            if (this.sprayFixedDialog.validate()) {
-                var formData = domForm.toObject(this.id + "SprayFixedDialog");
-                var context = this;
-                FileSpray.SprayFixed({
-                    request: formData
-                }).then(function (response) {
-                    context._handleResponse("SprayFixedResponse.wuid", response);
-                })
-                registry.byId(this.id + "SprayFixedDropDown").closeDropDown();
-            }
-        },
-
-        _onSprayVariable: function (event) {
-            if (this.sprayVariableDialog.validate()) {
-                var context = this;
-                var formData = domForm.toObject(this.id + "SprayVariableDialog");
-                FileSpray.SprayVariable({
-                    request: formData
-                }).then(function (response) {
-                    context._handleResponse("SprayResponse.wuid", response);
-                });
-                registry.byId(this.id + "SprayVariableDropDown").closeDropDown();
-            }
-        },
-
-        _onSprayXml: function (event) {
-            if (this.sprayXmlDialog.validate()) {
-                var context = this;
-                var formData = domForm.toObject(this.id + "SprayXmlDialog");
-                FileSpray.SprayVariable({
-                    request: formData
-                }).then(function (response) {
-                    context._handleResponse("SprayResponse.wuid", response);
-                });
-                registry.byId(this.id + "SprayXmlDropDown").closeDropDown();
             }
         },
 
@@ -283,21 +277,15 @@ define([
                 includeBlank: true
             });
             var context = this;
+            this.copyTargetSelect.init({
+                Groups: true
+            });
             this.desprayTargetSelect.init({
                 DropZones: true,
                 callback: function (value, item) {
                     registry.byId(context.id + "DesprayTargetIPAddress").set("value", item.machine.Netaddress);
                     registry.byId(context.id + "DesprayTargetPath").set("value", item.machine.Directory + "/");
                 }
-            });
-            this.sprayFixedDestinationSelect.init({
-                Groups: true
-            });
-            this.sprayVariableDestinationSelect.init({
-                Groups: true
-            });
-            this.sprayXmlDestinationSelect.init({
-                Groups: true
             });
             this.initWorkunitsGrid();
             this.selectChild(this.workunitsTab, true);
@@ -363,7 +351,7 @@ define([
                 this.menuFilterCluster = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
                         context.filter.clear();
-                        context.filter.setValue(context.id + "ClusterTargetSelect", context.menuFilterOwner.get("hpcc_value"));
+                        context.filter.setValue(context.id + "ClusterTargetSelect", context.menuFilterCluster.get("hpcc_value"));
                         context.refreshGrid();
                     }
                 });
@@ -473,6 +461,54 @@ define([
                 context.refreshActionState();
             });
             this.workunitsGrid.startup();
+
+            this.copyGrid = new SelectionGridWidget({
+                idProperty: "Name",
+                columns: {
+                    targetCopyName: editor({
+                        label: this.i18n.TargetName,
+                        width: 144,
+                        autoSave: true,
+                        editor: "text"
+                    })
+                }
+            }, this.id + "CopyGrid");
+
+            this.renameGrid = new SelectionGridWidget({
+                idProperty: "Name",
+                columns: {
+                    targetRenameName: editor({
+                        label: this.i18n.TargetName,
+                        width: 144,
+                        autoSave: true,
+                        editor: "text"
+                    })
+                }
+            }, this.id + "RenameGrid");
+
+            this.addToSuperfileGrid = new SelectionGridWidget({
+                idProperty: "Name",
+                columns: {
+                    Name: {
+                        label: this.i18n.LogicalName
+                    }
+                }
+            }, this.id + "AddToSuperfileGrid");
+
+            this.desprayGrid = new SelectionGridWidget({
+                idProperty: "Name",
+                columns: {
+                    Name: {
+                        label: this.i18n.LogicalName
+                    },
+                    targetName: editor({
+                        label: this.i18n.TargetName,
+                        width: 144,
+                        autoSave: true,
+                        editor: "text"
+                    })
+                }
+            }, this.id + "DesprayGrid");
         },
 
         initFilter: function () {
@@ -495,18 +531,41 @@ define([
 
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
             registry.byId(this.id + "Delete").set("disabled", !hasSelection);
+            registry.byId(this.id + "CopyDropDown").set("disabled", !hasSelection);
+            registry.byId(this.id + "RenameDropDown").set("disabled", !hasSelection);
+            registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "DesprayDropDown").set("disabled", !hasSelection);
 
             if (hasSelection) {
-                var sourceDiv = dom.byId(this.id + "DesprayDialogSource");
-                domConstruct.empty(sourceDiv);
                 var context = this;
+                var data = [];
+                var matchedPrefix = [];
                 arrayUtil.forEach(selection, function (item, idx) {
-                    domConstruct.create("div", {
-                        innerHTML: item.Name
-                    }, sourceDiv);
+                    var nameParts = item.Name.split("::");
+                    if (idx === 0) {
+                        matchedPrefix = nameParts.slice(0, nameParts.length - 1);
+                    } else {
+                        var i = 0;
+                        for (var i = 0; i < matchedPrefix.length && i < nameParts.length - 1; ++i) {
+                            if (matchedPrefix[i] !== nameParts[i]) {
+                                break;
+                            }
+                        }
+                        matchedPrefix = matchedPrefix.slice(0, i);
+                    }
+                    lang.mixin(item, {
+                        targetName:  nameParts[nameParts.length - 1],
+                        targetCopyName: item.Name + "_copy",
+                        targetRenameName: item.Name + "_rename"
                 });
+                    data.push(item);
+                });
+                registry.byId(this.id + "AddToSuperfileTargetName").set("value", matchedPrefix.join("::") + "::superfile");
+                this.copyGrid.setData(data);
+                this.renameGrid.setData(data);
+                this.addToSuperfileGrid.setData(data);
+                this.desprayGrid.setData(data);
             }
         },
 

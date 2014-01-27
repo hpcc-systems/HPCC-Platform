@@ -19,8 +19,6 @@ define([
     "dojo/_base/lang",
     "dojo/_base/Deferred",
     "dojo/promise/all",
-    "dojo/data/ObjectStore",
-    "dojo/store/util/QueryResults",
     "dojo/store/Observable",
 
     "hpcc/WsWorkunits",
@@ -28,7 +26,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, all, ObjectStore, QueryResults, Observable,
+], function (declare, arrayUtil, lang, Deferred, all, Observable,
     WsWorkunits, WsTopology, ESPUtil, ESPRequest, ESPResult) {
 
     var _workunits = {};
@@ -650,10 +648,6 @@ define([
         CreateWUQueryStore: function (options) {
             var store = new Store(options);
             return Observable(store);
-        },
-
-        CreateWUQueryObjectStore: function (options) {
-            return new ObjectStore({ objectStore: this.CreateWUQueryStore(options) });
         }
     };
 });

@@ -266,21 +266,21 @@ define([
                 this.menuFilterJobname = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
                         context.filter.clear();
-                        context.filter.setValue(context.id + "Jobname", context.menuFilterOwner.get("hpcc_value"));
+                        context.filter.setValue(context.id + "Jobname", context.menuFilterJobname.get("hpcc_value"));
                         context.refreshGrid();
                     }
                 });
                 this.menuFilterCluster = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
                         context.filter.clear();
-                        context.filter.setValue(context.id + "ClusterTargetSelect", context.menuFilterOwner.get("hpcc_value"));
+                        context.filter.setValue(context.id + "ClusterTargetSelect", context.menuFilterCluster.get("hpcc_value"));
                         context.refreshGrid();
                     }
                 });
                 this.menuFilterState = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
                         context.filter.clear();
-                        context.filter.setValue(context.id + "StateSelect", context.menuFilterOwner.get("hpcc_value"));
+                        context.filter.setValue(context.id + "StateSelect", context.menuFilterState.get("hpcc_value"));
                         context.refreshGrid();
                     }
                 });

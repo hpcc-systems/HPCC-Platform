@@ -64,9 +64,9 @@ define([
 
         borderContainer: null,
 
-        copyDialog: null,
-        renameDialog: null,
-        desprayDialog: null,
+        copyForm: null,
+        renameForm: null,
+        desprayForm: null,
         summaryWidget: null,
         contentWidget: null,
         sourceWidget: null,
@@ -81,9 +81,9 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this.copyDialog = registry.byId(this.id + "CopyDialog");
-            this.renameDialog = registry.byId(this.id + "RenameDialog");
-            this.desprayDialog = registry.byId(this.id + "DesprayDialog");
+            this.copyForm = registry.byId(this.id + "CopyForm");
+            this.renameForm = registry.byId(this.id + "RenameForm");
+            this.desprayForm = registry.byId(this.id + "DesprayForm");
             this.summaryWidget = registry.byId(this.id + "_Summary");
             this.contentWidget = registry.byId(this.id + "_Content");
             this.sourceWidget = registry.byId(this.id + "_Source");
@@ -128,10 +128,10 @@ define([
             }
         },
         _onCopyOk: function (event) {
-            if (this.copyDialog.validate()) {
+            if (this.copyForm.validate()) {
                 var context = this;
                 this.logicalFile.copy({
-                    request: domForm.toObject(this.id + "CopyDialog")
+                    request: domForm.toObject(this.id + "CopyForm")
                 }).then(function (response) {
                     context._handleResponse("CopyResponse.result", response);
                 });
@@ -139,10 +139,10 @@ define([
             }
         },
         _onRenameOk: function (event) {
-            if (this.renameDialog.validate()) {
+            if (this.renameForm.validate()) {
                 var context = this;
                 this.logicalFile.rename({
-                    request: domForm.toObject(this.id + "RenameDialog")
+                    request: domForm.toObject(this.id + "RenameForm")
                 }).then(function (response) {
                     context._handleResponse("RenameResponse.wuid", response);
                 });
@@ -150,10 +150,10 @@ define([
             }
         },
         _onDesprayOk: function (event) {
-            if (this.desprayDialog.validate()) {
+            if (this.desprayForm.validate()) {
                 var context = this;
                 this.logicalFile.despray({
-                    request: domForm.toObject(this.id + "DesprayDialog")
+                    request: domForm.toObject(this.id + "DesprayForm")
                 }).then(function (response) {
                     context._handleResponse("DesprayResponse.wuid", response);
                 });
@@ -186,7 +186,7 @@ define([
                 DropZones: true,
                 callback: function (value, item) {
                     context.updateInput("DesprayTargetIPAddress", null, item.machine.Netaddress);
-                    context.updateInput("DesprayTargetPath", null, item.machine.Directory + "/" + context.logicalFile.Filename);
+                    context.updateInput("DesprayTargetPath", null, item.machine.Directory + "/" + context.logicalFile.getLeaf());
                 }
             });
         },
