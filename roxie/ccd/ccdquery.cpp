@@ -718,6 +718,7 @@ protected:
         catch (...)
         {
             ::Release(activities);
+            allActivities.kill();
             throw;
         }
         return activities;
@@ -1663,6 +1664,7 @@ public:
         catch (...)
         {
             ::Release(activities);
+            allActivities.kill();
             throw;
         }
         return activities;
