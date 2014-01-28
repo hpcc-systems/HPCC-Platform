@@ -5674,13 +5674,9 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
         switch (curOp)
         {
         case no_persist:
-            if (isRoxie && translator.getCheckRoxieRestrictions())
+            if (isRoxie)
             {
-                StringBuffer s;
-                IHqlExpression * name = cur.queryChild(0);
-                OwnedHqlExpr seq = getGlobalSequenceNumber();
-                getStoredDescription(s, seq, name, true);
-                throwError1(HQLERR_NotSupportInRoxie, s.str());
+                // MORE - Add dynamic attribute to ensure the file is not pre-resolved
             }
             //fall through
         case no_checkpoint:
