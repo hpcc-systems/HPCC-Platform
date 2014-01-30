@@ -50,6 +50,7 @@
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
+#define MAX_STAT_LEVELS 3
 static int workUnitTraceLevel = 1;
 
 static StringBuffer &getXPath(StringBuffer &wuRoot, const char *wuid)
@@ -568,7 +569,7 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
     mutable IArrayOf<IWUResult> variables;
     mutable CachedTags<CLocalWUTimeStamp,IConstWUTimeStamp> timestamps;
     mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
-    mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics;
+    mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics[MAX_STAT_LEVELS];
     mutable Owned<IUserDescriptor> userDesc;
     Mutex locked;
     Owned<ISecManager> secMgr;
@@ -5641,12 +5642,21 @@ mapEnums queryStatMeasure[] =
     { SMEASURE_MAX, NULL},
 };
 
-void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, const char * stat, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
+void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, const char * stat, const char * description, StatisticMeasure kind,
+	unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
 {
     if (!wuScope) wuScope = "workunit";
 
+	const char * finger = wuScope;
+	unsigned colons = 0;
+	while ((finger = strchr(finger,':')) != NULL)
+	{
+		colons++;
+		finger++;
+	}
+
     //creator. scope and name must all be present, and must not contain semi colons.
-    assertex(creator && wuScope && stat);
+    assertex(creator && stat && colons < MAX_STAT_LEVELS);
     dbgassertex(!strchr(creator, ';') && !strchr(wuScope, ';') && !strchr(stat, ';'));
     if (count == 1 && maxValue < value)
         maxValue = value;
@@ -5655,7 +5665,7 @@ void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, co
     fullname.append(creator).append(";").append(wuScope).append(";").append(stat);
 
     StringBuffer xpath;
-    xpath.append("Statistic[@name=\"").append(fullname).append("\"]");
+    xpath.append(statNames[colons]).append("[@name=\"").append(fullname).append("\"]");
 
     CriticalBlock block(crit);
     IPropertyTree * stats = p->queryPropTree("Statistics");
@@ -5752,11 +5762,20 @@ IConstWUTimeStampIterator& CLocalWorkUnit::getTimeStamps() const
     return *new CArrayIteratorOf<IConstWUTimeStamp,IConstWUTimeStampIterator> (timestamps, 0, (IConstWorkUnit *) this);
 }
 
+static const char * statNames[MAX_STAT_LEVELS] = { "Statistics", "Stats1", "Stats2" };
 IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(unsigned maxNestingLevel) const
 {
     CriticalBlock block(crit);
-    statistics.load(p,"Statistics/*");
-    return *new CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> (statistics, 0, (IConstWorkUnit *) this);
+    if(maxNestingLevel > MAX_STAT_LEVELS)
+        maxNestingLevel = MAX_STAT_LEVELS;
+
+    for(unsigned i = 0; i < maxNestingLevel; ++i)
+    {
+        StringBuffer elements = statNames[i];
+        elements.append("/*");
+        statistics[i].load(p,elements);
+    }
+   // return *new CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> (statistics, 0, (IConstWorkUnit *) this);
 }
 
 IConstWUStatistic * CLocalWorkUnit::getStatisticByDescription(const char * desc) const
