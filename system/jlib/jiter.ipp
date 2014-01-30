@@ -84,4 +84,39 @@ public:
     virtual IInterface & get()   { IInterface * i = 0; return *i; }
 };
 
+template<class X, class Y> class CCompoundIteratorOf : public CInterfaceOf<Y>
+{
+public:
+    CCompoundIteratorOf(Y * _left, Y * _right) : left(_left), right(_right)
+    {
+        doneLeft = true;
+    }
+    virtual bool first() 
+    { 
+        doneLeft = false;
+        if (left->first())
+            return true;
+        doneLeft = true;
+        return right->first();
+    }
+    virtual bool next()  
+    {
+        if (!doneLeft)
+        {
+            if (left->first())
+                return true;
+            doneLeft = true;
+        }
+        return right->next();
+    }
+    virtual bool isValid() { return doneLeft ? right->isValid() : left->isValid(); }
+    virtual X & query() { return doneLeft ? right->query() : left->query();}
+    
+protected:
+    Linked<Y> left;
+    Linked<Y> right;
+    bool doneLeft;
+};
+
+
 #endif
