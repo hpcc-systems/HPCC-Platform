@@ -27,7 +27,8 @@ define([
     "dijit/layout/ContentPane",
 
     "hpcc/ActivityWidget",
-    "hpcc/SearchResultsWidget"
+    "hpcc/SearchResultsWidget",
+    "hpcc/EventScheduleWorkunitWidget"
 
 ], function (declare,
                 registry,

@@ -19,10 +19,17 @@ define([
     "dojo/_base/array",
     "dojo/promise/all",
     "dojo/store/Observable",
-    
+
     "hpcc/ESPRequest"
 ], function (declare, lang, arrayUtil, all, Observable,
     ESPRequest) {
+
+    var EventScheduleStore = declare([ESPRequest.Store], {
+            service: "WsWorkunits",
+            action: "WUShowScheduled",
+            responseQualifier: "WUShowScheduledResponse.Workunits.ScheduledWU",
+            idProperty: "Wuid",
+    });
 
     return {
         States: {
@@ -67,6 +74,10 @@ define([
 
         WUGetZAPInfo: function (params) {
             return ESPRequest.send("WsWorkunits", "WUGetZAPInfo", params);
+        },
+
+        WUShowScheduled: function (params) {
+            return ESPRequest.send("WsWorkunits", "WUShowScheduled", params);
         },
 
         WUQuerysetAliasAction: function (selection, action) {
@@ -236,6 +247,11 @@ define([
                     }
                 }
             });
+        },
+
+        CreateEventScheduleStore: function (options) {
+            var store = new EventScheduleStore(options);
+            return Observable(store);
         },
 
         //  Helpers  ---
