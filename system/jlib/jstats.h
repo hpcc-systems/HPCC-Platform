@@ -65,7 +65,8 @@ enum StatisticMeasure
     SMEASURE_TIME_NS,
     SMEASURE_COUNT,
     SMEASURE_MEM_KB,
-    SMEASURE_MAX
+    SMEASURE_TIMESTAMP,
+    SMEASURE_SIZE
 };
 
 extern jlib_decl const char *getStatName(unsigned i);
