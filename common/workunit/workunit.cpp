@@ -51,6 +51,8 @@
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
 #define MAX_STAT_LEVELS 3
+static const char * statNames[MAX_STAT_LEVELS] = { "Statistics", "Stats1", "Stats2" };
+
 static int workUnitTraceLevel = 1;
 
 static StringBuffer &getXPath(StringBuffer &wuRoot, const char *wuid)
@@ -3000,8 +3002,8 @@ CLocalWorkUnit::~CLocalWorkUnit()
         variables.kill();
         timestamps.kill();
         appvalues.kill();
-        statistics.kill();
-
+        for (unsigned i = 0; i < MAX_STAT_LEVELS; ++i)
+            statistics[i].kill();
         userDesc.clear();
         secMgr.clear();
         secUser.clear();
@@ -5639,12 +5641,16 @@ mapEnums queryStatMeasure[] =
     { SMEASURE_TIME_NS, "ns" },
     { SMEASURE_COUNT, "cnt" },
     { SMEASURE_MEM_KB, "kb" },
-    { SMEASURE_MAX, NULL},
+    { SMEASURE_TIMESTAMP, "s" },
+    { SMEASURE_SIZE, NULL},
 };
 
 void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, const char * stat, const char * description, StatisticMeasure kind,
 	unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge)
 {
+	//MORE: This needs to move so it is inside an updateStatistics() call, so that updates to dali are batched
+	//MORE: We need to incrementally update *some* of the stats every 30s from thor
+	//MORE: We need to probably use an in memory hash table, but we also want the serialized form to be efficiently compressed.
     if (!wuScope) wuScope = "workunit";
 
 	const char * finger = wuScope;
@@ -5701,8 +5707,8 @@ void CLocalWorkUnit::setStatistic(const char * creator, const char * wuScope, co
         if (maxValue)
             statTree->setPropInt64("@max", maxValue);
 
-        if (statistics.cached)
-            statistics.append(LINK(statTree));
+        if (statistics[colons].cached)
+            statistics[colons].append(LINK(statTree));
     }
     else
     {
@@ -5762,20 +5768,23 @@ IConstWUTimeStampIterator& CLocalWorkUnit::getTimeStamps() const
     return *new CArrayIteratorOf<IConstWUTimeStamp,IConstWUTimeStampIterator> (timestamps, 0, (IConstWorkUnit *) this);
 }
 
-static const char * statNames[MAX_STAT_LEVELS] = { "Statistics", "Stats1", "Stats2" };
 IConstWUStatisticIterator& CLocalWorkUnit::getStatistics(unsigned maxNestingLevel) const
 {
     CriticalBlock block(crit);
     if(maxNestingLevel > MAX_STAT_LEVELS)
         maxNestingLevel = MAX_STAT_LEVELS;
 
+    Owned<IConstWUStatisticIterator> result = new CNullIteratorOf<IConstWUStatistic,IConstWUStatisticIterator>();
     for(unsigned i = 0; i < maxNestingLevel; ++i)
     {
         StringBuffer elements = statNames[i];
         elements.append("/*");
         statistics[i].load(p,elements);
+        IConstWUStatisticIterator * next = new CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> (statistics[i], 0, (IConstWorkUnit *) this);
+
+        result.setown(new CCompoundIteratorOf <IConstWUStatistic,IConstWUStatisticIterator> ( result.getClear(), next) );
     }
-   // return *new CArrayIteratorOf<IConstWUStatistic,IConstWUStatisticIterator> (statistics, 0, (IConstWorkUnit *) this);
+    return *result.getClear();
 }
 
 IConstWUStatistic * CLocalWorkUnit::getStatisticByDescription(const char * desc) const

@@ -84,6 +84,17 @@ public:
     virtual IInterface & get()   { IInterface * i = 0; return *i; }
 };
 
+template<class X, class Y> class jlib_decl CNullIteratorOf : public CInterface, public Y
+{
+public:
+    IMPLEMENT_IINTERFACE
+
+    virtual bool first() { return false; }
+    virtual bool next()  { return false; }
+    virtual bool isValid() { return false; }
+    virtual X & query() { X * i = 0; return *i; }
+    virtual X & get()   { X * i = 0; return *i; }
+};
 template<class X, class Y> class CCompoundIteratorOf : public CInterfaceOf<Y>
 {
 public:
