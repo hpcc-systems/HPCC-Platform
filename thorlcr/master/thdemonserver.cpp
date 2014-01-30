@@ -39,7 +39,7 @@ private:
     CIArrayOf<CGraphBase> activeGraphs;
     UnsignedArray graphStarts;
     
-    void doReportGraph(IWUGraphProgress *progress, CGraphBase *graph, bool finished)
+    void doReportGraph(stats, CGraphBase *graph, bool finished)
     {
         Owned<IThorActivityIterator> iter;
         if (graph->queryOwner() && !graph->isGlobal())
@@ -60,23 +60,23 @@ private:
                 {
                     StringBuffer edgeId;
                     edgeId.append(id).append('_').append(oid);
-                    IPropertyTree &edge = progress->updateEdge(sourceGraphId, edgeId.str());
-                    activity->getXGMML(oid, &edge); // for subgraph, may recursively call reportGraph
+                    activity->getXGMML(oid, stats); // for subgraph, may recursively call reportGraph
                 }
-                IPropertyTree &node = progress->updateNode(sourceGraphId, id);
-                activity->getXGMML(progress, &node);
+                activity->getXGMML(progress, stats);
+
+                setStatistic("thorslave%d, "subgraph%d:activity%d", const char * stat_what, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge) = 0;
             }
         }
     }
-    void reportGraph(IWUGraphProgress *progress, CGraphBase *graph, bool finished)
+    void reportGraph(IStats *stats, CGraphBase *graph, bool finished)
     {
         try
         {
             if (graph->isCreated())
-                doReportGraph(progress, graph, finished);
+                doReportGraph(stats, graph, finished);
             Owned<IThorGraphIterator> graphIter = graph->getChildGraphs();
             ForEach (*graphIter)
-                reportGraph(progress, &graphIter->query(), finished);
+                reportGraph(stats, &graphIter->query(), finished);
         }
         catch (IException *e)
         {
@@ -129,13 +129,14 @@ private:
             {
                 IConstWorkUnit &currentWU = activeGraphs.item(0).queryJob().queryWorkUnit();
                 Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)activeGraphs.item(0).queryJob()).getGraphProgress();
-                Owned<IWUGraphProgress> progress = graphProgress->update();
+
+                Owned<IStats> stats = currentWU.updateStats();
+
                 ForEachItemIn (g, activeGraphs)
                 {
                     CGraphBase &graph = activeGraphs.item(g);
-                    reportGraph(progress, &graph, finished);
+                    reportGraph(stats, &graph, finished);
                 }
-                progress.clear(); // clear progress(lock) now, before attempting to get lock on wu, potentially delaying progress unlock.
                 graphProgress.clear();
                 Owned<IWorkUnit> wu = &currentWU.lock();
                 ForEachItemIn (g2, activeGraphs)

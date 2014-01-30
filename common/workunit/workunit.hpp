@@ -951,7 +951,12 @@ interface IConstWorkUnit : extends IInterface
 
 interface IDistributedFile;
 
-interface IWorkUnit : extends IConstWorkUnit
+interface IStats
+{
+    virtual void setStatistic(const char * creator_who, const char * wuScope_where, const char * stat_what, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge) = 0;
+};
+
+interface IWorkUnit : extends IConstWorkUnit, extends IStats
 {
     virtual void clearExceptions() = 0;
     virtual void commit() = 0;
@@ -981,6 +986,9 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setAgentSession(__int64 sessionId) = 0;
     virtual void setTimerInfo(const char * name, unsigned ms, unsigned count, unsigned __int64 max) = 0;
     virtual void setStatistic(const char * creator_who, const char * wuScope_where, const char * stat_what, const char * description, StatisticMeasure kind, unsigned __int64 value, unsigned __int64 count, unsigned __int64 maxValue, bool merge) = 0;
+
+    virtual IStats *updateStats();
+
     virtual void setTracingValue(const char * propname, const char * value) = 0;
     virtual void setTracingValueInt(const char * propname, int value) = 0;
     virtual void setUser(const char * value) = 0;

@@ -191,11 +191,12 @@ protected:
     UInt64Array counts;
     StringAttr prefix;
     StringAttr labelMin, labelMax, labelMinSkew, labelMaxSkew, labelMinEndpoint, labelMaxEndpoint;
-
+	CMasterActivity &activity;
+	
 public:
     IMPLEMENT_IINTERFACE;
 
-    CThorStats(const char *prefix=NULL);
+    CThorStats(CMasterActivity *activity, const char *prefix=NULL);
     void reset();
     virtual void processInfo();
     static void removeAttribute(IPropertyTree *node, const char *name);
@@ -212,13 +213,13 @@ public:
     unsigned queryMinNode() { return minNode; }
 
     void set(unsigned node, unsigned __int64 count);
-    void getXGMML(IPropertyTree *node, bool suppressMinMaxWhenEqual);
+    void setStats(IStats *stats);
 };
 
 class graphmaster_decl CTimingInfo : public CThorStats
 {
 public:
-    CTimingInfo();
+    CTimingInfo(CMasterActivity *activity);
     void getXGMML(IPropertyTree *node) { CThorStats::getXGMML(node, false); }
 };
 
