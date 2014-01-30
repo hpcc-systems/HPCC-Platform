@@ -65,6 +65,7 @@ enum StatisticMeasure
     SMEASURE_TIME_NS,
     SMEASURE_COUNT,
     SMEASURE_MEM_KB,
+    SMEASURE_TIMESTAMP,
     SMEASURE_MAX
 };
 

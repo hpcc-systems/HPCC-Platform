@@ -489,6 +489,48 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
+void WsWuInfo::getStatistics(IEspECLWorkunit &info, int maxStatisticsLevel)
+{
+    if (!maxStatisticsLevel)
+        return;
+
+    IArrayOf<IEspECLStatistic> stats;
+	Owned<IConstWUStatisticIterator> it = &cw->getStatistics(maxStatisticsLevel);
+	ForEach(*it)
+	{
+		IConstWUStatistic & cur = it->query();
+		Owned<IEspECLStatistic> statistic = createECLStatistic();
+
+		SCMStringBuffer s;
+		statistic->setFullName(cur.getFullName(s).str());
+		statistic->setCreator(cur.getCreator(s).str());
+		statistic->setDescription(cur.getDescription(s).str());
+		statistic->setName(cur.getName(s).str());
+		statistic->setScope(cur.getScope(s).str());
+		statistic->setValue(cur.getValue());
+		statistic->setCount(cur.getCount());
+		statistic->setMax(cur.getMax());
+		switch (cur.getKind()) {
+		case SMEASURE_TIME_NS:
+			statistic->setKind(CWUINFOStatisticType_TIME_NS);
+			break;
+		case SMEASURE_COUNT:
+			statistic->setKind(CWUINFOStatisticType_COUNT);
+			break;
+		case SMEASURE_MEM_KB:
+			statistic->setKind(CWUINFOStatisticType_MEM_KB);
+			break;
+		case SMEASURE_TIMESTAMP:
+			statistic->setKind(CWUINFOStatisticType_TIMESTAMP);
+			break;
+		default:
+			break;
+		}
+		stats.append(*statistic.getClear());
+	}
+    info.setStatistics(stats);
+}
+
 struct mapEnums { int val; const char *str; };
 
 mapEnums queryFileTypes[] = {
@@ -905,7 +947,7 @@ void WsWuInfo::getCommon(IEspECLWorkunit &info, unsigned flags)
     getRoxieCluster(info, flags);
 }
 
-void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
+void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags, int maxStatisticLevel)
 {
     getCommon(info, flags);
 
@@ -939,6 +981,8 @@ void WsWuInfo::getInfo(IEspECLWorkunit &info, unsigned flags)
     getSourceFiles(info, flags);
     getResults(info, flags);
     getVariables(info, flags);
+    getTimers(info, flags);
+    getStatistics(info, maxStatisticLevel);
     getTimers(info, flags);
     getDebugValues(info, flags);
     getApplicationValues(info, flags);

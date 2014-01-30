@@ -108,6 +108,28 @@ ESPStruct [nil_remove] ECLTimer
 };
 
 //  ===========================================================================
+ESPenum WUINFOStatisticType : int
+{
+    TIME_NS(0, "Time (NS)"),
+    COUNT(1, "Count"),
+    MEM_KB(2, "Memory (KB)"),
+    TIMESTAMP(3, "Time Stamp")
+};
+
+ESPStruct [nil_remove] ECLStatistic
+{
+    string FullName;
+    string Creator;
+    string Description;
+    string Name;
+    string Scope;
+    ESPenum WUINFOStatisticType Kind;
+    int64 Value;
+    int64 Count;
+    int64 Max;
+};
+
+//  ===========================================================================
 ESPStruct [nil_remove] ECLHelpFile
 {
     string Name;
@@ -204,6 +226,7 @@ ESPStruct [nil_remove] ECLWorkunit
     ESParray<ESPstruct ECLResult>       Results;
     ESParray<ESPstruct ECLResult>       Variables;
     ESParray<ESPstruct ECLTimer>        Timers;
+    [min_ver("1.48")] ESParray<ESPstruct ECLStatistic>    Statistics;
     ESParray<ESPstruct DebugValue>      DebugValues;
     ESParray<ESPstruct ApplicationValue> ApplicationValues;
     [min_ver("1.01")] ESParray<ESPstruct ECLWorkflow> Workflows;
@@ -595,6 +618,7 @@ ESPrequest WUInfoRequest
     [min_ver("1.47")] bool IncludeResourceURLs(false);
     [min_ver("1.16")] bool SuppressResultSchemas(false);
     [min_ver("1.25")] string ThorSlaveIP;
+    [min_ver("1.48")] int StatisticsLevel(0);  //-1 for all, 0 for none
 };
 
 ESPresponse [exceptions_inline] WUInfoResponse
@@ -1445,7 +1469,7 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 };
 
 ESPservice [
-    version("1.47"), default_client_version("1.47"),
+    version("1.48"), default_client_version("1.48"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
