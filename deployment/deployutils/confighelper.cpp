@@ -1,64 +1,119 @@
 #include "confighelper.hpp"
-#include "XMLTags.h"
-#include "jlib.hpp"
+#include "jexcept.hpp"
+#include "jfile.hpp"
+#include "jmutex.hpp"
 #include "jprop.hpp"
-#include "jptree.hpp"
+#include "jfile.hpp"
+#include "../deploy/XMLTags.h"
 #include "build-config.h"
 
 #define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
 #define STANDARD_CONFIG_CONFIGXML_DIR "/componentfiles/configxml/"
+#define STANDARD_CONFIG_PLUGIN_DIR_NAME "/plugins/"
+#define STANDARD_CONFIG_PLUGINS_DIR STANDARD_CONFIG_CONFIGXML_DIR STANDARD_CONFIG_PLUGIN_DIR_NAME
+#define PLUGIN_CGEN_COMP_LIST  "cgencomplist.xml"
+#define ENV_GEN_RULES_DO_NOT_GENERATE_PROP "do_not_generate"
 
-CConfigHelper::CConfigHelper() : m_pDefBldSet(NULL)
+CConfigHelper::CConfigHelper(IDeploymentCallback *pCallBack): m_pDefBldSet(NULL)
 {
+    if (pCallBack != NULL)
+    {
+        m_cbDeployment.set(pCallBack);
+    }
+    m_strConfigXMLDir.clear();
 }
 
 CConfigHelper::~CConfigHelper()
 {
 }
 
-CConfigHelper* CConfigHelper::getInstance(const IPropertyTree *cfg, const char* esp_name)
+CConfigHelper* CConfigHelper::getInstance(const IPropertyTree *cfg, const char* esp_name, IDeploymentCallback *pCallBack)
 {
-  static CConfigHelper *pConfigHelper = NULL;
+    static CConfigHelper *p_sConfigHelper = NULL;
+    static CSingletonLock slock;
+    StringBuffer xpath1, xpath2;
 
-  if (pConfigHelper != NULL)
-  {
-      return pConfigHelper;
-  }
-
-  if (cfg == NULL || esp_name == NULL)
-  {
-      return NULL;
-  }
-
-  pConfigHelper = new CConfigHelper();
-
-  StringBuffer xpath;
-
-  xpath.setf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALCONFFILE);
-  pConfigHelper->m_strConfFile = cfg->queryProp(xpath.str());
-
-  xpath.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALENVCONFFILE);
-  pConfigHelper->m_strEnvConfFile = cfg->queryProp(xpath.str());
-
-  if (pConfigHelper->m_strConfFile.length() > 0 && pConfigHelper->m_strEnvConfFile.length() > 0)
-  {
-    Owned<IProperties> pParams = createProperties(pConfigHelper->m_strConfFile);
-    Owned<IProperties> pEnvParams = createProperties(pConfigHelper->m_strEnvConfFile);
-
-    pConfigHelper->m_strConfigXMLDir = pEnvParams->queryProp(TAG_PATH);
-
-    if ( pConfigHelper->m_strConfigXMLDir.length() == 0)
+    if (slock.lock())
     {
-      pConfigHelper->m_strConfigXMLDir = INSTALL_DIR;
+        if (p_sConfigHelper != NULL)
+        {
+            slock.unlock();
+
+            return p_sConfigHelper;
+        }
+        if (cfg == NULL || esp_name == NULL)
+        {
+            slock.unlock();
+
+            return p_sConfigHelper = new CConfigHelper(pCallBack);
+        }
+        else
+        {
+            p_sConfigHelper = new CConfigHelper(pCallBack);
+
+            xpath1.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALCONFFILE);
+            p_sConfigHelper->m_strConfFile = cfg->queryProp(xpath1.str());
+
+            xpath2.clear().appendf("%s/%s/%s[%s='%s']/%s",XML_TAG_SOFTWARE, XML_TAG_ESPPROCESS, XML_TAG_ESPSERVICE, XML_ATTR_NAME, esp_name, XML_TAG_LOCALENVCONFFILE);
+            p_sConfigHelper->m_strEnvConfFile = cfg->queryProp(xpath2.str());
+
+            if (p_sConfigHelper->m_strConfFile.length() > 0 && p_sConfigHelper->m_strEnvConfFile.length() > 0 && checkFileExists(p_sConfigHelper->m_strConfFile.str()) && checkFileExists(p_sConfigHelper->m_strEnvConfFile.str()))
+            {
+                Owned<IProperties> pParams = createProperties(p_sConfigHelper->m_strConfFile.str());
+                Owned<IProperties> pEnvParams = createProperties(p_sConfigHelper->m_strEnvConfFile.str());
+
+                p_sConfigHelper->m_strConfigXMLDir = pEnvParams->queryProp(TAG_PATH);
+
+                if (p_sConfigHelper->m_strConfigXMLDir.length() == 0)
+                {
+                  p_sConfigHelper->m_strConfigXMLDir = INSTALL_DIR;
+                }
+
+                p_sConfigHelper->m_strBuildSetFileName = pParams->queryProp(TAG_BUILDSET);
+
+                p_sConfigHelper->m_strBuildSetFilePath.append(p_sConfigHelper->m_strConfigXMLDir).append(STANDARD_CONFIG_CONFIGXML_DIR).append(
+                            p_sConfigHelper->m_strBuildSetFileName.length() > 0 ? p_sConfigHelper->m_strBuildSetFileName : STANDARD_CONFIG_BUILDSETFILE);
+
+                if (p_sConfigHelper->m_cbDeployment.get() != NULL)
+                {
+                    p_sConfigHelper->m_cbDeployment->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
+                                              "Adding plugin buildset %s", p_sConfigHelper->m_strBuildSetFilePath.str());
+                }
+
+                try
+                {
+                    p_sConfigHelper->m_pDefBldSet.set(createPTreeFromXMLFile(p_sConfigHelper->m_strBuildSetFilePath.str()));
+                    p_sConfigHelper->appendBuildSetFromPlugins();
+                }
+                catch (IException *e)
+                {
+                    if (p_sConfigHelper->m_cbDeployment.get() != NULL)
+                    {
+                        StringBuffer msg;
+                        e->errorMessage(msg);
+
+                        p_sConfigHelper->m_cbDeployment->printStatus(STATUS_ERROR, NULL, NULL, NULL,
+                                                    "Unable to add pluging buildset %s with error %s", p_sConfigHelper->m_strBuildSetFilePath.str(), msg.str());
+                    }
+                    delete e;
+                }
+
+                slock.unlock();
+                return p_sConfigHelper;
+            }
+            else
+            {
+                delete p_sConfigHelper;
+                p_sConfigHelper = NULL;
+
+                slock.unlock();
+                throw MakeStringException(-1, "Config file does not define values for %s and %s", xpath1.str(), xpath2.str());
+
+                return NULL;
+            }
+        }
     }
-
-    pConfigHelper->m_strBuildSetFileName = pParams->queryProp(TAG_BUILDSET);
-
-    pConfigHelper->m_strBuildSetFilePath.append(pConfigHelper->m_strConfigXMLDir).append(STANDARD_CONFIG_CONFIGXML_DIR).append( pConfigHelper->m_strBuildSetFileName.length() > 0 ? pConfigHelper->m_strBuildSetFileName : STANDARD_CONFIG_BUILDSETFILE);
-    pConfigHelper->m_pDefBldSet.set(createPTreeFromXMLFile(pConfigHelper->m_strBuildSetFilePath.str()));
-  }
-
-  return pConfigHelper;
+    return p_sConfigHelper;
 }
 
 bool CConfigHelper::isInBuildSet(const char* comp_process_name, const char* comp_name) const
@@ -75,6 +130,76 @@ bool CConfigHelper::isInBuildSet(const char* comp_process_name, const char* comp
   {
      return true;
   }
+}
+
+IPropertyTree* CConfigHelper::getBuildSetTree()
+{
+    this->m_pDefBldSet->Link();
+
+    return this->m_pDefBldSet;
+}
+
+void CConfigHelper::appendBuildSetFromPlugins()
+{
+    const char *pMask = "*";
+
+    StringBuffer strPath(this->m_strConfigXMLDir);
+    strPath.append(STANDARD_CONFIG_CONFIGXML_DIR).append(STANDARD_CONFIG_PLUGIN_DIR_NAME);
+
+    Owned<IFile> pluginRootDir = createIFile(strPath.str());
+
+    if (checkFileExists(strPath.str()) == false)
+    {
+        if (m_cbDeployment.get() != NULL)
+        {
+            m_cbDeployment->printStatus(STATUS_WARN, NULL, NULL, NULL,
+                                      "Could not find plugin directory at %s", strPath.str());
+        }
+        return;
+    }
+
+    Owned<IDirectoryIterator> pluginFiles = pluginRootDir->directoryFiles(pMask, false, true);
+
+    ForEach(*pluginFiles)
+    {
+        if (pluginFiles->query().isDirectory() == true)
+        {
+            StringBuffer strPluginBuildSetPath;
+
+            strPluginBuildSetPath.append(pluginFiles->query().queryFilename()).append("/").append(STANDARD_CONFIG_BUILDSETFILE);
+
+            if (checkFileExists(strPluginBuildSetPath.str()) == true)
+            {
+                StringBuffer strXPath;
+
+                strXPath.appendf("./%s/%s/%s", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET);
+
+                Owned<IPropertyTree> pPluginBuildSet = createPTreeFromXMLFile(strPluginBuildSetPath.str());
+
+                if (m_cbDeployment.get() != NULL)
+                {
+                    m_cbDeployment->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
+                                            "Loading plugin BuildSet from  %s", strPluginBuildSetPath.str());
+                }
+
+                Owned<IPropertyTreeIterator> pBuildSetIterator = pPluginBuildSet->getElements(strXPath);
+
+                ForEach(*pBuildSetIterator)
+                {
+                    m_pDefBldSet->addPropTree(strXPath.str(), LINK(&(pBuildSetIterator->query())));
+                }
+            }
+            else
+            {
+                // Log message that buildset plugin file is missing
+                if (m_cbDeployment != NULL)
+                {
+                    m_cbDeployment->printStatus(STATUS_WARN, NULL, NULL, NULL,
+                                              "buildset.xml file is missing.  Looked in %s", strPluginBuildSetPath.str());
+                }
+            }
+        }
+    }
 }
 
 void CConfigHelper::getNewComponentListFromBuildSet(const IPropertyTree *pEnvTree, StringArray &sCompArray) const
@@ -102,7 +227,7 @@ void CConfigHelper::getNewComponentListFromBuildSet(const IPropertyTree *pEnvTre
     }
 }
 
-void CConfigHelper::addNewComponentsFromBuildSetToEnv(IPropertyTree *pEnvTree)
+void CConfigHelper::addNewComponentsFromBuildSetToEnv(IPropertyTree *pEnvTree) const
 {
     if (pEnvTree == NULL)
         return;
@@ -123,5 +248,193 @@ void CConfigHelper::addNewComponentsFromBuildSetToEnv(IPropertyTree *pEnvTree)
             continue;
 
         pEnvTree->queryPropTree(XML_TAG_PROGRAMS"/"XML_TAG_BUILD)->addPropTree(XML_TAG_BUILDSET, createPTreeFromIPT(m_pDefBldSet->queryPropTree(xpath.str())));
+    }
+}
+
+void CConfigHelper::addPluginsToConfigGenCompList(IPropertyTree *pCGenComplist,  const char *pPath) const
+{
+    if (pCGenComplist == NULL)
+    {
+        return;
+    }
+
+    const char *pMask = "*";
+
+
+    StringBuffer strPath;
+
+    if (m_strConfigXMLDir.length() > 0)
+    {
+        strPath.set(m_strConfigXMLDir.str());
+        strPath.append(STANDARD_CONFIG_CONFIGXML_DIR).append(STANDARD_CONFIG_PLUGIN_DIR_NAME);
+    }
+    else if(pPath != NULL)
+    {
+        strPath.set(pPath).append(STANDARD_CONFIG_PLUGIN_DIR_NAME);
+    }
+    else
+    {
+        return;
+    }
+
+    Owned<IFile> pluginRootDir = createIFile(strPath.str());
+
+    if (checkFileExists(strPath.str()) == false)
+    {
+        return;
+    }
+
+    Owned<IDirectoryIterator> pluginFiles = pluginRootDir->directoryFiles(pMask, false, true);
+
+    ForEach(*pluginFiles)
+    {
+        if (pluginFiles->query().isDirectory() == true)
+        {
+            StringBuffer strPluginCGenCompListPath;
+
+            strPluginCGenCompListPath.append(pluginFiles->query().queryFilename()).append("/").append(PLUGIN_CGEN_COMP_LIST);
+
+            if (checkFileExists(strPluginCGenCompListPath.str()) == true)
+            {
+                StringBuffer strXPath;
+
+                strXPath.appendf("./%s", XML_TAG_COMPONENT);
+
+                Owned<IPropertyTree> pPluginCGenCompList;
+
+                try
+                {
+                    pPluginCGenCompList.set(createPTreeFromXMLFile(strPluginCGenCompListPath.str()));
+                }
+                catch (IException *e)
+                {
+                    if (m_cbDeployment.get() != NULL)
+                    {
+                        m_cbDeployment->printStatus(STATUS_WARN, NULL, NULL, NULL,
+                                                "Unable to load cgencomplist.xml from  %s", strPluginCGenCompListPath.str());
+                    }
+                    delete e;
+                }
+
+                Owned<IPropertyTreeIterator> pCGenCompListIterator = pPluginCGenCompList->getElements(strXPath);
+
+                ForEach(*pCGenCompListIterator)
+                {
+                    StringBuffer strXPath2(XML_TAG_COMPONENT);
+                    StringBuffer strXPath3(XML_TAG_COMPONENT"/"XML_TAG_FILE);
+                    strXPath2.appendf("[%s='%s']", XML_ATTR_NAME, pCGenCompListIterator->query().queryProp(XML_ATTR_NAME));
+
+                    if (pCGenComplist->hasProp(strXPath2.str()) == false)
+                    {
+                        pCGenComplist->addPropTree(XML_TAG_COMPONENT, LINK(&(pCGenCompListIterator->query())));
+
+                        if (m_cbDeployment.get() != NULL)
+                        {
+                            m_cbDeployment->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
+                                                "Loaded %s from  %s", strXPath2.str(), strPluginCGenCompListPath.str());
+                        }
+                    }
+                    else
+                    {
+                        Owned<IPropertyTreeIterator> pFileListIter = pPluginCGenCompList->getElements(strXPath3);
+
+                        ForEach(*pFileListIter)
+                        {
+                            pCGenComplist->queryPropTree(strXPath2.str())->addPropTree(XML_TAG_FILE, LINK((&(pFileListIter->query()))));
+
+                            if (m_cbDeployment.get() != NULL)
+                            {
+                                m_cbDeployment->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
+                                                "Loading %s from  %s", strXPath3.str(), strPluginCGenCompListPath.str());
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (m_cbDeployment != NULL)
+                {
+                    m_cbDeployment->printStatus(STATUS_WARN, NULL, NULL, NULL,
+                                              "cgencomplist.xml file is missing.  Looked in %s", strPluginCGenCompListPath.str());
+                }
+            }
+        }
+    }
+}
+
+void CConfigHelper::addPluginsToGenEnvRules(IProperties *pGenEnvRulesProps) const
+{
+    if (pGenEnvRulesProps == NULL)
+    {
+        return;
+    }
+
+    const char *pMask = "*";
+
+    StringBuffer strPath(this->m_strConfigXMLDir);
+    strPath.append(STANDARD_CONFIG_CONFIGXML_DIR).append(STANDARD_CONFIG_PLUGIN_DIR_NAME);
+
+    Owned<IFile> pluginRootDir = createIFile(strPath.str());
+
+    if (checkFileExists(strPath.str()) == false)
+    {
+        return;
+    }
+
+    Owned<IDirectoryIterator> pluginFiles = pluginRootDir->directoryFiles(pMask, false, true);
+
+    ForEach(*pluginFiles)
+    {
+        if (pluginFiles->query().isDirectory() == true)
+        {
+            StringBuffer strPluginGenEnvRulesPath;
+
+            strPluginGenEnvRulesPath.append(pluginFiles->query().queryFilename()).append("/").append(STANDARD_CONFIG_ALGORITHMFILE);
+
+            if (checkFileExists(strPluginGenEnvRulesPath.str()) == true)
+            {
+
+                Owned<IProperties> pPluginGenEnvPropList = createProperties(strPluginGenEnvRulesPath.str());
+                Owned<IPropertyIterator> pPluginGenEnvPropListIterator = pPluginGenEnvPropList->getIterator();
+
+                ForEach(*pPluginGenEnvPropListIterator)
+                {
+                    const char *pKeyName = pPluginGenEnvPropListIterator->getPropKey();
+
+                    if (pKeyName != NULL && *pKeyName != 0 && strcmp(pKeyName, ENV_GEN_RULES_DO_NOT_GENERATE_PROP) == 0)
+                    {
+                        StringBuffer strProp;
+
+                        if (pGenEnvRulesProps->hasProp(pKeyName) == false)
+                        {
+                            pPluginGenEnvPropList->getProp(pKeyName, strProp);
+                            pGenEnvRulesProps->appendProp(ENV_GEN_RULES_DO_NOT_GENERATE_PROP, strProp.str());
+
+                            if (m_cbDeployment != NULL)
+                            {
+                                m_cbDeployment->printStatus(STATUS_NORMAL, NULL, NULL, NULL,
+                                                            "Adding genenvrules %s", strProp.str());
+                            }
+                        }
+                        else
+                        {
+                            pPluginGenEnvPropList->getProp(pKeyName, strProp.clear());
+                            strProp.append(",");
+                            pGenEnvRulesProps->getProp(pKeyName, strProp);
+                            pGenEnvRulesProps->setProp(pKeyName, strProp.str());
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (m_cbDeployment != NULL)
+                {
+                    m_cbDeployment->printStatus(STATUS_WARN, NULL, NULL, NULL,
+                                               "Failed to load plug-in genenvrules.conf file %s", strPluginGenEnvRulesPath.str());
+                }
+            }
+        }
     }
 }

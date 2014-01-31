@@ -1819,6 +1819,8 @@ IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSc
     if (genEnvConf.length() && checkFileExists(genEnvConf.str()))
       algProp.setown(createProperties(genEnvConf.str()));
 
+    CConfigHelper::getInstance()->addPluginsToGenEnvRules(algProp.get());
+
     enum GenOptional {GENOPTIONAL_ALL, GENOPTIONAL_NONE, GENOPTIONAL_COMPS};
     GenOptional genOpt = GENOPTIONAL_COMPS;
     algProp->getProp("do_not_gen_optional", prop);

@@ -35,11 +35,11 @@ set (    SRCS
          DeployTask.cpp 
          EspDeploymentEngine.cpp 
          espconfiggenengine.cpp 
-#        HoleDeploymentEngine.cpp 
          RoxieDeploymentEngine.cpp 
          thorconfiggenengine.cpp 
          ThorDeploymentEngine.cpp 
-         XslFunctions.cpp 
+         XslFunctions.cpp
+         ../deployutils/confighelper.cpp
     )
 
 include_directories ( 
@@ -50,6 +50,9 @@ include_directories (
          ./../../common/environment
          ./../../dali/base 
          ./../../system/security/securesocket 
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
+         ./../deployutils
     )
 
 ADD_DEFINITIONS ( -D_USRDLL -DDEPLOY_EXPORTS )

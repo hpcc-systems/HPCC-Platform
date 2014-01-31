@@ -49,6 +49,7 @@ class CCloudTask;
 class CCloudActionHandler;
 class CWsDeployEx;
 class CWsDeployExCE;
+class CConfigHelper;
 
 interface IConfigFileObserver : extends IObserver
 {
@@ -949,6 +950,8 @@ public:
     const char* getBackupDir() { return m_backupDir.str(); }
     const char* getProcessName() { return m_process.str(); }
     const char* getSourceDir() { return m_sourceDir.str(); }
+
+    CConfigHelper *m_pConfigHelper;
 
 private:
   virtual void getWizOptions(StringBuffer& sb);

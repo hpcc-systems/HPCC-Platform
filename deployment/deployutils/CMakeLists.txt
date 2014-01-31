@@ -28,8 +28,8 @@ set (    SRCS
          buildset.cpp 
          computerpicker.cpp 
          configenvhelper.cpp
-         wizardInputs.cpp 
-         deployutils.cpp 
+         wizardInputs.cpp
+         deployutils.cpp
          confighelper.cpp
     )
 
@@ -42,7 +42,7 @@ include_directories (
          ./../../dali/base 
          ./../../esp/esplib
          ../configgen
-         ../deploy 
+         ../deploy
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )

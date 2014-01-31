@@ -195,7 +195,6 @@ void expandRange(IPropertyTree* pComputers)
   }
 }
 
-
 CWsDeployExCE::~CWsDeployExCE()
 {
     m_pCfg.clear();
@@ -250,6 +249,8 @@ void CWsDeployExCE::init(IPropertyTree *cfg, const char *process, const char *se
   m_bCloud = false;
   StringBuffer xpath;
   m_envFile.clear();
+
+  m_pConfigHelper = CConfigHelper::getInstance(cfg,service);
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalEnvConfFile", service);
   const char* tmp = cfg->queryProp(xpath.str());
@@ -6269,6 +6270,20 @@ void CWsDeployFileInfo::initFileInfo(bool createOrOverwrite, bool bClearEnv)
     fileExists = false;
     StringBuffer s("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Environment></Environment>");
     Owned<IPropertyTree> pNewTree = createPTreeFromXMLString(s);
+
+    if ( strlen(m_pService->m_pConfigHelper->getBuildSetFilePath()) > 0 )
+    {
+        try
+        {
+          Owned<IPropertyTree> pDefBldSet = m_pService->m_pConfigHelper->getBuildSetTree(); //createPTreeFromXMLFile( m_pService->m_pConfigHelper->getBuildSetFilePath() );
+          pNewTree->addPropTree(XML_TAG_PROGRAMS, createPTreeFromIPT(pDefBldSet->queryPropTree("./Programs")));
+          pNewTree->addPropTree(XML_TAG_SOFTWARE, createPTreeFromIPT(pDefBldSet->queryPropTree("./Software")));
+        }
+        catch(IException* e)
+        {
+          e->Release();
+        }
+    }
 
     if(!pNewTree->queryPropTree(XML_TAG_SOFTWARE))
     {

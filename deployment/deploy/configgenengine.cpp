@@ -21,6 +21,7 @@
 #include "xslprocessor.hpp"
 #include "configgenengine.hpp"
 #include "XMLTags.h"
+#include "confighelper.hpp"
 
 #ifdef _WINDOWS 
 #define CONFIGGEN_COMP_LIST "cgencomplist_win.xml"
@@ -56,6 +57,12 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
             compListPath.clear().append(m_inDir).append(PATHSEPCHAR).append(CONFIGGEN_COMP_LIST);
 
         Owned<IPropertyTree> deployNode = createPTreeFromXMLFile(compListPath.str(), ipt_caseInsensitive);
+
+        CConfigHelper *pConfigHelper = CConfigHelper::getInstance(NULL, NULL, m_pCallback.get());
+
+        compListPath.clear().set(m_inDir).append(PATHSEPCHAR);
+        pConfigHelper->addPluginsToConfigGenCompList(deployNode.get(), compListPath.str());
+
         StringBuffer srcFilePath;
         srcFilePath.ensureCapacity(_MAX_PATH);
         const bool bFindStartable = &m_process == &processNode && m_startable == unknown;
