@@ -1,10 +1,10 @@
 define(
 ({
-    title: "HPCC Platform - Files",
+    title: "Platforma HPCC - Archivos",
 
-    LogicalFiles: "Logical Files",
-    LandingZones: "Landing Zones",
-    Workunits: "Workunits",
-    XRef: "XRef"
+    LogicalFiles: "Arvhivos lógicos",
+    LandingZones: "Zonas de aterrizaje",
+    Workunits: "Unidades de trabajo",
+    XRef: "Referencias cruzadas"
 })
 );

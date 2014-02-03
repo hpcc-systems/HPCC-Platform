@@ -1,5 +1,5 @@
 define(
 ({
-    undefined: "undefined"
+    undefined: "no definido"
 })
 );

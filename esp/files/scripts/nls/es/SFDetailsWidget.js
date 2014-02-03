@@ -1,17 +1,16 @@
 define(
 ({
-    Cluster: "Cluster",
-    DeleteSuperfile: "Delete Superfile?",
-    Description: "Description",
-    Description: "Description",
-    FileSize: "File Size",
-    LogicalName: "Logical Name",
-    ModifiedUTCGMT: "Modified (UTC/GMT)",
-    Owner: "Owner",
-    Parts: "Parts",
-    Records: "Records",
-    Remove: "Remove",
-    Size: "Size",
-    Summary: "Summary"
+    Cluster: "Sistema",
+    DeleteSuperfile: "Borrar super-archivo?",
+    Description: "Descripción",
+    FileSize: "Tamaño de archivo",
+    LogicalName: "Nombre lógico",
+    ModifiedUTCGMT: "Modificado (UTC/GMT)",
+    Owner: "Dueño",
+    Parts: "Partes",
+    Records: "Registros",
+    Remove: "Remover",
+    Size: "Tamaño",
+    Summary: "Resumen"
 })
 );

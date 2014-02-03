@@ -1,6 +1,6 @@
 define(
 ({
-    Mappings: "Mappings",
-    Show: "Show"
+    Mappings: "Mapeados",
+    Show: "Mostrar"
 })
 );
