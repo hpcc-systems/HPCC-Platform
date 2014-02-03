@@ -1,8 +1,8 @@
 define(
 ({
     title: "HPCC Platform - Home",
-
     Activity: "Activity",
-    SearchResults: "Search Results",
+    EventScheduler: "Event Scheduler",
+    SearchResults: "Search Results"
 })
 );
