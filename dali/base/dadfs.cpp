@@ -4473,8 +4473,11 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     {
                         sf->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
                         // potentially subfile _was_ a subfile, but isn't anymore, after dirty update
-                        if (!transaction->isSubFile(parent, subfile, true))
-                            WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
+                        if (!subfile.isEmpty())
+                        {
+                            if (!transaction->isSubFile(parent, subfile, true))
+                                WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
+                        }
                     }
                 }
                 if (sub)
