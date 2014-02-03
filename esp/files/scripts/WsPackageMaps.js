@@ -18,7 +18,7 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/PackageSourceWidget",
+    "dojo/i18n!./nls/PackageMapQueryWidget",
     "dojo/_base/Deferred",
     "dojo/_base/array",
     "dojo/store/util/QueryResults",
@@ -43,7 +43,7 @@ define([
                 return true;
             var exceptionCode = response.Exceptions.Exception[0].Code;
             var exceptionMSG = response.Exceptions.Exception[0].Message;
-            this.errorMessageCallback(callback, i18n.Exception, i18n.Code+exceptionCode+i18n.Message+exceptionMSG);
+            this.errorMessageCallback(callback, i18n.Exception + ":", i18n.Code + ":" +exceptionCode+ " " +i18n.Message+ ":" +exceptionMSG);
             return false;
         },
 
