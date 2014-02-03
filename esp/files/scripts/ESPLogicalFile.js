@@ -18,8 +18,6 @@ define([
     "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/_base/Deferred",
-    "dojo/data/ObjectStore",
-    "dojo/store/util/QueryResults",
     "dojo/store/Observable",
     "dojo/Stateful",
 
@@ -28,7 +26,7 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable, Stateful,
+], function (declare, arrayUtil, lang, Deferred, Observable, Stateful,
         WsDfu, FileSpray, ESPRequest, ESPUtil, ESPResult) {
 
     var _logicalFiles = {};
@@ -158,6 +156,10 @@ define([
                 }
             });
         },
+        getLeaf: function () {
+            var nameParts = this.Name.split("::");
+            return nameParts.length ? nameParts[nameParts.length - 1] : "";
+        },
         updateData: function (data) {
             this.inherited(arguments);
             if (!this.result) {
@@ -198,13 +200,6 @@ define([
         CreateLFQueryStore: function (options) {
             var store = new Store(options);
             return Observable(store);
-        },
-
-        CreateLFQueryObjectStore: function (options) {
-            var objStore = new ObjectStore({
-                objectStore: this.CreateLFQueryStore()
-            });
-            return objStore;
         }
     };
 });
