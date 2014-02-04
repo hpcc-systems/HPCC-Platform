@@ -54,6 +54,8 @@ class ECLFile:
         self.xml_r = baseXml
         self.xml_a = 'archive_' + baseXml
         self.jobname = self.basename
+        self.diff = ''
+        self.abortReason =''
 
     def getExpected(self):
         return os.path.join(self.dir_ex, self.xml_e)
@@ -189,10 +191,10 @@ class ECLFile:
                                              tofile=self.xml_r):
                 self.diff += line
         except Exception as e:
-            logging.critical( e, extra={'taskId':self.taskId})
-            logging.critical("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
-            logging.critical("EXP: %s",  self.getExpected(),  extra={'taskId':self.taskId})
-            logging.critical("REC: %s",  self.getResults(),  extra={'taskId':self.taskId})
+            logging.debug( e, extra={'taskId':self.taskId})
+            logging.debug("%s",  traceback.format_exc().replace("\n","\n\t\t"),  extra={'taskId':self.taskId} )
+            logging.debug("EXP: %s",  self.getExpected(),  extra={'taskId':self.taskId})
+            logging.debug("REC: %s",  self.getResults(),  extra={'taskId':self.taskId})
             return False
         finally:
             if not self.diff:

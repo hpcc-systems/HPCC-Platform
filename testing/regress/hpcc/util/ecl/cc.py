@@ -29,6 +29,7 @@ class ECLCC(Shell):
     def __init__(self):
         self.defaults = []
         self.cmd = self.which('eclcc')
+        self.makeArchiveError=''
 
     def __ECLCC(self):
         return self.command(self.cmd, *self.defaults)
