@@ -137,6 +137,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ClearSuperFile.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/RemoveOwnedSubFiles.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SwapSuperFile.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
