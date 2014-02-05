@@ -220,7 +220,7 @@ define([
             if (workunit) {
                 var idPrefix = prefix.split(" ").join("_");
                 this.store.add({
-                    id: "FileSprayGetDFUWorkunits" + idPrefix + idx,
+                    id: "FileSprayGetDFUWorkunits" + idPrefix + workunit.ID,
                     Type: "DFU Workunit",
                     Reason: prefix,
                     Summary: workunit.ID,
