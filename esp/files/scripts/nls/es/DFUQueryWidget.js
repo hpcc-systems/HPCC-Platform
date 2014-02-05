@@ -7,7 +7,7 @@ define(
     Append: "Agregar",
     Cluster: "Agrupar",
     Compress: "Comprimir",
-    DeleteSelectedFiles: "Borrar archivos seleccionados?",
+    DeleteSelectedFiles: "¿Borrar archivos seleccionados?",
     Delimited: "Delimitado",
     Description: "Descripción",
     Despray: "Despray",
@@ -18,7 +18,7 @@ define(
     FromDate: "Desde Fecha",
     FromSizes: "Desde Tamaños",
     Group: "Grupo",
-    IP: "IP",as
+    IP: "IP",
     IPAddress: "Dirección de IP",
     JSmith: "JSmit*",
     Label: "Etiqueta",

@@ -4,7 +4,7 @@ define(
 
     Compress: "Comprimir",
     Date: "Fecha",
-    DeleteSelectedFiles: "Borrar archivos seleccionados?",
+    DeleteSelectedFiles: "¿Borrar archivos seleccionados?",
     Delimited: "Delimitado",
     Download: "Descargar",
     Errorparsingserverresult: "Error analizando los resultados del servidor",

@@ -6,7 +6,7 @@ define(
     Cluster: "Sistema",
     Created: "Creado",
     dataset: ":=dataset*",
-    DeleteSelectedWorkunits: "Borrar unidades de trabajo seleccionadas?",
+    DeleteSelectedWorkunits: "¿Borrar unidades de trabajo seleccionadas?",
     Deschedule: "Eliminar del plan de ejecución",
     ECL: "ECL",
     FromDate: "Desde fecha",
