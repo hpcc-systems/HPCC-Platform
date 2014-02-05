@@ -5,7 +5,7 @@ define(
     ArchivedOnly: "Solo archivado",
     Cluster: "Systema",
     Created: "Creado",
-    DeleteSelectedWorkunits: "Borrar unidades de trabajo soeleccionadas?",
+    DeleteSelectedWorkunits: "¿Borrar unidades de trabajo soeleccionadas?",
     ID: "ID",
     Jobname: "Nombre del trabajo",
     JobName: "Nombre del trabajo",

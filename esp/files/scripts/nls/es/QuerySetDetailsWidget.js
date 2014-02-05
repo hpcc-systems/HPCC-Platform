@@ -4,7 +4,7 @@ define(
 
     Activated: "Activado",
     Comment: "Comentario",
-    DeleteSelectedWorkunits: "Borrar unidades de trabajo seleccionadas?",
+    DeleteSelectedWorkunits: "¿Borrar unidades de trabajo seleccionadas?",
     Dll: "Dll",
     Errors: "Errores",
     ErrorsStatus: "Errores/Estado",

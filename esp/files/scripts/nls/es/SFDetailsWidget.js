@@ -1,7 +1,7 @@
 define(
 ({
     Cluster: "Sistema",
-    DeleteSuperfile: "Borrar super-archivo?",
+    DeleteSuperfile: "¿Borrar super-archivo?",
     Description: "Descripción",
     FileSize: "Tamaño de archivo",
     LogicalName: "Nombre lógico",

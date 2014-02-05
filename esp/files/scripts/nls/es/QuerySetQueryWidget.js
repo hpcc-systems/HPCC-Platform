@@ -6,7 +6,7 @@ define(
     Active: "Activo",
     Cluster: "Sistema",
     Deactivate: "Deactivar",
-    DeleteSelectedQueries: "Borrar queries seleccionados?",
+    DeleteSelectedQueries: "¿Borrar queries seleccionados?",
     Dll: "Dll",
     ID: "ID",
     IsLibrary: "Es biblioteca",
