@@ -19,7 +19,7 @@
           <row>
             <entry>Return:</entry>
 
-            <entry>EVENTNAME returns a single string value.</entry>
+            <entry>EVENTEXTRA returns a single string value.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -49,5 +49,8 @@ WAIT('MyServiceComplete');
 OUTPUT('WORKUNIT DONE')
 </programlisting>
 
-  <para>See Also: <link linkend="EVENT">EVENT</link>, <link linkend="EVENTNAME">EVENTNAME</link>, <link linkend="CRON">CRON</link>, <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link linkend="NOTIFY">NOTIFY</link></para>
+  <para>See Also: <link linkend="EVENT">EVENT</link>, <link
+  linkend="EVENTNAME">EVENTNAME</link>, <link linkend="CRON">CRON</link>,
+  <link linkend="WHEN">WHEN</link>, <link linkend="WAIT">WAIT</link>, <link
+  linkend="NOTIFY">NOTIFY</link></para>
 </sect1>
