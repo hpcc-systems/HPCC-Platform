@@ -20,7 +20,7 @@ Result:
 |       HPCC Platform Regression suite
 | 
 |       positional arguments:
-|          {list,run}            sub-command help
+|          {list,run,query}      sub-command help
 |            list                list help
 |            run                 run help
 |            query               query help
@@ -90,7 +90,7 @@ Result:
 |       usage: regress query [-h] [--publish] [ECL query] [target cluster | all]
 |
 |       positional arguments:
-|         ECL query             Name of a single ECL query (mandatory).
+|         ECL query             Name of a single ECL query. It can contain wildcards. (mandatory).
 |         target cluster | all  Cluster for single query run. If cluster = 'all' then run single query on all clusters. Default value is thor.
 |
 |       optional arguments:
@@ -309,7 +309,7 @@ Command:
         ./regress query [-h] [--publish] test_name [target cluster | all]
 
 Positional arguments:
-        test_name               Name of a single ECL query (mandatory).
+        test_name               Name of a single ECL query. It can contain wildcards. (mandatory).
         target cluster | all    Cluster for single query run (default: thor).
                                 If cluster = 'all' then run ECL query on all clusters.
 Optional arguments:

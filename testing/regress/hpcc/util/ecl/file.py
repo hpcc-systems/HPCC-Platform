@@ -67,6 +67,9 @@ class ECLFile:
     def getEcl(self):
         return os.path.join(self.dir_ec, self.ecl)
 
+    def getBaseEcl(self):
+        return self.ecl
+
     def getWuid(self):
         return self.wuid
 
