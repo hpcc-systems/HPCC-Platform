@@ -90,6 +90,8 @@ define([
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.filter = registry.byId(this.id + "Filter");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
+            this.importForm = registry.byId(this.id + "ImportForm");
+            this.importTargetSelect = registry.byId(this.id + "ImportTargetSelect");
             this.copyForm = registry.byId(this.id + "CopyForm");
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
             this.copyGrid = registry.byId(this.id + "CopyGrid");
@@ -152,6 +154,19 @@ define([
                 if (tab) {
                     this.selectChild(tab);
                 }
+            }
+        },
+
+        _onImportOk: function (event) {
+            if (this.importForm.validate()) {
+                var request = domForm.toObject(this.importForm.id);
+                var context = this;
+                FileSpray.Copy({
+                    request: request
+                }).then(function (response) {
+                    context._handleResponse("CopyResponse.result", response);
+                });
+                registry.byId(this.id + "ImportDropDown").closeDropDown();
             }
         },
 
@@ -274,6 +289,9 @@ define([
                 includeBlank: true
             });
             var context = this;
+            this.importTargetSelect.init({
+                Groups: true
+            });
             this.copyTargetSelect.init({
                 Groups: true
             });

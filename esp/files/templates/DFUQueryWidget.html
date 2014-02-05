@@ -8,6 +8,44 @@
                     <div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">${i18n.Open}</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}ImportDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.Import}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}ImportForm" style="width: 460px;" onsubmit="return false;" data-dojo-props="region: 'bottom'" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Source</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input name="sourceDali" title="${i18n.Dali}:" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input name="srcusername" title="${i18n.UserID}:" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input name="srcpassword" title="${i18n.Password}:" style="width:100%" required="true" type="password" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input name="sourceLogicalName" title="${i18n.LogicalName}:" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Target</legend>
+                                    <div data-dojo-type="hpcc.TableContainer">
+                                        <input id="${id}ImportTargetSelect" title="${i18n.Group}:" name="destGroup" style="width:100%" data-dojo-type="TargetSelectWidget" />
+                                        <input name="destLogicalName" title="${i18n.LogicalName}:" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox" />
+                                    </div>
+                                </div>
+                                <div data-dojo-type="dijit.Fieldset">
+                                    <legend>Options</legend>
+                                    <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                                        <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit/form/CheckBox" />
+                                        <input title="${i18n.NoSplit}:" name="nosplit" data-dojo-type="dijit/form/CheckBox" />
+                                        <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit/form/CheckBox" />
+                                        <input title="${i18n.Wrap}:" name="Wrap" data-dojo-type="dijit/form/CheckBox" />
+                                        <input title="${i18n.Replicate}:" name="replicate" data-dojo-type="dijit/form/CheckBox" />
+                                        <input title="${i18n.RetainSuperfileStructure}:" name="superCopy" data-dojo-type="dijit/form/CheckBox" />
+                                    </div>
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onImportOk" data-dojo-type="dijit.form.Button">${i18n.Import}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}CopyDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Copy}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
