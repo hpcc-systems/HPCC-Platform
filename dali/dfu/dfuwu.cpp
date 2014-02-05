@@ -113,7 +113,9 @@ struct DFUcmdStruct { int val; const char *str; } DFUcmds[] =
 
 
 
-struct DFUsortField { int val; const char *str; } DFUsortfields[] = 
+struct mapEnums { int val; const char *str; };
+
+mapEnums DFUsortfields[] =
 {
     {DFUsf_user,                    "@submitID"},
     {DFUsf_cluster,                 "@cluster"},
@@ -125,6 +127,19 @@ struct DFUsortField { int val; const char *str; } DFUsortfields[] =
     {DFUsf_protected,               "@protected"},
     {DFUsf_term,                    ""}
 };
+
+const char *getEnumText(int value, mapEnums *map)
+{
+    const char *defval = map->str;
+    while (map->str)
+    {
+        if (value==map->val)
+            return map->str;
+        map++;
+    }
+    assertex(!"Unexpected value in setEnum");
+    return defval;
+}
 
 DFUcmd decodeDFUcommand(const char * str)
 {
@@ -2990,12 +3005,13 @@ public:
             StringAttr sortOrder;
             StringAttr nameFilterLo;
             StringAttr nameFilterHi;
+            StringArray& unknownAttributes;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi)
-                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
+            CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
+                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi), unknownAttributes(_unknownAttributes)
             {
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
@@ -3006,7 +3022,7 @@ public:
                 Owned<IPropertyTreeIterator> iter = conn->getElements(xPath);
                 if (!iter)
                     return NULL;
-                sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), elements);
+                sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
                 return conn.getClear();
             }
         };
@@ -3017,6 +3033,7 @@ public:
         StringBuffer sf;
         StringAttr namefilterlo;
         StringAttr namefilterhi;
+        StringArray unknownAttributes;
         if (filters) {
             const char *fv = (const char *)filterbuf;
             for (unsigned i=0;filters[i]!=DFUsf_term;i++) {
@@ -3025,6 +3042,8 @@ public:
                     namefilterlo.set(fv);
                 else if (fmt==DFUsf_wuidhigh) 
                     namefilterhi.set(fv);
+                else if (!fv || !*fv)
+                    unknownAttributes.append(getEnumText(fmt,DFUsortfields));
                 else {
                     field = encodeDFUsortfield(fmt,sf.clear(),false).str();
                     query.append('[').append(field).append('=');
@@ -3046,7 +3065,7 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get());
+        Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,queryowner,cachehint,results,total);
         return new CConstDFUWUArrayIterator(this,conn,results);
     }

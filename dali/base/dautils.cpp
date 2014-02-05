@@ -1567,7 +1567,7 @@ void filterParts(IPropertyTree *file,UnsignedArray &partslist)
 #define SORT_NOCASE  2
 #define SORT_NUMERIC 4
 
-inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterlo,const char *namefilterhi,IPropertyTree *item)
+inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterlo,const char *namefilterhi,StringArray& unknownAttributes, IPropertyTree *item)
 {
 
     if (!item)
@@ -1579,6 +1579,15 @@ inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterl
         if (namefilterlo&&(strcmp(namefilterlo,n)>0))
             return;
         if (namefilterhi&&(strcmp(namefilterhi,n)<0))
+            return;
+    }
+    ForEachItemIn(i, unknownAttributes)
+    {
+        const char *attribute = unknownAttributes.item(i);
+        if (!attribute || !*attribute)
+            continue;
+        const char *attrValue = item->queryProp(attribute);
+        if (attrValue && *attrValue)
             return;
     }
     item->Link();
@@ -1602,7 +1611,7 @@ public:
         : buf(0x100000*100,0x10000,true)
     {
     }
-    void dosort(IPropertyTreeIterator &iter,const char *sortorder, const char *namefilterlo,const char *namefilterhi, IArrayOf<IPropertyTree> &results)
+    void dosort(IPropertyTreeIterator &iter,const char *sortorder, const char *namefilterlo,const char *namefilterhi, StringArray& unknownAttributes, IArrayOf<IPropertyTree> &results)
     {
         StringBuffer sk;
         const char *s = sortorder;
@@ -1630,7 +1639,7 @@ public:
             s++;
         }
         ForEach(iter)
-            filteredAdd(sortvalues,namefilterlo,namefilterhi,&iter.query());
+            filteredAdd(sortvalues,namefilterlo,namefilterhi,unknownAttributes,&iter.query());
         nv = sortvalues.ordinality();
         nk = sortkeys.ordinality();
         vals = (char **)calloc(sizeof(char *),nv*nk);
@@ -1711,6 +1720,7 @@ IRemoteConnection *getSortedElements( const char *basexpath,
                                      const char *sortorder,
                                      const char *namefilterlo,
                                      const char *namefilterhi,
+                                     StringArray& unknownAttributes,
                                      IArrayOf<IPropertyTree> &results)
 {
     Owned<IRemoteConnection> conn = querySDS().connect(basexpath, myProcessSession(), 0, SDS_LOCK_TIMEOUT);
@@ -1726,10 +1736,10 @@ IRemoteConnection *getSortedElements( const char *basexpath,
     StringBuffer nbuf;
     cSort sort;
     if (sortorder&&*sortorder)
-        sort.dosort(*iter,sortorder,namefilterlo,namefilterhi,results);
+        sort.dosort(*iter,sortorder,namefilterlo,namefilterhi,unknownAttributes,results);
     else
         ForEach(*iter)
-            filteredAdd(results,namefilterlo,namefilterhi,&iter->query());
+            filteredAdd(results,namefilterlo,namefilterhi,unknownAttributes,&iter->query());
     return conn.getClear();
 }
 
@@ -1894,6 +1904,7 @@ void sortElements(IPropertyTreeIterator* elementsIter,
                     const char *sortOrder,
                     const char *nameFilterLo,
                     const char *nameFilterHi,
+                    StringArray& unknownAttributes,
                     IArrayOf<IPropertyTree> &sortedElements)
 {
     if (nameFilterLo&&!*nameFilterLo)
@@ -1902,10 +1913,10 @@ void sortElements(IPropertyTreeIterator* elementsIter,
         nameFilterHi = NULL;
     cSort sort;
     if (sortOrder && *sortOrder)
-        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,sortedElements);
+        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,unknownAttributes, sortedElements);
     else
         ForEach(*elementsIter)
-            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,&elementsIter->query());
+            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,unknownAttributes, &elementsIter->query());
 };
 
 IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,

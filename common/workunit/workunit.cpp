@@ -2313,12 +2313,13 @@ public:
             StringAttr sortOrder;
             StringAttr nameFilterLo;
             StringAttr nameFilterHi;
+            StringArray& unknownAttributes;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi)
-                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
+            CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
+                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi), unknownAttributes(_unknownAttributes)
             {
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
@@ -2329,7 +2330,7 @@ public:
                 Owned<IPropertyTreeIterator> iter = conn->getElements(xPath);
                 if (!iter)
                     return NULL;
-                sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), elements);
+                sortElements(iter, sortOrder.get(), nameFilterLo.get(), nameFilterHi.get(), unknownAttributes, elements);
                 return conn.getClear();
             }
         };
@@ -2374,6 +2375,7 @@ public:
         StringAttr namefilter("*");
         StringAttr namefilterlo;
         StringAttr namefilterhi;
+        StringArray unknownAttributes;
         if (filters) {
             const char *fv = (const char *)filterbuf;
             for (unsigned i=0;filters[i]!=WUSFterm;i++) {
@@ -2385,6 +2387,8 @@ public:
                     namefilterhi.set(fv);
                 else if (subfmt==WUSFwildwuid)
                     namefilter.set(fv);
+                else if (!fv || !*fv)
+                    unknownAttributes.append(getEnumText(subfmt,workunitSortFields));
                 else {
                     query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
                     if (fmt&WUSFnocase)
@@ -2412,7 +2416,7 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get());
+        Owned<IElementsPager> elementsPager = new CWorkUnitsPager(query.str(), so.length()?so.str():NULL, namefilterlo.get(), namefilterhi.get(), unknownAttributes);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,secmgr?sc:NULL,queryowner,cachehint,results,total);
         return new CConstWUArrayIterator(conn, results, secmgr, secuser);
     }
@@ -2455,6 +2459,7 @@ public:
             StringAttr xPath;
             StringAttr sortOrder;
             PostFilters& postFilters;
+            StringArray& unknownAttributes;
 
             void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
             {
@@ -2518,8 +2523,8 @@ public:
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters)
-                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), postFilters(_postFilters)
+            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes)
+                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), postFilters(_postFilters), unknownAttributes(_unknownAttributes)
             {
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
@@ -2533,13 +2538,14 @@ public:
                 Owned<IPropertyTreeIterator> iter = elementTree->getElements("*");
                 if (!iter)
                     return NULL;
-                sortElements(iter, sortOrder.get(), NULL, NULL, elements);
+                sortElements(iter, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
                 return conn.getClear();
             }
         };
         StringAttr querySet;
         StringBuffer xPath;
         StringBuffer so;
+        StringArray unknownAttributes;
         if (filters)
         {
             const char *fv = (const char *)filterbuf;
@@ -2556,6 +2562,8 @@ public:
                     postFilters.activatedFilter = (WUQueryFilterBoolean) atoi(fv);
                 else if (subfmt==WUQSFSuspendedByUser)
                     postFilters.suspendedByUserFilter = (WUQueryFilterBoolean) atoi(fv);
+                else if (!fv || !*fv)
+                    unknownAttributes.append(getEnumText(subfmt,querySortFields));
                 else {
                     xPath.append('[').append(getEnumText(subfmt,querySortFields)).append('=');
                     if (fmt&WUQSFnocase)
@@ -2584,7 +2592,7 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters);
+        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters, unknownAttributes);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
         return new CConstQuerySetQueryIterator(results);
     }

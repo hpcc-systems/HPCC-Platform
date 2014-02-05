@@ -263,6 +263,7 @@ IRemoteConnection *getSortedElements( const char *basexpath,
                                      const char *sortorder, 
                                      const char *namefilterlo, // if non null filter less than this value
                                      const char *namefilterhi, // if non null filter greater than this value
+                                     StringArray& unknownAttributes,
                                      IArrayOf<IPropertyTree> &results);
 interface ISortedElementsTreeFilter : extends IInterface
 {
@@ -276,6 +277,7 @@ extern da_decl void sortElements( IPropertyTreeIterator* elementsIter,
                                      const char *sortorder, 
                                      const char *namefilterlo, // if non null filter less than this value
                                      const char *namefilterhi, // if non null filter greater than this value
+                                     StringArray& unknownAttributes, //the attribute not exist or empty
                                      IArrayOf<IPropertyTree> &sortedElements);
 
 extern da_decl IRemoteConnection *getElementsPaged(IElementsPager *elementsPager,
