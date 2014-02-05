@@ -32,6 +32,7 @@
 
 const unsigned ROXIECONNECTIONTIMEOUT = 1000;   //1 second
 const unsigned ROXIECONTROLQUERYTIMEOUT = 3000; //3 second
+const unsigned ROXIELOCKCONNECTIONTIMEOUT = 60000; //60 second
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -1623,9 +1624,8 @@ void CWsWorkunitsEx::getGraphsByQueryId(const char *target, const char *queryId,
     if (eps.empty())
         return;
 
-    VStringBuffer xpath("<control:querystats><Query id='%s'/></control:querystats>", queryId);
-    Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
-    Owned<IPropertyTree> querystats = sendRoxieControlQuery(sock, xpath.str(), ROXIECONTROLQUERYTIMEOUT);
+    VStringBuffer control("<control:querystats><Query id='%s'/></control:querystats>", queryId);
+    Owned<IPropertyTree> querystats = sendRoxieControlAllNodes(eps.item(0), control.str(), false, ROXIELOCKCONNECTIONTIMEOUT);
     if (!querystats)
         return;
 
@@ -1637,7 +1637,7 @@ void CWsWorkunitsEx::getGraphsByQueryId(const char *target, const char *queryId,
         if (graphId && *graphId && !strieq(graphId, aGraphId))
             continue;
 
-        IPropertyTree* xgmml = graph.getBranch("xgmml/graph/graph");
+        IPropertyTree* xgmml = graph.getBranch("xgmml/graph");
         if (!xgmml)
             continue;
 
@@ -1652,6 +1652,7 @@ void CWsWorkunitsEx::getGraphsByQueryId(const char *target, const char *queryId,
             VStringBuffer xpath("//node[@id='%s']", subGraphId);
             toXML(xgmml->queryPropTree(xpath.str()), xml);
         }
+
         g->setGraph(xml.str());
         ECLGraphs.append(*g.getClear());
     }
