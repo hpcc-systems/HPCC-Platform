@@ -1910,7 +1910,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.optimizeSharedInputs = _translatorOptions.optimizeSharedGraphInputs && options.combineSiblings;
     options.actionLinkInNewGraph = _translatorOptions.actionLinkInNewGraph || (targetClusterType == HThorCluster);
     options.convertCompoundToExecuteWhen = false;
-    options.useResultsForChildSpills = _translatorOptions.useResultsForChildSpills;// && (targetClusterType != HThorCluster);
+    options.useResultsForChildSpills = _translatorOptions.useResultsForChildSpills;
 }
 
 EclResourcer::~EclResourcer()               

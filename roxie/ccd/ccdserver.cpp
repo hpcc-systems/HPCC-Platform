@@ -25504,7 +25504,6 @@ public:
 
     virtual void reset()
     {
-        results.clear();
         ForEachItemIn(idx, sinks)
         {
             IRoxieServerActivity &sink = sinks.item(idx);
