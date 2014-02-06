@@ -96,6 +96,9 @@ define([
         //  Implementation  ---
         initGrid: function() {
             var context = this;
+            this.noDataMessage = this.i18n.noDataMessage;
+            this.loadingMessage = this.i18n.loadingMessage;
+
             var store = new Memory({
                 idProperty: this.idProperty,
                 data: []
@@ -120,10 +123,10 @@ define([
                 context._refreshActionState();
             });
             if (!this.grid.get("noDataMessage")) {
-                this.grid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
+                this.grid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.noDataMessage + "</span>");
             }
             if (!this.grid.get("loadingMessage")) {
-                this.grid.set("loadingMessage", "<span class='dojoxGridNoData'>" + this.i18n.loadingMessage + "</span>");
+                this.grid.set("loadingMessage", "<span class='dojoxGridNoData'>" + this.loadingMessage + "</span>");
             }
             this.grid.startup();
         },

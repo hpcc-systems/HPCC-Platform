@@ -359,11 +359,11 @@ define([
                     return 0;
                 });
                 Deferred.when(results, function (response) {
+                    if (context.preProcessFullResponse) {
+                        context.preProcessFullResponse(response, request, query, options);
+                    }
                     var items = [];
                     if (context._hasResponseContent(response)) {
-                        if (context.preProcessFullResponse) {
-                            context.preProcessFullResponse(response, request, query, options);
-                        }
                         if (context.preProcessResponse) {
                             var responseQualiferArray = context.responseQualifier.split(".");
                             context.preProcessResponse(lang.getObject(responseQualiferArray[0], false, response), request, query, options);
