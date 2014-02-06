@@ -4036,13 +4036,42 @@ bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfo
             //add ECL query/archive to zip
             Owned<IConstWUQuery> query = cwu->getQuery();
             StringBuffer ecl;//String buffers containing file contents must persist until ziptofile is called !
+            StringBuffer archive;//String buffers containing file contents must persist until ziptofile is called !
             if(query)
             {
+                //Add archive if present
+                Owned<IConstWUAssociatedFileIterator> iter = &query->getAssociatedFiles();
+                SCMStringBuffer ssb;
+                ForEach(*iter)
+                {
+                    IConstWUAssociatedFile & cur = iter->query();
+                    cur.getDescription(ssb);
+                    if (0 == stricmp(ssb.str(), "archive"))
+                    {
+                        cur.getName(ssb);
+                        if (ssb.length())
+                        {
+                            fs.clear().append("ZAPReport_").append(req.getWuid()).append('_').append(userName.str()).append(".archive");
+                            try
+                            {
+                                archive.loadFile(ssb.str());
+                                zipper->addContentToZIP(archive.length(), (void*)archive.str(), (char*)fs.str(), true);
+                            }
+                            catch (IException *E)
+                            {
+                                DBGLOG("Error accessing archive file %s", ssb.str());
+                                E->Release();
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                //Add Query
                 query->getQueryText(temp);
                 if (temp.length())
                 {
-                    fs.clear().append("ZAPReport_").append(req.getWuid()).append('_').append(userName.str()).append(".");
-                    fs.append(isArchiveQuery(temp.str()) ? "archive" : "ecl");
+                    fs.clear().append("ZAPReport_").append(req.getWuid()).append('_').append(userName.str()).append(".ecl");
                     ecl.append(temp.str());
                     zipper->addContentToZIP(ecl.length(), (void*)ecl.str(), (char*)fs.str(), true);
                 }
