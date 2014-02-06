@@ -1,0 +1,5 @@
+define(
+({
+    undefined: "nem definiált"
+})
+);
