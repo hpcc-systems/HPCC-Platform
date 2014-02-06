@@ -1,6 +1,6 @@
 define(
 ({
-    Unknown: "Unknown",
-    Wuidcannotbeempty: "Wuid Cannot Be Empty."
+    Unknown: "Desconocido",
+    Wuidcannotbeempty: "Wuid no puede estar vacío."
 })
 );

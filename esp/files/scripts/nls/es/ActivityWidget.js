@@ -1,10 +1,10 @@
 define(
 ({
-    title: "Activity",
-    ActiveWorkunit: "Active Workunit",
-    Target: "Target",
-    State: "State",
-    Owner: "Owner",
-    JobName: "Job Name"
+    title: "Actividad",
+    ActiveWorkunit: "Unidad activa",
+    Target: "Destino",
+    State: "Estado",
+    Owner: "Dueño",
+    JobName: "Nombre del trabajo"
 })
 );

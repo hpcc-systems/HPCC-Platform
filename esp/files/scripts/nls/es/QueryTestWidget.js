@@ -1,15 +1,15 @@
 define(
 ({
-    title: "Super Files",
+    title: "Super Archivos",
 
     JSON: "JSON",
-    LegacyForm: "Legacy Form",
-    Links: "Links",
-    ParameterXML: "Parameter XML",
-    RequestSchema: "Request Schema",
-    ResponseSchema: "Response Schema",
-    SampleRequest: "Sample Request",
-    SampleResponse: "Sample Response",
+    LegacyForm: "Forma histórica",
+    Links: "Vínculos",
+    ParameterXML: "Parámetro XML",
+    RequestSchema: "Esquema del requerimiento",
+    ResponseSchema: "Esquema de la respuesta",
+    SampleRequest: "Ejemplo del requerimiento",
+    SampleResponse: "Ejemplo de la respuesta",
     SOAP: "SOAP",
     WSDL: "WSDL"
 })

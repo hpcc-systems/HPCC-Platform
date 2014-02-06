@@ -1,15 +1,15 @@
 define(
 ({
-    Code: "Code",
+    Code: "Código",
     Col: "Col",
-    Errors: "Errors",
-    ErrorWarnings: "Error/Warnings",
-    FileName: "File Name",
+    Errors: "Errores",
+    ErrorWarnings: "Error/Advertencias",
+    FileName: "Nombre de archivo",
     Info: "Info",
-    Line: "Line",
-    Message: "Message",
-    Reset: "Source",
-    Severity: "Severity",
-    Warnings: "Warnings"
+    Line: "Línea",
+    Message: "Mensaje",
+    Reset: "Origen",
+    Severity: "Severidad",
+    Warnings: "Advertencias"
 })
 );

@@ -1,10 +1,10 @@
 define(
 ({
-    title: "Outputs",
+    title: "Salidas",
 
-    FileName: "File Name",
-    Name: "Name",
-    Value: "Value",
-    Views: "Views"
+    FileName: "Nombre de archivo",
+    Name: "Nombre",
+    Value: "Valor",
+    Views: "Vistas"
 })
 );

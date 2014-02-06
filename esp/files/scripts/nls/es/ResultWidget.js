@@ -1,8 +1,8 @@
 define(
 ({
-    title: "Activity",
+    title: "Actividad",
 
-    Download: "Download",
+    Download: "Descargar",
     GZip: "GZip",
     XLS: "XLS",
     Zip: "Zip"
