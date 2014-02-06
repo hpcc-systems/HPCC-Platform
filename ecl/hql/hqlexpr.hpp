@@ -1861,8 +1861,9 @@ extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContex
 extern HQL_API void ensureSymbolsDefined(IHqlScope * scope, HqlLookupContext & ctx);
 extern HQL_API bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft=false);
 
-extern HQL_API void setLegacyEclSemantics(bool _value);
-extern HQL_API bool queryLegacyEclSemantics();
+extern HQL_API void setLegacyEclSemantics(bool _legacyImport, bool _legacyWhen);
+extern HQL_API bool queryLegacyImportSemantics();
+extern HQL_API bool queryLegacyWhenSemantics();
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx);
 
 #endif

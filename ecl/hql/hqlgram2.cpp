@@ -287,7 +287,7 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     forceResult = false;
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
-    if(lookupCtx.queryRepository() && loadImplicit && legacyEclSemantics)
+    if(lookupCtx.queryRepository() && loadImplicit && legacyImportSemantics)
     {
         HqlScopeArray scopes;
         getImplicitScopes(scopes, lookupCtx.queryRepository(), _containerScope, lookupCtx);
@@ -356,7 +356,8 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
 {
     minimumScopeIndex = 0;
     isQuery = false;
-    legacyEclSemantics = queryLegacyEclSemantics();
+    legacyImportSemantics = queryLegacyImportSemantics();
+    legacyWhenSemantics = queryLegacyWhenSemantics();
     current_id = NULL;
     lexObject = NULL;
     expectedAttribute = NULL;
@@ -374,7 +375,7 @@ void HqlGram::init(IHqlScope * _globalScope, IHqlScope * _containerScope)
     globalScope = _globalScope;
     parseScope.setown(createPrivateScope(_containerScope));
     transformScope = NULL;
-    if (globalScope->queryName() && legacyEclSemantics)
+    if (globalScope->queryName() && legacyImportSemantics)
         parseScope->defineSymbol(globalScope->queryId(), NULL, LINK(queryExpression(globalScope)), false, false, ob_import);
 
     boolType = makeBoolType();
@@ -3382,7 +3383,7 @@ IHqlExpression *HqlGram::lookupSymbol(IIdAtom * searchName, const attribute& err
             return recordLookupInTemplateContext(searchName, ret, templateScope);
 
         // finally comes the local scope
-        if (legacyEclSemantics && searchName->lower()==globalScope->queryName())
+        if (legacyImportSemantics && searchName->lower()==globalScope->queryName())
             return LINK(recordLookupInTemplateContext(searchName, queryExpression(globalScope), templateScope));
 
         ForEachItemIn(idx2, defaultScopes)
@@ -8580,7 +8581,7 @@ void HqlGram::checkNotAlreadyDefined(IIdAtom * name, IHqlScope * scope, const at
     OwnedHqlExpr expr = scope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
     if (expr)
     {
-        if (legacyEclSemantics && isImport(expr))
+        if (legacyImportSemantics && isImport(expr))
             reportWarning(ERR_ID_REDEFINE, idattr.pos, "Identifier '%s' hides previous import", name->str());
         else
             reportError(ERR_ID_REDEFINE, idattr, "Identifier '%s' is already defined", name->str());
@@ -8868,7 +8869,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
 {
     if (sideEffectsPending())
     {
-        if (legacyEclSemantics)
+        if (legacyWhenSemantics)
         {
             if (okToAddSideEffects(expr))
                 return addSideEffects(expr);
@@ -8933,7 +8934,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
             if (isQuery && !insideNestedScope())
             {
                 //If this is a global query, and not inside a nested attribute, then keep any actions on the global list of results
-                if (!legacyEclSemantics)
+                if (!legacyWhenSemantics)
                 {
                     //Should we give a warning here?? export/shared would not be legal if this was within the repository
                 }
@@ -11568,7 +11569,7 @@ IHqlExpression *HqlGram::doParse()
     {
         if (queryExpression(containerScope)->getOperator() == no_forwardscope)
             enterScope(containerScope, true);
-        if (legacyEclSemantics)
+        if (legacyImportSemantics)
             enterScope(globalScope, true);
 
         //If expecting a particular attribute, add symbols to a private scope, and then copy result across

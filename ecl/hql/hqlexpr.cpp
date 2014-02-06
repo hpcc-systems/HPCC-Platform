@@ -15754,14 +15754,20 @@ IHqlExpression * closeAndLink(IHqlExpression * expr)
 }
 
 //MORE: This should probably be handled via the Lookup context instead (which shoudl be renamed parse
-static bool legacyEclMode = false;
-extern HQL_API void setLegacyEclSemantics(bool _value)
+static bool legacyImportMode = false;
+static bool legacyWhenMode = false;
+extern HQL_API void setLegacyEclSemantics(bool _legacyImport, bool _legacyWhen)
 {
-    legacyEclMode = _value;
+    legacyImportMode = _legacyImport;
+    legacyWhenMode = _legacyWhen;
 }
-extern HQL_API bool queryLegacyEclSemantics()
+extern HQL_API bool queryLegacyImportSemantics()
 {
-    return legacyEclMode;
+    return legacyImportMode;
+}
+extern HQL_API bool queryLegacyWhenSemantics()
+{
+    return legacyWhenMode;
 }
 
 

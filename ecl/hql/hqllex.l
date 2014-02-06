@@ -977,7 +977,7 @@ __ECL_VERSION_SUBMINOR__ {
                     }
 __ECL_LEGACY_MODE__ {
                         setupdatepos;
-                        returnToken.setExpr(createConstant(queryLegacyEclSemantics()));
+                        returnToken.setExpr(createConstant(queryLegacyImportSemantics()));
                         return (BOOL_CONST);
                     }
 __OS__              { 

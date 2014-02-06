@@ -8231,7 +8231,7 @@ IHqlExpression * expandMacroDefinition(IHqlExpression * expr, HqlLookupContext &
     //with implicitly importing myModule.
     Owned<IFileContents> mappedContents = createFileContentsFromText(macroText.length(), macroText.str(), macroContents->querySourcePath());
     Owned<IHqlScope> scope = createPrivateScope();
-    if (queryLegacyEclSemantics())
+    if (queryLegacyImportSemantics())
         importRootModulesToScope(scope, ctx);
     return parseQuery(scope, mappedContents, ctx, NULL, macroParms, true);
 }

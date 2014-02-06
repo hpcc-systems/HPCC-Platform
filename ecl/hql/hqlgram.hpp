@@ -831,7 +831,8 @@ protected:
     bool resolveSymbols;
     bool forceResult;
     bool associateWarnings;
-    bool legacyEclSemantics;
+    bool legacyImportSemantics;
+    bool legacyWhenSemantics;
     bool isQuery;
     bool parseConstantText;
     unsigned m_maxErrorsAllowed;

@@ -194,10 +194,11 @@ static bool getHomeFolder(StringBuffer & homepath)
 struct EclCompileInstance
 {
 public:
-    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errs, FILE * _errout, const char * _outputFilename, bool _legacyMode) :
+    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errs, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen) :
       inputFile(_inputFile), errs(&_errs), errout(_errout), outputFilename(_outputFilename)
     {
-        legacyMode = _legacyMode;
+        legacyImport = _legacyImport;
+        legacyWhen = _legacyWhen;
         ignoreUnknownImport = false;
         fromArchive = false;
         stats.parseTime = 0;
@@ -221,7 +222,8 @@ public:
     FILE * errout;
     Owned<IPropertyTree> srcArchive;
     Owned<IPropertyTree> generatedMeta;
-    bool legacyMode;
+    bool legacyImport;
+    bool legacyWhen;
     bool fromArchive;
     bool ignoreUnknownImport;
     struct {
@@ -248,7 +250,8 @@ public:
         optGenerateMeta = false;
         optGenerateDepend = false;
         optIncludeMeta = false;
-        optLegacy = false;
+        optLegacyImport = false;
+        optLegacyWhen = false;
         optShared = false;
         optWorkUnit = false;
         optNoCompile = false;
@@ -371,7 +374,8 @@ protected:
     bool optShared;
     bool optOnlyCompile;
     bool optSaveQueryText;
-    bool optLegacy;
+    bool optLegacyImport;
+    bool optLegacyWhen;
     bool optGenerateHeader;
     bool optShowPaths;
     int argc;
@@ -492,8 +496,13 @@ void EclCC::loadManifestOptions()
             makeAbsolutePath(ecl->queryProp("@filename"), dir.str(), abspath);
             processArgvFilename(inputFiles, abspath.str());
         }
-        if (!optLegacy)
-            optLegacy = ecl->getPropBool("@legacy");
+        if (!optLegacyImport && !optLegacyWhen)
+        {
+            bool optLegacy = ecl->getPropBool("@legacy");
+            optLegacyImport = ecl->getPropBool("@legacyImport", optLegacy);
+            optLegacyWhen = ecl->getPropBool("@legacyWhen", optLegacy);
+        }
+
         if (!optQueryRepositoryReference && ecl->hasProp("@main"))
             optQueryRepositoryReference.set(ecl->queryProp("@main"));
 
@@ -982,7 +991,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                                const char * queryAttributePath)
 {
 #ifdef TEST_LEGACY_DEPENDENCY_CODE
-    setLegacyEclSemantics(instance.legacyMode);
+    setLegacyEclSemantics(instance.legacyImportMode, instance.legacyWhenMode);
     Owned<IPropertyTree> dependencies = gatherAttributeDependencies(instance.dataServer, "");
     if (dependencies)
         saveXML("depends.xml", dependencies);
@@ -1025,9 +1034,12 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             parseCtx.setGatherMeta(options);
         }
 
-        setLegacyEclSemantics(instance.legacyMode);
+        setLegacyEclSemantics(instance.legacyImport, instance.legacyWhen);
         if (instance.archive)
-            instance.archive->setPropBool("@legacyMode", instance.legacyMode);
+        {
+            instance.archive->setPropBool("@legacyImport", instance.legacyImport);
+            instance.archive->setPropBool("@legacyWhen", instance.legacyWhen);
+        }
 
         parseCtx.ignoreUnknownImport = instance.ignoreUnknownImport;
 
@@ -1054,7 +1066,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             else
             {
                 Owned<IHqlScope> scope = createPrivateScope();
-                if (instance.legacyMode)
+                if (instance.legacyImport)
                     importRootModulesToScope(scope, ctx);
 
                 instance.query.setown(parseQuery(scope, queryContents, ctx, NULL, NULL, true));
@@ -1176,7 +1188,10 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
         queryAttributePath = optQueryRepositoryReference;
 
     //The legacy mode (if specified) in the archive takes precedence - it needs to match to compile.
-    instance.legacyMode = archiveTree->getPropBool("@legacyMode", instance.legacyMode);
+    instance.legacyImport = archiveTree->getPropBool("@legacyMode", instance.legacyImport);
+    instance.legacyWhen = archiveTree->getPropBool("@legacyMode", instance.legacyWhen);
+    instance.legacyImport = archiveTree->getPropBool("@legacyImport", instance.legacyImport);
+    instance.legacyWhen = archiveTree->getPropBool("@legacyWhen", instance.legacyWhen);
 
     //Some old archives contained imports, but no definitions of the module.  This option is to allow them to compile.
     //It shouldn't be needed for new archives in non-legacy mode. (But neither should it cause any harm.)
@@ -1319,7 +1334,7 @@ void EclCC::processFile(EclCompileInstance & instance)
         {
             //Ensure that $ is valid for any file submitted - even if it isn't in the include direcotories
             //Disable this for the moment when running the regression suite.
-            if (!optBatchMode && !withinRepository && !inputFromStdIn && !optLegacy)
+            if (!optBatchMode && !withinRepository && !inputFromStdIn && !optLegacyImport)
             {
                 //Associate the contents of the directory with an internal module called _local_directory_
                 //(If it was root it might override existing root symbols).  $ is the only public way to get at the symbol
@@ -1599,7 +1614,7 @@ bool EclCC::processFiles()
     else if (inputFiles.ordinality() == 0)
     {
         assertex(optQueryRepositoryReference);
-        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacy);
+        EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen);
         processReference(info, optQueryRepositoryReference);
         ok = (errs->errCount() == 0);
 
@@ -1607,7 +1622,7 @@ bool EclCC::processFiles()
     }
     else
     {
-        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacy);
+        EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacyImport, optLegacyWhen);
         processFile(info);
         ok = (errs->errCount() == 0);
 
@@ -1765,7 +1780,15 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
             libraryPaths.append(tempArg);
         }
-        else if (iter.matchFlag(optLegacy, "-legacy"))
+        else if (iter.matchFlag(tempBool, "-legacy"))
+        {
+            optLegacyImport = tempBool;
+            optLegacyWhen = tempBool;
+        }
+        else if (iter.matchFlag(optLegacyImport, "-legacyimport"))
+        {
+        }
+        else if (iter.matchFlag(optLegacyWhen, "-legacywhen"))
         {
         }
         else if (iter.matchOption(optLogfile, "--logfile"))
@@ -2080,7 +2103,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             }
 
             Owned<IErrorReceiver> localErrs = createFileErrorReceiver(logFile);
-            EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacy);
+            EclCompileInstance info(&file, *localErrs, logFile, outFilename, optLegacyImport, optLegacyWhen);
             processFile(info);
             //Following only produces output if the system has been compiled with TRANSFORM_STATS defined
             dbglogTransformStats(true);
