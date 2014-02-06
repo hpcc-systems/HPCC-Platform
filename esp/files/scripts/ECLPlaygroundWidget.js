@@ -203,13 +203,11 @@ define([
                 } else if (name === "Results" && newValue) {
                     context.stackContainer.selectChild(context.resultsWidget);
                     context.resultsWidget.set("disabled", false);
-                    if (context.visualizeWidget.supportsSvg()) {
-                        context.visualizeWidget.set("disabled", false);
-                        context.visualizeWidget.reset();
-                        context.visualizeWidget.init({
-                            Wuid: context.wu.Wuid
-                        });
-                    }
+                    context.visualizeWidget.set("disabled", false);
+                    context.visualizeWidget.reset();
+                    context.visualizeWidget.init({
+                        Wuid: context.wu.Wuid
+                    });
                 }
             });
             this.wu.monitor();
