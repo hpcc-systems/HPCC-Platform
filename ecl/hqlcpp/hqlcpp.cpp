@@ -2828,7 +2828,7 @@ void HqlCppTranslator::buildAnyExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlB
 bool HqlCppTranslator::shouldEvaluateSelectAsAlias(BuildCtx & ctx, IHqlExpression * expr)
 {
     //If we're inside an activity that serializes onStart data, then the code to serialize fields
-    //selected from a row are generally simpler than the code to serialize the row itself.
+    //selected from a row is generally simpler than the code to serialize the row itself.
     if (insideActivityRemoteSerialize(ctx) && !expr->isList())
     {
         bool isNew;
