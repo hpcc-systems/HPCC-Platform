@@ -512,11 +512,12 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 
         if (cw->getWuidVersion() > 0)
         {
-            IPropertyTreeIterator& eclAgents = cw->getProcesses("EclAgent", NULL);
-            ForEach (eclAgents)
+            Owned<IPropertyTreeIterator> eclAgents = cw->getProcesses("EclAgent", NULL);
+            ForEach (*eclAgents)
             {
-                StringBuffer logName, agentPID;
-                eclAgents.query().getProp("@log",logName);
+                StringBuffer logName;
+                IPropertyTree& eclAgent = eclAgents->query();
+                eclAgent.getProp("@log",logName);
                 if (!logName.length())
                     continue;
 
@@ -530,8 +531,8 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
                         h->setFileSize(fileSize);
                     if (version >= 1.44)
                     {
-                        if (eclAgents.query().hasProp("@pid"))
-                            h->setPID(eclAgents.query().getPropInt("@pid"));
+                        if (eclAgent.hasProp("@pid"))
+                            h->setPID(eclAgent.getPropInt("@pid"));
                         else
                             h->setPID(cw->getAgentPID());
                     }
@@ -940,7 +941,11 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
     if (cw->getWuidVersion() > 0)
     {
         SCMStringBuffer clusterName;
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(cw->getClusterName(clusterName).str());
+        cw->getClusterName(clusterName);
+        if (!clusterName.length()) //Cluster name may not be set yet
+            return countThorLog;
+
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (!clusterInfo)
         {
             SCMStringBuffer wuid;

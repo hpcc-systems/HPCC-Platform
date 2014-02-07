@@ -640,7 +640,7 @@ public:
     virtual unsigned __int64 getHash() const;
     virtual IStringIterator *getLogs(const char *type, const char *component) const;
     virtual IStringIterator *getProcesses(const char *type) const;
-    virtual IPropertyTreeIterator& getProcesses(const char *type, const char *instance) const;
+    virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const;
 
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
@@ -1103,7 +1103,7 @@ public:
             { return c->getLogs(type, instance); }
     virtual IStringIterator *getProcesses(const char *type) const
             { return c->getProcesses(type); }
-    virtual IPropertyTreeIterator& getProcesses(const char *type, const char *instance) const
+    virtual IPropertyTreeIterator* getProcesses(const char *type, const char *instance) const
             { return c->getProcesses(type, instance); }
 
     virtual void clearExceptions()
@@ -5232,7 +5232,7 @@ IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance)
         return new CStringPTreeAttrIterator(p->getElements(xpath.str()), "@log");
 }
 
-IPropertyTreeIterator& CLocalWorkUnit::getProcesses(const char *type, const char *instance) const
+IPropertyTreeIterator* CLocalWorkUnit::getProcesses(const char *type, const char *instance) const
 {
     VStringBuffer xpath("Process/%s/", type);
     if (instance)
@@ -5240,7 +5240,7 @@ IPropertyTreeIterator& CLocalWorkUnit::getProcesses(const char *type, const char
     else
         xpath.append("*");
     CriticalBlock block(crit);
-    return * p->getElements(xpath.str());
+    return p->getElements(xpath.str());
 }
 
 IStringIterator *CLocalWorkUnit::getProcesses(const char *type) const

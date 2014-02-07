@@ -3898,15 +3898,16 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
 
 void CWsWorkunitsEx::addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr)
 {
-    IPropertyTreeIterator& proc = cwu->getProcesses(process, NULL);
-    ForEach (proc)
+    Owned<IPropertyTreeIterator> procs = cwu->getProcesses(process, NULL);
+    ForEach (*procs)
     {
         StringBuffer logSpec;
-        proc.query().getProp("@log",logSpec);
+        IPropertyTree& proc = procs->query();
+        proc.getProp("@log",logSpec);
         if (!logSpec.length())
             continue;
         StringBuffer pid;
-        pid.appendf("%d",proc.query().getPropInt("@pid"));
+        pid.appendf("%d",proc.getPropInt("@pid"));
         MemoryBuffer * pMB = NULL;
         try
         {

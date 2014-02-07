@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="RemoveOwnedSubFiles">
+  <title>RemoveOwnedSubFiles</title>
+
+  <para><emphasis role="bold">STD.File.RemoveOwnedSubFiles<indexterm>
+      <primary>STD.File.RemoveOwnedSubFiles</primary>
+    </indexterm><indexterm>
+      <primary>File.RemoveOwnedSubFiles</primary>
+    </indexterm><indexterm>
+      <primary>RemoveOwnedSubFiles</primary>
+    </indexterm>(</emphasis> <emphasis> superfile</emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>superfile</emphasis></entry>
+
+          <entry>A null-terminated string containing the logical name of the
+          superfile.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Null.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">RemoveOwnedSubFiles </emphasis>function
+  removes all owned sub-files from the specified superfile. These are only
+  removed if they are soley owned by the superfile. If a subfile is co-owned,
+  (i.e.,a member of any other superfile), then the removal is ignored.</para>
+
+  <para>This function may be included in a superfile transaction.</para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">SEQUENTIAL(
+ STD.File.StartSuperFileTransaction(),
+ STD.File.RemoveOwnedSubFiles('MySuperFile'),
+ STD.File.FinishSuperFileTransaction()
+);</programlisting>
+</sect1>

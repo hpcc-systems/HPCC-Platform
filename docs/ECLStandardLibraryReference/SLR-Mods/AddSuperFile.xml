@@ -34,7 +34,7 @@
           <entry><emphasis>subfile</emphasis></entry>
 
           <entry>A null-terminated string containing the logical name of the
-          sub-file. Ths may be another superfile.</entry>
+          sub-file. This may be another superfile.</entry>
         </row>
 
         <row>

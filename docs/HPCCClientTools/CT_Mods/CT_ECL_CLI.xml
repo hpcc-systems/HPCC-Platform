@@ -2315,7 +2315,7 @@ ecl packagemap validate roxie --active</programlisting>
       <sect2 role="brk">
         <title>ecl roxie detach</title>
 
-        <para><emphasis role="bold">ecl roxie attach
+        <para><emphasis role="bold">ecl roxie detach
         &lt;processName&gt;</emphasis></para>
 
         <para>Examples:</para>
@@ -2333,7 +2333,7 @@ ecl packagemap validate roxie --active</programlisting>
 
               <tbody>
                 <row>
-                  <entry>ecl roxie attach</entry>
+                  <entry>ecl roxie detach</entry>
 
                   <entry>Detach the roxie from Dali</entry>
                 </row>
