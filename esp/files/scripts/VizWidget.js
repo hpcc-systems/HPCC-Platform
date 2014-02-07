@@ -114,10 +114,6 @@ define([
         },
 
         //  Implementation  ---
-        supportsSvg:function () {
-            return document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#Shape", "1.0");
-        },
-
         onErrorClick: function (line, col) {
         },
 
