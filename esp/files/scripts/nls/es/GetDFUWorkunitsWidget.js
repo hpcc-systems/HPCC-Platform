@@ -1,24 +1,24 @@
 define(
 ({
-    title: "DFU Workunits",
+    title: "Unidades de trabajo DFU",
 
-    ArchivedOnly: "Archived Only",
-    Cluster: "Cluster",
-    Created: "Created",
-    DeleteSelectedWorkunits: "Delete Selected Workunits?",
+    ArchivedOnly: "Solo archivado",
+    Cluster: "Systema",
+    Created: "Creado",
+    DeleteSelectedWorkunits: "Borrar unidades de trabajo soeleccionadas?",
     ID: "ID",
-    Jobname: "Jobname",
-    JobName: "Job Name",
+    Jobname: "Nombre del trabajo",
+    JobName: "Nombre del trabajo",
     JSmith: "JSmit*",
     log_analysis_1: "log_analysis_1*",
     NA: "N/A",
-    Owner: "Owner",
-    PctComplete: "% Complete",
-    Protect: "Protect",
+    Owner: "Dueño",
+    PctComplete: "% completado",
+    Protect: "Proteger",
     roxie: "r?x*",
-    SetToFailed: "Set To Failed",
-    State: "State",
-    Type: "Type",
-    Unprotect: "Unprotect"
+    SetToFailed: "Marcar como fallo",
+    State: "Estado",
+    Type: "Tipo",
+    Unprotect: "Desproteger"
 })
 );

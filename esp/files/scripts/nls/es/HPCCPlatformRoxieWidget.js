@@ -1,6 +1,6 @@
 define(
 ({
-    title: "HPCC Platform - Roxie",
+    title: "Plataforma HPCC - Roxie",
 
     Queries: "Queries",
     PackageMaps: "Package Maps"
