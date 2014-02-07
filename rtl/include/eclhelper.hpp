@@ -1822,6 +1822,7 @@ enum
 {
     POFextend           = 0x0001,
     POFgrouped          = 0x0002,
+    POFmaxsize          = 0x0004,
 };
 
 struct IHThorWorkUnitWriteArg : public IHThorArg
@@ -1830,6 +1831,7 @@ struct IHThorWorkUnitWriteArg : public IHThorArg
     virtual void serializeXml(const byte * self, IXmlWriter & out) = 0;
     virtual const char * queryName() = 0;
     virtual unsigned getFlags() = 0;
+    virtual unsigned getMaxSize() = 0; // size in Mb
 };
 
 struct IHThorXmlWorkunitWriteArg : public IHThorWorkUnitWriteArg
