@@ -4679,7 +4679,7 @@ public:
             node_operator childOp = child->getOperator();
             if (childOp == no_createrow)
             {
-                OwnedHqlExpr match = getExtractSelect(child->queryChild(0), transformed->queryChild(1));
+                OwnedHqlExpr match = getExtractSelect(child->queryChild(0), transformed->queryChild(1), false);
                 if (match)
                 {
                     IHqlExpression * cur = queryUncastExpr(match);

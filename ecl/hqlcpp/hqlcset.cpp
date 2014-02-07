@@ -863,7 +863,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
     if (optimizedLookupFunc.length())
     {
         args.add(*LINK(dictionary), 0);
-        args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
+        args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord), false));
         args.append(*::createRow(no_null, LINK(record))); // the default record
         lookupFunction = createIdAtom(optimizedLookupFunc);
     }
@@ -927,7 +927,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     if (optimizedLookupFunc.length())
     {
         args.add(*LINK(dictionary), 0);
-        args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
+        args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord), false));
         lookupFunction = createIdAtom(optimizedLookupFunc);
     }
     else

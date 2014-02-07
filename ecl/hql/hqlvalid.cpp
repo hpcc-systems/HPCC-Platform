@@ -200,7 +200,7 @@ IHqlExpression * queryAmbiguousRollupCondition(IHqlExpression * expr, bool stric
     ForEachItemIn(i, selects)
     {
         IHqlExpression * select = &selects.item(i);
-        OwnedHqlExpr value = getExtractSelect(transform, selector, select);
+        OwnedHqlExpr value = getExtractSelect(transform, selector, select, true);
         if (!value)
             return select;
 
@@ -236,7 +236,7 @@ IHqlExpression * queryAmbiguousRollupCondition(IHqlExpression * expr, const HqlE
     ForEachItemIn(i, selects)
     {
         IHqlExpression * select = &selects.item(i);
-        OwnedHqlExpr value = getExtractSelect(transform, selector, select);
+        OwnedHqlExpr value = getExtractSelect(transform, selector, select, true);
         if (!value)
             return select;
 
@@ -268,7 +268,7 @@ void filterAmbiguousRollupCondition(HqlExprArray & ambiguousSelects, HqlExprArra
     ForEachItemInRev(i, selects)
     {
         IHqlExpression * select = &selects.item(i);
-        OwnedHqlExpr value = getExtractSelect(transform, selector, select);
+        OwnedHqlExpr value = getExtractSelect(transform, selector, select, true);
         if (value)
         {
             if (value->getOperator() == no_constant)

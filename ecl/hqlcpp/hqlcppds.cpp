@@ -1686,7 +1686,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     }
 
     traceExpression("BeforeResourcing Child", resourced);
-    cycle_t time = msTick();
+    unsigned time = msTick();
     HqlExprCopyArray activeRows;
     gatherActiveCursors(ctx, activeRows);
     if (graphKind == no_loop)

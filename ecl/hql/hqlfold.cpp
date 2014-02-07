@@ -4709,7 +4709,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                                 ok = false;
                                 break;
                             }
-                            IHqlExpression * match = getExtractSelect(cur, field);
+                            IHqlExpression * match = getExtractSelect(cur, field, false);
                             if (!match)
                             {
                                 ok = false;
@@ -4752,7 +4752,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
 #if 1
                     if (!expr->isDataset() && !expr->isDatarow())
                     {
-                        OwnedHqlExpr  match = getExtractSelect(left->queryChild(0), expr->queryChild(1));
+                        OwnedHqlExpr  match = getExtractSelect(left->queryChild(0), expr->queryChild(1), false);
                         if (match && match->isConstant())
                             return match.getClear();
                     }
@@ -4762,7 +4762,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                     //Should enable once I've had time to investigate
                     if (!expr->isDataset())// && !expr->isDatarow())
                     {
-                        OwnedHqlExpr  match = getExtractSelect(left->queryChild(0), expr->queryChild(1));
+                        OwnedHqlExpr  match = getExtractSelect(left->queryChild(0), expr->queryChild(1), false);
                         if (match)// && match->isConstant())
                             return match.getClear();
                     }
