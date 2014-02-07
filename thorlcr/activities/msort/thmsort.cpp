@@ -56,8 +56,8 @@ class CMSortActivityMaster : public CMasterActivity
     IThorSorterMaster *imaster;
     mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
-    Owned<IDistributedFile> coSortFile;
-    
+    OwnedRoxieString cosortlogname;
+
 public:
     CMSortActivityMaster(CMasterGraphElement *info)
       : CMasterActivity(info)
@@ -85,6 +85,7 @@ protected:
             Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
             reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
         }
+        cosortlogname.setown(helper->getSortedFilename());
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -137,10 +138,9 @@ protected:
                 skewThreshold = container.queryJob().getWorkUnitValueInt("defaultSkewThreshold", 0);
         }
         StringBuffer cosortfilenames;
-        OwnedRoxieString cosortlogname(helper->getSortedFilename());
         if (cosortlogname&&*cosortlogname)
         {
-            coSortFile.setown(queryThorFileManager().lookup(container.queryJob(), cosortlogname));
+            Owned<IDistributedFile> coSortFile = queryThorFileManager().lookup(container.queryJob(), cosortlogname);
             Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
             queryThorFileManager().noteFileRead(container.queryJob(), coSortFile);
             unsigned o;
@@ -195,8 +195,12 @@ protected:
     {
         ActPrintLog("done");
         CMasterActivity::done();
-        if (coSortFile)
-            coSortFile->setAccessed();
+        if (cosortlogname&&*cosortlogname)
+        {
+            Owned<IDistributedFile> coSortFile = queryThorFileManager().lookup(container.queryJob(), cosortlogname, false, true);
+            if (coSortFile)
+                coSortFile->setAccessed();
+        }
         ActPrintLog("done exit");
     }
 };
