@@ -887,8 +887,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 int channel = i+1;
                 for (int copy=0; copy<channelsPerNode; copy++)
                 {
-                    channel = channel + copy*numNodes;
                     addChannel(i, channel, copy);
+                    channel += numNodes;
                 }
             }
         }
