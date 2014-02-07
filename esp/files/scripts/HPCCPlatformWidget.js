@@ -29,6 +29,7 @@ define([
     "dojox/widget/UpgradeBar",
 
     "hpcc/_TabContainerWidget",
+    "hpcc/ESPActivity",
     "hpcc/WsAccount",
     "hpcc/ws_access",
     "hpcc/WsSMC",
@@ -59,7 +60,7 @@ define([
 ], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domStyle,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, WsAccount, WsAccess, WsSMC, GraphWidget,
+                _TabContainerWidget, ESPActivity, WsAccount, WsAccess, WsSMC, GraphWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -96,6 +97,9 @@ define([
 
         //  Implementation  ---
         parseBuildString: function (build) {
+            if (!build) {
+                return;
+            }
             this.build = {};
             this.build.orig = build;
             this.build.prefix = "";
@@ -112,14 +116,11 @@ define([
             this.build.version = verArray.join("_");
         },
 
-        refreshActivityResponse: function(response) {
-            if (lang.exists("ActivityResponse.Build", response)) {
-                this.parseBuildString(response.ActivityResponse.Build);
-                this.banner = lang.exists("ActivityResponse.BannerContent", response) ? response.ActivityResponse.BannerContent : "";
-                if (this.banner) {
-                    this.upgradeBar.notify("<div style='text-align:center'><b>" + this.banner + "</b></div>");
-                    this.upgradeBar.show();
-                }
+        refreshBanner: function (banner) {
+            if (this.banner !== banner) {
+                this.banner = banner;
+                this.upgradeBar.notify("<div style='text-align:center'><b>" + banner + "</b></div>");
+                this.upgradeBar.show();
             }
         },
 
@@ -137,9 +138,12 @@ define([
                 }
             });
 
-            WsSMC.Activity({
-            }).then(function (response) {
-                context.refreshActivityResponse(response);
+            this.activity = ESPActivity.Get();
+            this.activity.watch("Build", function (name, oldValue, newValue) {
+                context.parseBuildString(newValue);
+            });
+            this.activity.watch("BannerContent", function (name, oldValue, newValue) {
+                context.refreshBanner(newValue);
             });
 
             this.createStackControllerTooltip(this.id + "_ECL", this.i18n.ECL);
@@ -226,20 +230,7 @@ define([
         },
 
         _onSetBannerOk: function (evt) {
-            var context = this;
-            WsSMC.Activity({
-                request: {
-                    FromSubmitBtn: true,
-                    BannerAction: dom.byId(this.id + "BannerText").value != "",
-                    EnableChatURL: 0,
-                    BannerContent: dom.byId(this.id + "BannerText").value,
-                    BannerColor: "red",
-                    BannerSize: 4,
-                    BannerScroll: 2
-                }
-            }).then(function (response) {
-                context.refreshActivityResponse(response);
-            });
+            this.activity.setBanner(dom.byId(this.id + "BannerText").value);
             this.setBannerDialog.hide();
         },
 

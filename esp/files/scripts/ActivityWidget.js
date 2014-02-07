@@ -28,21 +28,20 @@ define([
     "dgrid/Keyboard",
     "dgrid/Selection",
     "dgrid/selector",
+    "dgrid/tree",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPDFUWorkunit",
-    "hpcc/WsSMC",
+    "hpcc/ESPActivity",
     "hpcc/WUDetailsWidget",
     "hpcc/DFUWUDetailsWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
                 Button,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, ESPDFUWorkunit, WsSMC, WUDetailsWidget, DFUWUDetailsWidget, ESPUtil) {
+                OnDemandGrid, Keyboard, Selection, selector, tree, ColumnResizer, DijitRegistry,
+                GridDetailsWidget, ESPActivity, WUDetailsWidget, DFUWUDetailsWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
         i18n: lang.mixin(nlsCommon, nlsSpecific),
@@ -59,29 +58,70 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            var context = this;
+            this.activity.monitor(function (activity) {
+                context.grid.set("query", {});
+            });
+
             this._refreshActionState();
         },
 
         createGrid: function (domID) {
             var context = this;
+            this.noDataMessage = this.i18n.loadingMessage;
+            this.activity = ESPActivity.Get();
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
-                store: WsSMC.CreateActivityStore(),
+                store: this.activity.getStore(),
                 columns: {
-                    col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Wuid: {
-                        label: this.i18n.ActiveWorkunit, width: 180, sortable: true,
-                        formatter: function (Wuid, row) {
-                            var wu = row.Server === "DFUserver" ? ESPDFUWorkunit.Get(Wuid) : ESPWorkunit.Get(Wuid);
-                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp;<a href='#' class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox',
+                        disabled: function (item) {
+                            if (item.__hpcc_type) {
+                                switch (item.__hpcc_type) {
+                                    case "TargetCluster":
+                                        return true;
+                                }
+                            }
+                            return false;
+                        },
+                        sortable: false
+                    }),
+                    DisplayName: tree({
+                        label: this.i18n.Target,
+                        width: 225,
+                        sortable: true,
+                        shouldExpand: function(row, level, previouslyExpanded) {
+                            return true;
+                        },
+                        formatter: function (_name, row) {
+                            var img = "../files/";
+                            var name = "";
+                            if (row.__hpcc_type === "TargetCluster") {
+                                img += "img/server.png";
+                                name = row.__hpcc_id;
+                            } else {
+                                img += row.getStateImage();
+                                name = "<a href='#' class='" + context.id + "WuidClick'>" + row.Wuid + "</a>";
+                            }
+                            return "<img src='" + img + "'/>&nbsp;" + name;
                         }
-
-                    },
-                    ClusterName: { label: this.i18n.Target, width: 108, sortable: true },
+                    }),
                     State: {
-                        label: this.i18n.State, width: 180, sortable: true, formatter: function (state, row) {
-                            return state + (row.Duration ? " (" + row.Duration + ")" : "");
+                        label: this.i18n.State,
+                        sortable: true,
+                        formatter: function (state, row) {
+                            if (row.__hpcc_type === "TargetCluster") {
+                                return "";
+                            }
+                            if (row.Duration) {
+                                return state + " (" + row.Duration + ")";
+                            } else if (row.Instance && state.indexOf(row.Instance) === -1) {
+                                return state + " [" + row.Instance + "]";
+                            }
+                            return state;
                         }
                     },
                     Owner: { label: this.i18n.Owner, width: 90, sortable: true },
@@ -89,7 +129,6 @@ define([
                 }
             }, domID);
 
-            var context = this;
             on(document, "." + this.id + "WuidClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
@@ -146,9 +185,7 @@ define([
         },
 
         refreshGrid: function (args) {
-            var context = this;
-            this.grid.set("query", {
-            });
+            this.activity.refresh();
         },
 
         refreshActionState: function (selection) {
