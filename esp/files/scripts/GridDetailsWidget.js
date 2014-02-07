@@ -90,7 +90,9 @@ define([
 
         _onRowDblClick: function (row) {
             var tab = this.ensurePane(row);
-            this.selectChild(tab);
+            if (tab) {
+                this.selectChild(tab);
+            }
         },
 
         //  Implementation  ---
@@ -189,7 +191,9 @@ define([
             var retVal = registry.byId(id);
             if (!retVal) {
                 retVal = this.createDetail(id, row, params);
-                this.addChild(retVal);
+                if (retVal) {
+                    this.addChild(retVal);
+                }
             } else {
                 lang.mixin(retVal.hpcc, {
                     refreshParams: params

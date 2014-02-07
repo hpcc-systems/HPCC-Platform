@@ -24,6 +24,30 @@ define([
     return {
         Activity: function (params) {
             return ESPRequest.send("WsSMC", "Activity", params);
+        },
+        PauseQueue: function (params) {
+            return ESPRequest.send("WsSMC", "PauseQueue", params);
+        },
+        ResumeQueue: function (params) {
+            return ESPRequest.send("WsSMC", "ResumeQueue", params);
+        },
+        ClearQueue: function (params) {
+            return ESPRequest.send("WsSMC", "ClearQueue", params);
+        },
+        SetJobPriority: function (params) {
+            return ESPRequest.send("WsSMC", "SetJobPriority", params);
+        },
+        MoveJobFront: function (params) {
+            return ESPRequest.send("WsSMC", "MoveJobFront", params);
+        },
+        MoveJobUp: function (params) {
+            return ESPRequest.send("WsSMC", "MoveJobUp", params);
+        },
+        MoveJobDown: function (params) {
+            return ESPRequest.send("WsSMC", "MoveJobDown", params);
+        },
+        MoveJobBack: function (params) {
+            return ESPRequest.send("WsSMC", "MoveJobBack", params);
         }
     };
 });
