@@ -161,8 +161,8 @@
         <row>
           <entry><emphasis>transferBufferSize </emphasis></entry>
 
-          <entry>Optional. A integer value to override the DFU Server's buffer
-          size value (default is 64k)</entry>
+          <entry>Optional. An integer value to override the DFU Server's
+          buffer size value (default is 64k)</entry>
         </row>
 
         <row>
