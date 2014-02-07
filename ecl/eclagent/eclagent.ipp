@@ -771,6 +771,7 @@ public:
     virtual const void * queryRow(unsigned whichRow);
     virtual void getLinkedResult(unsigned & count, byte * * & ret);
     virtual const void * getOwnRow(unsigned whichRow);
+    virtual const void * getLinkedRowResult();
 
 protected:
     unsigned id;
@@ -787,6 +788,7 @@ public:
     virtual const void * queryRow(unsigned whichRow);
     virtual void getLinkedResult(unsigned & count, byte * * & ret);
     virtual const void * getOwnRow(unsigned whichRow);
+    virtual const void * getLinkedRowResult();
 
 protected:
     Owned<IEngineRowAllocator> rowsetAllocator;
@@ -806,8 +808,11 @@ public:
 
     virtual void clear();
     virtual IHThorGraphResult * queryResult(unsigned id);
+    virtual IHThorGraphResult * queryGraphLoopResult(unsigned id);
     virtual IHThorGraphResult * createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator);
     virtual IHThorGraphResult * createResult(IEngineRowAllocator * ownedRowsetAllocator);
+    virtual IHThorGraphResult * createGraphLoopResult(IEngineRowAllocator * ownedRowsetAllocator) { throwUnexpected(); }
+
     virtual void setResult(unsigned id, IHThorGraphResult * result);
 
 //interface IEclGraphResults
@@ -819,7 +824,10 @@ public:
     {
         queryResult(id)->getLinkedResult(count, ret);
     }
-
+    virtual const void * getLinkedRowResult(unsigned id)
+    {
+        return queryResult(id)->getLinkedRowResult();
+    }
 protected:
     void ensureAtleast(unsigned id);
 
@@ -976,6 +984,7 @@ public:
 
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
     virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id);
+    virtual const void * getLinkedRowResult(unsigned id);
     inline unsigned __int64 queryId() const
     {
         return id;
@@ -1077,6 +1086,7 @@ public:
 protected:
     IAgentContext * agent;
     CIArrayOf<EclSubGraph> graphs;
+    GraphResults globalResults;
     StringAttr graphName;
     SubGraphMapping subgraphMap;
     Linked<IConstWorkUnit> wu;

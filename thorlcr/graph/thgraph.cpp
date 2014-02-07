@@ -181,6 +181,12 @@ public:
         }
         result = (byte **)_rowset.getClear();
     }
+    virtual const void * getLinkedRowResult()
+    {
+        assertex(rowStreamCount==1); // catch, just in case
+        Owned<IRowStream> stream = getRowStream();
+        return stream->nextRow();
+    }
 };
 
 /////
@@ -1977,6 +1983,12 @@ void CGraphBase::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
 {
     Owned<IThorResult> result = getResult(id, true); // will get collated distributed result
     result->getLinkedResult(count, ret);
+}
+
+const void * CGraphBase::getLinkedRowResult(unsigned id)
+{
+    Owned<IThorResult> result = getResult(id, true); // will get collated distributed result
+    return result->getLinkedRowResult();
 }
 
 // IThorChildGraph impl.

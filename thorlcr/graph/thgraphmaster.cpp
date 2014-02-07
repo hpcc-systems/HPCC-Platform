@@ -1988,7 +1988,12 @@ public:
     virtual void getLinkedResult(unsigned & count, byte * * & ret)
     {
         ensure();
-        return result->getLinkedResult(count, ret);
+        result->getLinkedResult(count, ret);
+    }
+    virtual const void * getLinkedRowResult()
+    {
+        ensure();
+        return result->getLinkedRowResult();
     }
 };
 

@@ -25,6 +25,7 @@
 #endif
 #endif
 
+extern IAtom * _accessedFromChild_Atom;
 extern IAtom * activeActivityMarkerAtom;
 extern IAtom * activeMatchTextAtom;
 extern IAtom * activeMatchUnicodeAtom;
@@ -328,6 +329,7 @@ extern IIdAtom * freeExceptionId;
 extern IIdAtom * getBytesFromBuilderId;
 extern IIdAtom * getChildQueryDictionaryResultId;
 extern IIdAtom * getChildQueryLinkedResultId;
+extern IIdAtom * getChildQueryLinkedRowResultId;
 extern IIdAtom * getClusterSizeId;
 extern IIdAtom * getDatasetHashId;
 extern IIdAtom * getECLId;
@@ -343,6 +345,7 @@ extern IIdAtom * getLocalDictionaryResultId;
 extern IIdAtom * getLocalFailMessageId;
 extern IIdAtom * getLocalFilePositionId;
 extern IIdAtom * getLocalLinkedResultId;
+extern IIdAtom * getLocalLinkedRowResultId;
 extern IIdAtom * getMatchedId;
 extern IIdAtom * getMatchLengthId;
 extern IIdAtom * getMatchPositionId;

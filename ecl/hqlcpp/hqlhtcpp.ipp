@@ -109,7 +109,6 @@ public:
     Owned<EvalContext> parentEvalContext;
     Owned<GlobalClassEvalContext> evalContext;
     IHqlStmt *  onCreateStmt;
-    unsigned    onCreateMarker;
 
     StringAttr className;
     StringAttr baseName;
@@ -167,6 +166,7 @@ public:
     BuildCtx &   onlyEvalOnceContext();
     inline IPropertyTree * querySubgraphNode() { return subgraph ? subgraph->tree.get() : NULL; }
     inline void setImplementationClass(IIdAtom * name) { implementationClassName = name; }
+    inline bool requiresRemoteSerialize() const { return executedRemotely; }
     void setInternalSink(bool value);
 
     void changeActivityKind(ThorActivityKind newKind);
@@ -208,7 +208,6 @@ public:
     Owned<EvalContext> parentEvalContext;
     IHqlStmt *  onCreateStmt;
     IHqlStmt * classGroup;
-    unsigned    onCreateMarker;
     unsigned    initialGroupMarker;
     HqlExprArray constructorArgs;
     HqlExprCopyArray names;

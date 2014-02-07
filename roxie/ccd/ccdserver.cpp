@@ -5655,6 +5655,18 @@ public:
         countResult = count;
      }
 
+    virtual const void * getLinkedRowResult()
+    {
+        if (!complete)
+            throw MakeStringException(ROXIE_GRAPH_PROCESSING_ERROR, "Internal Error: Reading uninitialised graph result");
+
+        if (count != 1)
+            throw MakeStringException(ROXIE_GRAPH_PROCESSING_ERROR, "Internal Error: Expected a single row result");
+        const void * ret = rowset[0];
+        LinkRoxieRow(ret);
+        return ret;
+    }
+
 //other 
     const void * getRow(unsigned i)
     {
@@ -25211,6 +25223,10 @@ public:
     {
         select(id).getLinkedResult(count, ret);
     }
+    virtual const void * getLinkedRowResult(unsigned id)
+    {
+        return select(id).getLinkedRowResult();
+    }
     void setResult(unsigned id, IGraphResult * result)
     {
         CriticalBlock procedure(cs);
@@ -25520,6 +25536,7 @@ public:
 
     virtual void execute()
     {
+        results.setown(new CGraphResults);
         doExecute(0, NULL);
     }
 
@@ -25681,6 +25698,10 @@ public:
     virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
     {
         results->getLinkedResult(count, ret, id);
+    }
+    virtual const void * getLinkedRowResult(unsigned id)
+    {
+        return results->getLinkedRowResult(id);
     }
     virtual void setResult(unsigned id, IGraphResult * result)
     {

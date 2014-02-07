@@ -1381,7 +1381,7 @@ unsigned HqlCppTranslator::cppIndexNextActivity(bool isChildActivity)
 static IHqlExpression * createResultAttribute(IHqlExpression * seq, IHqlExpression * name)
 {
     //if a named user output then set seq to the name so that workunit reads from the named symbol get commoned up correctly
-    if (name && !name->queryType()->isInteger() && seq->queryValue()->getIntValue() >= 0)
+    if (name && !name->queryType()->isInteger() && (getIntValue(seq, -1) >= 0))
         seq = name;
     return createAttribute(resultAtom, LINK(seq), LINK(name));
 }
@@ -1736,7 +1736,6 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     containerActivity = NULL;
     subgraph = queryActiveSubGraph(ctx);
     onCreateStmt = NULL;
-    onCreateMarker = 0;
 
     //count index and count disk need to be swapped to the new (much simpler) mechanism
     //until then, they need to be special cased.
@@ -2250,7 +2249,7 @@ void ActivityInstance::buildPrefix()
 
         evalContext->onCreate.createFunctionStructure(translator, oncreatectx, true, executedRemotely ? "serializeCreateContext" : NULL);
         if (onCreateStmt)
-            onCreateMarker = calcTotalChildren(onCreateStmt);
+            onCreateStmt->finishedFramework();
 
         onstartctx.set(startctx);
 
@@ -2299,10 +2298,6 @@ void ActivityInstance::buildPrefix()
 
 void ActivityInstance::buildSuffix()
 {
-    //If onCreate() doesn't do anything special, then use an implementation in the base
-    if (onCreateStmt && (calcTotalChildren(onCreateStmt) == onCreateMarker))
-        onCreateStmt->setIncluded(false);
-
     //Paranoid check to ensure that library classes aren't used when member functions were required
     if (implementationClassName && (initialGroupMarker != classGroup->numChildren()))
         throwUnexpectedX("Implementation class created, but member functions generated");
@@ -2837,14 +2832,11 @@ void GlobalClassBuilder::buildClass(unsigned priority)
     oncreatectx.addQuoted("ctx = _ctx;");
 
     evalContext->onCreate.createFunctionStructure(translator, oncreatectx, true, NULL);
-    onCreateMarker = calcTotalChildren(onCreateStmt);
+    onCreateStmt->finishedFramework();
 }
 
 void GlobalClassBuilder::completeClass(unsigned priority)
 {
-    if (onCreateStmt && (calcTotalChildren(onCreateStmt) == onCreateMarker))
-        onCreateStmt->setIncluded(false);
-
     //MORE: This should be generated from a system function prototype somehow - so we can extend it to user functions later.
     //arguments and parameters should also be configured similarly.
     if (accessorInterface)
@@ -2934,6 +2926,11 @@ static bool anyXmlGeneratedForPass(IHqlExpression * expr, unsigned pass)
 bool HqlCppTranslator::insideOnCreate(BuildCtx & ctx)
 {
     return ctx.queryMatchExpr(insideOnCreateMarker) != NULL;
+}
+
+bool HqlCppTranslator::insideOnStart(BuildCtx & ctx)
+{
+    return ctx.queryMatchExpr(insideOnStartMarker) != NULL;
 }
 
 bool HqlCppTranslator::getInvariantMemberContext(BuildCtx & ctx, BuildCtx * * declarectx, BuildCtx * * initctx, bool isIndependentMaybeShared, bool invariantEachStart)
@@ -6306,7 +6303,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_datasetfromrow:
                 {
                     OwnedHqlExpr row = expr->cloneAllAnnotations(expr->queryChild(0));  // preserve any position information....
-                    if ((getNumActivityArguments(expr) == 0) && canProcessInline(&ctx, row))
+                    if ((getNumActivityArguments(expr) == 0) && canProcessInline(&ctx, row) && (row->getOperator() != no_getgraphresult))
                         result = doBuildActivityCreateRow(ctx, row, false);
                     else
                         result = buildCachedActivity(ctx, row);
@@ -6377,6 +6374,8 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                             if (extract)
                                 canAccessResultDirectly = extract->areGraphResultsAccessible(graphId);
                         }
+                        else if (getTargetClusterType() == HThorCluster)
+                            canAccessResultDirectly = true;
                     }
                     if (canAccessResultDirectly)
                         result = doBuildActivityGetGraphResult(ctx, expr);
@@ -8898,6 +8897,12 @@ ActivityInstance * HqlCppTranslator::queryCurrentActivity(BuildCtx & ctx)
     return static_cast<ActivityInstance *>(ctx.queryFirstAssociation(AssocActivityInstance));
 }
 
+bool HqlCppTranslator::insideActivityRemoteSerialize(BuildCtx & ctx)
+{
+    ActivityInstance * activeActivity = queryCurrentActivity(ctx);
+    return activeActivity && activeActivity->requiresRemoteSerialize();
+}
+
 unique_id_t HqlCppTranslator::queryCurrentActivityId(BuildCtx & ctx)
 {
     ActivityInstance * activeActivity = queryCurrentActivity(ctx);
@@ -9211,7 +9216,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
 
     checkNormalized(resourced);
 
-    bool createGraphResults = (outputLibraryId != 0);
+    bool createGraphResults = (outputLibraryId != 0) || options.alwaysUseGraphResults;
     resourced.setown(optimizeGraphPostResource(resourced, csfFlags, options.optimizeSpillProject && !createGraphResults));
     if (options.optimizeSpillProject)
     {

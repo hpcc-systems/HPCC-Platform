@@ -599,8 +599,9 @@ const char * cppSystemText[]  = {
     "   executeGraph(const varstring graph, boolean realThor, unsigned4 lenExtract, row parentExtract) : ctxmethod,entrypoint='executeGraph';",
     "   executeChildQueryInstance(unsigned4 lenExtract, row parentExtract)  : method,entrypoint='execute';",
     "   evaluateChildQueryInstance(unsigned4 lenExtract, row parentExtract) : method,entrypoint='evaluate';",       // actually returns something el
-    "   _linkcounted_ dataset getChildQueryLinkedResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getLinkedResult';",
-    "   _linkcounted_ dictionary getChildQueryDictionaryResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getDictionaryResult';",
+    "   linkcounted dataset getChildQueryLinkedResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getLinkedResult';",
+    "   linkcounted dictionary getChildQueryDictionaryResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getDictionaryResult';",
+    "   linkcounted row getChildQueryLinkedRowResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getLinkedRowResult';",
     
     //MORE: Should this be utf8?
     "   varstring getenv(const varstring name, const varstring defaultValue) : pure,ctxmethod,entrypoint='getEnv';",
@@ -750,6 +751,7 @@ const char * cppSystemText[]  = {
 
     "   _linkcounted_ dataset getLocalLinkedResult(unsigned4 id) : method,allocator(false),pure,entrypoint='getLinkedResult';",
     "   linkcounted dictionary getLocalDictionaryResult(unsigned4 id) : method,allocator(false),pure,entrypoint='getDictionaryResult';",
+    "   _linkcounted_ row getLocalLinkedRowResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getLinkedRowResult';",
     "   unsigned4 getGraphLoopCounter() : ctxmethod,entrypoint='getGraphLoopCounter';",
 
     "   _linkcounted_ row(dummyRecord) finalizeRowClear(unsigned4 _size) : omethod,entrypoint='finalizeRowClear',allocator=false;",

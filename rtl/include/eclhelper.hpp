@@ -522,6 +522,7 @@ interface IEclGraphResults : public IInterface
 {
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id) = 0;
     virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id) = 0;
+    virtual const void * getLinkedRowResult(unsigned id) = 0;
 };
 
 //Provided by engine=>can extent

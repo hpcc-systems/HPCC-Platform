@@ -3856,22 +3856,10 @@ funcRetType
     | propType
     | setType
     | explicitDatasetType
+    | explicitRowType
     | explicitDictionaryType
     | transformType
  // A plain record would be better, but that then causes a s/r error in knownOrUnknownId because scope
-    | ROW '(' recordDef ')'     
-                        {
-                            OwnedHqlExpr expr = $3.getExpr();
-                            $$.setType(makeOriginalModifier(makeRowType(expr->getType()), LINK(expr)));
-                            $$.setPosition($1);
-                        }
-    | LINKCOUNTED ROW '(' recordDef ')'       
-                        {
-                            OwnedHqlExpr expr = $4.getExpr();
-                            Owned<ITypeInfo> rowType = makeOriginalModifier(makeRowType(expr->getType()), LINK(expr));
-                            $$.setType(setLinkCountedAttr(rowType, true));
-                            $$.setPosition($1);
-                        }
     | recordDef         {
                             OwnedHqlExpr expr = $1.getExpr();
 //                          $$.setType(makeOriginalModifier(makeRowType(expr->getType()), LINK(expr)));

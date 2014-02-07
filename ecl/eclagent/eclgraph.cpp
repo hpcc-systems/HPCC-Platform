@@ -260,7 +260,7 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKxmlread:
         return createXmlReadActivity(agent, activityId, subgraphId, (IHThorXmlReadArg &)arg, kind);
     case TAKlocalresultread:
-        return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, graphId);
+        return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, node->getPropInt("att[@name='_graphId']/@value"));
     case TAKlocalresultwrite:
         return createLocalResultWriteActivity(agent, activityId, subgraphId, (IHThorLocalResultWriteArg &)arg, kind, graphId);
     case TAKdictionaryresultwrite:
@@ -1085,6 +1085,11 @@ void EclSubGraph::getDictionaryResult(unsigned & count, byte * * & ret, unsigned
     localResults->queryResult(id)->getLinkedResult(count, ret);
 }
 
+const void * EclSubGraph::getLinkedRowResult(unsigned id)
+{
+    return localResults->queryResult(id)->getLinkedRowResult();
+}
+
 
 EclGraphElement * EclSubGraph::idToActivity(unsigned id)
 {
@@ -1310,6 +1315,12 @@ void UninitializedGraphResult::getLinkedResult(unsigned & count, byte * * & ret)
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
 }
 
+const void * UninitializedGraphResult::getLinkedRowResult()
+{
+    throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
+}
+
+
 
 void GraphResult::addRowOwn(const void * row)
 {
@@ -1349,6 +1360,14 @@ void GraphResult::getLinkedResult(unsigned & count, byte * * & ret)
     ret = rowset;
 }
 
+const void * GraphResult::getLinkedRowResult()
+{
+    assertex(rows.ordinality() == 1);
+    const void * next = rows.item(0);
+    LinkRoxieRow(next);
+    return next;
+}
+
 //---------------------------------------------------------------------------
 
 GraphResults::GraphResults(unsigned _maxResults)
@@ -1375,6 +1394,11 @@ IHThorGraphResult * GraphResults::queryResult(unsigned id)
     CriticalBlock procedure(cs);
     ensureAtleast(id+1);
     return &results.item(id);
+}
+
+IHThorGraphResult * GraphResults::queryGraphLoopResult(unsigned id)
+{
+    throwUnexpected();
 }
 
 IHThorGraphResult * GraphResults::createResult(unsigned id, IEngineRowAllocator * ownedRowsetAllocator)
@@ -1421,6 +1445,8 @@ IThorChildGraph * EclGraph::resolveChildQuery(unsigned subgraphId)
 //NB: resolveLocalQuery (unlike children) can't link otherwise you get a cicular dependency.
 IEclGraphResults * EclGraph::resolveLocalQuery(unsigned subgraphId)
 {
+    if (subgraphId == 0)
+        return &globalResults;
     return idToGraph(subgraphId);
 }
 

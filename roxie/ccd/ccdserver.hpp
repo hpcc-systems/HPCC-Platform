@@ -215,6 +215,7 @@ interface IGraphResult : public IInterface
 {
     virtual void getLinkedResult(unsigned & countResult, byte * * & result) = 0;
     virtual IRoxieInput * createIterator() = 0;
+    virtual const void * getLinkedRowResult() = 0;
 };
 
 interface IRoxieServerLoopResultProcessor

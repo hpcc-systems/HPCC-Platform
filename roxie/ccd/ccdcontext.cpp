@@ -1090,6 +1090,8 @@ public:
     {
         if (queryTraceLevel() > 10)
             CTXLOG("CSlaveContext %p resolveChildGraph %d", this, id);
+        if (id == 0)
+            return graph;
         IActivityGraph *childGraph = childGraphs.getValue(id);
         assertex(childGraph);
         return childGraph;

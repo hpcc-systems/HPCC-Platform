@@ -11667,8 +11667,17 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
             break;
         }
     case no_getresult:
+    case no_getgraphresult:
         {
             IHqlExpression * record = &args.item(0);
+            type = makeRowType(record->getType());
+            if (recordRequiresLinkCount(record))
+                type = makeAttributeModifier(type, getLinkCountedAttr());
+            break;
+        }
+    case no_readspill:
+        {
+            IHqlExpression * record = queryOriginalRecord(&args.item(0));
             type = makeRowType(record->getType());
             if (recordRequiresLinkCount(record))
                 type = makeAttributeModifier(type, getLinkCountedAttr());
