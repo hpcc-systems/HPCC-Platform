@@ -2508,7 +2508,8 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                 if (expr->queryAttribute(sort_KeyedAtom))
                 {
                     IHqlExpression * payloadAttr = expr->queryAttribute(_payload_Atom);
-                    unsigned payloadCount = payloadAttr ? (unsigned)getIntValue(payloadAttr->queryChild(0), 1) : 1;
+                    bool hasFileposition = getBoolAttribute(expr, filepositionAtom, true);
+                    unsigned payloadCount = payloadAttr ? (unsigned)getIntValue(payloadAttr->queryChild(0), 1) : hasFileposition ? 1 : 0;
                     unsigned payloadIndex = firstPayloadField(record, payloadCount);
                     unwindRecordAsSelects(sortExprs, record, queryActiveTableSelector(), payloadIndex);
                 }

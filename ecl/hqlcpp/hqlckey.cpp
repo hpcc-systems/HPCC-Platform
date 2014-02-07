@@ -284,6 +284,7 @@ protected:
     OwnedHqlExpr    extractJoinFieldsTransform;
     bool            canOptimizeTransfer;
     bool            hasComplexIndex;
+    bool            keyHasFileposition;
 };
 
 KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _expr, bool _canOptimizeTransfer) : translator(_translator)
@@ -299,6 +300,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
         key.set(keyed->queryChild(0));
         if (right->getOperator() == no_keyed)
             right = right->queryChild(0);
+        assertex(getBoolAttribute(right, filepositionAtom, true));
         file.set(right);
         IHqlExpression * rightTable = queryPhysicalRootTable(right);
         if (!rightTable || rightTable->queryNormalizedSelector() != right->queryNormalizedSelector())
@@ -323,6 +325,8 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
         else
             translator.throwError1(HQLERR_KeyedJoinNoRightIndex_X, getOpString(right->getOperator()));
     }
+
+    keyHasFileposition = getBoolAttribute(key, filepositionAtom, true);
 
     if (!originalKey)
         originalKey.set(key);
@@ -687,7 +691,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
     if (extractJoinFieldsTransform)
     {
         IHqlExpression * fileposField = isFullJoin() ? queryVirtualFileposField(file->queryRecord()) : queryLastField(key->queryRecord());
-        if (fileposField && (expr->getOperator() != no_denormalizegroup))
+        if (keyHasFileposition && fileposField && (expr->getOperator() != no_denormalizegroup))
         {
             HqlMapTransformer fileposMapper;
             OwnedHqlExpr select = createSelectExpr(LINK(serializedRight), LINK(fileposField));
@@ -997,6 +1001,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         {
 //          unwindFields(fieldsAccessed, key->queryRecord());
             extractedRecord.set(key->queryRecord());
+            if (keyHasFileposition)
                 fileposField = queryLastField(key->queryRecord());
         }
     }
@@ -1017,7 +1022,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         {
             IHqlExpression * keyRecord = key->queryRecord();
             IHqlExpression * filepos = queryLastField(keyRecord);
-            if (filepos)
+            if (filepos && keyHasFileposition)
                 fieldsAccessed.zap(*filepos);
 
             if (translator.getTargetClusterType() != HThorCluster)
@@ -1142,7 +1147,6 @@ bool KeyedJoinInfo::processFilter()
     //Now need to transform the index into its real representation so
     //the hozed transforms take place.
     unsigned payload = numPayloadFields(key);
-    assertex(payload);          // don't use rawindex once payload can be 0
     TableProjectMapper mapper(expandedKey);
     OwnedHqlExpr rightSelect = createSelector(no_right, key, joinSeq);
     OwnedHqlExpr newFilter = mapper.expandFields(keyedKeyFilter, rightSelect, rawKey, rawKey);

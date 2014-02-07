@@ -428,15 +428,22 @@ IPropertyTree * SourceFieldUsage::createReport(bool includeFieldDetail, const IP
         if (!original)
             original = source;
         IHqlExpression * lastField = queryLastField(original->queryRecord());
-        if (usedFilepos || !lastField->hasAttribute(_implicitFpos_Atom))
+        if (getBoolAttribute(source, filepositionAtom, true))
         {
-            numFields++;
-            if (usedFilepos || usedAll)
+            if (usedFilepos || !lastField->hasAttribute(_implicitFpos_Atom))
             {
-                if (includeFieldDetail)
-                    addSelect(entry, lastField, true);
-                numFieldsUsed++;
+                numFields++;
+                if (usedFilepos || usedAll)
+                {
+                    if (includeFieldDetail)
+                        addSelect(entry, lastField, true);
+                    numFieldsUsed++;
+                }
             }
+        }
+        else
+        {
+            assertex(!usedFilepos);
         }
     }
 
