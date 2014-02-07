@@ -243,7 +243,9 @@ void CommonXmlWriter::outputUtf8(unsigned len, const char *field, const char *fi
 
 void CommonXmlWriter::outputBeginDataset(const char *dsname, bool nestChildren)
 {
-    outputBeginNested("Dataset", nestChildren, false); //no indent for backward compatibility
+    outputBeginNested("Dataset", nestChildren, false); //indent row, not dataset for backward compatibility
+    if (nestChildren && indent==0)
+        indent++;
     if (!dsname || !*dsname)
         return;
     out.append(" name='"); //single quote for backward compatibility
@@ -303,7 +305,7 @@ void CommonXmlWriter::outputEndNested(const char *fieldname, bool doIndent)
     }
     else
     {
-        if (!nestLimit)
+        if (!nestLimit && doIndent)
             out.pad(indent-1);
         out.append("</").append(fieldname).append('>');
     }

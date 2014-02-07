@@ -1544,7 +1544,8 @@ void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex, const cha
         }
         return;
     case FVFFendrecord:
-        appendXMLCloseTag(out, name);
+        if (name && *name)
+            appendXMLCloseTag(out, name);
         return;
     }
 
@@ -3809,10 +3810,14 @@ extern FILEVIEW_API IStringVal& getFullWorkUnitResultsXML(const char *username, 
     SCMStringBuffer wuid;
     cw->getWuid(wuid);
 
-    Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(0);
+    Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
     writeFullWorkUnitResults(username, password, cw, *writer, flags, minSeverity, "Result");
 
-    str.set(writer->str());
+    const char *xml = writer->str();
+    unsigned len = writer->length();
+    if (len && xml[len-1]=='\n')
+        len--;
+    str.setLen(xml, len);
     return str;
 }
 
@@ -3821,7 +3826,7 @@ extern FILEVIEW_API IStringVal& getFullWorkUnitResultsJSON(const char *username,
     SCMStringBuffer wuid;
     cw->getWuid(wuid);
 
-    Owned<CommonJsonWriter> writer = new CommonJsonWriter(0, 0, 0);
+    Owned<CommonJsonWriter> writer = new CommonJsonWriter(0);
     writer->outputBeginRoot();
     writeFullWorkUnitResults(username, password, cw, *writer, flags, minSeverity, "Results");
     writer->outputEndRoot();
