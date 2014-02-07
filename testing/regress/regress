@@ -39,7 +39,7 @@ if __name__ == "__main__":
     description = 'HPCC Platform Regression suite'
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('--version', '-v', action='version',
-                        version='%(prog)s 0.0.9')
+                        version='%(prog)s 0.0.10')
     parser.add_argument('--config', help="config file to use. Default: regress.json",
                         nargs='?', default="regress.json")
     parser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",

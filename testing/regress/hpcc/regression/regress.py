@@ -397,14 +397,19 @@ class Regression:
                                   username=self.config.username,
                                   password=self.config.password)
             wuid = query.getWuid()
+            logging.debug("res: '%s', wuid:'%s'"  % ( res,  wuid))
         else:
             res = False
             report[0].addResult(query)
+            wuid="N/A"
 
-        if wuid:
+        if wuid and wuid.startswith("W"):
             url = "http://" + self.config.server
             url += "/WsWorkunits/WUInfo?Wuid="
             url += wuid
+        else:
+            url = "N/A"
+            res = False
 
         self.loggermutex.acquire()
         elapsTime = time.time()-startTime
@@ -412,7 +417,7 @@ class Regression:
             logging.info("%3d. Pass %s (%d sec)" % (cnt, wuid,  elapsTime))
             logging.info("%3d. URL %s" % (cnt,url))
         else:
-            if not wuid:
+            if not wuid or not wuid.startswith("W"):
                 logging.error("%3d. Fail No WUID (%d sec)" % (cnt,  elapsTime))
             else:
                 logging.error("%3d. Fail %s (%d sec)" % (cnt, wuid,  elapsTime))
