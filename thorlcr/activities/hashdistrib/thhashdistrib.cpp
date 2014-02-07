@@ -59,22 +59,10 @@ public:
 protected:
     virtual void init()
     {
+        CMasterActivity::init();
         mptag = container.queryJob().allocateMPTag();
         if (mode==DM_join)
             mptag2 = container.queryJob().allocateMPTag();
-    }
-    virtual void process()
-    {
-        ActPrintLog("HashDistributeActivityMaster::process");
-
-        CMasterActivity::process();
-        ActPrintLog("HashDistributeActivityMaster::process exit");
-    }
-    virtual void done()
-    {
-        ActPrintLog("HashDistributeActivityMaster::done");
-        CMasterActivity::done();
-        ActPrintLog("HashDistributeActivityMaster::done exit");
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -127,7 +115,6 @@ public:
 class IndexDistributeActivityMaster : public HashDistributeMasterBase
 {
     MemoryBuffer tlkMb;
-    Owned<IDistributedFile> file;
 
 public:
     IndexDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_index, info) { }
@@ -141,7 +128,7 @@ public:
         StringBuffer scoped;
         OwnedRoxieString indexFileName(helper->getIndexFileName());
         queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
-        file.setown(queryThorFileManager().lookup(container.queryJob(), indexFileName));
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName);
         if (!file)
             throw MakeActivityException(this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
         if (0 == file->numParts())
@@ -163,18 +150,12 @@ public:
         tlkMb.append(iFileIO->size());
         ::read(iFileIO, 0, (size32_t)iFileIO->size(), tlkMb);
 
-        queryThorFileManager().noteFileRead(container.queryJob(), file);
+        addReadFile(file);
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         HashDistributeMasterBase::serializeSlaveData(dst, slave); // have to chain for standard activity data..
         dst.append(tlkMb);
-    }
-    virtual void done()
-    {
-        HashDistributeMasterBase::done();
-        if (file)
-            file->setAccessed();
     }
 };
 

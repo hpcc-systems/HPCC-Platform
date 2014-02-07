@@ -6462,6 +6462,18 @@ bool CDistributedFilePart::getModifiedTime(bool allowphysical,bool forcephysical
     return false;
 }
 
+unsigned getSuperFileSubs(IDistributedSuperFile *super, IArrayOf<IDistributedFile> &subFiles, bool superSub)
+{
+    unsigned numSubs = super->numSubFiles(superSub);
+    for (unsigned s=0; s<numSubs; s++)
+    {
+        IDistributedFile &subFile = super->querySubFile(s, superSub);
+        subFiles.append(*LINK(&subFile));
+    }
+    return numSubs;
+}
+
+
 // --------------------------------------------------------
 
 class CNamedGroupIterator: public CInterface, implements INamedGroupIterator

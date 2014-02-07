@@ -100,10 +100,7 @@ public:
         container.queryJob().freeMPTag(barrierMpTag);
         delete climitedcmp;
     }
-    void init()
-    {
-    }
-    void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
+    virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         if (!islocal)
         {
@@ -111,7 +108,7 @@ public:
             serializeMPtag(dst, barrierMpTag);
         }
     }
-    void preStart(size32_t parentExtractSz, const byte *parentExtract)
+    virtual void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
         CMasterActivity::preStart(parentExtractSz, parentExtract);
         ActPrintLog("preStart");
@@ -127,7 +124,7 @@ public:
             }
         }
     }
-    void process()
+    virtual void process()
     {
         ActPrintLog("process");
         CMasterActivity::process();
@@ -299,7 +296,7 @@ public:
         }
         ActPrintLog("process exit");
     }
-    void deserializeStats(unsigned node, MemoryBuffer &mb)
+    virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
     {
         CMasterActivity::deserializeStats(node, mb);
         rowcount_t lhsProgressCount, rhsProgressCount;
@@ -311,7 +308,7 @@ public:
             rhsProgress->set(node, rhsProgressCount);
         }
     }
-    void getXGMML(unsigned idx, IPropertyTree *edge)
+    virtual void getXGMML(unsigned idx, IPropertyTree *edge)
     {
         CMasterActivity::getXGMML(idx, edge);
 
