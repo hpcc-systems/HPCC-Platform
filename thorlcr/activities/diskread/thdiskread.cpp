@@ -30,7 +30,7 @@ class CDiskReadMasterVF : public CDiskReadMasterBase
 {
 public:
     CDiskReadMasterVF(CMasterGraphElement *info) : CDiskReadMasterBase(info) { }
-    virtual void validateFile()
+    virtual void validateFile(IDistributedFile *file)
     {
         IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *)queryHelper();
         bool codeGenGrouped = 0 != (TDXgrouped & helper->getFlags());
@@ -165,6 +165,7 @@ public:
         {
             if (!helper->hasSegmentMonitors() && !helper->hasFilter() && !(helper->getFlags() & TDXtemporary))
             {
+                Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()));
                 if (file.get() && canMatch)
                 {
                     if (0 != (TDRunfilteredcount & helper->getFlags()) && file->queryAttributes().hasProp("@recordCount"))
