@@ -61,7 +61,7 @@ class ECLcmd(Shell):
             args.append("--name=" + name)
             args.append(eclfile.getArchive())
         data = ""
-        wuid = ""
+        wuid = "N/A"
         state = ""
         try:
             #print "runCmd:", args
@@ -73,6 +73,7 @@ class ECLcmd(Shell):
             cnt = 0
             for i in ret:
                 if "wuid:" in i:
+                    logging.debug("------ runCmd:" + repr(i) + "------")
                     wuid = i.split()[1]
                 if "state:" in i:
                     state = i.split()[1]
@@ -89,6 +90,9 @@ class ECLcmd(Shell):
             logging.error("------" + err + "------")
             return err + "\n"
         finally:
+            if wuid ==  'N/A':
+                wuid = queryWuid(eclfile.getJobname(), eclfile.getTaskId())['wuid']
+
             eclfile.addResults(data, wuid)
             if cmd == 'publish':
                 if state == 'compiled':

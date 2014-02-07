@@ -37,6 +37,7 @@ class ECLCC(Shell):
         try:
             return self.__ECLCC()('-E', file)
         except Error as err:
+            logging.debug("getArchive exception:'%s'",  repr(err))
             self.makeArchiveError = str(err)
             return repr(err)
 
