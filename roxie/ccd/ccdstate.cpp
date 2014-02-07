@@ -2143,6 +2143,10 @@ private:
                 else
                     allQueryPackages->resetStats(NULL, logctx);
             }
+            else if (stricmp(queryName, "control:resetremotedalicache")==0)
+            {
+                queryNamedGroupStore().resetCache();
+            }
             else if (stricmp(queryName, "control:restart")==0)
             {
                 FatalError("Roxie process restarted by operator request");
