@@ -146,8 +146,7 @@
           <entry><emphasis>compress</emphasis></entry>
 
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
-          automatically LZW compress the new file. If omitted, the default is
-          FALSE.</entry>
+          LZW compress the new file. If omitted, the default is FALSE.</entry>
         </row>
 
         <row>
@@ -162,8 +161,8 @@
         <row>
           <entry><emphasis>transferBufferSize </emphasis></entry>
 
-          <entry>Optional. A integer value to overrides the DFU Server's
-          buffer size value (default is 64k)</entry>
+          <entry>Optional. A integer value to override the DFU Server's buffer
+          size value (default is 64k)</entry>
         </row>
 
         <row>
