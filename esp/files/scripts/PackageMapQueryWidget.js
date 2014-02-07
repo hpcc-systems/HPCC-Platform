@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/PackageMapQueryWidget",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-construct",
@@ -52,7 +55,7 @@ define([
     "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
-], function (declare, lang, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     Uploader, FileUploader, Flash, EnhancedGrid, Pagination, IndirectSelection, ItemFileWriteStore,
     PackageMapDetailsWidget, PackageMapValidateWidget,
@@ -61,6 +64,7 @@ define([
     return declare("PackageMapQueryWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "PackageMapQueryWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
         packagesTab: null,
         packagesGrid: null,
         tabMap: [],
@@ -214,7 +218,7 @@ define([
             var id = registry.byId(this.id+"AddProcessMapId").get('value');
             var files = registry.byId(this.id+"AddProcessMapFileUploader").getFileList();
             if (files.length > 1) {
-                alert('Only one package file allowed');
+                alert(this.i18n.Only1PackageFileAllowed);
                 return;
             }
             var fileName = '';
@@ -238,7 +242,7 @@ define([
             var overwrite = registry.byId(this.id+"AddProcessMapOverWrite").get('checked');
             if ((id == '') || (target == ''))
                 return false;
-            if  ((process == '') || (process == 'ANY'))
+            if  ((process == '') || (process == this.i18n.ANY))
                 process = '*';
 
             var action = "/WsPackageProcess/AddPackage?upload_&PackageMap="+id+"&Target="+target;
@@ -319,8 +323,8 @@ define([
                     IncludeProcessFilters: true
                 }, {
                 load: function (response) {
-                    context.targetSelect.options.push({label: 'ANY', value: '' });
-                    context.processSelect.options.push({label: 'ANY', value: '' });
+                    context.targetSelect.options.push({label: context.i18n.ANY, value: '' });
+                    context.processSelect.options.push({label: context.i18n.ANY, value: '' });
                     if (lang.exists("Targets.TargetData", response)) {
                         context.targets = response.Targets.TargetData;
                         context.initSelections();
@@ -356,7 +360,7 @@ define([
                 processSelect.removeOption(value);
             }
             ///processSelect.removeOption(processSelect.getOptions());
-            processSelect.options.push({label: 'ANY', value: '' });
+            processSelect.options.push({label: this.i18n.ANY, value: '' });
             processes.length = 0;
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
@@ -388,7 +392,7 @@ define([
 
             this.validateTab = new PackageMapValidateWidget({
                 id: this.id + "_ValidatePackageMap",
-                title: 'Validate PackageMap',
+                title: this.i18n.ValidatePackageMap,
                 params: params
             });
             //this.tabMap[this.id + "_ValidatePackageMap"] = this.validateTab;
@@ -399,11 +403,11 @@ define([
 
         initPackagesGrid: function() {
             this.packagesGrid.setStructure([
-                { name: "Package Map", field: "Id", width: "40%" },
-                { name: "Target", field: "Target", width: "15%" },
-                { name: "Process Filter", field: "Process", width: "15%" },
+                { name: this.i18n.PackageMap, field: "Id", width: "40%" },
+                { name: this.i18n.Target, field: "Target", width: "15%" },
+                { name: this.i18n.ProcessFilter, field: "Process", width: "15%" },
                 {
-                    name: "Active",
+                    name: this.i18n.Active,
                     field: "Active",
                     width: "10%",
                     formatter: function (active) {
@@ -413,7 +417,7 @@ define([
                         return "";
                     }
                 },
-                { name: "Description", field: "Description", width: "20%" }
+                { name: this.i18n.Description, field: "Description", width: "20%" }
             ]);
             var objStore = ESPPackageProcess.CreatePackageMapQueryObjectStore();
             this.packagesGrid.setStore(objStore);

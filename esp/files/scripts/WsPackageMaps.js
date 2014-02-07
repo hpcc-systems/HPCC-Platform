@@ -16,13 +16,17 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/PackageMapQueryWidget",
     "dojo/_base/Deferred",
     "dojo/_base/array",
     "dojo/store/util/QueryResults",
 
     "hpcc/ESPRequest"
-], function (declare, lang, Deferred, arrayUtil, QueryResults,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, Deferred, arrayUtil, QueryResults,
     ESPRequest) {
+    var i18n = lang.mixin(nlsCommon, nlsSpecific);
     return {
         PackageMapQuery: function (params) {
             return ESPRequest.send("WsPackageProcess", "ListPackages", params);
@@ -39,7 +43,7 @@ define([
                 return true;
             var exceptionCode = response.Exceptions.Exception[0].Code;
             var exceptionMSG = response.Exceptions.Exception[0].Message;
-            this.errorMessageCallback(callback, "Exception:", "Code:"+exceptionCode);
+            this.errorMessageCallback(callback, i18n.Exception + ":", i18n.Code + ":" +exceptionCode+ " " +i18n.Message+ ":" +exceptionMSG);
             return false;
         },
 
@@ -48,7 +52,7 @@ define([
                 return true;
             if (callback && callback.error) {
                 if (!hasStatus)
-                    this.errorMessageCallback(callback, "(Invalid response)", "");
+                    this.errorMessageCallback(callback, i18n.InvalidResponse, "");
                 else
                     this.errorMessageCallback(callback, status.Description, "");
             }
@@ -69,7 +73,7 @@ define([
                         response.GetPackageMapByIdResponse.status))
                     {
                         if (!lang.exists("GetPackageMapByIdResponse.Info", response))
-                            callback.load("(No content)");
+                            callback.load(i18n.NoContent);
                         else
                             callback.load(response.GetPackageMapByIdResponse.Info);
                     }
@@ -113,7 +117,7 @@ define([
                         response.ListProcessFiltersResponse.status))
                     {
                         if (!lang.exists("ListProcessFiltersResponse.ProcessFilters", response))
-                            callback.load("(No content)");
+                            callback.load(i18n.NoContent);
                         else
                             callback.load(response.ListProcessFiltersResponse.ProcessFilters);
                     }

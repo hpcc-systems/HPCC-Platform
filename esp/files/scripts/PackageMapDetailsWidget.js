@@ -15,6 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/PackageMapDetailsWidget",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
@@ -37,12 +41,13 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog",
     "dijit/TitlePane"
-], function (declare, dom, domAttr, domClass, topic,
+], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domAttr, domClass, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     WsPackageMaps, PackageSourceWidget, template) {
     return declare("PackageMapDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",
+        i18n: lang.mixin(nlsCommon, nlsSpecific),
         borderContainer: null,
         tabContainer: null,
         validateWidget: null,
@@ -126,7 +131,7 @@ define([
         refreshActionState: function () {
             registry.byId(this.id + "Activate").set("disabled", this.active);
             registry.byId(this.id + "Deactivate").set("disabled", !this.active);
-            domAttr.set(this.id + "StateIdImage", "title", this.active? "Active":"Not active");
+            domAttr.set(this.id + "StateIdImage", "title", this.active? this.i18n.Active:this.i18n.NotActive);
         },
 
         showErrors: function (errMsg, errStack) {
@@ -172,7 +177,7 @@ define([
             });
         },
         _onDelete: function (event) {
-            if (confirm('Delete selected package?')) {
+            if (confirm(this.i18n.DeleteThisPackage)) {
                 var context = this;
                 var packageMaps = [];
                 packageMaps[0] = {Target:this.target,

@@ -16,6 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/common",
+    "dojo/i18n!./nls/PackageSourceWidget",
     "dojo/dom",
 
     "dijit/layout/_LayoutWidget",
@@ -29,13 +32,14 @@ define([
 
     "dojo/text!../templates/PackageSourceWidget.html"
 ],
-    function (declare, lang, dom,
+    function (declare, lang, i18n, nlsCommon, nlsSpecific, dom,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
             BorderContainer, ContentPane, registry,
             WsPackageMaps, template) {
         return declare("PackageSourceWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
             baseClass: "PackageSourceWidget",
+            i18n: lang.mixin(nlsCommon, nlsSpecific),
             borderContainer: null,
 
             editor: null,
@@ -129,18 +133,18 @@ define([
             validateResponseToText: function (response) {
                 var text = "";
                 if (!lang.exists("Errors", response) || (response.Errors.length < 1))
-                    text += "No errors found\n";
+                    text += this.i18n.NoErrorFound;
                 else
-                    text = this.addArrayToText("Error(s)", response.Errors, text);
+                    text = this.addArrayToText(this.i18n.Errors, response.Errors, text);
                 if (!lang.exists("Warnings", response) || (response.Warnings.length < 1))
-                    text += "No warnings found\n";
+                    text += this.i18n.NoWarningFound;
                 else
-                    text = this.addArrayToText("Warning(s)", response.Warnings, text);
+                    text = this.addArrayToText(this.i18n.Warnings, response.Warnings, text);
 
                 text += "\n";
-                text = this.addArrayToText("Queries without matching package", response.queries.Unmatched, text);
-                text = this.addArrayToText("Packages without matching queries", response.packages.Unmatched, text);
-                text = this.addArrayToText("Files without matching package definitions", response.files.Unmatched, text);
+                text = this.addArrayToText(this.i18n.QueriesNoPackage, response.queries.Unmatched, text);
+                text = this.addArrayToText(this.i18n.PackagesNoQuery, response.packages.Unmatched, text);
+                text = this.addArrayToText(this.i18n.FilesNoPackage, response.files.Unmatched, text);
                 return text;
             }
         });
