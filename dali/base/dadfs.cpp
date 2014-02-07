@@ -4473,8 +4473,11 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     {
                         sf->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
                         // potentially subfile _was_ a subfile, but isn't anymore, after dirty update
-                        if (!transaction->isSubFile(parent, subfile, true))
-                            WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
+                        if (!subfile.isEmpty())
+                        {
+                            if (!transaction->isSubFile(parent, subfile, true))
+                                WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
+                        }
                     }
                 }
                 if (sub)
@@ -6529,6 +6532,7 @@ public:
 // --------------------------------------------------------
 
 #define GROUP_CACHE_INTERVAL (1000*60)
+#define GROUP_EXCEPTION_CACHE_INTERVAL (1000*60*10)
 
 static GroupType translateGroupType(const char *groupType)
 {
@@ -6550,7 +6554,6 @@ public:
     Linked<IGroup> group;
     StringAttr name;
     StringAttr groupDir;
-    unsigned cachedtime;
     GroupType groupType;
     Linked<IException> exception;
 
@@ -6565,6 +6568,16 @@ public:
     {
         cachedtime = msTick();
     }
+
+    bool expired(unsigned timeNow)
+    {
+        if (exception)
+            return timeNow-cachedtime > GROUP_EXCEPTION_CACHE_INTERVAL;
+        else
+            return timeNow-cachedtime > GROUP_CACHE_INTERVAL;
+    }
+protected:
+    unsigned cachedtime;
 };
 
 class CNamedGroupStore: public CInterface, implements INamedGroupStore
@@ -6645,7 +6658,7 @@ public:
             ForEachItemInRev(idx, cache)
             {
                 CNamedGroupCacheEntry &entry = cache.item(idx);
-                if (timeNow-entry.cachedtime > GROUP_CACHE_INTERVAL)
+                if (entry.expired(timeNow))
                 {
                     cache.remove(idx);
                 }
@@ -6971,6 +6984,11 @@ public:
         return ret;
     }
 
+    void resetCache()
+    {
+        CriticalBlock block(cachesect);
+        cache.kill();
+    }
 private:
     bool getRemoteGroup(const INode *foreigndali, const char *gname, unsigned foreigndalitimeout,
                            StringAttr &groupdir, GroupType &type, SocketEndpointArray &epa)

@@ -1081,10 +1081,10 @@ public:
                     if (thisGraphNameStr.length() && (stricmp(graphName, thisGraphNameStr.s.str()) != 0))
                         continue; // not interested in this one
                 }
-                reply.appendf("<Graph id='%s'><xgmml><graph>", thisGraphNameStr.s.str());
+                reply.appendf("<Graph id='%s'><xgmml>", thisGraphNameStr.s.str());
                 Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
                 getGraphStats(reply, *graphXgmml);
-                reply.append("</graph></xgmml></Graph>");
+                reply.append("</xgmml></Graph>");
             }
         }
     }

@@ -138,8 +138,16 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter id="Value_Types_Chapter">
+  <chapter id="Value_Types">
     <title><emphasis role="bold">Value Types</emphasis></title>
+
+    <para>Value types<indexterm>
+        <primary>Value Types</primary>
+      </indexterm> declare an Attribute's type when placed left of the
+    Attribute name in the definition. They also declare a passed parameter's
+    type when placed left of the parameter name in the definition. Value types
+    also explicitly cast from type to another when placed in parentheses left
+    of the expression to cast.</para>
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Value-Boolean.xml"
                 xpointer="element(/1)"
@@ -866,9 +874,9 @@
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOUNICODE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-   
+
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOXML.xml"
-                   xpointer="element(/1)"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRANSFER.xml"
