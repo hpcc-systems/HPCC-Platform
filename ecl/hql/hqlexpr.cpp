@@ -1637,7 +1637,6 @@ bool checkConstant(node_operator op)
     case no_xmlencode:
     case no_sortpartition:
     case no_clustersize:
-    case no_debug_option_value:
         return false;
     }
     return true;
