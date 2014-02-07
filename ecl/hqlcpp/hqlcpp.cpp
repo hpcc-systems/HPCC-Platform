@@ -1699,7 +1699,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.precalculateFieldOffsets,"precalculateFieldOffsets", false),
         DebugOption(options.generateStaticInlineTables,"generateStaticInlineTables", true),
         DebugOption(options.staticRowsUseStringInitializer,"staticRowsUseStringInitializer", true),
-        DebugOption(options.convertWhenExecutedToCompound,"convertWhenExecutedToCompound", queryLegacyEclSemantics()),
+        DebugOption(options.convertWhenExecutedToCompound,"convertWhenExecutedToCompound", queryLegacyWhenSemantics()),
         DebugOption(options.standAloneExe,"standAloneExe", false),
         DebugOption(options.enableCompoundCsvRead,"enableCompoundCsvRead", true),
         // The following works 99% of the time, but disabled due to potential problems with the ambiguity of LEFT

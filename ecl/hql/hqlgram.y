@@ -667,7 +667,7 @@ importItem
                         }
     | importSelectorList AS '*'
                         {
-                            if (queryLegacyEclSemantics())
+                            if (queryLegacyImportSemantics())
                                 parser->reportWarning(ERR_DEPRECATED, $1.pos, "IMPORT <module> AS * is deprecated, use IMPORT * FROM <module>");
                             else
                                 parser->reportError(ERR_DEPRECATED, $1.pos, "IMPORT <module> AS * is deprecated, use IMPORT * FROM <module>");
@@ -6038,10 +6038,7 @@ primexpr1
                         }
     | COUNT             {
                             $$.setExpr(parser->getActiveCounter($1));
-                            if (queryLegacyEclSemantics())
-                                parser->reportWarning(ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
-                            else
-                                parser->reportError(ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
+                            parser->reportError(ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
                         }
     | COUNTER               {
                             $$.setExpr(parser->getActiveCounter($1));
