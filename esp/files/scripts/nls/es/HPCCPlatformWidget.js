@@ -1,16 +1,16 @@
 define(
 ({
-    About: "About",
+    About: "Acerca",
     ECL: "ECL",
-    ErrorWarnings: "Error/Warnings",
-    Files: "Files",
-    Find: "Find",
-    LoggedInAs: "Logged in as",
-    OpenLegacyECLWatch: "Open Legacy ECL Watch",
-    Operations: "Operations",
-    PlaceholderFindText: "Wuid, User, More...",
-    PublishedQueries: "Published Queries",
-    ReleaseNotes: "Release Notes",
-    SetBanner: "Set Banner"
+    ErrorWarnings: "Error/Advertencias",
+    Files: "Archivos",
+    Find: "Encontrar",
+    LoggedInAs: "Conectado como",
+    OpenLegacyECLWatch: "Abrir ECL Watch viejo",
+    Operations: "Operaciones",
+    PlaceholderFindText: "Wuid, usuario, mas...",
+    PublishedQueries: "Queries publicados",
+    ReleaseNotes: "Notas de la versión",
+    SetBanner: "Configurar la bandera"
 })
 );

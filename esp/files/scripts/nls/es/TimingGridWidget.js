@@ -1,6 +1,6 @@
 define(
 ({
-    Component: "Component",
-    TimeSeconds: "Time (Seconds)"
+    Component: "Componente",
+    TimeSeconds: "Tiempo (Segundos)"
 })
 );
