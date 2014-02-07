@@ -1,8 +1,8 @@
 define(
 ({
-    title: "HPCC Platform - Home",
+    title: "Plataforma HPCC - Hogar",
 
-    Workunits: "Workunits",
-    Playground: "Playground"
+    Workunits: "Unidades de trabajo",
+    Playground: "Patio de recreo"
 })
 );

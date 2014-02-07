@@ -1,6 +1,6 @@
 define(
 ({
-    Created: "Created",
-    Used: "Used"
+    Created: "Creado",
+    Used: "Usado"
 })
 );

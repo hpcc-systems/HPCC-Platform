@@ -1,10 +1,10 @@
 define(
 ({
-    Download: "Download",
-    Description: "Description",
-    File: "File",
+    Download: "Descargar",
+    Description: "Descripción",
+    File: "Archivo",
     GZip: "GZip",
-    Type: "Type",
+    Type: "Tipo",
     Zip: "Zip"
 })
 );
