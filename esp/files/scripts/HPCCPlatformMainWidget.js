@@ -25,10 +25,12 @@ define([
     "dojo/text!../templates/HPCCPlatformMainWidget.html",
 
     "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
 
     "hpcc/ActivityWidget",
-    "hpcc/SearchResultsWidget"
+    "hpcc/SearchResultsWidget",
+    "hpcc/EventScheduleWorkunitWidget"
 
 ], function (declare, lang, i18n, nlsCommon, nlsSpecific,
                 _TabContainerWidget,
