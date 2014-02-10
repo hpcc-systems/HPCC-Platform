@@ -37,6 +37,8 @@ class ECLcmd(Shell):
         args.append(cmd)
         args.append('-v')
         args.append('--cluster=' + cluster)
+        args.append('-fpickBestEngine=false')
+        args.append('--target=' + cluster)
 
         username = kwargs.pop('username', False)
         if username:
