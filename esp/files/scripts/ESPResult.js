@@ -19,8 +19,6 @@ define([
     "dojo/_base/Deferred",
     "dojo/_base/lang",
     "dojo/NodeList-manipulate",
-    "dojo/data/ObjectStore",
-    "dojo/store/util/QueryResults",
     "dojo/store/Observable",
     "dojo/dom-construct",
 
@@ -31,7 +29,7 @@ define([
     "hpcc/ESPBase",
     "hpcc/ESPRequest",
     "hpcc/WsWorkunits"
-], function (declare, arrayUtil, Deferred, lang, NodeListManipulate, ObjectStore, QueryResults, Observable, domConstruct,
+], function (declare, arrayUtil, Deferred, lang, NodeListManipulate, Observable, domConstruct,
             parser, DomParser, entities,
             ESPBase, ESPRequest, WsWorkunits) {
 
@@ -474,12 +472,6 @@ define([
             return deferred.promise;
         },
 
-        getObjectStore: function () {
-            return new ObjectStore({
-                objectStore: this.store
-            });
-        },
-
         getLoadingMessage: function () {
             if (lang.exists("wu.state", this)) {
                 return "<span class=\'dojoxGridWating\'>[" + this.wu.state + "]</span>";
@@ -498,13 +490,6 @@ define([
     });
 
     return {
-        CreateWUResultObjectStore: function (options) {
-            var store = new Store(options);
-            store = Observable(store);
-            var objStore = new ObjectStore({ objectStore: store });
-            return objStore;
-        },
-
         Get: function (params) {
             return new Result(params);
         }

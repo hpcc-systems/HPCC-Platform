@@ -48,13 +48,12 @@ define([
     "dijit/Dialog",
     "dijit/MenuSeparator",
 
-    "dojox/layout/TableContainer",
-
     "hpcc/HPCCPlatformMainWidget",
     "hpcc/HPCCPlatformECLWidget",
     "hpcc/HPCCPlatformFilesWidget",
     "hpcc/HPCCPlatformRoxieWidget",
     "hpcc/HPCCPlatformOpsWidget",
+    "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
 ], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domStyle,

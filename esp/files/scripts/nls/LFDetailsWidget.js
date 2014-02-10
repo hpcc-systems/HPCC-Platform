@@ -34,6 +34,7 @@ define({ root:
     SplitPrefix: "Split Prefix",
     Summary: "Summary",
     Target: "Target",
+    TargetName: "Target Name",
     UseSingleConnection: "Use Single Connection",
     Workunit: "Workunit",
     Wrap: "Wrap",
