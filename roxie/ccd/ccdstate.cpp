@@ -501,13 +501,13 @@ public:
                 fileName.clear().append(resolved->queryPhysicalName());
             resolved.clear();
         }
+        else
+            throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
+        // filename by now is a local filename
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
-        bool disconnected = !daliHelper->connected();
-        // MORE - not sure this is really the right test. If there SHOULD be a dali but is's unavailable, we should fail.
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, disconnected, !disconnected, true);
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, true, false, true);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
-
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
 
