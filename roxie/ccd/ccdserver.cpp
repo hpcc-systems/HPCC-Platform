@@ -20962,6 +20962,26 @@ public:
                         {
                             unsigned fileNo = 0;
                             IKeyIndex *thisKey = thisBase->queryPart(fileNo);
+                            if (!thisKey->isTopLevelKey())
+                            {
+                                if (keyedLimit != (unsigned __int64) -1)
+                                {
+                                    if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
+                                    {
+                                        Owned<IKeyManager> countKey;
+                                        countKey.setown(createKeyManager(thisKey, 0, this));
+                                        countKey->setLayoutTranslator(translators->item(fileNo));
+                                        createSegmentMonitors(countKey);
+                                        unsigned __int64 count = countKey->checkCount(keyedLimit);
+                                        if (count > keyedLimit)
+                                        {
+                                            if (traceLevel > 4)
+                                                DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
+                                            onLimitExceeded(true);
+                                        }
+                                    }
+                                }
+                            }
                             if (seekGEOffset && !thisKey->isTopLevelKey())
                             {
                                 tlk.setown(createSingleKeyMerger(thisKey, 0, seekGEOffset, this));
@@ -21011,21 +21031,6 @@ public:
                                     }
                                     else
                                     {
-                                        if (keyedLimit != (unsigned __int64) -1)
-                                        {
-                                            if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
-                                            {
-                                                unsigned __int64 count = tlk->checkCount(keyedLimit);
-                                                if (count > keyedLimit)
-                                                {
-                                                    if (traceLevel > 4)
-                                                        DBGLOG("activityid = %d  line = %d", activityId, __LINE__);
-                                                    onLimitExceeded(true); 
-                                                }
-                                                tlk->reset();
-                                            }
-                                        }
-
                                         if (processSingleKey(thisKey, translators->item(fileNo)))
                                             break;
                                     }
