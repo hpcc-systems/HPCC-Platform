@@ -1821,7 +1821,8 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
         }
         return;
     case FVFFendrecord:
-        writer.outputEndNested(name);
+        if (name && *name)
+            writer.outputEndNested(name);
         return;
     }
 
