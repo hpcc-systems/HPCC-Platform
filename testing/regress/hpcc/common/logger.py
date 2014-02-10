@@ -138,9 +138,10 @@ class Logger(object):
                 if isBuffer:
                     #toggle buffer switch
                     self.isBuffer = not self.isBuffer
+                    isBuffer = False
                 if self.isBuffer or isBuffer:
                     if len(msg):
-                        msg.replace(". Test:",". Case:")
+                        msg = msg.replace(". Test:",". Case:")
                         msg = msg[0:4]+'-'+record.asctime+'-'+msg[4:]
                         self.logBuffer.append(msg)
                 else:

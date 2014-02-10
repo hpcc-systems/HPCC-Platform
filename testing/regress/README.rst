@@ -2,6 +2,8 @@ Overview of Regression Suite usage
 ==================================
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
 
+Regression Suite requires Python environment version >=2.6.6 and < 3.x
+
 Parameters of Regression Suite:
 -------------------------------
 

@@ -90,6 +90,8 @@ class Report:
             reportStr += " (%02d:%02d:%02d) \n" % (hours,  mins,  elapsTime % 60)
             reportStr += "-------------------------------------------------\n"
         logging.warn(reportStr)
+        self.report._pass = []
+        self.report._fail = []
 
     def getResult(self, eclfile):
         pass
