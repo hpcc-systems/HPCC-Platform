@@ -67,8 +67,8 @@ class jlib_decl Thread : public CInterface, public IThread
 private:
     ThreadId threadid;
     unsigned short stacksize; // in 4K blocks
-    char prioritydelta;
-    char nicelevel;
+    int prioritydelta;
+    int nicelevel;
 
     bool alive;
     unsigned tidlog;
@@ -103,9 +103,9 @@ public:
     Thread() { init(NULL); }
     ~Thread();
 
-    void adjustPriority(char delta);
+    void adjustPriority(int delta);
     bool isCurrentThread() const;
-    void setNice(char nicelevel);
+    void setNice(int nicelevel);
     void setStackSize(size32_t size);               // required stack size in bytes - called before start() (obviously)
     const char *getName() { const char *ret = ithreadname?ithreadname->get():NULL; return ret?ret:"unknown"; }
     bool isAlive() { return alive; }

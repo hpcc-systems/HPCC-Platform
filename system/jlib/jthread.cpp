@@ -150,7 +150,7 @@ void *Thread::_threadmain(void *v)
 }
 
 // JCSMORE - should have a setPriority(), unsupported under _WIN32
-void Thread::adjustPriority(char delta)
+void Thread::adjustPriority(int delta)
 {
     if (delta < -2)
         prioritydelta = -2;
@@ -229,7 +229,7 @@ bool Thread::isCurrentThread() const
 }
 
 // _nicelevel ranges from -20 to 19, the higher the nice level, the less cpu time the thread will get.
-void Thread::setNice(char _nicelevel)
+void Thread::setNice(int _nicelevel)
 {
     if (_nicelevel < -20 || _nicelevel > 19)
         throw MakeStringException(0, "nice level should be between -20 and 19");
