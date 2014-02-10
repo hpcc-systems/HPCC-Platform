@@ -201,10 +201,10 @@ define([
                 this.workunitsTab.set("title", newValue);
             }
             if (name === "Suspended") {
-                dom.byId(this.id + "SuspendImg").src = newValue ? "img/suspended.png" : "img/unsuspended.png";
+                dom.byId(this.id + "SuspendImg").src = newValue ? "/esp/files/img/suspended.png" : "/esp/files/img/unsuspended.png";
             }
             if (name === "Activated") {
-                dom.byId(this.id + "ActiveImg").src = newValue ? "img/active.png" : "img/inactive.png";
+                dom.byId(this.id + "ActiveImg").src = newValue ? "/esp/files/img/active.png" : "/esp/files/img/inactive.png";
             }
 
             else if (name === "CountGraphs" && newValue) {

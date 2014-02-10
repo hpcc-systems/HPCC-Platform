@@ -546,6 +546,18 @@ int CEspHttpServer::onGetApplicationFrame(CHttpRequest* request, CHttpResponse* 
     }
     else
     {
+        CEspBindingEntry* entry = m_apport->getDefaultBinding();
+        if(entry)
+        {
+            EspHttpBinding *httpbind = dynamic_cast<EspHttpBinding *>(entry->queryBinding());
+            if(httpbind)
+            {
+                const char *page = httpbind->getRootPage(ctx);
+                if(page && *page)
+                    return onGetFile(request, response, page);
+            }
+        }
+
         StringBuffer html;
         m_apport->getAppFrameHtml(modtime, inner, html, ctx);
         response->setContent(html.length(), html.str());

@@ -363,13 +363,13 @@ define([
                     }),
                     Protected: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='../files/img/locked.png'>";
+                            node.innerHTML = "<img src='/esp/files/img/locked.png'>";
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (protected) {
                             if (protected == true) {
-                                return ("<img src='../files/img/locked.png'>");
+                                return ("<img src='/esp/files/img/locked.png'>");
                             }
                             return "";
                         }
@@ -378,7 +378,7 @@ define([
                         label: this.i18n.WUID, width: 180,
                         formatter: function (Wuid, idx) {
                             var wu = ESPWorkunit.Get(Wuid);
-                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp;<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                            return "<img src='" + wu.getStateImage() + "'>&nbsp;<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
                         }
                     },
                     Owner: { label: this.i18n.Owner, width: 90 },

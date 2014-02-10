@@ -20,30 +20,33 @@
 <head>
     <meta charset="utf-8">
     <title>HPCC: Stub</title>
-    <link href="CodeMirror2/lib/codemirror.css" rel="stylesheet">
-    <script src="CodeMirror2/lib/codemirror.js"></script>
-    <script src="CodeMirror2/lib/util/foldcode.js"></script>
-    <script src="CodeMirror2/mode/ecl/ecl.js"></script>
-    <script src="CodeMirror2/mode/xml/xml.js"></script>
-    <link href="css/ecl.css" rel="stylesheet">
-    <link href="dijit/themes/claro/claro.css" media="screen" rel="stylesheet">
-    <link href="dojox/grid/resources/Grid.css" rel="stylesheet">
-    <link href="dojox/grid/enhanced/resources/claro/EnhancedGrid.css" rel="stylesheet">
-    <link href="dojox/grid/resources/claroGrid.css" rel="stylesheet">
-    <link href="dojox/widget/Toaster/Toaster.css" rel="stylesheet">
-    <link href="dojox/widget/UpgradeBar/UpgradeBar.css" rel="stylesheet">
-    <link href="dojox/form/resources/FileUploader.css" rel="stylesheet">
-    <link href="dojox/form/resources/UploaderFileList.css" rel="stylesheet">
-    <link href="dgrid/css/dgrid.css" rel="stylesheet">
-    <link href="dgrid/css/skins/claro.css" rel="stylesheet">
-    <link href="css/hpcc.css" rel="stylesheet">
+    <link href="/esp/files/CodeMirror2/lib/codemirror.css" rel="stylesheet">
+    <script src="/esp/files/CodeMirror2/lib/codemirror.js"></script>
+    <script src="/esp/files/CodeMirror2/lib/util/foldcode.js"></script>
+    <script src="/esp/files/CodeMirror2/mode/ecl/ecl.js"></script>
+    <script src="/esp/files/CodeMirror2/mode/xml/xml.js"></script>
+    <link href="/esp/files/css/ecl.css" rel="stylesheet">
+    <link href="/esp/files/dijit/themes/claro/claro.css" media="screen" rel="stylesheet">
+    <link href="/esp/files/dojox/grid/resources/Grid.css" rel="stylesheet">
+    <link href="/esp/files/dojox/grid/enhanced/resources/claro/EnhancedGrid.css" rel="stylesheet">
+    <link href="/esp/files/dojox/grid/resources/claroGrid.css" rel="stylesheet">
+    <link href="/esp/files/dojox/widget/Toaster/Toaster.css" rel="stylesheet">
+    <link href="/esp/files/dojox/widget/UpgradeBar/UpgradeBar.css" rel="stylesheet">
+    <link href="/esp/files/dojox/form/resources/FileUploader.css" rel="stylesheet">
+    <link href="/esp/files/dojox/form/resources/UploaderFileList.css" rel="stylesheet">
+    <link href="/esp/files/dgrid/css/dgrid.css" rel="stylesheet">
+    <link href="/esp/files/dgrid/css/skins/claro.css" rel="stylesheet">
+    <link href="/esp/files/css/hpcc.css" rel="stylesheet">
     <!-- load dojo and provide config via dojoConfig global -->
     <script>
         var dojoConfig = (function () {
-            var baseLHS = location.href.split("#");
-            var base = baseLHS[0].split("/");
-            base.pop();
-            base = base.join("/");
+            var pathnodes = location.href.split("#");
+            pathnodes = pathnodes[0].split("/");
+            pathnodes.pop();
+            var base = pathnodes.join("/");
+            var len = pathnodes.length;
+            if (len < 2 || pathnodes[len-2]!="esp" || pathnodes[len-1]!="files")
+                base = base + "/esp/files";
 
             return {
                 async: true,
@@ -64,7 +67,7 @@
             };
         })();
     </script>
-    <script src="dojo/dojo.js"></script>
+    <script src="/esp/files/dojo/dojo.js"></script>
     <script>
         require([
         "main/stub",
