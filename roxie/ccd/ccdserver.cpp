@@ -19924,7 +19924,7 @@ public:
         isKeyed = false;
         stopAfter = I64C(0x7FFFFFFFFFFFFFFF);
         diskSize.set(helper.queryDiskRecordSize());
-        variableFileName = allFilesDynamic || ((helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
         isOpt = (helper.getFlags() & TDRoptional) != 0;
     }
 
@@ -20948,7 +20948,7 @@ public:
         isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
         Owned<IHThorDiskReadBaseArg> helper = (IHThorDiskReadBaseArg *) helperFactory();
         sorted = (helper->getFlags() & TDRunsorted) == 0;
-        variableFileName = allFilesDynamic || ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
         maySkip = (helper->getFlags() & (TDRkeyedlimitskips|TDRkeyedlimitcreates|TDRlimitskips|TDRlimitcreates)) != 0;
         quotes = separators = terminators = escapes = NULL;
         if (!variableFileName)
@@ -21074,7 +21074,7 @@ public:
     {
         indexHelper.setCallback(&callback);
         steppedExtra = static_cast<IHThorSteppedSourceExtra *>(indexHelper.selectInterface(TAIsteppedsourceextra_1));
-        variableFileName = allFilesDynamic || ((indexHelper.getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((indexHelper.getFlags() & (TIRvarfilename|TIRdynamicfilename)) != 0);
         variableInfoPending = false;
         isOpt = (indexHelper.getFlags() & TIRoptional) != 0;
         seekGEOffset = 0;
@@ -21716,7 +21716,7 @@ public:
         steppedExtra = static_cast<IHThorSteppedSourceExtra *>(indexHelper.selectInterface(TAIsteppedsourceextra_1));
         limitTransformExtra = static_cast<IHThorSourceLimitTransformExtra *>(indexHelper.selectInterface(TAIsourcelimittransformextra_1));
         unsigned flags = indexHelper.getFlags();
-        variableFileName = allFilesDynamic || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);
         variableInfoPending = false;
         isOpt = (flags & TIRoptional) != 0;
         optimizeSteppedPostFilter = (flags & TIRunfilteredtransform) != 0;
@@ -22058,7 +22058,7 @@ public:
         activityMeta.setown(deserializeRecordMeta(m, true));
         enableFieldTranslation = queryFactory.getEnableFieldTranslation();
         translatorArray.setown(new TranslatorArray);
-        variableFileName = allFilesDynamic || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);
         if (!variableFileName)
         {
             bool isOpt = (flags & TIRoptional) != 0;
@@ -22973,7 +22973,7 @@ public:
         : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
         Owned<IHThorCountFileArg> helper = (IHThorCountFileArg *) helperFactory();
-        variableFileName = allFilesDynamic || ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || _queryFactory.isDynamic() ||  ((helper->getFlags() & (TDXvarfilename|TDXdynamicfilename)) != 0);
         assertex(helper->queryRecordSize()->isFixedSize());
         if (!variableFileName)
         {
@@ -23047,7 +23047,7 @@ public:
     {
         fetchContext = static_cast<IHThorFetchContext *>(helper.selectInterface(TAIfetchcontext_1));
         needsRHS = helper.transformNeedsRhs();
-        variableFileName = allFilesDynamic || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
     }
 
@@ -23194,7 +23194,7 @@ public:
     {
         Owned<IHThorFetchBaseArg> helper = (IHThorFetchBaseArg *) helperFactory();
         IHThorFetchContext *fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
-        variableFileName = allFilesDynamic || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         if (!variableFileName)
         {
             OwnedRoxieString fname(fetchContext->getFileName());
@@ -23693,7 +23693,7 @@ public:
           puller(false),
           isLocal(_isLocal)
     {
-        variableIndexFileName = allFilesDynamic || ((helper.getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        variableIndexFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
         indexReadInputRecordVariable = indexReadMeta->isVariableSize();
         indexReadInput = NULL;
         rootIndex = NULL;
@@ -24407,7 +24407,7 @@ public:
           map(_map)
     {
         CRoxieServerKeyedJoinBase::setInput(0, head.queryOutput(0));
-        variableFetchFileName = allFilesDynamic || ((helper.getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        variableFetchFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
     }
     
     virtual const IResolvedFile *queryVarFileInfo() const
@@ -24519,7 +24519,7 @@ public:
           keySet(_keySet),
           translators(_translators)
     {
-        variableIndexFileName = allFilesDynamic || ((helper.getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        variableIndexFileName = allFilesDynamic || factory->queryQueryFactory().isDynamic() || ((helper.getJoinFlags() & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
         indexReadInputRecordVariable = indexReadMeta->isVariableSize();
     }
 
@@ -24784,8 +24784,8 @@ public:
         enableFieldTranslation = queryFactory.getEnableFieldTranslation();
         translatorArray.setown(new TranslatorArray);
         joinFlags = helper->getJoinFlags();
-        variableIndexFileName = allFilesDynamic || ((joinFlags & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
-        variableFetchFileName = allFilesDynamic || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
+        variableIndexFileName = allFilesDynamic || _queryFactory.isDynamic() || ((joinFlags & (JFvarindexfilename|JFdynamicindexfilename)) != 0);
+        variableFetchFileName = allFilesDynamic || _queryFactory.isDynamic() || ((helper->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0);
         if (!variableIndexFileName)
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
@@ -26200,7 +26200,7 @@ protected:
         package.setown(createRoxiePackage(NULL, NULL));
         ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
-        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL));
+        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, false));
         timer->reset();
     }
 

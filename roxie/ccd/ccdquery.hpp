@@ -123,6 +123,7 @@ interface IQueryFactory : extends IInterface
 
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual void getQueryInfo(StringBuffer &result, bool full, const IRoxieContextLogger &logctx) const = 0;
+    virtual bool isDynamic() const = 0;
 };
 
 class ActivityArray : public CInterface
@@ -243,8 +244,8 @@ extern const IQueryDll *createExeQueryDll(const char *exeName);
 extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu);
 
 extern IRecordLayoutTranslator *createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta);
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo);
-extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned _channelNo, const IPropertyTree *stateInfo);
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool isDynamic);
+extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, bool isDynamic);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
 extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu);
 extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo);

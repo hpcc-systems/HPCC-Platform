@@ -282,6 +282,7 @@ protected:
     StringBuffer errorMessage;
     MapIdToActivityFactory allActivities;
 
+    bool dynamic;
     bool isSuspended;
     bool enableFieldTranslation;
     ClusterType targetClusterType;
@@ -848,8 +849,8 @@ public:
     IMPLEMENT_IINTERFACE;
     unsigned channelNo;
 
-    CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext)
-        : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue), sharedOnceContext(_sharedOnceContext)
+    CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
+        : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue), sharedOnceContext(_sharedOnceContext), dynamic(_dynamic)
     {
         package.Link();
         isSuspended = false;
@@ -859,7 +860,6 @@ public:
         timeLimit = defaultTimeLimit[priority];
         warnTimeLimit = 0;
         enableFieldTranslation = fieldTranslationEnabled;
-
     }
 
     ~CQueryFactory()
@@ -1271,6 +1271,11 @@ public:
         }
     }
 
+    virtual bool isDynamic() const
+    {
+        return dynamic;
+    }
+
 protected:
     IPropertyTree *queryWorkflowTree() const
     {
@@ -1317,8 +1322,8 @@ protected:
     Owned<IQueryStatsAggregator> queryStats;
 
 public:
-    CRoxieServerQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, ISharedOnceContext *_sharedOnceContext)
-        : CQueryFactory(_id, _dll, _package, _hashValue, 0, _sharedOnceContext)
+    CRoxieServerQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
+        : CQueryFactory(_id, _dll, _package, _hashValue, 0, _sharedOnceContext, _dynamic)
     {
         queryStats.setown(createQueryStatsAggregator(id.get(), statsExpiryTime));
     }
@@ -1411,7 +1416,7 @@ static void checkWorkunitVersionConsistency(const IQueryDll *dll)
         throw MakeStringException(ROXIE_MISMATCH, "Workunit did not export createProcess function");
 }
 
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool isDynamic)
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
     hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo);
@@ -1428,7 +1433,7 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
         IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
         if (workflow && workflow->hasProp("Item[@mode='once']"))
             sharedOnceContext.setown(new CSharedOnceContext);
-        Owned<CRoxieServerQueryFactory> newFactory = new CRoxieServerQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, sharedOnceContext);
+        Owned<CRoxieServerQueryFactory> newFactory = new CRoxieServerQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, sharedOnceContext, isDynamic);
         newFactory->load(stateInfo);
         if (sharedOnceContext && preloadOnceData)
         {
@@ -1438,7 +1443,7 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
         return newFactory.getClear();
     }
     else
-        return new CRoxieServerQueryFactory(id, NULL, dynamic_cast<const IRoxiePackage&>(package), hashValue, NULL);
+        return new CRoxieServerQueryFactory(id, NULL, dynamic_cast<const IRoxiePackage&>(package), hashValue, NULL, isDynamic);
 }
 
 extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu)
@@ -1447,7 +1452,7 @@ extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu)
     if (!dll)
         return NULL;
     SCMStringBuffer wuid;
-    return createServerQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), NULL); // MORE - if use a constant for id might cache better?
+    return createServerQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), NULL, true); // MORE - if use a constant for id might cache better?
 }
 
 //==============================================================================================================================================
@@ -1625,8 +1630,8 @@ class CSlaveQueryFactory : public CQueryFactory
     }
 
 public:
-    CSlaveQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext)
-        : CQueryFactory(_id, _dll, _package, _hashValue, _channelNo, _sharedOnceContext)
+    CSlaveQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext, bool _dynamic)
+        : CQueryFactory(_id, _dll, _package, _hashValue, _channelNo, _sharedOnceContext, _dynamic)
     {
     }
 
@@ -1677,7 +1682,7 @@ public:
     }
 };
 
-IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned channel, const IPropertyTree *stateInfo)
+IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned channel, const IPropertyTree *stateInfo, bool isDynamic)
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
     hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo);
@@ -1690,13 +1695,13 @@ IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, con
     if (dll)
     {
         checkWorkunitVersionConsistency(dll);
-        Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo); // Should always find a cached one
-        Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, serverFactory->querySharedOnceContext());
+        Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo, false); // Should always find a cached one
+        Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic);
         newFactory->load(stateInfo);
         return newFactory.getClear();
     }
     else
-        return new CSlaveQueryFactory(id, NULL, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, NULL);
+        return new CSlaveQueryFactory(id, NULL, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, NULL, isDynamic);
 }
 
 extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo)
@@ -1705,7 +1710,7 @@ extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     if (!dll)
         return NULL;
     SCMStringBuffer wuid;
-    return createSlaveQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL);  // MORE - if use a constant for id might cache better?
+    return createSlaveQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true);  // MORE - if use a constant for id might cache better?
 }
 
 IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta)

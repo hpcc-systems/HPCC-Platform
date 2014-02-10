@@ -878,7 +878,7 @@ public:
 
     virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
     {
-        return createServerQueryFactory(id, dll, package, stateInfo);
+        return createServerQueryFactory(id, dll, package, stateInfo, false);
     }
 
 };
@@ -902,7 +902,7 @@ public:
 
     virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
     {
-        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo);
+        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo, false);
     }
 
 };
