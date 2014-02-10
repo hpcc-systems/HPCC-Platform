@@ -307,7 +307,7 @@ protected:
                 DBGLOG("resolveLFNusingDaliOrLocal %s - cache hit", fileName);
             return result;
         }
-        if (!checkCachedDaliMiss(fileName))
+        if (alwaysCreate || !checkCachedDaliMiss(fileName))
         {
             Owned<IRoxieDaliHelper> daliHelper = connectToDali();
             if (daliHelper)
@@ -334,9 +334,9 @@ protected:
             if (!result)
             {
                 StringBuffer useName;
+                bool wasDFS = false;
                 if (strstr(fileName,"::"))
                 {
-                    bool wasDFS;
                     makeSinglePhysicalPartName(fileName, useName, true, wasDFS);
                 }
                 else
@@ -344,7 +344,7 @@ protected:
                 bool exists = checkFileExists(useName);
                 if (exists || alwaysCreate)
                 {
-                    Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, useName, false);
+                    Owned <IResolvedFileCreator> creator = createResolvedFile(fileName, wasDFS ? NULL : useName.str(), false);
                     if (exists)
                         creator->addSubFile(useName);
                     result = creator.getClear();
@@ -498,14 +498,14 @@ public:
                 resolved->remove();
             }
             if (resolved->queryPhysicalName())
-                fileName.clear().append(resolved->queryPhysicalName());
+                fileName.clear().append(resolved->queryPhysicalName());  // if it turned out to be a local file
             resolved.clear();
         }
         else
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
-        // filename by now is a local filename
+        // filename by now may be a local filename, or a dali one
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, true, false, true);
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, false, false, true);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
