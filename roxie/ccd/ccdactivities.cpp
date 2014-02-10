@@ -3490,7 +3490,7 @@ public:
                 resent = false;
                 {
                     TransformCallbackAssociation associate(callback, tlk); // want to destroy this before we advance to next key...
-                    while (!aborted && rawSeek ? tlk->lookupSkip(rawSeek, steppingOffset, steppingLength) : tlk->lookup(true))
+                    while (!aborted && (rawSeek ? tlk->lookupSkip(rawSeek, steppingOffset, steppingLength) : tlk->lookup(true)))
                     {
                         rawSeek = NULL;  // only want to do the seek first time we look for a particular seek value
                         keyprocessed++;
@@ -3520,6 +3520,7 @@ public:
                             if (diff < 0)
                             {
                                 rawSeek = steppingRow;
+                                keyProcessed--;
                                 break;
                             }
                         }
