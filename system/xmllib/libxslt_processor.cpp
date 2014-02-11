@@ -698,7 +698,7 @@ CLibXslProcessor::CLibXslProcessor()
     xmlSubstituteEntitiesDefault(1);
     xmlThrDefSaveNoEmptyTags(1);
     xmlLoadExtDtdDefaultValue = 1;
-
+    xsltMaxDepth = 20000;
     xsltSetLoaderFunc(NULL);
     originalLibXsltIncludeHandler = xsltDocDefaultLoader;
     xsltSetLoaderFunc(globalLibXsltIncludeHandler);
