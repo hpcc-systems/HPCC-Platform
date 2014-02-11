@@ -779,6 +779,7 @@ public:
         StringArray &unusedFiles = resp->getFiles().getUnmatched();
         if (unusedFiles.ordinality()>0)
         {
+            validateMessages = true;
             fputs("\n   Files without matching package definitions:\n", stderr);
             ForEachItemIn(i, unusedFiles)
                 fprintf(stderr, "      %s\n", unusedFiles.item(i));
@@ -787,6 +788,7 @@ public:
         StringArray &notInDFS = resp->getFiles().getNotInDFS();
         if (notInDFS.ordinality()>0)
         {
+            validateMessages = true;
             fputs("\n   Packagemap SubFiles not found in DFS:\n", stderr);
             ForEachItemIn(i, notInDFS)
                 fprintf(stderr, "      %s\n", notInDFS.item(i));
