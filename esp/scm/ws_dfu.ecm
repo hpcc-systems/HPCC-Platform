@@ -80,7 +80,7 @@ ESPStruct DFUFileDetail
     string Dir;
     string PathMask;
     string Filesize;
-    string ActualSize;
+    [depr_ver("1.23")] string ActualSize;
     string RecordSize;
     string RecordCount;
     string Wuid;
@@ -631,7 +631,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.22"), default_client_version("1.22"),
+    version("1.23"), default_client_version("1.23"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
