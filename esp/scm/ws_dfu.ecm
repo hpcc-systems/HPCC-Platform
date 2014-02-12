@@ -80,7 +80,6 @@ ESPStruct DFUFileDetail
     string Dir;
     string PathMask;
     string Filesize;
-    string ActualSize;
     string RecordSize;
     string RecordCount;
     string Wuid;
