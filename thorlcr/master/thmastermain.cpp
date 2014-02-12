@@ -640,6 +640,14 @@ int main( int argc, char *argv[]  )
             	// 32 bit OS doesn't handle whole physically installed RAM
                 maxMem = 2048;
             }
+#ifdef __ARM_ARCH_7A__
+            // For ChromeBook with 2GB RAM
+            if (maxMem <= 2048)
+            {
+                // Decrease max memory to 2/3 
+                maxMem = maxMem * 2 / 3; 
+            }
+#endif            
 #endif
 #endif
             gmemSize = maxMem * 3 / 4; // default to 75% of total
