@@ -109,6 +109,7 @@ extern HQL_API IAtom * compressedAtom;
 extern HQL_API IAtom * __compressed__Atom;
 extern HQL_API IAtom * _conditionFolded_Atom;
 extern HQL_API IAtom * constAtom;
+extern HQL_API IAtom * _container_Atom;
 extern HQL_API IAtom * contextAtom;
 extern HQL_API IAtom * contextSensitiveAtom;
 extern HQL_API IAtom * costAtom;

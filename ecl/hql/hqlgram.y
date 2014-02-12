@@ -713,6 +713,10 @@ importId
                         {
                             $$.setExpr(createAttribute(_dot_Atom, $1.getExpr(), createId($3.getId())), $1);
                         }
+    | importId '.' '^'
+                        {
+                            $$.setExpr(createAttribute(_container_Atom, $1.getExpr()), $1);
+                        }
     ;
 
 defineType

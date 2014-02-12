@@ -9925,7 +9925,8 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
 {
     if (isDollarModule(expr))
         return LINK(queryExpression(globalScope));
-    if (expr->queryName() != _dot_Atom)
+    IAtom * name = expr->queryName();
+    if ((name != _dot_Atom) && (name != _container_Atom))
     {
         if (!lookupCtx.queryRepository())
         {
@@ -9965,11 +9966,28 @@ IHqlExpression * HqlGram::resolveImportModule(const attribute & errpos, IHqlExpr
     OwnedHqlExpr parent = resolveImportModule(errpos, expr->queryChild(0));
     if (!parent)
         return NULL;
+
+    const char * parentName = parent->queryId()->str();
+    if (name == _container_Atom)
+    {
+        const char * containerName = parent->queryFullContainerId()->str();
+        //This is a bit ugly - remove the last qualified module, and resolve the name again.  A more "correct" method
+        //saving container pointers hit problems because remote scopes within CHqlMergedScope containers have a remote
+        //scope as the parent, rather than the merged scope...
+        if (containerName)
+        {
+            OwnedHqlExpr matched = getResolveAttributeFullPath(containerName, LSFpublic, lookupCtx);
+            if (matched)
+                return matched.getClear();
+        }
+        reportError(ERR_CANNOT_ACCESS_CONTAINER, errpos, "Cannot access container for Object '%s'", parentName);
+        return NULL;
+    }
+
     IIdAtom * childId = expr->queryChild(1)->queryId();
     OwnedHqlExpr resolved = parent->queryScope()->lookupSymbol(childId, LSFpublic, lookupCtx);
     if (!resolved)
     {
-        const char * parentName = parent->queryName()->str();
         if (!parentName)
             parentName = "$";
         reportError(ERR_OBJ_NOSUCHFIELD, errpos, "Object '%s' does not have a field named '%s'", parentName, childId->str());

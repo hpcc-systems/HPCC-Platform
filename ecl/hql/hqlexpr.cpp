@@ -6633,9 +6633,9 @@ bool CHqlAnnotation::isFullyBound() const
     return body->isFullyBound();
 }
 
-IIdAtom * CHqlAnnotation::queryFullModuleId() const
+IIdAtom * CHqlAnnotation::queryFullContainerId() const
 {
-    return body->queryFullModuleId();
+    return body->queryFullContainerId();
 }
 
 IHqlExpression * CHqlAnnotation::queryProperty(ExprPropKind kind)
@@ -6907,7 +6907,7 @@ bool CHqlSymbolAnnotation::equals(const IHqlExpression & other) const
     if ((symbolFlags != other.getSymbolFlags()) || (funcdef != other.queryFunctionDefinition()))
         return false;
 
-    if (moduleId != other.queryFullModuleId())
+    if (moduleId != other.queryFullContainerId())
         return false;
 
     if (op == no_nobody)
@@ -7533,24 +7533,29 @@ extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents
 CHqlScope::CHqlScope(node_operator _op, IIdAtom * _id, const char * _fullName)
 : CHqlExpressionWithType(_op, NULL), id(_id), fullName(_fullName)
 {
+    containerId = NULL;
     type = this;
+    initContainer();
 }
 
 CHqlScope::CHqlScope(IHqlScope* scope)
 : CHqlExpressionWithType(no_scope, NULL)
 {
     id = scope->queryId();
+    containerId = NULL;
     fullName.set(scope->queryFullName());
     CHqlScope* s = QUERYINTERFACE(scope, CHqlScope);
     if (s && s->text)
         text.set(s->text);
     type = this;
+    initContainer();
 }
 
 CHqlScope::CHqlScope(node_operator _op) 
 : CHqlExpressionWithType(_op, NULL)
 {
     id = NULL;
+    containerId = NULL;
     type = this;
 }
 
@@ -7558,6 +7563,16 @@ CHqlScope::~CHqlScope()
 {
     if (type == this)
         type = NULL;
+}
+
+void CHqlScope::initContainer()
+{
+    if (fullName)
+    {
+        const char * dot = strrchr(fullName, '.');
+        if (dot)
+            containerId = createIdAtom(fullName, dot-fullName);
+    }
 }
 
 bool CHqlScope::assignableFrom(ITypeInfo * source)
