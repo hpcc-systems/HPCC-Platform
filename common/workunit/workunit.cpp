@@ -533,8 +533,8 @@ template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
 
 class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements ISDSSubscription, implements IExtendedWUInterface
 {
-    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs);
-    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs);
+    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs, bool includeProgress);
+    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs, bool includeProgress);
 
     // NOTE - order is important - we need to construct connection before p and (especially) destruct after p
     Owned<IRemoteConnection> connection;
@@ -583,7 +583,7 @@ public:
     CLocalWorkUnit(IRemoteConnection *_conn, IPropertyTree* root, ISecManager *secmgr, ISecUser *secuser);
     ~CLocalWorkUnit();
     CLocalWorkUnit(const char *dummyWuid, const char *parentWuid, ISecManager *secmgr, ISecUser *secuser);
-    IPropertyTree *getUnpackedTree() const;
+    IPropertyTree *getUnpackedTree(bool includeProgress) const;
 
     ISecManager *querySecMgr(){return secMgr.get();}
     ISecUser *querySecUser(){return secUser.get();}
@@ -3151,7 +3151,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
         return false;
 
     StringBuffer buf;
-    exportWorkUnitToXML(this, buf, false);
+    exportWorkUnitToXML(this, buf, false, false);
 
     StringBuffer extraWorkUnitXML;
     StringBuffer xpath("/GraphProgress/");
@@ -3454,7 +3454,7 @@ void CLocalWorkUnit::serialize(MemoryBuffer &tgt)
 {
     CriticalBlock block(crit);
     StringBuffer x;
-    tgt.append(exportWorkUnitToXML(this, x, false).str());
+    tgt.append(exportWorkUnitToXML(this, x, false, false).str());
 }
 
 void CLocalWorkUnit::deserialize(MemoryBuffer &src)
@@ -6554,14 +6554,14 @@ bool CLocalWorkUnit::switchThorQueue(const char *cluster, IQueueSwitcher *qs)
 
 //=================================================================================================
 
-IPropertyTree *CLocalWorkUnit::getUnpackedTree() const
+IPropertyTree *CLocalWorkUnit::getUnpackedTree(bool includeProgress) const
 {
     Owned<IPropertyTree> ret = createPTreeFromIPT(p);
     Owned<IConstWUGraphIterator> graphIter = &getGraphs(GraphTypeAny);
     ForEach(*graphIter)
     {
         IConstWUGraph &graph  = graphIter->query();
-        Owned<IPropertyTree> graphTree = graph.getXGMMLTree(false);
+        Owned<IPropertyTree> graphTree = graph.getXGMMLTree(includeProgress);
         SCMStringBuffer gName;
         graph.getName(gName);
         StringBuffer xpath("Graphs/Graph[@name=\"");
@@ -6575,7 +6575,6 @@ IPropertyTree *CLocalWorkUnit::getUnpackedTree() const
     }
     return ret.getClear();
 }
-
 void CLocalWorkUnit::loadGraphs() const
 {
     CriticalBlock block(crit);
@@ -8651,7 +8650,7 @@ extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit()
     return ret;
 }
 
-extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack)
+extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack, bool includeProgress)
 {
     const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
     if (!w)
@@ -8663,8 +8662,8 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
     if (w)
     {
         Linked<IPropertyTree> p;
-        if (unpack)
-            p.setown(w->getUnpackedTree());
+        if (unpack||includeProgress)
+            p.setown(w->getUnpackedTree(includeProgress));
         else
             p.set(w->p);
         toXML(p, str, 0, XML_Format|XML_SortTags);
@@ -8674,14 +8673,14 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
     return str;
 }
 
-extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack)
+extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack, bool includeProgress)
 {
     StringBuffer x;
-    str.set(exportWorkUnitToXML(wu,x,unpack).str());
+    str.set(exportWorkUnitToXML(wu,x,unpack, includeProgress).str());
     return str;
 }
 
-extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack)
+extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack, bool includeProgress)
 {
     const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
     if (!w)
@@ -8693,8 +8692,8 @@ extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const
     if (w)
     {
         Linked<IPropertyTree> p;
-        if (unpack)
-            p.setown(w->getUnpackedTree());
+        if (unpack||includeProgress)
+            p.setown(w->getUnpackedTree(includeProgress));
         else
             p.set(w->p);
         saveXML(filename, p, 0, XML_Format|XML_SortTags|extraXmlFlags);

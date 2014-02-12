@@ -118,6 +118,7 @@ void usage(const char *exe)
   printf("  validatestore [fix=<true|false>]\n"
          "                [verbose=<true|false>]\n"
          "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
+  printf("  workunit <workunit> [true]      -- dump workunit xml, if 2nd parameter equals true, will also include progress data\n");
   printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
   printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
   printf("  xmlsize <filename> [<percentage>] --  analyse size usage in xml file, display individual items above 'percentage' \n");
@@ -2372,6 +2373,13 @@ static void unlock(const char *pattern)
     }
 }
 
+static void dumpWorkunit(const char *wuid, bool includeProgress)
+{
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnit> workunit = factory->openWorkUnit(wuid, false);
+    exportWorkUnitToXMLFile(workunit, "stdout:", 0, true, includeProgress);
+}
+
 static void wuidCompress(const char *match, const char *type, bool compress)
 {
     if (0 != stricmp("graph", type))
@@ -2872,6 +2880,13 @@ int main(int argc, char* argv[])
                         bool verbose = props->getPropBool("verbose");
                         bool deleteFiles = props->getPropBool("deletefiles");
                         validateStore(fix, deleteFiles, verbose);
+                    }
+                    else if (stricmp(cmd, "workunit") == 0) {
+                        CHECKPARAMS(1,2);
+                        bool includeProgress=false;
+                        if (np>1)
+                            includeProgress = strToBool(params.item(2));
+                        dumpWorkunit(params.item(1), includeProgress);
                     }
                     else if (stricmp(cmd,"wuidCompress")==0) {
                         CHECKPARAMS(2,2);
