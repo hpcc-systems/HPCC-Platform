@@ -288,7 +288,7 @@ define([
                         }
                     },
                     DisplayName: tree({
-                        label: this.i18n.Target,
+                        label: this.i18n.TargetWuid,
                         width: 270,
                         sortable: true,
                         shouldExpand: function (row, level, previouslyExpanded) {
@@ -303,7 +303,7 @@ define([
                                 } else {
                                     img += "/esp/files/img/server.png";
                                 }
-                                name = row.getDisplayName();
+                                name = _name;
                             } else {
                                 img = row.getStateImage();
                                 name = "<a href='#' class='" + context.id + "WuidClick'>" + row.Wuid + "</a>";
@@ -311,9 +311,10 @@ define([
                             return "<img src='" + img + "'/>&nbsp;" + name;
                         }
                     }),
+                    DisplaySize: { label: this.i18n.Size, width: 59, sortable: true },
                     State: {
                         label: this.i18n.State,
-                        sortable: true,
+                        sortable: false,
                         formatter: function (state, row) {
                             if (context.activity.isInstanceOfQueue(row)) {
                                 if (row.isPaused()) {
@@ -329,8 +330,8 @@ define([
                             return state;
                         }
                     },
-                    Owner: { label: this.i18n.Owner, width: 90, sortable: true },
-                    Jobname: { label: this.i18n.JobName, sortable: true }
+                    Owner: { label: this.i18n.Owner, width: 90, sortable: false },
+                    Jobname: { label: this.i18n.JobName, sortable: false }
                 },
                 getSelected: function () {
                     var retVal = [];

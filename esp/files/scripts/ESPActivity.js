@@ -147,6 +147,7 @@ define([
                         queue = ESPQueue.GetServerJobQueue(item.QueueName);
                     }
                     queue.updateData(item);
+                    queue.set("DisplayName", queue.getDisplayName());
                     queue.clearChildren();
                     targetClusters.push(queue);
                     targetClusterMap[queue.__hpcc_id] = queue;
