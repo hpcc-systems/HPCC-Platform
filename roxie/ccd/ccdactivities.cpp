@@ -3178,30 +3178,14 @@ protected:
     SmartStepExtra stepExtra; // just used for flags - a little unnecessary...
     const byte *steppingRow;
 
-    __int64 getCount()
-    {
-        assertex(!resent);
-        unsigned __int64 result = 0;
-        unsigned inputsDone = 0;
-        while (!aborted && inputsDone < inputCount)
-        {
-            checkPartChanged(inputData[inputsDone]);
-            if (tlk)
-            {
-                createSegmentMonitors();
-                result += tlk->getCount();
-            }
-            inputsDone++;
-        }
-        return result;
-    }
-
     bool checkLimit(unsigned __int64 limit)
     {
         assertex(!resent);
         unsigned __int64 result = 0;
         unsigned inputsDone = 0;
         bool ret = true;
+        unsigned saveStepping = steppingOffset;
+        steppingOffset = 0;
         while (!aborted && inputsDone < inputCount)
         {
             checkPartChanged(inputData[inputsDone]);
@@ -3216,6 +3200,13 @@ protected:
                 }
             }
             inputsDone++;
+        }
+        if (saveStepping)
+        {
+            steppingOffset = saveStepping;
+            lastPartNo.partNo = 0xffff;
+            lastPartNo.fileNo = 0xffff;
+            tlk.clear();
         }
         return ret;
     }
@@ -3490,7 +3481,7 @@ public:
                 resent = false;
                 {
                     TransformCallbackAssociation associate(callback, tlk); // want to destroy this before we advance to next key...
-                    while (!aborted && rawSeek ? tlk->lookupSkip(rawSeek, steppingOffset, steppingLength) : tlk->lookup(true))
+                    while (!aborted && (rawSeek ? tlk->lookupSkip(rawSeek, steppingOffset, steppingLength) : tlk->lookup(true)))
                     {
                         rawSeek = NULL;  // only want to do the seek first time we look for a particular seek value
                         keyprocessed++;
