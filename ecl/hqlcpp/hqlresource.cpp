@@ -1872,7 +1872,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.isChildQuery = false;
     options.targetClusterType = targetClusterType;
     options.filteredSpillThreshold = _translatorOptions.filteredReadSpillThreshold;
-    options.allowThroughSpill = _translatorOptions.allowThroughSpill;
+    options.allowThroughSpill = (targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster) && _translatorOptions.allowThroughSpill;
     options.allowThroughResult = (targetClusterType != RoxieCluster) && (targetClusterType != ThorLCRCluster);
     options.cloneFilteredIndex = (targetClusterType != RoxieCluster);
     options.spillSharedConditionals = (targetClusterType == RoxieCluster);
