@@ -1202,7 +1202,7 @@ public:
             {
                 DBGLOG("LdapBind for user %s (retries=%d).", username, retries);
                 {
-#ifndef _NO_DALIUSER_STACKTRACE
+#ifdef NULL_DALIUSER_STACKTRACE
                     //following debug code to be removed
                     if (!username)
                     {

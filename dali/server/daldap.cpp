@@ -132,7 +132,7 @@ public:
                 udesc->getPassword(password);
             }
             if (username.length()==0)  {
-#ifndef _NO_DALIUSER_STACKTRACE
+#ifdef NULL_DALIUSER_STACKTRACE
                 DBGLOG("UNEXPECTED USER (NULL) in daldap.cpp getPermissions() line %d", __LINE__);
                 //following debug code to be removed
                 PrintStackReport();
