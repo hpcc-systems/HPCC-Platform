@@ -634,6 +634,10 @@ define([
     });
 
     return {
+        isInstanceOfWorkunit: function (obj) {
+            return obj.isInstanceOf(Workunit);
+        },
+
         Create: function (params) {
             retVal = new Workunit(params);
             retVal.create();

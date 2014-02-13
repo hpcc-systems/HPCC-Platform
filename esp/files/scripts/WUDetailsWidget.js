@@ -116,7 +116,6 @@ define([
             this.resultsWidget = registry.byId(this.id + "_Results");
             this.filesWidget = registry.byId(this.id + "_Files");
             this.vizWidget = registry.byId(this.id + "_Visualize");
-            this.vizWidget.set("disabled", true);
             this.timersWidget = registry.byId(this.id + "_Timers");
             this.graphsWidget = registry.byId(this.id + "_Graphs");
             this.sourceWidget = registry.byId(this.id + "_Source");

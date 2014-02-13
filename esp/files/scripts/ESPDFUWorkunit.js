@@ -203,7 +203,12 @@ define([
         },
         _action: function (action, callback) {
         },
-        abort: function (callback) {
+        abort: function () {
+            return FileSpray.AbortDFUWorkunit({
+                request: {
+                    wuid: this.Wuid
+                }
+            });
         },
         doDelete: function (callback) {
         },
@@ -287,6 +292,10 @@ define([
     });
 
     return {
+        isInstanceOfWorkunit: function (obj) {
+            return obj.isInstanceOf(Workunit);
+        },
+
         Get: function (wuid) {
             var store = new Store();
             return store.get(wuid);

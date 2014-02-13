@@ -302,6 +302,9 @@ define([
         UpdateDFUWorkunit: function (params) {
             return ESPRequest.send("FileSpray", "UpdateDFUWorkunit", params);
         },
+        AbortDFUWorkunit: function(params) {
+            return ESPRequest.send("FileSpray", "AbortDFUWorkunit", params);
+        },
         DFUWUFile: function (params) {
             lang.mixin(params, {
                 handleAs: "text"
