@@ -77,7 +77,7 @@ define([
                     Name: {
                         label: "Name", sortable: true,
                         formatter: function (Name, row) {
-                            return "<img src='../files/img/" + (row.IsSuperFile ? "folder_table.png" : "file.png") + "'>&nbsp;<a href='#' rowIndex=" + row + " class='" + context.id + "SourceFileClick'>" + Name + "</a>";
+                            return "<img src='/esp/files/img/" + (row.IsSuperFile ? "folder_table.png" : "file.png") + "'>&nbsp;<a href='#' rowIndex=" + row + " class='" + context.id + "SourceFileClick'>" + Name + "</a>";
                         }
                     },
                     Count: { label: "Usage", width: 72, sortable: true }

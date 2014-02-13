@@ -457,47 +457,47 @@ define([
         getStateImage: function () {
             switch (this.StateID) {
                 case 1:
-                    return "img/workunit_completed.png";
+                    return "/esp/files/img/workunit_completed.png";
                 case 2:
-                    return "img/workunit_running.png";
+                    return "/esp/files/img/workunit_running.png";
                 case 3:
-                    return "img/workunit_completed.png";
+                    return "/esp/files/img/workunit_completed.png";
                 case 4:
-                    return "img/workunit_failed.png";
+                    return "/esp/files/img/workunit_failed.png";
                 case 5:
-                    return "img/workunit_warning.png";
+                    return "/esp/files/img/workunit_warning.png";
                 case 6:
-                    return "img/workunit_aborting.png";
+                    return "/esp/files/img/workunit_aborting.png";
                 case 7:
-                    return "img/workunit_failed.png";
+                    return "/esp/files/img/workunit_failed.png";
                 case 8:
-                    return "img/workunit_warning.png";
+                    return "/esp/files/img/workunit_warning.png";
                 case 9:
-                    return "img/workunit_submitted.png";
+                    return "/esp/files/img/workunit_submitted.png";
                 case 10:
-                    return "img/workunit_warning.png";
+                    return "/esp/files/img/workunit_warning.png";
                 case 11:
-                    return "img/workunit_running.png";
+                    return "/esp/files/img/workunit_running.png";
                 case 12:
-                    return "img/workunit_warning.png";
+                    return "/esp/files/img/workunit_warning.png";
                 case 13:
-                    return "img/workunit_warning.png";
+                    return "/esp/files/img/workunit_warning.png";
                 case 14:
-                    return "img/workunit_warning.png";
+                    return "/esp/files/img/workunit_warning.png";
                 case 15:
-                    return "img/workunit_running.png";
+                    return "/esp/files/img/workunit_running.png";
                 case 16:
-                    return "img/workunit_warning.png";
+                    return "/esp/files/img/workunit_warning.png";
                 case 999:
-                    return "img/workunit_deleted.png";
+                    return "/esp/files/img/workunit_deleted.png";
             }
-            return "img/workunit.png";
+            return "/esp/files/img/workunit.png";
         },
         getProtectedImage: function () {
             if (this.Protected) {
-                return "img/locked.png"
+                return "/esp/files/img/locked.png"
             }
-            return "img/unlocked.png"
+            return "/esp/files/img/unlocked.png"
         },
         fetchText: function (onFetchText) {
             var context = this;

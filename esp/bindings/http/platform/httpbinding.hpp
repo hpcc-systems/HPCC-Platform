@@ -173,7 +173,7 @@ public:
     virtual bool doAuth(IEspContext* ctx);
     virtual void populateRequest(CHttpRequest *request);
     virtual void getNavSettings(int &width, bool &resizable, bool &scroll){width=165;resizable=false;scroll=true;}
-    virtual const char* getRootPage() {return NULL;}
+    virtual const char* getRootPage(IEspContext* ctx) {return NULL;}
 
     virtual StringBuffer &generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns);
     virtual void getSchemaLocation(IEspContext &context, CHttpRequest* request, StringBuffer &schemaLocation );
