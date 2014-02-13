@@ -31,7 +31,7 @@ from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam,  getVersionNumbers
 
-prog_version = "0.0.10"
+prog_version = "0.0.11"
 
 if __name__ == "__main__":
 
