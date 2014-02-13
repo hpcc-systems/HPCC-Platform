@@ -85,7 +85,7 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this.queriesTab = registry.byId(this.id + "_Queries");
+            this.queriesTab = registry.byId(this.id + "_PublishedQueries");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.borderContainer = registry.byId(this.id + "BorderContainer");
         },
