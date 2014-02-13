@@ -1026,21 +1026,20 @@ size32_t RtlSetTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
         target.outputBeginNested(outerTag, false);
     }
 
-    const char *innerPath = queryXPath(field);
-    target.outputBeginArray(innerPath);
-
     if (*(bool *)self)
         target.outputSetAll();
     else
     {
+        const char *innerPath = queryXPath(field);
+        target.outputBeginArray(innerPath);
         while (offset < max)
         {
             child->toXML(self+offset, selfrow, field, target);
             offset += child->size(self+offset, selfrow);
         }
+        target.outputEndArray(innerPath);
     }
 
-    target.outputEndArray(innerPath);
     if (outerTag)
         target.outputEndNested(outerTag);
     return max;

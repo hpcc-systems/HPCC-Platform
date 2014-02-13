@@ -48,6 +48,10 @@ public:
     unsigned length() const                                 { return out.length(); }
     const char * str() const                                { return out.str(); }
 
+    void outputInlineXml(const char *text){out.append(text); flush(false);} //for appending xml only content
+    void outputBeginNested(const char *fieldname, bool nestChildren, bool doIndent);
+    void outputEndNested(const char *fieldname, bool doIndent);
+
     virtual void outputQuoted(const char *text);
     virtual void outputQString(unsigned len, const char *field, const char *fieldname);
     virtual void outputString(unsigned len, const char *field, const char *fieldname);
@@ -60,6 +64,8 @@ public:
     virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname);
     virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname);
     virtual void outputUtf8(unsigned len, const char *field, const char *fieldname);
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren);
+    virtual void outputEndDataset(const char *dsname);
     virtual void outputBeginNested(const char *fieldname, bool nestChildren);
     virtual void outputEndNested(const char *fieldname);
     virtual void outputBeginArray(const char *fieldname){}; //repeated elements are inline for xml
@@ -109,11 +115,16 @@ public:
     virtual void outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname);
     virtual void outputUnicode(unsigned len, const UChar *field, const char *fieldname);
     virtual void outputUtf8(unsigned len, const char *field, const char *fieldname);
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren);
+    virtual void outputEndDataset(const char *dsname);
     virtual void outputBeginNested(const char *fieldname, bool nestChildren);
     virtual void outputEndNested(const char *fieldname);
     virtual void outputBeginArray(const char *fieldname);
     virtual void outputEndArray(const char *fieldname);
     virtual void outputSetAll();
+
+    void outputBeginRoot(){out.append('{');}
+    void outputEndRoot(){out.append('}');}
 
 protected:
     inline void flush(bool isClose)
@@ -131,8 +142,8 @@ protected:
         unsigned depth;
     };
 
-    const char *checkItemName(CJsonWriterItem *item, const char *name);
-    const char *checkItemName(const char *name);
+    const char *checkItemName(CJsonWriterItem *item, const char *name, bool simpleType=true);
+    const char *checkItemName(const char *name, bool simpleType=true);
     const char *checkItemNameBeginNested(const char *name);
     const char *checkItemNameEndNested(const char *name);
 
@@ -173,7 +184,7 @@ public:
 };
 
 enum XMLWriterType{WTStandard, WTEncoding, WTEncodingData64, WTJSON} ;
-CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
+thorhelper_decl CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 thorhelper_decl IXmlWriter * createIXmlWriter(unsigned _flags, unsigned initialIndent=0, IXmlStreamFlusher *_flusher=NULL, XMLWriterType xmlType=WTStandard);
 
 class thorhelper_decl SimpleOutputWriter : public CInterface, implements IXmlWriter
@@ -202,6 +213,8 @@ public:
     virtual void outputUtf8(unsigned len, const char *field, const char *fieldname);
     virtual void outputBeginNested(const char *fieldname, bool nestChildren);
     virtual void outputEndNested(const char *fieldname);
+    virtual void outputBeginDataset(const char *dsname, bool nestChildren){}
+    virtual void outputEndDataset(const char *dsname){}
     virtual void outputBeginArray(const char *fieldname){}
     virtual void outputEndArray(const char *fieldname){}
     virtual void outputSetAll();

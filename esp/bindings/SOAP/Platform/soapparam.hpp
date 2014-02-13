@@ -83,9 +83,9 @@ public:
     virtual void addRpcValue(IRpcMessage &rpc_call, const char *tagname, const char *basepath, const char *xsdtype, const char *prefix, bool *encodex)=0;
 
     virtual void toXMLValue(StringBuffer &s, bool encode)=0;
-    virtual void toJSONValue(StringBuffer &s)=0;
+    virtual void toJSONValue(StringBuffer &s, bool encode)=0;
     virtual void toXML(IEspContext* ctx, StringBuffer &s, const char *tagname, const char *prefix, bool encode);
-    virtual void toJSON(IEspContext* ctx, StringBuffer &s, const char *tagname);
+    virtual void toJSON(IEspContext* ctx, StringBuffer &s, const char *tagname, bool encode);
     void toStr(IEspContext* ctx, StringBuffer &str, const char *tagname, const char *basepath="", bool encodeXml=true, const char *xsdtype="", const char *prefix="");
 
     void marshall(IRpcMessage &rpc_call, const char *tagname, const char *basepath="", const char *xsdtype="", const char *prefix="");
@@ -129,7 +129,7 @@ public:
         appendStringBuffer(s, value);
     }
 
-    virtual void toJSONValue(StringBuffer &s)
+    virtual void toJSONValue(StringBuffer &s, bool encode)
     {
         if (!isNil)
             appendJSONValue(s, NULL, value);
@@ -194,7 +194,7 @@ public:
         s.append(value);
     }
 
-    virtual void toJSONValue(StringBuffer &s)
+    virtual void toJSONValue(StringBuffer &s, bool encode)
     {
         if (!isNil)
             appendJSONValue(s, NULL, value);
@@ -272,8 +272,10 @@ public:
         encodeNewlines = b;
     }
 
+    void toStr(IEspContext* ctx, StringBuffer &str, const char *tagname, const char *basepath="", bool encodeXml=true, const char *xsdtype="", const char *prefix="", bool encodeJSON=true);
+
     virtual void toXMLValue(StringBuffer &s, bool encode);
-    virtual void toJSONValue(StringBuffer &s);
+    virtual void toJSONValue(StringBuffer &s, bool encode);
 
     void addRpcValue(IRpcMessage &rpc_call, const char *tagname, const char *basepath, const char *xsdtype, const char *prefix, bool *encodex);
     virtual bool updateValue(IRpcMessage &rpc_call, const char *path);

@@ -2476,7 +2476,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
     return true;
 }
 
-void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd)
+void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt)
 {
     if (!result)
         return;
@@ -2502,7 +2502,10 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
             MemoryBuffer & buffer;
         } adaptor(mb);
 
-        count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
+        if (fmt==ESPSerializationJSON)
+            count = getResultJSON(adaptor, result, name, (unsigned) start, count);
+        else
+            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
     }
 }
 
@@ -2549,7 +2552,7 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     }
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
-    appendResultSet(mb, rs, name, start, count, total, bin, xsd);
+    appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat());
 }
 
 void openSaveFile(IEspContext &context, int opt, const char* filename, const char* origMimeType, MemoryBuffer& buf, IEspWULogFileResponse &resp)
@@ -2910,7 +2913,7 @@ void getFileResults(IEspContext &context, const char* logicalName, const char* c
 {
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(logicalName, cluster));
-    appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd);
+    appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat());
 }
 
 void getWorkunitCluster(IEspContext &context, const char* wuid, SCMStringBuffer& cluster, bool checkArchiveWUs)
@@ -2963,6 +2966,8 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
         filter.appendf(";seq=%d;", seq);
         if (inclXsd)
             filter.append("xsd;");
+        if (context.getResponseFormat()==ESPSerializationJSON)
+            filter.append("json;");
 
         const char* logicalName = req.getLogicalName();
         const char* clusterName = req.getCluster();

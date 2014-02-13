@@ -704,7 +704,7 @@ ESPresponse [exceptions_inline,http_encode(0)] WUResultResponse
     int Count;
     int64 Total;
 
-    string Result;
+    [json_inline(1)] string Result;
 };
 
 ESPrequest WUResultViewRequest

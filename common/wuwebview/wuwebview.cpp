@@ -287,6 +287,8 @@ public:
     virtual void renderResults(const char *viewName, const char *xml, StringBuffer &html);
     virtual void renderResults(const char *viewName, StringBuffer &html);
     virtual void renderSingleResult(const char *viewName, const char *resultname, StringBuffer &html);
+    virtual void renderResultsJSON(StringBuffer &out, const char *jsonp);
+
     virtual void expandResults(const char *xml, StringBuffer &out, unsigned flags);
     virtual void expandResults(StringBuffer &out, unsigned flags);
     virtual void createWuidResponse(StringBuffer &out, unsigned flags);
@@ -629,6 +631,22 @@ void WuWebView::renderResults(const char *viewName, StringBuffer &out)
     buffer.appendResults(cw, username.get(), pw.get());
     renderExpandedResults(viewName, buffer, out);
 }
+
+void WuWebView::renderResultsJSON(StringBuffer &out, const char *jsonp)
+{
+    if (jsonp && *jsonp)
+        out.append(jsonp).append('(');
+    out.append('{');
+    StringBuffer responseName(name.str());
+    responseName.append("Response");
+    appendJSONName(out, responseName);
+    StringBufferAdaptor json(out);
+    getFullWorkUnitResultsJSON(username, pw, cw, json, 0, ExceptionSeverityError);
+    out.append("}");
+    if (jsonp && *jsonp)
+        out.append(");");
+}
+
 
 void WuWebView::renderSingleResult(const char *viewName, const char *resultname, StringBuffer &out)
 {

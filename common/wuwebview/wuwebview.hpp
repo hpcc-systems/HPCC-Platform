@@ -46,6 +46,7 @@ interface IWuWebView : extends IInterface
     virtual void renderResults(const char *viewName, const char *xml, StringBuffer &html)=0;
     virtual void renderResults(const char *viewName, StringBuffer &html)=0;
     virtual void renderSingleResult(const char *viewName, const char *resultname, StringBuffer &html)=0;
+    virtual void renderResultsJSON(StringBuffer &out, const char *jsonp)=0;
     virtual void applyResultsXSLT(const char *file, const char *xml, StringBuffer &html)=0;
     virtual void applyResultsXSLT(const char *file, StringBuffer &html)=0;
     virtual StringBuffer &aggregateResources(const char *type, StringBuffer &content)=0;

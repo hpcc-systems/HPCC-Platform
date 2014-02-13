@@ -2138,7 +2138,7 @@ int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response,
     return 0;
 }
 
-int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, const char *viewname, const char *xsltname)
+int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, TextMarkupFormat fmt, const char *viewname, const char *xsltname)
 {
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
     Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "wsecl", context.queryUserId());
@@ -2193,6 +2193,8 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
             web->renderResults(viewname, out);
         else if (xsltname)
             web->applyResultsXSLT(xsltname, out);
+        else if (fmt==MarkupFmt_JSON)
+            web->renderResultsJSON(out, context.queryRequestParameters()->queryProp("jsonp"));
         else
             web->expandResults(out, flags);
     }
@@ -2378,15 +2380,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
         }
     }
     else
-    {
-        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), output, xmlflags);
-        if (outputJSON)
-        {
-            StringBuffer jsonresp;
-            getWsEclJsonResponse(jsonresp, context, request, output.str(), wsinfo);
-            output.swapWith(jsonresp);
-        }
-    }
+        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), output, xmlflags, outputJSON ? MarkupFmt_JSON : MarkupFmt_XML);
 
     response->setContent(output.str());
     response->setContentType(outputJSON ? "application/json" : "application/xml");
@@ -2427,7 +2421,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     }
     else
     {
-        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), html, 0, view, xsltfile.str());
+        submitWsEclWorkunit(context, wsinfo, soapmsg.str(), html, 0, MarkupFmt_XML, view, xsltfile.str());
     }
 
     response->setContent(html.str());
@@ -2937,7 +2931,6 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
             if (getEspLogLevel()>LogNormal)
                 DBGLOG("soap from json req: %s", soapfromjson.str());
 
-            StringBuffer soapresp;
             unsigned xmlflags = WWV_ADD_SOAP | WWV_ADD_RESULTS_TAG | WWV_ADD_RESPONSE_TAG | WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES;
             if (ctx->queryRequestParameters()->hasProp("display"))
                 xmlflags |= WWV_USE_DISPLAY_XSLT;
@@ -2946,10 +2939,9 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
             else
                 xmlflags |= WWV_OMIT_SCHEMAS;
 
-            submitWsEclWorkunit(*ctx, wsinfo, soapfromjson.str(), soapresp, xmlflags);
+            submitWsEclWorkunit(*ctx, wsinfo, soapfromjson.str(), jsonresp, xmlflags, MarkupFmt_JSON);
             if (getEspLogLevel()>LogNormal)
-                DBGLOG("HandleSoapRequest response: %s", soapresp.str());
-            getWsEclJsonResponse(jsonresp, *ctx, request, soapresp.str(), wsinfo);
+                DBGLOG("HandleJSONRequest response: %s", jsonresp.str());
         }
 
     }

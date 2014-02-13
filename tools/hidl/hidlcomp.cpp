@@ -1955,12 +1955,16 @@ void ParamInfo::write_esp_marshall(bool isRpc, bool encodeXml, bool checkVer, in
         {
             outf("\"%s\", \"\", ", getXmlTag());
             if (isRpc)
-                outf("\"\", ");
+                outf("\"\", %s);\n", prefix);
             else if (kind==TK_ESPSTRUCT)
-                outf("false, \"\", ");
+                outf("false, \"\", %s);\n", prefix);
             else
-                outf("%s, \"\", ", encode);
-            outf("%s);\n", prefix);
+            {
+                outf("%s, \"\", %s", encode, prefix);
+                if (getMetaInt("json_inline"))
+                    outs(", false");
+                outs(");\n");
+            }
         }
     }
 }
