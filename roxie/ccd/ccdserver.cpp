@@ -20788,7 +20788,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 map.setown(datafile->getFileMap());
             bool isSimple = (map && map->getNumParts()==1 && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false));
@@ -21896,7 +21896,7 @@ public:
         {
             bool isOpt = (flags & TIRoptional) != 0;
             OwnedRoxieString indexName(indexHelper->getFileName());
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, queryFactory.queryWorkUnit()));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -22814,7 +22814,7 @@ public:
             assertex(recsize);
             OwnedRoxieString fileName(helper->getFileName());
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
-            datafile.setown(queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, queryFactory.queryWorkUnit()));
+            datafile.setown(queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit()));
             offset_t filesize = datafile ? datafile->getFileSize() : 0;
             if (filesize % recsize != 0)
                 throw MakeStringException(ROXIE_MISMATCH, "Record size mismatch for file %s - %"I64F"d is not a multiple of fixed record size %d", fileName.get(), filesize, recsize);
@@ -23033,7 +23033,7 @@ public:
             OwnedRoxieString fname(fetchContext->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fname,
                                                                         (fetchContext->getFetchFlags() & FFdatafileoptional) != 0,
-                                                                        true,
+                                                                        true, true,
                                                                         _queryFactory.queryWorkUnit()));
             if (datafile)
                 map.setown(datafile->getFileMap());
@@ -23082,13 +23082,13 @@ public:
             const char *indexName = queryNodeIndexName(_graphNode);
             if (indexName && (!fileName || !streq(indexName, fileName)))
             {
-                indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, queryFactory.queryWorkUnit()));
+                indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
                 if (indexfile)
                     keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, false));
             }
             if (fileName)
             {
-                datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, queryFactory.queryWorkUnit()));
+                datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, queryFactory.queryWorkUnit()));
                 if (datafile)
                 {
                     if (isLocal)
@@ -24623,7 +24623,7 @@ public:
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, queryFactory.queryWorkUnit()));
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, queryFactory.queryWorkUnit()));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -24642,7 +24642,7 @@ public:
         if (!isHalfKeyed && !variableFetchFileName)
         {
             bool isFetchOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode), isFetchOpt, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode), isFetchOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
             {
                 if (isLocal)
