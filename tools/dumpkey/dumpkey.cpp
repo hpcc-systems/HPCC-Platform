@@ -69,6 +69,7 @@ void doOption(const char *opt)
 
 int main(int argc, const char **argv)
 {
+    InitModuleObjects();
 #ifdef _WIN32
     _setmode( _fileno( stdout ), _O_BINARY );
     _setmode( _fileno( stdin ), _O_BINARY );

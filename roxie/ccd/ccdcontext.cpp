@@ -3047,7 +3047,7 @@ public:
 
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
     {
-        return factory->queryPackage().lookupFileName(filename, isOpt, true, workUnit);
+        return factory->queryPackage().lookupFileName(filename, isOpt, false, true, workUnit);
     }
 
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)

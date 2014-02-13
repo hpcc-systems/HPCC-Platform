@@ -990,7 +990,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
             {
                 unsigned channel = queryFactory.queryChannel();
@@ -3085,7 +3085,7 @@ public:
         {
             bool isOpt = (helper->getFlags() & TIRoptional) != 0;
             OwnedRoxieString indexName(helper->getFileName());
-            datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, queryFactory.queryWorkUnit()));
+            datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, queryFactory.queryWorkUnit()));
             if (datafile)
                 keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
         }
@@ -3185,30 +3185,14 @@ protected:
     SmartStepExtra stepExtra; // just used for flags - a little unnecessary...
     const byte *steppingRow;
 
-    __int64 getCount()
-    {
-        assertex(!resent);
-        unsigned __int64 result = 0;
-        unsigned inputsDone = 0;
-        while (!aborted && inputsDone < inputCount)
-        {
-            checkPartChanged(inputData[inputsDone]);
-            if (tlk)
-            {
-                createSegmentMonitors();
-                result += tlk->getCount();
-            }
-            inputsDone++;
-        }
-        return result;
-    }
-
     bool checkLimit(unsigned __int64 limit)
     {
         assertex(!resent);
         unsigned __int64 result = 0;
         unsigned inputsDone = 0;
         bool ret = true;
+        unsigned saveStepping = steppingOffset;
+        steppingOffset = 0;
         while (!aborted && inputsDone < inputCount)
         {
             checkPartChanged(inputData[inputsDone]);
@@ -3223,6 +3207,13 @@ protected:
                 }
             }
             inputsDone++;
+        }
+        if (saveStepping)
+        {
+            steppingOffset = saveStepping;
+            lastPartNo.partNo = 0xffff;
+            lastPartNo.fileNo = 0xffff;
+            tlk.clear();
         }
         return ret;
     }
@@ -3497,7 +3488,7 @@ public:
                 resent = false;
                 {
                     TransformCallbackAssociation associate(callback, tlk); // want to destroy this before we advance to next key...
-                    while (!aborted && rawSeek ? tlk->lookupSkip(rawSeek, steppingOffset, steppingLength) : tlk->lookup(true))
+                    while (!aborted && (rawSeek ? tlk->lookupSkip(rawSeek, steppingOffset, steppingLength) : tlk->lookup(true)))
                     {
                         rawSeek = NULL;  // only want to do the seek first time we look for a particular seek value
                         keyprocessed++;
@@ -4316,7 +4307,7 @@ public:
         {
             bool isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
             OwnedRoxieString fname(fetchContext->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
         }
@@ -4665,7 +4656,7 @@ public:
         {
             bool isOpt = (helper->getJoinFlags() & JFindexoptional) != 0;
             OwnedRoxieString indexFileName(helper->getIndexFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
         }
@@ -5011,7 +5002,7 @@ public:
         {
             bool isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
         }
@@ -5362,13 +5353,13 @@ public:
             const char *indexName = queryNodeIndexName(_graphNode);
             if (indexName && (!fileName || !streq(indexName, fileName)))
             {
-                indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, _queryFactory.queryWorkUnit()));
+                indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit()));
                 if (indexfile)
                     keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
             }
             if (fileName)
             {
-                datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
+                datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
                 if (datafile)
                     fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
             }
