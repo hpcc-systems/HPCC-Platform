@@ -20,7 +20,7 @@
 ############################################################################## */
 
 import Std.Str;
-import Std.Str.^.Uni;
+import Std.Str.^.^.Std.Uni;  // Invalid to access parent of Std?
 
 output(Str.toUpperCase(&apos;x&apos;));
 output(Uni.toUpperCase(U&apos;x&apos;));&#10;

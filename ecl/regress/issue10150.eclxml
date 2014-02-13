@@ -25,7 +25,7 @@ export v1 := 'Hello';
 export x := 3;
   </Attribute>
   <Attribute name="y">
-export y := 2;
+export y := 5;
   </Attribute>
   <Attribute name="z">
 import $ as common;
@@ -34,10 +34,10 @@ export z := common.x * common.y;
  </Module>
  <Module name="a.b.d">
   <Attribute name="x">
-export x := 30;
+export x := 7;
   </Attribute>
   <Attribute name="y">
-export y := 20;
+export y := 11;
   </Attribute>
   <Attribute name="z">
 import $ as common;
