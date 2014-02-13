@@ -675,7 +675,11 @@ public:
     ~CWriteHandler()
     {
         primaryio.clear(); // should close
-        if (aborted && *aborted) return;
+        if (aborted && *aborted)
+        {
+            primary->remove(); // i.e. never completed, so remove partial (temp) primary
+            return;
+        }
         if (renameToPrimary)
         {
             OwnedIFile tmpIFile;

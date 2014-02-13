@@ -2779,23 +2779,7 @@ public:
 
     virtual unsigned __int64 checkCount(unsigned __int64 max)
     {
-        unsigned __int64 ret = 0;
-        if (resetPending)
-            resetSort(NULL, 0, 0); // this is a little suboptimal as we will not bail out early
-        for (unsigned i = 0; i < activekeys; i++)
-        {
-            unsigned key = mergeheap[i];
-            keyBuffer = buffers[key];
-            keyCursor = cursors[key];
-            ret += CKeyLevelManager::checkCount(max);
-            if (max)
-            {
-                if (ret > max)
-                    return ret;
-                max -= ret;
-            }
-        }
-        return ret;
+        throwUnexpected();  // Can't sensibly check counts on merged streams (and you don't want to even if you could)
     }
 
     virtual void serializeCursorPos(MemoryBuffer &mb)
