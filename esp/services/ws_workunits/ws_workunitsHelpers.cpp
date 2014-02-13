@@ -1961,7 +1961,7 @@ void WsWuInfo::getWorkunitXml(const char* plainText, MemoryBuffer& buf)
         header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><?xml-stylesheet href=\"../esp/xslt/xmlformatter.xsl\" type=\"text/xsl\"?>";
 
     SCMStringBuffer xml;
-    exportWorkUnitToXML(cw, xml, true);
+    exportWorkUnitToXML(cw, xml, true, false);
 
     buf.append(strlen(header), header);
     buf.append(xml.length(), xml.str());
