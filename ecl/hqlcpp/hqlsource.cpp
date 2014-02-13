@@ -458,10 +458,10 @@ static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * 
 }
 
 
-static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * tableExpr, IHqlExpression * record, bool hasWeirdFileposition, bool allowTranslate)
+static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * tableExpr, IHqlExpression * record, bool hasInternalFileposition, bool allowTranslate)
 {
     HqlExprArray physicalFields;
-    unsigned max = record->numChildren() - (hasWeirdFileposition ? 1 : 0);
+    unsigned max = record->numChildren() - (hasInternalFileposition ? 1 : 0);
     for (unsigned idx=0; idx < max; idx++)
     {
         IHqlExpression * cur = record->queryChild(idx);

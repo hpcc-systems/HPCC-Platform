@@ -9719,10 +9719,13 @@ void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name,
     IHqlExpression * payload = expr ? expr->queryAttribute(_payload_Atom) : NULL;
     OwnedHqlExpr exprToCrc = getSerializedForm(dataset->queryRecord(), diskAtom);
 
-    //MORE: Should this take FILEPOSITION(FALSE) into account?
     unsigned payloadSize = 1;
     if (payload)
         payloadSize = (unsigned)getIntValue(payload->queryChild(0)) + payloadDelta;
+
+    //FILEPOSITION(FALSE) means we have counted 1 too many in the payload
+    if (!getBoolAttribute(expr, filepositionAtom, true))
+        payloadSize--;
 
     exprToCrc.setown(createComma(exprToCrc.getClear(), getSizetConstant(payloadSize)));
 

@@ -15354,7 +15354,7 @@ static bool getBoolAttributeValue(IHqlExpression * attr)
     if (value->queryValue())
         return getBoolValue(value, true);
 
-    //Not a constant => fold th expression
+    //Not a constant => fold the expression
     OwnedHqlExpr folded = foldHqlExpression(value);
     if (folded->queryValue())
         return getBoolValue(folded, true);

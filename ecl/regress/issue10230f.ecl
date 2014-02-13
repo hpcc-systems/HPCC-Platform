@@ -17,6 +17,8 @@
 
 d := dataset('~people', { string15 name, unsigned8 dob }, flat);
 
-// The parameter can be any compile-time constant?  It should be supported, but isn't currently
+// The parameter can be any compile-time constant?  It "could" be supported, but isn't currently
+//If you really need something like this it will need to use a macro.
+//It is an example of a function needing to have a fixed output record format.
 i(boolean hasFileposition) := index(d, { name, dob }, 'peopleIndex', FILEPOSITION(hasFileposition)); // dob goes into the keyed portion, not filepos
 output(i(false)(name = 'Gavin' and dob != 0));
