@@ -147,7 +147,7 @@ define([
 
             this.createStackControllerTooltip(this.id + "_ECL", this.i18n.ECL);
             this.createStackControllerTooltip(this.id + "_Files", this.i18n.files);
-            this.createStackControllerTooltip(this.id + "_Queries", this.i18n.publishedQueries);
+            this.createStackControllerTooltip(this.id + "_RoxieQueries", this.i18n.publishedQueries);
             this.createStackControllerTooltip(this.id + "_OPS", this.i18n.operations);
             this.initTab();
         },

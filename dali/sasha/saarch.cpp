@@ -73,6 +73,8 @@ static void mkDateCompare(bool dfu,const char *dt,StringBuffer &out,char fill)
             else
                 out.append(fill);
         out.append('-');
+        if (dt[i]) // skip '-'
+            i++;
         while (dt[i]||(out.length()<16))
             if (dt[i])
                 out.append(dt[i++]);

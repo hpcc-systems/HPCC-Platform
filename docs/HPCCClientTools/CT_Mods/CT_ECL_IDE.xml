@@ -570,6 +570,12 @@
             </tgroup>
           </informaltable>
 
+          <para>An <emphasis role="bold">Override Automatic Compiler
+          Selection</emphasis> checkbox is available should you want to
+          override the default compiler selection, or location. Use this
+          option if you are using multiple versions of the client tools or if
+          you installed the compiler in a different location.</para>
+
           <informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
               <colspec align="left" colwidth="122.40pt" />
