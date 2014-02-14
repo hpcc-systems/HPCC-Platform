@@ -843,10 +843,9 @@ interface IDistributedFileTransactionExt : extends IDistributedFileTransaction
     virtual void ascend()=0;   // ascend back from the deep, one step at a time
     virtual void autoCommit()=0; // if transaction not active, commit straight away
     virtual void addAction(CDFAction *action)=0;
-    virtual void addFile(IDistributedFile *file)=0;
-    virtual void ensureFile(IDistributedFile *file)=0;
+    virtual void addFile(IDistributedFile *file, bool keep)=0;
     virtual void clearFile(IDistributedFile *file)=0;
-    virtual void clearFiles()=0;
+    virtual void clearFiles(bool all)=0;
     virtual void noteAddSubFile(IDistributedSuperFile *super, const char *superName, IDistributedFile *sub) = 0;
     virtual void noteRemoveSubFile(IDistributedSuperFile *super, IDistributedFile *sub) = 0;
     virtual void clearSubFiles(IDistributedSuperFile *super) = 0;
@@ -1220,7 +1219,7 @@ public:
 
 class CDistributedFileTransaction: public CInterface, implements IDistributedFileTransactionExt
 {
-    class CTransactionFile : public CSimpleInterface
+    class CTransactionFile : public CInterface
     {
         class HTMapping : public CInterface
         {
@@ -1259,8 +1258,9 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
         OwningStringSuperHashTableOf<HTMapping> subFilesByName;
         StringAttr name;
         Linked<IDistributedFile> file;
+        bool keep;
     public:
-        CTransactionFile(CDistributedFileTransaction &_owner, const char *_name, IDistributedFile *_file) : owner(_owner), name(_name), file(_file)
+        CTransactionFile(CDistributedFileTransaction &_owner, const char *_name, IDistributedFile *_file, bool _keep) : owner(_owner), name(_name), file(_file), keep(_keep)
         {
         }
         const char *queryName() const { return name; }
@@ -1315,6 +1315,7 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
         }
         const void *queryFindParam() const { return &file; }
         const char *queryFindString() const { return name; }
+        bool queryKeep() const { return keep; }
     };
     CIArrayOf<CDFAction> actions;
     OwningSimpleHashTableOf<CTransactionFile, IDistributedFile *> trackedFiles;
@@ -1332,19 +1333,13 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
 
 
     void validateAddSubFile(IDistributedSuperFile *super, IDistributedFile *sub, const char *subName);
-    CTransactionFile *queryCreate(const char *name, IDistributedFile *file, bool recreate=false)
+    CTransactionFile *queryCreate(const char *name, IDistributedFile *file, bool keep)
     {
-        Owned<CTransactionFile> trackedFile;
-        if (!recreate)
-            trackedFile.set(trackedFiles.find(file));
-        if (!trackedFile)
-        {
-            StringBuffer tmp;
-            name = normalizeLFN(name, tmp);
-            trackedFile.setown(new CTransactionFile(*this, tmp.str(), file));
-            trackedFiles.replace(*trackedFile.getLink());
-            trackedFilesByName.replace(*trackedFile.getLink());
-        }
+        StringBuffer tmp;
+        name = normalizeLFN(name, tmp);
+        Owned<CTransactionFile> trackedFile = new CTransactionFile(*this, tmp.str(), file, keep);
+        trackedFiles.replace(*trackedFile.getLink());
+        trackedFilesByName.replace(*trackedFile.getLink());
         return trackedFile;
     }
     CTransactionFile *lookupTrackedFile(IDistributedFile *file)
@@ -1367,14 +1362,9 @@ public:
             rollback();
         assert(depth == 0);
     }
-    void ensureFile(IDistributedFile *file)
+    void addFile(IDistributedFile *file, bool keep)
     {
-        if (!trackedFiles.find(file))
-            addFile(file);
-    }
-    void addFile(IDistributedFile *file)
-    {
-        CTransactionFile *trackedFile = queryCreate(file->queryLogicalName(), file, false);
+        CTransactionFile *trackedFile = queryCreate(file->queryLogicalName(), file, keep);
         // Also add subfiles to cache
         IDistributedSuperFile *sfile = file->querySuperFile();
         if (sfile)
@@ -1384,13 +1374,13 @@ public:
             {
                 IDistributedFile *f = &iter->query();
                 trackedFile->noteAddSubFile(f);
-                addFile(f);
+                addFile(f, keep);
             }
         }
     }
     void noteAddSubFile(IDistributedSuperFile *super, const char *superName, IDistributedFile *sub)
     {
-        CTransactionFile *trackedSuper = queryCreate(superName, super);
+        CTransactionFile *trackedSuper = queryCreate(superName, super, false);
         trackedSuper->noteAddSubFile(sub);
     }
     void noteRemoveSubFile(IDistributedSuperFile *super, IDistributedFile *sub)
@@ -1412,7 +1402,7 @@ public:
         {
             trackedFiles.removeExact(trackedFile);
             trackedFilesByName.removeExact(trackedFile);
-            trackedFile = queryCreate(newName, file);
+            trackedFile = queryCreate(newName, file, false);
         }
     }
     void addAction(CDFAction *action)
@@ -1424,7 +1414,7 @@ public:
     {
         if (isactive)
             throw MakeStringException(-1,"Transaction already started");
-        clearFiles();
+        clearFiles(true);
         actions.kill();
         isactive = true;
         prepared = 0;
@@ -1445,7 +1435,11 @@ public:
     }
     void retryActions()
     {
-        clearFiles(); // clear all previously tracked pending file changes, e.g. renames, super file additions/removals
+        /* clear all previously tracked pending file changes, e.g. renames, super file additions/removals
+         * but keep any files added marked 'keep' that mechanism depends on
+         */
+        clearFiles(false);
+
         while (prepared) // unlock for retry
             actions.item(--prepared).retry();
     }
@@ -1494,7 +1488,7 @@ public:
     {
         // =============== COMMIT and CLEANUP
         commitActions();
-        clearFiles();
+        clearFiles(true);
         isactive = false;
         actions.kill();
         deleteFiles();
@@ -1520,7 +1514,7 @@ public:
             }
         }
         actions.kill(); // should be empty
-        clearFiles(); // release locks
+        clearFiles(true); // release locks
         if (!isactive)
             return;
         isactive = false;
@@ -1575,7 +1569,7 @@ public:
         {
             ret = queryDistributedFileDirectory().lookup(name, udesc, false, false, this, timeout);
             if (ret)
-                queryCreate(name, ret, true);
+                addFile(ret, false);
             return ret;
         }
     }
@@ -1589,7 +1583,7 @@ public:
         {
             IDistributedSuperFile *ret = queryDistributedFileDirectory().lookupSuperFile(name,udesc,this,timeout);
             if (ret)
-                addFile(ret);
+                addFile(ret, false);
             return ret;
         }
     }
@@ -1608,15 +1602,31 @@ public:
         return isactive;
     }
 
-    void clearFiles()
+    void clearFiles(bool all)
     {
+        SuperHashIteratorOf<CTransactionFile> iter(trackedFilesByName);
+        CIArrayOf<CTransactionFile> toKeep;
+        if (!all)
+        {
+            ForEach(iter)
+            {
+                CTransactionFile &file = iter.query();
+                if (file.queryKeep())
+                    toKeep.append(*LINK(&file));
+            }
+        }
         trackedFiles.kill();
         trackedFilesByName.kill();
+        ForEachItemIn(k, toKeep)
+        {
+            CTransactionFile &file = toKeep.item(k);
+            trackedFiles.replace(*LINK(&file));
+            trackedFilesByName.replace(*LINK(&file));
+        }
     }
     void clearFile(IDistributedFile *file)
     {
         CTransactionFile *trackedFile = lookupTrackedFile(file);
-        IDistributedSuperFile *sfile = file->querySuperFile();
         if (trackedFile)
         {
             Owned<IDistributedFileIterator> iter = trackedFile->getSubFiles();
@@ -5846,7 +5856,7 @@ public:
         }
         else
             localtrans.setown(new CDistributedFileTransaction(udesc));
-        localtrans->ensureFile(this);
+        localtrans->addFile(this, true);
 
         if (addcontents)
         {
@@ -5895,7 +5905,7 @@ public:
             localtrans.setown(new CDistributedFileTransaction(udesc));
 
         // Make sure this file is in cache (reuse below)
-        localtrans->ensureFile(this);
+        localtrans->addFile(this, true);
 
         // If recurring, traverse super-file subs (if super)
         if (remcontents)
@@ -5952,7 +5962,7 @@ public:
             localtrans.setown(new CDistributedFileTransaction(udesc));
 
         // Make sure this file is in cache (reuse below)
-        localtrans->addFile(this);
+        localtrans->addFile(this, true);
 
         cRemoveOwnedSubFilesAction *action = new cRemoveOwnedSubFilesAction(localtrans, queryLogicalName(), remsub);
         localtrans->addAction(action); // takes ownership
@@ -5981,7 +5991,7 @@ public:
         else
             localtrans.setown(new CDistributedFileTransaction(udesc));
         // Make sure this file is in cache
-        localtrans->ensureFile(this);
+        localtrans->addFile(this, true);
 
         cSwapFileAction *action = new cSwapFileAction(queryLogicalName(),_file->queryLogicalName());
         localtrans->addAction(action); // takes ownership
@@ -7412,7 +7422,7 @@ public:
                 root->setPropInt("@interleaved",interleaved?2:0); // this is ill placed
                 super.setown(new CDistributedSuperFile(parent, root, logicalname, user));
                 created = true;
-                transaction->addFile(super);
+                transaction->addFile(super, false);
             }
             addFileLock(super);
         }
@@ -7484,8 +7494,7 @@ class CRemoveSuperFileAction: public CDFAction
         virtual IUserDescriptor *queryUser() { return transaction->queryUser(); }
         virtual void descend() { transaction->descend(); }
         virtual void ascend() { transaction->ascend(); }
-        virtual void addFile(IDistributedFile *file) { transaction->addFile(file); }
-        virtual void ensureFile(IDistributedFile *file) { transaction->ensureFile(file); }
+        virtual void addFile(IDistributedFile *file, bool keep) { transaction->addFile(file, keep); }
         virtual void clearFile(IDistributedFile *file) { transaction->clearFile(file); }
         virtual void noteAddSubFile(IDistributedSuperFile *super, const char *superName, IDistributedFile *sub)
         {
