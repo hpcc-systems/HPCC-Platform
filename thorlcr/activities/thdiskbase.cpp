@@ -39,7 +39,7 @@ void CDiskReadMasterBase::init()
 {
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
     fileName.setown(helper->getFileName());
-    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
+    file.setown(queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true));
 
     if (file)
     {
@@ -116,7 +116,6 @@ void CDiskReadMasterBase::done()
     fileDesc.clear();
     if (!abortSoon) // in case query has relinquished control of file usage to another query (e.g. perists)
     {
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
         if (file)
             file->setAccessed();
     }

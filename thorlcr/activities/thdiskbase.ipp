@@ -33,6 +33,7 @@ protected:
     IHash *hash;
     Owned<ProgressInfo> inputProgress;
     OwnedRoxieString fileName;
+    Owned<IDistributedFile> file;
 
 public:
     CDiskReadMasterBase(CMasterGraphElement *info);
