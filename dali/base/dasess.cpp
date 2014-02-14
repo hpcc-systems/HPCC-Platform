@@ -590,7 +590,7 @@ public:
                 StringAttr passwordenc;
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
-#ifndef _NO_DALIUSER_STACKTRACE
+#ifdef NULL_DALIUSER_STACKTRACE
                 //following debug code to be removed
                 StringBuffer sb;
                 udesc->getUserName(sb);
@@ -895,7 +895,7 @@ public:
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
-#ifndef _NO_DALIUSER_STACKTRACE
+#ifdef NULL_DALIUSER_STACKTRACE
         //following debug code to be removed
         StringBuffer sb;
         if (udesc)
@@ -1144,7 +1144,7 @@ public:
     {
         key.set(_key);
         obj.set(_obj); 
-#ifndef _NO_DALIUSER_STACKTRACE
+#ifdef NULL_DALIUSER_STACKTRACE
         StringBuffer sb;
         if (_udesc)
             _udesc->getUserName(sb);
@@ -1409,7 +1409,7 @@ public:
 #ifdef _NO_LDAP
         return -1;
 #else
-#ifndef _NO_DALIUSER_STACKTRACE
+#ifdef NULL_DALIUSER_STACKTRACE
         StringBuffer sb;
         if (udesc)
             udesc->getUserName(sb);
