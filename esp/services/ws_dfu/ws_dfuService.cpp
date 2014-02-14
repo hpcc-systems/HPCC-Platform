@@ -1665,17 +1665,26 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     tmpstr<<c1;
     FileDetails.setFilesize(tmpstr.str());
 
+    offset_t actualSize = size;
     if(df->isCompressed())
     {
+        bool hasCompressedSize = df->queryAttributes().hasProp("@compressedSize");
+        if (hasCompressedSize)
+            actualSize = df->queryAttributes().getPropInt64("@compressedSize");
+
         if (version < 1.22)
             FileDetails.setZipFile(true);
         else
         {
             FileDetails.setIsCompressed(true);
-            if (df->queryAttributes().hasProp("@compressedSize"))
-                FileDetails.setCompressedFileSize(df->queryAttributes().getPropInt64("@compressedSize"));
+            if (hasCompressedSize)
+                FileDetails.setCompressedFileSize(actualSize);
         }
     }
+    comma cActualSize(actualSize);
+    tmpstr.clear();
+    tmpstr<<cActualSize;
+    FileDetails.setActualSize(tmpstr.str());
 
     comma c2(recordSize);
     tmpstr.clear();
