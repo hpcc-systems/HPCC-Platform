@@ -343,8 +343,6 @@ void ReferencedFile::cloneInfo(IDFUhelper *helper, IUserDescriptor *user, const 
         return;
     if (!(flags & (RefFileRemote | RefFileForeign | RefFileNotOnCluster)))
         return;
-    if (!daliip.length())
-        return;
     if (fileSrcCluster.length())
         srcCluster = fileSrcCluster;
 
