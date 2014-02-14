@@ -127,7 +127,7 @@ public:
 class IndexDistributeActivityMaster : public HashDistributeMasterBase
 {
     MemoryBuffer tlkMb;
-    OwnedRoxieString indexFileName;
+    Owned<IDistributedFile> file;
 
 public:
     IndexDistributeActivityMaster(CMasterGraphElement *info) : HashDistributeMasterBase(DM_index, info) { }
@@ -139,9 +139,9 @@ public:
         IHThorKeyedDistributeArg *helper = (IHThorKeyedDistributeArg *)queryHelper();
 
         StringBuffer scoped;
-        indexFileName.setown(helper->getIndexFileName());
+        OwnedRoxieString indexFileName(helper->getIndexFileName());
         queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName);
+        file.setown(queryThorFileManager().lookup(container.queryJob(), indexFileName));
         if (!file)
             throw MakeActivityException(this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
         if (0 == file->numParts())
@@ -173,7 +173,6 @@ public:
     virtual void done()
     {
         HashDistributeMasterBase::done();
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), indexFileName, false, true);
         if (file)
             file->setAccessed();
     }

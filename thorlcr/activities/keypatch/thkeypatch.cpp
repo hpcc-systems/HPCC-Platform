@@ -31,7 +31,7 @@ class CKeyPatchMaster : public CMasterActivity
     bool local;
     unsigned width;
     StringArray clusters;
-    OwnedRoxieString originalName, patchName;
+    Owned<IDistributedFile> originalIndexFile, patchFile;
 
 public:
     CKeyPatchMaster(CMasterGraphElement *info) : CMasterActivity(info)
@@ -44,10 +44,10 @@ public:
     {
         helper = (IHThorKeyPatchArg *)queryHelper();
 
-        originalName.setown(helper->getOriginalName());
-        patchName.setown(helper->getPatchName());
-        Owned<IDistributedFile> originalIndexFile = queryThorFileManager().lookup(container.queryJob(), originalName);
-        Owned<IDistributedFile> patchFile = queryThorFileManager().lookup(container.queryJob(), patchName);
+        OwnedRoxieString originalName(helper->getOriginalName());
+        OwnedRoxieString patchName(helper->getPatchName());
+        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalName));
+        patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchName));
         
         if (originalIndexFile->numParts() != patchFile->numParts())
             throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());
@@ -164,10 +164,8 @@ public:
 
         container.queryTempHandler()->registerFile(outputName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
         queryThorFileManager().publish(container.queryJob(), outputName, false, *newIndexDesc);
-        Owned<IDistributedFile> originalIndexFile = queryThorFileManager().lookup(container.queryJob(), originalName, false, true);
         if (originalIndexFile)
 	        originalIndexFile->setAccessed();
-        Owned<IDistributedFile> patchFile = queryThorFileManager().lookup(container.queryJob(), patchName, false, true);
         if (patchFile)
 	        patchFile->setAccessed();
     }
