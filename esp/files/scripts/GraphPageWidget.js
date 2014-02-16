@@ -93,9 +93,6 @@ define([
         findText: "",
         found: [],
         foundIndex: 0,
-        overviewDepth: null,
-        localDepth: null,
-        localDistance: null,
 
         buildRendering: function (args) {
             this.inherited(arguments);
@@ -105,12 +102,11 @@ define([
             this.inherited(arguments);
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.rightBorderContainer = registry.byId(this.id + "RightBorderContainer");
+            this.overviewTabContainer = registry.byId(this.id + "OverviewTabContainer");
+            this.timingsGrid = registry.byId(this.id + "TimingsGrid");
+            this.localTabContainer = registry.byId(this.id + "LocalTabContainer");
+            this.properties = registry.byId(this.id + "Properties");
             this.findField = registry.byId(this.id + "FindField");
-            this.mainDepth = registry.byId(this.id + "MainDepth");
-            this.overviewDepth = registry.byId(this.id + "OverviewDepth");
-            this.localDepth = registry.byId(this.id + "LocalDepth");
-            this.localDistance = registry.byId(this.id + "LocalDistance");
-
             this._initGraphControls();
             this._initTimings();
             this._initDialogs();
@@ -134,6 +130,12 @@ define([
             this.local.watchSplitter(splitter);
 
             this.main.watchSelect(registry.byId(this.id + "AdvancedMenu"));
+
+            this.overview.showNextPrevious(false);
+            this.overview.showDistance(false);
+            this.overview.showSyncSelection(false);
+
+            this.refreshActionState();
         },
 
         resize: function (args) {
@@ -156,19 +158,6 @@ define([
             var context = this;
             this.global = registry.byId(this.id + "GlobalGraphWidget");
 
-            this.main = registry.byId(this.id + "MainGraphWidget");
-            this.main.onSelectionChanged = function (items) {
-                context.syncSelectionFrom(context.main);
-            };
-            this.main.onLayoutFinished = function () {
-                //  TODO:  Could be too expensive  ---
-                //context.wu.setGraphSvg(context.graphName, context.main.svg);
-            };
-            this.main.onDoubleClick = function (globalID) {
-                var mainItem = context.main.getItem(globalID);
-                context.main.centerOnItem(mainItem, true);
-            };
-
             this.overview = registry.byId(this.id + "MiniGraphWidget");
             this.overview.onSelectionChanged = function (items) {
                 context.syncSelectionFrom(context.overview);
@@ -178,14 +167,21 @@ define([
                 context.main.centerOnItem(mainItem, true);
             };
 
+            this.main = registry.byId(this.id + "MainGraphWidget");
+            this.main.onSelectionChanged = function (items) {
+                context.syncSelectionFrom(context.main);
+            };
+            this.main.onDoubleClick = function (globalID) {
+                context.main._onSyncSelection();
+                context.syncSelectionFrom(context.main);
+            };
+
             this.local = registry.byId(this.id + "LocalGraphWidget");
             this.local.onSelectionChanged = function (items) {
                 context.syncSelectionFrom(context.local);
             };
             this.local.onDoubleClick = function (globalID) {
-                var mainItem = context.main.getItem(globalID);
-                context._onLocalRefresh();
-                context.main.centerOnItem(mainItem, true);
+                context.local._onSyncSelection();
                 context.syncSelectionFrom(context.local);
             };
         },
@@ -238,7 +234,7 @@ define([
                     context.main.setDotMetaAttributes(dotAttrs);
                     context.overview.setDotMetaAttributes(dotAttrs);
                     context.local.setDotMetaAttributes(dotAttrs);
-                    context._onMainRefresh();
+                    context._onMainSync();
                 }
             });
             on(dom.byId(this.id + "XGMMLDialogCancel"), "click", function (event) {
@@ -303,15 +299,6 @@ define([
             this.refreshData();
         },
 
-        _onMainRefresh: function () {
-            this.main.setMessage(this.i18n.PerformingLayout);
-            this.main.startLayout("dot");
-        },
-
-        _onLocalRefresh: function () {
-            this.refreshLocal(this.local.getSelectionAsGlobalID());
-        },
-
         _doFind: function (prev) {
             if (this.findText != this.findField.value) {
                 this.findText = this.findField.value;
@@ -328,8 +315,9 @@ define([
             }
             if (this.found.length) {
                 this.main.centerOnGlobalID(this.found[this.foundIndex], true);
-                this.local.centerOnGlobalID(this.found[this.foundIndex], true);
+                this.setLocalRootItems([this.found[this.foundIndex]]);
             }
+            this.refreshActionState();
         },
 
         _onFind: function (prev) {
@@ -387,32 +375,24 @@ define([
             this.xgmmlDialog.show();
         },
 
-        _onMainDepthChange: function (value) {
-            this.refreshMain();
-        },
-
-        _onOverviewDepthChange: function (value) {
-            this.refreshOverview();
-        },
-
-        _onLocalDepthChange: function (value) {
-            this._onLocalRefresh();
-        },
-
-        _onLocalDistanceChange: function (value) {
-            this._onLocalRefresh();
-        },
-
         init: function (params) {
             if (this.inherited(arguments))
                 return;
 
             if (params.SafeMode && params.SafeMode != "false") {
-                this.overviewDepth.set("value", 0)
-                this.mainDepth.set("value", 1)
-                this.localDepth.set("value", 2)
+                this.overviewTabContainer.selectChild(this.timingsGrid);
+                this.localTabContainer.selectChild(this.properties);
+                this.overview.depth.set("value", 0);
+                this.main.depth.set("value", 1);
+                this.local.depth.set("value", 0);
+                this.local.distance.set("value", 0);
                 var dotAttrs = this.global.getDotMetaAttributes();
-                dotAttrs += "\r\ngraph[splines=\"line\"];";
+                dotAttrs = dotAttrs.replace("\n//graph[splines=\"line\"];", "\ngraph[splines=\"line\"];");
+                this.global.setDotMetaAttributes(dotAttrs);
+            } else {
+                this.overview.depth.set("value", 1);
+                var dotAttrs = this.global.getDotMetaAttributes();
+                dotAttrs = dotAttrs.replace("\ngraph[splines=\"line\"];", "\n//graph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
             }
             if (params.Wuid) {
@@ -428,9 +408,7 @@ define([
                         onGetGraphs: function (graphs) {
                             if (firstLoad == true) {
                                 firstLoad = false;
-                                context.loadGraphFromWu(context.wu, context.graphName).then(function (response) {
-                                    context.refresh(params);
-                                });
+                                context.loadGraphFromWu(context.wu, context.graphName);
                             } else {
                                 context.refreshGraphFromWU(context.wu, context.graphName);
                             }
@@ -454,6 +432,11 @@ define([
                 hideHelp: true
             }, params));
 
+            this.global.on("ready", lang.hitch(this, function(evt) {
+                if (this.global.version.major < 5) {
+                    dom.byId(this.id + "Warning").innerHTML = this.i18n.WarnOldGraphControl + " (" + this.global.version.version + ")";
+                }
+            }));
         },
 
         refreshData: function () {
@@ -464,33 +447,36 @@ define([
             }
         },
 
-        refresh: function (params) {
-            if (params && params.SubGraphId) {
-                this.global.setSelectedAsGlobalID([params.SubGraphId]);
-                this.syncSelectionFrom(this.global);
+        loadGraphFromXGMML: function (xgmml) {
+            if (this.global.loadXGMML(xgmml, false)) {
+                this.global.setMessage("...");  //  Just in case it decides to render  ---
+                this.setOverviewRootItems([0]);
+                this.setMainRootItems([]);
+                this.setLocalRootItems([]);
+                this.loadSubgraphs();
+                this.loadVertices();
+                this.loadEdges();
             }
         },
 
-        loadGraphFromXGMML: function (xgmml) {
-            this.global.loadXGMML(xgmml, false);
-            this.refreshMain();
-            this.refreshOverview();
-            this.loadSubgraphs();
-            this.loadVertices();
-            this.loadEdges();
-        },
-
         mergeGraphFromXGMML: function (xgmml) {
-            this.main.mergeXGMML(xgmml);
-            this.loadSubgraphs();
-            this.loadVertices();
-            this.loadEdges();
+            if (this.global.loadXGMML(xgmml, true)) {
+                this.global.setMessage("...");  //  Just in case it decides to render  ---
+                this.refreshOverviewXGMML();
+                this.refreshMainXGMML();
+                this.refreshLocalXGMML();
+                this.loadSubgraphs();
+                this.loadVertices();
+                this.loadEdges();
+            }
         },
 
         loadGraphFromDOT: function (dot) {
             this.global.loadDOT(dot);
-            this.refreshMain();
-            this.refreshOverview();
+            this.global.setMessage("...");  //  Just in case it decides to render  ---
+            this.setOverviewRootItems([0]);
+            this.setMainRootItems([]);
+            this.setLocalRootItems([]);
             this.loadSubgraphs();
             this.loadVertices();
             this.loadEdges();
@@ -516,7 +502,7 @@ define([
             var context = this;
             wu.fetchGraphXgmmlByName(graphName, function (xgmml) {
                 context.mergeGraphFromXGMML(xgmml);
-            });
+            }, true);
         },
 
         loadGraphFromQuery: function (targetQuery, queryId, graphName) {
@@ -564,7 +550,7 @@ define([
         },
 
         loadSubgraphs: function () {
-            var subgraphs = this.main.getSubgraphsWithProperties();
+            var subgraphs = this.global.getSubgraphsWithProperties();
 
             var layoutMap = [];
             for (var i = 0; i < subgraphs.length; ++i) {
@@ -592,7 +578,7 @@ define([
         },
 
         loadVertices: function () {
-            var vertices = this.main.getVerticesWithProperties();
+            var vertices = this.global.getVerticesWithProperties();
 
             var layoutMap = [];
             for (var i = 0; i < vertices.length; ++i) {
@@ -622,7 +608,7 @@ define([
         },
 
         loadEdges: function () {
-            var edges = this.main.getEdgesWithProperties();
+            var edges = this.global.getEdgesWithProperties();
 
             var layoutMap = [];
             for (var i = 0; i < edges.length; ++i) {
@@ -687,15 +673,32 @@ define([
             if (sourceControl != this.edgesGrid && this.edgesGrid.store) {
                 this.edgesGrid.setSelection(selectedGlobalIDs);
             }
-            if (sourceControl != this.main) {
-                this.main.setSelectedAsGlobalID(selectedGlobalIDs);
-            }
+
+            //  Refresh Graph Controls  ---
             if (sourceControl != this.overview) {
                 this.overview.setSelectedAsGlobalID(selectedGlobalIDs);
             }
-
+            if (sourceControl != this.main) {
+                switch (sourceControl) {
+                    case this.verticesGrid:
+                    case this.edgesGrid:
+                    case this.local:
+                        this.main.setSelectedAsGlobalID(selectedGlobalIDs);
+                        break;
+                    default:
+                        this.setMainRootItems(selectedGlobalIDs);
+                }
+            }
             if (sourceControl != this.local) {
-                this.refreshLocal(selectedGlobalIDs);
+                switch (sourceControl) {
+                    case this.verticesGrid:
+                    case this.edgesGrid:
+                    case this.main:
+                        this.setLocalRootItems(selectedGlobalIDs);
+                        break;
+                    default:
+                        this.local.setSelectedAsGlobalID(selectedGlobalIDs);
+                }
             }
 
             var propertiesDom = dom.byId(this.id + "Properties");
@@ -709,24 +712,34 @@ define([
             this.main.clear();
         },
 
-        refreshMain: function () {
-            var xgmml = this.global.getLocalisedXGMML([0], this.mainDepth.get("value"));
-            this.main.loadXGMML(xgmml);
+        setOverviewRootItems: function (globalIDs) {
+            var graphView = this.global.getGraphView(globalIDs, this.overview.depth.get("value"), 3, this.params.SubGraphId ? [this.params.SubGraphId] : []);
+            graphView.navigateTo(this.overview);
         },
 
-        refreshOverview: function () {
-            var xgmml = this.global.getLocalisedXGMML([0], this.overviewDepth.get("value"));
-            this.overview.loadXGMML(xgmml);
+        refreshOverviewXGMML: function () {
+            var graphView = this.overview.getCurrentGraphView();
+            graphView.refreshXGMML(this.overview);
         },
 
-        refreshLocal: function (selectedGlobalIDs) {
-            var globalItems = [];
-            for (var i = 0; i < selectedGlobalIDs.length; ++i) {
-                globalItems.push(this.global.getItem(selectedGlobalIDs[i]));
-            }
-            var xgmml = this.global.getLocalisedXGMML(globalItems, this.localDepth.get("value"), this.localDistance.get("value"));
-            this.local.loadXGMML(xgmml);
-            this.local.setSelectedAsGlobalID(selectedGlobalIDs);
+        setMainRootItems: function (globalIDs) {
+            var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"));
+            graphView.navigateTo(this.main);
+        },
+
+        refreshMainXGMML: function () {
+            var graphView = this.main.getCurrentGraphView();
+            graphView.refreshXGMML(this.main);
+        },
+
+        setLocalRootItems: function (globalIDs) {
+            var graphView = this.global.getGraphView(globalIDs, this.local.depth.get("value"), this.local.distance.get("value"));
+            graphView.navigateTo(this.local);
+        },
+
+        refreshLocalXGMML: function () {
+            var graphView = this.local.getCurrentGraphView();
+            graphView.refreshXGMML(this.local);
         },
 
         displayGraphs: function (graphs) {
@@ -735,6 +748,11 @@ define([
                     this.main.loadXGMML(xgmml, true);
                 });
             }
+        },
+
+        refreshActionState: function (selection) {
+            this.setDisabled(this.id + "FindPrevious", !(this.foundIndex > 0), "iconLeft", "iconLeftDisabled");
+            this.setDisabled(this.id + "FindNext", !(this.foundIndex < this.found.length - 1), "iconRight", "iconRightDisabled");
         }
     });
 });

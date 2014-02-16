@@ -597,14 +597,14 @@ define([
                 onGetGraphs: onFetchGraphs
             });
         },
-        fetchGraphXgmmlByName: function (name, onFetchGraphXgmml) {
+        fetchGraphXgmmlByName: function (name, onFetchGraphXgmml, force) {
             var idx = this.getGraphIndex(name);
             if (idx >= 0) {
-                this.fetchGraphXgmml(idx, onFetchGraphXgmml);
+                this.fetchGraphXgmml(idx, onFetchGraphXgmml, force);
             }
         },
-        fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
-            if (this.graphs && this.graphs[idx] && this.graphs[idx].xgmml) {
+        fetchGraphXgmml: function (idx, onFetchGraphXgmml, force) {
+            if (!force && this.graphs && this.graphs[idx] && this.graphs[idx].xgmml) {
                 onFetchGraphXgmml(this.graphs[idx].xgmml, this.graphs[idx].svg);
                 return;
             }

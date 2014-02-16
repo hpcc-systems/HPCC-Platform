@@ -273,16 +273,16 @@ define([
                     }),
                     Priority: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='../files/img/priority.png'>";
+                            node.innerHTML = "<img src='/esp/files/img/priority.png'>";
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (Priority) {
                             switch (Priority) {
                                 case "high":
-                                    return "<img src='../files/img/priority_high.png'>";
+                                    return "<img src='/esp/files/img/priority_high.png'>";
                                 case "low":
-                                    return "<img src='../files/img/priority_low.png'>";
+                                    return "<img src='/esp/files/img/priority_low.png'>";
                             }
                             return "";
                         }
@@ -295,13 +295,13 @@ define([
                             return true;
                         },
                         formatter: function (_name, row) {
-                            var img;
+                            var img = "";
                             var name = "";
                             if (context.activity.isInstanceOfQueue(row)) {
                                 if (row.isPaused()) {
-                                    img += "/esp/files/img/server_paused.png";
+                                    img = "/esp/files/img/server_paused.png";
                                 } else {
-                                    img += "/esp/files/img/server.png";
+                                    img = "/esp/files/img/server.png";
                                 }
                                 name = row.getDisplayName();
                             } else {
