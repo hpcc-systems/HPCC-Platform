@@ -95,7 +95,7 @@ interface IFileIOArray : extends IInterface
 interface IRoxieQuerySetManager : extends IInterface
 {
     virtual bool isActive() const = 0;
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &ctx) const = 0;
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &ctx) const = 0;
     virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash) = 0;
     virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const = 0;
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx) = 0;
@@ -120,7 +120,7 @@ interface IRoxieQueryPackageManagerSet : extends IInterface
 {
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const = 0;
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual int getActivePackageCount() const = 0;
 };
