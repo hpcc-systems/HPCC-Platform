@@ -19512,7 +19512,21 @@ public:
             }
 
         }
-        if (serverContext->outputResultsToWorkUnit()||(response && response->isRaw))
+        size32_t outputLimitBytes = 0;
+        IConstWorkUnit *workunit = serverContext->queryWorkUnit();
+        if (workunit)
+        {
+            size32_t outputLimit;
+            if (helper.getFlags() & POFmaxsize)
+                outputLimit = helper.getMaxSize();
+            else
+                outputLimit = workunit->getDebugValueInt("outputLimit", DALI_RESULT_LIMIT_DEFAULT);
+            if (outputLimit>DALI_RESULT_OUTPUTMAX)
+                throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the current limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, DALI_RESULT_LIMIT_DEFAULT);
+            assertex(outputLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
+            outputLimitBytes = outputLimit * 0x100000;
+        }
+        if (workunit != NULL || (response && response->isRaw))
         {
             createRowAllocator();
             rowSerializer.setown(rowAllocator->createDiskSerializer(ctx->queryCodeContext()));
@@ -19529,7 +19543,7 @@ public:
             }
             if (grouped && (processed != initialProcessed))
             {
-                if (serverContext->outputResultsToWorkUnit())
+                if (workunit)
                     result.append(row == NULL);
                 if (response)
                 {
@@ -19550,7 +19564,7 @@ public:
                     builder.append(row);
             }
             processed++;
-            if (serverContext->outputResultsToWorkUnit())
+            if (workunit)
             {
                 CThorDemoRowSerializer serializerTarget(result);
                 rowSerializer->serialize(serializerTarget, (const byte *) row);
@@ -19582,12 +19596,24 @@ public:
                 response->flush(false);
             }
             ReleaseRoxieRow(row);
+            if (outputLimitBytes && result.length() > outputLimitBytes)
+            {
+                StringBuffer errMsg("Dataset too large to output to workunit (limit ");
+                errMsg.append(outputLimitBytes/0x100000).append(") megabytes, in result (");
+                const char *name = helper.queryName();
+                if (name)
+                    errMsg.append("name=").append(name);
+                else
+                    errMsg.append("sequence=").append(helper.getSequence());
+                errMsg.append(")");
+                throw MakeStringExceptionDirect(0, errMsg.str());
+            }
         }
         if (writer)
             writer->outputEndArray("Row");
         if (saveInContext)
             serverContext->appendResultDeserialized(storedName, sequence, builder.getcount(), builder.linkrows(), (helper.getFlags() & POFextend) != 0, LINK(meta.queryOriginal()));
-        if (serverContext->outputResultsToWorkUnit())
+        if (workunit)
             serverContext->appendResultRawContext(storedName, sequence, result.length(), result.toByteArray(), processed, (helper.getFlags() & POFextend) != 0, false); // MORE - shame to do extra copy...
     }
 };
