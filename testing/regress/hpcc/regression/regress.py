@@ -46,34 +46,41 @@ class Regression:
             self.timeoutThread = threading.Timer(1.0,  self.timeoutHandler)
             self.timeoutThread.start()
 
-    def __init__(self, config="regress.json", level='info', suiteDir=None,  timeout=0,  numOfThreads=1):
-        self.config = Config(config).configObj
+    def __init__(self, args):
+        self.args = args
+        self.config = Config(args.config).configObj
         setConfig(self.config)
         self.suites = {}
-        self.log = Logger(level)
-        if timeout == '0':
+        self.log = Logger(args.loglevel)
+        if args.timeout == '0':
             self.timeout = int(self.config.timeout);
         else:
-            self.timeout = int(timeout)
+            self.timeout = int(args.timeout)
         logging.debug("Suite timeout: %d sec / testcase", self.timeout)
-        if numOfThreads == 0:
-            numOfThreads = 1;
-        if not suiteDir:
+        if not args.suiteDir:
             self.suiteDir = self.config.suiteDir
             if not self.suiteDir:
                 raise Error("2002")
         else:
-            self.suiteDir = suiteDir
+            self.suiteDir = args.suiteDir
 
-        self.suiteDir = ExpandCheck.dir_exists(suiteDir, True)
+        if args.keyDir == self.config.keyDir:
+            self.keyDir = self.config.keyDir
+            if not self.keyDir:
+                raise Error("2003")
+        else:
+            self.keyDir = args.keyDir
+            logging.debug("Try to use alternative key directory: %s", self.keyDir)
+
+        self.suiteDir = ExpandCheck.dir_exists(self.suiteDir, True)
         self.regressionDir = ExpandCheck.dir_exists(self.config.regressionDir, True)
         self.logDir = ExpandCheck.dir_exists(self.config.logDir, True)
         self.setupDir = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.setupDir), True)
         self.dir_ec = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.eclDir), True)
-        self.dir_ex = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.keyDir), True)
+        self.dir_ex = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.keyDir), True)
         self.dir_a = os.path.join(self.regressionDir, self.config.archiveDir)
         self.dir_r = os.path.join(self.regressionDir, self.config.resultDir)
-        logging.debug("Suite Dir      : %s", suiteDir)
+        logging.debug("Suite Dir      : %s", self.suiteDir)
         logging.debug("Regression Dir : %s", self.regressionDir)
         logging.debug("Result Dir     : %s", self.dir_r)
         logging.debug("Log Dir        : %s", self.logDir)
@@ -82,6 +89,13 @@ class Regression:
         logging.debug("Setup Dir      : %s", self.setupDir)
         logging.debug("Archive Dir    : %s", self.dir_a)
 
+
+        numOfThreads=1
+        if 'pq' in args:
+            if args.pq == 0:
+                numOfThreads = 1;
+            else:
+                numOfThreads = args.pq
         self.loggermutex = thread.allocate_lock()
         self.numOfCpus = 2
         ver = getVersionNumbers()
@@ -94,10 +108,9 @@ class Regression:
                         self.numOfCpus = 1
                     else:
                         self.numOfCpus = int(cpuInfo.split()[3])
-            numOfThreads = self.numOfCpus  * 2
-        else:
-            if (ver['main'] <= 2) and (ver['minor'] < 7):
                 numOfThreads = self.numOfCpus  * 2
+            elif (ver['main'] <= 2) and (ver['minor'] < 7):
+                    numOfThreads = self.numOfCpus  * 2
         logging.debug("Number of CPUs:%d, NUmber of threads:%d", self.numOfCpus, numOfThreads  )
 
         self.maxthreads = numOfThreads
@@ -171,6 +184,7 @@ class Regression:
                 if oldCnt != cnt:
                     query = suiteItems[cnt]
                     query.setTaskId(cnt+1)
+                    query.setIgnoreResult(self.args.ignoreResult)
                     query.setJobname(time.strftime("%y%m%d-%H%M%S"))
                     timeout = query.getTimeout()
                     oldCnt = cnt
@@ -315,6 +329,7 @@ class Regression:
             for query in suite.getSuite():
                 query.setJobname(time.strftime("%y%m%d-%H%M%S"))
                 query.setTaskId(cnt)
+                query.setIgnoreResult(self.args.ignoreResult)
                 self.timeouts[th] = self.timeout
                 timeout = query.getTimeout()
                 if timeout != 0:
@@ -349,6 +364,7 @@ class Regression:
 
         cnt = 1
         eclfile.setTaskId(cnt)
+        eclfile.setIgnoreResult(self.args.ignoreResult)
         threadId = 0
         logging.warn("Target: %s" % clusterName)
         logging.warn("Queries: %s" % 1)
@@ -398,6 +414,8 @@ class Regression:
                                   password=self.config.password)
             wuid = query.getWuid()
             logging.debug("res: '%s', wuid:'%s'"  % ( res,  wuid))
+            if wuid == 'Not found':
+                res = False
         else:
             res = False
             report[0].addResult(query)

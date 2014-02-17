@@ -31,7 +31,7 @@ from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam,  getVersionNumbers
 
-prog_version = "0.0.11"
+prog_version = "0.0.12"
 
 if __name__ == "__main__":
 
@@ -66,6 +66,10 @@ if __name__ == "__main__":
                         nargs='?', default=".")
     parser.add_argument('--timeout', '-t', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in regress.json config file.",
                         nargs='?', default="0")
+    parser.add_argument('--keyDir', '-k', help="key file directory to compare test output. Default value defined in regress.json config file.",
+                        nargs='?', default="ecl/key")
+    parser.add_argument('--ignoreResult', '-i', help="completely ignore the result.",
+                        action='store_true')
 
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
@@ -88,12 +92,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    suiteDir = ""
-    if 'suiteDir' in args:
-        suiteDir = args.suiteDir
-    timeout = -1
-    if 'timeout' in args:
-        timeout = args.timeout
     # Resolve Regression Suite starting path for regress.json config file
     # It is necessary when Regression Suite doesn't started from its home directory
     regressionSuiteMainDir = os.path.dirname(__file__)
@@ -103,7 +101,7 @@ if __name__ == "__main__":
     try:
         if 'clusters' in args:
             Clusters = ['setup']
-            regress = Regression(args.config, args.loglevel, suiteDir)
+            regress = Regression(args)
             for cluster in regress.config.Clusters:
                 Clusters.append(str(cluster))
             print "Avaliable Clusters: "
@@ -114,10 +112,10 @@ if __name__ == "__main__":
                 print "\nMissing ECL query file!\n"
                 parser_query.print_help()
                 exit()
-            regress = Regression(args.config, args.loglevel, suiteDir,  timeout)
+            regress = Regression(args)
             eclfiles=[]   # List for ECL filenames to be executed
             if  ('*' in args.query) or ('?' in args.query):
-                # There is any wildcard in ECL file name, resolve it
+                # If there is any wildcard in ECL file name, resolve it
                 eclwild = os.path.join(regress.dir_ec, args.query)
                 eclfiles = glob.glob(eclwild)
 
@@ -140,7 +138,7 @@ if __name__ == "__main__":
                 try:
                     # Execute ECL files one by one on the cluster
                     for ecl in eclfiles:
-                        eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex, regress.dir_r)
+                        eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex, regress.dir_r, cluster)
                         # Check if this query is not skip on this cluster and not part of setup
                         if (not eclfile.testSkip(cluster)['skip']) and (not eclfile.testSkip('setup')['skip'] ):
                             if not eclfile.testExclusion(cluster):
@@ -154,7 +152,7 @@ if __name__ == "__main__":
                     exit()
             print("End.")
         elif 'cluster' in args:
-            regress = Regression(args.config, args.loglevel, suiteDir,  timeout,  args.pq)
+            regress = Regression(args)
             regress.bootstrap(args.cluster)
             if 'setup' in args.cluster:
                 regress.runSuite('setup', regress.Setup())

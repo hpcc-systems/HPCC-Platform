@@ -16,7 +16,8 @@ Result:
 |
 |       usage: regress [-h] [--version] [--config [CONFIG]]
 |                       [--loglevel [{info,debug}]] [--suiteDir [SUITEDIR]]
-|                       [--timeout [TIMEOUT]]
+|                       [--timeout [TIMEOUT]] [--keyDir [KEYDIR]]
+|                       [--ignoreResult]
 |                       {list,run,query} ...
 | 
 |       HPCC Platform Regression suite
@@ -37,7 +38,9 @@ Result:
 |                                  suiteDir to use. Default value is the current directory and it can handle relative path.
 |            --timeout [TIMEOUT], -t [TIMEOUT]
 |                                  timeout for query execution in sec. Use -1 to disable timeout. Default value defined in regress.json config file (see: 7.)
-
+|            --keyDir [KEYDIR], -k [KEYDIR]
+|                                  key file directory to compare test output. Default value defined in regress.json config file.
+|            --ignoreResult, -i    completely ignore the result.
 
 Parameters of Regression Suite list sub-command:
 ------------------------------------------------
@@ -340,9 +343,44 @@ The format of result is same as above:
     (If this tag exists in the test case source then its output stored into the result log file.)
 //nokey
 
+    If //nokey is present then the following tag prevents the output being stored in the result log file.
+//nooutput
 
-7. Key file generation:
-------------------------------
+7. Key file handling:
+---------------------
+
+After an ECL test case execution finished and all output collected the result checking follows these steps:
+
+If the ECL source contains //nokey tag
+    then the key file and output comparison skipped and the output can control by //nooutput tag
+    else RS checks cluster specific key directory and key file existence
+        If both exist
+            then output compared with cluster specific keyfile
+            else output compared with the keyfile located KEY directory
+
+Examples:
+
+We have a simple structure only one ECL file and two related keyfile. One in hthor and one in key directory.
+
+ ecl
+   |---hthor
+   |     alljoin.xml
+   |---key
+   |     alljoin.xml
+   |---setup
+   alljoin.ecl
+
+If we execute this query:
+
+     ./regress query alljoin.ecl all
+
+Then the RS executes alljoin.ecl on all target clusters and
+    on hthor the output compared with hthor/alljoin.xml
+    on thor and roxie the output compared with key/alljoin.xml
+
+
+8. Key file generation:
+-----------------------
 
 The regression suite stores every test case output into ~/HPCCSystems-regression/result directory. This is the latest version of result. (The previous version can be found in ~/HPCCSystems-regression/archives directory.) When a test case execution finished Regression Suite compares this output file with the relevant key file to verify the result.
 
@@ -354,7 +392,8 @@ So if you have a new test case and it works well on all clusters (or some of the
 
 (To check everything is fine, repeat the step 1 and the query should now pass. )
 
-8. Configuration setting in regress.json file:
+
+9. Configuration setting in regress.json file:
 -------------------------------------------------------------
 
         "ip": "127.0.0.1",                              - ECl server address
@@ -379,8 +418,8 @@ So if you have a new test case and it works well on all clusters (or some of the
         "maxAttemptCount":"3"                           - Max retry count to reset timeout if a testcase in any early stage (compiled, blocked) of execution pipeline.
 
 
-8. Authentication:
-------------------
+10. Authentication:
+-------------------
 
 If your HPCC System is configured to use LDAP authentication you should change value of "username" and "password" fields in regress.json file to yours.
 

@@ -38,7 +38,8 @@ class ExpandCheck:
                 except:
                     raise IOError("REQUIRED DIRECTORY NOT FOUND. " + path)
             else:
-                logging.info( "DIRECTORY NOT FOUND. " + path)
+                logging.debug( "DIRECTORY NOT FOUND. " + path)
+                path = None
 
         return(path)
 
