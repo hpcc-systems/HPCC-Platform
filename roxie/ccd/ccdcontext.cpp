@@ -2164,6 +2164,7 @@ protected:
     void startWorkUnit()
     {
         WorkunitUpdate wu(&workUnit->lock());
+        wu->subscribe(SubscribeOptionAbort);
         wu->addTimeStamp("Roxie", GetCachedHostName(), "Started");
         if (!context->getPropBool("@outputToSocket", false))
             client = NULL;
