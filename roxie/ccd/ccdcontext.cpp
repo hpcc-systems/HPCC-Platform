@@ -24,6 +24,7 @@
 #include "thorplugin.hpp"
 #include "thorxmlread.hpp"
 #include "roxiemem.hpp"
+#include "eventqueue.hpp"
 
 #include "ccd.hpp"
 #include "ccdcontext.hpp"
@@ -3160,8 +3161,23 @@ public:
 
     virtual unsigned getWorkflowId() { return workflow->queryCurrentWfid(); }
 
-    virtual void doNotify(char const * code, char const * extra) { UNIMPLEMENTED; }
-    virtual void doNotify(char const * code, char const * extra, const char * target) { UNIMPLEMENTED; }
+    void doNotify(char const * name, char const * text)
+    {
+        doNotify(name, text, NULL);
+    }
+
+    void doNotify(char const * name, char const * text, const char * target)
+    {
+        Owned<IRoxieDaliHelper> daliHelper = connectToDali();
+        if (daliHelper && daliHelper->connected())
+        {
+            Owned<IScheduleEventPusher> pusher(getScheduleEventPusher());
+            pusher->push(name, text, target);
+        }
+        else
+            throw MakeStringException(ROXIE_DALI_ERROR, "doNotify: no dali connection available");
+    }
+
     virtual void doWait(unsigned code, char const * extra) { UNIMPLEMENTED; }
     virtual void doWaitCond(unsigned code, char const * extra, int sequence, char const * alias, unsigned wfid) { UNIMPLEMENTED; }
 
