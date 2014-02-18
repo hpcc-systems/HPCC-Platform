@@ -74,7 +74,6 @@
 # ifdef _HAS_EPOLL_SUPPORT
 #  include <unistd.h>
 #  include <sys/epoll.h>
-//#  define EPOLLTRACE
 #  ifndef EPOLLRDHUP
 //  Centos 5.x bug - epoll.h does not define but its in the kernel
 #   define EPOLLRDHUP 0x2000
@@ -4312,7 +4311,7 @@ public:
           LOGERR(err,1,"epoll_create()");
           THROWJSOCKEXCEPTION2(err);
         }
-# if defined(_DEBUG) || defined(EPOLLTRACE)
+# ifdef EPOLLTRACE
         DBGLOG("CSocketEpollThread: creating epoll fd %d", epfd );
 # endif
         try {
