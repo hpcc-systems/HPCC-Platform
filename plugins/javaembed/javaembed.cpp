@@ -218,7 +218,8 @@ public:
         assertex(res >= 0);
         javaClass = NULL;
         javaMethodID = NULL;
-        contextClassLoaderChecked = false;
+        prevClassPath.set("dummy");  // Forces the call below to actually do something...
+        setThreadClassLoader("");
     }
     ~JavaThreadContext()
     {
@@ -247,67 +248,108 @@ public:
         }
     }
 
-    void ensureContextClassLoaderAvailable ()
+    jobject getSystemClassLoader()
     {
-        // JVMs that are created by native threads have a context class loader set to the
-        // bootstrap class loader, which is not very useful because the bootstrap class
-        // loader is interested only in getting the JVM up to speed.  In particular,
-        // the classpath is ignored.  The idea here is to set, if needed, the context
-        // class loader to another loader that does recognize classpath.  What follows
-        // is the equivalent of the following Java code:
-        //
-        // if (Thread.currentThread().getContextClassLoader == NULL)
-        //     Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
+        JNIenv->ExceptionClear();
+        jclass javaLangClassLoaderClass = JNIenv->FindClass("java/lang/ClassLoader");
+        checkException();
+        jmethodID getSystemClassLoaderMethod = JNIenv->GetStaticMethodID(javaLangClassLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+        checkException();
+        jobject systemClassLoaderObj = JNIenv->CallStaticObjectMethod(javaLangClassLoaderClass, getSystemClassLoaderMethod);
+        checkException();
+        assertex(systemClassLoaderObj);
+        return systemClassLoaderObj;
+    }
 
-        if (!contextClassLoaderChecked)
+    void setThreadClassLoader(jobject classLoader)
+    {
+        JNIenv->ExceptionClear();
+        jclass javaLangThreadClass = JNIenv->FindClass("java/lang/Thread");
+        checkException();
+        jmethodID currentThreadMethod = JNIenv->GetStaticMethodID(javaLangThreadClass, "currentThread", "()Ljava/lang/Thread;");
+        checkException();
+        jobject threadObj = JNIenv->CallStaticObjectMethod(javaLangThreadClass, currentThreadMethod);
+        checkException();
+        jmethodID setContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "setContextClassLoader", "(Ljava/lang/ClassLoader;)V");
+        checkException();
+        JNIenv->CallObjectMethod(threadObj, setContextClassLoaderMethod, classLoader);
+        checkException();
+    }
+
+    jobject getThreadClassLoader()
+    {
+        JNIenv->ExceptionClear();
+        jclass javaLangThreadClass = JNIenv->FindClass("java/lang/Thread");
+        checkException();
+        jmethodID currentThreadMethod = JNIenv->GetStaticMethodID(javaLangThreadClass, "currentThread", "()Ljava/lang/Thread;");
+        checkException();
+        jobject threadObj = JNIenv->CallStaticObjectMethod(javaLangThreadClass, currentThreadMethod);
+        checkException();
+        jmethodID getContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "getContextClassLoader", "()Ljava/lang/ClassLoader;");
+        checkException();
+        jobject contextClassLoaderObj = JNIenv->CallObjectMethod(threadObj, getContextClassLoaderMethod);
+        checkException();
+        assertex(contextClassLoaderObj);
+        return contextClassLoaderObj;
+    }
+
+    void setThreadClassLoader(const char *classPath)
+    {
+        if (classPath && *classPath)
         {
-            JNIenv->ExceptionClear();
-            // Get the current context class loader
-            jclass javaLangThreadClass = JNIenv->FindClass("java/lang/Thread");
+            if (prevClassPath && strcmp(classPath, prevClassPath) == 0)
+                return;
+            jclass URLcls = JNIenv->FindClass("java/net/URL");
             checkException();
-            jmethodID currentThreadMethod = JNIenv->GetStaticMethodID(javaLangThreadClass, "currentThread", "()Ljava/lang/Thread;");
+            jmethodID URLclsMid = JNIenv->GetMethodID(URLcls, "<init>","(Ljava/lang/String;)V");
             checkException();
-            jobject threadObj = JNIenv->CallStaticObjectMethod(javaLangThreadClass, currentThreadMethod);
-            checkException();
-            jmethodID getContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "getContextClassLoader", "()Ljava/lang/ClassLoader;");
-            checkException();
-            jobject contextClassLoaderObj = JNIenv->CallObjectMethod(threadObj, getContextClassLoaderMethod);
-            checkException();
-
-            if (!contextClassLoaderObj)
+            StringArray paths;
+            paths.appendList(classPath, ENVSEPSTR);
+            jobjectArray URLArray = JNIenv->NewObjectArray(paths.length(), URLcls, NULL);
+            ForEachItemIn(idx, paths)
             {
-                // No context class loader, so use the system class loader (hopefully it's present)
-                jclass javaLangClassLoaderClass = JNIenv->FindClass("java/lang/ClassLoader");
+                StringBuffer testpath;
+                testpath.append("file:").append(paths.item(idx));  // MORE - is the file: useful ?
+                jstring jstr = JNIenv->NewStringUTF(testpath.str());
                 checkException();
-                jmethodID getSystemClassLoaderMethod = JNIenv->GetStaticMethodID(javaLangClassLoaderClass, "getSystemClassLoader", "()Ljava/lang/ClassLoader;");
+                jobject URLobj = JNIenv->NewObject(URLcls, URLclsMid, jstr);
                 checkException();
-                jobject systemClassLoaderObj = JNIenv->CallStaticObjectMethod(javaLangClassLoaderClass, getSystemClassLoaderMethod);
-                checkException();
-
-                if (systemClassLoaderObj)
-                {
-                    jmethodID setContextClassLoaderMethod = JNIenv->GetMethodID(javaLangThreadClass, "setContextClassLoader", "(Ljava/lang/ClassLoader;)V");
-                    checkException();
-                    JNIenv->CallObjectMethod(threadObj, setContextClassLoaderMethod, systemClassLoaderObj);
-                    checkException();
-                }
+                JNIenv->SetObjectArrayElement(URLArray, idx, URLobj);
+                JNIenv->DeleteLocalRef(URLobj);
+                JNIenv->DeleteLocalRef(jstr);
             }
-
-            contextClassLoaderChecked = true;
+            checkException();
+            jclass customLoaderClass = (jclass) JNIenv->NewGlobalRef(JNIenv->FindClass("java/net/URLClassLoader"));
+            checkException();
+            jmethodID newInstance = JNIenv->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;)Ljava/net/URLClassLoader;");
+            checkException();
+            jobject contextClassLoaderObj = JNIenv->NewGlobalRef(JNIenv->CallStaticObjectMethod(customLoaderClass, newInstance, URLArray, getSystemClassLoader()));
+            checkException();
+            assertex(contextClassLoaderObj);
+            setThreadClassLoader(contextClassLoaderObj);
+            prevClassPath.set(classPath);
+        }
+        else
+        {
+            if (prevClassPath)
+                setThreadClassLoader(getSystemClassLoader());
+            prevClassPath.clear();
         }
     }
 
-    inline void importFunction(size32_t lenChars, const char *utf)
+    inline void importFunction(size32_t lenChars, const char *utf, const char *options)
     {
         size32_t bytes = rtlUtf8Size(lenChars, utf);
         StringBuffer text(bytes, utf);
+        setThreadClassLoader(options);
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
             prevtext.clear();
 
             // Make sure there is a context class loader available; we need to
             // do this before calling FindClass() on the class we need
-            ensureContextClassLoaderAvailable();
+//            ensureContextClassLoaderAvailable();
+
 
             // Name should be in the form class.method:signature
             const char *funcname = strchr(text, '.');
@@ -322,7 +364,12 @@ public:
             signature++; // skip the ':'
             if (javaClass)
                 JNIenv->DeleteGlobalRef(javaClass);
-            javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->FindClass(classname));
+
+            jobject classLoader = getThreadClassLoader();
+            jmethodID loadClassMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(classLoader), "loadClass","(Ljava/lang/String;)Ljava/lang/Class;");
+            jstring methodString = JNIenv->NewStringUTF(classname);
+            javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->CallObjectMethod(classLoader, loadClassMethod, methodString));
+
             if (!javaClass)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s", classname.str());
             javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodname, signature);
@@ -659,9 +706,9 @@ private:
     StringAttr returnType;
     StringAttr argsig;
     StringAttr prevtext;
+    StringAttr prevClassPath;
     jclass javaClass;
     jmethodID javaMethodID;
-    bool contextClassLoaderChecked;
 };
 
 // Each call to a Java function will use a new JavaEmbedScriptContext object
@@ -675,6 +722,22 @@ public:
     {
         argcount = 0;
         argsig = NULL;
+        StringArray opts;
+        opts.appendList(options, ",");
+        ForEachItemIn(idx, opts)
+        {
+            const char *opt = opts.item(idx);
+            const char *val = strchr(opt, '=');
+            if (val)
+            {
+                StringBuffer optName(val-opt, opt);
+                val++;
+                if (stricmp(optName, "classpath")==0)
+                    classpath.set(val);
+                else
+                    throw MakeStringException(0, "javaembed: Unknown option %s", optName.str());
+            }
+        }
 
         // Create a new frame for local references and increase the capacity
         // of those references to 64 (default is 16)
@@ -1049,7 +1112,7 @@ public:
 
     virtual void importFunction(size32_t lenChars, const char *utf)
     {
-        sharedCtx->importFunction(lenChars, utf);
+        sharedCtx->importFunction(lenChars, utf, classpath);
         argsig = sharedCtx->querySignature();
         assertex(*argsig == '(');
         argsig++;
@@ -1066,6 +1129,7 @@ public:
 protected:
     JavaThreadContext *sharedCtx;
     jvalue result;
+    StringAttr classpath;
 private:
 
     void typeError(const char *ECLtype) __attribute__((noreturn))

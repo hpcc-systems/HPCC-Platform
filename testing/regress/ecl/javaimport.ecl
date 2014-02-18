@@ -1,5 +1,5 @@
 import java;
-string jcat(string a, string b) := IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;');
+string jcat(string a, string b) := IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;' : classpath('/opt/HPCCSystems/moreclasses/'));
 
 integer jadd(integer a, integer b) := IMPORT(java, 'JavaCat.add:(II)I');
 integer jaddl(integer a, integer b) := IMPORT(java, 'JavaCat.addL:(II)J');
