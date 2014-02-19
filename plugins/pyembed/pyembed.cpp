@@ -881,10 +881,6 @@ public:
         rtlQStrToStrX(charCount, text.refstr(), len, value);
         processString(charCount, text.getstr(), field);
     }
-    virtual void processSetAll(const RtlFieldInfo * field)
-    {
-        rtlFail(0, "pyembed: ALL sets are not supported");
-    }
     virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
     {
         size32_t sizeBytes = rtlUtf8Size(len, value);
@@ -893,12 +889,14 @@ public:
         addArg(vval);
     }
 
-    virtual bool processBeginSet(const RtlFieldInfo * field)
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data)
     {
         push();
+        if (isAll)
+            rtlFail(0, "pyembed: ALL sets are not supported");
         return true;
     }
-    virtual bool processBeginDataset(const RtlFieldInfo * field)
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows)
     {
         push();
         return true;

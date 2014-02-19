@@ -194,13 +194,12 @@ public:
     virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field) = 0;
     virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field) = 0;
     virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field) = 0;
-    virtual void processSetAll(const RtlFieldInfo * field) = 0;
     virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field) = 0;
     inline  void processCString(const char *value, const RtlFieldInfo * field) { processString((size32_t)strlen(value), value, field); }
 
 //The following are used process the structured fields
-    virtual bool processBeginSet(const RtlFieldInfo * field) = 0;
-    virtual bool processBeginDataset(const RtlFieldInfo * field) = 0;
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned elements, bool isAll, const byte *data) = 0;
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned rows) = 0;
     virtual bool processBeginRow(const RtlFieldInfo * field) = 0;           // either in a dataset, or nested
     virtual void processEndSet(const RtlFieldInfo * field) = 0;
     virtual void processEndDataset(const RtlFieldInfo * field) = 0;

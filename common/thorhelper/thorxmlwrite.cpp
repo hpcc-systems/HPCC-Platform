@@ -1115,10 +1115,6 @@ void CommonFieldProcessor::processQString(unsigned len, const char *value, const
     rtlQStrToStr(len, temp, len, value);
     processString(len, temp, field);
 }
-void CommonFieldProcessor::processSetAll(const RtlFieldInfo * field)
-{
-    result.append("ALL");
-}
 void CommonFieldProcessor::processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
 {   
     if (trim)
@@ -1126,12 +1122,14 @@ void CommonFieldProcessor::processUtf8(unsigned len, const char *value, const Rt
     outputXmlUtf8(len, value, NULL, result);
 }
 
-bool CommonFieldProcessor::processBeginSet(const RtlFieldInfo * field)
+bool CommonFieldProcessor::processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data)
 {
     result.append('[');
+    if (isAll)
+        result.append("ALL");
     return true;
 }
-bool CommonFieldProcessor::processBeginDataset(const RtlFieldInfo * field) 
+bool CommonFieldProcessor::processBeginDataset(const RtlFieldInfo * field, unsigned numRows)
 {
     result.append('[');
     return true;

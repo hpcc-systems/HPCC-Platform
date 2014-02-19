@@ -37,8 +37,10 @@ if (USE_JNI)
              ./../../system/include
              ./../../rtl/eclrtl
              ./../../rtl/include
+             ./../../rtl/nbcd
              ./../../common/deftype
              ./../../system/jlib
+             ./../../roxie/roxiemem
              ${CMAKE_BINARY_DIR}
              ${CMAKE_BINARY_DIR}/oss
         )
@@ -53,6 +55,7 @@ if (USE_JNI)
     endif()
 
     install ( TARGETS javaembed DESTINATION plugins )
+    install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/HpccUtils.class DESTINATION classes/com/HPCCSystems COMPONENT Runtime)
 
     # We link against jsig so that signals are chained from the jvm
 

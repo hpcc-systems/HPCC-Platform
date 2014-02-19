@@ -288,23 +288,22 @@ public:
         rtlQStrToStrX(charCount, text.refstr(), len, value);
         processString(charCount, text.getstr(), field);
     }
-    virtual void processSetAll(const RtlFieldInfo * field)
-    {
-        rtlFail(0, "v8embed: ALL sets are not supported");
-    }
     virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
     {
         addProp(field, v8::String::New(value, rtlUtf8Size(len, value)));
     }
 
-    virtual bool processBeginSet(const RtlFieldInfo * field)
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data)
     {
         push();
         inDataset = true;
+        if (isAll)
+            rtlFail(0, "v8embed: ALL sets are not supported");
+
         obj = v8::Array::New();
         return true;
     }
-    virtual bool processBeginDataset(const RtlFieldInfo * field)
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows)
     {
         push();
         inDataset = true;
