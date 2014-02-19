@@ -32,10 +32,11 @@ define({ root:
     ShowSVG: "Show SVG",
     Subgraphs: "Subgraphs",
     SVGSource: "SVG Source",
-    Sync: "Sync",
+    SyncSelection: "Sync To Selection",
     Timings: "Timings",
     TimingsMap: "Timings Map",
     Version: "Version",
+    WarnOldGraphControl: "Warning:  Old Graph Control",
     XGMML: "XGMML"
 })
 //end v1.x content

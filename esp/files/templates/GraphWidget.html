@@ -3,11 +3,20 @@
         <div id="${id}ToolbarContentPane" class="${baseClass}ToolbarContentPane" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
             <div id="${id}Toolbar" class="topPanel dijit dijitToolbar" role="toolbar">
                 <div data-dojo-attach-event="onClick:_onClickRefresh" data-dojo-props="iconClass:'iconRefresh', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                <div id="${id}Previous" data-dojo-attach-event="onClick:_onClickPrevious" data-dojo-props="iconClass:'iconLeft', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                <div id="${id}Next" data-dojo-attach-event="onClick:_onClickNext" data-dojo-props="iconClass:'iconRight', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 <div data-dojo-attach-event="onClick:_onClickZoomOrig" data-dojo-props="iconClass:'iconZoomOrig', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.Zoom100Pct}</div>
                 <div data-dojo-attach-event="onClick:_onClickZoomAll" data-dojo-props="iconClass:'iconZoomAll', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomAll}</div>
                 <div data-dojo-attach-event="onClick:_onClickZoomWidth" data-dojo-props="iconClass:'iconZoomWidth', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.ZoomWidth}</div>
                 <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 <span data-dojo-attach-point="containerNode"></span>
+                <div title="${i18n.Depth}" data-dojo-props="iconClass:'iconDepth', showLabel:false, disabled: true" data-dojo-type="dijit.form.Button"></div>
+                <input id="${id}Depth" style="width: 60px" value="2" title="${i18n.Depth}" data-dojo-attach-event="onChange:_onDepthChange" data-dojo-props="placeHolder:'${i18n.Depth}', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+                <div id="${id}DistanceLabel" title="${i18n.Distance}" data-dojo-props="iconClass:'iconDistance', showLabel:false, disabled: true" data-dojo-type="dijit.form.Button"></div>
+                <input id="${id}Distance" style="width: 60px" value="2" title="${i18n.Distance}" data-dojo-attach-event="onChange:_onDistanceChange" data-dojo-props="placeHolder:'${i18n.Depth}', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <div id="${id}SyncSelection" data-dojo-attach-event="onClick:_onSyncSelection" data-dojo-props="iconClass:'iconSync', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.SyncSelection}</div>
             </div>
         </div>
         <div id="${id}GraphContentPane" class="${baseClass}GraphContentPane" style="padding: 0px; overflow: hidden; background-color: #707070" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">

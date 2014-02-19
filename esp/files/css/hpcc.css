@@ -797,6 +797,84 @@ margin-left:-20px;
     display: inline-block;
 }
 
+.iconLeft {
+    background-image: url("../img/left.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconUp {
+    background-image: url("../img/up.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconRight {
+    background-image: url("../img/right.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconDown {
+    background-image: url("../img/down_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconLeftDisabled {
+    background-image: url("../img/left_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconUpDisabled {
+    background-image: url("../img/up_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconRightDisabled {
+    background-image: url("../img/right_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconDownDisabled {
+    background-image: url("../img/down_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconUpDown {
+    background-image: url("../img/updown.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconDepth {
+    background-image: url("../img/depth.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconDistance {
+    background-image: url("../img/distance.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconSync {
+    background-image: url("../img/sync.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconSyncDisabled {
+    background-image: url("../img/sync_disabled.png"); 
+    width: 16px;
+    height: 16px;
+}
+
 .ErrorCell{
     background: red;
     color: white;

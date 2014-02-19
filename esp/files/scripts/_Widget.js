@@ -4,9 +4,11 @@ define([
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin"
+    "dijit/_WidgetsInTemplateMixin",
+    "dijit/registry"
+
 ], function (declare, ioQuery,
-    _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin) {
+    _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry) {
 
     return declare("_Widget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         baseClass: "_Widget",
@@ -33,6 +35,14 @@ define([
         },
 
         //  Usefull functions  ---
+        setDisabled: function (id, disabled, icon, disabledIcon) {
+            var target = registry.byId(id);
+            if (target) {
+                target.set("disabled", disabled);
+                target.set("iconClass", disabled ? disabledIcon : icon);
+            }
+        },
+
         endsWith: function (str, suffix) {
             return str.indexOf(suffix, str.length - suffix.length) !== -1;
         }

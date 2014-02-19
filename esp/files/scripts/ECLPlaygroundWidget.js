@@ -153,6 +153,9 @@ define([
         initGraph: function () {
             var context = this;
             this.graphControl = registry.byId(this.id + "GraphControl");
+            this.graphControl.showNextPrevious(false);
+            this.graphControl.showDistance(false);
+            this.graphControl.showSyncSelection(false);
             this.graphControl.onSelectionChanged = function (items) {
                 context.editorControl.clearHighlightLines();
                 for (var i = 0; i < items.length; ++i) {
@@ -266,10 +269,15 @@ define([
         },
 
         displayGraphs: function (graphs) {
+            var fetchedCount = 0;
             for (var i = 0; i < graphs.length; ++i) {
                 var context = this;
                 this.wu.fetchGraphXgmml(i, function (xgmml) {
-                    context.graphControl.loadXGMML(xgmml, i > 0);
+                    ++fetchedCount;
+                    context.graphControl.loadXGMML(xgmml, fetchedCount > 1);
+                    if (fetchedCount === graphs.length) {
+                        context.graphControl.startLayout("dot");
+                    }
                 });
             }
         },
