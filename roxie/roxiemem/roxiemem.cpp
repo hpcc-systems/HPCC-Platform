@@ -38,7 +38,6 @@
 namespace roxiemem {
 
 #define NOTIFY_UNUSED_PAGES_ON_FREE     // avoid linux swapping 'freed' pages to disk
-#define TIMEOUT_CHECK_FREQUENCY_MILLISECONDS 10
 
 unsigned memTraceLevel = 1;
 memsize_t memTraceSizeLimit = 0;
@@ -2667,7 +2666,7 @@ public:
         if (timeLimit)
         {
             cyclesChecked = get_cycles_now();
-            cyclesCheckInterval = nanosec_to_cycle(1000000 * TIMEOUT_CHECK_FREQUENCY_MILLISECONDS); // Could perhaps ask timelimit object what a suitable frequency is..
+            cyclesCheckInterval = nanosec_to_cycle(1000000 * timeLimit->checkInterval());
         }
         else
         {

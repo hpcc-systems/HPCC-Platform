@@ -896,6 +896,20 @@ public:
         }
     }
 
+    virtual unsigned checkInterval() const
+    {
+        unsigned interval = MAX_ABORT_CHECK_INTERVAL;
+        if (timeLimit)
+        {
+            interval = timeLimit / 10;
+            if (interval < MIN_ABORT_CHECK_INTERVAL)
+                interval = MIN_ABORT_CHECK_INTERVAL;
+            if (interval > MAX_ABORT_CHECK_INTERVAL)
+                interval = MAX_ABORT_CHECK_INTERVAL;
+        }
+        return interval;
+    }
+
     virtual void notifyAbort(IException *E)
     {
         CriticalBlock b(abortLock);

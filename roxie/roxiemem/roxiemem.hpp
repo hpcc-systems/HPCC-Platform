@@ -469,9 +469,13 @@ interface IRowManager : extends IInterface
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
 
+#define MIN_ABORT_CHECK_INTERVAL 10
+#define MAX_ABORT_CHECK_INTERVAL 5000
+
 interface ITimeLimiter 
 {
-    virtual void checkAbort() = 0 ;
+    virtual void checkAbort() = 0;
+    virtual unsigned checkInterval() const = 0;
 };
 
 interface IActivityMemoryUsageMap : public IInterface
