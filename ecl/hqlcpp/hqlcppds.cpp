@@ -730,7 +730,7 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
                 if (multiPath)
                 {
                     BuildCtx condctx(ctx);
-                    buildFilter(condctx, optimized);
+                    condctx.addFilter(optimized);
                     assignBound(condctx, target, queryBoolExpr(true));
                 }
                 else
