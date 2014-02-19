@@ -148,7 +148,7 @@
             <body class="yui-skin-sam">
                 <xsl:variable name="suspendedOnClusters">
                     <xsl:for-each select="Clusters/ClusterQueryState[State='Suspended']">
-                        <xsl:if test="position() > 1"><xsl:text>, </xsl:text></xsl:if><xsl:value-of select="Cluster"/>
+                        <xsl:if test="position() > 1"><xsl:text>, </xsl:text></xsl:if><xsl:value-of select="Cluster"/><xsl:if test="MixedNodeStates=1"><xsl:text>(some nodes)</xsl:text></xsl:if>
                     </xsl:for-each>
                 </xsl:variable>
                 <h3>Query Details for <xsl:value-of select="QueryId"/></h3>

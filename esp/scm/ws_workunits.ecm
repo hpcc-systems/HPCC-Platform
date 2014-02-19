@@ -1168,6 +1168,7 @@ ESPStruct ClusterQueryState
     string Cluster;
     string State;
     [min_ver("1.46")] string Errors;
+    [min_ver("1.47")] bool MixedNodeStates;
 };
 
 ESPStruct [nil_remove] QuerySetQuery
@@ -1443,7 +1444,7 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 };
 
 ESPservice [
-    version("1.46"), default_client_version("1.46"),
+    version("1.47"), default_client_version("1.47"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
