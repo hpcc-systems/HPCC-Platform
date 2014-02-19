@@ -2868,15 +2868,11 @@ OUTPUT(ValidWords)
 
       <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
 
-      <programlisting>sudo rpm -e hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
-
-      <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+      <programlisting>sudo rpm -e hpccsystems-platform </programlisting>
 
       <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
 
-      <programlisting>sudo dpkg -r hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> </programlisting>
-
-      <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+      <programlisting>sudo dpkg -r hpccsystems-platform</programlisting>
     </sect1>
 
     <sect1 id="Helper-Applications">
