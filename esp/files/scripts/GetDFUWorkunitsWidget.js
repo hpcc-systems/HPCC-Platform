@@ -119,7 +119,7 @@ define([
                 var context = this;
                 FileSpray.DFUWorkunitsAction(this.workunitsGrid.getSelected(), this.i18n.Delete, {
                     load: function (response) {
-                        context.refreshGrid(response);
+                        context.refreshGrid(true);
                     }
                 });
             }
@@ -390,6 +390,9 @@ define([
 
         refreshGrid: function (args) {
             this.workunitsGrid.set("query", this.filter.toObject());
+            if (clearSelection) {
+                this.workunitsGrid.clearSelection();
+            }
         },
 
         refreshActionState: function () {

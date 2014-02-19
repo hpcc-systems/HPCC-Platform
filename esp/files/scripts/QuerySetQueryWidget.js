@@ -428,13 +428,16 @@ define([
             if (confirm(this.i18n.DeleteSelectedQueries)) {
                 var context = this;
                 WsWorkunits.WUQuerysetQueryAction(this.querySetGrid.getSelected(), "Delete").then(function (response) {
-                    context.refreshGrid();
+                    context.refreshGrid(true);
                 });
             }
         },
 
         refreshGrid: function (args) {
             this.querySetGrid.set("query", this.getFilter());
+            if (clearSelection) {
+                this.workunitsGrid.clearSelection();
+            }
         },
 
         _onSuspend: function(){

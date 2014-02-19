@@ -195,7 +195,12 @@ define([
             getSelected: function() {
                 var retVal = [];
                 for (var id in this.selection) {
-                    retVal.push(this.store.get(id));
+                    if (this.selection[id]) {
+                        var storeItem = this.store.get(id);
+                        if (storeItem) {
+                            retVal.push(storeItem);
+                        }
+                    }
                 }
                 return retVal;
             }
