@@ -1051,8 +1051,8 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
         PROGLOG("%2d  %08X  %08X",n+1,fip,(unsigned) bp);
         bp = nextbp;
     }
-#elif defined (__linux__) && defined (__arm__)
-#pragma message "Implement signal dump for ARM."
+#elif defined (__linux__) && defined (__ARM_ARCH_7A__)
+#pragma message "Implement signal dump for ARMv7-A."
 
     ucontext_t *uc = (ucontext_t *) extra;
 
@@ -1072,48 +1072,52 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
 
     struct flags
     {
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-        unsigned int M0:1;      // bit 0   LSB
-        unsigned int M1:1;      // bit 1
-        unsigned int M2:1;      // bit 2
-        unsigned int M3:1;      // bit 3
-        unsigned int M4:1;      // bit 4
+        unsigned int Mode:4;    // bit 0 - 3
+        unsigned int M:1;       // bit 4
         unsigned int T:1;       // bit 5
         unsigned int F:1;       // bit 6
         unsigned int I:1;       // bit 7
-        unsigned int DNM:19;    // bit 8 - 26
+        unsigned int A:1;       // bit 8
+        unsigned int E:1;       // bit 9
+        unsigned int IT1:6;     // bit 10 - 15
+        unsigned int GE:4;      // bit 16 - 19
+        unsigned int DNM:4;     // bit 20 - 23
+        unsigned int J:1;       // bit 24
+        unsigned int IT2:2;     // bit 25 - 26
         unsigned int Q:1;       // bit 27
         unsigned int V:1;       // bit 28
         unsigned int C:1;       // bit 29
         unsigned int Z:1;       // bit 30
         unsigned int N:1;       // bit 31
-#else
-        unsigned int DNM1:3     // bit 24 - bit 26  MSB
-        unsigned int Q:1;       // bit 27
-        unsigned int V:1;       // bit 38
-        unsigned int C:1;       // bit 29
-        unsigned int Z:1;       // bit 30
-        unsigned int N:1;       // bit 31
-        unsigned int DNM2:16;   // bit 23 - bit 8
-        unsigned int M0:1;      // bit 0            LSB
-        unsigned int M1:1;      // bit 1
-        unsigned int M2:1;      // bit 2
-        unsigned int M3:1;      // bit 3
-        unsigned int M4:1;      // bit 4
-        unsigned int T:1;       // bit 5
-        unsigned int F:1;       // bit 6
-        unsigned int I:1;       // bit 7
-#endif
     } *flags_p;
 
-    const char *ArmCpuModes[] = { "User", "FIQ", "IRQ", "Supervisor", "Abort", "Undefined", "System" };
+    const char *ArmCpuModes[] = {
+                            // M M[3:0]
+            "User",         // 1 0000
+            "FIQ",          // 1 0001
+            "IRQ",          // 1 0010
+            "Supervisor",   // 1 0011
+            "N/A",          // 1 0100
+            "N/A",          // 1 0101
+            "Monitor",      // 1 0110
+            "Abort",        // 1 0111
+            "N/A",          // 1 1000
+            "N/A",          // 1 1001
+            "Hyp"           // 1 1010
+            "Undefined",    // 1 1011
+            "N/A",          // 1 1100
+            "N/A",          // 1 1101
+            "N/A",          // 1 1110
+            "System"        // 1 1111
+    };
 
     flags_p = (struct flags *)&uc->uc_mcontext.arm_cpsr;
-    PROGLOG("Flags N:%d Z:%d C:%d V:%d Q:%d I:%d F:%d T:%d M:%d%d%d%d%d [%s]\n"
+    PROGLOG("Flags N:%d Z:%d C:%d V:%d Q:%d IT:0x%X J:%d GE:0x%X E:%d A:%d I:%d F:%d T:%d M:0x%X [%s]"
             , flags_p->N, flags_p->Z, flags_p->C, flags_p->V, flags_p->Q
-            , flags_p->I, flags_p->F, flags_p->T
-            , flags_p->M4, flags_p->M3, flags_p->M2, flags_p->M1, flags_p->M0
-            , ArmCpuModes[uc->uc_mcontext.arm_cpsr & 0x07]
+            , (flags_p->IT2 << 6 | flags_p->IT1)
+            , flags_p->J, flags_p->GE
+            , flags_p->E, flags_p->A, flags_p->I, flags_p->F, flags_p->T, (flags_p->M << 4 | flags_p->Mode)
+            , ArmCpuModes[flags_p->Mode]
             );
 
     PROGLOG("Fault address: %08lX", uc->uc_mcontext.fault_address);
@@ -1134,6 +1138,13 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
         }
     }
     PROGLOG( "%s",s.str());
+
+#elif defined (__linux__) && defined (__arm__)
+#pragma message "Unknown ARM architecture!"
+
+    PROGLOG("================================================");
+    PROGLOG("Signal:    %d %s",signum,strsignal(signum));
+    PROGLOG("More information unavailable on your platform");
 
 #else
     // Placeholder for any new HW-SW platform
