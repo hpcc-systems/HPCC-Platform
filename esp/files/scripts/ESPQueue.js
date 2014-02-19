@@ -130,6 +130,7 @@ define([
 
         clearChildren: function () {
             this.children.setData([]);
+            this.set("DisplaySize", "");
         },
 
         addChild: function (wu) {
@@ -145,6 +146,7 @@ define([
                     }
                 });
             }
+            this.set("DisplaySize", this.getChildCount());
         },
 
         getChild: function (id) {

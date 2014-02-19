@@ -3,7 +3,8 @@ define({ root:
 ({
     title: "Activity",
     ActiveWorkunit: "Active Workunit",
-    Target: "Target",
+    TargetWuid: "Target/Wuid",
+    Size: "Size",
     State: "State",
     Owner: "Owner",
     JobName: "Job Name"
