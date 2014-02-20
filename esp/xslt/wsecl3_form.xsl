@@ -135,7 +135,7 @@
         <xsl:with-param name="types" select="$enum-types"/>
     </xsl:call-template>
 <xsl:text disable-output-escaping="yes"><![CDATA[
-
+m
 function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param passing, 3: roxiexml
 {
     var form = document.forms['esp_form'];
@@ -149,12 +149,10 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes" select="concat('/WsEcl/forms/soap/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="esp_json")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/forms/json/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
-        else if (actval.value=="roxie_soap")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/forms/roxiesoap/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
-        else if (actval.value=="roxie_xml")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/forms/roxiexml/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="run_xslt")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+        else if (actval.value=="proxy_xml")
+            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/proxy/query/', $queryPath, '/', $methodName, '/xml?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="xml")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/query/', $queryPath, '/', $methodName, '/xml?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="json")
@@ -170,8 +168,12 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
          form.action = document.getElementById('dest_url').value;
     else
         form.action = actionpath;
-
-    //alert("Form action = " + form.action);
+    var methodval = document.getElementById('method_type').value;
+    form.method = methodval;
+    if (methodval == "GET")
+        form.target = "_blank";
+    else
+        form.target = "_self";
 
     // firefox now save input values (version 1.5)
     saveInputValues(form);
@@ -306,17 +308,22 @@ function switchInputForm()
 
                 <tr class='commands'>
                   <td align='left'>
-                    <select id="submit_type" name="submit_type_">
+                    <select id="submit_type">
                         <xsl:for-each select="/FormInfo/CustomViews/Result">
                             <option><xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute><xsl:value-of select="."/></option>
                         </xsl:for-each>
                         <option value="run_xslt">Output Tables</option>
+                        <option value="proxy_xml">Output XML (Proxy mode)</option>
                         <option value="xml">Output XML</option>
                         <option value="json">Output JSON</option>
                         <option value="esp_soap">SOAP Test</option>
                         <option value="esp_json">JSON Test</option>
                     </select>&nbsp;
-                   <input type='submit' value='Submit' name='S1'/>
+                    <select id="method_type">
+                         <option value="POST">FORM POST</option>
+                        <option value="GET">REST URL</option>
+                    </select>&nbsp;
+                   <input type='submit' value='Submit'/>
 
           &nbsp;<input type='button' value='Clear All' onclick='onClearAll()'  title='Reset the form, and remove all arrays you added'/>
            </td>
