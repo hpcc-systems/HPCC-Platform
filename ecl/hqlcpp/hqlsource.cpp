@@ -1961,7 +1961,10 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
         {
             StringBuffer spillName;
             getExprECL(nameExpr, spillName);
-            throwError1(HQLERR_ReadSpillBeforeWrite, spillName.str());
+            if (translator.queryOptions().allowThroughSpill)
+                throwError1(HQLERR_ReadSpillBeforeWriteFix, spillName.str());
+            else
+                throwError1(HQLERR_ReadSpillBeforeWrite, spillName.str());
         }
         translator.addFilenameConstructorParameter(*instance, "getFileName", nameExpr);
     }
@@ -2629,7 +2632,10 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     {
         StringBuffer spillName;
         getExprECL(tableExpr->queryChild(0), spillName);
-        throwError1(HQLERR_ReadSpillBeforeWrite, spillName.str());
+        if (translator.queryOptions().allowThroughSpill)
+            throwError1(HQLERR_ReadSpillBeforeWriteFix, spillName.str());
+        else
+            throwError1(HQLERR_ReadSpillBeforeWrite, spillName.str());
     }
 
 

@@ -829,6 +829,7 @@ protected:
             if (rows)
                 rows->kill();
         }
+        rhs.kill();
     }
     void clearHT()
     {

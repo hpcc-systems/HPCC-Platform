@@ -3379,6 +3379,7 @@ public:
             else
                 t->removeProp("@group");
             t->setPropInt("@numclusters",clusters.ordinality());
+            t->setProp("@directory", directory);
             if (t==tc)
                 break;
             t = tc; // now fix cache
@@ -3416,7 +3417,20 @@ public:
         if (i!=NotFound) {
             if (clusters.ordinality()==1)
                 throw MakeStringException(-1,"CFileClusterOwner::removeCluster cannot remove sole cluster %s",clustername);
+            // If the cluster is the 'default' one we need to update the directory too
+            StringBuffer oldBaseDir;
+            char pathSepChar = getPathSepChar(directory.get());
+            DFD_OS os = SepCharBaseOs(pathSepChar);
+            clusters.item(i).getBaseDir(oldBaseDir, os);
+            unsigned oldLen = oldBaseDir.length();
             clusters.remove(i);
+            if (oldLen && strncmp(directory, oldBaseDir, oldLen)==0 && (directory[oldLen]==pathSepChar || directory[oldLen]=='\0'))
+            {
+                StringBuffer newBaseDir;
+                clusters.item(0).getBaseDir(newBaseDir, os);
+                newBaseDir.append(directory.get() + oldBaseDir.length());
+                directory.set(newBaseDir);
+            }
             saveClusters();
             return true;
         }

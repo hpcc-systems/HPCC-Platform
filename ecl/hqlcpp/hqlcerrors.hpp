@@ -306,6 +306,7 @@
 #define HQLERR_ReadSpillBeforeWrite             4835
 #define HQLERR_DependencyWithinGraph            4836
 #define HQLERR_UnknownCompoundAssign            4837
+#define HQLERR_ReadSpillBeforeWriteFix          4838
 //#define HQLERR_Max                            4999
 
 //---- Text for all errors (make it easy to internationalise) ---------------------------
@@ -577,6 +578,7 @@
 #define HQLERR_ReadSpillBeforeWrite_Text        "INTERNAL: Attempt to read spill file %s before it is written"
 #define HQLERR_DependencyWithinGraph_Text       "INTERNAL: Dependency within a graph incorrectly generated for hThor (%u)"
 #define HQLERR_UnknownCompoundAssign_Text       "INTERNAL: Unrecognised compound assign %s"
+#define HQLERR_ReadSpillBeforeWriteFix_Text     "INTERNAL: Attempt to read spill file %s before it is written.  Try adding #option ('allowThroughSpill', false); to the query."
 
 #define WARNINGAT(e, x)                 reportWarning(e, x, x##_Text)
 #define WARNINGAT1(e, x, a)             reportWarning(e, x, x##_Text, a)

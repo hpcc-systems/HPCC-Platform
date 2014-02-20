@@ -1169,6 +1169,7 @@ ESPStruct ClusterQueryState
     string Cluster;
     string State;
     [min_ver("1.46")] string Errors;
+    [min_ver("1.47")] bool MixedNodeStates;
 };
 
 ESPStruct [nil_remove] QuerySetQuery

@@ -613,12 +613,15 @@ void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, 
     Owned<IPropertyTreeIterator> iter = queriesOnCluster->getElements(xpath.str());
     bool found = false;
     bool suspended = false;
+    bool available = false;
     StringBuffer errors;
     ForEach (*iter)
     {
         found = true;
         if (iter->query().getPropBool("@suspended", false))
             suspended = true;
+        else
+            available = true;
         const char* error = iter->query().queryProp("@error");
         if (error && *error && (version >=1.46))
         {
@@ -630,7 +633,11 @@ void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, 
     if (!found)
         clusterState->setState("Not Found");
     else if (suspended)
+    {
         clusterState->setState("Suspended");
+        if (available)
+            clusterState->setMixedNodeStates(true);
+    }
     else
         clusterState->setState("Available");
     if ((version >=1.46) && errors.length())
@@ -831,7 +838,7 @@ IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset)
     try
     {
         Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
-        return sendRoxieControlQuery(sock, "<control:queries/>", ROXIECONTROLQUERYTIMEOUT);
+        return sendRoxieControlAllNodes(sock, "<control:queries/>", true, ROXIECONTROLQUERYTIMEOUT);
     }
     catch(IException* e)
     {

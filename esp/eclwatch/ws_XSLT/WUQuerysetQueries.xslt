@@ -444,12 +444,16 @@
                   <xsl:for-each select="Clusters/ClusterQueryState[State='Suspended']">
                       <xsl:choose>
                           <xsl:when test="position() = 1">
-                              <xsl:text>On Cluster(s): </xsl:text><xsl:value-of select="Cluster"/>
+                              <xsl:text>On Cluster(s): </xsl:text>
                           </xsl:when>
                           <xsl:otherwise>
-                              <xsl:text>, </xsl:text><xsl:value-of select="Cluster"/>
+                              <xsl:text>, </xsl:text>
                           </xsl:otherwise>
                       </xsl:choose>
+                      <xsl:value-of select="Cluster"/>
+                      <xsl:if test="MixedNodeStates=1">
+                        <xsl:text>(some nodes)</xsl:text>
+                      </xsl:if>
                   </xsl:for-each>
               </xsl:otherwise>
           </xsl:choose>
