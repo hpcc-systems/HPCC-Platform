@@ -1885,31 +1885,57 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
     return true;
 }
 
+void CWsSMCEx::setJobPriority(IWorkUnitFactory* factory, const char* wuid, const char* queueName, WUPriorityClass& priority)
+{
+    if (!wuid || !*wuid)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit ID not specified.");
+    if (!queueName || !*queueName)
+        throw MakeStringException(ECLWATCH_INVALID_INPUT, "queue not specified.");
+
+    Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
+    if (!lw)
+        throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cannot update Workunit %s", wuid);
+
+    lw->setPriority(priority);
+
+    // set job priority to queue
+    int priorityValue = lw->getPriorityValue();
+    {
+        CriticalBlock b(crit);
+        Owned<IJobQueue> queue = createJobQueue(queueName);
+        QueueLock lock(queue);
+        queue->changePriority(wuid,priorityValue);
+    }
+
+    return;
+}
+
 bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &req, IEspSMCPriorityResponse &resp)
 {
     try
     {
-        const char* wuid = req.getWuid();
-        if (!wuid || !*wuid)
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Workunit ID not specified.");
+        WUPriorityClass priority = PriorityClassNormal;
+        if(strieq(req.getPriority(),"high"))
+            priority = PriorityClassHigh;
+        else if(strieq(req.getPriority(),"low"))
+            priority = PriorityClassLow;
 
         Owned<IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
-        Owned<IWorkUnit> lw = factory->updateWorkUnit(wuid);
-        if (!lw)
-            throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT, "Cannot update Workunit %s", wuid);
 
-        if(stricmp(req.getPriority(),"high")==0)
-            lw->setPriority(PriorityClassHigh);
-        else if(stricmp(req.getPriority(),"normal")==0)
-            lw->setPriority(PriorityClassNormal);
-        else if(stricmp(req.getPriority(),"low")==0)
-            lw->setPriority(PriorityClassLow);
-
-        // set job priority
-        int priority = lw->getPriorityValue();  
-        Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
-        QueueLock lock(queue);
-        queue->changePriority(req.getWuid(),priority);
+        IArrayOf<IConstSMCJob>& jobs = req.getSMCJobs();
+        if (!jobs.length())
+            setJobPriority(factory, req.getWuid(), req.getQueueName(), priority);
+        else
+        {
+            ForEachItemIn(i, jobs)
+            {
+                IConstSMCJob &item = jobs.item(i);
+                const char *wuid = item.getWuid();
+                const char *queueName = item.getQueueName();
+                if (wuid && *wuid && queueName && *queueName)
+                    setJobPriority(factory, wuid, queueName, priority);
+            }
+        }
 
         resp.setRedirectUrl("/WsSMC/");
     }

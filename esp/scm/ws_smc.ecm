@@ -205,13 +205,20 @@ ESPresponse [exceptions_inline] SMCJobResponse
 {
 };
 
+ESPStruct SMCJob
+{
+    string Wuid;
+    string QueueName;
+};
+
 ESPrequest SMCPriorityRequest
 {
-    int ClusterType;
-    string Cluster;
+    [dspr_ver("1.18")] int ClusterType;
+    [dspr_ver("1.18")] string Cluster;
     string QueueName;
     string Wuid;
     string Priority;
+    [min_ver("1.18")] ESParray<ESPstruct SMCJob> SMCJobs;
 };
 
 
@@ -321,7 +328,7 @@ RoxieControlCmdResponse
     ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
 };
 
-ESPservice [noforms, version("1.17"), default_client_version("1.17"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.18"), default_client_version("1.18"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
