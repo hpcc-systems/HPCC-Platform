@@ -4882,7 +4882,7 @@ private:
         return true;
     }
 
-    virtual bool enableUser(ISecUser* user, const char* dn, LDAP* ld)
+    virtual void enableUser(ISecUser* user, const char* dn, LDAP* ld)
     {
         const char* username = user->getName();
 
@@ -4902,7 +4902,7 @@ private:
         if ( rc != LDAP_SUCCESS )
         {
             DBGLOG("ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
-            return false;
+            throw MakeStringException(-1, "ldap_search_ext_s error: %s, when searching %s under %s", ldap_err2string( rc ), filter.str(), m_ldapconfig->getUserBasedn());
         }
 
         StringBuffer act_ctrl;
@@ -4928,8 +4928,8 @@ private:
 
         if(act_ctrl.length() == 0)
         {
-            DBGLOG("enableUser: userAccountControl doesn't exist");
-            return false;
+            DBGLOG("enableUser: userAccountControl doesn't exist for user %s",username);
+            throw MakeStringException(-1, "enableUser: userAccountControl doesn't exist for user %s",username);
         }
 
         unsigned act_ctrl_val = atoi(act_ctrl.str());
@@ -4967,16 +4967,22 @@ private:
         if(passwd == NULL || *passwd == '\0')
             passwd = "password";
 
-        updateUserPassword(*tmpuser, passwd, NULL);
+        if (!updateUserPassword(*tmpuser, passwd, NULL))
+        {
+            DBGLOG("Error updating password for %s",username);
+            throw MakeStringException(-1, "Error updating password for %s",username);
+        }
 
         //Add tempfile scope for this user (spill, paused and checkpoint
         //will be created under this user specific scope)
         StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
         resName.append("::").append(tmpuser->getName());
         Owned<ISecResource> resource = new CLdapSecResource(resName.str());
-        addResource(RT_FILE_SCOPE, *tmpuser, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
-
-        return true;
+        if (!addResource(RT_FILE_SCOPE, *tmpuser, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE)))
+        {
+            DBGLOG("Error adding temp file scope %s",resName.str());
+            throw MakeStringException(-1, "Error adding temp file scope %s",resName.str());
+        }
     }
 
 
@@ -4986,7 +4992,7 @@ private:
         if(username == NULL || *username == '\0')
         {
             DBGLOG("Can't add user, username not set");
-            return false;
+            throw MakeStringException(-1, "Can't add user, username not set");
         }
 
         const char* fname = user.getFirstName();
@@ -5147,7 +5153,7 @@ private:
         {
             try
             {
-                return enableUser(&user, dn.str(), ld);
+                enableUser(&user, dn.str(), ld);
             }
             catch(...)
             {
