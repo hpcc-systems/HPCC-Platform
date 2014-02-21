@@ -118,8 +118,9 @@ public:
     bool onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp);
     bool onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoRequest &req, IEspWUGetZAPInfoResponse &resp);
 private:
+#ifdef _USE_ZLIB
     void addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr);
-
+#endif
     unsigned awusCacheMinutes;
     StringBuffer queryDirectory;
     StringAttr daliServers;

@@ -3917,7 +3917,7 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
     }
     return true;
 }
-
+#ifdef _USE_ZLIB
 void CWsWorkunitsEx::addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr)
 {
     Owned<IPropertyTreeIterator> procs = cwu->getProcesses(process, NULL);
@@ -3967,7 +3967,7 @@ void CWsWorkunitsEx::addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &c
         }
     }
 }
-
+#endif
 
 bool CWsWorkunitsEx::onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp)
 {
