@@ -653,7 +653,6 @@ public:
             memset(inbuf, 0, 1024);
             memset(outbuf, 0, 1024);
 
-            unsigned int len = 0;
             unsigned int lenread = 0;
             m_client->read(inbuf, 8, 8, lenread);
             if(lenread != 8)
@@ -662,22 +661,18 @@ public:
                 return -1;
             }
 
-            len += lenread;
+            unsigned int len = 8;
             m_client->read(inbuf + len, 0, 1, lenread);
             StringBuffer username;
             while(lenread > 0)
             {
+                char c = inbuf[len];
+                if (c == '\0')
+                    break;
+                username.append(c);
                 len += lenread;
                 if(len >= 1023)
-                {
                     len = 0;
-                }
-                if(inbuf[len - 1] == '\0')
-                {
-                    break;
-                }
-                char c = inbuf[len - 1];
-                username.append(c);
                 m_client->read(inbuf + len, 0, 1, lenread);
             }
             
