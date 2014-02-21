@@ -78,7 +78,7 @@
                     <autogenforwizard>1</autogenforwizard>
                     <onchange>
                         <xml>component</xml>
-                        <xslt>@temp/wsecl_onchange.xslt</xslt>
+                        <xslt>atmark_temp/wsecl_onchange.xslt</xslt>
                         <refresh>false</refresh>
                     </onchange>
                 </xs:appinfo>
@@ -100,7 +100,7 @@
                     <serviceType>WsAttributes</serviceType>
                     <onchange>
                         <xml>component</xml>
-                        <xslt>@temp/wsecl_onchange.xslt</xslt>
+                        <xslt>atmark_temp/wsecl_onchange.xslt</xslt>
                         <refresh>false</refresh>
                     </onchange>
                 </xs:appinfo>
@@ -143,7 +143,7 @@
                     <tooltip>For internal use only.</tooltip>
                     <onchange>
                         <xml>component</xml>
-                        <xslt>@temp/wsecl_onchange.xslt</xslt>
+                        <xslt>atmark_temp/wsecl_onchange.xslt</xslt>
                         <refresh>false</refresh>
                     </onchange>
                 </xs:appinfo>

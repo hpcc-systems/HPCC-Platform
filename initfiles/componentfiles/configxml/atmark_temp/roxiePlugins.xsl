@@ -53,7 +53,7 @@
     </xsl:choose>
 </xsl:variable>
 
-    
+
 <xsl:template match="/">
     <xsl:if test="not($roxieNode)">
         <xsl:message terminate="yes">Roxie cluster '<xsl:value-of select="$process"/>' is not defined!</xsl:message>

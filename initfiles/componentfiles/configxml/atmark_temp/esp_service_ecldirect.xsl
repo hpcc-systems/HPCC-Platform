@@ -106,7 +106,6 @@
             <xsl:for-each select="$bindingNode/Authenticate">
                <Location path="{@path}" resource="{@resource}" access="{@access}"/>
             </xsl:for-each>
-            
             <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
             </xsl:for-each>

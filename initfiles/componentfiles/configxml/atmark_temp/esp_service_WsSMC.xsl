@@ -17,14 +17,14 @@
 ################################################################################
 -->
 
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default" 
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
 xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-result-prefixes="seisint set">
 <!--xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"-->
     <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <xsl:param name="process" select="'esp'"/>
     <xsl:param name="instance" select="'rmoondhra'"/>
     <xsl:param name="outputFilePath" select="'c:\development\deployment\xmlenv\dummy.xml'"/>
-    <xsl:param name="isLinuxInstance" select="0"/>    
+    <xsl:param name="isLinuxInstance" select="0"/>
     <xsl:param name="espServiceName" select="'espsmc'"/>
 
     <xsl:template match="text()"/>
@@ -51,7 +51,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
 
     <xsl:template match="EspBinding">
         <xsl:param name="authNode"/>
-        
+
      <xsl:variable name="serviceNode" select="/Environment/Software/EspService[@name=$espServiceName and @name=current()/@service and Properties/@type='WsSMC']"/>
         <xsl:apply-templates select="$serviceNode">
             <xsl:with-param name="bindingNode" select="."/>
@@ -138,7 +138,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             </xsl:call-template>
         </xsl:variable>
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>
-        <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" 
+        <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}"
              plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}" defaultBinding="true">
             <xsl:call-template name="bindAuthentication">
                 <xsl:with-param name="bindingNode" select="$bindingNode"/>
@@ -147,7 +147,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             </xsl:call-template>
         </EspBinding>
     </xsl:template>
-    
+
     <!-- WS-TOPOLOGY -->
     <xsl:template match="EspService" mode="WsTopology">
         <xsl:param name="bindingNode"/>
@@ -161,7 +161,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:call-template name="defineServicePlugin">
                 <xsl:with-param name="plugin" select="'ws_topology'"/>
             </xsl:call-template>
-        </xsl:variable>    
+        </xsl:variable>
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
             <xsl:for-each select="@warnIfCpuLoadOver|@warnIfFreeStorageUnder|@warnIfFreeMemoryUnder">
                 <xsl:if test="string-length()!=0">
@@ -285,7 +285,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 </xsl:call-template>
             </xsl:variable>
           <xsl:variable name="outputPath1" select="translate($outputPath, '\','/')"/>
-            
+
             <xsl:variable name="pluginsFilePath" select="concat('file:///', $outputPath1, $espServiceName, '_plugins.xml')"/>
             <xsl:variable name="pluginsRoot" select="document($pluginsFilePath)"/>
             <xsl:if test="not($pluginsRoot)">
@@ -448,7 +448,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             </xsl:call-template>
         </EspBinding>
     </xsl:template>
-    
+
     <!-- ws_machine-->
     <xsl:template match="EspService" mode="ws_machine">
         <xsl:param name="bindingNode"/>
@@ -468,7 +468,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         <xsl:copy-of select="@monitorDaliFileServer|@excludePartitions"/>
         <xsl:apply-templates select="Properties/ProcessFilters" mode="copy"/>
      </EspService>
-        
+
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
             <xsl:call-template name="bindAuthentication">
                 <xsl:with-param name="bindingNode" select="$bindingNode"/>
@@ -492,8 +492,8 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:with-param name="plugin" select="'ws_account'"/>
             </xsl:call-template>
         </xsl:variable>
-        
-        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>     
+
+        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
             <xsl:call-template name="bindAuthentication">
                 <xsl:with-param name="bindingNode" select="$bindingNode"/>
@@ -517,8 +517,8 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:with-param name="plugin" select="'ws_config'"/>
             </xsl:call-template>
         </xsl:variable>
-        
-        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>     
+
+        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
             <xsl:call-template name="bindAuthentication">
                 <xsl:with-param name="bindingNode" select="$bindingNode"/>
@@ -542,7 +542,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:with-param name="plugin" select="'ws_access'"/>
             </xsl:call-template>
         </xsl:variable>
-        
+
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
             <xsl:variable name="ldapservername" select="$bindingNode/../Authentication/@ldapServer"/>
             <xsl:choose>
@@ -557,7 +557,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 </xsl:for-each>
             </Resources>
         </EspService>
-        
+
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
             <xsl:call-template name="bindAuthentication">
                 <xsl:with-param name="bindingNode" select="$bindingNode"/>
@@ -572,13 +572,13 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
          <xsl:apply-templates select="@*[string(.) != '']|node()" mode="copy"/>
       </xsl:copy>
    </xsl:template>
-   
+
    <xsl:template match="@*" mode="copy">
       <xsl:if test="string(.) != ''">
          <xsl:copy/>
       </xsl:if>
    </xsl:template>
-   
+
    <xsl:template match="Process" mode="copy">
       <xsl:variable name="processNameLowerCase" select="translate(@name, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz')"/>
       <xsl:variable name="processName">
@@ -594,7 +594,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         <xsl:copy-of select="@remove"/>
       </xsl:copy>
    </xsl:template>
-   
+
     <!-- Utility templates -->
     <xsl:template name="bindAuthentication">
         <xsl:param name="bindingNode"/>
@@ -623,13 +623,13 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
                <Location path="/" resource="{@resource}" required="{@access}" description="{@description}"/>
             </xsl:for-each>
-            
+
             <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                <xsl:if test="$service='ws_smc' or @service=$service">
                   <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
                </xsl:if>
             </xsl:for-each>
-            
+
             <xsl:if test="$service = 'ws_topology'"><!--also add MachineInfoAccess stuff for topology-->
                <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                   <xsl:if test="starts-with(@path, 'MachineInfoAccess')">
@@ -638,7 +638,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                      </Feature>
                   </xsl:if>
                </xsl:for-each>
-            </xsl:if>         
+            </xsl:if>
          </Authenticate>
       </xsl:when>
       <xsl:when test="$authMethod='htpasswd'">
@@ -653,7 +653,7 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
     </xsl:template>
 
     <xsl:template name="defineServicePlugin">
-        <xsl:param name="plugin"/>            
+        <xsl:param name="plugin"/>
         <xsl:choose>
             <xsl:when test="$isLinuxInstance">lib<xsl:value-of select="$plugin"/>.so</xsl:when>
             <xsl:otherwise><xsl:value-of select="$plugin"/>.dll</xsl:otherwise>

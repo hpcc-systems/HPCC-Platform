@@ -24,8 +24,6 @@
     <xsl:param name="instance" select="'2wd20'"/>
     <xsl:param name="isLinuxInstance" select="0"/>
     <xsl:param name="espServiceName" select="''"/>
-    
-
   <xsl:variable name="pluginsPath">
      <xsl:variable name="path1">
         <xsl:choose>
@@ -38,7 +36,7 @@
                </xsl:message>
            </xsl:otherwise>
         </xsl:choose>
-     </xsl:variable> 
+     </xsl:variable>
      <xsl:variable name="path2" select="translate($path1, '/$', '\:')"/>
      <xsl:variable name="path">
         <xsl:choose>
@@ -49,7 +47,7 @@
                <xsl:value-of select="$path2"/>
             </xsl:otherwise>
          </xsl:choose>
-     </xsl:variable> 
+     </xsl:variable>
      <xsl:variable name="len" select="string-length($path)"/>
      <xsl:choose>
        <xsl:when test="$len > 0">
@@ -66,10 +64,6 @@
        <xsl:otherwise>plugins\</xsl:otherwise>
      </xsl:choose>
   </xsl:variable>
-     
-
-
-
     <xsl:template match="PluginRef">
        <xsl:variable name="pluginName" select="@process"/>
        <xsl:variable name="pluginNode" select="/Environment/Software/PluginProcess[@name=$pluginName]"/>
@@ -95,11 +89,8 @@
        </xsl:apply-templates>
        </xsl:if>
     </xsl:template>
-    
-
     <xsl:template name="generatePluginsPath">
-       <xsl:param name="node"/>    
-       
+       <xsl:param name="node"/>
        <xsl:variable name="buildSetPath">
           <xsl:call-template name="getBuildSetPath">
              <xsl:with-param name="build" select="$node/@build"/>
@@ -124,7 +115,6 @@
        </xsl:apply-templates>
     </xsl:template>
 
-
    <xsl:template match="InstallSet">
    <xsl:param name="sourcePath"/>
       <xsl:variable name="getDefaultPlugins" select="@processName != 'PluginProcess'"/>
@@ -132,16 +122,15 @@
          <xsl:when test="$getDefaultPlugins">
             <xsl:apply-templates select="File" mode="DefaultPlugins">
                <xsl:with-param name="sourcePath" select="$sourcePath"/>
-            </xsl:apply-templates>              
+            </xsl:apply-templates>
          </xsl:when>
          <xsl:otherwise>
             <xsl:apply-templates select="File">
                <xsl:with-param name="sourcePath" select="$sourcePath"/>
-            </xsl:apply-templates>              
+            </xsl:apply-templates>
          </xsl:otherwise>
       </xsl:choose>
    </xsl:template>
-    
 
     <xsl:template match="File" mode="DefaultPlugins">
        <xsl:param name="sourcePath"/>
@@ -173,13 +162,11 @@
               <xsl:with-param name="type"  select="$extension"/>
            <xsl:with-param name="srcPath" select="$srcPath"/>
            <xsl:with-param name="destName" select="@destName"/>
-           <xsl:with-param name="destPath" select="$destPath"/>                   
+           <xsl:with-param name="destPath" select="$destPath"/>
             <xsl:with-param name="method" select="@method"/>
         </xsl:call-template>
       </xsl:if>
     </xsl:template>
-    
-
     <xsl:template match="File">
        <xsl:param name="sourcePath"/>
      <xsl:variable name="srcPath">
@@ -200,7 +187,7 @@
              <xsl:with-param name="destName" select="@destName"/>
              <xsl:with-param name="destPath" select="$pluginsPath"/>
              <xsl:with-param name="method" select="@method"/>
-          </xsl:call-template>              
+          </xsl:call-template>
      </xsl:if>
     </xsl:template>
 
@@ -211,7 +198,7 @@
    <xsl:param name="srcPath"/>
    <xsl:param name="destName"/>
    <xsl:param name="destPath"/>
-   <xsl:param name="method"/>         
+   <xsl:param name="method"/>
       <Plugin>
          <xsl:variable name="method2">
             <xsl:choose>
@@ -252,7 +239,7 @@
             </xsl:variable>
             <xsl:attribute name="srcPath"><xsl:value-of select="$srcPath2"/></xsl:attribute>
             <xsl:if test="not(function-available('seisint:addDeploymentFile'))">
-               <xsl:message terminate="yes">This XSL transformation can only be run by the Seisint Deployment Tool!</xsl:message>               
+               <xsl:message terminate="yes">This XSL transformation can only be run by the Seisint Deployment Tool!</xsl:message>
             </xsl:if>
             <!--ask deployment tool to add this plugin file to be copied if copying files-->
             <!--format is: method+name+sourcePath+destName[+destPath]-->
@@ -271,8 +258,6 @@
          </xsl:if>
       </Plugin>
    </xsl:template>
-      
-
    <xsl:template name="getBuildSetPath">
      <xsl:param name="build"/>
      <xsl:param name="buildSet"/>
@@ -313,8 +298,6 @@
     </xsl:if>
     <xsl:value-of select="$buildSetNode/@installSet"/>
   </xsl:template>
-
-
   <xsl:template name="GetPathName">
    <xsl:param name="path"/>
       <xsl:if test="contains($path, '\')">
@@ -325,7 +308,5 @@
          </xsl:call-template>
       </xsl:if>
    </xsl:template>
-      
     <xsl:template match="node()|@*"/>
-    
 </xsl:stylesheet>

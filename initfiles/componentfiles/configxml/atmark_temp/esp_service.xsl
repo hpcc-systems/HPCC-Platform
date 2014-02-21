@@ -17,7 +17,7 @@
 ################################################################################
 -->
 
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default" 
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xml:space="default"
 xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-result-prefixes="seisint set">
     <xsl:output method="xml" indent="yes" omit-xml-declaration="no" encoding="UTF-8"/>
     <xsl:param name="process" select="'esp_dermot'"/>
@@ -92,7 +92,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                 <xsl:with-param name="plugin" select="Properties/@plugin"/>
             </xsl:call-template>
         </xsl:variable>
-        
+
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
             <xsl:call-template name="processServiceSpecifics">
                 <xsl:with-param name="serviceType" select="$serviceType"/>
@@ -572,8 +572,8 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                 <Plugins>
                     <xsl:attribute name="path"><xsl:value-of select="$eclServerNode/@pluginsPath"/></xsl:attribute>
                 </Plugins>
-                <!--BUG: 9141 - Special repository OUs should be set apart in display 
-                Copy ECL server's ldap configuration verbatim here.  Note that plugins.xsl already validated 
+                <!--BUG: 9141 - Special repository OUs should be set apart in display
+                Copy ECL server's ldap configuration verbatim here.  Note that plugins.xsl already validated
                 that an ECL server is specified-->
                 <xsl:variable name="eclAuthNode" select="$eclServerNode/ldapSecurity"/>
                 <xsl:variable name="espAuthNode" select="$espNode/Authentication"/>
@@ -618,7 +618,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                                         <xsl:value-of select="@netAddress"/>
                                     </xsl:otherwise>
                                 </xsl:choose>
-                            </xsl:variable> 
+                            </xsl:variable>
                                 <xsl:variable name="netAddress">
                                     <xsl:choose>
                                         <xsl:when test="string(@espBinding)='' and string(@netAddress)=''">
@@ -666,8 +666,8 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                                                </xsl:copy>
                                              </xsl:for-each>
                                            </Options>
-                                    </xsl:if>                                       
-                                  </Service>    
+                                    </xsl:if>
+                                  </Service>
                                 </xsl:when>
                                 <xsl:otherwise>
                                 <xsl:for-each select="Configuration">
@@ -692,10 +692,10 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                                         </xsl:attribute>
                                         <xsl:attribute name="path">
                                             <xsl:value-of select="$svrPath"/>
-                                        </xsl:attribute>                                        
+                                        </xsl:attribute>
                                         <xsl:attribute name="url">
                                             <xsl:value-of select="$netAddress"/>
-                                        </xsl:attribute>                                        
+                                        </xsl:attribute>
                                         <xsl:if test="@mode='Boolean' or @mode='Focus'">
                                             <xsl:variable name="normalQuery" select="../../RemoteNScfg/Configuration[@name=current()/@name and (@mode='Normal' or string(@mode)='')]"/>
                                             <xsl:if test="not($normalQuery)">
@@ -799,7 +799,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                 </xsl:if>
                 <xsl:if test="MemCache[1]">
                     <MemCache>
-                      <xsl:for-each select="MemCache"> 
+                      <xsl:for-each select="MemCache">
                             <xsl:if test="string(@netAddress)='' or string(@port)='' ">
                                <xsl:message terminate="yes">Netaddress and port are required to configure MemCache Server</xsl:message>
                             </xsl:if>
@@ -828,8 +828,8 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                         <xsl:if test="@failSafe='true'">
                                 <failsafe>true</failsafe>
                         </xsl:if>
-                    </loggingserver> 
-                </xsl:if>   
+                    </loggingserver>
+                </xsl:if>
             </xsl:when>
             <xsl:when test="$serviceType='WsEDA' or $serviceType='WsRiskWise'">
                 <!-- RemoteNScfg -->
@@ -949,8 +949,8 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                 <xsl:if test="@failSafe='true'">
                     <failsafe>true</failsafe>
                 </xsl:if>
-                <xsl:if test="@LogResponseXml='true'"> 
-                    <LogResponseXml>true</LogResponseXml> 
+                <xsl:if test="@LogResponseXml='true'">
+                    <LogResponseXml>true</LogResponseXml>
                 </xsl:if>
                 <MaxLogQueueLength>
                     <xsl:value-of select="@MaxLogQueueLength"/>

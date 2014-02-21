@@ -1487,9 +1487,9 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
                 string dest   = installFile.getDestPath().c_str();
         
                 std::string::size_type pos;
-                if ((pos = dest.find("@temp" PATHSEPSTR)) != std::string::npos)
+                if ((pos = dest.find("atmark_temp" PATHSEPSTR)) != std::string::npos)
                 {
-                    dest.replace(pos, strlen("@temp" PATHSEPSTR), m_cachePath.get());
+                    dest.replace(pos, strlen("atmark_temp" PATHSEPSTR), m_cachePath.get());
                     //a temp file should not be copied over itself so ignore
                     if (!bCacheFiles && !stricmp(source, dest.c_str()))
                         continue;
@@ -1584,8 +1584,8 @@ void CDeploymentEngine::copyInstallFiles(const char* instanceName, int instanceI
             CInstallFile* pInstallFileAdded = m_installFiles.addInstallFile(method, src.str(), dest.c_str(), bCacheable, params);
 
                std::string::size_type pos;
-            if ((pos = dest.find("@temp" PATHSEPSTR)) != std::string::npos)
-               dest.replace(pos, strlen("@temp" PATHSEPSTR), m_cachePath.get());
+            if ((pos = dest.find("atmark_temp" PATHSEPSTR)) != std::string::npos)
+               dest.replace(pos, strlen("atmark_temp" PATHSEPSTR), m_cachePath.get());
                else
                    dest.insert(0, destPath);//note that destPath is always terminated by PATHSEPCHAR
 
@@ -1968,7 +1968,7 @@ int CDeploymentEngine::determineInstallFiles(IPropertyTree& processNode, CInstal
             bool bCacheable     = pFile->getPropBool("@cache", false);
             
             // Get source filespec
-            if (srcPath && !strcmp(srcPath, "@temp"))
+            if (srcPath && !strcmp(srcPath, "atmark_temp"))
             {
                 char tempfile[_MAX_PATH];
                 getTempPath(tempfile, sizeof(tempfile), m_name);
@@ -2091,8 +2091,8 @@ int CDeploymentEngine::determineInstallFiles(IPropertyTree& processNode, CInstal
             StringBuffer destFilePath;
             destFilePath.ensureCapacity(_MAX_PATH);
             
-            bool bTempFile = (destPath && !stricmp(destPath, "@temp")) ||
-                !strnicmp(name, "@temp", 5); //@name starts with @temp or @tmp
+            bool bTempFile = (destPath && !stricmp(destPath, "atmark_temp")) ||
+                !strnicmp(name, "atmark_temp", 5); //@name starts with atmark_temp or @tmp
             if (bTempFile)
             {
                 if (sDestName.empty())//dest name not specified
@@ -2118,7 +2118,7 @@ int CDeploymentEngine::determineInstallFiles(IPropertyTree& processNode, CInstal
                             sDestName.append(pExt);
                     }
                 }
-                destFilePath.append("@temp" PATHSEPSTR);
+                destFilePath.append("atmark_temp" PATHSEPSTR);
             }
             else
             {
