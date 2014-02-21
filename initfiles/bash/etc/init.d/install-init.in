@@ -284,3 +284,6 @@ chmod 775 ${configs}
 if [ -d ${CONFIG_DIR} ]; then
     date > ${CONFIG_DIR}/installed
 fi
+
+cd  ${INSTALL_DIR}/componentfiles/configxml
+ln -sf atmark_temp  @temp
