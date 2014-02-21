@@ -89,7 +89,7 @@
         </listitem>
 
         <listitem>
-          <para>Spray the file to a Data Refinery (THOR) cluster</para>
+          <para>Spray the file to a Data Refinery (Thor) cluster</para>
         </listitem>
 
         <listitem>
@@ -346,7 +346,7 @@ Blankline</programlisting></para>
       </sect2>
 
       <sect2 id="Spray_the_Data_to_THOR">
-        <title>Spray the Data File to your <emphasis>Data Refinery (THOR)
+        <title>Spray the Data File to your <emphasis>Data Refinery (Thor)
         Cluster</emphasis></title>
 
         <para>To use the data file in our HPCC system, we must "spray" it to
