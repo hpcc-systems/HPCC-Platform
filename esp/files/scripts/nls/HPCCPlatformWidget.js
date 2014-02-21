@@ -9,6 +9,7 @@ define({ root:
     LoggedInAs: "Logged in as",
     OpenLegacyECLWatch: "Open Legacy ECL Watch",
     Operations: "Operations",
+    Permissions: "Permissions",
     PlaceholderFindText: "Wuid, User, More...",
     PublishedQueries: "Published Queries",
     ReleaseNotes: "Release Notes",
