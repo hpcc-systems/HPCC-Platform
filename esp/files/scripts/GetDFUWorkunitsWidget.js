@@ -388,7 +388,7 @@ define([
             this.workunitsGrid.startup();
         },
 
-        refreshGrid: function (args) {
+        refreshGrid: function (clearSelection) {
             this.workunitsGrid.set("query", this.filter.toObject());
             if (clearSelection) {
                 this.workunitsGrid.clearSelection();
