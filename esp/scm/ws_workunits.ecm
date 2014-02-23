@@ -1236,6 +1236,8 @@ ESPrequest [nil_remove] WUListQueriesRequest
     nonNegativeInteger WarnTimeLimitHigh;
     nonNegativeInteger PriorityLow;
     nonNegativeInteger PriorityHigh;
+    [min_ver("1.48")] bool Activated;
+    [min_ver("1.48")] bool SuspendedByUser;
 
     nonNegativeInteger PageSize(0);
     nonNegativeInteger PageStartFrom(0);
@@ -1445,7 +1447,7 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 };
 
 ESPservice [
-    version("1.47"), default_client_version("1.47"),
+    version("1.48"), default_client_version("1.48"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
