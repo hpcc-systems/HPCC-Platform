@@ -277,7 +277,7 @@ bool CWsTopologyEx::onSystemLog(IEspContext &context,IEspSystemLogRequest  &req,
         else
         {
 #ifndef _USE_ZLIB
-            throw MakeStringException(ERRORID_ECLWATCH_TOPOLOGY+109,"The data cannot be compressed.");
+            throw MakeStringException(ECLWATCH_CANNOT_COMPRESS_DATA,"The data cannot be compressed.");
 #else
             StringBuffer ifname;
             unsigned threadID = (unsigned) (memsize_t) GetCurrentThreadId();
