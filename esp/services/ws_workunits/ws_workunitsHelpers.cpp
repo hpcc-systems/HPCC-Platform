@@ -28,6 +28,7 @@
 #include "wuwebview.hpp"
 #include "dllserver.hpp"
 #include "wujobq.hpp"
+#include "hqlexpr.hpp"
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"

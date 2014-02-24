@@ -43,6 +43,7 @@
 
 #include "hqlgram.hpp"
 #include "hqltrans.ipp"
+#include "hqlutil.hpp"
 
 #include "build-config.h"
 #include "rmtfile.hpp"
@@ -194,8 +195,8 @@ static bool getHomeFolder(StringBuffer & homepath)
 struct EclCompileInstance
 {
 public:
-    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errs, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen) :
-      inputFile(_inputFile), errs(&_errs), errout(_errout), outputFilename(_outputFilename)
+    EclCompileInstance(IFile * _inputFile, IErrorReceiver & _errorProcessor, FILE * _errout, const char * _outputFilename, bool _legacyImport, bool _legacyWhen) :
+      inputFile(_inputFile), errorProcessor(&_errorProcessor), errout(_errout), outputFilename(_outputFilename)
     {
         legacyImport = _legacyImport;
         legacyWhen = _legacyWhen;
@@ -208,12 +209,14 @@ public:
     }
 
     void logStats();
+    void checkEclVersionCompatible();
     bool reportErrorSummary();
+    inline IErrorReceiver & queryErrorProcessor() { return *errorProcessor; }
+
 
 public:
     Linked<IFile> inputFile;
     Linked<IPropertyTree> archive;
-    Linked<IErrorReceiver> errs;
     Linked<IWorkUnit> wu;
     Owned<IEclRepository> dataServer;  // A member which can be cleared after parsing the query
     OwnedHqlExpr query;  // parsed query - cleared when generating to free memory
@@ -232,6 +235,9 @@ public:
         offset_t xmlSize;
         offset_t cppSize;
     } stats;
+
+protected:
+    Linked<IErrorReceiver> errorProcessor;
 };
 
 class EclCC : public CInterfaceOf<ICodegenContextCallback>
@@ -294,9 +300,9 @@ protected:
     void evaluateResult(EclCompileInstance & instance);
     bool generatePrecompiledHeader();
     void generateOutput(EclCompileInstance & instance);
-    void instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
+    void instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver & errorProcessor, const char * outputFile);
     bool isWithinPath(const char * sourcePathname, const char * searchPath);
-    void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs);
+    void getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver & errorProcessor);
     void outputXmlToOutputFile(EclCompileInstance & instance, IPropertyTree * xml);
     void processSingleQuery(EclCompileInstance & instance,
                                IFileContents * queryContents,
@@ -305,7 +311,7 @@ protected:
     void processFile(EclCompileInstance & info);
     void processReference(EclCompileInstance & instance, const char * queryAttributePath);
     void processBatchFiles();
-    void reportCompileErrors(IErrorReceiver *errs, const char * processName);
+    void reportCompileErrors(IErrorReceiver & errorProcessor, const char * processName);
     void setDebugOption(const char * name, bool value);
     void usage();
 
@@ -343,6 +349,7 @@ protected:
     StringArray inputFileNames;
     StringArray applicationOptions;
     StringArray debugOptions;
+    StringArray warningMappings;
     StringArray compileOptions;
     StringArray linkOptions;
     StringArray libraryPaths;
@@ -662,7 +669,7 @@ ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceD
     return compiler.getClear();
 }
 
-void EclCC::reportCompileErrors(IErrorReceiver *errs, const char * processName)
+void EclCC::reportCompileErrors(IErrorReceiver & errorProcessor, const char * processName)
 {
     StringBuffer failText;
     StringBuffer absCCLogName;
@@ -672,7 +679,7 @@ void EclCC::reportCompileErrors(IErrorReceiver *errs, const char * processName)
         absCCLogName = "log file";
 
     failText.appendf("Compile/Link failed for %s (see '%s' for details)",processName,absCCLogName.str());
-    errs->reportError(ERR_INTERNALEXCEPTION, failText.toCharArray(), processName, 0, 0, 0);
+    errorProcessor.reportError(ERR_INTERNALEXCEPTION, failText.toCharArray(), processName, 0, 0, 0);
     try
     {
         StringBuffer s;
@@ -705,7 +712,7 @@ void EclCC::reportCompileErrors(IErrorReceiver *errs, const char * processName)
 
 //=========================================================================================
 
-void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver *errs, const char * outputFile)
+void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver & errorProcessor, const char * outputFile)
 {
     StringBuffer processName(outputFile);
     if (instance.query && containsAnyActions(instance.query))
@@ -717,7 +724,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
             bool optSaveCpp = optSaveTemps || optNoCompile || wu->getDebugValueBool("saveCppTempFiles", false);
             //New scope - testing things are linked correctly
             {
-                Owned<IHqlExprDllGenerator> generator = createDllGenerator(errs, processName.toCharArray(), NULL, wu, templateDir, optTargetClusterType, this, false);
+                Owned<IHqlExprDllGenerator> generator = createDllGenerator(&errorProcessor, processName.toCharArray(), NULL, wu, templateDir, optTargetClusterType, this, false);
 
                 setWorkunitHash(wu, instance.query);
                 if (!optShared)
@@ -756,7 +763,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                     }
 
                     if (!compileOk)
-                        reportCompileErrors(errs, processName);
+                        reportCompileErrors(errorProcessor, processName);
                 }
                 else
                     wu->setState(generateOk ? WUStateCompleted : WUStateFailed);
@@ -790,7 +797,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
             {
                 StringBuffer exceptionText;
                 e->errorMessage(exceptionText);
-                errs->reportError(ERR_INTERNALEXCEPTION, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
+                errorProcessor.reportError(ERR_INTERNALEXCEPTION, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
             }
             e->Release();
         }
@@ -809,9 +816,9 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
 
 //=========================================================================================
 
-void EclCC::getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver *errs)
+void EclCC::getComplexity(IWorkUnit *wu, IHqlExpression * query, IErrorReceiver & errs)
 {
-    double complexity = getECLcomplexity(query, errs, wu, optTargetClusterType);
+    double complexity = getECLcomplexity(query, &errs, wu, optTargetClusterType);
     LOG(MCstats, unknownJob, "Complexity = %g", complexity);
 }
 
@@ -930,7 +937,7 @@ void EclCC::evaluateResult(EclCompileInstance & instance)
         query = query->queryChild(0);
     if (query->getOperator()==no_createdictionary)
         query = query->queryChild(0);
-    OwnedHqlExpr folded = foldHqlExpression(query, NULL, HFOthrowerror|HFOloseannotations|HFOforcefold|HFOfoldfilterproject|HFOconstantdatasets);
+    OwnedHqlExpr folded = foldHqlExpression(instance.queryErrorProcessor(), query, NULL, HFOthrowerror|HFOloseannotations|HFOforcefold|HFOfoldfilterproject|HFOconstantdatasets);
     StringBuffer out;
     IValue *result = folded->queryValue();
     if (result)
@@ -998,8 +1005,33 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 #endif
 
     Owned<IErrorReceiver> wuErrs = new WorkUnitErrorReceiver(instance.wu, "eclcc");
-    Owned<IErrorReceiver> errs = createCompoundErrorReceiver(instance.errs, wuErrs);
+    Owned<IErrorReceiver> compoundErrs = createCompoundErrorReceiver(&instance.queryErrorProcessor(), wuErrs);
+    Owned<ErrorSeverityMapper> severityMapper = new ErrorSeverityMapper(*compoundErrs);
 
+    //Apply command line mappings...
+    ForEachItemIn(i, warningMappings)
+    {
+        if (!severityMapper->addCommandLineMapping(warningMappings.item(i)))
+            return;
+
+        //Preserve command line mappings in the generated archive
+        if (instance.archive)
+            instance.archive->addPropTree("OnWarning", createPTree())->setProp("@value",warningMappings.item(i));
+    }
+
+    //Apply preserved onwarning mappings from any source archive
+    if (instance.srcArchive)
+    {
+        Owned<IPropertyTreeIterator> iter = instance.srcArchive->getElements("OnWarning");
+        ForEach(*iter)
+        {
+            const char * option = iter->query().queryProp("@value");
+            if (!severityMapper->addCommandLineMapping(option))
+                return;
+        }
+    }
+
+    IErrorReceiver & errorProcessor = *severityMapper;
     //All dlls/exes are essentially cloneable because you may be running multiple instances at once
     //The only exception would be a dll created for a one-time query.  (Currently handled by eclserver.)
     instance.wu->setCloneable(true);
@@ -1012,7 +1044,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
     bool withinRepository = (queryAttributePath && *queryAttributePath);
     bool syntaxChecking = instance.wu->getDebugValueBool("syntaxCheck", false);
-    size32_t prevErrs = errs->errCount();
+    size32_t prevErrs = errorProcessor.errCount();
     unsigned startTime = msTick();
     const char * sourcePathname = queryContents ? queryContents->querySourcePath()->str() : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
@@ -1048,7 +1080,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
         try
         {
-            HqlLookupContext ctx(parseCtx, errs);
+            HqlLookupContext ctx(parseCtx, &errorProcessor);
 
             if (withinRepository)
             {
@@ -1059,11 +1091,11 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                 }
 
                 instance.query.setown(getResolveAttributeFullPath(queryAttributePath, LSFpublic, ctx));
-                if (!instance.query && !syntaxChecking && (errs->errCount() == prevErrs))
+                if (!instance.query && !syntaxChecking && (errorProcessor.errCount() == prevErrs))
                 {
                     StringBuffer msg;
                     msg.append("Could not resolve attribute ").append(queryAttributePath);
-                    errs->reportError(3, msg.str(), defaultErrorPathname, 0, 0, 0);
+                    errorProcessor.reportError(3, msg.str(), defaultErrorPathname, 0, 0, 0);
                 }
             }
             else
@@ -1086,7 +1118,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
                 }
             }
 
-            gatherWarnings(ctx.errs, instance.query);
+            gatherParseWarnings(ctx.errs, instance.query);
 
             if (instance.query && !syntaxChecking && !optGenerateMeta && !optEvaluateResult)
                 instance.query.setown(convertAttributeToQuery(instance.query, ctx));
@@ -1099,14 +1131,14 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             if (optIncludeMeta || optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getMetaTree());
 
-            if (optEvaluateResult && !errs->errCount() && instance.query)
+            if (optEvaluateResult && !errorProcessor.errCount() && instance.query)
                 evaluateResult(instance);
         }
         catch (IException *e)
         {
             StringBuffer s;
             e->errorMessage(s);
-            errs->reportError(3, s.toCharArray(), defaultErrorPathname, 1, 0, 0);
+            errorProcessor.reportError(3, s.toCharArray(), defaultErrorPathname, 1, 0, 0);
             e->Release();
         }
     }
@@ -1114,9 +1146,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     //Free up the repository (and any cached expressions) as soon as the expression has been parsed
     instance.dataServer.clear();
 
-    if (!syntaxChecking && (errs->errCount() == prevErrs) && (!instance.query || !containsAnyActions(instance.query)))
+    if (!syntaxChecking && (errorProcessor.errCount() == prevErrs) && (!instance.query || !containsAnyActions(instance.query)))
     {
-        errs->reportError(3, "Query is empty", defaultErrorPathname, 1, 0, 0);
+        errorProcessor.reportError(3, "Query is empty", defaultErrorPathname, 1, 0, 0);
         return;
     }
 
@@ -1146,10 +1178,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             targetFilename.append(".eclout");
     }
 
-    if (errs->errCount() == prevErrs)
+    if (errorProcessor.errCount() == prevErrs)
     {
         const char * queryFullName = NULL;
-        instantECL(instance, instance.wu, queryFullName, errs, targetFilename);
+        instantECL(instance, instance.wu, queryFullName, errorProcessor, targetFilename);
     }
     else
     {
@@ -1202,7 +1234,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
     instance.eclVersion.set(archiveTree->queryProp("@eclVersion"));
     if (optCheckEclVersion)
-        checkEclVersionCompatible(instance.errs, instance.eclVersion);
+        instance.checkEclVersionCompatible();
 
     Owned<IEclSourceCollection> archiveCollection;
     if (archiveTree->getPropBool("@testRemoteInterface", false))
@@ -1287,7 +1319,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     //deployed to the eclcc machine via other means (typically via a version-control system)
     if (!allowAccess("userECL") && (!optQueryRepositoryReference || queryText->length()))
     {
-        instance.errs->reportError(HQLERR_UserCodeNotAllowed, HQLERR_UserCodeNotAllowed_Text, NULL, 1, 0, 0);
+        instance.queryErrorProcessor().reportError(HQLERR_UserCodeNotAllowed, HQLERR_UserCodeNotAllowed_Text, NULL, 1, 0, 0);
     }
     else if (isArchiveQuery(queryTxt))
     {
@@ -1354,7 +1386,7 @@ void EclCC::processFile(EclCompileInstance & instance)
                 Owned<IEclSourceCollection> inputFileCollection = createSingleDefinitionEclCollection(attributePath, queryText);
                 repositories.append(*createRepository(inputFileCollection));
 
-                Owned<IEclSourceCollection> directory = createFileSystemEclCollection(instance.errs, thisDirectory, 0, 0);
+                Owned<IEclSourceCollection> directory = createFileSystemEclCollection(&instance.queryErrorProcessor(), thisDirectory, 0, 0);
                 Owned<IEclRepository> directoryRepository = createRepository(directory, moduleName);
                 Owned<IEclRepository> nested = createNestedRepository(moduleNameId, directoryRepository);
                 repositories.append(*LINK(nested));
@@ -1650,6 +1682,12 @@ void EclCC::setDebugOption(const char * name, bool value)
 }
 
 
+void EclCompileInstance::checkEclVersionCompatible()
+{
+    //Strange function that might modify errorProcessor...
+    ::checkEclVersionCompatible(errorProcessor, eclVersion);
+}
+
 void EclCompileInstance::logStats()
 {
     if (wu && wu->getDebugValueBool("logCompileStats", false))
@@ -1665,12 +1703,12 @@ void EclCompileInstance::logStats()
 
 bool EclCompileInstance::reportErrorSummary()
 {
-    if (errs->errCount() || errs->warnCount())
+    if (errorProcessor->errCount() || errorProcessor->warnCount())
     {
-        fprintf(errout, "%d error%s, %d warning%s\n", errs->errCount(), errs->errCount()<=1 ? "" : "s",
-                errs->warnCount(), errs->warnCount()<=1?"":"s");
+        fprintf(errout, "%d error%s, %d warning%s\n", errorProcessor->errCount(), errorProcessor->errCount()<=1 ? "" : "s",
+                errorProcessor->warnCount(), errorProcessor->warnCount()<=1?"":"s");
     }
-    return errs->errCount() != 0;
+    return errorProcessor->errCount() != 0;
 }
 
 //=========================================================================================
@@ -1917,6 +1955,11 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optWorkUnit, "-wu"))
         {
         }
+        else if (iter.matchFlag(tempArg, "-w"))
+        {
+            //Any other option beginning -wxxx are treated as warning mappings
+            warningMappings.append(tempArg);
+        }
         else if (strcmp(arg, "-")==0)
         {
             inputFileNames.append("stdin:");
@@ -2032,6 +2075,8 @@ const char * const helpText[] = {
     "    -specs file   Read eclcc configuration from specified file",
     "!   -split m:n    Process a subset m of n input files (only with -b option)",
     "    -v --verbose  Output additional tracing information while compiling",
+    "    -wcode=level  Set the severity for a particular warning code",
+    "!                 level=ignore|log|warning|error|fail",
     "    --version     Output version information",
     "!   --timings     Output additional timing information",
     "!",
@@ -2115,7 +2160,7 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             //Following only produces output if the system has been compiled with TRANSFORM_STATS defined
             dbglogTransformStats(true);
             if (info.wu &&
-                (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.errs->errCount() == 0))
+                (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.queryErrorProcessor().errCount() == 0))
             {
                 exportWorkUnitToXMLFile(info.wu, xmlFilename, XML_NoBinaryEncode64, true, false);
                 Owned<IFile> xml = createIFile(xmlFilename);

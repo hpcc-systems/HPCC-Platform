@@ -1027,12 +1027,10 @@ class HqlScopeTagger : public ScopedDependentTransformer
 {
     typedef ScopedDependentTransformer Parent;
 public:
-    HqlScopeTagger(IErrorReceiver * _errors);
+    HqlScopeTagger(IErrorReceiver & _errors, ErrorSeverityMapper & _errorMapper);
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr);
-
-    void reportWarnings();
 
 protected:
     void checkActiveRow(IHqlExpression * expr);
@@ -1047,12 +1045,12 @@ protected:
     IHqlExpression * transformWithin(IHqlExpression * dataset, IHqlExpression * scope);
 
     bool isValidNormalizeSelector(IHqlExpression * expr);
-    void reportError(const char * msg, bool warning = false);
+    void reportError(const char * msg, ErrorSeverity severity);
     void reportSelectorError(IHqlExpression * selector, IHqlExpression * expr);
 
 protected:
-    IErrorReceiver * errors;
-    WarningProcessor collector;
+    IErrorReceiver & errors;
+    ErrorSeverityMapper & errorMapper;
 };
 
 //---------------------------------------------------------------------------
@@ -1202,7 +1200,7 @@ protected:
 
 protected:
     HqlCppTranslator & translator;
-    IErrorReceiver * errors;
+    IErrorReceiver * errorProcessor;
 
     HqlExprArray forwardReferences;
     HqlExprArray defines;

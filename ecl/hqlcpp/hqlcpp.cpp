@@ -1358,6 +1358,12 @@ IHqlCppInstance * createCppInstance(IWorkUnit *wu, const char * wupathname)
 
 HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soName, IHqlCppInstance * _code, ClusterType _targetClusterType, ICodegenContextCallback *_ctxCallback) : ctxCallback(_ctxCallback)
 {
+    //Insert a couple of warning mapping layers - one for global #onwarnigns, and another for local : onwarning
+    globalOnWarnings.setown(new ErrorSeverityMapper(*_errors));
+    localOnWarnings.setown(new ErrorSeverityMapper((IErrorReceiver &)*globalOnWarnings)); // horrible: cast required, otherwise copy constructor is called!
+
+    //Ensure that any errors reported within the code generator automatically abort compiling immediately
+    errorProcessor.setown(createAbortingErrorReceiver(*localOnWarnings));
     targetClusterType = _targetClusterType;
     {
         CriticalBlock block(*systemCS);
@@ -1395,7 +1401,6 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     #endif
         }
     }
-    errors = _errors;
     hints = 0;
     litno = 0;
     soName.set(_soName);
@@ -1837,7 +1842,7 @@ void HqlCppTranslator::postProcessOptions()
         options.resourceConditionalActions = true;
 
     //Probably best to ignore this warning. - possibly configure it based on some other option
-    queryWarningProcessor().addGlobalOnWarning(HQLWRN_FoldRemoveKeyed, ignoreAtom);
+    globalOnWarnings->addOnWarning(HQLWRN_FoldRemoveKeyed, ignoreAtom);
 
     //Ensure the settings for the following options are always present in the workunit
     wu()->setDebugValueInt("expandPersistInputDependencies",options.expandPersistInputDependencies,true);
@@ -2046,11 +2051,11 @@ void HqlCppTranslator::doReportWarning(IHqlExpression * location, unsigned id, c
     if (!location)
         location = queryActiveActivityLocation();
     if (location)
-        warnError.setown(createECLError(false, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
+        warnError.setown(createECLError(SeverityWarning, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
     else
-        warnError.setown(createECLError(false, id, msg, NULL, 0, 0, 0));
+        warnError.setown(createECLError(SeverityWarning, id, msg, NULL, 0, 0, 0));
 
-    warningProcessor.report(NULL, errors, warnError);
+    errorProcessor->report(warnError);
 }
 
 void HqlCppTranslator::reportWarning(IHqlExpression * location, unsigned id, const char * msg, ...)
@@ -2133,7 +2138,7 @@ IHqlExpression * HqlCppTranslator::queryActiveActivityLocation() const
 void HqlCppTranslator::ThrowStringException(int code,const char *format, ...)
 {
     IHqlExpression * location = queryActiveActivityLocation();
-    if (errors && location)
+    if (errorProcessor && location)
     {
         StringBuffer errorMsg;
         va_list args;
@@ -2158,9 +2163,10 @@ void HqlCppTranslator::reportErrorDirect(IHqlExpression * location, int code,con
         loc.extractLocationAttr(location);
         if (alwaysAbort)
             throw createECLError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
-        errors->reportError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
+        errorProcessor->reportError(code, msg, loc.sourcePath->str(), loc.lineno, loc.column, loc.position);
     }
     else
+//        errorProcessor->reportError(code, msg, NULL, 0, 0, 0);
         throw MakeStringExceptionDirect(code, msg);
 }
 
@@ -12083,7 +12089,7 @@ IHqlExpression * HqlCppTranslator::getIndexedElementPointer(IHqlExpression * sou
 IHqlExpression * HqlCppTranslator::needFunction(IIdAtom * name)
 {
     assertex(name);
-    HqlDummyLookupContext dummyctx(errors);
+    HqlDummyLookupContext dummyctx(errorProcessor);
     return internalScope->lookupSymbol(name, LSFsharedOK, dummyctx);
 }
 

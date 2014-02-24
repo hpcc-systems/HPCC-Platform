@@ -85,26 +85,6 @@ extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext
 
 //-------------------------------------------------------------------------------------------------------------------
 
-void lookupAllRootDefinitions(IHqlScope * scope, HqlLookupContext & ctx)
-{
-    HqlExprArray rootSymbols;
-    scope->getSymbols(rootSymbols);
-    ForEachItemIn(i, rootSymbols)
-    {
-        ::Release(scope->lookupSymbol(rootSymbols.item(i).queryId(), LSFsharedOK, ctx));
-    }
-}
-
-void lookupAllRootDefinitions(IEclRepository * repository)
-{
-    HqlParseContext parseCtx(repository, NULL);
-    ThrowingErrorReceiver errs;
-    HqlLookupContext ctx(parseCtx, &errs);
-    lookupAllRootDefinitions(repository->queryRootScope(), ctx);
-}
-
-//-------------------------------------------------------------------------------------------------------------------
-
 IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     Owned<IHqlScope> parentScope;

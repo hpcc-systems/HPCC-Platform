@@ -2340,7 +2340,7 @@ void CBitfieldInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IRe
     if (bitOffset > 0)
         newValue.setown(createValue(no_lshift, LINK(storageType), newValue.getClear(), getSizetConstant(bitOffset)));
     if (newValue->isConstant())
-        newValue.setown(foldHqlExpression(newValue, 0, 0));
+        newValue.setown(foldHqlExpression(translator.queryErrorProcessor(), newValue));
     OwnedHqlExpr final = createValue(no_bor, LINK(storageType), oldValue, newValue.getClear());
 
     CHqlBoundTarget boundTarget;

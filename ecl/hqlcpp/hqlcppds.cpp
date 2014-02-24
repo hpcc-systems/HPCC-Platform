@@ -1680,7 +1680,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     {
         unsigned time = msTick();
         traceExpression("BeforeOptimizeSub", resourced);
-        resourced.setown(optimizeHqlExpression(resourced, getOptimizeFlags()|HOOcompoundproject));
+        resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags()|HOOcompoundproject));
         traceExpression("AfterOptimizeSub", resourced);
         updateTimer("workunit;optimize graph", msTick()-time);
     }

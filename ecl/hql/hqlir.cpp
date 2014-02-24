@@ -1341,7 +1341,7 @@ public:
                 appendStringAsCPP(line, msg.length(), msg.str(), false);
                 line.append("'");
                 line.append(",").append(warning->errorAudience());
-                line.append(",").append(warning->isError());
+                line.append(",").append((unsigned)warning->getSeverity());
                 line.append(")");
                 break;
             }

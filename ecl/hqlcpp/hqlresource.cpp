@@ -1840,10 +1840,10 @@ IHqlExpression * ResourcerInfo::wrapRowOwn(IHqlExpression * expr)
 
 //---------------------------------------------------------------------------
 
-EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions)
+EclResourcer::EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions)
 { 
     wu.set(_wu);
-    errors = _errors;
+    errors = &_errors;
     lockTransformMutex(); 
     targetClusterType = _targetClusterType; 
     clusterSize = _clusterSize ? _clusterSize : FIXED_CLUSTER_SIZE;
@@ -5188,7 +5188,7 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
 {
     HqlExprArray transformed;
     {
-        EclResourcer resourcer(translator.queryErrors(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
+        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
         if (graphIdExpr)
             resourcer.setNewChildQuery(graphIdExpr, 0);
 
@@ -5206,7 +5206,7 @@ static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCo
     HqlExprArray transformed;
     unsigned totalResults;
     {
-        EclResourcer resourcer(translator.queryErrors(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
+        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
         if (isChild)
             resourcer.setChildQuery(true);
         resourcer.setNewChildQuery(graphIdExpr, numResults);
@@ -5254,7 +5254,7 @@ IHqlExpression * resourceRemoteGraph(HqlCppTranslator & translator, IHqlExpressi
 {
     HqlExprArray transformed;
     {
-        EclResourcer resourcer(translator.queryErrors(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
+        EclResourcer resourcer(translator.queryErrorProcessor(), translator.wu(), targetClusterType, clusterSize, translator.queryOptions());
 
         resourcer.resourceRemoteGraph(expr, transformed);
     }

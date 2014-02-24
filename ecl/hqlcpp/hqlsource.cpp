@@ -67,6 +67,11 @@ inline bool needToSerializeRecord(IHqlExpression * mode)
 
 //---------------------------------------------------------------------------
 
+void HqlCppTranslator::addGlobalOnWarning(IHqlExpression * setMetaExpr)
+{
+    globalOnWarnings->addOnWarning(setMetaExpr);
+}
+
 unsigned HqlCppTranslator::getSourceAggregateOptimizeFlags() const
 {
     return getOptimizeFlags()|HOOfold|HOOinsidecompound;
@@ -855,14 +860,15 @@ void SourceBuilder::analyse(IHqlExpression * expr)
         switch (expr->getAnnotationKind())
         {
         case annotate_meta:
-            translator.queryWarningProcessor().processMetaAnnotation(expr);
+            //the onwarning state will be restored by the scope held in HqlCppTranslator::buildActivity
+            translator.localOnWarnings->processMetaAnnotation(expr);
             break;
         case annotate_location:
             instance->addLocationAttribute(expr);
             break;
         case annotate_symbol:
-            instance->addNameAttribute(expr);
             //don't clear onWarnings when we hit a symbol because the warnings within a compound activity aren't generated at the correct point
+            instance->addNameAttribute(expr);
             break;
         }
         analyse(body);
@@ -1373,7 +1379,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
                     IHqlExpression * ds = expr->queryChild(0);
                     OwnedHqlExpr test = returnIfFilterFails ? getInverse(cond) : LINK(cond);
                     if (translator.queryOptions().foldFilter)
-                        test.setown(foldScopedHqlExpression(ds->queryNormalizedSelector(), test));
+                        test.setown(foldScopedHqlExpression(translator.queryErrorProcessor(), ds->queryNormalizedSelector(), test));
 
                     if (translator.options.spotCSE)
                         test.setown(spotScalarCSE(test, ds));
@@ -1780,6 +1786,7 @@ inline bool useDescriptiveGraphLabel(ThorActivityKind kind)
 ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * expr, ThorActivityKind _activityKind, const char *kind, ABoundActivity *input)
 {
     activityKind = _activityKind;
+
     translator.gatherActiveCursors(ctx, parentCursors);
 
     bool isSpill = tableExpr && tableExpr->hasAttribute(_spill_Atom);
@@ -1933,7 +1940,6 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     instance->graphLabel.set(graphLabel.str());
 
     translator.buildActivityFramework(localInstance);
-
     translator.buildInstancePrefix(localInstance);
 
     analyseGraph(expr);
@@ -2884,7 +2890,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
         //Need to wrap a possible no_usertable, otherwise the localisation can go wrong.
         if (expr->getOperator() == no_table)
             transformed.setown(createDataset(no_compound_diskread, LINK(transformed)));
-        OwnedHqlExpr optimized = optimizeHqlExpression(transformed, optFlags);
+        OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
         traceExpression("after disk optimize", optimized);
         return doBuildActivityDiskRead(ctx, optimized);
     }
@@ -2893,7 +2899,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
     if (expr->getOperator() == no_table)
         optimized.set(expr);
     else
-        optimized.setown(optimizeHqlExpression(expr, optFlags));
+        optimized.setown(optimizeHqlExpression(queryErrorProcessor(), expr, optFlags));
 
     if (optimized != expr)
         return buildActivity(ctx, optimized, false);
@@ -2972,7 +2978,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskNormalize(BuildCtx & ctx, 
         transformed.setown(buildTableWithoutVirtuals(info.fieldInfo, expr));
 
     unsigned optFlags = (options.foldOptimized ? HOOfold : 0);
-    OwnedHqlExpr optimized = optimizeHqlExpression(transformed, optFlags);
+    OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
     if (optimized != expr)
         return buildActivity(ctx, optimized, false);
 
@@ -3127,7 +3133,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskAggregate(BuildCtx & ctx, 
     LinkedHqlExpr transformed = expr;
     if (info.recordHasVirtualsOrDeserialize())
         transformed.setown(buildTableWithoutVirtuals(info.fieldInfo, expr));
-    transformed.setown(optimizeHqlExpression(transformed, getSourceAggregateOptimizeFlags()));
+    transformed.setown(optimizeHqlExpression(queryErrorProcessor(), transformed, getSourceAggregateOptimizeFlags()));
 
     if (transformed != expr)
         return buildActivity(ctx, transformed, false);
@@ -3204,7 +3210,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskGroupAggregate(BuildCtx & 
     LinkedHqlExpr transformed = expr;
     if (info.recordHasVirtualsOrDeserialize())
         transformed.setown(buildTableWithoutVirtuals(info.fieldInfo, expr));
-    transformed.setown(optimizeHqlExpression(transformed, getSourceAggregateOptimizeFlags()));
+    transformed.setown(optimizeHqlExpression(queryErrorProcessor(), transformed, getSourceAggregateOptimizeFlags()));
 
     if (transformed != expr)
         return buildActivity(ctx, transformed, false);
@@ -3279,7 +3285,7 @@ void ChildNormalizeBuilder::buildTransform(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityChildNormalize(BuildCtx & ctx, IHqlExpression * expr)
 {
     ChildNormalizeBuilder info(*this, NULL, NULL);
-    OwnedHqlExpr optimized = optimizeHqlExpression(expr, HOOfold);
+    OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), expr, HOOfold);
 
     if (optimized != expr)
         return buildActivity(ctx, optimized, false);
@@ -3336,7 +3342,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChildAggregate(BuildCtx & ctx,
 {
     ChildAggregateBuilder info(*this, NULL, NULL);
 
-    OwnedHqlExpr transformed = optimizeHqlExpression(expr, getSourceAggregateOptimizeFlags());
+    OwnedHqlExpr transformed = optimizeHqlExpression(queryErrorProcessor(), expr, getSourceAggregateOptimizeFlags());
     if (transformed != expr)
         return buildActivity(ctx, transformed, false);
 
@@ -3399,7 +3405,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChildGroupAggregate(BuildCtx &
 {
     ChildGroupAggregateBuilder info(*this, NULL, NULL);
 
-    OwnedHqlExpr transformed = optimizeHqlExpression(expr, getSourceAggregateOptimizeFlags());
+    OwnedHqlExpr transformed = optimizeHqlExpression(queryErrorProcessor(), expr, getSourceAggregateOptimizeFlags());
     if (transformed != expr)
         return buildActivity(ctx, transformed, false);
 
@@ -3456,7 +3462,7 @@ void ChildThroughNormalizeBuilder::buildTransform(IHqlExpression * expr)
 
 ABoundActivity * HqlCppTranslator::doBuildActivityCompoundSelectNew(BuildCtx & ctx, IHqlExpression * expr)
 {
-    OwnedHqlExpr optimized = optimizeHqlExpression(expr, HOOfold);
+    OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), expr, HOOfold);
     if (optimized->getOperator() == no_null)
         return buildCachedActivity(ctx, optimized);
 
@@ -6390,7 +6396,7 @@ void NewIndexReadBuilder::buildTransform(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityIndexRead(BuildCtx & ctx, IHqlExpression * expr)
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
-    OwnedHqlExpr optimized = optimizeHqlExpression(transformed, HOOfold);
+    OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, HOOfold);
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     //If the filter is false, then it may get reduced to a NULL operation!
@@ -6467,7 +6473,7 @@ void IndexNormalizeBuilder::buildTransform(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityIndexNormalize(BuildCtx & ctx, IHqlExpression * expr)
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
-    OwnedHqlExpr optimized = optimizeHqlExpression(transformed, HOOfold);
+    OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, HOOfold);
     traceExpression("after optimize", optimized);
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
@@ -6635,7 +6641,7 @@ void IndexCountBuilder::buildTransform(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityIndexAggregate(BuildCtx & ctx, IHqlExpression * expr)
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
-    OwnedHqlExpr optimized = optimizeHqlExpression(transformed, getSourceAggregateOptimizeFlags());
+    OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, getSourceAggregateOptimizeFlags());
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)
@@ -6797,7 +6803,7 @@ void IndexGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
 ABoundActivity * HqlCppTranslator::doBuildActivityIndexGroupAggregate(BuildCtx & ctx, IHqlExpression * expr)
 {
     OwnedHqlExpr transformed = buildIndexFromPhysical(expr);
-    OwnedHqlExpr optimized = optimizeHqlExpression(transformed, getSourceAggregateOptimizeFlags());
+    OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), transformed, getSourceAggregateOptimizeFlags());
 
     IHqlExpression *tableExpr = queryPhysicalRootTable(optimized);
     if (!tableExpr)
@@ -7237,13 +7243,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFetch(BuildCtx & ctx, IHqlExpr
         OwnedHqlExpr null = createDataset(no_anon, LINK(fetchRhs->queryRecord()));
         OwnedHqlExpr simple = replaceFetchInput(expr, null, no_right);
         OwnedHqlExpr transformed = replaceExpression(simple, tableExpr, projected);
-        OwnedHqlExpr optSimple = optimizeHqlExpression(transformed, optFlags);
+        OwnedHqlExpr optSimple = optimizeHqlExpression(queryErrorProcessor(), transformed, optFlags);
         OwnedHqlExpr optimized = replaceFetchInput(optSimple, fetchRhs, no_right);
         return doBuildActivityFetch(ctx, optimized);
     }
     if (getProjectCount(expr) > 1)
     {
-        OwnedHqlExpr optimized = optimizeHqlExpression(expr, optFlags);
+        OwnedHqlExpr optimized = optimizeHqlExpression(queryErrorProcessor(), expr, optFlags);
         return doBuildActivityFetch(ctx, optimized);
     }
 
