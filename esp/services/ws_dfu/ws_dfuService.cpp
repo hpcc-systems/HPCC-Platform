@@ -51,6 +51,7 @@
 #include "ws_dfuService.hpp"
 
 #include "hqlerror.hpp"
+#include "hqlexpr.hpp"
 #include "eclrtl.hpp"
 
 #define     Action_Delete           "Delete"

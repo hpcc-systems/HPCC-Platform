@@ -37,10 +37,6 @@ extern HQL_API void getRootScopes(HqlScopeArray & rootScopes, IEclRepository * r
 extern HQL_API void getImplicitScopes(HqlScopeArray & implicitScopes, IEclRepository * repository, IHqlScope * scope, HqlLookupContext & ctx);
 extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext & ctx);
 
-
-extern HQL_API void lookupAllRootDefinitions(IHqlScope * scope, HqlLookupContext & ctx);
-extern HQL_API void lookupAllRootDefinitions(IEclRepository * repository);
-
 extern HQL_API IHqlScope * getResolveDottedScope(const char * modname, unsigned lookupFlags, HqlLookupContext & ctx);
 extern HQL_API IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned lookupFlags, HqlLookupContext & ctx);
 

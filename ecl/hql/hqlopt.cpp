@@ -80,14 +80,14 @@ IHqlExpression * createFilterCondition(const HqlExprArray & conds, IHqlExpressio
 }
 
 
-bool optimizeFilterConditions(HqlExprArray & conds)
+bool optimizeFilterConditions(IErrorReceiver & errorProcessor, HqlExprArray & conds)
 {
     ForEachItemInRev(i, conds)
     {
         IHqlExpression & cur = conds.item(i);
         if (cur.isConstant())
         {
-            OwnedHqlExpr folded = foldHqlExpression(&cur);
+            OwnedHqlExpr folded = foldHqlExpression(errorProcessor, &cur);
             IValue * value = folded->queryValue();
             if (value)
             {
@@ -218,7 +218,7 @@ void ExpandComplexityMonitor::onExpand(IHqlExpression * select, IHqlExpression *
 
 //---------------------------------------------------------------------------
 static HqlTransformerInfo cTreeOptimizerInfo("CTreeOptimizer");
-CTreeOptimizer::CTreeOptimizer(unsigned _options) : PARENT(cTreeOptimizerInfo)
+CTreeOptimizer::CTreeOptimizer(IErrorReceiver & _errorProcessor, unsigned _options) : PARENT(cTreeOptimizerInfo), errorProcessor(_errorProcessor)
 {
     options = _options;
     optimizeFlags |= TCOtransformNonActive;
@@ -934,7 +934,7 @@ bool CTreeOptimizer::expandFilterCondition(HqlExprArray & expanded, HqlExprArray
 
             if (expandedFilter->isConstant())
             {
-                expandedFilter.setown(foldHqlExpression(expandedFilter));
+                expandedFilter.setown(foldHqlExpression(errorProcessor, expandedFilter));
                 IValue * value = expandedFilter->queryValue();
                 if (value && !value->getBoolValue())
                 {
@@ -1008,7 +1008,7 @@ IHqlExpression * CTreeOptimizer::hoistFilterOverProject(IHqlExpression * transfo
     HqlExprArray expanded, unexpanded;
     if (expandFilterCondition(expanded, unexpanded, transformed, true, onlyKeyed))
     {
-        if (optimizeFilterConditions(expanded))
+        if (optimizeFilterConditions(errorProcessor, expanded))
             return getOptimizedFilter(transformed, expanded);
 
         OwnedHqlExpr filterExpr = createFilterCondition(expanded);
@@ -1063,7 +1063,7 @@ IHqlExpression * CTreeOptimizer::getHoistedFilter(IHqlExpression * transformed, 
 
         if (expandedFilter->isConstant())
         {
-            expandedFilter.setown(foldHqlExpression(expandedFilter));
+            expandedFilter.setown(foldHqlExpression(errorProcessor, expandedFilter));
             IValue * value = expandedFilter->queryValue();
             if (value)
             {
@@ -1955,7 +1955,7 @@ IHqlExpression * CTreeOptimizer::expandFields(TableProjectMapper * mapper, IHqlE
 {
     OwnedHqlExpr expandedFilter = mapper->expandFields(expr, oldDataset, newDataset, _expandCallback);
     if (options & HOOfold)
-        expandedFilter.setown(foldScopedHqlExpression(newDataset, expandedFilter));
+        expandedFilter.setown(foldScopedHqlExpression(errorProcessor, newDataset, expandedFilter));
     return expandedFilter.getClear();
 }
 
@@ -2554,8 +2554,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             if (child->getOperator() == no_list)
             {
                 ECLlocation dummyLocation(0, 0, 0, NULL);
-                ThrowingErrorReceiver errorReporter;
-                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, transformed);
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorProcessor, dummyLocation, transformed);
                 if (transformed != inlineTable)
                     return inlineTable.getClear();
             }
@@ -2783,8 +2782,8 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         break;
                     if (transformed->queryAttribute(onFailAtom) != child->queryAttribute(onFailAtom))
                         break;
-                    OwnedHqlExpr parentLimit = foldHqlExpression(transformed->queryChild(1));
-                    OwnedHqlExpr childLimit = foldHqlExpression(child->queryChild(1));
+                    OwnedHqlExpr parentLimit = foldHqlExpression(errorProcessor, transformed->queryChild(1));
+                    OwnedHqlExpr childLimit = foldHqlExpression(errorProcessor, child->queryChild(1));
                     if (parentLimit == childLimit)
                         return removeParentNode(transformed);
 
@@ -2822,16 +2821,16 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 break;
             case no_choosen:
                 {
-                    OwnedHqlExpr parentLimit = foldHqlExpression(transformed->queryChild(1));
-                    OwnedHqlExpr childLimit = foldHqlExpression(child->queryChild(1));
+                    OwnedHqlExpr parentLimit = foldHqlExpression(errorProcessor, transformed->queryChild(1));
+                    OwnedHqlExpr childLimit = foldHqlExpression(errorProcessor, child->queryChild(1));
                     if (getIntValue(parentLimit, 0) > getIntValue(childLimit, I64C(0x7fffffffffffffff)))
                         return removeParentNode(transformed);
                     break;
                 }
             case no_topn:
                 {
-                    OwnedHqlExpr parentLimit = foldHqlExpression(transformed->queryChild(1));
-                    OwnedHqlExpr childLimit = foldHqlExpression(child->queryChild(2));
+                    OwnedHqlExpr parentLimit = foldHqlExpression(errorProcessor, transformed->queryChild(1));
+                    OwnedHqlExpr childLimit = foldHqlExpression(errorProcessor, child->queryChild(2));
                     if (getIntValue(parentLimit, 0) > getIntValue(childLimit, I64C(0x7fffffffffffffff)))
                         return removeParentNode(transformed);
                     break;
@@ -3033,7 +3032,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                         if (!expandedFilter->isConstant())
                             break;
 
-                        OwnedHqlExpr folded = foldHqlExpression(expandedFilter);
+                        OwnedHqlExpr folded = foldHqlExpression(errorProcessor, expandedFilter);
                         IValue * value = folded->queryValue();
                         if (!value)
                             break;
@@ -3902,23 +3901,23 @@ bool CTreeOptimizer::isSharedOrUnknown(IHqlExpression * expr)
     return (extra->useCount != 1);
 }
 
-IHqlExpression * optimizeHqlExpression(IHqlExpression * expr, unsigned options)
+IHqlExpression * optimizeHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, unsigned options)
 {
     //The no_compound can get very heavily nested => unwind to save stack traversal.  We really should support nary no_compound
     HqlExprArray args, newArgs;
     unwindCommaCompound(args, expr);
-    optimizeHqlExpression(newArgs, args, options);
+    optimizeHqlExpression(errorProcessor, newArgs, args, options);
     OwnedHqlExpr optimized = createActionList(newArgs);
     //If the graph was optimized then it is highly likely there are now constant folding opportunities
     if (expr != optimized)
-        return foldHqlExpression(optimized);
+        return foldHqlExpression(errorProcessor, optimized);
     return optimized.getClear();
 }
 
 
-void optimizeHqlExpression(HqlExprArray & target, HqlExprArray & source, unsigned options)
+void optimizeHqlExpression(IErrorReceiver & errorProcessor, HqlExprArray & target, HqlExprArray & source, unsigned options)
 {
-    CTreeOptimizer optimizer(options);
+    CTreeOptimizer optimizer(errorProcessor, options);
     optimizer.analyseArray(source, 0);
     optimizer.transformRoot(source, target);
 }

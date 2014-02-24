@@ -351,7 +351,7 @@ class EclResourcer
 {
     friend class SelectHoistTransformer;
 public:
-    EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions);
+    EclResourcer(IErrorReceiver & _errors, IConstWorkUnit * _wu, ClusterType _targetClusterType, unsigned _clusterSize, const HqlCppOptions & _translatorOptions);
     ~EclResourcer();
 
     void resourceGraph(IHqlExpression * expr, HqlExprArray & transformed);

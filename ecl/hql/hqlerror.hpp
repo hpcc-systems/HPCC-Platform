@@ -19,102 +19,138 @@
 
 #include "jhash.hpp"
 #include "jexcept.hpp"
-#include "hqlexpr.hpp"
+#include "hql.hpp"
 
-class HQL_API CECLError : public CInterface, implements IECLError
+#define HQLERR_ErrorAlreadyReported             4799            // special case...
+
+enum ErrorSeverity
 {
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CECLError(bool _isError, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position);
-
-    virtual int             errorCode() const { return no; }
-    virtual StringBuffer &  errorMessage(StringBuffer & ret) const { return ret.append(msg); }
-    virtual MessageAudience errorAudience() const { return MSGAUD_user; }
-    virtual const char* getFilename() { return filename; }
-    virtual int getLine() { return lineno; }
-    virtual int getColumn() { return column; }
-    virtual int getPosition() { return position; }
-    virtual StringBuffer& toString(StringBuffer&);
-    virtual bool isError() { return iserror; }
-
-protected:
-    bool iserror;
-    int no;
-    StringAttr msg;
-    StringAttr filename;
-    int lineno;
-    int column;
-    int position;
+    SeverityIgnore,
+    SeverityInfo,
+    SeverityWarning,
+    SeverityError,    // a warning treated as an error
+    SeverityFatal,      // a fatal error - can't be mapped to anything else
+    SeverityUnknown,
 };
 
-class HQL_API MultiErrorReceiver : public CInterface, implements IErrorReceiver
+inline bool isError(ErrorSeverity severity) { return severity >= SeverityError; }
+inline bool isFatal(ErrorSeverity severity) { return severity == SeverityFatal; }
+
+//TBD in a separate commit - add support for warnings to be associated with different categories
+enum WarnErrorCategory
+{
+    WECunknown,
+};
+
+interface HQL_API IECLError: public IException
 {
 public:
-    MultiErrorReceiver() { errs = warns = 0; }
+    virtual const char* getFilename() const = 0;
+    virtual WarnErrorCategory getCategory() const = 0;
+    virtual int getLine() const = 0;
+    virtual int getColumn() const = 0;
+    virtual int getPosition() const = 0;
+    virtual StringBuffer& toString(StringBuffer&) const = 0;
+    virtual ErrorSeverity getSeverity() const = 0;
+    virtual IECLError * cloneSetSeverity(ErrorSeverity _severity) const = 0;
+};
+inline bool isFatal(IECLError * error) { return isFatal(error->getSeverity()); }
 
-    virtual void reportError(int errNo, const char* msg, const char * filename=0, int lineno=0, int column=0, int position=1);
-    virtual void reportWarning(int warnNo, const char* msg, const char * filename, int lineno, int column, int position);
-    virtual void report(IECLError* error);
+interface HQL_API IErrorReceiver : public IInterface
+{
+    virtual void report(IECLError* error) = 0;
+    virtual IECLError * mapError(IECLError * error) = 0;
+    virtual size32_t errCount() = 0;
+    virtual size32_t warnCount() = 0;
 
-    size32_t length() { return errCount() + warnCount();}
-    size32_t errCount() { return errs; }
-    size32_t warnCount() { return warns; }
-    IECLError* item(size32_t index) { return &msgs.item(index); }
-    IECLError* firstError();
-    StringBuffer& toString(StringBuffer&);
-    void clear() { msgs.kill(); }
-    IMPLEMENT_IINTERFACE;
+    //global helper functions
+    void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos);
+    void reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
+};
+
+typedef IArrayOf<IECLError> IECLErrorArray;
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+class HQL_API ErrorReceiverSink : public CInterfaceOf<IErrorReceiver>
+{
+public:
+    ErrorReceiverSink() { errs = warns = 0; }
+
+    virtual IECLError * mapError(IECLError * error) { return LINK(error); }
+    virtual void report(IECLError* err);
+    virtual size32_t errCount() { return errs; }
+    virtual size32_t warnCount() { return warns; }
 
 private:
-    IECLErrorArray msgs;
     unsigned errs;
     unsigned warns;
 };
 
-class HQL_API ThrowingErrorReceiver : public CInterface, implements IErrorReceiver
-{
-    IMPLEMENT_IINTERFACE
+//---------------------------------------------------------------------------------------------------------------------
 
-    virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
-    virtual void report(IECLError* error);
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
-    virtual size32_t errCount() { return 0; }
-    virtual size32_t warnCount() { return 0; }
-};
-
-class HQL_API NullErrorReceiver : public CInterface, implements IErrorReceiver
+class IndirectErrorReceiver : public CInterfaceOf<IErrorReceiver>
 {
 public:
-    IMPLEMENT_IINTERFACE;
+    IndirectErrorReceiver(IErrorReceiver & _prev) : prevErrorProcessor(&_prev) {}
 
-    void reportError(int errNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) { numErrors++; }
-    void reportWarning(int warnNo, const char *msg,  const char * filename, int _lineno, int _column, int _pos) { numWarnings++; }
-    void report(IECLError* err) { if (err->isError()) numErrors++; else numWarnings++; }
-    virtual size32_t errCount() { return numErrors; };
-    virtual size32_t warnCount() { return numWarnings; };
+    virtual void report(IECLError* error)
+    {
+        prevErrorProcessor->report(error);
+    }
+    virtual IECLError * mapError(IECLError * error)
+    {
+        return prevErrorProcessor->mapError(error);
+    }
+    virtual size32_t errCount()
+    {
+        return prevErrorProcessor->errCount();
+    }
+    virtual size32_t warnCount()
+    {
+        return prevErrorProcessor->warnCount();
+    }
 
-private:
-    unsigned numErrors;
-    unsigned numWarnings;
+protected:
+    Linked<IErrorReceiver> prevErrorProcessor;
 };
 
+//---------------------------------------------------------------------------------------------------------------------
 
-extern HQL_API IECLError *createECLError(bool isError, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0);
+class HQL_API MultiErrorReceiver : public ErrorReceiverSink
+{
+public:
+    MultiErrorReceiver() {}
+
+    virtual void report(IECLError* err);
+
+    size32_t length() { return errCount() + warnCount();}
+    IECLError* item(size32_t index) { return &msgs.item(index); }
+    IECLError* firstError();
+    StringBuffer& toString(StringBuffer& out);
+    void clear() { msgs.kill(); }
+
+private:
+    IECLErrorArray msgs;
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
+extern HQL_API IECLError *createECLError(ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0);
 inline IECLError * createECLError(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
 {
-    return createECLError(true, errNo, msg, filename, lineno, column, pos);
+    return createECLError(SeverityFatal, errNo, msg, filename, lineno, column, pos);
 }
-inline IECLError *createECLWarning(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
-{
-    return createECLError(false, errNo, msg, filename, lineno, column, pos);
-}
-extern HQL_API IECLError *changeErrorType(bool isError, IECLError * error);
 extern HQL_API void reportErrors(IErrorReceiver & receiver, IECLErrorArray & errors);
 void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args);
 void HQL_API reportError(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char * format, ...) __attribute__((format(printf, 4, 5)));
-void HQL_API expandReportError(IErrorReceiver * errors, IECLError* error);
-extern HQL_API IErrorReceiver *createFileErrorReceiver(FILE *f);
+
+extern HQL_API IErrorReceiver * createFileErrorReceiver(FILE *f);
+extern HQL_API IErrorReceiver * createNullErrorReceiver();
+extern HQL_API IErrorReceiver * createThrowingErrorReceiver();
+extern HQL_API IErrorReceiver * createAbortingErrorReceiver(IErrorReceiver & prev);
+extern HQL_API IErrorReceiver * createDedupingErrorReceiver(IErrorReceiver & prev);
 
 extern HQL_API void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * eclVersion);
 

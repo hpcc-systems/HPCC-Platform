@@ -957,17 +957,15 @@ void TransformBuilder::doTransform(BuildCtx & ctx, IHqlExpression * transform, B
     IHqlExpression * body = transform->queryBody(true);
     if (transform != body)
     {
+        ErrorSeverityMapper::Scope saved(translator.queryLocalOnWarningMapper());
         switch (transform->getAnnotationKind())
         {
         case annotate_meta:
-            translator.queryWarningProcessor().processMetaAnnotation(transform);
+            translator.queryLocalOnWarningMapper().processMetaAnnotation(transform);
             break;
         case annotate_symbol:
-            {
-                WarningProcessor::OnWarningStateSymbolBlock saved(translator.queryWarningProcessor(), transform);
-                doTransform(ctx, body, self);
-                return;
-            }
+            translator.queryLocalOnWarningMapper().setSymbol(transform);
+            break;
         }
         doTransform(ctx, body, self);
         return;
@@ -6089,7 +6087,7 @@ IReferenceSelector * HqlCppTranslator::buildReference(BuildCtx & ctx, IHqlExpres
 ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     checkAbort();
-    WarningProcessor::OnWarningStateBlock saved(warningProcessor);
+    ErrorSeverityMapper::Scope saved(*localOnWarnings);
 
     //Process any annotations first - but still pass the original expr to the doBuildActivtyXXX functions.
     IHqlExpression * cur = expr;
@@ -6102,7 +6100,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
         switch (cur->getAnnotationKind())
         {
         case annotate_meta:
-            warningProcessor.processMetaAnnotation(cur);
+            localOnWarnings->processMetaAnnotation(cur);  // state restored by OnWarningStateBlock
             break;
         case annotate_symbol:
             {
@@ -6122,7 +6120,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                     }
                 }
 #endif
-                warningProcessor.setSymbol(cur);
+                localOnWarnings->setSymbol(cur);
                 break;
             }
         }
@@ -6715,7 +6713,7 @@ ABoundActivity * HqlCppTranslator::buildCachedActivity(BuildCtx & ctx, IHqlExpre
 
 void HqlCppTranslator::buildRootActivity(BuildCtx & ctx, IHqlExpression * expr)
 {
-    WarningProcessor::OnWarningStateBlock saved(warningProcessor);
+    ErrorSeverityMapper::Scope saved(*localOnWarnings);
     ::Release(buildCachedActivity(ctx, expr, true));
 }
 
@@ -9118,7 +9116,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     {
         unsigned time = msTick();
         traceExpression("BeforeOptimize2", resourced);
-        resourced.setown(optimizeHqlExpression(resourced, getOptimizeFlags()|HOOcompoundproject));
+        resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, getOptimizeFlags()|HOOcompoundproject));
         traceExpression("AfterOptimize2", resourced);
         updateTimer("workunit;optimize graph", msTick()-time);
     }
@@ -9149,7 +9147,7 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     if (options.optimizeGraph)
     {
         unsigned time = msTick();
-        resourced.setown(optimizeHqlExpression(resourced, optFlags|HOOfiltersharedproject));
+        resourced.setown(optimizeHqlExpression(queryErrorProcessor(), resourced, optFlags|HOOfiltersharedproject));
         //have the following on an "aggressive fold" option?  If no_selects extract constants it can be quite impressive (jholt22.hql)
         //resourced.setown(foldHqlExpression(resourced));
         updateTimer("workunit;optimize graph", msTick()-time);
@@ -9373,7 +9371,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
             {
                 StringBuffer comma;
                 expandDefaultString(comma, separator, ",");
-                expandFieldNames(names, record, comma.str(), queryAttributeChild(headerAttr, formatAtom, 0));
+                expandFieldNames(queryErrorProcessor(), names, record, comma.str(), queryAttributeChild(headerAttr, formatAtom, 0));
                 expandDefaultString(names, terminator, "\n");
             }
             OwnedHqlExpr namesExpr = createConstant(names.str());

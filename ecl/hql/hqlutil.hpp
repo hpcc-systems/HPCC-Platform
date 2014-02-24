@@ -458,10 +458,10 @@ extern HQL_API bool isNullList(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record);
 extern HQL_API IHqlExpression *getDictionarySearchRecord(IHqlExpression *record);
-extern HQL_API IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values);
-extern HQL_API IHqlExpression * createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict);
-extern HQL_API IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict);
-extern HQL_API IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr);
+extern HQL_API IHqlExpression * createSelectMapRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values);
+extern HQL_API IHqlExpression * createINDictExpr(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict);
+extern HQL_API IHqlExpression *createINDictRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict);
+extern HQL_API IHqlExpression * convertTempRowToCreateRow(IErrorReceiver & errorProcessor, ECLlocation & location, IHqlExpression * expr);
 extern HQL_API IHqlExpression * convertTempTableToInlineTable(IErrorReceiver & errors, ECLlocation & location, IHqlExpression * expr);
 extern HQL_API void setPayloadAttribute(HqlExprArray &args);
 
@@ -505,81 +505,76 @@ protected:
     bool streamingAllowed;
 };
 
-extern HQL_API IAtom * getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first);
-class HQL_API WarningProcessor
+/*
+ *
+ *This class is used for processing the onWarningMappings.
+ *
+ * Global onWarnings are simple, and are just added to a class instance
+ * local onWarnings are
+ * - applied in a stack-wise manner, so should be removed when no longer processing inside them
+ * - only apply until the next defined symbol - to prevent them having an effect too far down the tree
+ *
+ * For this reason SymbolBlocks and Blocks are used to ensure those rules are followed
+ *
+ */
+class HQL_API ErrorSeverityMapper : public IndirectErrorReceiver
 {
 public:
-    struct OnWarningState
+    struct ErrorSeverityMapperState
     {
         IHqlExpression * symbol;
-        unsigned firstOnWarning;
-        unsigned onWarningMax;
+        unsigned firstActiveMapping;
+        unsigned maxMappings;
     };
 
-    struct OnWarningStateSymbolBlock
+    struct SymbolScope
     {
-        inline OnWarningStateSymbolBlock(WarningProcessor & _processor, IHqlExpression * _expr) : processor(_processor) { processor.pushSymbol(state, _expr); }
-        inline ~OnWarningStateSymbolBlock() { processor.popSymbol(state); }
+        inline SymbolScope(ErrorSeverityMapper & _processor, IHqlExpression * _expr) : processor(_processor) { processor.pushSymbol(state, _expr); }
+        inline ~SymbolScope() { processor.popSymbol(state); }
 
     private:
-        WarningProcessor & processor;
-        OnWarningState state;
+        ErrorSeverityMapper & processor;
+        ErrorSeverityMapperState state;
     };
 
-    struct OnWarningStateBlock
+    struct Scope
     {
-        inline OnWarningStateBlock(WarningProcessor & _processor) : processor(_processor) { processor.saveState(state); }
-        inline ~OnWarningStateBlock() { processor.restoreState(state); }
+        inline Scope(ErrorSeverityMapper & _processor) : processor(_processor) { processor.saveState(state); }
+        inline ~Scope() { processor.restoreState(state); }
 
     private:
-        WarningProcessor & processor;
-        OnWarningState state;
+        ErrorSeverityMapper & processor;
+        ErrorSeverityMapperState state;
     };
 
 public:
-    WarningProcessor();
+    ErrorSeverityMapper(IErrorReceiver & errorProcessor);
 
-    void addGlobalOnWarning(unsigned code, IAtom * action);
-    void addGlobalOnWarning(IHqlExpression * setMetaExpr);
-    void addWarning(IECLError * warning);
-    inline void checkForGlobalOnWarning(IHqlExpression * expr)
-    {
-        if ((expr->getOperator() == no_setmeta) && (expr->queryChild(0)->queryName() == onWarningAtom))
-            addGlobalOnWarning(expr);
-    }
-    void processMetaAnnotation(IHqlExpression * expr);
-    void processWarningAnnotation(IHqlExpression * expr);
-    void pushSymbol(OnWarningState & saved, IHqlExpression * _symbol);
-    void popSymbol(const OnWarningState & saved) { restoreState(saved); }
-    void saveState(OnWarningState & saved);
+    virtual IECLError * mapError(IECLError * error);
+
+    bool addCommandLineMapping(const char * mapping);
+    void addOnWarning(unsigned code, IAtom * action);
+    void addOnWarning(IHqlExpression * setMetaExpr);
+    unsigned processMetaAnnotation(IHqlExpression * expr);
+    void pushSymbol(ErrorSeverityMapperState & saved, IHqlExpression * _symbol);
+    void popSymbol(const ErrorSeverityMapperState & saved) { restoreState(saved); }
+    void restoreLocalOnWarnings(unsigned prevMax);
+    void saveState(ErrorSeverityMapperState & saved) const;
     void setSymbol(IHqlExpression * _symbol);
-    void restoreState(const OnWarningState & saved);
-    void report(IErrorReceiver & errors);
-    void report(IErrorReceiver * errors, IErrorReceiver * warnings, IECLError * warning);   // process warning now.
+    void restoreState(const ErrorSeverityMapperState & saved);
 
-    inline void appendUnique(IECLErrorArray & list, IECLError * search)
-    {
-        if (!list.contains(*search))
-            list.append(*LINK(search));
-    }
-    inline unsigned numErrors() const { return allErrors.ordinality(); }
     inline IHqlExpression * queryActiveSymbol() { return activeSymbol; }
 
-
-protected:
-    void combineSandboxWarnings();
-    void applyGlobalOnWarning();
+private:
+    ErrorSeverityMapper(const ErrorSeverityMapper &); // prevent this being called
 
 protected:
     IHqlExpression * activeSymbol;
-    IECLErrorArray possibleWarnings;
-    IECLErrorArray warnings;
-    IECLErrorArray allErrors;
-    HqlExprArray globalOnWarnings;
-    HqlExprArray localOnWarnings;
-    unsigned firstLocalOnWarning;
+    HqlExprArray severityMappings;
+    unsigned firstActiveMapping;
 };
 
+extern HQL_API bool isGlobalOnWarning(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * queryDefaultMaxRecordLengthExpr();
 extern HQL_API IHqlExpression * getFixedSizeAttr(unsigned size);
@@ -730,5 +725,6 @@ protected:
 };
 
 extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch);
+extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr);
 
 #endif
