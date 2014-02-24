@@ -693,6 +693,7 @@ public:
         xmlStoredDatasetReadFlags = ptr_none;
         if (_debuggerActive)
         {
+            assertex(header);
             CSlaveDebugContext *slaveDebugContext = new CSlaveDebugContext(this, logctx, *header);
             slaveDebugContext->init(_packet);
             debugContext.setown(slaveDebugContext);
