@@ -1006,6 +1006,12 @@
     <EclSchedulerProcess process="myeclscheduler"/>
     <RoxieCluster process="myroxie"/>
    </Cluster>
+   <Cluster name="thor_roxie" prefix="thor">
+    <ThorCluster process="mythor"/>
+    <EclCCServerProcess process="myeclccserver"/>
+    <EclSchedulerProcess process="myeclscheduler"/>
+    <RoxieCluster process="myroxie"/>
+   </Cluster>
   </Topology>
  </Software>
 </Environment>

@@ -131,7 +131,7 @@ static void sendHttpException(SafeSocket &client, TextMarkupFormat fmt, IExcepti
 class CHttpRequestAsyncFor : public CInterface, public CAsyncFor
 {
 private:
-    const char *queryName, *queryText;
+    const char *queryName, *queryText, *querySetName;
     const ContextLogger &logctx;
     IArrayOf<IPropertyTree> &requestArray;
     Linked<IQueryFactory> f;
@@ -143,8 +143,10 @@ private:
     CriticalSection crit;
 
 public:
-    CHttpRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
-      f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused), slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags)
+    CHttpRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused,
+                            unsigned &_slaveReplyLen, const char *_queryText, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
+    : f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused),
+      slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags), querySetName(_querySetName)
     {
         queryName = _queryName;
         queryText = _queryText;
@@ -168,7 +170,7 @@ public:
         try
         {
             IPropertyTree &request = requestArray.item(idx);
-            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, true, logctx, xmlReadFlags);
+            Owned<IRoxieServerContext> ctx = f->createContext(&request, client, httpHelper.queryContentFormat(), false, false, httpHelper, true, logctx, xmlReadFlags, querySetName);
             ctx->process();
             ctx->flush(idx);
             CriticalBlock b(crit);
@@ -1636,7 +1638,8 @@ readAnother:
                     }
                     else
                     {
-                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, logctx));
+                        StringBuffer querySetName;
+                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, logctx));
                         if (isHTTP)
                             client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
                         if (queryFactory)
@@ -1722,12 +1725,12 @@ readAnother:
                             combinedQueryStats.noteActive();
                             if (isHTTP)
                             {
-                                CHttpRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, xmlReadFlags);
+                                CHttpRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, xmlReadFlags, querySetName);
                                 af.For(requestArray.length(), numRequestArrayThreads);
                             }
                             else
                             {
-                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, mlFmt, isRaw, isBlocked, httpHelper, trim, logctx, xmlReadFlags);
+                                Owned<IRoxieServerContext> ctx = queryFactory->createContext(queryXml, *client, mlFmt, isRaw, isBlocked, httpHelper, trim, logctx, xmlReadFlags, querySetName);
                                 if (client && !ctx->outputResultsToSocket())
                                 {
                                     unsigned replyLen = 0;

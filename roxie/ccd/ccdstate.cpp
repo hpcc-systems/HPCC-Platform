@@ -799,7 +799,7 @@ public:
 
     virtual void getStats(const char *queryName, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
-        Owned<IQueryFactory> f = getQuery(queryName, logctx);
+        Owned<IQueryFactory> f = getQuery(queryName, NULL, logctx);
         if (f)
         {
             reply.appendf("<Query id='%s'>\n", queryName);
@@ -812,7 +812,7 @@ public:
 
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx)
     {
-        Owned<IQueryFactory> f = getQuery(queryName, logctx);
+        Owned<IQueryFactory> f = getQuery(queryName, NULL, logctx);
         if (f)
             f->resetQueryTimings();
         else
@@ -856,7 +856,7 @@ public:
         }
     }
 
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const
     {
         IQueryFactory *ret;
         ret = aliases.getValue(id);
@@ -864,6 +864,8 @@ public:
             logctx.CTXLOG("Found query alias %s => %s", id, ret->queryQueryName());
         if (!ret)
             ret = queries.getValue(id);
+        if (ret && querySet)
+            querySet->set(querySetName);
         return LINK(ret);
     }
 
@@ -1071,7 +1073,7 @@ public:
         CriticalBlock b(updateCrit);
         if (queryId)
         {
-            Owned<IQueryFactory> query = serverManager->getQuery(queryId, logctx);
+            Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
             if (query)
             {
                 const char *id = query->queryQueryName();
@@ -1095,7 +1097,7 @@ public:
     void getStats(const char *queryId, const char *action, const char *graphName, StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
         CriticalBlock b2(updateCrit);
-        Owned<IQueryFactory> query = serverManager->getQuery(queryId, logctx);
+        Owned<IQueryFactory> query = serverManager->getQuery(queryId, NULL, logctx);
         if (query)
         {
             StringBuffer freply;
@@ -1306,7 +1308,7 @@ public:
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
             if (sm->isActive())
             {
-                Owned<IQueryFactory> library = sm->getQuery(libraryName, logctx);
+                Owned<IQueryFactory> library = sm->getQuery(libraryName, NULL, logctx);
                 if (library)
                 {
                     if (library->isQueryLibrary())
@@ -1325,14 +1327,14 @@ public:
         throw MakeStringException(ROXIE_LIBRARY_ERROR, "No library available for %s", libraryName);
     }
 
-    IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
+    IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const
     {
         ForEachItemIn(idx, allQueryPackages)
         {
             Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
             if (sm->isActive())
             {
-                IQueryFactory *query = sm->getQuery(id, logctx);
+                IQueryFactory *query = sm->getQuery(id, querySet, logctx);
                 if (query)
                     return query;
             }
@@ -1546,10 +1548,10 @@ public:
         return allQueryPackages->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
-        return allQueryPackages->getQuery(id, logctx);
+        return allQueryPackages->getQuery(id, querySet, logctx);
     }
 
     virtual int getActivePackageCount() const
@@ -1606,7 +1608,7 @@ private:
                 const char *id = ids->query().queryProp("@id");
                 if (id)
                 {
-                    Owned<IQueryFactory> query = getQuery(id, logctx);
+                    Owned<IQueryFactory> query = getQuery(id, NULL, logctx);
                     if (query)
                         query->getQueryInfo(reply, full, logctx);
                     else
@@ -1827,7 +1829,7 @@ private:
                 if (!id)
                     throw MakeStringException(ROXIE_MISSING_PARAMS, "No query name specified");
 
-                Owned<IQueryFactory> q = getQuery(id, logctx);
+                Owned<IQueryFactory> q = getQuery(id, NULL, logctx);
                 if (q)
                 {
                     Owned<IPropertyTree> tempTree = q->cloneQueryXGMML();
@@ -1842,7 +1844,7 @@ private:
                 const char *id = control->queryProp("Query/@id");
                 if (!id)
                     badFormat();
-                Owned<IQueryFactory> f = getQuery(id, logctx);
+                Owned<IQueryFactory> f = getQuery(id, NULL, logctx);
                 if (f)
                 {
                     unsigned warnLimit = f->getWarnTimeLimit();
@@ -2046,7 +2048,7 @@ private:
                 const char *id = control->queryProp("Query/@id");
                 if (id)
                 {
-                    Owned<IQueryFactory> f = getQuery(id, logctx);
+                    Owned<IQueryFactory> f = getQuery(id, NULL, logctx);
                     if (f)
                     {
                         Owned<const IPropertyTree> stats = f->getQueryStats(from, to);
@@ -2078,7 +2080,7 @@ private:
                 {
                     if (stricmp(action, "listGraphNames") == 0)
                     {
-                        Owned<IQueryFactory> query = getQuery(id, logctx);
+                        Owned<IQueryFactory> query = getQuery(id, NULL, logctx);
                         if (query)
                         {
                             reply.appendf("<Query id='%s'>\n", id);
@@ -2216,7 +2218,7 @@ private:
                 if (!id.length())
                     badFormat();
                 {
-                    Owned<IQueryFactory> f = getQuery(id, logctx);
+                    Owned<IQueryFactory> f = getQuery(id, NULL, logctx);
                     if (f)
                         id.clear().append(f->queryQueryName());  // use the spelling of the query stored with the query factory
                 }
