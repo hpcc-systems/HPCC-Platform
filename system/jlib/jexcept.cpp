@@ -819,7 +819,7 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
     PrintLog( "SS:ESP:%04X:%08X  EBP:%08X",
         pCtx->SegSs, pCtx->Esp, pCtx->Ebp );
 #else
-    // ARMFIX: Implement register bank dump for ARM.
+    // ARMFIX: Implement register bank dump for ARM on _WIN32.
     PrintLog("Register bank not implemented for your platform");
 #endif
     
@@ -831,7 +831,7 @@ static void PrintExceptionReport( PEXCEPTION_POINTERS pExceptionInfo)
 #elif defined(_ARCH_X86_)
     doPrintStackReport(pCtx->Eip, pCtx->Ebp,pCtx->Esp);
 #else
-    // ARMFIX: Implement stack dump for ARM.
+    // ARMFIX: Implement stack dump for ARM on _WIN32.
     PrintLog("Stack report not implemented for your platform");
 #endif
     if (SEHtermOnSystemDLLs || SEHtermAlways) {
@@ -885,7 +885,7 @@ public:
 #elif defined(_ARCH_X86_)
         sprintf(s,"SEH Exception(%08X) at %04X:%08X\n",u,pExp->ContextRecord->SegCs,pExp->ContextRecord->Eip);
 #else
-        // ARMFIX: Implement exception dump for ARM.
+        // ARMFIX: Implement exception dump for ARM on _WIN32.
         sprintf(s,"SEH Exception");
 #endif
 #endif
@@ -1051,11 +1051,104 @@ void excsighandler(int signum, siginfo_t *info, void *extra)
         PROGLOG("%2d  %08X  %08X",n+1,fip,(unsigned) bp);
         bp = nextbp;
     }
-#else
-    // ARMFIX: Implement signal dump for ARM.
+#elif defined (__linux__) && defined (__ARM_ARCH_7A__)
+#pragma message "Implement signal dump for ARMv7-A."
+
+    ucontext_t *uc = (ucontext_t *) extra;
+
+    PROGLOG("================================================");
+    PROGLOG("Signal:    %d %s",signum,strsignal(signum));
+    PROGLOG("Registers:" );
+    PROGLOG("r0 :%08lX  r1 :%08lX  r2 :%08lX  r3 :%08lX  r4 :%08lX  r5 :%08lX",
+        uc->uc_mcontext.arm_r0, uc->uc_mcontext.arm_r1, uc->uc_mcontext.arm_r2,
+        uc->uc_mcontext.arm_r3, uc->uc_mcontext.arm_r4, uc->uc_mcontext.arm_r5);
+    PROGLOG("r6 :%08lX  r7 :%08lX  r8 :%08lX  r9 :%08lX  r10:%08lX  fp :%08lX",
+        uc->uc_mcontext.arm_r6, uc->uc_mcontext.arm_r7, uc->uc_mcontext.arm_r8,
+        uc->uc_mcontext.arm_r9, uc->uc_mcontext.arm_r10, uc->uc_mcontext.arm_fp);
+    PROGLOG("ip :%08lX  sp :%08lX  lr :%08lX  pc :%08lX",
+        uc->uc_mcontext.arm_ip, uc->uc_mcontext.arm_sp, uc->uc_mcontext.arm_lr,
+        uc->uc_mcontext.arm_pc);
+    PROGLOG("CPSR:%08lX\n", uc->uc_mcontext.arm_cpsr);
+
+    struct flags
+    {
+        unsigned int Mode:4;    // bit 0 - 3
+        unsigned int M:1;       // bit 4
+        unsigned int T:1;       // bit 5
+        unsigned int F:1;       // bit 6
+        unsigned int I:1;       // bit 7
+        unsigned int A:1;       // bit 8
+        unsigned int E:1;       // bit 9
+        unsigned int IT1:6;     // bit 10 - 15
+        unsigned int GE:4;      // bit 16 - 19
+        unsigned int DNM:4;     // bit 20 - 23
+        unsigned int J:1;       // bit 24
+        unsigned int IT2:2;     // bit 25 - 26
+        unsigned int Q:1;       // bit 27
+        unsigned int V:1;       // bit 28
+        unsigned int C:1;       // bit 29
+        unsigned int Z:1;       // bit 30
+        unsigned int N:1;       // bit 31
+    } *flags_p;
+
+    const char *ArmCpuModes[] = {
+                            // M M[3:0]
+            "User",         // 1 0000
+            "FIQ",          // 1 0001
+            "IRQ",          // 1 0010
+            "Supervisor",   // 1 0011
+            "N/A",          // 1 0100
+            "N/A",          // 1 0101
+            "Monitor",      // 1 0110
+            "Abort",        // 1 0111
+            "N/A",          // 1 1000
+            "N/A",          // 1 1001
+            "Hyp"           // 1 1010
+            "Undefined",    // 1 1011
+            "N/A",          // 1 1100
+            "N/A",          // 1 1101
+            "N/A",          // 1 1110
+            "System"        // 1 1111
+    };
+
+    flags_p = (struct flags *)&uc->uc_mcontext.arm_cpsr;
+    PROGLOG("Flags N:%d Z:%d C:%d V:%d Q:%d IT:0x%X J:%d GE:0x%X E:%d A:%d I:%d F:%d T:%d M:0x%X [%s]"
+            , flags_p->N, flags_p->Z, flags_p->C, flags_p->V, flags_p->Q
+            , (flags_p->IT2 << 6 | flags_p->IT1)
+            , flags_p->J, flags_p->GE
+            , flags_p->E, flags_p->A, flags_p->I, flags_p->F, flags_p->T, (flags_p->M << 4 | flags_p->Mode)
+            , ArmCpuModes[flags_p->Mode]
+            );
+
+    PROGLOG("Fault address: %08lX", uc->uc_mcontext.fault_address);
+    PROGLOG("Trap no      : %08lX", uc->uc_mcontext.trap_no);
+    PROGLOG("Error code   : %08lX", uc->uc_mcontext.error_code);
+    PROGLOG("Old mask     : %08lX", uc->uc_mcontext.oldmask);
+
+    unsigned sp = uc->uc_mcontext.arm_sp;
+    for (unsigned i=0;i<8;i++)
+    {
+        StringBuffer s;
+        s.appendf("Stack[%08X]:",sp);
+        for (unsigned j=0;j<8;j++)
+        {
+            size_t v = *(size_t *)sp;
+            sp += sizeof(unsigned);
+            s.appendf(" %08X",v);
+        }
+    }
+    PROGLOG( "%s",s.str());
+
+#elif defined (__linux__) && defined (__arm__)
+#pragma message "Unknown ARM architecture!"
+
     PROGLOG("================================================");
     PROGLOG("Signal:    %d %s",signum,strsignal(signum));
     PROGLOG("More information unavailable on your platform");
+
+#else
+    // Placeholder for any new HW-SW platform
+
 #endif
 
 #ifdef _EXECINFO_H
