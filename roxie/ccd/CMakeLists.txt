@@ -68,6 +68,7 @@ include_directories (
          ./../../roxie/roxie 
          ./../../common/environment 
          ./../../ecl/hthor 
+         ./../../ecl/schedulectrl
          ./../../rtl/nbcd 
          ./../../common/deftype 
          ./../../system/include 
@@ -106,6 +107,7 @@ target_link_libraries ( ccd
          thorhelper 
          jhtree 
          environment 
+         schedulectrl
          dllserver 
          workunit 
     )
