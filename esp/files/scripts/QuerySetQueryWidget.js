@@ -433,7 +433,7 @@ define([
             }
         },
 
-        refreshGrid: function (args) {
+        refreshGrid: function (clearSelection) {
             this.querySetGrid.set("query", this.getFilter());
             if (clearSelection) {
                 this.workunitsGrid.clearSelection();
