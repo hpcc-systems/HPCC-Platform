@@ -563,8 +563,9 @@ stop_component() {
                         if [ $__pidExists -ne 1 ];then
                             removePid ${PIDPATH}
                             unlock ${LOCKPATH}
-                            log_success_msg  
-                            return 3 
+                            log_success_msg
+                            # HPCC 10662
+                            return 0
                         fi
                     fi
                 done
