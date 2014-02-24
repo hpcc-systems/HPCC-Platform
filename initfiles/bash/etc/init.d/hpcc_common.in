@@ -564,7 +564,7 @@ stop_component() {
                             removePid ${PIDPATH}
                             unlock ${LOCKPATH}
                             log_success_msg  
-                            return 3 
+                            return 0
                         fi
                     fi
                 done
