@@ -351,11 +351,11 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
             klManager->finishSegmentMonitors();
             klManager->reset();
             activity.setManager(klManager);
+            activity.resetLastStats();
         }
         rowcount_t getCount(const rowcount_t &keyedLimit)
         {
-            unsigned __int64 count;
-            count = 0;
+            unsigned __int64 count = 0;
             // Note - don't use merger's count - it doesn't work
             ForEachItemIn(p, activity.partDescs)
             {
@@ -364,7 +364,7 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
                 Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.logicalFilename.get(), activity.partDescs.item(p));
                 klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
                 activity.setManager(klManager);
-                count += klManager->checkCount(keyedLimit);
+                count += klManager->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
                 activity.noteStats(klManager->querySeeks(), klManager->queryScans());
                 if (count > keyedLimit)
                     break;
