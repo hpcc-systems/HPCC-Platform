@@ -287,7 +287,7 @@ protected:
             if (workunit->getDebugValueBool("expandPersistInputDependencies", false))
                 doExecuteItemDependencies(item, wfid);
             if (maxPersistCopies > 0)
-                deleteLRUPersists(logicalName, maxPersistCopies-1);
+                deleteLRUPersists(logicalName, (unsigned) maxPersistCopies-1);
             doExecuteItem(item, wfid);
             updatePersist(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC);
         }
@@ -562,7 +562,7 @@ private:
 
     }
 
-    void deleteLRUPersists(const char * logicalName, int keep)
+    void deleteLRUPersists(const char * logicalName, unsigned keep)
     {
         StringBuffer lfn;
         expandLogicalFilename(lfn, logicalName, workunit, false);
