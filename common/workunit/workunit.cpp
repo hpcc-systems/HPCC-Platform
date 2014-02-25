@@ -1934,6 +1934,8 @@ mapEnums querySortFields[] =
    { WUQSFpriority, "@priority" },
    { WUQSFpriorityHi, "@priority" },
    { WUQSFQuerySet, "../@id" },
+   { WUQSFActivited, "@activated" },
+   { WUQSFSuspendedByUser, "@suspended" },
    { WUQSFterm, NULL }
 };
 
@@ -2436,11 +2438,23 @@ public:
                                                 __int64 *cachehint,
                                                 unsigned *total)
     {
+        struct PostFilters
+        {
+            WUQueryFilterBoolean activatedFilter;
+            WUQueryFilterBoolean suspendedByUserFilter;
+            PostFilters()
+            {
+                activatedFilter = WUQFSAll;
+                suspendedByUserFilter = WUQFSAll;
+            };
+        } postFilters;
+
         class CQuerySetQueriesPager : public CSimpleInterface, implements IElementsPager
         {
             StringAttr querySet;
             StringAttr xPath;
             StringAttr sortOrder;
+            PostFilters& postFilters;
 
             void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
             {
@@ -2448,8 +2462,6 @@ public:
                 ForEach(*iter)
                 {
                     IPropertyTree &query = iter->query();
-                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", LINK(&query));
-                    queryWithSetId->addProp("@querySetId", querySetId);
 
                     bool activated = false;
                     const char* queryId = query.queryProp("@id");
@@ -2460,6 +2472,17 @@ public:
                         if (alias)
                             activated = true;
                     }
+                    if (activated && (postFilters.activatedFilter == WUQFSNo))
+                        continue;
+                    if (!activated && (postFilters.activatedFilter == WUQFSYes))
+                        continue;
+                    if ((postFilters.suspendedByUserFilter == WUQFSNo) && query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
+                        continue;
+                    if ((postFilters.suspendedByUserFilter == WUQFSYes) && !query.hasProp(getEnumText(WUQSFSuspendedByUser,querySortFields)))
+                        continue;
+
+                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", LINK(&query));
+                    queryWithSetId->addProp("@querySetId", querySetId);
                     queryWithSetId->addPropBool("@activated", activated);
                 }
             }
@@ -2495,8 +2518,8 @@ public:
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder)
-                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder)
+            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters)
+                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), postFilters(_postFilters)
             {
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
@@ -2529,6 +2552,10 @@ public:
                     xPath.append('[').append(getEnumText(subfmt,querySortFields)).append(">=").append(fv).append("]");
                 else if ((subfmt==WUQSFmemoryLimitHi) || (subfmt==WUQSFtimeLimitHi) || (subfmt==WUQSFwarnTimeLimitHi) || (subfmt==WUQSFpriorityHi))
                     xPath.append('[').append(getEnumText(subfmt,querySortFields)).append("<=").append(fv).append("]");
+                else if (subfmt==WUQSFActivited)
+                    postFilters.activatedFilter = (WUQueryFilterBoolean) atoi(fv);
+                else if (subfmt==WUQSFSuspendedByUser)
+                    postFilters.suspendedByUserFilter = (WUQueryFilterBoolean) atoi(fv);
                 else {
                     xPath.append('[').append(getEnumText(subfmt,querySortFields)).append('=');
                     if (fmt&WUQSFnocase)
@@ -2542,8 +2569,6 @@ public:
                 fv = fv + strlen(fv)+1;
             }
         }
-        if (xPath.length() < 1)
-            xPath.set("*");
         if (sortorder) {
             for (unsigned i=0;sortorder[i]!=WUQSFterm;i++) {
                 if (so.length())
@@ -2559,7 +2584,7 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL);
+        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
         return new CConstQuerySetQueryIterator(results);
     }

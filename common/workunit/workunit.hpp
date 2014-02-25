@@ -1108,6 +1108,13 @@ enum WUSortField
     WUSFwild = 2048
 };
 
+enum WUQueryFilterBoolean
+{
+    WUQFSNo = 0,
+    WUQFSYes = 1,
+    WUQFSAll = 2
+};
+
 enum WUQuerySortField
 {
     WUQSFId = 1,
@@ -1123,6 +1130,8 @@ enum WUQuerySortField
     WUQSFpriority = 11,
     WUQSFpriorityHi = 12,
     WUQSFQuerySet = 13,
+    WUQSFActivited = 14,
+    WUQSFSuspendedByUser = 15,
     WUQSFterm = 0,
     WUQSFreverse = 256,
     WUQSFnocase = 512,
