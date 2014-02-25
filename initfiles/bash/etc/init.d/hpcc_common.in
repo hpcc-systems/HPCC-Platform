@@ -567,6 +567,7 @@ stop_component() {
                             return 3 
                         fi
                     fi
+                    sleep 1
                 done
             fi
             sleep 1
