@@ -1865,4 +1865,7 @@ extern HQL_API void setLegacyEclSemantics(bool _value);
 extern HQL_API bool queryLegacyEclSemantics();
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx);
 
+//The following is only here to provide information about the source file being compiled when reporting leaks
+extern HQL_API void setActiveSource(const char * filename);
+
 #endif

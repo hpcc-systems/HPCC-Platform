@@ -2295,9 +2295,10 @@ IIdAtom * HqlGram::createUnnamedFieldId()
 
 
 /* In parms: type, value: linked */
-void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type, IHqlExpression *value, IHqlExpression *attrs)
+void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type, IHqlExpression * _value, IHqlExpression *attrs)
 {
     Owned<ITypeInfo> fieldType = _type;
+    OwnedHqlExpr value = _value;
     Linked<ITypeInfo> expectedType = fieldType;
     if (expectedType->getTypeCode() == type_alien)
     {
@@ -2313,9 +2314,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
             canNotAssignTypeWarn(fieldType,valueType,errpos);
         if (expectedType->getTypeCode() != type_row)
         {
-            IHqlExpression * newValue = ensureExprType(value, expectedType);
-            value->Release();
-            value = newValue;
+            value.setown(ensureExprType(value, expectedType));
         }
     }
 
@@ -2396,7 +2395,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
     if ((fieldType->getSize() != UNKNOWN_LENGTH) && (fieldType->getSize() > MAX_SENSIBLE_FIELD_LENGTH))
         reportError(ERR_BAD_FIELD_SIZE, errpos, "Field %s is too large", name->str());
 
-    OwnedHqlExpr newField = createField(name, fieldType.getClear(), value, attrs);
+    OwnedHqlExpr newField = createField(name, fieldType.getClear(), value.getClear(), attrs);
     OwnedHqlExpr annotated = createLocationAnnotation(LINK(newField), errpos.pos);
     addToActiveRecord(LINK(newField));
 }
