@@ -1,0 +1,28 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props='title:"${i18n.Summary}", iconClass:"iconUsers"' data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}SaveGroup" data-dojo-attach-event="onClick:_onSave" data-dojo-props="disabled: true" data-dojo-type="dijit.form.Button">${i18n.Save}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
+                </div>
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <h2>
+                        <span id="${id}Group" class="bold">${i18n.GroupName}</span>
+                    </h2>
+                    <form>
+                        <ul>
+                            <li>
+                                <label class="Prompt" for="${id}Name">${i18n.Name}:</label>
+                                <input id="${id}Name" name="name" data-dojo-props="trim: true, disabled: true" data-dojo-type="dijit.form.TextBox" />
+                            </li>
+                        </ul>
+                    </form>
+                </div>
+            </div>
+            <div id="${id}_Members" data-dojo-props='title:"${i18n.Members}", iconClass:"iconGroups"' data-dojo-type="MembersWidget"></div>
+            <div id="${id}_Permissions" data-dojo-props='title:"${i18n.GroupPermissions}", iconClass:"iconFolder"' data-dojo-type="PermissionsWidget"></div>
+        </div>
+    </div>
+</div>

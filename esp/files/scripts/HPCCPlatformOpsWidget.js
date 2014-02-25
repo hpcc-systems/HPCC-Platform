@@ -27,6 +27,7 @@ define([
 
     "dojo/text!../templates/HPCCPlatformOpsWidget.html",
 
+    "hpcc/UserQueryWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane"
@@ -68,21 +69,6 @@ define([
                 if (currSel.id === this.id + "_Resources") {
                     currSel.set("content", dojo.create("iframe", {
                         src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsSMC") + "/BrowseResources"),
-                        style: "border: 0; width: 100%; height: 100%"
-                    }));
-                } else if (currSel.id === this.id + "_Users") {
-                    currSel.set("content", dojo.create("iframe", {
-                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("ws_access") + "/Users"),
-                        style: "border: 0; width: 100%; height: 100%"
-                    }));
-                } else if (currSel.id === this.id + "_Groups") {
-                    currSel.set("content", dojo.create("iframe", {
-                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("ws_access") + "/Groups"),
-                        style: "border: 0; width: 100%; height: 100%"
-                    }));
-                } else if (currSel.id === this.id + "_Permissions") {
-                    currSel.set("content", dojo.create("iframe", {
-                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("ws_access") + "/Permissions"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.id === this.id + "_TargetClusters") {
