@@ -135,7 +135,7 @@
         <xsl:with-param name="types" select="$enum-types"/>
     </xsl:call-template>
 <xsl:text disable-output-escaping="yes"><![CDATA[
-m
+
 function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param passing, 3: roxiexml
 {
     var form = document.forms['esp_form'];

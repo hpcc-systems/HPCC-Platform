@@ -565,9 +565,12 @@ StringBuffer &CWsEclBinding::generateNamespace(IEspContext &context, CHttpReques
 #define REQSF_TRIM         0x0004
 #define REQSF_ESCAPEFORMATTERS 0x0008
 
-static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *parmtree, unsigned flags, const char* ns=NULL)
+#define REQSF_EXCLUSIVE (REQSF_SAMPLE_DATA | REQSF_TRIM)
+
+static void buildReqXml(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *parmtree, unsigned flags, const char* ns=NULL)
 {
     assertex(type!=NULL);
+    assertex((flags & REQSF_EXCLUSIVE)!= REQSF_EXCLUSIVE);
 
     if (!parmtree && (flags & REQSF_TRIM) && !(flags & REQSF_ROOT))
         return;
@@ -575,7 +578,7 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
     const char* typeName = type->queryName();
     if (type->isComplexType())
     {
-        if (typeName && std::find(parent.begin(),parent.end(),typeName) != parent.end())
+        if (typeName && !parentTypes.appendUniq(typeName))
             return; // recursive
 
         int startlen = out.length();
@@ -596,8 +599,6 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
                 appendXMLAttr(out, attr->queryName(), attrval);
         }
         out.append('>');
-        if (typeName)
-            parent.push_back(typeName);
 
         int flds = type->getFieldCount();
         switch (type->getSubType())
@@ -621,13 +622,13 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
                 const char *childname = type->queryFieldName(idx);
                 if (parmtree)
                     childtree = parmtree->queryPropTree(childname);
-                buildReqXml(parent,type->queryFieldType(idx), out, childname, childtree, flags & ~REQSF_ROOT);
+                buildReqXml(parentTypes,type->queryFieldType(idx), out, childname, childtree, flags & ~REQSF_ROOT);
             }
             break;
         }
 
         if (typeName)
-            parent.pop_back();
+            parentTypes.pop();
         if ((flags & REQSF_TRIM) && !(flags & REQSF_ROOT) && out.length()==taglen)
             out.setLength(startlen);
         else
@@ -635,16 +636,13 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
     }
     else if (type->isArray())
     {
-        if (typeName && std::find(parent.begin(),parent.end(),typeName) != parent.end())
+        if (typeName && !parentTypes.appendUniq(typeName))
             return; // recursive
 
         const char* itemName = type->queryFieldName(0);
         IXmlType*   itemType = type->queryFieldType(0);
         if (!itemName || !itemType)
             throw MakeStringException(-1,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
-
-        if (typeName)
-            parent.push_back(typeName);
 
         int startlen = out.length();
         appendXMLOpenTag(out, tag, NULL, false);
@@ -665,14 +663,14 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
                     itempath.append(itemName).append(idx);
                     IPropertyTree *itemtree = parmtree->queryPropTree(itempath.str());
                     if (itemtree)
-                        buildReqXml(parent,itemType,out,itemName, itemtree, flags & ~REQSF_ROOT);
+                        buildReqXml(parentTypes,itemType,out,itemName, itemtree, flags & ~REQSF_ROOT);
                 }
             }
             else if (parmtree->hasProp(itemName))
             {
                 Owned<IPropertyTreeIterator> items = parmtree->getElements(itemName);
                 ForEach(*items)
-                    buildReqXml(parent,itemType,out,itemName, &items->query(), flags & ~REQSF_ROOT);
+                    buildReqXml(parentTypes,itemType,out,itemName, &items->query(), flags & ~REQSF_ROOT);
             }
             else
             {
@@ -688,10 +686,10 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
             }
         }
         else
-            buildReqXml(parent,itemType,out,itemName, NULL, flags & ~REQSF_ROOT);
+            buildReqXml(parentTypes,itemType,out,itemName, NULL, flags & ~REQSF_ROOT);
 
         if (typeName)
-            parent.pop_back();
+            parentTypes.pop();
         if ((flags & REQSF_TRIM) && !(flags & REQSF_ROOT) && out.length()==taglen)
             out.setLength(startlen);
         else
@@ -710,10 +708,7 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
             if (strieq(typeName, "boolean"))
             {
                 if (!strieq(parmval, "default"))
-                {
-                    bool val = (strieq(parmval.str(),"1")||strieq(parmval.str(),"true")||strieq(parmval.str(), "on"));
-                    appendXMLTag(out, tag, val ? "1" : "0");
-                }
+                    appendXMLTag(out, tag, strToBool(parmval.str()) ? "1" : "0");
             }
             else
                 appendXMLTag(out, tag, parmval);
@@ -744,19 +739,15 @@ void appendRESTParameter(StringBuffer &out, const StringArray &path, const char 
     out.append(s).append('=').append(value);
 }
 
-static void buildRestURL(StringStack& parent, StringArray &path, IXmlType* type, StringBuffer& out, const char* tag, unsigned flags, unsigned depth=0)
+static void buildRestURL(StringArray& parentTypes, StringArray &path, IXmlType* type, StringBuffer& out, const char* tag, unsigned flags, unsigned depth=0)
 {
     assertex(type!=NULL);
 
     const char* typeName = type->queryName();
     if (type->isComplexType())
     {
-        if (typeName)
-        {   if (std::find(parent.begin(),parent.end(),typeName) != parent.end())
-                return; // recursive
-            parent.push_back(typeName);
-        }
-
+        if (typeName && !parentTypes.appendUniq(typeName))
+            return; // recursive
         if (tag && *tag)
             path.append(tag);
         for (size_t i=0; i<type->getAttrCount(); i++)
@@ -784,18 +775,18 @@ static void buildRestURL(StringStack& parent, StringArray &path, IXmlType* type,
 
         default:
             for (int idx=0; idx<flds; idx++)
-                buildRestURL(parent, path, type->queryFieldType(idx), out, type->queryFieldName(idx), flags, depth+1);
+                buildRestURL(parentTypes, path, type->queryFieldType(idx), out, type->queryFieldName(idx), flags, depth+1);
             break;
         }
 
         if (typeName)
-            parent.pop_back();
+            parentTypes.pop();
         if (tag && *tag)
             path.pop();
     }
     else if (type->isArray())
     {
-        if (typeName && std::find(parent.begin(),parent.end(),typeName) != parent.end())
+        if (typeName && !parentTypes.appendUniq(typeName))
             return; // recursive
         if (tag && *tag)
             path.append(tag);
@@ -805,16 +796,13 @@ static void buildRestURL(StringStack& parent, StringArray &path, IXmlType* type,
         if (!itemName || !itemType)
             throw MakeStringException(-1,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
 
-        if (typeName)
-            parent.push_back(typeName);
-
         StringBuffer itemURLPath(itemName);
         if (depth>1)
             itemURLPath.append(".0");
-        buildRestURL(parent, path, itemType, out, itemURLPath, flags, depth+1);
+        buildRestURL(parentTypes, path, itemType, out, itemURLPath, flags, depth+1);
 
         if (typeName)
-            parent.pop_back();
+            parentTypes.pop();
         if (tag && *tag)
             path.pop();
     }
@@ -827,10 +815,7 @@ static void buildRestURL(StringStack& parent, StringArray &path, IXmlType* type,
         if (strieq(typeName, "boolean"))
         {
             if (!strieq(parmval, "default"))
-            {
-                bool val = (strieq(parmval.str(),"1")||strieq(parmval.str(),"true")||strieq(parmval.str(), "on"));
-                appendRESTParameter(out, path, tag, val ? "1" : "0");
-            }
+                appendRESTParameter(out, path, tag, strToBool(parmval.str()) ? "1" : "0");
         }
         else
             appendRESTParameter(out, path, tag, parmval);
@@ -930,7 +915,7 @@ JSONField_Category xsdTypeToJSONFieldCategory(const char *xsdtype)
     return JSONField_String;
 }
 
-static void buildJsonAppendValue(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, const char *value, unsigned flags)
+static void buildJsonAppendValue(IXmlType* type, StringBuffer& out, const char* tag, const char *value, unsigned flags)
 {
     if (tag && *tag)
         out.appendf("\"%s\": ", tag);
@@ -955,7 +940,7 @@ static void buildJsonAppendValue(StringStack& parent, IXmlType* type, StringBuff
             appendJSONNumericString(out, value, true);
             break;
         case JSONField_Boolean:
-            appendJSONValue(out, NULL, (bool)('1'==*value || strieq(value, "true")));
+            appendJSONValue(out, NULL, strToBool(value));
             break;
         }
     }
@@ -963,7 +948,7 @@ static void buildJsonAppendValue(StringStack& parent, IXmlType* type, StringBuff
         out.append("null");
 }
 
-static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *parmtree, unsigned flags)
+static void buildJsonMsg(StringArray& parentTypes, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *parmtree, unsigned flags)
 {
     assertex(type!=NULL);
 
@@ -973,7 +958,7 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
     const char* typeName = type->queryName();
     if (type->isComplexType())
     {
-        if (typeName && std::find(parent.begin(),parent.end(),typeName) != parent.end())
+        if (typeName && !parentTypes.appendUniq(typeName))
             return; // recursive
 
         int startlen = out.length();
@@ -981,8 +966,6 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
             appendJSONName(out, tag);
         out.append('{');
         int taglen=out.length()+1;
-        if (typeName)
-            parent.push_back(typeName);
         if (type->getSubType()==SubType_Complex_SimpleContent)
         {
             if (parmtree)
@@ -1011,26 +994,23 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                 const char *childname = type->queryFieldName(idx);
                 if (parmtree)
                     childtree = parmtree->queryPropTree(childname);
-                buildJsonMsg(parent, type->queryFieldType(idx), out, childname, childtree, flags & ~REQSF_ROOT);
+                buildJsonMsg(parentTypes, type->queryFieldType(idx), out, childname, childtree, flags & ~REQSF_ROOT);
             }
         }
 
         if (typeName)
-            parent.pop_back();
+            parentTypes.pop();
         out.append("}");
     }
     else if (type->isArray())
     {
-        if (typeName && std::find(parent.begin(),parent.end(),typeName) != parent.end())
+        if (typeName && !parentTypes.appendUniq(typeName))
             return; // recursive
 
         const char* itemName = type->queryFieldName(0);
         IXmlType*   itemType = type->queryFieldType(0);
         if (!itemName || !itemType)
             throw MakeStringException(-1,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
-
-        if (typeName)
-            parent.push_back(typeName);
 
         int startlen = out.length();
         if (tag)
@@ -1056,7 +1036,7 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                     itempath.append(itemName).append(idx);
                     IPropertyTree *itemtree = parmtree->queryPropTree(itempath.str());
                     if (itemtree)
-                        buildJsonMsg(parent,itemType,out, NULL, itemtree, flags & ~REQSF_ROOT);
+                        buildJsonMsg(parentTypes,itemType,out, NULL, itemtree, flags & ~REQSF_ROOT);
                 }
             }
             else if (parmtree->hasProp(itemName))
@@ -1069,7 +1049,7 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                         first=false;
                     else
                         out.append(",");
-                    buildJsonMsg(parent,itemType,out, NULL, &items->query(), flags & ~REQSF_ROOT);
+                    buildJsonMsg(parentTypes,itemType,out, NULL, &items->query(), flags & ~REQSF_ROOT);
                 }
             }
             else
@@ -1082,25 +1062,25 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                     ForEachItemIn(i, items)
                     {
                         delimitJSON(out, false);
-                        buildJsonAppendValue(parent, type, out, NULL, items.item(i), flags & ~REQSF_ROOT);
+                        buildJsonAppendValue(type, out, NULL, items.item(i), flags & ~REQSF_ROOT);
                     }
                 }
 
             }
         }
         else
-            buildJsonMsg(parent, itemType, out, NULL, NULL, flags & ~REQSF_ROOT);
+            buildJsonMsg(parentTypes, itemType, out, NULL, NULL, flags & ~REQSF_ROOT);
 
         out.append(']');
 
         if (typeName)
-            parent.pop_back();
+            parentTypes.pop();
         out.append("}");
     }
     else // simple type
     {
         const char *parmval = (parmtree) ? parmtree->queryProp(NULL) : NULL;
-        buildJsonAppendValue(parent, type, out, tag, parmval, flags);
+        buildJsonAppendValue(type, out, tag, parmval, flags);
     }
 
     if (flags & REQSF_ROOT)
@@ -1133,8 +1113,8 @@ void buildSampleDataset(StringBuffer &xml, IPropertyTree *xsdtree, const char *s
             appendNamespaceSpecificString(ns, method).append(":result:");
             appendNamespaceSpecificString(ns, resultname);
             ns.append('\"');
-            StringStack parent;
-            buildReqXml(parent, type, xml, "Dataset", NULL, REQSF_SAMPLE_DATA, ns.str());
+            StringArray parentTypes;
+            buildReqXml(parentTypes, type, xml, "Dataset", NULL, REQSF_SAMPLE_DATA, ns.str());
         }
     }
 
@@ -1867,8 +1847,8 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
         IXmlType* type = schema->queryElementType(element);
         if (type)
         {
-            StringStack parent;
-            buildReqXml(parent, type, soapmsg, (!stricmp(xmltype, "roxiexml")) ? wsinfo.queryname.sget() : element.str(), parmtree, flags|REQSF_ROOT, ns);
+            StringArray parentTypes;
+            buildReqXml(parentTypes, type, soapmsg, (!stricmp(xmltype, "roxiexml")) ? wsinfo.queryname.sget() : element.str(), parmtree, flags|REQSF_ROOT, ns);
         }
     }
 }
@@ -1940,8 +1920,8 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
             IXmlType* type = schema->queryElementType(element);
             if (type)
             {
-                StringStack parent;
-                buildJsonMsg(parent, type, jsonmsg, wsinfo.queryname.sget(), parmtree, flags|REQSF_ROOT);
+                StringArray parentTypes;
+                buildJsonMsg(parentTypes, type, jsonmsg, wsinfo.queryname.sget(), parmtree, flags|REQSF_ROOT);
             }
         }
     }
@@ -2016,10 +1996,10 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
                         IXmlType* type = schema->queryElementType("Dataset");
                         if (type)
                         {
-                            StringStack parent;
                             StringBuffer outname(dsname);
                             delimitJSON(jsonmsg);
-                            buildJsonMsg(parent, type, jsonmsg, outname.replace(' ', '_').str(), &ds, 0);
+                            StringArray parentTypes;
+                            buildJsonMsg(parentTypes, type, jsonmsg, outname.replace(' ', '_').str(), &ds, 0);
                         }
                     }
                 }
@@ -2753,12 +2733,11 @@ int CWsEclBinding::getRestURL(IEspContext *ctx, CHttpRequest *request, CHttpResp
         IXmlType* type = schema->queryElementType(element);
         if (type)
         {
-            StringBuffer url;
-            StringStack parent;
-
-            url.set("/WsEcl/proxy/query/").append(wsinfo.qsetname).append('/').append(wsinfo.queryname).append('?');
+            StringArray parentTypes;
             StringArray path;
-            buildRestURL(parent, path, type, url, NULL, 0);
+            StringBuffer url;
+            url.set("/WsEcl/proxy/query/").append(wsinfo.qsetname).append('/').append(wsinfo.queryname).append('?');
+            buildRestURL(parentTypes, path, type, url, NULL, 0);
 
             StringBuffer xml;
             appendXMLOpenTag(xml, "resturl");
