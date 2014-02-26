@@ -32,8 +32,8 @@
   </informaltable>
 
   <para>The <emphasis role="bold">Node </emphasis>function returns the
-  (zero-based) number of the Data Refinery (THOR) or Rapid Data Delivery
-  Engine (ROXIE) node.</para>
+  (zero-based) number of the Data Refinery (Thor) or Rapid Data Delivery
+  Engine (Roxie) node.</para>
 
   <para>Example:</para>
 

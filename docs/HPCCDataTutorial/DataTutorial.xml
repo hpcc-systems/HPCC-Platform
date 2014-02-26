@@ -367,7 +367,7 @@
       </sect2>
 
       <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
-        <title>Spray the Data File to your THOR Cluster</title>
+        <title>Spray the Data File to your Thor Cluster</title>
 
         <para>To use the data file in our HPCC cluster, we must first “spray”
         it to a Thor cluster. A <emphasis>spray</emphasis> or
