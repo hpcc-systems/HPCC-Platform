@@ -1194,7 +1194,7 @@ public:
     {
         return package;
     }
-    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const ContextLogger &logctx) const
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const ContextLogger &logctx) const
     {
         throwUnexpected();  // only on server...
     }
@@ -1380,12 +1380,12 @@ public:
         return createWorkUnitServerContext(wu, this, _logctx);
     }
 
-    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const ContextLogger &logctx) const
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const ContextLogger &logctx) const
     {
         IPropertyTree *workflow = queryWorkflowTree();
         if (workflow)
         {
-            return ::createRoxieWorkflowMachine(workflow, isOnce, logctx);
+            return ::createRoxieWorkflowMachine(workflow, wu, isOnce, logctx);
         }
         else
             return NULL;

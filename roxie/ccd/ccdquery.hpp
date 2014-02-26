@@ -70,6 +70,7 @@ interface IActivityGraph : extends IInterface
 
 interface IRoxiePackage;
 interface IDeserializedResultStore;
+class CRoxieWorkflowMachine;
 
 interface ISharedOnceContext : extends IInterface
 {
@@ -108,7 +109,7 @@ interface IQueryFactory : extends IInterface
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
 
     virtual IPropertyTree *cloneQueryXGMML() const = 0;
-    virtual WorkflowMachine *createWorkflowMachine(bool isOnce, const ContextLogger &logctx) const = 0;
+    virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const ContextLogger &logctx) const = 0;
     virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
     virtual unsigned getPriority() const = 0;
     virtual unsigned getWarnTimeLimit() const = 0;

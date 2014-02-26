@@ -69,7 +69,7 @@
 #define HQLERR_RowTooLarge                      4043
 #define HQLERR_ShouldHaveBeenHoisted            4044
 #define HQLERR_NoArgumentsInValidator           4045
-#define HQLERR_NotSupportInRoxie                4046
+
 #define HQLERR_InputMergeNotSorted              4047
 #define HQLERR_TooComplicatedToPreload          4048
 #define HQLERR_KeyedNotKeyed                    4049
@@ -356,7 +356,6 @@
 #define HQLERR_RowTooLarge_Text                 "Row size %u exceeds the maximum specified (%u)"
 #define HQLERR_ShouldHaveBeenHoisted_Text       "Select expression should have been hoisted"
 #define HQLERR_NoArgumentsInValidator_Text      "%s() cannot have a parameter inside a VALIDATE"
-#define HQLERR_NotSupportInRoxie_Text           "%s is not supported in roxie queries"
 #define HQLERR_InputMergeNotSorted_Text         "Input to MERGE does not appear to be sorted"
 #define HQLERR_TooComplicatedToPreload_Text     "Expression is too complicated to preload"
 #define HQLERR_KeyedNotKeyed_Text               "KEYED(%s) couldn't be looked up in a key."
