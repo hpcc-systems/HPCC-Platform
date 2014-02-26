@@ -2764,6 +2764,8 @@ public:
 
     virtual unsigned __int64 getCount()
     {
+        assertex (!sortFieldOffset);  // we should have avoided using a stepping merger for precheck of limits, both for efficiency and because this code won't work
+                                      // as the sequence numbers are not in sequence
         unsigned __int64 ret = 0;
         if (resetPending)
             resetSort(NULL, 0, 0); // This is slightly suboptimal
@@ -2779,7 +2781,25 @@ public:
 
     virtual unsigned __int64 checkCount(unsigned __int64 max)
     {
-        throwUnexpected();  // Can't sensibly check counts on merged streams (and you don't want to even if you could)
+        assertex (!sortFieldOffset);  // we should have avoided using a stepping merger for precheck of limits, both for efficiency and because this code won't work
+                                      // as the sequence numbers are not in sequence
+        unsigned __int64 ret = 0;
+        if (resetPending)
+            resetSort(NULL, 0, 0); // this is a little suboptimal as we will not bail out early
+        for (unsigned i = 0; i < activekeys; i++)
+        {
+            unsigned key = mergeheap[i];
+            keyBuffer = buffers[key];
+            keyCursor = cursors[key];
+            ret += CKeyLevelManager::checkCount(max);
+            if (max)
+            {
+                if (ret > max)
+                    return ret;
+                max -= ret;
+            }
+        }
+        return ret;
     }
 
     virtual void serializeCursorPos(MemoryBuffer &mb)
