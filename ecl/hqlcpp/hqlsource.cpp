@@ -372,7 +372,7 @@ static IHqlExpression * nextDiskField(IHqlExpression * diskRecord, unsigned & di
 }
 
 
-void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * diskRecord, IHqlExpression * record, IHqlExpression * diskDataset, bool allowTranslate, unsigned fileposIndex)
+static void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * diskRecord, IHqlExpression * record, IHqlExpression * diskDataset, bool allowTranslate, unsigned fileposIndex)
 {
     unsigned numFields = record->numChildren();
     unsigned diskIndex = 0;
@@ -423,11 +423,12 @@ void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression * self,
 }
 
 
-void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression * diskDataset, IHqlExpression * tableExpr)
+static void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression * diskDataset, IHqlExpression * tableExpr, bool hasFilePosition)
 {
     IHqlExpression * record = tableExpr->queryRecord();
+    unsigned fileposIndex = (hasFilePosition ? record->numChildren() - 1 : NotFound);
     OwnedHqlExpr self = getSelf(record);
-    createPhysicalLogicalAssigns(assigns, self, diskDataset->queryRecord(), record, diskDataset, true, record->numChildren()-1);
+    createPhysicalLogicalAssigns(assigns, self, diskDataset->queryRecord(), record, diskDataset, true, fileposIndex);
 }
 
 
@@ -457,10 +458,10 @@ static IHqlExpression * mapIfBlock(HqlMapTransformer & mapper, IHqlExpression * 
 }
 
 
-static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * tableExpr, IHqlExpression * record, bool isMainRecord, bool allowTranslate)
+static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IHqlExpression * tableExpr, IHqlExpression * record, bool hasInternalFileposition, bool allowTranslate)
 {
     HqlExprArray physicalFields;
-    unsigned max = record->numChildren() - (isMainRecord ? 1 : 0);
+    unsigned max = record->numChildren() - (hasInternalFileposition ? 1 : 0);
     for (unsigned idx=0; idx < max; idx++)
     {
         IHqlExpression * cur = record->queryChild(idx);
@@ -540,22 +541,24 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
     IHqlExpression * record = tableExpr->queryRecord();
 
     HqlMapTransformer mapper;
-    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, tableExpr, record, true, true);
+    bool hasFileposition = getBoolAttribute(tableExpr, filepositionAtom, true);
+    IHqlExpression * diskRecord = createPhysicalIndexRecord(mapper, tableExpr, record, hasFileposition, true);
 
-    __int64 payload = numPayloadFields(tableExpr);
-    assertex(payload);
+    unsigned payload = numPayloadFields(tableExpr);
+    assertex(payload || !hasFileposition);
+    unsigned newPayload = hasFileposition ? payload-1 : payload;
     HqlExprArray args;
     unwindChildren(args, tableExpr);
     args.replace(*diskRecord, 1);
     removeAttribute(args, _payload_Atom);
-    args.append(*createAttribute(_payload_Atom, createConstant(payload-1)));
+    args.append(*createAttribute(_payload_Atom, getSizetConstant(newPayload)));
     args.append(*createAttribute(_original_Atom, LINK(tableExpr)));
 
     //remove the preload attribute and replace with correct value
     IHqlExpression * newDataset = createDataset(tableExpr->getOperator(), args);
 
     HqlExprArray assigns;
-    createPhysicalLogicalAssigns(assigns, newDataset, tableExpr);
+    createPhysicalLogicalAssigns(assigns, newDataset, tableExpr, hasFileposition);
     OwnedHqlExpr projectedTable = createDataset(no_newusertable, newDataset, createComma(LINK(record), createValue(no_newtransform, makeTransformType(record->getType()), assigns)));
     physicalIndexCache.setValue(tableExpr, projectedTable);
     return projectedTable.getClear();

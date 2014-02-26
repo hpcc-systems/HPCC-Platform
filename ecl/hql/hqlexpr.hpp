@@ -1860,6 +1860,7 @@ extern HQL_API IPropertyTree * createAttributeArchive();
 extern HQL_API void ensureSymbolsDefined(IHqlExpression * scope, HqlLookupContext & ctx);
 extern HQL_API void ensureSymbolsDefined(IHqlScope * scope, HqlLookupContext & ctx);
 extern HQL_API bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft=false);
+extern HQL_API bool getBoolAttributeInList(IHqlExpression * expr, IAtom * name, bool dft);
 
 extern HQL_API void setLegacyEclSemantics(bool _legacyImport, bool _legacyWhen);
 extern HQL_API bool queryLegacyImportSemantics();

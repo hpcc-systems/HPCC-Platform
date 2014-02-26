@@ -14848,7 +14848,9 @@ unsigned numPayloadFields(IHqlExpression * index)
     IHqlExpression * payloadAttr = index->queryAttribute(_payload_Atom);
     if (payloadAttr)
         return (unsigned)getIntValue(payloadAttr->queryChild(0));
-    return 1;
+    if (getBoolAttribute(index, filepositionAtom, true))
+        return 1;
+    return 0;
 }
 
 unsigned numKeyedFields(IHqlExpression * index)
@@ -15349,19 +15351,42 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
 }
 
 
+static bool getBoolAttributeValue(IHqlExpression * attr)
+{
+    IHqlExpression * value = attr->queryChild(0);
+    //No argument implies true
+    if (!value)
+        return true;
+
+    //If it is a constant return it.
+    if (value->queryValue())
+        return getBoolValue(value, true);
+
+    //Not a constant => fold the expression
+    OwnedHqlExpr folded = foldHqlExpression(value);
+    if (folded->queryValue())
+        return getBoolValue(folded, true);
+
+    throwError1(HQLERR_PropertyArgumentNotConstant, attr->queryName()->str());
+}
+
 bool getBoolAttribute(IHqlExpression * expr, IAtom * name, bool dft)
 {
     if (!expr)
         return dft;
-    IHqlExpression * prop = expr->queryAttribute(name);
-    if (!prop)
+    IHqlExpression * attr = expr->queryAttribute(name);
+    if (!attr)
         return dft;
-    IHqlExpression * value = prop->queryChild(0);
-    if (!value)
-        return true;
-    return getBoolValue(value, true);
+    return getBoolAttributeValue(attr);
 }
 
+bool getBoolAttributeInList(IHqlExpression * expr, IAtom * search, bool dft)
+{
+    IHqlExpression * match = queryAttributeInList(search, expr);
+    if (!match)
+        return dft;
+    return getBoolAttributeValue(match);
+}
 
 IHqlExpression * queryOriginalRecord(IHqlExpression * expr)
 {

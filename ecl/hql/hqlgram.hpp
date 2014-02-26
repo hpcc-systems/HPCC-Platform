@@ -454,7 +454,7 @@ public:
     void checkWorkflowMultiples(IHqlExpression * currentWorkflow, IHqlExpression * newWorkflow, attribute& errpos);
     void checkJoinFlags(const attribute & err, IHqlExpression * joinExpr);
     void checkLoopFlags(const attribute & err, IHqlExpression * loopExpr);
-    IHqlExpression * checkIndexRecord(IHqlExpression * record, const attribute & errpos);
+    IHqlExpression * checkIndexRecord(IHqlExpression * record, const attribute & errpos, OwnedHqlExpr & indexAttrs);
     void checkIndexFieldType(IHqlExpression * cur, bool isPayload, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordType(IHqlExpression * record, unsigned numPayloadFields, bool insideNestedRecord, const attribute & errpos);
     void checkIndexRecordTypes(IHqlExpression * index, const attribute & errpos);

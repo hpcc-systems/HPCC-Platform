@@ -9723,9 +9723,14 @@ void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name,
 {
     IHqlExpression * payload = expr ? expr->queryAttribute(_payload_Atom) : NULL;
     OwnedHqlExpr exprToCrc = getSerializedForm(dataset->queryRecord(), diskAtom);
+
     unsigned payloadSize = 1;
     if (payload)
         payloadSize = (unsigned)getIntValue(payload->queryChild(0)) + payloadDelta;
+
+    //FILEPOSITION(FALSE) means we have counted 1 too many in the payload
+    if (!getBoolAttribute(expr, filepositionAtom, true))
+        payloadSize--;
 
     exprToCrc.setown(createComma(exprToCrc.getClear(), getSizetConstant(payloadSize)));
 
@@ -9734,10 +9739,10 @@ void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name,
     doBuildUnsignedFunction(ctx, name, crc);
 }
 
-static void createOutputIndexRecord(HqlMapTransformer & mapper, HqlExprArray & fields, IHqlExpression * record, bool isMainRecord, bool allowTranslate)
+static void createOutputIndexRecord(HqlMapTransformer & mapper, HqlExprArray & fields, IHqlExpression * record, bool hasFileposition, bool allowTranslate)
 {
     unsigned numFields = record->numChildren();
-    unsigned max = isMainRecord ? numFields-1 : numFields;
+    unsigned max = hasFileposition ? numFields-1 : numFields;
     for (unsigned idx=0; idx < max; idx++)
     {
         IHqlExpression * cur = record->queryChild(idx);
@@ -9804,10 +9809,10 @@ static void createOutputIndexRecord(HqlMapTransformer & mapper, HqlExprArray & f
 }
 
 
-static void createOutputIndexTransform(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * tgtRecord, IHqlExpression * srcRecord, IHqlExpression* srcDataset, bool isMainRecord, bool allowTranslate)
+static void createOutputIndexTransform(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * tgtRecord, IHqlExpression * srcRecord, IHqlExpression* srcDataset, bool hasFileposition, bool allowTranslate)
 {
     unsigned numFields = srcRecord->numChildren();
-    unsigned max = isMainRecord ? numFields-1 : numFields;
+    unsigned max = hasFileposition ? numFields-1 : numFields;
     for (unsigned idx=0; idx < max; idx++)
     {
         IHqlExpression * cur = srcRecord->queryChild(idx);
@@ -9852,19 +9857,19 @@ static void createOutputIndexTransform(HqlExprArray & assigns, IHqlExpression * 
 }
 
 
-void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, SharedHqlExpr & rawRecord)
+void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, SharedHqlExpr & rawRecord, bool hasFileposition)
 {
     OwnedHqlExpr srcDataset = createDataset(no_anon, LINK(record));
 
     HqlExprArray fields;
     HqlExprArray assigns;
     HqlMapTransformer mapper;
-    createOutputIndexRecord(mapper, fields, record, true, true);
+    createOutputIndexRecord(mapper, fields, record, hasFileposition, true);
 
     OwnedHqlExpr newRecord = createRecord(fields);
     rawRecord.set(newRecord);
     OwnedHqlExpr self = getSelf(newRecord);
-    createOutputIndexTransform(assigns, self, newRecord, record, srcDataset, true, true);
+    createOutputIndexTransform(assigns, self, newRecord, record, srcDataset, hasFileposition, true);
 
     OwnedHqlExpr tgtDataset = createDataset(no_anon, newRecord.getLink());
     OwnedHqlExpr transform = createValue(no_newtransform, makeTransformType(newRecord->getType()), assigns);
@@ -9881,8 +9886,12 @@ void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpressio
     doTransform(subctx, transform, selfCursor);
 
     OwnedHqlExpr fposVar = createVariable("filepos", makeIntType(8, false));
-    OwnedHqlExpr fposField = createSelectExpr(LINK(srcDataset), LINK(queryLastField(record)));
-    buildAssignToTemp(subctx, fposVar, fposField);
+    OwnedHqlExpr fposValue;
+    if (hasFileposition)
+        fposValue.setown(createSelectExpr(LINK(srcDataset), LINK(queryLastField(record))));
+    else
+        fposValue.setown(getSizetConstant(0));
+    buildAssignToTemp(subctx, fposVar, fposValue);
 
     buildReturnRecordSize(subctx, selfCursor);
 
@@ -10036,6 +10045,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     IHqlExpression * compressAttr = expr->queryAttribute(compressedAtom);
     IHqlExpression * widthExpr = queryAttributeChild(expr, widthAtom, 0);
     bool hasTLK = !expr->hasAttribute(noRootAtom);
+    bool hasFileposition = getBoolAttribute(expr, filepositionAtom, true);
     bool singlePart = expr->hasAttribute(fewAtom);
     if (matchesConstantValue(widthExpr, 1))
     {
@@ -10120,7 +10130,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     }
 
     OwnedHqlExpr rawRecord;
-    doBuildIndexOutputTransform(instance->startctx, record, rawRecord);
+    doBuildIndexOutputTransform(instance->startctx, record, rawRecord, hasFileposition);
     buildFormatCrcFunction(instance->classctx, "getFormatCrc", rawRecord, expr, 0);
 
     if (compressAttr && compressAttr->hasAttribute(rowAtom))
