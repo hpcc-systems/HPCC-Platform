@@ -736,7 +736,9 @@ void appendRESTParameter(StringBuffer &out, const StringArray &path, const char 
     unsigned len = out.length();
     if (len && out.charAt(len-1)!='?')
         out.append('&');
-    out.append(s).append('=').append(value);
+    out.append(s).append('=');
+    if (value && *value)
+        appendURL(&out, value);
 }
 
 static void buildRestURL(StringArray& parentTypes, StringArray &path, IXmlType* type, StringBuffer& out, const char* tag, unsigned flags, unsigned depth=0)
@@ -2735,16 +2737,16 @@ int CWsEclBinding::getRestURL(IEspContext *ctx, CHttpRequest *request, CHttpResp
         {
             StringArray parentTypes;
             StringArray path;
-            StringBuffer url;
-            url.set("/WsEcl/proxy/query/").append(wsinfo.qsetname).append('/').append(wsinfo.queryname).append('?');
-            buildRestURL(parentTypes, path, type, url, NULL, 0);
+
+            StringBuffer urlParams("?");
+            buildRestURL(parentTypes, path, type, urlParams, NULL, 0);
 
             StringBuffer xml;
             appendXMLOpenTag(xml, "resturl");
             appendXMLTag(xml, "version", "3");
             appendXMLTag(xml, "target", wsinfo.qsetname);
             appendXMLTag(xml, "query", wsinfo.queryname);
-            appendXMLTag(xml, "url", url);
+            appendXMLTag(xml, "urlParams", urlParams);
             appendXMLCloseTag(xml, "resturl");
 
             Owned<IXslProcessor> xslp = getXslProcessor();
