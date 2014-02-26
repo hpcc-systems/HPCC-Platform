@@ -2313,14 +2313,20 @@ public:
             StringAttr sortOrder;
             StringAttr nameFilterLo;
             StringAttr nameFilterHi;
-            StringArray& unknownAttributes;
+            StringArray unknownAttributes;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
-                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi), unknownAttributes(_unknownAttributes)
+                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
             {
+                ForEachItemIn(x, _unknownAttributes)
+                {
+                    const char* attr = _unknownAttributes.item(x);
+                    if (attr && *attr)
+                        unknownAttributes.append(attr);
+                }
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
             {
@@ -2459,7 +2465,7 @@ public:
             StringAttr xPath;
             StringAttr sortOrder;
             PostFilters& postFilters;
-            StringArray& unknownAttributes;
+            StringArray unknownAttributes;
 
             void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
             {
@@ -2526,6 +2532,12 @@ public:
             CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes)
                 : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), postFilters(_postFilters), unknownAttributes(_unknownAttributes)
             {
+                ForEachItemIn(x, _unknownAttributes)
+                {
+                    const char* attr = _unknownAttributes.item(x);
+                    if (attr && *attr)
+                        unknownAttributes.append(attr);
+                }
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
             {

@@ -112,10 +112,7 @@ struct DFUcmdStruct { int val; const char *str; } DFUcmds[] =
 };
 
 
-
-struct mapEnums { int val; const char *str; };
-
-mapEnums DFUsortfields[] =
+struct DFUsortField { int val; const char *str; } DFUsortfields[] =
 {
     {DFUsf_user,                    "@submitID"},
     {DFUsf_cluster,                 "@cluster"},
@@ -128,17 +125,14 @@ mapEnums DFUsortfields[] =
     {DFUsf_term,                    ""}
 };
 
-const char *getEnumText(int value, mapEnums *map)
+const char* DFUSortFieldsXPath[] = {"", "@submitID", "@cluster", "Progress/@state", "@command",
+        "@jobName", "@", "Progress/@percentdone", "", "@protected"};
+
+const char *getDFUSortFieldXPath(DFUsortfield sortField)
 {
-    const char *defval = map->str;
-    while (map->str)
-    {
-        if (value==map->val)
-            return map->str;
-        map++;
-    }
-    assertex(!"Unexpected value in setEnum");
-    return defval;
+    if (sortField < sizeof(DFUSortFieldsXPath)/sizeof(char*))
+        return DFUSortFieldsXPath[sortField];
+    return NULL;
 }
 
 DFUcmd decodeDFUcommand(const char * str)
@@ -3005,14 +2999,20 @@ public:
             StringAttr sortOrder;
             StringAttr nameFilterLo;
             StringAttr nameFilterHi;
-            StringArray& unknownAttributes;
+            StringArray unknownAttributes;
 
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CWorkUnitsPager(const char* _xPath, const char *_sortOrder, const char* _nameFilterLo, const char* _nameFilterHi, StringArray& _unknownAttributes)
-                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi), unknownAttributes(_unknownAttributes)
+                : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
             {
+                ForEachItemIn(x, _unknownAttributes)
+                {
+                    const char* attr = _unknownAttributes.item(x);
+                    if (attr && *attr)
+                        unknownAttributes.append(attr);
+                }
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
             {
@@ -3042,9 +3042,11 @@ public:
                     namefilterlo.set(fv);
                 else if (fmt==DFUsf_wuidhigh) 
                     namefilterhi.set(fv);
-                else if (!fv || !*fv)
-                    unknownAttributes.append(getEnumText(fmt,DFUsortfields));
-                else {
+                else if (!fv || !*fv) {
+                    const char* attr = getDFUSortFieldXPath(fmt);
+                    if (attr && *attr)
+                        unknownAttributes.append(attr);
+                } else {
                     field = encodeDFUsortfield(fmt,sf.clear(),false).str();
                     query.append('[').append(field).append('=');
                     if (((int)fmt)&DFUsf_nocase)

@@ -1581,8 +1581,7 @@ inline void filteredAdd(IArrayOf<IPropertyTree> &results,const char *namefilterl
         if (namefilterhi&&(strcmp(namefilterhi,n)<0))
             return;
     }
-    ForEachItemIn(i, unknownAttributes)
-    {
+    ForEachItemIn(i, unknownAttributes) {
         const char *attribute = unknownAttributes.item(i);
         if (!attribute || !*attribute)
             continue;
@@ -1729,17 +1728,8 @@ IRemoteConnection *getSortedElements( const char *basexpath,
     Owned<IPropertyTreeIterator> iter = conn->getElements(xpath);
     if (!iter)
         return NULL;
-    if (namefilterlo&&!*namefilterlo)
-        namefilterlo = NULL;
-    if (namefilterhi&&!*namefilterhi)
-        namefilterhi = NULL;
-    StringBuffer nbuf;
-    cSort sort;
-    if (sortorder&&*sortorder)
-        sort.dosort(*iter,sortorder,namefilterlo,namefilterhi,unknownAttributes,results);
-    else
-        ForEach(*iter)
-            filteredAdd(results,namefilterlo,namefilterhi,unknownAttributes,&iter->query());
+
+    sortElements(iter, sortorder, namefilterlo,namefilterhi,unknownAttributes, results);
     return conn.getClear();
 }
 
@@ -1911,9 +1901,11 @@ void sortElements(IPropertyTreeIterator* elementsIter,
         nameFilterLo = NULL;
     if (nameFilterHi&&!*nameFilterHi)
         nameFilterHi = NULL;
-    cSort sort;
     if (sortOrder && *sortOrder)
+    {
+        cSort sort;
         sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,unknownAttributes, sortedElements);
+    }
     else
         ForEach(*elementsIter)
             filteredAdd(sortedElements,nameFilterLo,nameFilterHi,unknownAttributes, &elementsIter->query());
