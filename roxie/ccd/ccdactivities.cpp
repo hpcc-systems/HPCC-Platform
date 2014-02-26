@@ -3098,7 +3098,7 @@ protected:
     virtual void createSegmentMonitors() = 0;
     virtual void setPartNo(bool filechanged)
     {
-        if (!lastPartNo.partNo)
+        if (!lastPartNo.partNo)  // Check for ,LOCAL indexes
         {
             assertex(filechanged);
             Owned<IKeyIndexSet> allKeys = createKeyIndexSet();
@@ -3184,7 +3184,7 @@ protected:
         unsigned __int64 result = 0;
         unsigned inputsDone = 0;
         bool ret = true;
-        unsigned saveStepping = steppingOffset;
+        unsigned saveStepping = steppingOffset;  // Avoid using a stepping keymerger for the checkCount - they don't support it (and would be inefficient)
         steppingOffset = 0;
         while (!aborted && inputsDone < inputCount)
         {
