@@ -123,7 +123,7 @@ public:
         JavaVMOption* options = new JavaVMOption[optionStrings.length()];
         ForEachItemIn(idx, optionStrings)
         {
-            DBGLOG("javaembed: Setting JVM option: %s",(char *)optionStrings.item(idx));
+            // DBGLOG("javaembed: Setting JVM option: %s",(char *)optionStrings.item(idx));
             options[idx].optionString = (char *) optionStrings.item(idx);
             options[idx].extraInfo = NULL;
         }
@@ -309,7 +309,7 @@ public:
             ForEachItemIn(idx, paths)
             {
                 StringBuffer testpath;
-                testpath.append("file:").append(paths.item(idx));  // MORE - is the file: useful ?
+                testpath.append(paths.item(idx));
                 jstring jstr = JNIenv->NewStringUTF(testpath.str());
                 checkException();
                 jobject URLobj = JNIenv->NewObject(URLcls, URLclsMid, jstr);
@@ -319,7 +319,7 @@ public:
                 JNIenv->DeleteLocalRef(jstr);
             }
             checkException();
-            jclass customLoaderClass = (jclass) JNIenv->NewGlobalRef(JNIenv->FindClass("java/net/URLClassLoader"));
+            jclass customLoaderClass = JNIenv->FindClass("java/net/URLClassLoader");
             checkException();
             jmethodID newInstance = JNIenv->GetStaticMethodID(customLoaderClass, "newInstance","([Ljava/net/URL;Ljava/lang/ClassLoader;)Ljava/net/URLClassLoader;");
             checkException();
