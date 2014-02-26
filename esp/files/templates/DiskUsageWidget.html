@@ -1,0 +1,30 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+            <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+            <div id="${id}Filter" data-dojo-type="FilterDropDownWidget">
+                <select id="${id}GroupBy" title="${i18n.GroupBy}:" name="CountBy" colspan="2" data-dojo-type="dijit/form/Select">
+                    <option selected="selected" value="Owner">${i18n.Owner}</option>
+                    <option value="Scope">${i18n.Scope}</option>
+                    <option value="Year">${i18n.Year}</option>
+                    <option value="Quarter">${i18n.Quarter}</option>
+                    <option value="Month">${i18n.Month}</option>
+                    <option value="Day">${i18n.Day}</option>
+                </select>
+                <input id="${id}ScopeUnder" title="${i18n.Scope}:" name="ScopeUnder" colspan="2" style="width:100%" data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}OwnerUnder" title="${i18n.Owner}:" name="OwnerUnder" colspan="2" style="width:100%" data-dojo-type="dijit.form.TextBox" />
+                <input id="${id}FromDate" title="${i18n.FromDate}:" name="StartDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
+                <input id="${id}FromTime" name="FromTime" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox" />
+                <input id="${id}ToDate" title="${i18n.ToDate}:" name="EndDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
+                <input id="${id}ToTime" name="ToTime" data-dojo-props="trim: true, placeHolder:'7:30 PM'" data-dojo-type="dijit.form.TimeTextBox" />
+            </div>
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+            <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
+        </div>
+        <div id="${id}DiskUsageGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+            <div id="${id}DiskUsageGrid">
+            </div>
+        </div>
+    </div>
+</div>

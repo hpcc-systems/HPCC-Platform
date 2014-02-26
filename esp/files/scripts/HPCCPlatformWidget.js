@@ -31,6 +31,7 @@ define([
     "hpcc/ESPActivity",
     "hpcc/ws_account",
     "hpcc/ws_access",
+    "hpcc/WsDfu",
     "hpcc/WsSMC",
     "hpcc/GraphWidget",
 
@@ -58,7 +59,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPActivity, WsAccount, WsAccess, WsSMC, GraphWidget,
+                _TabContainerWidget, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -122,17 +123,50 @@ define([
             }
         },
 
+        refreshUserName: function () {
+            var userDisplay = this.userName ? this.userName : "";
+
+            var total = 0;
+            var myTotal = 0;
+            arrayUtil.forEach(this.spaceUsage, function (item, idx) {
+                var itemTotal = item.TotalSize.split(",").join("");
+                total += parseInt(itemTotal);
+                if (item.Name === this.userName) {
+                    myTotal = parseInt(itemTotal);
+                }
+            }, this);
+            this.userUsage = (myTotal / total) * 100;
+
+            if (this.userUsage) {
+                userDisplay += " (" + (Math.round(this.userUsage * 100) / 100) + "%)"
+            }
+            dom.byId(this.id + "UserID").innerHTML = userDisplay;
+        },
+
         init: function (params) {
             if (this.inherited(arguments))
                 return;
-            var context = this;
-            registry.byId(context.id + "SetBanner").set("disabled", true);
 
+            registry.byId(this.id + "SetBanner").set("disabled", true);
+
+            var context = this;
             WsAccount.MyAccount({
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
-                    dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
-                    context.checkIfAdmin(response.MyAccountResponse.username);
+                    context.userName = response.MyAccountResponse.username;
+                    context.checkIfAdmin(context.username);
+                    context.refreshUserName();
+                }
+            });
+
+            WsDfu.DFUSpace({
+                request: {
+                    CountBy: "Owner"
+                }
+            }).then(function (response) {
+                if (lang.exists("DFUSpaceResponse.DFUSpaceItems.DFUSpaceItem", response)) {
+                    context.spaceUsage = response.DFUSpaceResponse.DFUSpaceItems.DFUSpaceItem;
+                    context.refreshUserName();
                 }
             });
 
