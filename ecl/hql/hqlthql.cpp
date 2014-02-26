@@ -220,7 +220,7 @@ StringBuffer & HqltHql::appendId(StringBuffer & s, IIdAtom * id)
 
 StringBuffer &HqltHql::makeUniqueName(IHqlExpression * expr, StringBuffer &s)
 {
-    IIdAtom * moduleName = expr->queryFullModuleId();
+    IIdAtom * moduleName = expr->queryFullContainerId();
     if (moduleName && !ignoreModuleNames)
     {
         if (isPublicSymbol(expr))
@@ -3049,7 +3049,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
 
 #ifdef SHOW_SYMBOL_LOCATION
         if (expandProcessed)
-            newdef.append(expr->queryFullModuleId()).append("(").append(expr->getStartLine()).append(",").append(expr->getStartColumn()).append("):");
+            newdef.append(expr->queryFullContainerId()).append("(").append(expr->getStartLine()).append(",").append(expr->getStartColumn()).append("):");
 #endif
         newdef.append(exports);
         lookupSymbolName(expr, name);

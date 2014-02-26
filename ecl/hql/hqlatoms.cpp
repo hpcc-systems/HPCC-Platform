@@ -107,6 +107,7 @@ IAtom * compressedAtom;
 IAtom * __compressed__Atom;
 IAtom * _conditionFolded_Atom;
 IAtom * constAtom;
+IAtom * _container_Atom;
 IAtom * contextAtom;
 IAtom * contextSensitiveAtom;
 IAtom * costAtom;
@@ -519,6 +520,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(__compressed__);
     MAKESYSATOM(conditionFolded);
     MAKEATOM(const);
+    MAKESYSATOM(container);
     MAKEATOM(context);
     MAKEATOM(contextSensitive);
     MAKEATOM(cost);

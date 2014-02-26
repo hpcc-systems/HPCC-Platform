@@ -1214,6 +1214,8 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
     EclRepositoryArray repositories;
     repositories.append(*LINK(pluginsRepository));
+    if (archiveTree->getPropBool("@useLocalSystemLibraries", false)) // Primarily for testing.
+        repositories.append(*LINK(libraryRepository));
 
     Owned<IFileContents> contents;
     StringBuffer fullPath; // Here so it doesn't get freed when leaving the else block
