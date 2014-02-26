@@ -498,7 +498,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "topology file %s not found", topologyFile.str());
             }
             topology=createPTreeFromXMLString(
-                "<RoxieTopology localSlave='1'>"
+                "<RoxieTopology allFilesDynamic='1' localSlave='1'>"
                 " <RoxieFarmProcess/>"
                 " <RoxieServerProcess netAddress='.'/>"
                 "</RoxieTopology>"
