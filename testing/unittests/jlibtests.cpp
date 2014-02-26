@@ -155,7 +155,7 @@ protected:
 
             unsigned st = msTick();
 
-            IFEflags extraFlags = IFEnone;
+            IFEflags extraFlags = IFEcache;
             if (j==1)
                 extraFlags = IFEnocache;
             ifileio = ifile->open(IFOcreate, extraFlags);
@@ -183,7 +183,7 @@ protected:
 
             st = msTick();
 
-            extraFlags = IFEnone;
+            extraFlags = IFEcache;
             if (j==1)
                 extraFlags = IFEnocache;
             ifileio = ifile->open(IFOread, extraFlags);

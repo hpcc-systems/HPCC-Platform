@@ -3422,10 +3422,15 @@ public:
         byte mode;
         byte share;
         msg.read(name->text).read(mode).read(share);  
-        // also try to recv extra
+        // also try to recv extra byte
         byte extra = 0;
         if (msg.remaining() >= sizeof(byte))
             msg.read(extra);
+        IFEflags extraFlags = (IFEflags)extra;
+        // none => nocache for remote (hint)
+        // can revert to previous behavior with conf file setting "allow_pgcache_flush=false"
+        if (extraFlags == IFEnone)
+            extraFlags = IFEnocache;
         try {
             Owned<IFile> file = createIFile(name->text);
             switch ((compatIFSHmode)share) {
@@ -3448,8 +3453,8 @@ public:
                 break;
             }
             if (TF_TRACE_PRE_IO)
-                PROGLOG("before open file '%s',  (%d,%d,%d)",name->text.get(),(int)mode,(int)share,(int)extra);
-            IFileIO *fileio = file->open((IFOmode)mode,(IFEflags)extra);
+                PROGLOG("before open file '%s',  (%d,%d,%d)",name->text.get(),(int)mode,(int)share,extraFlags);
+            IFileIO *fileio = file->open((IFOmode)mode,extraFlags);
             int handle;
             if (fileio) {
                 CriticalBlock block(sect);

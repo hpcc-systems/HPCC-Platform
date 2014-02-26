@@ -92,8 +92,8 @@ size32_t CTransformer::read(size32_t maxLength, void * buffer)
 bool CTransformer::setPartition(RemoteFilename & remoteInputName, offset_t _startOffset, offset_t _length, bool compressedInput, const char *decryptKey)
 {
     CTransformerBase::setPartition(remoteInputName, _startOffset, _length);
-    // if we want spray to not fill page cache use IFEnocache
-    input.setown(inputFile->open(IFOread,IFEnone));
+    // could be cache for local, nocache for mirror
+    input.setown(inputFile->open(IFOread,IFEnocache));
     if (compressedInput) {                          
         Owned<IExpander> expander;
         if (decryptKey&&*decryptKey) {
@@ -825,7 +825,7 @@ processedProgress:
 
             OwnedIFile outFile = createIFile(localFilename.str());
             // if we want spray to not fill page cache use IFEnocache
-            OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone,IFEnone);
+            OwnedIFileIO outio = outFile->openShared(IFOcreate,IFSHnone,IFEnocache);
             if (!outio)
                 throwError1(DFTERR_CouldNotCreateOutput, localFilename.str());
             if (compressOutput) {
