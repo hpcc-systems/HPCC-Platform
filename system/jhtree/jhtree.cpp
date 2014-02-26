@@ -2791,13 +2791,11 @@ public:
             unsigned key = mergeheap[i];
             keyBuffer = buffers[key];
             keyCursor = cursors[key];
-            ret += CKeyLevelManager::checkCount(max);
-            if (max)
-            {
-                if (ret > max)
-                    return ret;
-                max -= ret;
-            }
+            unsigned __int64 thisKeyCount = CKeyLevelManager::checkCount(max);
+            ret += thisKeyCount;
+            if (thisKeyCount > max)
+                return ret;
+            max -= thisKeyCount;
         }
         return ret;
     }
