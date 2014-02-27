@@ -629,7 +629,7 @@ IHqlExpression * removeCommonSubstringRange(IHqlExpression * expr)
     if (matchesConstantValue(from, 1))
         return LINK(value);
     OwnedHqlExpr newRange = createValue(no_rangefrom, makeNullType(), LINK(from));
-    return replaceChild(expr, 1, newRange.getClear());
+    return replaceChild(expr, 1, newRange);
 }
 
 void AtmostLimit::extractAtmostArgs(IHqlExpression * atmost)

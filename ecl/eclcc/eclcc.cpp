@@ -1017,6 +1017,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     const char * sourcePathname = queryContents ? queryContents->querySourcePath()->str() : NULL;
     const char * defaultErrorPathname = sourcePathname ? sourcePathname : queryAttributePath;
 
+    //The following is only here to provide information about the source file being compiled when reporting leaks
+    setActiveSource(instance.inputFile->queryFilename());
+
     {
         //Minimize the scope of the parse context to reduce lifetime of cached items.
         HqlParseContext parseCtx(instance.dataServer, instance.archive);
