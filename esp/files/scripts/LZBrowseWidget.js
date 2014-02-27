@@ -174,7 +174,7 @@ define([
                             Names: item.partialPath
                         },
                         load: function (response) {
-                            context.refreshGrid();
+                            context.refreshGrid(true);
                         }
                     });
                 });
@@ -413,10 +413,13 @@ define([
             this.refreshActionState();
         },
 
-        refreshGrid: function (args) {
+        refreshGrid: function (clearSelection) {
             this.landingZonesGrid.set("query", {
                 id: "*"
             });
+            if (clearSelection) {
+                this.landingZonesGrid.clearSelection();
+            }
         },
 
         refreshActionState: function () {
