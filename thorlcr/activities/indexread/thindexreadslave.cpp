@@ -351,36 +351,27 @@ class CIndexReadSlaveActivity : public CIndexReadSlaveBase, public CThorDataLink
             klManager->finishSegmentMonitors();
             klManager->reset();
             activity.setManager(klManager);
+            activity.resetLastStats();
         }
         rowcount_t getCount(const rowcount_t &keyedLimit)
         {
-            unsigned __int64 count;
-            if (merger)
+            unsigned __int64 count = 0;
+            // Note - don't use merger's count - it doesn't work
+            ForEachItemIn(p, activity.partDescs)
             {
-                count = klManager->checkCount(keyedLimit);
-                activity.noteStats(klManager->querySeeks(), klManager->queryScans());
-                klManager->reset();
-                activity.resetLastStats();
-            }
-            else
-            {
-                count = 0;
-                ForEachItemIn(p, activity.partDescs)
-                {
-                    activity.callback.clearManager();
-                    klManager->releaseSegmentMonitors();
-                    Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.logicalFilename.get(), activity.partDescs.item(p));
-                    klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
-                    activity.setManager(klManager);
-                    count += klManager->checkCount(keyedLimit);
-                    activity.noteStats(klManager->querySeeks(), klManager->queryScans());
-                    if (count > keyedLimit)
-                        break;
-                }
                 activity.callback.clearManager();
                 klManager->releaseSegmentMonitors();
-                init();
+                Owned<IKeyIndex> keyIndex = openKeyPart(&activity, activity.logicalFilename.get(), activity.partDescs.item(p));
+                klManager.setown(getKeyManager(keyIndex, activity.helper, activity.fixedDiskRecordSize));
+                activity.setManager(klManager);
+                count += klManager->checkCount(keyedLimit-count); // part max, is total limit [keyedLimit] minus total so far [count]
+                activity.noteStats(klManager->querySeeks(), klManager->queryScans());
+                if (count > keyedLimit)
+                    break;
             }
+            activity.callback.clearManager();
+            klManager->releaseSegmentMonitors();
+            init();
             return (rowcount_t)count;
         }
         const void *nextKey()
