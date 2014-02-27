@@ -59,7 +59,7 @@ public:
         dataLinkStart();
         __uint64 numRows = helper->numRows();
         // local when generated from a child query (the range is per node, don't split)
-        bool isLocal = container.queryLocalData()||(container.queryOwnerId() && container.queryOwner().isLocalOnly());
+        bool isLocal = container.queryLocalData() || container.queryOwner().isLocalChild();
         if (!isLocal && ((helper->getFlags() & TTFdistributed) != 0))
         {
             __uint64 nodes = container.queryCodeContext()->getNodes();
