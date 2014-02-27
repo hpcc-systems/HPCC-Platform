@@ -213,8 +213,8 @@ ESPStruct SMCJob
 
 ESPrequest SMCPriorityRequest
 {
-    [dspr_ver("1.18")] int ClusterType;
-    [dspr_ver("1.18")] string Cluster;
+    [depr_ver("1.18")] int ClusterType;
+    [depr_ver("1.18")] string Cluster;
     string QueueName;
     string Wuid;
     string Priority;
