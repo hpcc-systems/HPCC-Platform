@@ -706,7 +706,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         }
     }
 
-    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg)
+    bool doCopyFile(ILazyFileIO *f, const char *tempFile, const char *targetFilename, const char *destPath, const char *msg, CFflags copyFlags=CFnone)
     {
         bool fileCopied = false;
         IFile *sourceFile;
@@ -755,16 +755,16 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                         str.appendf("doCopyFile %s", sourceFile->queryFilename());
                         TimeSection timing(str.str());
                         if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true);
+                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, copyFlags);
                         else
-                            sourceFile->copyTo(destFile);
+                            sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
                     }
                     else
                     {
                         if (useTreeCopy)
-                            sourceFile->treeCopyTo(destFile, subnet, fromip, true);
+                            sourceFile->treeCopyTo(destFile, subnet, fromip, true, copyFlags);
                         else
-                            sourceFile->copyTo(destFile);
+                            sourceFile->copyTo(destFile,DEFAULT_COPY_BLKSIZE,NULL,false,copyFlags);
                     }
                 }
                 f->setCopying(false);
@@ -822,7 +822,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
         return fileCopied;
     }
 
-    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage)
+    bool doCopy(ILazyFileIO *f, bool background, bool displayFirstFileMessage, CFflags copyFlags=CFnone)
     {
         if (!f->isRemote())
             f->copyComplete();
@@ -846,7 +846,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             
             tempFile.append(".$$$");
             const char *msg = background ? "Background copy" : "Copy";
-            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg);
+            return doCopyFile(f, tempFile.str(), targetFilename, destPath.str(), msg, copyFlags);
         }
         return false;  // if we get here there was no file copied
     }
@@ -951,7 +951,7 @@ public:
                 {
                     try
                     {
-                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false);
+                        fileCopied = doCopy(next, true, (fileCopiedCount==0) ? true : false, CFflush_rdwr);
                         CriticalBlock b(crit);
                         if (fileCopied)
                             fileCopiedCount++;
@@ -1150,7 +1150,7 @@ public:
                         if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
                         {
                             ret->checkOpen();
-                            doCopy(ret, false, false);
+                            doCopy(ret, false, false, CFflush_rdwr);
                             return ret.getLink();
                         }
 

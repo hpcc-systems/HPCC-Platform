@@ -2186,7 +2186,7 @@ ICompressedFileIO *createCompressedFileReader(IFileIO *fileio,IExpander *expande
 }
 
 
-ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, bool memorymapped)
+ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, bool memorymapped, IFEflags extraFlags)
 {
     if (file) {
         if (memorymapped) {
@@ -2208,7 +2208,7 @@ ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander, b
                 }
             }
         }
-        Owned<IFileIO> fileio = file->open(IFOread);
+        Owned<IFileIO> fileio = file->open(IFOread, extraFlags);
         if (fileio) 
             return createCompressedFileReader(fileio,expander);
     }
@@ -2252,12 +2252,12 @@ ICompressedFileIO *createCompressedFileWriter(IFileIO *fileio,size32_t recordsiz
     return cfile;
 }
 
-ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append,bool _setcrc,ICompressor *compressor,bool fast)
+ICompressedFileIO *createCompressedFileWriter(IFile *file,size32_t recordsize,bool append,bool _setcrc,ICompressor *compressor,bool fast, IFEflags extraFlags)
 {
     if (file) {
         if (append&&!file->exists())
             append = false;
-        Owned<IFileIO> fileio = file->open(append?IFOreadwrite:IFOcreate);
+        Owned<IFileIO> fileio = file->open(append?IFOreadwrite:IFOcreate, extraFlags);
         if (fileio) 
             return createCompressedFileWriter(fileio,recordsize,_setcrc,compressor,fast);
     }
