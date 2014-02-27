@@ -121,7 +121,7 @@ define([
                 var selection = this.workunitsGrid.getSelected();
                 WsWorkunits.WUAction(selection, "Delete", {
                     load: function (response) {
-                        context.refreshGrid(response);
+                        context.refreshGrid(true);
                     }
                 });
             }
@@ -420,8 +420,11 @@ define([
             this.workunitsGrid.startup();
         },
 
-        refreshGrid: function (args) {
+        refreshGrid: function (clearSelection) {
             this.workunitsGrid.set("query", this.getFilter());
+            if (clearSelection) {
+                this.workunitsGrid.clearSelection();
+            }
         },
 
         refreshActionState: function () {

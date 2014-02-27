@@ -138,7 +138,7 @@ define([
                 var context = this;
                 WsDfu.DFUArrayAction(this.workunitsGrid.getSelected(), "Delete", {
                     load: function (response) {
-                        context.refreshGrid(response);
+                        context.refreshGrid(true);
                     }
                 });
             }
@@ -150,7 +150,7 @@ define([
                 var formData = domForm.toObject(this.id + "AddToSuperfileForm");
                 WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
                     load: function (response) {
-                        context.refreshGrid(response);
+                        context.refreshGrid();
                     }
                 });
                 var d = registry.byId(this.id + "AddtoDropDown");
@@ -477,8 +477,11 @@ define([
             });
         },
 
-        refreshGrid: function (args) {
+        refreshGrid: function (clearSelection) {
             this.workunitsGrid.set("query", this.getFilter());
+            if (clearSelection) {
+                this.workunitsGrid.clearSelection();
+            }
         },
 
         refreshActionState: function () {
