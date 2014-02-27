@@ -120,7 +120,7 @@ define([
                         dojo.publish("hpcc/brToaster", {
                             Severity: "Error",
                             Source: service + "." + action,
-                            Exceptions: response.Exceptions
+                            Exceptions: response.Exceptions.Exception
                         });
                     }
                 }

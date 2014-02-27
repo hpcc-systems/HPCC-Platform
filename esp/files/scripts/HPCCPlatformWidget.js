@@ -30,7 +30,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPActivity",
-    "hpcc/WsAccount",
+    "hpcc/ws_account",
     "hpcc/ws_access",
     "hpcc/WsSMC",
     "hpcc/GraphWidget",
