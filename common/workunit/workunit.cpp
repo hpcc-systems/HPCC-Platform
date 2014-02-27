@@ -2322,11 +2322,7 @@ public:
                 : xPath(_xPath), sortOrder(_sortOrder), nameFilterLo(_nameFilterLo), nameFilterHi(_nameFilterHi)
             {
                 ForEachItemIn(x, _unknownAttributes)
-                {
-                    const char* attr = _unknownAttributes.item(x);
-                    if (attr && *attr)
-                        unknownAttributes.append(attr);
-                }
+                    unknownAttributes.append(_unknownAttributes.item(x));
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
             {
@@ -2464,7 +2460,7 @@ public:
             StringAttr querySet;
             StringAttr xPath;
             StringAttr sortOrder;
-            PostFilters& postFilters;
+            PostFilters postFilters;
             StringArray unknownAttributes;
 
             void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
@@ -2530,14 +2526,12 @@ public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
             CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes)
-                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), postFilters(_postFilters), unknownAttributes(_unknownAttributes)
+                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder)
             {
+                postFilters.activatedFilter = _postFilters.activatedFilter;
+                postFilters.suspendedByUserFilter = _postFilters.suspendedByUserFilter;
                 ForEachItemIn(x, _unknownAttributes)
-                {
-                    const char* attr = _unknownAttributes.item(x);
-                    if (attr && *attr)
-                        unknownAttributes.append(attr);
-                }
+                    unknownAttributes.append(_unknownAttributes.item(x));
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
             {
