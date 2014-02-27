@@ -318,7 +318,7 @@ void ConditionalContextTransformer::addDefinition(ConditionalContextInfo * locat
 
 void ConditionalContextTransformer::removeDefinition(ConditionalContextInfo * location, ConditionalContextInfo * candidate)
 {
-    location->definitions.zap(*LINK(candidate->original));
+    location->definitions.zap(*candidate->original);
     candidate->moveTo = NULL;
 }
 
