@@ -1,21 +1,21 @@
-define(
+﻿define(
 ({
-    title: "Event Scheduler",
-    Apply: "Apply",
-    Clear: "Clear",
-    Cluster: "Cluster",
+    title: "事件计划",
+    Apply: "确认",
+    Clear: "清除",
+    Cluster: "计算机集群",
     ClusterPH: "r?x*",
-    Deschedule: "Deschedule",
-    DescheduleSelectedWorkunits: "Deschedule Selected Workunits?",
-    EventName: "Event Name",
-    EventNamePH: "eventname",
-    EventText: "Event Text",
-    Filter: "Filter",
-    JobName: "Job Name",
-    NoScheduledEvents: "No Scheduled Events.",
-    Open: "Open",
-    OpenInNewPage: "Open In New Page",
-    Refresh: "Refresh",
-    Workunit: "Workunit"
+    Deschedule: "取消计划",
+    DescheduleSelectedWorkunits: "取消所选工作单元的计划?",
+    EventName: "事件名称",
+    EventNamePH: "事件名称",
+    EventText: "事件内容",
+    Filter: "筛选器",
+    JobName: "任务名",
+    NoScheduledEvents: "无事件计划.",
+    Open: "打开",
+    OpenInNewPage: "打开到新的页面里",
+    Refresh: "更新",
+    Workunit: "工作单元"
 })
 );
