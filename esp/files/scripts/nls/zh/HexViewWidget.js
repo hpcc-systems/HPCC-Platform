@@ -1,7 +1,7 @@
 define(
 ({
     EBCDIC: "EBCDIC",
-    fetchingresults: "fetching results",
-    Width: "Width"
+    fetchingresults: "提取结果",
+    Width: "宽度"
 })
 );

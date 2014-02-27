@@ -1,7 +1,7 @@
 define(
 ({
-    title: "Super Files",
+    title: "文件集",
 
-    LogicalFiles: "Logical Files"
+    LogicalFiles: "逻辑文件"
 })
 );

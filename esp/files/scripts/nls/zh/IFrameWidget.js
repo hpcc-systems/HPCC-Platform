@@ -1,5 +1,5 @@
 define(
 ({
-    Reset: "Reset"
+    Reset: "设置更新"
 })
 );

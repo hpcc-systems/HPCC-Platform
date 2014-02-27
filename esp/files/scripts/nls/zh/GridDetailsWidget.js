@@ -1,5 +1,5 @@
 define(
 ({
-    title: "Change Me"
+    title: "修改"
 })
 );

@@ -1,8 +1,8 @@
 define(
 ({
-    title: "HPCC Platform - Roxie",
+    title: "HPCC平台 - Roxie",
 
-    Queries: "Queries",
-    PackageMaps: "Package Maps"
+    Queries: "查询程序",
+    PackageMaps: "查询程序文件包"
 })
 );

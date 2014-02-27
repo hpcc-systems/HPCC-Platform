@@ -1,8 +1,8 @@
-define(
+﻿define(
 ({
-    title: "HPCC Platform - Home",
-    Activity: "Activity",
-    EventScheduler: "Event Scheduler",
-    SearchResults: "Search Results"
+    title: "HPCC平台 - 首页",
+    EventScheduler: "事件计划",
+    Activity: "活动",
+    SearchResults: "查询结果",
 })
 );
