@@ -75,7 +75,6 @@ class Regression:
         self.suiteDir = ExpandCheck.dir_exists(self.suiteDir, True)
         self.regressionDir = ExpandCheck.dir_exists(self.config.regressionDir, True)
         self.logDir = ExpandCheck.dir_exists(self.config.logDir, True)
-        self.setupDir = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.setupDir), True)
         self.dir_ec = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.eclDir), True)
         self.dir_ex = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.keyDir), True)
         self.dir_a = os.path.join(self.regressionDir, self.config.archiveDir)
@@ -86,7 +85,7 @@ class Regression:
         logging.debug("Log Dir        : %s", self.logDir)
         logging.debug("ECL Dir        : %s", self.dir_ec)
         logging.debug("Key Dir        : %s", self.dir_ex)
-        logging.debug("Setup Dir      : %s", self.setupDir)
+        #logging.debug("Setup Dir      : %s", self.setupDir)
         logging.debug("Archive Dir    : %s", self.dir_a)
 
 
@@ -144,6 +143,8 @@ class Regression:
                                      self.dir_a, self.dir_ex, self.dir_r, self.logDir)
 
     def Setup(self):
+        self.setupDir = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.setupDir), True)
+        logging.debug("Setup Dir      : %s", self.setupDir)
         return Suite('setup', self.setupDir, self.dir_a, self.dir_ex,
                      self.dir_r, self.logDir)
 
