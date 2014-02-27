@@ -324,7 +324,7 @@ define([
                             }
                             if (row.Duration) {
                                 return state + " (" + row.Duration + ")";
-                            } else if (row.Instance && state.indexOf(row.Instance) === -1) {
+                            } else if (row.Instance && !(state.indexOf && state.indexOf(row.Instance) !== -1)) {
                                 return state + " [" + row.Instance + "]";
                             }
                             return state;
