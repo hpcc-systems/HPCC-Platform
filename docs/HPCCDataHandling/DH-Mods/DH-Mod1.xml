@@ -5,7 +5,7 @@
   <title>Data Handling Components</title>
 
   <para>This document Module is used to allow us to include data handling
-  sections in multiple books. </para>
+  sections in multiple books.</para>
 
   <sect1 id="Data_Handling_Terms">
     <title>Data Handling Terms</title>
@@ -453,7 +453,7 @@
                     <row>
                       <entry><emphasis role="bold">Group</emphasis></entry>
 
-                      <entry>Select the name of THOR cluster to spray
+                      <entry>Select the name of Thor cluster to spray
                       to.</entry>
                     </row>
 
@@ -630,7 +630,7 @@
                     <row>
                       <entry><emphasis role="bold">Group</emphasis></entry>
 
-                      <entry>Select the name of THOR cluster to spray
+                      <entry>Select the name of Thor cluster to spray
                       to.</entry>
                     </row>
 
@@ -795,7 +795,7 @@
                     <row>
                       <entry><emphasis role="bold">Group</emphasis></entry>
 
-                      <entry>Select the name of THOR cluster to spray
+                      <entry>Select the name of Thor cluster to spray
                       to.</entry>
                     </row>
 
@@ -906,14 +906,14 @@
                   <row>
                     <entry><emphasis role="bold">Group</emphasis></entry>
 
-                    <entry>Select the name of THOR cluster to copy to.</entry>
+                    <entry>Select the name of Thor cluster to copy to.</entry>
                   </row>
 
                   <row>
                     <entry align="right"><emphasis
                     role="bold">Note</emphasis></entry>
 
-                    <entry>You can only choose from THOR clusters within the
+                    <entry>You can only choose from Thor clusters within the
                     current environment.</entry>
                   </row>
 
@@ -1069,14 +1069,14 @@
                   <row>
                     <entry><emphasis role="bold">Group</emphasis></entry>
 
-                    <entry>Select the name of THOR cluster to copy to.</entry>
+                    <entry>Select the name of Thor cluster to copy to.</entry>
                   </row>
 
                   <row>
                     <entry align="right"><emphasis
                     role="bold">Note</emphasis></entry>
 
-                    <entry>You can only choose from THOR clusters within the
+                    <entry>You can only choose from Thor clusters within the
                     current environment.</entry>
                   </row>
 
