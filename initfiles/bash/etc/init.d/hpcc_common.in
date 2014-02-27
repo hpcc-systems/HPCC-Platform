@@ -269,6 +269,10 @@ set_environmentvars() {
         echo "\$autodetectipscript=$autodetectipscript"
         echo
     fi
+
+    if [ -n "${umask}" ]; then
+        umask $umask
+    fi
 }
 
 
@@ -444,9 +448,14 @@ startCmd() {
           return ${RCSTART}
        fi
     fi
+
+    UMASK_ARG=""
+    if [ -n "${umask}" ]; then
+        UMASK_ARG="--umask ${umask}"
+    fi
     
     EXEC_COMMAND="${bin_path}/init_${compType} "
-    startcmd="${START_STOP_DAEMON} -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1"
+    startcmd="${START_STOP_DAEMON} -S -p ${pid}/${compName}_init.pid -c ${user}:${group} -d ${compPath} ${UMASK_ARG} -m -x ${EXEC_COMMAND} -b  >>${logFile} 2>&1"
 
     issueTime=`date`
     logCommand="COMMAND:: $startcmd  ::Issued at $issueTime "
@@ -566,8 +575,8 @@ stop_component() {
                         if [ $__pidExists -ne 1 ];then
                             removePid ${PIDPATH}
                             unlock ${LOCKPATH}
-                            log_success_msg  
-                            return 0
+                            log_success_msg
+                            return 3
                         fi
                     fi
                     sleep 1
