@@ -135,7 +135,7 @@ void CWizardInputs::setEnvironment()
 
      if (strlen(pConfigHelper->getBuildSetFileName()) == 0 || pBuildSet == NULL)
      {
-         throw MakeStringException( -1 , "The buildSetFile %s/%s does not exists", pConfigHelper->getBuildSetFilePath(), pConfigHelper->getBuildSetFileName());
+         throw MakeStringException( -1 , "The buildset file %s/%s does not exist", pConfigHelper->getBuildSetFilePath(), pConfigHelper->getBuildSetFileName());
      }
 
      m_buildSetTree.setown(pBuildSet);

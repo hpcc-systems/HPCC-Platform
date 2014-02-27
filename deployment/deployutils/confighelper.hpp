@@ -2,7 +2,7 @@
 #define CONFIGHELPER_HPP_INCL
 
 #include "deployutils.hpp"
-#include "../deploy/deploy.hpp"
+#include "deploy.hpp"
 
 #define STANDARD_CONFIG_ALGORITHMFILE "genenvrules.conf"
 
@@ -48,6 +48,8 @@ protected:
 
   CConfigHelper(IDeploymentCallback *m_cbDeployment = NULL);
 
+  static CriticalSection m_critSect;
+
   Owned<IPropertyTree> m_pDefBldSet;
   Linked<IDeploymentCallback> m_cbDeployment;
   StringBuffer  m_strConfigXMLDir;
@@ -59,6 +61,5 @@ protected:
   void appendBuildSetFromPlugins();
 
 };
-
 
 #endif // CONFIGHELPER_HPP_INCL
