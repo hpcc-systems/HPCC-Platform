@@ -810,7 +810,8 @@ explicitRowType
     : explicitRowType1
     | LINKCOUNTED explicitRowType1
                         {
-                            $$.setType(setLinkCountedAttr($2.getType(), true));
+                            Owned<ITypeInfo> rowType = $2.getType();
+                            $$.setType(setLinkCountedAttr(rowType, true));
                             $$.setPosition($1);
                         }
     ;
