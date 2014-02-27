@@ -1517,7 +1517,7 @@ IStringVal & CResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
     return ret;
 }
 
-void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const char *tag, bool attrOnly)
+void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const char *tag)
 {
     if (!isValid())
         return;
@@ -1532,17 +1532,17 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
         return;
     case FVFFbeginrecord:
         {
-            if (!attrOnly && name && *name)
+            if (name && *name)
             {
                 writer.outputBeginNested(name, false);
                 const IntArray &attributes = meta.meta->queryAttrList(columnIndex);
                 ForEachItemIn(ac, attributes)
-                    writeXmlText(writer, attributes.item(ac), NULL, true);
+                    writeXmlText(writer, attributes.item(ac), NULL);
             }
         }
         return;
     case FVFFendrecord:
-        if (!attrOnly && name && *name)
+        if (name && *name)
             writer.outputEndNested(name);
         return;
     }
@@ -1638,7 +1638,6 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
         break;
     case type_table:
     case type_groupedtable:
-        if (!attrOnly)
         {
             writer.outputBeginNested(name, false);
             Owned<IResultSetCursor> childCursor = getChildren(columnIndex);
@@ -1650,7 +1649,6 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
         }
         break;
     case type_set:
-        if (!attrOnly)
         {
             writer.outputBeginNested(name, false);
             if (getIsAll(columnIndex))
@@ -1724,7 +1722,7 @@ void CResultSetCursor::writeXmlRow(IXmlWriter &writer)
         writer.outputBeginNested(rowtag, false);
         const IntArray &attributes = meta.meta->queryAttrList();
         ForEachItemIn(ac, attributes)
-            writeXmlText(writer, attributes.item(ac), NULL, true);
+            writeXmlText(writer, attributes.item(ac), NULL);
     }
     unsigned numColumns = meta.getColumnCount();
     unsigned ignoreNesting = 0;
