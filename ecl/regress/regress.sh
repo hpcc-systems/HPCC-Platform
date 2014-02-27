@@ -60,7 +60,7 @@ if [[ $1 = '' ]]; then
     exit -1
 fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:I:e:d:f:q:l:p:x:v" opt; do
+    while getopts "t:c:I:e:d:f:q:l:p:x:vw" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -97,6 +97,12 @@ if [[ $* != '' ]]; then
                	eclcc="$valgrind $eclcc"
                	compare_dir=
                	;;
+            w)
+                valgrind="valgrind --leak-check=full --suppressions=suppressions.txt --vgdb-error=0 "
+                valgrind="$valgrind --track-origins=yes "
+                eclcc="$valgrind $eclcc"
+                compare_dir=
+                ;;
             :)
                 echo $syntax
                 exit -1

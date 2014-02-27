@@ -58,6 +58,7 @@
 //#define NEW_VIRTUAL_DATASETS
 #define HQL_VERSION_NUMBER 30
 //#define ALL_MODULE_ATTRS_VIRTUAL
+//#define _REPORT_EXPRESSION_LEAKS
 
 //#define TRACE_THIS
 //#define CONSISTENCY_CHECK
@@ -160,6 +161,25 @@ static unsigned numNestedExtra;
 static unsigned insideCreate;
 #endif
 
+#ifdef _REPORT_EXPRESSION_LEAKS
+static char activeSource[256];
+void setActiveSource(const char * filename)
+{
+    if (filename)
+    {
+        strncpy(activeSource, filename, sizeof(activeSource));
+        activeSource[sizeof(activeSource)-1]= 0;
+    }
+    else
+        activeSource[0] = 0;
+}
+#else
+void setActiveSource(const char * filename)
+{
+}
+#endif
+
+
 MODULE_INIT(INIT_PRIORITY_HQLINTERNAL)
 {
     transformMutex = new Mutex;
@@ -221,6 +241,20 @@ MODULE_EXIT()
     nullType->Release();
 
     ClearTypeCache();
+
+#ifdef _REPORT_EXPRESSION_LEAKS
+    if (exprCache->count())
+    {
+#if 0 // Place debugging code inside here
+        JavaHashIteratorOf<IHqlExpression> iter(*exprCache, false);
+        ForEach(iter)
+        {
+            IHqlExpression & ret = iter.query();
+        }
+#endif
+        fprintf(stderr, "%s Hash table contains %d entries\n", activeSource, exprCache->count());
+    }
+#endif
 
     ::Release(sourcePaths);
     delete sourcePathCS;
@@ -9368,6 +9402,7 @@ CHqlScopeParameter::CHqlScopeParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *
     idx = _idx;
     typeScope = ::queryScope(type);
     infoFlags |= HEFunbound;
+    uid = (idx == UnadornedParameterIndex) ? 0 : parameterSequence.next();
     if (!hasAttribute(_virtualSeq_Atom))
         addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }

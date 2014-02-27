@@ -1975,7 +1975,10 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
         if (!normalized)
             normalized = normalizeTableToAggregate(transformed, true);
         if (!normalized || (normalized == transformed))
+        {
+            ::Release(normalized);
             normalized = normalizePrefetchAggregate(transformed);
+        }
         break;
     case no_dedup:
         normalized = normalizeDedup(transformed);
