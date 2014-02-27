@@ -37,10 +37,11 @@ CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterAct
 
 void CDiskReadMasterBase::init()
 {
+    CMasterActivity::init();
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
     fileName.setown(helper->getFileName());
-    file.setown(queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true));
 
+    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
     if (file)
     {
         if (file->numParts() > 1)
@@ -50,15 +51,14 @@ void CDiskReadMasterBase::init()
         reInit = 0 != (helper->getFlags() & (TDXvarfilename|TDXdynamicfilename));
         if (container.queryLocal() || helper->canMatchAny()) // if local, assume may match
         {
+            bool temp = 0 != (TDXtemporary & helper->getFlags());
             bool local;
-            if (0 == (TDXtemporary & helper->getFlags())) // don't add temp files
-            {
-                queryThorFileManager().noteFileRead(container.queryJob(), file);
-                local = container.queryLocal();
-            }
-            else
+            if (temp)
                 local = false;
+            else
+                local = container.queryLocal();
             mapping.setown(getFileSlaveMaps(file->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), local, false, hash, file->querySuperFile()));
+            addReadFile(file, temp);
         }
         if (0 != (helper->getFlags() & TDRfilenamecallback)) // only get/serialize if using virtual file name fields
         {
@@ -108,17 +108,6 @@ void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
         mapping->serializeMap(slave, dst);
     else
         CSlavePartMapping::serializeNullMap(dst);
-}
-
-void CDiskReadMasterBase::done()
-{
-    IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
-    fileDesc.clear();
-    if (!abortSoon) // in case query has relinquished control of file usage to another query (e.g. perists)
-    {
-        if (file)
-            file->setAccessed();
-    }
 }
 
 void CDiskReadMasterBase::deserializeStats(unsigned node, MemoryBuffer &mb)
@@ -309,6 +298,7 @@ void CWriteMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 
 void CWriteMasterBase::done()
 {
+    CMasterActivity::done();
     publish();
     if (TAKdiskwrite == container.getKind() && (0 != (diskHelperBase->getFlags() & TDXtemporary)) && container.queryOwner().queryOwner()) // I am in a child query
     {

@@ -42,6 +42,7 @@ public:
     }
     virtual void init()
     {
+        CMasterActivity::init();
         helper = (IHThorKeyPatchArg *)queryHelper();
 
         OwnedRoxieString originalName(helper->getOriginalName());
@@ -54,8 +55,8 @@ public:
         if (originalIndexFile->querySuperFile() || patchFile->querySuperFile())
             throw MakeActivityException(this, 0, "Patching super files not supported");
         
-        queryThorFileManager().noteFileRead(container.queryJob(), originalIndexFile);
-        queryThorFileManager().noteFileRead(container.queryJob(), patchFile);
+        addReadFile(originalIndexFile);
+        addReadFile(patchFile);
 
         width = originalIndexFile->numParts();
 
@@ -164,10 +165,7 @@ public:
 
         container.queryTempHandler()->registerFile(outputName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
         queryThorFileManager().publish(container.queryJob(), outputName, false, *newIndexDesc);
-        if (originalIndexFile)
-	        originalIndexFile->setAccessed();
-        if (patchFile)
-	        patchFile->setAccessed();
+        CMasterActivity::done();
     }
     void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {

@@ -33,10 +33,10 @@ public:
     {
         helper = (IHThorXmlWriteArg *)queryHelper();
     }
-    void init()
+    virtual void init()
     {
-        assertex(!(helper->getFlags() & TDWextend));
         CWriteMasterBase::init();
+        assertex(!(helper->getFlags() & TDWextend));
 
         IPropertyTree &props = fileDesc->queryProperties();
         StringBuffer rowTag;

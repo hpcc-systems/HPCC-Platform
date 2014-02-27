@@ -49,8 +49,9 @@ public:
         workunitWriteLimit = 0;
         mpTag = container.queryJob().allocateMPTag(); // used by local too
     }
-    void init()
+    virtual void init()
     {
+        CMasterActivity::init();
         workunitWriteLimit = getOptInt(THOROPT_OUTPUTLIMIT, DEFAULT_WUIDWRITE_LIMIT);
         if (workunitWriteLimit>DALI_RESULT_OUTPUTMAX)
             throw MakeActivityException(this, 0, "Dali result outputs are restricted to a maximum of %d MB, the default limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, DEFAULT_WUIDWRITE_LIMIT);
@@ -153,7 +154,7 @@ public:
         resultName.set(helper->queryName());
         resultSeq = helper->getSequence();
     }
-    void init()
+    virtual void init()
     {
         CWorkUnitWriteGlobalMasterBase::init();
         if (appendOutput)

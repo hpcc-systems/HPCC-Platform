@@ -39,6 +39,7 @@ public:
 
     virtual void init()
     {
+        CMasterActivity::init();
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
         IHThorAlgorithm *algo = static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1));
         OwnedRoxieString algoname = algo->getAlgorithm();
@@ -56,8 +57,8 @@ class CMSortActivityMaster : public CMasterActivity
     IThorSorterMaster *imaster;
     mptag_t mpTagRPC, barrierMpTag;
     Owned<IBarrier> barrier;
-    Owned<IDistributedFile> coSortFile;
-    
+    StringBuffer cosortfilenames;
+
 public:
     CMSortActivityMaster(CMasterGraphElement *info)
       : CMasterActivity(info)
@@ -66,7 +67,6 @@ public:
         barrierMpTag = container.queryJob().allocateMPTag();
         barrier.setown(container.queryJob().createBarrier(barrierMpTag));
     }
-
     ~CMSortActivityMaster()
     {
         container.queryJob().freeMPTag(mpTagRPC);
@@ -76,6 +76,7 @@ public:
 protected:
     virtual void init()
     {
+        CMasterActivity::init();
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
         IHThorAlgorithm *algo = static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1));
         OwnedRoxieString algoname(algo->getAlgorithm());
@@ -84,6 +85,23 @@ protected:
         {
             Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
             reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
+        }
+        OwnedRoxieString cosortlogname(helper->getSortedFilename());
+        if (cosortlogname&&*cosortlogname)
+        {
+            Owned<IDistributedFile> coSortFile = queryThorFileManager().lookup(container.queryJob(), cosortlogname);
+            addReadFile(coSortFile);
+            Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
+            unsigned o;
+            for (o=0; o<fileDesc->numParts(); o++)
+            {
+                Owned<IPartDescriptor> partDesc = fileDesc->getPart(o);
+                if (cosortfilenames.length())
+                    cosortfilenames.append("|");
+
+                // JCSMORE - picking the primary here, means no automatic use of backup copy, could use RMF's possibly.
+                getPartFilename(*partDesc, 0, cosortfilenames);
+            }
         }
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
@@ -136,24 +154,6 @@ protected:
             if (!skewThreshold)
                 skewThreshold = container.queryJob().getWorkUnitValueInt("defaultSkewThreshold", 0);
         }
-        StringBuffer cosortfilenames;
-        OwnedRoxieString cosortlogname(helper->getSortedFilename());
-        if (cosortlogname&&*cosortlogname)
-        {
-            coSortFile.setown(queryThorFileManager().lookup(container.queryJob(), cosortlogname));
-            Owned<IFileDescriptor> fileDesc = coSortFile->getFileDescriptor();
-            queryThorFileManager().noteFileRead(container.queryJob(), coSortFile);
-            unsigned o;
-            for (o=0; o<fileDesc->numParts(); o++)
-            {
-                Owned<IPartDescriptor> partDesc = fileDesc->getPart(o);
-                if (cosortfilenames.length())
-                    cosortfilenames.append("|");
-
-                // JCSMORE - picking the primary here, means no automatic use of backup copy, could use RMF's possibly.
-                getPartFilename(*partDesc, 0, cosortfilenames);
-            }
-        }
 
         Owned<IRowInterfaces> rowif = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryActivityId(),queryCodeContext());
         Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryActivityId(),queryCodeContext());
@@ -190,14 +190,6 @@ protected:
         }
         ::Release(imaster);
         ActPrintLog("process exit");
-    }
-    virtual void done()
-    {
-        ActPrintLog("done");
-        CMasterActivity::done();
-        if (coSortFile)
-            coSortFile->setAccessed();
-        ActPrintLog("done exit");
     }
 };
 
