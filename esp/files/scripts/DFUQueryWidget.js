@@ -270,12 +270,6 @@ define([
                 StartDate: this.getISOString("FromDate", "FromTime"),
                 EndDate: this.getISOString("ToDate", "ToTime")
             });
-            if (retVal.StartDate != "" && retVal.EndDate != "") {
-            } else if (retVal.FirstN) {
-                var now = new Date();
-                retVal.StartDate = date.add(now, "day", retVal.LastNDays * -1).toISOString();
-                retVal.EndDate = now.toISOString();
-            }
             return retVal;
         },
 
@@ -439,10 +433,10 @@ define([
                     Owner: { label: this.i18n.Owner, width: 72 },
                     Description: { label: this.i18n.Description, width: 153 },
                     ClusterName: { label: this.i18n.Cluster, width: 108 },
-                    RecordCount: { label: this.i18n.Records, width: 72, sortable: false },
-                    Totalsize: { label: this.i18n.Size, width: 72, sortable: false },
-                    Parts: { label: this.i18n.Parts, width: 45, sortable: false },
-                    Modified: { label: this.i18n.ModifiedUTCGMT, width: 155, sortable: false }
+                    RecordCount: { label: this.i18n.Records, width: 72},
+                    Totalsize: { label: this.i18n.Size, width: 72},
+                    Parts: { label: this.i18n.Parts, width: 45},
+                    Modified: { label: this.i18n.ModifiedUTCGMT, width: 155}
                 }
             }, this.id + "WorkunitsGrid");
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";

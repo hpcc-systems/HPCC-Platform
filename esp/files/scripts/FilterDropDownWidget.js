@@ -25,6 +25,7 @@ define([
     "dojo/on",
 
     "dijit/registry",
+    "dijit/form/Select",
 
     "hpcc/_Widget",
 
@@ -38,7 +39,7 @@ define([
     "hpcc/TableContainer"
 
 ], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domForm, on,
-                registry,
+                registry, Select,
                 _Widget,
                 template) {
     return declare("FilterDropDownWidget", [_Widget], {
@@ -46,6 +47,7 @@ define([
         baseClass: "FilterDropDownWidget",
         i18n: lang.mixin(nlsCommon, nlsSpecific),
 
+        _width:"460px",
         iconFilter: null,
         filterDropDown: null,
         filterForm: null,
@@ -78,7 +80,11 @@ define([
         //  Implementation  ---
         clear: function () {
             arrayUtil.forEach(this.filterForm.getDescendants(), function (item, idx) {
-                item.set("value", null);
+                if (item instanceof Select) {
+                    item.set("value", "");
+                } else {
+                    item.set("value", null);
+                }
             });
         },
 

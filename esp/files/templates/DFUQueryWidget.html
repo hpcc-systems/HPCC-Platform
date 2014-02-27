@@ -155,11 +155,16 @@
                         <input id="${id}ClusterTargetSelect" title="${i18n.Cluster}:" name="ClusterName" colspan="2" style="display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget" />
                         <input id="${id}FromSize" title="${i18n.FromSizes}:" name="FileSizeFrom" colspan="2" data-dojo-props="trim: true, placeHolder:'4096'" data-dojo-type="dijit.form.TextBox" />
                         <input id="${id}ToSize" title="${i18n.ToSizes}:" name="FileSizeTo" colspan="2" data-dojo-props="trim: true, placeHolder:'16777216'" data-dojo-type="dijit.form.TextBox" />
+                        <select id="${id}FileType" title="${i18n.FileType}:" name="FileType" colspan="2" data-dojo-type="dijit.form.Select">
+                            <option value="" selected="selected">${i18n.LogicalFilesAndSuperfiles}</option>
+                            <option value="Logical Files Only">${i18n.LogicalFilesOnly}</option>
+                            <option value="Superfiles Only">${i18n.SuperfilesOnly}</option>
+                            <option value="Not in Superfiles">${i18n.NotInSuperfiles}</option>
+                        </select>
                         <input id="${id}FromDate" title="${i18n.FromDate}:" name="StartDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
                         <input id="${id}FromTime" title="" name="FromTime" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox" />
                         <input id="${id}ToDate" title="${i18n.ToDate}:" name="EndDate" data-dojo-props="trim: true, placeHolder:'7/28/2013'" data-dojo-type="dijit.form.DateTextBox" />
                         <input id="${id}ToTime" title="" name="ToTime" data-dojo-props="trim: true, placeHolder:'7:30 PM'" data-dojo-type="dijit.form.TimeTextBox" />
-                        <input id="${id}LastNDays" title="${i18n.LastNDays}:" name="FirstN" colspan="2" data-dojo-props="dtrim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox" />
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>

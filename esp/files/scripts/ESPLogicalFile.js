@@ -46,6 +46,19 @@ define([
                 Name: id
             });
         },
+        preRequest: function (request) {
+            switch (request.Sortby) {
+                case "ClusterName":
+                    request.Sortby = "Cluster";
+                    break;
+                case "RecordCount":
+                    request.Sortby = "Records";
+                    break;
+                case "Totalsize":
+                    request.Sortby = "Size";
+                    break;
+            }
+        },
         update: function (id, item) {
             var storeItem = this.get(id);
             storeItem.updateData(item);
