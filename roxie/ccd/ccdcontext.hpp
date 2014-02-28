@@ -92,7 +92,7 @@ interface IRoxieServerContext : extends IInterface
     virtual unsigned getSlavesReplyLen() = 0;
 
     virtual unsigned getXmlFlags() const = 0;
-    virtual bool outputResultsToWorkUnit() const = 0;
+    virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual bool outputResultsToSocket() const = 0;
 
     virtual IRoxieDaliHelper *checkDaliConnection() = 0;

@@ -3686,7 +3686,7 @@ public:
     virtual IDistributedFileTransaction *querySuperFileTransaction() { UNIMPLEMENTED; }
     virtual void flush(unsigned seqNo) { throwUnexpected(); }
     virtual unsigned getPriority() const { return priority; }
-    virtual bool outputResultsToWorkUnit() const { return workUnit != NULL; }
+    virtual IConstWorkUnit *queryWorkUnit() const { return workUnit; }
     virtual bool outputResultsToSocket() const { return client != NULL; }
 
     virtual void selectCluster(const char * cluster) { throwUnexpected(); }
