@@ -430,7 +430,6 @@ public:
 
 protected:
     Linked<IEngineRowAllocator> resultAllocator;
-    unsigned numRows;
     unsigned rowIdx;
     v8::Persistent<v8::Array> result;
 };
