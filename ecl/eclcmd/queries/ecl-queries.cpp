@@ -292,7 +292,7 @@ private:
 class EclCmdQueriesCopy : public EclCmdCommon
 {
 public:
-    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false), optNoForeign(false)
+    EclCmdQueriesCopy() : optActivate(false), optNoReload(false), optMsToWait(10000), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false)
     {
         optTimeLimit = (unsigned) -1;
         optWarnTimeLimit = (unsigned) -1;
@@ -335,7 +335,7 @@ public:
                 continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
                 continue;
-            if (iter.matchFlag(optNoForeign, ECLOPT_NO_FOREIGN))
+            if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
                 continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
@@ -393,7 +393,7 @@ public:
         req->setDontCopyFiles(optDontCopyFiles);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
-        req->setAllowForeignFiles(!optNoForeign);
+        req->setAllowForeignFiles(optAllowForeign);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -439,7 +439,7 @@ public:
             "   -A, --activate         Activate the new query\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   -O, --overwrite        Overwrite existing files\n"
-            "   --no-foreign           Fail if foreign files are used in query (roxie)\n"
+            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n"
             "   --timeLimit=<sec>      Value to set for query timeLimit configuration\n"
             "   --warnTimeLimit=<sec>  Value to set for query warnTimeLimit configuration\n"
@@ -468,7 +468,7 @@ private:
     bool optNoReload;
     bool optOverwrite;
     bool optDontCopyFiles;
-    bool optNoForeign;
+    bool optAllowForeign;
 };
 
 class EclCmdQueriesConfig : public EclCmdCommon
