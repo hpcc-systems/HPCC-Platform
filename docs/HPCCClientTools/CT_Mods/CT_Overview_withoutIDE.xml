@@ -136,9 +136,9 @@
 
           <para><emphasis role="bold">Mac OSX:</emphasis></para>
 
-          <para>Run the installation file, for example:
-          hpccsystems-clienttools_community-4.X.X-XDarwin-x86_64.dmg. Follow
-          the prompts to complete the installation.</para>
+          <para>Open the Apple disk image file (.dmg) and then run the
+          installation package (.pkg). Follow the prompts to complete the
+          installation.</para>
         </listitem>
       </orderedlist>
     </sect2>
