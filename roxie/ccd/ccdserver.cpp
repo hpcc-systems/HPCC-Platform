@@ -3480,6 +3480,7 @@ public:
         processed = 0;
         totalCycles = 0;
         sentSequence = 0;
+        resendSequence = 0;
         serverSideCache = activity.queryServerSideCache();
         bufferStream.setown(createMemoryBufferSerialStream(tempRowBuffer));
         rowSource.setStream(bufferStream);
@@ -5213,6 +5214,8 @@ public:
     CRoxieServerInlineTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorInlineTableArg &) basehelper)
     {
+        curRow = 0;
+        numRows = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -11264,6 +11267,7 @@ public:
     {
         overwrite = ((helper.getFlags() & TIWoverwrite) != 0);
         reccount = 0;
+        fileCrc = 0;
     }
 
     ~CRoxieServerIndexWriteActivity()
@@ -12377,6 +12381,7 @@ public:
     {
         numInputs = _numInputs;
         eof = (numInputs==0);
+        inGroup = false;
         nextPuller = 0;
         readyPending = 0;
         for (unsigned i = 0; i < numInputs; i++)
@@ -12516,6 +12521,7 @@ public:
         inputArray = new IRoxieInput*[numInputs];
         for (unsigned i = 0; i < numInputs; i++)
             inputArray[i] = NULL;
+        curInput = NULL;
     }
 
     ~CRoxieServerOrderedConcatActivity()
@@ -14283,6 +14289,7 @@ public:
     {
         probeManager = _probeManager;
         defaultNumParallel = 0;
+        sizeNumParallel = 0;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -15532,6 +15539,7 @@ public:
         grouped = helper.isGrouped();
         graphId = _graphId;
         selectionIsAll = false;
+        selectionLen = 0;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -15797,7 +15805,10 @@ protected:
 class CRoxieStreamMerger : public CStreamMerger
 {
 public:
-    CRoxieStreamMerger() : CStreamMerger(true) {}
+    CRoxieStreamMerger() : CStreamMerger(true)
+    {
+        inputArray = NULL;
+    }
 
     void initInputs(unsigned _numInputs, IRoxieInput ** _inputArray)
     {
@@ -16091,6 +16102,7 @@ public:
         : CRoxieServerMultiInputActivity(_factory, _probeManager, _numInputs),
           helper((IHThorNWaySelectArg &)basehelper)
     {
+        selectedInput = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -17168,7 +17180,7 @@ private:
                 size <<= 1;
             mask = size - 1;
             table = (const void * *)calloc(size, sizeof(void *));
-            findex = BadIndex;
+            findex = fstart = BadIndex;
         }
 
         ~LookupTable()
@@ -17312,6 +17324,7 @@ public:
         atmostLimit = 0;
         atmostsTriggered = 0;
         limitLimit = 0;
+        rightGroupIndex = 0;
         hasGroupLimit = false;
         isSmartJoin = (joinFlags & JFsmart) != 0;
         getLimitType(joinFlags, limitFail, limitOnFail);
