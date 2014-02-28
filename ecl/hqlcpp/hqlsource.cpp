@@ -698,6 +698,7 @@ public:
         isVirtualLogicalFilenameUsed = false;
         requiresOrderedMerge = false;
         rootSelfRow = NULL;
+        activityKind = TAKnone;
     }
     virtual ~SourceBuilder() {}
 
@@ -1586,7 +1587,6 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
         }
         break;
 
-    case no_cachealias:
     case no_compound_diskread:
     case no_compound_disknormalize:
     case no_compound_diskaggregate:
@@ -5954,7 +5954,6 @@ bool MonitorExtractor::extractFilters(KeyConditionInfo & matches, IHqlExpression
         matches.appendPostFilter(expr);
         return false;
     }
-    UNIMPLEMENTED;
 }
 
 

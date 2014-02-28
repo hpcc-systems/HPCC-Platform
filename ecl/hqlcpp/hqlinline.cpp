@@ -134,6 +134,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         //can't do a skip inside an inline project - since the generated code doesn't allow "continue" to be used.
         if (transformContainsSkip(expr->queryChild(1)))
             return 0;
+        //fallthrough
     case no_newusertable:
         {
             if (expr->hasAttribute(prefetchAtom))

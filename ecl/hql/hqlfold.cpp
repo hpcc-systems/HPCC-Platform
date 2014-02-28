@@ -1903,9 +1903,8 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             IValue * t0 = expr->queryChild(0)->queryValue();
             IValue * t1 = expr->queryChild(1)->queryValue();
-            IHqlExpression * c2 = queryRealChild(expr, 2);
-            IValue * t2 = c2 ? c2->queryValue() : NULL;
-            if (t0 && t1 && (!c2 || t2))
+            IValue * t2 = expr->queryChild(2)->queryValue();
+            if (t0 && t1 && t2)
             {
                 IValue * result;
                 if(isUnicodeType(t0->queryType()))

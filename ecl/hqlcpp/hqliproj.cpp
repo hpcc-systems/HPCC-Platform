@@ -597,6 +597,7 @@ void UsedFieldSet::getText(StringBuffer & s) const
         if (cur.isDatarow())
         {
             NestedField * match = findNested(&cur);
+            assertex(match);
             if (!match->used.checkAllFieldsUsed())
                 match->used.getText(s);
         }
@@ -3265,8 +3266,7 @@ IHqlExpression * ImplicitProjectTransformer::updateSelectors(IHqlExpression * ne
 const SelectUsedArray & ImplicitProjectTransformer::querySelectsUsedForField(IHqlExpression * transform, IHqlExpression * field)
 {
     IHqlExpression * transformValues = queryTransformAssignValue(transform, field);
-    if (!transformValues)
-         transformValues = queryTransformAssignValue(transform, field);
+    assertex(transformValues);
     return querySelectsUsed(transformValues);
 }
 

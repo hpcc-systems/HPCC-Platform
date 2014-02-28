@@ -4691,7 +4691,7 @@ bool CHqlNamedExpression::equals(const IHqlExpression & r) const
 void CHqlNamedExpression::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = HASHFIELD(id);
+    HASHFIELD(id);
 }
 
 IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id, HqlExprArray & args)
@@ -10037,8 +10037,6 @@ CHqlAlienType::CHqlAlienType(IIdAtom * _id, IHqlScope *_scope, IHqlExpression * 
     scope = _scope;
     funcdef = _funcdef;
 
-    if (!scope)
-        return;
     if (!funcdef)
         funcdef = this;
 
@@ -10189,11 +10187,13 @@ size32_t CHqlAlienType::getSize()
 /* in parm _scope: linked */
 extern IHqlExpression *createAlienType(IIdAtom * _id, IHqlScope *_scope)
 {
+    assertex(_scope);
     return new CHqlAlienType(_id, _scope, NULL);
 }
 
 extern IHqlExpression *createAlienType(IIdAtom * id, IHqlScope * scope, HqlExprArray &newkids, IHqlExpression * funcdef)
 {
+    assertex(scope);
 //  assertex(!funcdef);     // I'm not sure what value this has...
     IHqlExpression * ret = new CHqlAlienType(id, scope, funcdef);
     ForEachItemIn(idx2, newkids)
@@ -12141,7 +12141,6 @@ IHqlExpression * ensureDataset(IHqlExpression * expr)
         return createDatasetFromRow(LINK(expr));
 
     throwUnexpected();
-    return createNullDataset();
 }
 
 
@@ -13750,7 +13749,6 @@ static bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur,
                             break;
                         case type_record:
                             throwUnexpected();
-                            targetType.set(newRecord->queryType());
                             break;
                         }
                     }

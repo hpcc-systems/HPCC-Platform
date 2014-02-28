@@ -233,16 +233,7 @@ static IHqlExpression * createResultName(IHqlExpression * name)
 {
     if (!name)
         return createQuoted("0", makeReferenceModifier(makeVarStringType(UNKNOWN_LENGTH)));
-    switch (name->getOperator())
-    {
-    case no_constant:
-        return LINK(name);
-    default:
-        return LINK(name);
-        UNIMPLEMENTED;
-        break;
-    }
-    return NULL;
+    return LINK(name);
 }
 
 //---------------------------------------------------------------------------
@@ -814,7 +805,7 @@ public:
     }
 
     TransformBuilder(const TransformBuilder & other, BuildCtx & _ctx) :
-            DelayedStatementExecutor(other.translator, _ctx), mapper(other.mapper), assigns(other.assigns)
+            DelayedStatementExecutor(other.translator, _ctx), mapper(other.mapper), assigns(other.assigns), self(other.self)
     {
         expectedIndex = 0;
     }
@@ -1452,23 +1443,7 @@ BoundRow * HqlCppTranslator::createRowBuilder(BuildCtx & ctx, BoundRow * targetR
 
     if (!targetIsOwnedRow && isFixedWidthDataset(record) && !options.alwaysCreateRowBuilder)
     {
-        LinkedHqlExpr targetArg = boundTarget;
-        if (targetIsOwnedRow)
-        {
-            OwnedHqlExpr allocator = createRowAllocator(ctx, record);
-
-            StringBuffer valueText;
-            valueText.append("(byte *)");
-            generateExprCpp(valueText, allocator).append("->createRow()");
-
-            StringBuffer setText;
-            generateExprCpp(setText, boundTarget);
-            setText.append(".setown(").append(valueText).append(");");
-            ctx.addQuoted(setText);
-            targetArg.setown(getPointer(boundTarget));
-        }
-
-        BoundRow * self = bindSelf(ctx, targetRow->queryDataset(), targetArg, NULL);
+        BoundRow * self = bindSelf(ctx, targetRow->queryDataset(), boundTarget, NULL);
         return LINK(self);
     }
 
@@ -1725,8 +1700,10 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     isMember = false;
     instanceIsLocal = false;
     classStmt = NULL;
+    classGroup = NULL;
     classGroupStmt = NULL;
     hasChildActivity = false;
+    initialGroupMarker = 0;
 
     includedInHeader = false;
     isCoLocal = false;
@@ -1791,7 +1768,6 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
 
     if (!parentExtract && (translator.getTargetClusterType() == RoxieCluster))
         executedRemotely = isNonLocal(dataset, false);
-
 
     unsigned containerId = 0;
     if (containerActivity)
@@ -2795,7 +2771,7 @@ GlobalClassBuilder::GlobalClassBuilder(HqlCppTranslator & _translator, BuildCtx 
         accessorName.set(s.clear().append("cr").append(className).str());
     }
     onCreateStmt = NULL;
-
+    classStmt = NULL;
 }
 
 void GlobalClassBuilder::buildClass(unsigned priority)
@@ -3224,22 +3200,22 @@ void HqlCppTranslator::noteFilename(ActivityInstance & instance, const char * na
 void HqlCppTranslator::buildRefFilenameFunction(ActivityInstance & instance, BuildCtx & classctx, const char * name, IHqlExpression * expr)
 {
     IHqlExpression * table = queryPhysicalRootTable(expr);
+    assertex(table);
+
     IHqlExpression * filename = NULL;
-    if (table)
+    switch (table->getOperator())
     {
-        switch (table->getOperator())
-        {
-        case no_keyindex:
-            filename = table->queryChild(2);
-            break;
-        case no_newkeyindex:
-            filename = table->queryChild(3);
-            break;
-        case no_table:
-            filename = table->queryChild(0);
-            break;
-        }
+    case no_keyindex:
+        filename = table->queryChild(2);
+        break;
+    case no_newkeyindex:
+        filename = table->queryChild(3);
+        break;
+    case no_table:
+        filename = table->queryChild(0);
+        break;
     }
+
     buildFilenameFunction(instance, classctx, name, filename, hasDynamicFilename(table));
 }
 
@@ -4157,8 +4133,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
                 }
             }
 
-            if (record)
-                generateMetaRecordSerialize(metactx, record, serializerName.str(), deserializerName.str(), internalSerializerName.str(), internalDeserializerName.str(), prefetcherName.str());
+            generateMetaRecordSerialize(metactx, record, serializerName.str(), deserializerName.str(), internalSerializerName.str(), internalDeserializerName.str(), prefetcherName.str());
 
             if (flags != (MDFhasserialize|MDFhasxml))
                 doBuildUnsignedFunction(metactx, "getMetaFlags", flags);
@@ -7103,6 +7078,7 @@ void HqlCppTranslator::buildClearRecord(BuildCtx & ctx, IHqlExpression * dataset
 
 IHqlExpression * HqlCppTranslator::getClearRecordFunction(IHqlExpression * record, int direction)
 {
+    assertex(record);
     IHqlExpression * dirExpr = getSizetConstant((size32_t)direction);
     OwnedHqlExpr search = createAttribute(__clearHelperAtom, LINK(record->queryBody()), dirExpr);
 
@@ -7120,7 +7096,6 @@ IHqlExpression * HqlCppTranslator::getClearRecordFunction(IHqlExpression * recor
     s.append("size32_t ").append(functionName).append("(ARowBuilder & crSelf, IResourceContext * ctx)");
 
     clearctx.setNextPriority(RowMetaPrio);
-    if (record)
     {
         IHqlStmt * func = clearctx.addQuotedCompound(s);
         func->setIncomplete(true);
@@ -7132,8 +7107,6 @@ IHqlExpression * HqlCppTranslator::getClearRecordFunction(IHqlExpression * recor
         buildReturnRecordSize(clearctx, cursor);
         func->setIncomplete(false);
     }
-    else
-        clearctx.addQuotedCompound(s.append(" {}"));
 
     if (options.spanMultipleCpp)
     {
@@ -13217,7 +13190,6 @@ void HqlCppTranslator::doBuildUserMergeAggregateFunc(BuildCtx & ctx, IHqlExpress
 void HqlCppTranslator::doBuildUserAggregateFuncs(BuildCtx & ctx, IHqlExpression * expr, bool & requiresOrderedMerge)
 {
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * tgtRecord = expr->queryChild(1);
     IHqlExpression * transform = expr->queryChild(2);
     IHqlExpression * selSeq = querySelSeq(expr);
     LinkedHqlExpr firstTransform;

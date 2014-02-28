@@ -113,7 +113,7 @@ public:
 class HQLCPP_API HqlCppSection : public CInterface
 {
 public:
-  HqlCppSection() : stmts(NULL) {}
+  HqlCppSection() : section(NULL),stmts(NULL) {}
 
 public:
     IAtom *                       section;
@@ -1909,7 +1909,6 @@ protected:
     bool                checkedEmbeddedCpp;
     bool                cachedAllowEmbeddedCpp;
     bool                checkedPipeAllowed;
-    unsigned            numExtraFiles;
     unsigned            activitiesThisCpp;
     unsigned            curCppFile;
     Linked<ICodegenContextCallback> ctxCallback;

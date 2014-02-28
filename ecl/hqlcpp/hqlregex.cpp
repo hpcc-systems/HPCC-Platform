@@ -2531,7 +2531,6 @@ void RegexContext::buildStructure()
     unsigned startTime = msTick();
     IHqlExpression * grammar = expr->queryChild(2);
     assertex(grammar->getOperator() == no_pat_instance);
-    IAtom * name = grammar->queryChild(1)->queryName();
     OwnedHqlExpr structure = LINK(grammar);//createValue(no_pat_instance, makeRuleType(NULL), LINK(grammar), LINK(grammar->queryChild(1)));
 
     HqlRegexExpr * rootRegex = createStructure(structure, isCaseSensitive());

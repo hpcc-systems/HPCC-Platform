@@ -730,7 +730,6 @@ private:
     bool hasCandidate;
     bool isSequential;
     unsigned curGraph;
-    unsigned nextGraph;
     HqlExprArray graphActions;
     unsigned activityDepth;
     HqlExprArray * globalTarget;

@@ -2479,8 +2479,7 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                 mapper.setMapping(transform, leftSelect);
                 break;
             default:
-                assertex(!"Missing entry...");
-                break;
+                throwUnexpected();
             }
 
             extractMeta(meta, dataset);

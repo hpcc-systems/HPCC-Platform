@@ -158,10 +158,8 @@ StringBuffer & TomToken::getName(StringBuffer & out)
         return out.append("EOF");
     IAtom * name = expr->queryName();
     if (expr->getOperator() == no_pat_instance)
-    {
         name = expr->queryChild(1)->queryName();
-        expr = expr->queryChild(0);
-    }
+
     if (name)
         out.append("tok").append(name);
     else if (id != NotFound)
@@ -557,6 +555,7 @@ TomRule::TomRule(IHqlExpression * expr, IAtom * _name, const TomFeatureArray & _
     cloneLinkedArray(features, _features);
     implicit = _implicit;
     id = 0;
+    isNull = false;
     isNullState = ValueUnknown;
     firstState = ValueUnknown;
     curExpandState = (unsigned)-1;

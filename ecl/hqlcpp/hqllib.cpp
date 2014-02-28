@@ -258,12 +258,14 @@ protected:
 
                 if (oldSymbol->isFunction())
                 {
-                    // Should have been caught in the parser..  Following code should be correct if we ever work out how to implement
                     throwUnexpected();
+#if 0
+                    // Should have been caught in the parser..  Following code should be correct if we ever work out how to implement
                     HqlExprArray parms;
                     unwindChildren(parms, oldSymbol, 1);
                     IHqlExpression * formals = createSortList(parms);
                     newValue.setown(createFunctionDefinition(id, newValue.getClear(), formals, NULL, NULL));
+#endif
                 }
 
                 IHqlExpression * newSym = oldSymbol->cloneAllAnnotations(newValue);
