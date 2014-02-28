@@ -18,8 +18,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/HexViewWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
@@ -36,14 +35,14 @@ define([
     "dijit/form/NumberSpinner",
     "dijit/form/CheckBox"
 ],
-    function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Memory, Observable, iframe,
+    function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, iframe,
             registry,
             _Widget, ESPWorkunit, ECLSourceWidget,
             template) {
         return declare("HexViewWidget", [_Widget], {
             templateString: template,
             baseClass: "HexViewWidget",
-            i18n: lang.mixin(nlsCommon, nlsSpecific),
+            i18n: nlsHPCC,
 
             borderContainer: null,
             widthField: null,

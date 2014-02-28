@@ -18,8 +18,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/SFDetailsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -62,7 +61,7 @@ define([
     "dojo/text!../templates/SFDetailsWidget.html",
 
     "dijit/TooltipDialog"
-], function (exports, declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable,
+], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget,
@@ -71,7 +70,7 @@ define([
     exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "SFDetailsWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         borderContainer: null,
         tabContainer: null,

@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/QueryTestWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
 
     "dijit/registry",
@@ -33,7 +32,7 @@ define([
 
     "dojo/text!../templates/QueryTestWidget.html"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil,
             registry,
             _TabContainerWidget, WsTopology, ESPQuery,
             BorderContainer, TabContainer, ContentPane,
@@ -41,7 +40,7 @@ define([
     return declare("QueryTestWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QueryTestWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         initalized: false,
         soapTab: null,

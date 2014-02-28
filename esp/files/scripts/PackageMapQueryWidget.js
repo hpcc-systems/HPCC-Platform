@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/PackageMapQueryWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-construct",
@@ -54,7 +53,7 @@ define([
     "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     Uploader, FileUploader, EnhancedGrid, Pagination, IndirectSelection, ItemFileWriteStore,
     PackageMapDetailsWidget, PackageMapValidateWidget,
@@ -63,7 +62,7 @@ define([
     return declare("PackageMapQueryWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "PackageMapQueryWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
         packagesTab: null,
         packagesGrid: null,
         tabMap: [],

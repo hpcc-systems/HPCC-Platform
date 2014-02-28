@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/WUDetailsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-form",
     "dojo/dom-attr",
@@ -68,7 +67,7 @@ define([
     "dijit/form/SimpleTextarea",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domForm, domAttr, iframe, domClass, query, Memory, Observable,
+], function (declare, lang, i18n, nlsHPCC, dom, domForm, domAttr, iframe, domClass, query, Memory, Observable,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ESPWorkunit, ESPRequest, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget, VizWidget, WsWorkunits,
@@ -76,7 +75,7 @@ define([
     return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "WUDetailsWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         summaryWidget: null,
         resultsWidget: null,
@@ -156,7 +155,7 @@ define([
         },
 
         getTitle: function () {
-            return this.i18n.title;
+            return this.i18n.title_WUDetails;
         },
 
         _onCancelDialog: function (){

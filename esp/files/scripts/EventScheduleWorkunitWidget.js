@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/EventScheduleWorkunitWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-form",
     "dojo/_base/array",
@@ -57,13 +56,13 @@ define([
     "dijit/TooltipDialog",
 
     "dojox/layout/TableContainer"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domForm, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, dom, domForm, arrayUtil, on,
                 registry, Menu, MenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, TargetSelectWidget, WUDetailsWidget, WsWorkunits, ESPUtil, FilterDropDownWidget,
                 template) {
     return declare("EventScheduleWorkunitWidget", [_TabContainerWidget], {
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
         templateString: template,
         baseClass: "EventScheduleWorkunitWidget",
 

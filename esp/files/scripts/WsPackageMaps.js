@@ -17,16 +17,15 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/PackageMapQueryWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/Deferred",
     "dojo/_base/array",
     "dojo/store/util/QueryResults",
 
     "hpcc/ESPRequest"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, Deferred, arrayUtil, QueryResults,
+], function (declare, lang, i18n, nlsHPCC, Deferred, arrayUtil, QueryResults,
     ESPRequest) {
-    var i18n = lang.mixin(nlsCommon, nlsSpecific);
+    var i18n = nlsHPCC;
     return {
         PackageMapQuery: function (params) {
             return ESPRequest.send("WsPackageProcess", "ListPackages", params);

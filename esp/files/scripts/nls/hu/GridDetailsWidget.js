@@ -1,5 +1,0 @@
-define(
-({
-    title: "Változtass meg!"
-})
-);

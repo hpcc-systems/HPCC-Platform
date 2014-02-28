@@ -18,8 +18,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/LogsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
@@ -48,7 +47,7 @@ define([
     "dijit/form/Button",
     "dijit/layout/ContentPane"
 ],
-    function (declare, lang, i18n, nlsCommon, nlsSpecific, array, Memory, Observable, iframe,
+    function (declare, lang, i18n, nlsHPCC, array, Memory, Observable, iframe,
             registry,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
             _Widget, ESPUtil, ESPRequest, ESPWorkunit,
@@ -56,7 +55,7 @@ define([
         return declare("LogsWidget", [_Widget], {
             templateString: template,
             baseClass: "LogsWidget",
-            i18n: lang.mixin(nlsCommon, nlsSpecific),
+            i18n: nlsHPCC,
 
             borderContainer: null,
             logsGrid: null,

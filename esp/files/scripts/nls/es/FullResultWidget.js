@@ -1,5 +1,0 @@
-define(
-({
-    undefined: "no definido"
-})
-);

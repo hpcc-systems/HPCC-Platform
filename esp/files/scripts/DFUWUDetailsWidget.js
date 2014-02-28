@@ -18,8 +18,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/DFUWUDetailsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -44,14 +43,14 @@ define([
 
     "dojo/text!../templates/DFUWUDetailsWidget.html"
 
-], function (exports, declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domClass, domStyle, query,
+], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domStyle, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
                 _TabContainerWidget, FileSpray, ESPDFUWorkunit, ECLSourceWidget, LFDetailsWidget,
                 template) {
     exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "DFUWUDetailsWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         summaryWidget: null,
         xmlWidget: null,
@@ -79,7 +78,7 @@ define([
         },
 
         getTitle: function () {
-            return this.i18n.title;
+            return this.i18n.title_DFUWUDetails;
         },
 
         //  Hitched actions  ---

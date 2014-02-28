@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/SearchResultsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
     "dojo/promise/all",
@@ -44,21 +43,21 @@ define([
     "hpcc/SFDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on, all,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, all,
                 Button,
                 Standby,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, WsWorkunits, FileSpray, WsDfu, WUDetailsWidget, DFUWUDetailsWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
     return declare("SearchResultsWidget", [GridDetailsWidget], {
+        i18n: nlsHPCC,
 
-        gridTitle: "Search Results",
+        gridTitle: nlsHPCC.title_SearchResults,
         idProperty: "id",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
 
         doSearch: function (searchText) {
-            this.params = {
+            lang.mixin(this.params, {
                 searchText: searchText
-            };
+            });
             this.searchText = searchText;
             this.selectChild(this.gridTab);
             this.refreshGrid();
@@ -88,10 +87,10 @@ define([
                 noDataMessage: "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>",
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Type: { label: "What", width: 108, sortable: true },
-                    Reason: { label: "Where", width: 108, sortable: true },
+                    Type: { label: this.i18n.What, width: 108, sortable: true },
+                    Reason: { label: this.i18n.Where, width: 108, sortable: true },
                     Summary: {
-                        label: "Who", sortable: true,
+                        label: this.i18n.Who, sortable: true,
                         formatter: function (summary, idx) {
                             return "<a href='#' rowIndex=" + idx + " class='" + context.id + "SearchResultClick'>" + summary + "</a>";
                         }
@@ -261,36 +260,36 @@ define([
                 //  ECL WU  ---
                 all([
                     WsWorkunits.WUQuery({ request: { Wuid: this.searchText }, suppressExceptionToaster: true }).then(function (response) {
-                        context.loadWUQueryResponse("Wuid", response);
+                        context.loadWUQueryResponse(context.i18n.WUID, response);
                     }),
                     WsWorkunits.WUQuery({ request: { Jobname: "*" + this.searchText + "*" } }).then(function (response) {
-                        context.loadWUQueryResponse("Job Name", response);
+                        context.loadWUQueryResponse(context.i18n.JobName, response);
                     }),
                     WsWorkunits.WUQuery({ request: { Owner: this.searchText } }).then(function (response) {
-                        context.loadWUQueryResponse("Owner", response);
+                        context.loadWUQueryResponse(context.i18n.Owner, response);
                     }),
                     WsWorkunits.WUQuery({ request: { ECL: this.searchText } }).then(function (response) {
-                        context.loadWUQueryResponse("ECL", response);
+                        context.loadWUQueryResponse(context.i18n.ECL, response);
                     }),
                     //  DFU WU  ---
                     FileSpray.GetDFUWorkunit({ request: { wuid: this.searchText }, suppressExceptionToaster: true }).then(function (response) {
-                        context.loadGetDFUWorkunitResponse("Wuid", response);
+                        context.loadGetDFUWorkunitResponse(context.i18n.WUID, response);
                     }),
                     FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + this.searchText + "*" } }).then(function (response) {
-                        context.loadGetDFUWorkunitsResponse("Job Name", response);
+                        context.loadGetDFUWorkunitsResponse(context.i18n.JobName, response);
                     }),
                     FileSpray.GetDFUWorkunits({ request: { Owner: this.searchText } }).then(function (response) {
-                        context.loadGetDFUWorkunitsResponse("Owner", response);
+                        context.loadGetDFUWorkunitsResponse(context.i18n.Owner, response);
                     }),
                     //  Logical Files  ---
                     WsDfu.DFUQuery({ request: { LogicalName: "*" + this.searchText + "*" } }).then(function (response) {
-                        context.loadDFUQueryResponse("Logical Name", response);
+                        context.loadDFUQueryResponse(context.i18n.LogicalName, response);
                     }),
                     WsDfu.DFUQuery({ request: { Description: "*" + this.searchText + "*" } }).then(function (response) {
-                        context.loadDFUQueryResponse("Description", response);
+                        context.loadDFUQueryResponse(context.i18n.Description, response);
                     }),
                     WsDfu.DFUQuery({ request: { Owner: this.searchText } }).then(function (response) {
-                        context.loadDFUQueryResponse("Owner", response);
+                        context.loadDFUQueryResponse(context.i18n.Owner, response);
                     })
                 ]).then(function (results) {
                     context.standby.hide();

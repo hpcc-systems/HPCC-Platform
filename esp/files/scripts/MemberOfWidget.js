@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/UserQueryWidget",
+    "dojo/i18n!./nls/hpcc",
 
     "dijit/registry",
 
@@ -33,14 +32,14 @@ define([
     "hpcc/ws_access",
     "hpcc/ESPUtil"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific,
+], function (declare, lang, i18n, nlsHPCC,
                 registry,
                 OnDemandGrid, Keyboard, Selection, editor, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, WsAccess, ESPUtil) {
     return declare("MemberOfWidget", [GridDetailsWidget], {
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
-        gridTitle: nlsSpecific.MemberOf,
+        gridTitle: nlsHPCC.title_MemberOf,
         idProperty: "__hpcc_id",
 
         //  Hitched Actions  ---

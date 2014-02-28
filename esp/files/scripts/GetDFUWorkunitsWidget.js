@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/GetDFUWorkunitsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-class",
@@ -61,7 +60,7 @@ define([
     "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil,dom, domClass, domForm, date, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil,dom, domClass, domForm, date, on,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -69,7 +68,7 @@ define([
     return declare("GetDFUWorkunitsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GetDFUWorkunitsWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         workunitsTab: null,
         workunitsGrid: null,
@@ -90,7 +89,7 @@ define([
         },
 
         getTitle: function () {
-            return this.i18n.title;
+            return this.i18n.title_GetDFUWorkunits;
         },
 
         //  Hitched actions  ---

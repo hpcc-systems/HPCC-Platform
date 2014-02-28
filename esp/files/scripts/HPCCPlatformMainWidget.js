@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/HPCCPlatformMainWidget",
+    "dojo/i18n!./nls/hpcc",
 
     "hpcc/_TabContainerWidget",
 
@@ -32,13 +31,13 @@ define([
     "hpcc/SearchResultsWidget",
     "hpcc/EventScheduleWorkunitWidget"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific,
+], function (declare, lang, i18n, nlsHPCC,
                 _TabContainerWidget,
                 template) {
     return declare("HPCCPlatformMainWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformMainWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -49,7 +48,7 @@ define([
         },
 
         getTitle: function () {
-            return this.i18n.title;
+            return this.i18n.title_HPCCPlatformMain;
         },
 
         //  Hitched actions  ---

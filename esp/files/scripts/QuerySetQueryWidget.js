@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/QuerySetQueryWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-form",
     "dojo/request/iframe",
@@ -65,7 +64,7 @@ define([
     "dijit/TooltipDialog",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domForm, iframe, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, dom, domForm, iframe, arrayUtil, on,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, QuerySetDetailsWidget, WsWorkunits, ESPQuery, ESPUtil,
@@ -73,7 +72,7 @@ define([
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QuerySetQueryWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         borderContainer: null,
         queriesTab: null,

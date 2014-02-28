@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/ECLPlaygroundWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/xhr",
     "dojo/dom",
     "dojo/query",
@@ -37,14 +36,14 @@ define([
     "hpcc/ESPQuery",
 
     "dojo/text!../templates/ECLPlaygroundWidget.html"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, xhr, dom, query,
+], function (declare, lang, i18n, nlsHPCC, xhr, dom, query,
                 BorderContainer, TabContainer, ContentPane, registry,
                 _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit, ESPQuery,
                 template) {
     return declare("ECLPlaygroundWidget", [_Widget], {
         templateString: template,
         baseClass: "ECLPlaygroundWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         wu: null,
         editorControl: null,
@@ -77,7 +76,7 @@ define([
 
         //  Implementation  ---
         getTitle: function () {
-            return this.i18n.title;
+            return this.i18n.title_ECLPlayground;
         },
 
         _initControls: function () {

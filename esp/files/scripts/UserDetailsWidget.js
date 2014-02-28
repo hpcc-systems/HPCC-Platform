@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/UserQueryWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-form",
@@ -49,7 +48,7 @@ define([
 
     "dojox/form/PasswordValidator"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domAttr, domForm,
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domForm,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, WsAccess, MemberOfWidget, PermissionsWidget,
@@ -57,7 +56,7 @@ define([
     return declare("UserDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "UserDetailsWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         summaryWidget: null,
         memberOfWidget: null,

@@ -1,5 +1,0 @@
-define(
-({
-    title: "Keresés eredménye",
-})
-);

@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/PackageSourceWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/dom",
 
     "dijit/layout/_LayoutWidget",
@@ -32,14 +31,14 @@ define([
 
     "dojo/text!../templates/PackageSourceWidget.html"
 ],
-    function (declare, lang, i18n, nlsCommon, nlsSpecific, dom,
+    function (declare, lang, i18n, nlsHPCC, dom,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
             BorderContainer, ContentPane, registry,
             WsPackageMaps, template) {
         return declare("PackageSourceWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
             baseClass: "PackageSourceWidget",
-            i18n: lang.mixin(nlsCommon, nlsSpecific),
+            i18n: nlsHPCC,
             borderContainer: null,
 
             editor: null,
