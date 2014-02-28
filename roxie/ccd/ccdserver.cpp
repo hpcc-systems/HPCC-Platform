@@ -21844,6 +21844,23 @@ public:
         return nextSteppedGE(NULL, 0, matched, dummySmartStepExtra);
     }
 
+    unsigned __int64 checkCount(unsigned __int64 limit)
+    {
+        unsigned numParts = keyIndexSet->numParts();
+        unsigned __int64 result = 0;
+        for (unsigned i = 0; i < numParts; i++)
+        {
+            Owned<IKeyManager> countTlk = createKeyManager(keyIndexSet->queryPart(i), 0, this);
+            countTlk->setLayoutTranslator(translators->item(i));
+            indexHelper.createSegmentMonitors(countTlk);
+            countTlk->finishSegmentMonitors();
+            result += countTlk->checkCount(limit-result);
+            if (result > limit)
+                break;
+        }
+        return result;
+    }
+
     virtual const void *nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
@@ -21891,7 +21908,7 @@ public:
             {
                 if ((indexHelper.getFlags() & TIRcountkeyedlimit) != 0)
                 {
-                    unsigned __int64 count = tlk->checkCount(keyedLimit);
+                    unsigned __int64 count = checkCount(keyedLimit);
                     if (count > keyedLimit)
                     {
                         if ((indexHelper.getFlags() & (TIRkeyedlimitskips|TIRkeyedlimitcreates)) == 0)
@@ -21903,7 +21920,6 @@ public:
                         onEOF();
                         return ret;
                     }
-                    tlk->reset();
                     keyedLimit = (unsigned __int64) -1;
                 }
             }
