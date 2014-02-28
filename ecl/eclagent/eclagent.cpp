@@ -2715,61 +2715,58 @@ void EclAgent::deleteLRUPersists(const char * logicalName, int keep)
     assertex(tail);
     StringBuffer head(tail-logicalName+1, logicalName);
     head.append("p*");                                  // Multi-mode persist names end with __pNNNNNNN
-    loop  // Until we manage to delete without things changing beneath us...
+restart:     // If things change beneath us as we are deleting, repeat the process
+    IArrayOf<IPropertyTree> persists;
+    Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(),false,false,NULL);
+    ForEach(*iter)
     {
-        IArrayOf<IPropertyTree> persists;
-        Owned<IDFAttributesIterator> iter = queryDistributedFileDirectory().getDFAttributesIterator(head,queryUserDescriptor(),false,false,NULL);
-        ForEach(*iter)
+        IPropertyTree &pt = iter->query();
+        const char *name = pt.queryProp("@name");
+        if (stricmp(name, logicalName) == 0)   // Don't include the one we are intending to recreate in the LRU list (keep value does not include it)
+            continue;
+        if (pt.getPropBool("@persistent", false))
         {
-            IPropertyTree &pt = iter->query();
-            const char *name = pt.queryProp("@name");
-            if (stricmp(name, logicalName) == 0)   // Don't include the one we are intending to recreate in the LRU list (keep value does not include it)
-                continue;
-            if (pt.getPropBool("@persistent", false))
+            // Paranoia - check as far as we can that it really is another instance of this persist
+            tail = strrchr(name, '_');     // Locate the trailing double-underbar
+            assertex(tail);
+            tail++;
+            bool crcSuffix = (*tail++=='p');
+            while (crcSuffix && *tail)
             {
-                // Paranoia - check as far as we can that it really is another instance of this persist
-                tail = strrchr(name, '_');     // Locate the trailing double-underbar
-                assertex(tail);
+                if (!isdigit(*tail))
+                    crcSuffix = false;
                 tail++;
-                bool crcSuffix = (*tail++=='p');
-                while (crcSuffix && *tail)
-                {
-                    if (!isdigit(*tail))
-                        crcSuffix = false;
-                    tail++;
-                }
-                if (crcSuffix)
-                    persists.append(*LINK(&pt));
             }
+            if (crcSuffix)
+                persists.append(*LINK(&pt));
         }
-        if (persists.ordinality() > keep)
+    }
+    if (persists.ordinality() > keep)
+    {
+        persists.sort(comparePersistAccess);
+        while (persists.ordinality() > keep)
         {
-            persists.sort(comparePersistAccess);
-            while (persists.ordinality() > keep)
+            Owned<IPropertyTree> oldest = &persists.popGet();
+            const char *oldAccessTime = oldest->queryProp("@accessed");
+            VStringBuffer goer("~%s", oldest->queryProp("@name"));   // Make sure we don't keep adding the scope
+            Owned<IRemoteConnection> persistLock = getPersistReadLock(goer);
+            while (!changePersistLockMode(persistLock, RTM_LOCK_WRITE, goer, false))
             {
-                Owned<IPropertyTree> oldest = &persists.popGet();
-                const char *oldAccessTime = oldest->queryProp("@accessed");
-                VStringBuffer goer("~%s", oldest->queryProp("@name"));   // Make sure we don't keep adding the scope
-                Owned<IRemoteConnection> persistLock = getPersistReadLock(goer);
-                while (!changePersistLockMode(persistLock, RTM_LOCK_WRITE, goer, false))
-                {
-                    persistLock.clear();
-                    MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
-                    persistLock.setown(getPersistReadLock(goer));
-                }
-                Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
-                if (!f)
-                    continue; // Persist has been deleted since last checked - repeat the whole process
-                const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
-                if (oldAccessTime && newAccessTime && !streq(oldAccessTime, newAccessTime))
-                    continue; // Persist has been accessed since last checked - repeat the whole process
-                else if (newAccessTime && !oldAccessTime)
-                    continue; // Persist has been accessed since last checked - repeat the whole process
-                DBGLOG("Deleting LRU persist %s (last accessed at %s)", goer.str(), oldAccessTime);
-                f->detach();
+                persistLock.clear();
+                MilliSleep(PERSIST_LOCK_SLEEP + (getRandom()%PERSIST_LOCK_SLEEP));
+                persistLock.setown(getPersistReadLock(goer));
             }
+            Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(goer, queryUserDescriptor(), true);
+            if (!f)
+                goto restart; // Persist has been deleted since last checked - repeat the whole process
+            const char *newAccessTime = f->queryAttributes().queryProp("@accessed");
+            if (oldAccessTime && newAccessTime && !streq(oldAccessTime, newAccessTime))
+                goto restart; // Persist has been accessed since last checked - repeat the whole process
+            else if (newAccessTime && !oldAccessTime)
+                goto restart; // Persist has been accessed since last checked - repeat the whole process
+            DBGLOG("Deleting LRU persist %s (last accessed at %s)", goer.str(), oldAccessTime);
+            f->detach();
         }
-        break;
     }
 }
 
