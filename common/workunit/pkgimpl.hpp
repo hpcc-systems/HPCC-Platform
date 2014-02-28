@@ -384,7 +384,7 @@ public:
         Owned<IPropertyTree> query = resolveQueryAlias(querySet, queryname, true);
         if (!query)
             throw MakeStringException(PACKAGE_QUERY_NOT_FOUND, "Query %s not found", queryname);
-        Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL);
+        Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL, true);
         Owned<IWorkUnitFactory> wufactory = getWorkUnitFactory(NULL, NULL);
         Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(query->queryProp("@wuid"), false);
 
@@ -462,7 +462,7 @@ public:
             const char *queryid = queries->query().queryProp("@id");
             if (queryid && *queryid)
             {
-                Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL);
+                Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL, true);
                 Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"), false);
 
                 StringArray libnames, unresolvedLibs;
