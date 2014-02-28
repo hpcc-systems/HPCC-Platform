@@ -5976,7 +5976,7 @@ void CHThorWorkUnitWriteActivity::execute()
         if(outputLimit && ((rowdata.length() + thisSize) > outputLimit))
         {
             StringBuffer errMsg("Dataset too large to output to workunit (limit "); 
-            errMsg.append(outputLimit/0x100000).append(") megabytes, in result ("); 
+            errMsg.append(outputLimit/0x100000).append(" megabytes), in result (");
             const char *name = helper.queryName();
             if (name)
                 errMsg.append("name=").append(name);
@@ -6074,7 +6074,7 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
     if(outputLimit && (rowdata.length()  > outputLimit))
     {
         StringBuffer errMsg("Dictionary too large to output to workunit (limit ");
-        errMsg.append(outputLimit/0x100000).append(") megabytes, in result (");
+        errMsg.append(outputLimit/0x100000).append(" megabytes), in result (");
         const char *name = helper.queryName();
         if (name)
             errMsg.append("name=").append(name);

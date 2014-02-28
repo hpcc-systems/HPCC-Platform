@@ -19599,7 +19599,7 @@ public:
             if (outputLimitBytes && result.length() > outputLimitBytes)
             {
                 StringBuffer errMsg("Dataset too large to output to workunit (limit ");
-                errMsg.append(outputLimitBytes/0x100000).append(") megabytes, in result (");
+                errMsg.append(outputLimitBytes/0x100000).append(" megabytes), in result (");
                 const char *name = helper.queryName();
                 if (name)
                     errMsg.append("name=").append(name);
