@@ -1,21 +1,21 @@
 define(
 ({
-    title: "Event Scheduler",
-    Apply: "Apply",
-    Clear: "Clear",
-    Cluster: "Cluster",
+    title: "Planificador de Eventos",
+    Apply: "Aplicar",
+    Clear: "Despejar",
+    Cluster: "Systema",
     ClusterPH: "r?x*",
-    Deschedule: "Deschedule",
-    DescheduleSelectedWorkunits: "Deschedule Selected Workunits?",
-    EventName: "Event Name",
-    EventNamePH: "eventname",
-    EventText: "Event Text",
-    Filter: "Filter",
-    JobName: "Job Name",
-    NoScheduledEvents: "No Scheduled Events.",
-    Open: "Open",
-    OpenInNewPage: "Open In New Page",
-    Refresh: "Refresh",
-    Workunit: "Workunit"
+    Deschedule: "Eliminar del plan de ejecución",
+    DescheduleSelectedWorkunits: "Eliminar la unidade de trabajo seleccionada?",
+    EventName: "Nombre del Evento",
+    EventNamePH: "nombre del evento",
+    EventText: "Texto del Evento",
+    Filter: "Filtro",
+    JobName: "Nombre del trabajo",
+    NoScheduledEvents: "No hay eventos programado.",
+    Open: "Abrir",
+    OpenInNewPage: "Abrir en una nueva página",
+    Refresh: "Refrescar",
+    Workunit: "Unidad de trabajo"
 })
 );
