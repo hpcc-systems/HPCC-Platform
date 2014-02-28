@@ -2480,7 +2480,6 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
 {
     if (!result)
         return;
-    const IResultSetMetaData &meta = result->getMetaData();
 
     Owned<IResultSetCursor> cursor(result->createCursor());
     total=result->getNumRows();

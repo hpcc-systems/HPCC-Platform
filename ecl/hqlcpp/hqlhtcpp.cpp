@@ -1582,7 +1582,6 @@ BoundRow * HqlCppTranslator::declareTempAnonRow(BuildCtx & ctx, BuildCtx & codec
 void HqlCppTranslator::finalizeTempRow(BuildCtx & ctx, BoundRow * row, BoundRow * builder)
 {
     IHqlExpression * targetRow = row->queryBound();
-    IHqlExpression * rowBuilder = builder->queryBound();
     bool targetIsOwnedRow = hasWrapperModifier(targetRow->queryType());
 
     if (builder->queryBuilder() && targetIsOwnedRow)
