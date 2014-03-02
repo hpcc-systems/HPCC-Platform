@@ -114,10 +114,6 @@ define([
                     context._onRowDblClick(row);
                 }
             });
-            this.grid.on(".dgrid-row:contextmenu", function (evt) {
-                if (context._onRowContextMenu) {
-                }
-            });
             this.grid.onSelectionChanged(function (event) {
                 context._refreshActionState();
             });

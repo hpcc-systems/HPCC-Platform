@@ -49,7 +49,7 @@ define([
             widthField: null,
             hexView: null,
             wu: null,
-            unknownChar:  String.fromCharCode(8226),
+            unknownChar: String.fromCharCode(8226),
             lineLength: 16,
             showEbcdic: false,
             bufferLength: 16 * 1024,
@@ -124,7 +124,7 @@ define([
                 var context = this;
                 this.watching = this.wu.watch(function (name, oldValue, newValue) {
                     switch (name) {
-                        case "hasCompleted": 
+                        case "hasCompleted":
                             if (newValue === true) {
                                 context.wu.fetchResults(function (results) {
                                     context.cachedResponse = "";
@@ -162,11 +162,11 @@ define([
                 return true;
             },
 
-            isCharPrintable: function (char) {
-                return this.isCharCodePrintable(char.charCodeAt(0));
+            isCharPrintable: function (_char) {
+                return this.isCharCodePrintable(_char.charCodeAt(0));
             },
 
-            displayHex: function() {
+            displayHex: function () {
                 var context = this;
                 var formatRow = function (row, strRow, hexRow, length) {
                     if (row) {
@@ -202,9 +202,9 @@ define([
                         if (hexRow)
                             hexRow += " ";
                     }
-                    if (hexRow) 
+                    if (hexRow)
                         hexRow += " ";
-                    hexRow += item.char;
+                    hexRow += item["char"];
 
                     if (context.showEbcdic) {
                         strRow += context.isCharPrintable(item.estr1) ? item.estr1 : context.unknownChar;
@@ -218,7 +218,7 @@ define([
             },
 
             getQuery: function () {
-                return  "data_layout := record\n" + 
+                return "data_layout := record\n" +
                         "    data1 char;\n" +
                         "end;\n" +
                         "data_dataset := dataset('" + this.logicalFile + "', data_layout, thor);\n" +

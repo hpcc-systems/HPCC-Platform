@@ -367,9 +367,9 @@ define([
                         },
                         width: 25,
                         sortable: false,
-                        formatter: function (protected) {
-                            if (protected == true) {
-                                return ("<img src='/esp/files/img/locked.png'>");
+                        formatter: function (_protected) {
+                            if (_protected == true) {
+                                return "<img src='/esp/files/img/locked.png'>";
                             }
                             return "";
                         }

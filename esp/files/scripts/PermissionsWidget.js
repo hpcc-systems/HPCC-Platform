@@ -145,7 +145,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyFull
                         }
-                    }),
+                    })
                 }
             }, domID);
 
