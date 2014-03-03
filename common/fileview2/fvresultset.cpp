@@ -3655,12 +3655,12 @@ extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * resu
     return getResultCursorXml(ret, cursor, name, start, count, schemaName);
 }
 
-extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count)
+extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName)
 {
     Owned<IResultSetCursor> cursor = result->createCursor();
     Owned<CommonJsonWriter> writer = new CommonJsonWriter(0);
     writer->outputBeginRoot();
-    unsigned rc = writeResultCursorXml(*writer, cursor, name, start, count, NULL);
+    unsigned rc = writeResultCursorXml(*writer, cursor, name, start, count, schemaName);
     writer->outputEndRoot();
     ret.set(writer->str());
     return rc;
@@ -3670,17 +3670,13 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSe
 {
     if (schemaName)
     {
-        CommonXmlWriter *xmlwriter = dynamic_cast<CommonXmlWriter *>(&writer);
-        if (xmlwriter)
-        {
-            StringBuffer xsd;
-            xsd.append("<XmlSchema name=\"").append(schemaName).append("\">");
-            const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
-            StringBufferAdaptor adaptor(xsd);
-            meta.getXmlXPathSchema(adaptor, false);
-            xsd.append("</XmlSchema>").newline();
-            xmlwriter->outputInlineXml(xsd.str());
-        }
+        writer.outputBeginNested("XmlSchema", false);
+        writer.outputUtf8(strlen(schemaName), schemaName, "@name");
+        SCMStringBuffer xsd;
+        const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
+        meta.getXmlXPathSchema(xsd, false);
+        writer.outputInlineXml(xsd.str());
+        writer.outputEndNested("XmlSchema");
     }
 
     writer.outputBeginDataset(name, true);

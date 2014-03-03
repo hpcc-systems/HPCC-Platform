@@ -407,6 +407,7 @@ public:
     }
 
     IMPLEMENT_IINTERFACE;
+    virtual void outputInlineXml(const char *xml){}
     virtual void outputQuoted(const char *text) { }
 
     virtual void outputString(unsigned len, const char *field, const char *fieldname) 
