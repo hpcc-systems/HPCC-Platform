@@ -259,6 +259,7 @@ protected:
     bool            isRecordStructurePresent;
     StringBuffer    recordStructure;
     unsigned        fieldCount;
+    StringAttrArray fields;
     bool            isFirstRow;
 };
 
@@ -314,6 +315,7 @@ protected:
     bool            isRecordStructurePresent;
     StringBuffer    recordStructure;
     unsigned        fieldCount;
+    StringAttrArray fields;
     bool            isFirstRow;
 };
 
