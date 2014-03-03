@@ -227,7 +227,7 @@ define([
         refreshResources: function (query) {
             return self.Resources({
                 request: {
-                    basedn: this.basedn,
+                    basedn: this.basedn
                 }
             }).then(lang.hitch(this, function (response) {
                 if (lang.exists("ResourcesResponse.Resources.Resource", response)) {

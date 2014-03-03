@@ -174,7 +174,7 @@ define([
                     }
                     var wu = item.Server === "DFUserver" ? ESPDFUWorkunit.Get(item.Wuid) : ESPWorkunit.Get(item.Wuid);
                     wu.updateData(lang.mixin({
-                        __hpcc_id: item.Wuid,
+                        __hpcc_id: item.Wuid
                     }, item));
                     queue.addChild(wu);
                 });
