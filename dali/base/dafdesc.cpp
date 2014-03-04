@@ -385,7 +385,7 @@ struct CClusterInfo: public CInterface, implements IClusterInfo
                     }
                     if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
                     {
-                        mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));
+                        mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
                     }
                     return; // ok
                 }
@@ -430,10 +430,14 @@ public:
             StringBuffer defaultDir;
             GroupType groupType;
             group.setown(resolver->lookup(name.get(), defaultDir, groupType));
+            // MORE - common some of this with checkClusterName?
             if (mspec.defaultBaseDir.isEmpty())
             {
                 mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
-                // MORE - work out why this code pulled out of checkClusterName
+            }
+            if (mspec.defaultCopies>1 && mspec.defaultReplicateDir.isEmpty())
+            {
+                mspec.setDefaultReplicateDir(queryBaseDirectory(groupType, 1));  // MORE - not sure this is strictly correct
             }
         }
         else
