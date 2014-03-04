@@ -195,7 +195,7 @@ class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
     EclCmdPublish() : optNoActivate(false), optSuspendPrevious(false), optDeletePrevious(false),
-        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000)
+        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000), optAllowForeign(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
         optTimeLimit = (unsigned) -1;
@@ -232,6 +232,8 @@ public:
             if (iter.matchOption(optComment, ECLOPT_COMMENT))
                 continue;
             if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
+                continue;
+            if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
                 continue;
             if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
             {
@@ -325,6 +327,7 @@ public:
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
         req->setDontCopyFiles(optDontCopyFiles);
+        req->setAllowForeignFiles(optAllowForeign);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -381,6 +384,7 @@ public:
             "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --no-files             Do not copy files referenced by query\n"
+            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
@@ -410,6 +414,7 @@ private:
     bool optDontCopyFiles;
     bool optSuspendPrevious;
     bool optDeletePrevious;
+    bool optAllowForeign;
 };
 
 class EclCmdRun : public EclCmdWithEclTarget
