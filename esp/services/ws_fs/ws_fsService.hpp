@@ -25,8 +25,21 @@
 
 class Schedule : public Thread
 {
+    bool stopping;
+    Semaphore semSchedule;
     IEspContainer* m_container;
 public:
+    Schedule()
+    {
+        stopping = false;
+    };
+    ~Schedule()
+    {
+        stopping = true;
+        semSchedule.signal();
+        join();
+    }
+
     virtual int run();
     virtual void setContainer(IEspContainer * container)
     {

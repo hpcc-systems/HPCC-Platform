@@ -2617,7 +2617,7 @@ int WUSchedule::run()
 {
     try
     {
-        while(true)
+        while(!stopping)
         {
             Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
             Owned<IConstWorkUnitIterator> itr = factory->getWorkUnitsByState(WUStateScheduled);
@@ -2652,7 +2652,7 @@ int WUSchedule::run()
                     }
                 }
             }
-            sleep(60);
+            semSchedule.wait(1000*60);
         }
     }
     catch(IException *e)
