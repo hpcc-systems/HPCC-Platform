@@ -55,11 +55,8 @@
                 //locale: "zh",  //  Uncomment for testing only  ----
                 //locale: "hu",  //  Uncomment for testing only  ----
                 packages: [{
-                    name: "main",
-                    location: base
-                }, {
                     name: "hpcc",
-                    location: base + "/scripts"
+                    location: base + "/hpcc"
                 }, {
                     name: "viz",
                     location: base + "/scripts/viz"
@@ -70,7 +67,7 @@
     <script src="/esp/files/dojo/dojo.js"></script>
     <script>
         require([
-        "main/stub",
+        "hpcc/stub",
         "dojo/domReady!"], function (app) {
             app.init();
         });

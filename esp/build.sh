@@ -12,7 +12,7 @@ SRCDIR="$BASEDIR/src"
 TOOLSDIR="$SRCDIR/util/buildscripts"
 
 # Destination directory for built code
-DISTDIR="$BASEDIR/dist"
+DISTDIR=$1
 
 # Module ID of the main application package loader configuration
 LOADERMID="hpcc/run"
@@ -36,15 +36,15 @@ echo -n "Cleaning old files..."
 rm -rf "$DISTDIR"
 echo " Done"
 
-mkdir "$DISTDIR"
+mkdir -p "$DISTDIR"
 cp -r "$SRCDIR/CodeMirror2" "$DISTDIR/CodeMirror2"
 
 cd "$TOOLSDIR"
 
 if which node >/dev/null; then
-	node ../../dojo/dojo.js load=build --require "$LOADERCONF" --profile "$PROFILE" --releaseDir "$DISTDIR" $@
+	node ../../dojo/dojo.js load=build --require "$LOADERCONF" --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
 elif which java >/dev/null; then
-	java -Xms256m -Xmx256m  -cp ../shrinksafe/js.jar:../closureCompiler/compiler.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main  ../../dojo/dojo.js baseUrl=../../dojo load=build --require "$LOADERCONF" --profile "$PROFILE" --releaseDir "$DISTDIR" $@
+	java -Xms256m -Xmx256m  -cp ../shrinksafe/js.jar:../closureCompiler/compiler.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main  ../../dojo/dojo.js baseUrl=../../dojo load=build --require "$LOADERCONF" --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
 else
 	echo "Need node.js or Java to build!"
 	exit 1
@@ -54,12 +54,12 @@ cd "$BASEDIR"
 
 LOADERMID=${LOADERMID//\//\\\/}
 
-# Copy & minify index.html to dist
-cat "$SRCDIR/index.html" | tr '\n' ' ' | \
+# Copy & minify stub.htm to dist
+cat "$SRCDIR/stub.htm" | tr '\n' ' ' | \
 perl -pe "
   s/<\!--.*?-->//g;                          # Strip comments
-  s/isDebug: *1/deps:['$LOADERMID']/;        # Remove isDebug, add deps
-  s/<script src=\"$LOADERMID.*?\/script>//;  # Remove script app/run
-  s/\s+/ /g;                                 # Collapse white-space" > "$DISTDIR/index.html"
+#  s/isDebug: *1/deps:['$LOADERMID']/;        # Remove isDebug, add deps
+#  s/<script src=\"$LOADERMID.*?\/script>//;  # Remove script hpcc/run
+  s/\s+/ /g;                                 # Collapse white-space" > "$DISTDIR/stub.htm"
 
 echo "Build complete"

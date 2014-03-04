@@ -63,7 +63,7 @@ var profile = {
 			// the main application `app/main` and the `dojo/i18n` and `dojo/domReady` modules because, while they are
 			// all conditional dependencies in `app/main`, we do not want to have to make extra HTTP requests for such
 			// tiny files.
-			include: [ 'dojo/i18n', 'dojo/domReady', 'hpcc/main', 'hpcc/run' ],
+			include: [ 'dojo/i18n', 'dojo/domReady', 'hpcc/run' ],
 
 			// By default, the build system will try to include `dojo/main` in the built `dojo/dojo` layer, which adds
 			// a bunch of stuff we do not want or need. We want the initial script load to be as small and quick to

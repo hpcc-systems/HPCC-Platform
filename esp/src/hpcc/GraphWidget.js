@@ -452,16 +452,6 @@ define([
                 return this.xgmml;
             },
 
-            localLayout: function(callback) {
-                var context = this;
-                require(
-                  ["hpcc/viz"],
-                  function (viz) {
-                      callback(Viz(context.dot, "svg"));
-                  }
-                );
-            },
-
             displayProperties: function (globalID, place) {
                 if (this.hasPlugin()) {
                     var item = this.getItem(globalID);

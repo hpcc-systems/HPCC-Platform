@@ -33,9 +33,7 @@ require({
 		'css',
 		'ecl',
 		'templates',
-
-		// For reference, this is what a more verbose package declaration looks like.
-                { name: 'hpcc', location: 'hpcc', map: {} }
+		'hpcc'
 	]
 // Require `app`. This loads the main application module, `app/main`, since we registered the `app` package above.
-}, [ 'hpcc' ]);
+});

@@ -1,26 +1,27 @@
 {
 	"name": "hpcc",
 	"version": "1.0",
-	"main": "main",
+	"main": "stub",
 	"dependencies": {
-		"dojo": "1.9.0",
-		"dijit": "1.9.0",
-		"dojox": "1.9.0",
-		"util": "1.9.0"
+		"dojo": "1.9.3",
+		"dijit": "1.9.3",
+		"dojox": "1.9.3",
+		"util": "1.9.3",
+		"d3": "3.4.3",
+		"topojson": "1.4.9",
+		"dgrid": "0.3.13",
+		"xstyle": "0.2.1",
+		"put-selector": "0.3.5"
 	},
-	"description": "Dojo Boilerplate Example Application. A quick-start application that demonstrates basic usage of the Dojo Toolkit. This package.json file is a CommonJS Packages/1.0 manifest, with a special `dojoBuild` property to point to the build file for this package.",
+	"description": "'ECL Watch' Web interface for HPCC Platform.",
 	"licenses": [
 		{
-			"type": "AFLv2.1",
-			"url": "http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L43"
-		},
-		{
-			"type": "BSD",
-			"url": "http://bugs.dojotoolkit.org/browser/dojo/trunk/LICENSE#L13"
+			"type": "Apache License, Version 2.0",
+			"url": "https://raw.github.com/hpcc-systems/HPCC-Platform/master/LICENSE.txt"
 		}
 	],
-	"bugs": "https://github.com/csnover/dojo-boilerplate/issues",
-	"keywords": ["JavaScript", "Dojo", "Boilerplate", "Example", "Howto"],
-	"homepage": "https://github.com/csnover/dojo-boilerplate",
+	"bugs": "https://track.hpccsystems.com/issues/?jql=component%20%3D%20EclWatch%20",
+	"keywords": ["JavaScript", "HPCC", "Big Data"],
+	"homepage": "https://github.com/hpcc-systems/HPCC-Platform",
 	"dojoBuild": "package.js"
 }

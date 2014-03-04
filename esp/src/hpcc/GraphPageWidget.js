@@ -344,15 +344,6 @@ define([
             this.infoDialog.show();
         },
 
-        _onRenderSVG: function () {
-            var context = this
-            this.main.localLayout(function (svg) {
-                html.set(dom.byId(context.id + "InfoDialogContent"), "<div style='border: 1px inset grey; width: 640px; height: 480px; overflow : auto; '>" + svg + "</div>");
-                context.infoDialog.set("title", this.i18n.RenderedSVG);
-                context.infoDialog.show();
-            });
-        },
-
         _onGetXGMML: function () {
             this.xgmmlDialog.set("title", this.i18n.XGMML);
             this.xgmmlDialog.set("hpccMode", "XGMML");
