@@ -120,7 +120,7 @@ define([
             this.clusterTargetSelect.init({
                 Targets: true,
                 includeBlank: true,
-                Target: params.Cluster,
+                Target: params.Cluster
             });
             this.initQuerySetGrid();
             this.selectChild(this.queriesTab, true);
@@ -346,8 +346,8 @@ define([
                     PublishedBy: {
                         width: 180,
                         label: this.i18n.PublishedBy
-                    },
-                },
+                    }
+                }
             },
             this.id + "QuerySetGrid");
             //this.querySetGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");

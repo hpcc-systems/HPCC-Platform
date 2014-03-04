@@ -11,7 +11,7 @@ define([
   "dojo/text!./map/us_counties.json",
   "dojo/text!./templates/DojoD3Choropeth.css",
 
-  "d3/topojson.v1.min"
+  "topojson/topojson"
 ], function (declare, lang, arrayUtil, JSON,
     DojoD3, Mapping,
     us, us_counties, css) {

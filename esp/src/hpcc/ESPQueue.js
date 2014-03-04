@@ -30,7 +30,7 @@ define([
     WsSMC, ESPUtil, ESPRequest, ESPWorkunit, ESPDFUWorkunit) {
 
     var Store = declare([Memory], {
-        idProperty: "__hpcc_id",
+        idProperty: "__hpcc_id"
     });
 
     var Queue = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
