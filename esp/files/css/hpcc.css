@@ -15,6 +15,19 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 
+
+@import '../dojo/resources/dojo.css';
+@import '../dijit/themes/claro/claro.css';
+@import '../dojox/grid/resources/Grid.css';
+@import '../dojox/grid/enhanced/resources/claro/EnhancedGrid.css';
+@import '../dojox/grid/resources/claroGrid.css';
+@import '../dojox/widget/Toaster/Toaster.css';
+@import '../dojox/widget/UpgradeBar/UpgradeBar.css';
+@import '../dojox/form/resources/FileUploader.css';
+@import '../dojox/form/resources/UploaderFileList.css';
+@import '../dgrid/css/dgrid.css';
+@import '../dgrid/css/skins/claro.css';
+
 /*ELEMENT STYLES***************/
 html, body {
     background: white;
@@ -417,7 +430,7 @@ hr.dashedLine {
 }
 
 #loadingOverlay {
-    background: url("/esp/files/img/loadingBar.gif") no-repeat 10px 23px;
+    background: url("../img/loadingBar.gif") no-repeat 10px 23px;
     background-position: center center;
     background-attachment:fixed;
     font-family: Arial, Verdana, sans-serif;
@@ -900,5 +913,6 @@ margin-left:-20px;
     left: 0;
     right: 0;
     height: auto;
+
 }
 
