@@ -176,6 +176,7 @@ public:
     virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) = 0;
     virtual void outputBeginArray(const char *fieldname) = 0;
     virtual void outputEndArray(const char *fieldname) = 0;
+    virtual void outputInlineXml(const char *text) = 0; //for appending raw xml content
     inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
 };
 

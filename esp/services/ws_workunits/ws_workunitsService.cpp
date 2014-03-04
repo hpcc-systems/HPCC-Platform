@@ -2502,7 +2502,7 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
         } adaptor(mb);
 
         if (fmt==ESPSerializationJSON)
-            count = getResultJSON(adaptor, result, name, (unsigned) start, count);
+            count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
         else
             count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
     }

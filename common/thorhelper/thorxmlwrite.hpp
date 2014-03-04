@@ -48,10 +48,10 @@ public:
     unsigned length() const                                 { return out.length(); }
     const char * str() const                                { return out.str(); }
 
-    void outputInlineXml(const char *text){out.append(text); flush(false);} //for appending xml only content
     void outputBeginNested(const char *fieldname, bool nestChildren, bool doIndent);
     void outputEndNested(const char *fieldname, bool doIndent);
 
+    virtual void outputInlineXml(const char *text){out.append(text); flush(false);} //for appending raw xml content
     virtual void outputQuoted(const char *text);
     virtual void outputQString(unsigned len, const char *field, const char *fieldname);
     virtual void outputString(unsigned len, const char *field, const char *fieldname);
@@ -103,6 +103,11 @@ public:
     void checkDelimit(int inc=0);
     void checkFormat(bool doDelimit, bool needDelimiter=true, int inc=0);
 
+    virtual void outputInlineXml(const char *text) //for appending raw xml content
+    {
+        if (text && *text)
+            outputUtf8(strlen(text), text, "xml");
+    }
     virtual void outputQuoted(const char *text);
     virtual void outputQString(unsigned len, const char *field, const char *fieldname);
     virtual void outputString(unsigned len, const char *field, const char *fieldname);
@@ -218,6 +223,8 @@ public:
     virtual void outputBeginArray(const char *fieldname){}
     virtual void outputEndArray(const char *fieldname){}
     virtual void outputSetAll();
+    virtual void outputInlineXml(const char *text){} //for appending raw xml content
+
 
     void newline();
 protected:
