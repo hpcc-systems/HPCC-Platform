@@ -1942,6 +1942,14 @@ class CLookupHT : public CHTBase
         }
         return NULL;
     }
+    void releaseHTRows()
+    {
+        for (rowidx_t r=0; r<htSize; r++)
+        {
+            if (ht[r])
+                ReleaseThorRow(ht[r]);
+        }
+    }
 public:
     CLookupHT()
     {
@@ -1949,11 +1957,7 @@ public:
     }
     ~CLookupHT()
     {
-        for (rowidx_t r=0; r<htSize; r++)
-        {
-            if (ht[r])
-                ReleaseThorRow(ht[r]);
-        }
+        releaseHTRows();
     }
     void setup(CLookupJoinActivityBase<CLookupHT> *_activity, rowidx_t size, IHash *leftHash, IHash *rightHash, ICompare *compareLeftRight)
     {
@@ -1966,6 +1970,7 @@ public:
     }
     void reset()
     {
+        releaseHTRows();
         CHTBase::reset();
         ht = NULL;
     }
