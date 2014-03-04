@@ -259,7 +259,7 @@ protected:
     bool            isRecordStructurePresent;
     StringBuffer    recordStructure;
     unsigned        fieldCount;
-    StringAttrArray fields;
+    Owned<KeptAtomTable> fields;
     bool            isFirstRow;
 };
 
@@ -315,7 +315,7 @@ protected:
     bool            isRecordStructurePresent;
     StringBuffer    recordStructure;
     unsigned        fieldCount;
-    StringAttrArray fields;
+    Owned<KeptAtomTable> fields;
     bool            isFirstRow;
 };
 

@@ -589,6 +589,7 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     isRecordStructurePresent = false;
     fieldCount = 0;
     isFirstRow = true;
+    fields.setown(new KeptAtomTable);
 }
 
 void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
@@ -625,21 +626,8 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
         }
 
         // Check discovered field name uniqueness
-        bool alreadyExist = false;
         const char * fn = fieldName.toCharArray();
-        ForEachItemIn(idx, fields)
-        {
-            StringAttrItem & field = fields.item(idx);
-
-            int result = strcmp(field.text.get(), fn);
-            if ( !result )
-            {
-                alreadyExist = true;
-                break;
-            }
-        }
-
-        if ( alreadyExist )
+        if ( fields->find(fn) != NULL )
         {
             time_t t;
             time(&t);
@@ -654,8 +642,7 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
     recordStructure.append(fieldName);
     recordStructure.append(";\n");
 
-    StringAttrItem *field = new StringAttrItem(fieldName.toCharArray());
-    fields.append(*field);
+    fields->addAtom(fieldName.toCharArray());
 }
 
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
@@ -927,6 +914,7 @@ CUtfPartitioner::CUtfPartitioner(const FileFormat & _format) : CInputBasePartiti
     isRecordStructurePresent = false;
     fieldCount = 0;
     isFirstRow = true;
+    fields.setown(new KeptAtomTable);
 }
 
 void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
@@ -967,21 +955,8 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
         }
 
         // Check discovered field name uniqueness
-        bool alreadyExist = false;
         const char * fn = fieldName.toCharArray();
-        ForEachItemIn(idx, fields)
-        {
-            StringAttrItem & field = fields.item(idx);
-
-            int result = strcmp(field.text.get(), fn);
-            if( !result )
-            {
-                alreadyExist = true;
-                break;
-            }
-        }
-
-        if ( alreadyExist )
+        if ( fields->find(fn) != NULL )
         {
             time_t t;
             time(&t);
@@ -996,8 +971,7 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
     recordStructure.append(fieldName);
     recordStructure.append(";\n");
 
-    StringAttrItem *field = new StringAttrItem(fieldName.toCharArray());
-    fields.append(*field);
+    fields->addAtom(fieldName.toCharArray());
 }
 
 size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
