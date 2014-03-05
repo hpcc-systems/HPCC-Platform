@@ -283,7 +283,6 @@ protected:
         }
         else if(!isPersistUptoDate(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC, thisPersist->isFile))
         {
-            // We used to call agent.clearPersist(logicalName) here - but that means if the persist rebuild fails, we forget WHY we wanted to.
             // New persist model allows dependencies to be executed AFTER checking if the persist is up to date
             if (workunit->getDebugValueBool("expandPersistInputDependencies", false))
                 doExecuteItemDependencies(item, wfid);
@@ -292,7 +291,8 @@ protected:
             doExecuteItem(item, wfid);
             updatePersist(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC);
         }
-        finishPersist(persistLock.getClear());
+        logctx.CTXLOG("Finished persists - add to read lock list");
+        persistReadLocks.append(*persistLock);
     }
 
 private:
@@ -489,18 +489,6 @@ private:
         return false;
     }
 
-    void clearPersist(const char * logicalName)
-    {
-        StringBuffer lfn, crcName, eclName;
-        expandLogicalFilename(lfn, logicalName, workunit, false);
-        crcName.append(lfn).append("$crc");
-        eclName.append(lfn).append("$eclcrc");
-
-        setResultInt(crcName, ResultSequencePersist, 0);
-        setResultInt(eclName, ResultSequencePersist, 0);
-        logctx.CTXLOG("Recalculate persistent value %s", logicalName);
-    }
-
     void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
     {
         StringBuffer lfn, crcName, eclName;
@@ -522,12 +510,6 @@ private:
         WorkunitUpdate w(&workunit->lock());
         w->setState(WUStateRunning);
         return persistLock;
-    }
-
-    void finishPersist(IRemoteConnection *persistLock)
-    {
-        logctx.CTXLOG("Finished persists - add to read lock list");
-        persistReadLocks.append(*persistLock);
     }
 
     void checkPersistMatches(const char * logicalName, unsigned eclCRC)
@@ -3593,11 +3575,6 @@ public:
         expandLogicalFilename(lfn, logicalName, workUnit, false);
         return lfn.detach();
     }
-    virtual IRemoteConnection *startPersist(const char * name) { throwUnexpected(); }
-    virtual void finishPersist(IRemoteConnection *) { throwUnexpected(); }
-    virtual void clearPersist(const char * logicalName) { throwUnexpected(); }
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) { throwUnexpected(); }
-    virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) { throwUnexpected(); }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
     {
