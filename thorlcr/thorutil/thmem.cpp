@@ -259,17 +259,18 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
             if (spillStream)
                 return spillStream->nextRow();
             CThorArrayLockBlock block(owner->rows);
-            if (pos == owner->rows.numCommitted())
-                return NULL;
-            else if (owner->spillFile) // i.e. has spilt
+            if (owner->spillFile) // i.e. has spilt
             {
                 assertex(((offset_t)-1) != outputOffset);
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (owner->preserveNulls)
                     rwFlags |= rw_grouped;
                 spillStream.setown(::createRowStreamEx(owner->spillFile, owner->rowIf, outputOffset, (offset_t)-1, (unsigned __int64)-1, rwFlags));
+                owner->rows.unregisterWriteCallback(*this); // no longer needed
                 return spillStream->nextRow();
             }
+            else if (pos == owner->rows.numCommitted())
+                return NULL;
             return owner->rows.get(pos++);
         }
         virtual void stop() { }
@@ -1169,6 +1170,16 @@ void CThorSpillableRowArray::sort(ICompare &compare, unsigned maxCores)
     }
 }
 
+static int callbackSortRev(IInterface **cb2, IInterface **cb1)
+{
+    rowidx_t i2 = ((IWritePosCallback *)(*cb2))->queryRecordNumber();
+    rowidx_t i1 = ((IWritePosCallback *)(*cb1))->queryRecordNumber();
+
+    if (i1==i2) return 0;
+    if (i1<i2) return -1;
+    return 1;
+}
+
 rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression)
 {
     rowidx_t n = numCommitted();
@@ -1184,24 +1195,43 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression)
         rwFlags |= rw_compress;
     if (allowNulls)
         rwFlags |= rw_grouped;
-    Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags);
 
+    // NB: This is always called within a CThorArrayLockBlock, as such no writebacks are added or updating
+    rowidx_t nextCBI = RCIDXMAX; // indicates none
+    IWritePosCallback *nextCB = NULL;
+    ICopyArrayOf<IWritePosCallback> cbCopy;
+    if (writeCallbacks.ordinality())
+    {
+        ForEachItemIn(c, writeCallbacks)
+            cbCopy.append(writeCallbacks.item(c));
+        cbCopy.sort(callbackSortRev);
+        nextCB = &cbCopy.pop();
+        nextCBI = nextCB->queryRecordNumber();
+    }
+    Owned<IExtRowWriter> writer = createRowWriter(&iFile, rowIf, rwFlags);
     const void **rows = getBlock(n);
     for (rowidx_t i=0; i < n; i++)
     {
         const void *row = rows[i];
         assertex(row || allowNulls);
+        if (i == nextCBI)
+        {
+            writer->flush();
+            do
+            {
+                nextCB->filePosition(writer->getPosition());
+                if (cbCopy.ordinality())
+                {
+                    nextCB = &cbCopy.pop();
+                    nextCBI = nextCB->queryRecordNumber();
+                }
+                else
+                    nextCBI = RCIDXMAX; // indicating no more
+            }
+            while (i == nextCBI); // loop as may be >1 IWritePosCallback at same pos
+        }
         writer->putRow(row);
         rows[i] = NULL;
-        ForEachItemIn(c, writeCallbacks)
-        {
-            IWritePosCallback &callback = writeCallbacks.item(c);
-            if (i == callback.queryRecordNumber())
-            {
-                writer->flush();
-                callback.filePosition(writer->getPosition());
-            }
-        }
     }
     writer->flush();
     offset_t bytesWritten = writer->getPosition();
