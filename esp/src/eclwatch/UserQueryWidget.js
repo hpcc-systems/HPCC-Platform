@@ -234,7 +234,7 @@ define([
                     name: {
                         label: this.i18n.GroupName
                     }
-                },
+                }
             }, this.id + "GroupsGrid");
             this.groupsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
             var context = this;
@@ -331,7 +331,7 @@ define([
                         width: 180,
                         label: this.i18n.PasswordExpiration
                     }
-                },
+                }
             }, this.id + "UsersGrid");
             this.usersGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
             var context = this;

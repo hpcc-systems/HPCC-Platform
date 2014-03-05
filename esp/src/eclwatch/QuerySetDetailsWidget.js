@@ -200,10 +200,10 @@ define([
                 this.workunitsTab.set("title", newValue);
             }
             if (name === "Suspended") {
-                dom.byId(this.id + "SuspendImg").src = newValue ? "/esp/files/img/suspended.png" : "/esp/files/img/unsuspended.png";
+                dom.byId(this.id + "SuspendImg").src = newValue ? dojoConfig.getImageURL("suspended.png") : dojoConfig.getImageURL("unsuspended.png");
             }
             if (name === "Activated") {
-                dom.byId(this.id + "ActiveImg").src = newValue ? "/esp/files/img/active.png" : "/esp/files/img/inactive.png";
+                dom.byId(this.id + "ActiveImg").src = newValue ? dojoConfig.getImageURL("active.png") : dojoConfig.getImageURL("inactive.png");
             }
 
             else if (name === "CountGraphs" && newValue) {

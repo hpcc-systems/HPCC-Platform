@@ -33,7 +33,7 @@ define([
 
     "hpcc/_Widget",
 
-    "dojo/text!/esp/files/templates/GraphWidget.html",
+    "dojo/text!../templates/GraphWidget.html",
 
     "dijit/Toolbar", 
     "dijit/ToolbarSeparator", 
@@ -450,16 +450,6 @@ define([
 
             getXGMML: function () {
                 return this.xgmml;
-            },
-
-            localLayout: function(callback) {
-                var context = this;
-                require(
-                  ["hpcc/viz"],
-                  function (viz) {
-                      callback(Viz(context.dot, "svg"));
-                  }
-                );
             },
 
             displayProperties: function (globalID, place) {

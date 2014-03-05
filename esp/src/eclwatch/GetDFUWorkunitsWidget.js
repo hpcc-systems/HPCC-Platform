@@ -318,13 +318,13 @@ define([
                     }),
                     isProtected: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='/esp/files/img/locked.png'>";
+                            node.innerHTML = dojoConfig.getImageHTML("locked.png");
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (_protected) {
                             if (_protected == true) {
-                                return ("<img src='/esp/files/img/locked.png'>");
+                                return dojoConfig.getImageHTML("locked.png");
                             }
                             return "";
                         }

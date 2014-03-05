@@ -240,9 +240,9 @@ define([
         },
         getProtectedImage: function () {
             if (this.isProtected) {
-                return "/esp/files/img/locked.png"
+                return dojoConfig.getImageURL("locked.png");
             }
-            return "/esp/files/img/unlocked.png"
+            return dojoConfig.getImageURL("unlocked.png");
         },
         getStateIconClass: function () {
             switch (this.StateID) {
@@ -270,23 +270,23 @@ define([
         getStateImage: function () {
             switch (this.State) {
                 case 1:
-                    return "/esp/files/img/workunit_warning.png";
+                    return dojoConfig.getImageURL("workunit_warning.png");
                 case 2:
-                    return "/esp/files/img/workunit_submitted.png";
+                    return dojoConfig.getImageURL("workunit_submitted.png");
                 case 3:
-                    return "/esp/files/img/workunit_running.png";
+                    return dojoConfig.getImageURL("workunit_running.png");
                 case 4:
-                    return "/esp/files/img/workunit_failed.png";
+                    return dojoConfig.getImageURL("workunit_failed.png");
                 case 5:
-                    return "/esp/files/img/workunit_failed.png";
+                    return dojoConfig.getImageURL("workunit_failed.png");
                 case 6:
-                    return "/esp/files/img/workunit_completed.png";
+                    return dojoConfig.getImageURL("workunit_completed.png");
                 case 7:
-                    return "/esp/files/img/workunit_running.png";
+                    return dojoConfig.getImageURL("workunit_running.png");
                 case 8:
-                    return "/esp/files/img/workunit_aborting.png";
+                    return dojoConfig.getImageURL("workunit_aborting.png");
             }
-            return "/esp/files/img/workunit.png";
+            return dojoConfig.getImageURL("workunit.png");
         }
     });
 

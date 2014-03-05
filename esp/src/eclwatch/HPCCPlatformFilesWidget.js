@@ -69,7 +69,7 @@ define([
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.id + "_XRef") {
                     currSel.set("content", dojo.create("iframe", {
-                        src: "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsDFUXRef") + "/DFUXRefList"),
+                        src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsDFUXRef") + "/DFUXRefList"),
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 } else if (currSel.init) {

@@ -120,7 +120,7 @@ define([
             this.clusterTargetSelect.init({
                 Targets: true,
                 includeBlank: true,
-                Target: params.Cluster,
+                Target: params.Cluster
             });
             this.initQuerySetGrid();
             this.selectChild(this.queriesTab, true);
@@ -272,39 +272,39 @@ define([
                     }),
                     Suspended: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='/esp/files/img/suspended.png'>";
+                            node.innerHTML = dojoConfig.getImageHTML("suspended.png");
                         },
                         width: 20,
                         sortable: false,
                         formatter: function (suspended) {
                             if (suspended == true) {
-                                return ("<img src='/esp/files/img/suspended.png'>");
+                                return dojoConfig.getImageHTML("suspended.png");
                             }
                             return "";
                         }
                     },
                     Activated: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='/esp/files/img/active.png'>";
+                            node.innerHTML = dojoConfig.getImageHTML("active.png");
                         },
                         width: 20,
                         sortable: false,
                         formatter: function (activated) {
                             if (activated == true) {
-                                return ("<img src='/esp/files/img/active.png'>");
+                                return dojoConfig.getImageHTML("active.png");
                             }
                             return "";
                         }
                     },
                     ErrorCount: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='/esp/files/img/errwarn.png'>";
+                            node.innerHTML = dojoConfig.getImageHTML("errwarn.png");
                         },
                         width: 20,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
-                                return ("<img src='/esp/files/img/errwarn.png'>");
+                                return dojoConfig.getImageHTML("errwarn.png");
                             }
                             return "";
                         }
@@ -346,8 +346,8 @@ define([
                     PublishedBy: {
                         width: 180,
                         label: this.i18n.PublishedBy
-                    },
-                },
+                    }
+                }
             },
             this.id + "QuerySetGrid");
             //this.querySetGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");

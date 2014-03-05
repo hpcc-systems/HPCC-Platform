@@ -14,30 +14,28 @@
 #    limitations under the License.
 ############################################################################## */
 define([
-    "dojo/_base/lang",
-    "dojo/_base/array",
     "dojo/_base/fx",
-    "dojo/_base/window",
     "dojo/dom",
     "dojo/dom-style",
-    "dojo/dom-geometry",
     "dojo/io-query",
-    "dojo/topic",
-    "dojo/ready",
-
-    "dojox/html/entities",
-    "dojox/widget/Toaster",
-    "dojox/widget/Standby"
-], function (lang, arrayUtil, fx, baseWindow, dom, domStyle, domGeometry, ioQuery, topic, ready,
-        entities, Toaster, Standby) {
+    "dojo/ready"
+], function (fx, dom, domStyle, ioQuery, ready) {
 
     var initUi = function () {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
         var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
-        require(
-            ["hpcc/" + hpccWidget],
-            function (WidgetClass) {
+        require([
+                "dojo/_base/lang",
+                "dojo/_base/array",
+                "dojo/topic",
+                "dojox/html/entities",
+                "dojox/widget/Toaster",
+                "dojox/widget/Standby",
+                "hpcc/" + hpccWidget
+        ], function (lang, arrayUtil, topic,
+            entities, Toaster, Standby,
+            WidgetClass) {
                 var webParams = {
                     id: "stub",
                     "class": "hpccApp"
