@@ -6316,8 +6316,11 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
     else
     {
         if (isFieldSelectedFromRecord(ret))
+        {
             if (errpos)
                 reportError(ERR_EXPECTED, *errpos, "Expression expected for parameter %s.  Fields from records can only be passed to field references", formalName->str());
+            return NULL;
+        }
     }
 
     if (formal->hasAttribute(fieldsAtom))
