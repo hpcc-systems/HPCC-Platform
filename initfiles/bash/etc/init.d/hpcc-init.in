@@ -93,6 +93,7 @@ source  ${INSTALL_DIR}/etc/init.d/export-path
 # Only root user can write following HPCC_INIT_LOG
 is_root
 
+[ ! -e ${LOG_DIR} ] && mkdir -p ${LOG_DIR}
 HPCC_INIT_LOG=${LOG_DIR}/hpcc-init.log
 
 export PS4='+${BASH_SOURCE[1]} ${LINENO}: '
