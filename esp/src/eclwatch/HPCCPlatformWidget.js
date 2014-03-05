@@ -207,6 +207,50 @@ define([
             this.stackContainer.selectChild(this.errWarnPage);
         },
 
+        _ondebugLanguageFiles: function () {
+            var context = this;
+            require(["hpcc/nls/hpcc"], function (lang) {
+                var languageID = [];
+                var languageRequire = [];
+                for (var key in lang) {
+                    if (key !== "root") {
+                        languageID.push(key);
+                        languageRequire.push("hpcc/nls/" + key + "/hpcc");
+                    }
+                }
+                require(languageRequire, function () {
+                    var errWarnGrid = registry.byId(context.id + "ErrWarnGrid");
+                    arrayUtil.forEach(arguments, function (otherLang, idx) {
+                        var langID = languageID[idx];
+                        for(var key in lang.root) {
+                            if (!otherLang[key]) {
+                                errWarnGrid.loadTopic({
+                                    Severity: "Error",
+                                    Source: context.i18n.Missing,
+                                    Exceptions: [{
+                                        Code: langID,
+                                        FileName: languageRequire[idx] + ".js - " + key,
+                                        Message: "'" + lang.root[key] + "'"
+                                    }]
+                                });
+                            } else if (otherLang[key] === lang.root[key]) {
+                                errWarnGrid.loadTopic({
+                                    Severity: /[a-z]/.test(otherLang[key]) ? "Warning" : "Info",
+                                    Source: context.i18n.EnglishQ,
+                                    Exceptions: [{
+                                        Code: langID,
+                                        FileName: languageRequire[idx] + ".js - " + key,
+                                        Message: otherLang[key]
+                                    }]
+                            });
+                            }
+                        }
+                    });
+                    errWarnGrid.refreshTopics();
+                });
+            });
+        },
+
         _onAboutLoaded: false,
         _onAbout: function (evt) {
             if (!this._onAboutLoaded) {

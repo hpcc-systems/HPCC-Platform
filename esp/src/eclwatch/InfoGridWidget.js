@@ -131,6 +131,7 @@ define([
                     this.infoData = [];
                     topic.subscribe("hpcc/brToaster", function (topic) {
                         context.loadTopic(topic);
+                        context.refreshTopics(topic);
                     });
 
                     var target = dom.byId("stubMore");
@@ -288,7 +289,9 @@ define([
                         }, item));
                     });
                 }
+            },
 
+            refreshTopics: function() {
                 this.refreshFilter();
                 if (this.errWarnCount) {
                     this.errWarnCount.innerHTML = this.infoData.length;

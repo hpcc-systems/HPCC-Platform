@@ -15,7 +15,7 @@
                 </div>
                 <div class="seperator grey"></div>
                 <div id="${id}More" class="left glow" data-dojo-props="iconClass:'iconAdvanced', showLabel:false" data-dojo-type="dijit.form.DropDownButton">
-                    <span>Advanced</span>
+                    <span>${i18n.Advanced}</span>
                     <div data-dojo-type="dijit.DropDownMenu">
                         <div id="${id}SetBanner" data-dojo-attach-event="onClick:_onSetBanner" data-dojo-type="dijit.MenuItem">${i18n.SetBanner}</div>
                         <div id="${id}ErrWarn" data-dojo-attach-event="onClick:_onOpenErrWarn" data-dojo-type="dijit.MenuItem">${i18n.ErrorWarnings}</div>
@@ -24,6 +24,13 @@
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div id="${id}ReleaseNotes" data-dojo-attach-event="onClick:_onOpenReleaseNotes" data-dojo-type="dijit.MenuItem">${i18n.ReleaseNotes}</div>
                         <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">${i18n.About}</div>
+                        <span data-dojo-type="dijit.MenuSeparator"></span>
+                        <div data-dojo-type="dijit/PopupMenuItem">
+                            <span>${i18n.Debug}</span>
+                            <div data-dojo-type="dijit/DropDownMenu">
+                                <div data-dojo-attach-event="onClick:_ondebugLanguageFiles" data-dojo-type="dijit/MenuItem">${i18n.LanguageFiles}</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
