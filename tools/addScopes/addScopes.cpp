@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
     if(argc != 2)
     {
         printf("usage: addScopes daliconf.xml\n");
-        printf("\n\n\tCreates user-specific LDAP private file scopes 'hpccinternal::<user>'\n\tand grants users access to their scope. The configuration file\n\tdaliconf.xml is the dali configuration file, typically\n\tfound in /var/lib/HPCCSystems/mydali");
+        printf("\n\tCreates all user-specific LDAP private file scopes 'hpccinternal::<user>'\n\tand grants users access to their scope. The configuration file\n\tdaliconf.xml is the dali configuration file, typically\n\tfound in /var/lib/HPCCSystems/mydali\n\n");
         return -1;
     }
 
@@ -54,10 +54,7 @@ int main(int argc, char* argv[])
             return -1;
         }
         bool ok = secmgr->createUserScopes();
-        if(ok)
-            printf("User scopes added\n");
-        else
-            printf("Some scopes not added\n");
+        printf(ok ? "User scopes added\n" : "Some scopes not added\n");
 #endif
     }
     catch(IException* e)
