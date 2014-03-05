@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/SourceFilesWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
 
@@ -36,13 +35,13 @@ define([
     "hpcc/SFDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, ESPWorkunit, ResultWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
     return declare("SourceFilesWidget", [GridDetailsWidget], {
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
-        gridTitle: "Inputs",
+        gridTitle: nlsHPCC.title_Inputs,
         idProperty: "sequence",
 
         wu: null,

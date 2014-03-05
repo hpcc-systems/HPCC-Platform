@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/TargetSelectWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/_base/xhr",
     "dojo/data/ItemFileReadStore",
@@ -30,11 +29,11 @@ define([
     "hpcc/WsTopology",
     "hpcc/WsWorkunits",
     "hpcc/FileSpray"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, xhr, ItemFileReadStore, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, xhr, ItemFileReadStore, on,
     Select, registry,
     WsTopology, WsWorkunits, FileSpray) {
     return declare("TargetSelectWidget", [Select], {
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         loading: false,
         defaultValue: "",

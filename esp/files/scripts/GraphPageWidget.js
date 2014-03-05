@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/GraphPageWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/dom",
@@ -62,7 +61,7 @@ define([
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Deferred, dom, domConstruct, on, html, Memory, Observable,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html, Memory, Observable,
             BorderContainer, TabContainer, ContentPane, registry, Dialog,
             entities,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
@@ -71,7 +70,7 @@ define([
     return declare("GraphPageWidget", [_Widget], {
         templateString: template,
         baseClass: "GraphPageWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         borderContainer: null,
         rightBorderContainer: null,

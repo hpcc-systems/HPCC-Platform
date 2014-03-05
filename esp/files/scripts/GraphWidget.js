@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/GraphWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/aspect",
@@ -40,7 +39,7 @@ define([
     "dijit/ToolbarSeparator", 
     "dijit/form/Button"
     
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle,
             registry, BorderContainer, ContentPane,
             _Widget,
             template) {
@@ -239,7 +238,7 @@ define([
     return declare("GraphWidget", [_Widget], {
             templateString: template,
             baseClass: "GraphWidget",
-            i18n: lang.mixin(nlsCommon, nlsSpecific),
+            i18n: nlsHPCC,
 
             borderContainer: null,
             graphContentPane: null,

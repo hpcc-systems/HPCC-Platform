@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/ActivityWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
 
@@ -40,14 +39,14 @@ define([
     "hpcc/DFUWUDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 registry, Button, ToolbarSeparator,
                 OnDemandGrid, Keyboard, Selection, selector, tree, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, ESPActivity, WUDetailsWidget, DFUWUDetailsWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
-        gridTitle: nlsSpecific.title,
+        i18n: nlsHPCC,
+        gridTitle: nlsHPCC.title_Activity,
         idProperty: "Wuid",
 
         _onPause: function (event, params) {

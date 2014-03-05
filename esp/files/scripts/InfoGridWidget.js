@@ -18,8 +18,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/InfoGridWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-construct",
@@ -49,7 +48,7 @@ define([
     "dijit/layout/ContentPane",
     "dijit/form/CheckBox"
 ],
-    function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic,
+    function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic,
             registry, 
             AndOrReadStore, entities,
             OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
@@ -58,7 +57,7 @@ define([
         return declare("InfoGridWidget", [_Widget], {
             templateString: template,
             baseClass: "InfoGridWidget",
-            i18n: lang.mixin(nlsCommon, nlsSpecific),
+            i18n: nlsHPCC,
 
             borderContainer: null,
             infoGrid: null,

@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/PackageMapDetailsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
@@ -41,13 +40,13 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog",
     "dijit/TitlePane"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domAttr, domClass, topic,
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     WsPackageMaps, PackageSourceWidget, template) {
     return declare("PackageMapDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
         borderContainer: null,
         tabContainer: null,
         validateWidget: null,

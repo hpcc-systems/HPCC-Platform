@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/VizWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/dom-construct",
@@ -47,14 +46,14 @@ define([
     "dijit/form/Button",
     "dijit/form/DropDownButton"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, domConstruct, domForm, ioQuery, all,
                 registry, ContentPane, Select,
                 TableContainer,
                 _Widget, ESPWorkunit, WsWorkunits,
                 template) {
     return declare("VizWidget", [_Widget], {
         templateString: template,
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         borderContainer: null,
         grid: null,

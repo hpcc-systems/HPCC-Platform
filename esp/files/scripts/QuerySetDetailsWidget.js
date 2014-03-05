@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/QuerySetDetailsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-attr",
     "dojo/dom-class",
@@ -60,7 +59,7 @@ define([
 
     "hpcc/WUDetailsWidget"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domAttr, domClass, query, Memory, Observable, all,
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, query, Memory, Observable, all,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 ESPWorkunit, ESPQuery, WsWorkunits, WsTopology, _TabContainerWidget, QuerySetLogicalFilesWidget, QuerySetErrorsWidget, QueryTestWidget,
@@ -68,7 +67,7 @@ define([
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "QuerySetDetailsWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         query: null,
 

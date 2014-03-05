@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/HPCCPlatformWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-style",
@@ -56,7 +55,7 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domStyle,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle,
                 registry, Tooltip,
                 UpgradeBar,
                 _TabContainerWidget, ESPActivity, WsAccount, WsAccess, WsSMC, GraphWidget,
@@ -64,7 +63,7 @@ define([
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         banner: "",
         upgradeBar: null,

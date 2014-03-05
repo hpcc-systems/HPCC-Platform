@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/GetDFUWorkunitsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/store/Observable",
@@ -27,10 +26,10 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, Deferred, Observable,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, Observable,
     FileSpray, ESPUtil, ESPRequest, ESPResult) {
 
-    var i18n = lang.mixin(nlsCommon, nlsSpecific);
+    var i18n = nlsHPCC;
 
     var Store = declare([ESPRequest.Store], {
         service: "FileSpray",

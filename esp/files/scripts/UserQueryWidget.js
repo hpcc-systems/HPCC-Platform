@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/UserQueryWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-form",
@@ -60,7 +59,7 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domForm, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on,
                 registry, Menu, MenuItem, MenuSeparator,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, WsAccess, ESPUtil, UserDetailsWidget, GroupDetailsWidget,
@@ -68,7 +67,7 @@ define([
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "UserQueryWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         usersTab: null,
         usersGrid: null,

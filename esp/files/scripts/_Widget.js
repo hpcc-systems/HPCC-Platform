@@ -18,7 +18,8 @@ define([
         initalized: false,
 
         _onNewPage: function (event) {
-            var baseUrl = document.URL.split("?")[0];
+            var baseUrl = document.URL.split("#")[0];
+            baseUrl = baseUrl.split("?")[0];
             var paramsString = ioQuery.objectToQuery(this.params);
             var win = window.open(baseUrl + "?" + paramsString, "_blank");
             win.focus();

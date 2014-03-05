@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/QuerySetErrorsWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
 
@@ -32,13 +31,13 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/WsWorkunits",
     "hpcc/ESPUtil"
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, WsWorkunits, ESPUtil) {
     return declare("QuerySetErrorsWidget", [GridDetailsWidget], {
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
-        gridTitle: nlsSpecific.title,
+        gridTitle: nlsHPCC.title_QuerySetErrors,
         idProperty: "Name",
 
         queryId: null,

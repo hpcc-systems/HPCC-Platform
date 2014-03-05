@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/DFUQueryWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-attr",
@@ -75,7 +74,7 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
                 Grid, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget,
@@ -83,7 +82,7 @@ define([
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "DFUQueryWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -111,7 +110,7 @@ define([
         },
 
         getTitle: function () {
-            return this.i18n.title;
+            return this.i18n.title_DFUQuery;
         },
 
         //  Hitched actions  ---

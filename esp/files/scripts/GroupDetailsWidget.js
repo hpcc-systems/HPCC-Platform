@@ -17,8 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/i18n",
-    "dojo/i18n!./nls/common",
-    "dojo/i18n!./nls/UserQueryWidget",
+    "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-attr",
 
@@ -46,7 +45,7 @@ define([
     "dijit/TitlePane",
     "dijit/Dialog"
 
-], function (declare, lang, i18n, nlsCommon, nlsSpecific, dom, domAttr,
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, WsAccess, MembersWidget, PermissionsWidget,
@@ -54,7 +53,7 @@ define([
     return declare("GroupDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GroupDetailsWidget",
-        i18n: lang.mixin(nlsCommon, nlsSpecific),
+        i18n: nlsHPCC,
 
         postCreate: function (args) {
             this.inherited(arguments);
