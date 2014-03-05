@@ -1109,6 +1109,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     string Comment;
     bool DontCopyFiles(false);
     string SourceProcess;
+    bool AllowForeignFiles(true);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -1410,6 +1411,7 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     string Comment;
     string SourceProcess;
     string DestName;
+    bool AllowForeignFiles(true);
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse

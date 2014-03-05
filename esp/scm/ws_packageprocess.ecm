@@ -36,6 +36,7 @@ ESPrequest AddPackageRequest
     string DaliIp;
     bool GlobalScope(0);
     string SourceProcess;
+    bool AllowForeignFiles(true);
 };
 
 
