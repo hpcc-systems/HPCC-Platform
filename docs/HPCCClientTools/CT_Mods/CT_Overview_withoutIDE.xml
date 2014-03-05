@@ -179,7 +179,7 @@
 
         <listitem>
           <para>Install the Client Tools on to your system. Take note of the
-          following considerations.</para>
+          following considerations:</para>
         </listitem>
       </orderedlist>
 
@@ -193,20 +193,14 @@
 
       <para>If you install a version other than the delivered client tools you
       will have a folder in /opt/HPCCSystems that corresponds to the set of
-      client tools. So you could have a client tools 4.0.x, 4.2.x, 4.4.x, etc.
-      </para>
-
-      <para>Client tools for Windows installs in a directory such as:
-      C:\Program Files (x86)\HPCCSystems\4.2.0\clientools where the number
-      (4.2.0 for example) will correspond to the version of the client tools.
-      </para>
+      client tools. So you could have a client tools 4.0.x, 4.2.x, 4.4.x,
+      etc.</para>
 
       <para>For older versions, download the package(s), and install. Install
       the one you want to use last. Copy to a different folder or Rename the
       client tools found in /opt/HPCCSystems after installing the older
       version and before installing the newer version. This is to prevent the
-      newer client tools from overwriting the older one. Windows clients will
-      prompt you to delete the previous version during installation. </para>
+      newer client tools from overwriting the older one. </para>
 
       <para>To use the Client tools for the various version number(s)
       explicitly call the client tool you wish to use, or set up an alias to
@@ -223,6 +217,18 @@
       for instance 4.0.x:</para>
 
       <para><programlisting>/opt/HPCCSystems/4.0.x/clienttools/bin/eclplus action=view wuid=W12345678</programlisting></para>
+
+      <para><emphasis role="bold">Windows</emphasis></para>
+
+      <para>Client tools for Windows installs in a directory such as:
+      C:\Program Files (x86)\HPCCSystems\4.2.0\clientools where the number
+      (4.2.0 for example) corresponds to the version of the client tools.
+      </para>
+
+      <para>The Windows installer will prompt you to delete the previous
+      version during installation. If you want to keep both, decline the offer
+      to uninstall, and choose a different installation directory at the next
+      prompt.</para>
     </sect2>
   </sect1>
 </chapter>
