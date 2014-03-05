@@ -434,6 +434,9 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
             return false;
         }
 
+        if (wu->getDebugValueBool("saveEclTempFiles", false) || wu->getDebugValueBool("saveCppTempFiles", false))
+            setSaveGeneratedFiles(true);
+
         doExpand(translator);
         if (wu->getDebugValueBool("addTimingToWorkunit", true))
         {
