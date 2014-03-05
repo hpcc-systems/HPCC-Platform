@@ -1517,285 +1517,6 @@ IStringVal & CResultSetCursor::getDisplayText(IStringVal &ret, int columnIndex)
     return ret;
 }
 
-
-void CResultSetCursor::getXmlText(StringBuffer & out, int columnIndex, const char *tag)
-{
-    if (!isValid())
-        return;
-
-    const char * name = (tag) ? tag : meta.meta->queryXmlTag(columnIndex);
-    CResultSetColumnInfo & column = meta.columns.item(columnIndex);
-    unsigned flags = column.flag;
-    switch (flags)
-    {
-    case FVFFbeginif:
-    case FVFFendif:
-        return;
-    case FVFFbeginrecord:
-        {
-            if (name && *name)
-            {
-                out.append('<').append(name);
-                const IntArray &attributes = meta.meta->queryAttrList(columnIndex);
-                ForEachItemIn(ac, attributes)
-                    getXmlAttrText(out, attributes.item(ac));
-                out.append('>');
-            }
-        }
-        return;
-    case FVFFendrecord:
-        if (name && *name)
-            appendXMLCloseTag(out, name);
-        return;
-    }
-
-    const byte * cur = getColumn(columnIndex);
-    unsigned resultLen;
-    char * resultStr = NULL;
-
-    ITypeInfo & type = *column.type;
-    unsigned size = type.getSize();
-    unsigned len = UNKNOWN_LENGTH;
-    switch (type.getTypeCode())
-    {
-    case type_boolean:
-        outputXmlBool(*((byte *)cur) != 0, name, out);
-        break;
-    case type_int:
-        {
-            __int64 value = getIntFromInt(type, cur, isMappedIndexField(columnIndex));
-            if (type.isSigned())
-                outputXmlInt((__int64) value, name, out);
-            else
-                outputXmlUInt((unsigned __int64) value, name, out);
-            break;
-        }
-    case type_swapint:
-        {
-            __int64 value = getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
-            if (type.isSigned())
-                outputXmlInt((__int64) value, name, out);
-            else
-                outputXmlUInt((unsigned __int64) value, name, out);
-            break;
-        }
-    case type_packedint:
-        {
-            if (type.isSigned())
-                outputXmlInt(rtlGetPackedSigned(cur), name, out);
-            else
-                outputXmlUInt(rtlGetPackedUnsigned(cur), name, out);
-            break;
-        }
-    case type_decimal:
-        if (type.isSigned())
-            outputXmlDecimal(cur, size, type.getPrecision(), name, out);
-        else
-            outputXmlUDecimal(cur, size, type.getPrecision(), name, out);
-        break;
-    case type_real:
-        if (size == 4)
-            outputXmlReal(*(float *)cur, name, out);
-        else
-            outputXmlReal(*(double *)cur, name, out);
-        break;
-    case type_qstring:
-        len = getLength(type, cur);
-        rtlQStrToStrX(resultLen, resultStr, len, (const char *)cur);
-        outputXmlString(resultLen, resultStr, name, out);
-        break;
-    case type_data:
-        len = getLength(type, cur);
-        outputXmlData(len, cur, name, out);
-        break;
-    case type_string:
-        len = getLength(type, cur);
-        if (meta.isEBCDIC(columnIndex))
-        {
-            rtlStrToEStrX(resultLen, resultStr, len, (const char *)cur);
-            outputXmlString(resultLen, resultStr, name, out);
-        }
-        else
-            outputXmlString(len, (const char *)cur, name, out);
-        break;
-    case type_unicode:
-        len = getLength(type, cur);
-        outputXmlUnicode(len, (UChar const *)cur, name, out);
-        break;
-    case type_varstring:
-        if (meta.isEBCDIC(columnIndex))
-        {
-            rtlStrToEStrX(resultLen, resultStr, strlen((const char *)cur), (const char *)cur);
-            outputXmlString(resultLen, resultStr, name, out);
-        }
-        else
-            outputXmlString(strlen((const char *)cur), (const char *)cur, name, out);
-        break;
-    case type_varunicode:
-        outputXmlUnicode(rtlUnicodeStrlen((UChar const *)cur), (UChar const *)cur, name, out);
-        break;
-    case type_utf8:
-        len = getLength(type, cur);
-        outputXmlUtf8(len, (const char *)cur, name, out);
-        break;
-    case type_table:
-    case type_groupedtable:
-        {
-            appendXMLOpenTag(out, name);
-            Owned<IResultSetCursor> childCursor = getChildren(columnIndex);
-            
-            ForEach(*childCursor)
-            {
-                StringBufferAdaptor adaptor(out);
-                childCursor->getXmlRow(adaptor);
-            }
-
-            appendXMLCloseTag(out, name);
-            break;
-        }
-    case type_set:
-        {
-            appendXMLOpenTag(out, name);
-            if (getIsAll(columnIndex))
-                outputXmlSetAll(out);
-            else
-            {
-                Owned<IResultSetCursor> childCursor = getChildren(columnIndex);
-                
-                ForEach(*childCursor)
-                {
-                    StringBufferAdaptor adaptor(out);
-                    childCursor->getXmlItem(adaptor);
-                }
-            }
-            appendXMLCloseTag(out, name);
-            break;
-        }
-    default:
-        UNIMPLEMENTED;
-    }
-    rtlFree(resultStr);
-}
-
-
-void CResultSetCursor::getXmlAttrText(StringBuffer & out, int columnIndex, const char *tag)
-{
-    if (!isValid())
-        return;
-
-    const char * name = (tag) ? tag : meta.meta->queryXmlTag(columnIndex);
-    if (name && *name=='@')
-        name++;
-    CResultSetColumnInfo & column = meta.columns.item(columnIndex);
-    unsigned flags = column.flag;
-    switch (flags)
-    {
-    case FVFFbeginif:
-    case FVFFendif:
-    case FVFFbeginrecord:
-    case FVFFendrecord:
-        return;
-    }
-
-    const byte * cur = getColumn(columnIndex);
-    unsigned resultLen;
-    char * resultStr = NULL;
-
-    ITypeInfo & type = *column.type;
-    unsigned size = type.getSize();
-    unsigned len = UNKNOWN_LENGTH;
-    switch (type.getTypeCode())
-    {
-    case type_boolean:
-        outputXmlAttrBool((*((byte *)cur)) != 0, name, out);
-        break;
-    case type_int:
-        {
-            __int64 value = getIntFromInt(type, cur, isMappedIndexField(columnIndex));
-            if (type.isSigned())
-                outputXmlAttrInt((__int64) value, name, out);
-            else
-                outputXmlAttrUInt((unsigned __int64) value, name, out);
-            break;
-        }
-    case type_swapint:
-        {
-            __int64 value = getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
-            if (type.isSigned())
-                outputXmlAttrInt((__int64) value, name, out);
-            else
-                outputXmlAttrUInt((unsigned __int64) value, name, out);
-            break;
-        }
-    case type_packedint:
-        {
-            if (type.isSigned())
-                outputXmlAttrInt(rtlGetPackedSigned(cur), name, out);
-            else
-                outputXmlAttrUInt(rtlGetPackedUnsigned(cur), name, out);
-            break;
-        }
-    case type_decimal:
-        if (type.isSigned())
-            outputXmlAttrDecimal(cur, size, type.getPrecision(), name, out);
-        else
-            outputXmlAttrUDecimal(cur, size, type.getPrecision(), name, out);
-        break;
-    case type_real:
-        if (size == 4)
-            outputXmlAttrReal(*(float *)cur, name, out);
-        else
-            outputXmlAttrReal(*(double *)cur, name, out);
-        break;
-    case type_qstring:
-        len = getLength(type, cur);
-        rtlQStrToStrX(resultLen, resultStr, len, (const char *)cur);
-        outputXmlAttrString(resultLen, resultStr, name, out);
-        break;
-    case type_data:
-        len = getLength(type, cur);
-        outputXmlAttrData(len, cur, name, out);
-        break;
-    case type_string:
-        len = getLength(type, cur);
-        if (meta.isEBCDIC(columnIndex))
-        {
-            rtlStrToEStrX(resultLen, resultStr, len, (const char *)cur);
-            outputXmlAttrString(resultLen, resultStr, name, out);
-        }
-        else
-            outputXmlAttrString(len, (const char *)cur, name, out);
-        break;
-    case type_unicode:
-        len = getLength(type, cur);
-        outputXmlAttrUnicode(len, (UChar const *)cur, name, out);
-        break;
-    case type_varstring:
-        if (meta.isEBCDIC(columnIndex))
-        {
-            rtlStrToEStrX(resultLen, resultStr, strlen((const char *)cur), (const char *)cur);
-            outputXmlAttrString(resultLen, resultStr, name, out);
-        }
-        else
-            outputXmlAttrString(strlen((const char *)cur), (const char *)cur, name, out);
-        break;
-    case type_varunicode:
-        outputXmlAttrUnicode(rtlUnicodeStrlen((UChar const *)cur), (UChar const *)cur, name, out);
-        break;
-    case type_utf8:
-        len = getLength(type, cur);
-        outputXmlAttrUtf8(len, (const char *)cur, name, out);
-        break;
-    case type_table:
-    case type_groupedtable:
-    case type_set:
-        break;
-    default:
-        UNIMPLEMENTED;
-    }
-    rtlFree(resultStr);
-}
-
 void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const char *tag)
 {
     if (!isValid())
@@ -1816,7 +1537,7 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
                 writer.outputBeginNested(name, false);
                 const IntArray &attributes = meta.meta->queryAttrList(columnIndex);
                 ForEachItemIn(ac, attributes)
-                    writeXmlAttrText(writer, attributes.item(ac));
+                    writeXmlText(writer, attributes.item(ac), NULL);
             }
         }
         return;
@@ -1925,8 +1646,8 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
                 childCursor->writeXmlRow(writer);
             childCursor->endWriteXmlRows(writer);
             writer.outputEndNested(name);
-            break;
         }
+        break;
     case type_set:
         {
             writer.outputBeginNested(name, false);
@@ -1941,123 +1662,7 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
                 childCursor->endWriteXmlRows(writer);
             }
             writer.outputEndNested(name);
-            break;
         }
-    default:
-        UNIMPLEMENTED;
-    }
-    rtlFree(resultStr);
-}
-
-void CResultSetCursor::writeXmlAttrText(IXmlWriter &writer, int columnIndex, const char *tag)
-{
-    if (!isValid())
-        return;
-
-    const char * name = (tag) ? tag : meta.meta->queryXmlTag(columnIndex);
-    CResultSetColumnInfo & column = meta.columns.item(columnIndex);
-    unsigned flags = column.flag;
-    switch (flags)
-    {
-    case FVFFbeginif:
-    case FVFFendif:
-    case FVFFbeginrecord:
-    case FVFFendrecord:
-        return;
-    }
-
-    const byte * cur = getColumn(columnIndex);
-    unsigned resultLen;
-    char * resultStr = NULL;
-
-    ITypeInfo & type = *column.type;
-    unsigned size = type.getSize();
-    unsigned len = UNKNOWN_LENGTH;
-    switch (type.getTypeCode())
-    {
-    case type_boolean:
-        writer.outputBool((*((byte *)cur)) != 0, name);
-        break;
-    case type_int:
-        {
-            __int64 value = getIntFromInt(type, cur, isMappedIndexField(columnIndex));
-            if (type.isSigned())
-                writer.outputInt((__int64) value, name);
-            else
-                writer.outputUInt((unsigned __int64) value, name);
-            break;
-        }
-    case type_swapint:
-        {
-            __int64 value = getIntFromSwapInt(type, cur, isMappedIndexField(columnIndex));
-            if (type.isSigned())
-                writer.outputInt((__int64) value, name);
-            else
-                writer.outputUInt((unsigned __int64) value, name);
-            break;
-        }
-    case type_packedint:
-        {
-            if (type.isSigned())
-                writer.outputInt(rtlGetPackedSigned(cur), name);
-            else
-                writer.outputUInt(rtlGetPackedUnsigned(cur), name);
-            break;
-        }
-    case type_decimal:
-        if (type.isSigned())
-            writer.outputDecimal(cur, size, type.getPrecision(), name);
-        else
-            writer.outputUDecimal(cur, size, type.getPrecision(), name);
-        break;
-    case type_real:
-        if (size == 4)
-            writer.outputReal(*(float *)cur, name);
-        else
-            writer.outputReal(*(double *)cur, name);
-        break;
-    case type_qstring:
-        len = getLength(type, cur);
-        rtlQStrToStrX(resultLen, resultStr, len, (const char *)cur);
-        writer.outputString(resultLen, resultStr, name);
-        break;
-    case type_data:
-        len = getLength(type, cur);
-        writer.outputData(len, cur, name);
-        break;
-    case type_string:
-        len = getLength(type, cur);
-        if (meta.isEBCDIC(columnIndex))
-        {
-            rtlStrToEStrX(resultLen, resultStr, len, (const char *)cur);
-            writer.outputString(resultLen, resultStr, name);
-        }
-        else
-            writer.outputString(len, (const char *)cur, name);
-        break;
-    case type_unicode:
-        len = getLength(type, cur);
-        writer.outputUnicode(len, (UChar const *)cur, name);
-        break;
-    case type_varstring:
-        if (meta.isEBCDIC(columnIndex))
-        {
-            rtlStrToEStrX(resultLen, resultStr, strlen((const char *)cur), (const char *)cur);
-            writer.outputString(resultLen, resultStr, name);
-        }
-        else
-            writer.outputString(strlen((const char *)cur), (const char *)cur, name);
-        break;
-    case type_varunicode:
-        writer.outputUnicode(rtlUnicodeStrlen((UChar const *)cur), (UChar const *)cur, name);
-        break;
-    case type_utf8:
-        len = getLength(type, cur);
-        writer.outputUtf8(len, (const char *)cur, name);
-        break;
-    case type_table:
-    case type_groupedtable:
-    case type_set:
         break;
     default:
         UNIMPLEMENTED;
@@ -2067,17 +1672,17 @@ void CResultSetCursor::writeXmlAttrText(IXmlWriter &writer, int columnIndex, con
 
 IStringVal & CResultSetCursor::getXml(IStringVal &ret, int columnIndex)
 {
-    StringBuffer temp;
-    getXmlText(temp, columnIndex);
-    ret.set(temp.str());
+    Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
+    writeXmlText(*writer, columnIndex);
+    ret.set(writer->str());
     return ret;
 }
 
 IStringVal & CResultSetCursor::getXmlItem(IStringVal & ret)
 {
-    StringBuffer temp;
-    getXmlText(temp, 0, meta.meta->queryXmlTag());
-    ret.set(temp.str());
+    Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
+    writeXmlText(*writer, 0, meta.meta->queryXmlTag());
+    ret.set(writer->str());
     return ret;
 }
 
@@ -2086,61 +1691,11 @@ void CResultSetCursor::writeXmlItem(IXmlWriter &writer)
     writeXmlText(writer, 0, meta.meta->queryXmlTag());
 }
 
-//More efficient than above...
 IStringVal & CResultSetCursor::getXmlRow(IStringVal &ret)
 {
-    StringBuffer temp;
-    const char *rowtag = meta.meta->queryXmlTag();
-    if (rowtag && *rowtag)
-    {
-        temp.append('<').append(rowtag);
-        const IntArray &attributes = meta.meta->queryAttrList();
-        ForEachItemIn(ac, attributes)
-            getXmlAttrText(temp, attributes.item(ac));
-        temp.append('>');
-    }
-    unsigned numColumns = meta.getColumnCount();
-    unsigned ignoreNesting = 0;
-    for (unsigned col = 0; col < numColumns; col++)
-    {
-        unsigned flags = meta.columns.item(col).flag;
-        const char *tag = meta.meta->queryXmlTag(col);
-        if (tag && *tag=='@')
-            continue;
-        switch (flags)
-        {
-        case FVFFbeginif:
-            if (ignoreNesting || !getBoolean(col))
-                ignoreNesting++;
-            break;
-        case FVFFendif:
-            if (ignoreNesting)
-                ignoreNesting--;
-            break;
-        case FVFFbeginrecord:
-            if (ignoreNesting)
-                ignoreNesting++;
-            else
-                getXmlText(temp, col);
-            break;
-        case FVFFendrecord:
-            if (ignoreNesting)
-                ignoreNesting--;
-            else
-                getXmlText(temp, col);
-            break;
-        case FVFFnone:
-        case FVFFvirtual:
-        case FVFFdataset:
-        case FVFFset:
-            if (ignoreNesting == 0)
-                getXmlText(temp, col);
-            break;
-        }
-    }
-    assertex(ignoreNesting == 0);
-    appendXMLCloseTag(temp, rowtag);
-    ret.set(temp.str());
+    Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
+    writeXmlRow(*writer);
+    ret.set(writer->str());
     return ret;
 }
 
@@ -2167,7 +1722,7 @@ void CResultSetCursor::writeXmlRow(IXmlWriter &writer)
         writer.outputBeginNested(rowtag, false);
         const IntArray &attributes = meta.meta->queryAttrList();
         ForEachItemIn(ac, attributes)
-            writeXmlAttrText(writer, attributes.item(ac));
+            writeXmlText(writer, attributes.item(ac), NULL);
     }
     unsigned numColumns = meta.getColumnCount();
     unsigned ignoreNesting = 0;
@@ -3615,38 +3170,11 @@ int findResultSetColumn(const INewResultSet * results, const char * columnName)
 
 extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName)
 {
-    StringBuffer text;
-    if (schemaName)
-    {
-        text.append("<XmlSchema name=\"").append(schemaName).append("\">");
-        const IResultSetMetaData & meta = cursor->queryResultSet()->getMetaData();
-        StringBufferAdaptor adaptor(text);
-        meta.getXmlXPathSchema(adaptor, false);
-        text.append("</XmlSchema>").newline();
-    }
+    Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
+    unsigned rc = writeResultCursorXml(*writer, cursor, name, start, count, schemaName);
+    ret.set(writer->str());
+    return rc;
 
-    text.append("<Dataset");
-    if (name)
-        text.append(" name='").append(name).append('\'');
-    if (schemaName) 
-        text.append(" xmlSchema=\"").append(schemaName).append("\" ");
-    text.append(">").newline();
-
-    unsigned c=0;
-    for(bool ok=cursor->absolute(start);ok;ok=cursor->next())
-    {
-        text.append(" ");
-        StringBufferAdaptor adaptor(text);
-        cursor->getXmlRow(adaptor);
-        text.newline();
-
-        c++;
-        if(count && c>=count)
-            break;
-    }
-    text.append("</Dataset>").newline();
-    ret.set(text.str());
-    return c;
 }
 
 extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName)
