@@ -624,19 +624,19 @@ void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
                 fieldName.setCharAt(i, '_');
             }
         }
-
-        // Check discovered field name uniqueness
-        const char * fn = fieldName.toCharArray();
-        if ( fields->find(fn) != NULL )
-        {
-            time_t t;
-            time(&t);
-            fieldName.append('_').append(fieldCount).append('_').append((unsigned)t);
-        }
     }
     else
     {
         fieldName.append("field").append(fieldCount);
+    }
+
+    // Check discovered field name uniqueness
+    const char * fn = fieldName.toCharArray();
+    if ( fields->find(fn) != NULL )
+    {
+        time_t t;
+        time(&t);
+        fieldName.append('_').append(fieldCount).append('_').append((unsigned)t);
     }
 
     recordStructure.append(fieldName);
@@ -953,19 +953,19 @@ void CUtfPartitioner::storeFieldName(const char * start, unsigned len)
                 fieldName.setCharAt(i, '_');
             }
         }
-
-        // Check discovered field name uniqueness
-        const char * fn = fieldName.toCharArray();
-        if ( fields->find(fn) != NULL )
-        {
-            time_t t;
-            time(&t);
-            fieldName.append('_').append(fieldCount).append('_').append((unsigned)t);
-        }
     }
     else
     {
         fieldName.append("field").append(fieldCount);
+    }
+
+    // Check discovered field name uniqueness
+    const char * fn = fieldName.toCharArray();
+    if ( fields->find(fn) != NULL )
+    {
+        time_t t;
+        time(&t);
+        fieldName.append('_').append(fieldCount).append('_').append((unsigned)t);
     }
 
     recordStructure.append(fieldName);
