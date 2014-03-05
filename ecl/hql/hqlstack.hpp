@@ -53,8 +53,7 @@ private:
     unsigned    numFpRegs;
 #endif
 public:
-    FuncCallStack();
-    FuncCallStack(int size);
+    FuncCallStack(int size = DEFAULTSTACKSIZE);
     virtual ~FuncCallStack();
 
     unsigned getSp();

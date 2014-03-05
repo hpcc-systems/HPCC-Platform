@@ -1040,6 +1040,7 @@ HqlStmt::HqlStmt(StmtKind _kind, HqlStmts * _container)
     container = _container;
     incomplete = false;
     included = true;
+    priority = 0;
 }
 
 void HqlStmt::addExpr(IHqlExpression * expr)

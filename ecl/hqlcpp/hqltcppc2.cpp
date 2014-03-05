@@ -347,51 +347,28 @@ void CChildDatasetColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx 
     OwnedHqlExpr lengthTarget = convertAddressToValue(addressSize, sizetType);
 
     ITypeInfo * columnType = column->queryType();
-    OwnedHqlExpr value = LINK(_value); //ensureExprType(_value, columnType);
+    IHqlExpression * record = column->queryRecord();
+    OwnedHqlExpr value = addDatasetLimits(translator, ctx, selector, _value);
     ITypeInfo * valueType = value->queryType();
-
     assertRecordTypesMatch(valueType, columnType);
 
-    bool assignInline = false;  // canEvaluateInline(value);   // MORE: What is the test
-//  bool assignInline = canAssignInline(&ctx, value) && !canEvaluateInline(&ctx, value);
-    value.setown(addDatasetLimits(translator, ctx, selector, value));
+    CHqlBoundExpr bound;
+    translator.buildDataset(ctx, value, bound, FormatBlockedDataset);
+    translator.normalizeBoundExpr(ctx, bound);
+    ensureSimpleLength(translator, ctx, bound);
 
-    IHqlExpression * record = column->queryRecord();
-    if (assignInline)
-    {
-        OwnedHqlExpr inlineSize = getSizetConstant(0);
-        checkAssignOk(translator, ctx, selector, inlineSize, sizeof(size32_t));
+    OwnedHqlExpr length = translator.getBoundLength(bound);
+    OwnedHqlExpr size = createValue(no_translated, LINK(sizetType), translator.getBoundSize(bound));
+    checkAssignOk(translator, ctx, selector, size, sizeof(size32_t));
 
-        //Can only assign inline if we know the maximum length that will be assigned is 0.
-        Owned<IHqlCppDatasetBuilder> builder = translator.createInlineDatasetBuilder(record, inlineSize, addressData);
-        builder->buildDeclare(ctx);
+    translator.assignBoundToTemp(ctx, lengthTarget, length);
+    translator.buildBlockCopy(ctx, addressData, bound);
 
-        translator.buildDatasetAssign(ctx, builder, value);
-
-        CHqlBoundTarget boundTarget;
-        boundTarget.length.set(lengthTarget);
-        builder->buildFinish(ctx, boundTarget);
-    }
-    else
-    {
-        CHqlBoundExpr bound;
-        translator.buildDataset(ctx, value, bound, FormatBlockedDataset);
-        translator.normalizeBoundExpr(ctx, bound);
-        ensureSimpleLength(translator, ctx, bound);
-
-        OwnedHqlExpr length = translator.getBoundLength(bound);
-        OwnedHqlExpr size = createValue(no_translated, LINK(sizetType), translator.getBoundSize(bound));
-        checkAssignOk(translator, ctx, selector, size, sizeof(size32_t));
-
-        translator.assignBoundToTemp(ctx, lengthTarget, length);
-        translator.buildBlockCopy(ctx, addressData, bound);
-
-        //Use the size just calculated for the field
-        OwnedHqlExpr sizeOfExpr = createValue(no_sizeof, LINK(sizetType), LINK(selector->queryExpr()));
-        OwnedHqlExpr boundSize = translator.getBoundSize(bound);
-        OwnedHqlExpr srcSize = adjustValue(boundSize, sizeof(size32_t));
-        ctx.associateExpr(sizeOfExpr, srcSize);
-    }
+    //Use the size just calculated for the field
+    OwnedHqlExpr sizeOfExpr = createValue(no_sizeof, LINK(sizetType), LINK(selector->queryExpr()));
+    OwnedHqlExpr boundSize = translator.getBoundSize(bound);
+    OwnedHqlExpr srcSize = adjustValue(boundSize, sizeof(size32_t));
+    ctx.associateExpr(sizeOfExpr, srcSize);
 }
 
 AColumnInfo * CChildDatasetColumnInfo::lookupColumn(IHqlExpression * search)

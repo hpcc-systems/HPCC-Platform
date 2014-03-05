@@ -140,7 +140,7 @@ void SubStringInfo::bindToFrom(HqlCppTranslator & translator, BuildCtx & ctx)
 
 //---------------------------------------------------------------------------
 
-WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(0), function(_function)
+WorkflowItem::WorkflowItem(IHqlExpression * _function) : wfid(0), function(_function), workflowOp(no_funcdef)
 {
     IHqlExpression * body = function->queryChild(0);
     assertex(body->getOperator() == no_outofline);
@@ -1423,6 +1423,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     nextTypeId = 0;
     nextFieldId = 0;
     code = (HqlCppInstance*)_code;
+    xmlUsesContents = false;
 }
 
 HqlCppTranslator::~HqlCppTranslator()
@@ -7693,7 +7694,7 @@ void HqlCppTranslator::doBuildExprList(BuildCtx & ctx, IHqlExpression * expr, CH
         }
         break;
     default:
-        throw(!"This type of list not supported yet");
+        throwUnexpectedX("This type of list not supported yet");
     }
 }
 
@@ -7710,7 +7711,7 @@ void HqlCppTranslator::doBuildAssignList(BuildCtx & ctx, const CHqlBoundTarget &
     case type_array:
         break;
     default:
-        throw(!"This type of list not supported yet");
+        throwUnexpectedX("This type of list not supported yet");
     }
 
     //This is an assignment, a non-constant set would end up creating two temporaries.
@@ -8272,7 +8273,7 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
     }
 
 
-    ITypeInfo * realType = realType = lhs.queryType()->queryPromotedType();
+    ITypeInfo * realType = lhs.queryType()->queryPromotedType();
     tc = realType->getTypeCode();
     IHqlExpression * op = NULL;
     switch (tc)

@@ -109,10 +109,9 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
 {
     Owned<IHqlScope> parentScope;
     const char * item = attrname;
-    const char * dot;
-    do
+    loop
     {
-        dot = strchr(item, '.');
+        const char * dot = strchr(item, '.');
         IIdAtom * moduleName;
         if (dot)
         {
@@ -142,8 +141,7 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
             return NULL;
 
         parentScope.set(scope);
-    } while (dot);
-    return LINK(queryExpression(parentScope));
+    }
 }
 
 

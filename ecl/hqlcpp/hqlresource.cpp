@@ -650,6 +650,9 @@ ResourceGraphInfo::ResourceGraphInfo(CResourceOptions * _options) : resources(_o
     startedGeneratingResourced = false;
     inheritedExpandedDependencies = false;
     cachedDependent.other = NULL;
+    cachedDependent.ignoreSources = false;
+    cachedDependent.updateSequence = 0;
+    cachedDependent.value = false;
 }
 
 ResourceGraphInfo::~ResourceGraphInfo()
@@ -1911,6 +1914,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.actionLinkInNewGraph = _translatorOptions.actionLinkInNewGraph || (targetClusterType == HThorCluster);
     options.convertCompoundToExecuteWhen = false;
     options.useResultsForChildSpills = _translatorOptions.useResultsForChildSpills;
+    spilled = false;
 }
 
 EclResourcer::~EclResourcer()               
@@ -3900,7 +3904,10 @@ void EclResourcer::addChildDependencies(IHqlExpression * expr, ResourceGraphInfo
 void EclResourcer::addDependencies(IHqlExpression * expr, ResourceGraphInfo * graph, IHqlExpression * activityExpr)
 {
     ResourcerInfo * info = queryResourceInfo(expr);
-    if (info && info->containsActivity)
+    if (!info)
+        return;
+
+    if (info->containsActivity)
     {
         if (info->isActivity)
         {

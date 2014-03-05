@@ -286,6 +286,8 @@ HqlGram::HqlGram(IHqlScope * _globalScope, IHqlScope * _containerScope, IFileCon
     sourcePath.set(_text->querySourcePath());
     moduleName = _containerScope->queryId();
     forceResult = false;
+    parsingTemplateAttribute = false;
+
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
 
     if(lookupCtx.queryRepository() && loadImplicit && legacyImportSemantics)
@@ -319,6 +321,7 @@ HqlGram::HqlGram(HqlGramCtx & parent, IHqlScope * _containerScope, IFileContents
     //Clone parseScope
     lexObject = new HqlLex(this, _text, xmlScope, NULL);
     forceResult = true;
+    parsingTemplateAttribute = false;
     parseConstantText = _parseConstantText;
 }
 
@@ -1242,8 +1245,7 @@ IHqlExpression * HqlGram::findAssignment(IHqlExpression *field)
     if (match && !match->isAttribute())
         return match;
     return NULL;
-#endif
-
+#else
     unsigned kids = curTransform->numChildren();
     for (unsigned idx = 0; idx < kids; idx++)
     {
@@ -1254,6 +1256,7 @@ IHqlExpression * HqlGram::findAssignment(IHqlExpression *field)
     }
 
     return NULL;
+#endif
 }
 
 IHqlExpression * HqlGram::doFindAssignment(IHqlExpression* in, IHqlExpression* field)
@@ -1677,8 +1680,9 @@ bool HqlGram::haveAssignedToChildren(IHqlExpression * select)
 {
 #ifdef FAST_FIND_FIELD
     return select->queryTransformExtra() == alreadyAssignedNestedTag;
-#endif
+#else
     return ::haveAssignedToChildren(select, curTransform);
+#endif
 }
 
 void HqlGram::addAssignall(IHqlExpression *tgt, IHqlExpression *src, const attribute& errpos)
@@ -2302,7 +2306,7 @@ void HqlGram::addToActiveRecord(IHqlExpression * newField)
 
     CHqlRecord *currentRecord = QUERYINTERFACE(self->queryRecord(), CHqlRecord);
     //Protect against adding fields to closed records (can only occur after errors).
-    if ((currentRecord != &topRecord) && !currentRecord->isExprClosed())
+    if (currentRecord && (currentRecord != &topRecord) && !currentRecord->isExprClosed())
         currentRecord->insertSymbols(newField);
 }
 
@@ -5335,7 +5339,6 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
         OwnedHqlExpr list = createValue(no_null);
         OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
         return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
-        return createDataset(no_null, LINK(record));
     }
 
     IHqlExpression * listRecord = list->queryRecord();
@@ -6313,7 +6316,11 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
     else
     {
         if (isFieldSelectedFromRecord(ret))
+        {
+            if (errpos)
                 reportError(ERR_EXPECTED, *errpos, "Expression expected for parameter %s.  Fields from records can only be passed to field references", formalName->str());
+            return NULL;
+        }
     }
 
     if (formal->hasAttribute(fieldsAtom))
@@ -7567,12 +7574,6 @@ bool HqlGram::isExplicitlyDistributed(IHqlExpression *e)
 {
     if (e->getOperator()==no_distribute || e->getOperator()==no_keyeddistribute)
         return true;
-    return false;
-    for (unsigned i = 0; i < getNumChildTables(e); i++)
-    {
-        if (isExplicitlyDistributed(e->queryChild(i)))
-            return true;
-    }
     return false;
 }
 

@@ -925,7 +925,7 @@ class BinaryIRPlayer : public CIRPlayer
     };
 
 public:
-    BinaryIRPlayer(ISimpleReadStream * _in, IEclBuilder * _target) : CIRPlayer(_target), in(_in)
+    BinaryIRPlayer(ISimpleReadStream * _in, IEclBuilder * _target) : CIRPlayer(_target), in(_in), seq(0)
     {
     }
 

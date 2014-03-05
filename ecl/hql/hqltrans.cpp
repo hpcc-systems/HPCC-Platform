@@ -1334,7 +1334,7 @@ void NewHqlTransformer::analyseSelector(IHqlExpression * expr)
 
 IHqlExpression * NewHqlTransformer::quickTransformTransform(IHqlExpression * expr)
 {
-    bool same = false;
+    bool same = true;
     unsigned max = expr->numChildren();
     HqlExprArray children;
     children.ensure(max);
@@ -4011,7 +4011,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
 
             if (expr->isDataset())
                 pushScope();
-                children.append(*transform(expr->queryChild(0)));
+            children.append(*transform(expr->queryChild(0)));
             if (expr->isDataset())
                 popScope();
             for (idx = 1; idx < numChildren; idx++)

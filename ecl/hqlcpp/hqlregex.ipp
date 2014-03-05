@@ -71,7 +71,6 @@ protected:
     unsigned numUses;
     IAtom * name;
     LengthLimit limit;
-    IAtom * cachedModule;
     node_operator kind;
     OwnedHqlExpr searchExpr;
     OwnedHqlExpr expr;

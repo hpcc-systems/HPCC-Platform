@@ -5424,6 +5424,7 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
     workflowOut = NULL;
     isConditional = false;
     insideStored = false;
+    activeWfid = 0;
 }
 
 //-- Helper routines --
@@ -7851,6 +7852,7 @@ AutoScopeMigrateTransformer::AutoScopeMigrateTransformer(IWorkUnit * _wu, HqlCpp
     hasCandidate = false;
     activityDepth = 0;
     curGraph = 1;
+    globalTarget = NULL;
 }
 
 void AutoScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
