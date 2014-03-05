@@ -36,6 +36,21 @@ bool getIsOpt(const IPropertyTree &graphNode)
         return graphNode.getPropBool("att[@name='_isIndexOpt']/@value", false);
 }
 
+bool checkForeign(const char *lfn)
+{
+    if (*lfn=='~')
+        lfn++;
+    static size_t l = strlen("foreign");
+    if (strncasecmp("foreign", lfn, l)==0)
+    {
+        lfn+=l;
+        while (isspace(*lfn))
+            lfn++;
+        if (lfn[0]==':' && lfn[1]==':')
+            return true;
+    }
+    return false;
+}
 const char *skipForeign(const char *name, StringBuffer *ip)
 {
     if (*name=='~')
@@ -164,7 +179,7 @@ class ReferencedFileList : public CInterface, implements IReferencedFileList
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFileList(const char *username, const char *pw)
+    ReferencedFileList(const char *username, const char *pw, bool allowForeignFiles) : allowForeign(allowForeignFiles)
     {
         if (username && pw)
         {
@@ -204,6 +219,7 @@ public:
     StringAttr process;
     StringAttr srcCluster;
     StringAttr remotePrefix;
+    bool allowForeign;
 };
 
 void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *dstCluster, const char *srcCluster, StringArray *subfiles)
@@ -461,6 +477,9 @@ public:
 
 void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, const char *daliip, const char *srcCluster, const char *prefix)
 {
+    if (!allowForeign && checkForeign(ln))
+        throw MakeStringException(-1, "Foreign file not allowed%s: %s", (flags & RefFileInPackage) ? " (declared in package)" : "", ln);
+
     Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid);
     if (!file->logicalName.length())
         return;
@@ -597,7 +616,11 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalF
     StringArray childSubFiles;
     ForEachItemIn(i, subfiles)
     {
-        Owned<ReferencedFile> file = new ReferencedFile(subfiles.item(i), NULL, NULL, NULL, true, 0, NULL);
+        const char *lfn = subfiles.item(i);
+        if (!allowForeign && checkForeign(lfn))
+            throw MakeStringException(-1, "Foreign sub file not allowed: %s", lfn);
+
+        Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL);
         if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
         {
             file->resolve(process.get(), srcCluster, user, remote, remotePrefix, checkLocalFirst, &childSubFiles, resolveForeign);
@@ -676,7 +699,7 @@ IReferencedFileIterator *ReferencedFileList::getFiles()
     return new ReferencedFileIterator(this);
 }
 
-IReferencedFileList *createReferencedFileList(const char *user, const char *pw)
+IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles)
 {
-    return new ReferencedFileList(user, pw);
+    return new ReferencedFileList(user, pw, allowForeignFiles);
 }

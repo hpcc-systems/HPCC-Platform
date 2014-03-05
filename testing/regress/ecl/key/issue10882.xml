@@ -1,0 +1,105 @@
+<Dataset name='Result 1'>
+ <Row><Result_1>12345.678901234</Result_1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>12345.678901234</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>****</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>****</Result_4></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>12345</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>12345</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>12345.</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>12345.</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>12345.6</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>12345.6</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>12345.67</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>12345.67</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>12345.678901234     </Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>12345.678901234     </Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>0</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>0.</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>0.0</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>0.01</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>0.014</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>0.0145</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>0.01456</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>1.999</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>1.999</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>9.999</Result_24></Row>
+</Dataset>
+<Dataset name='Result 25'>
+ <Row><Result_25>9.999</Result_25></Row>
+</Dataset>
+<Dataset name='Result 26'>
+ <Row><Result_26>-1.99</Result_26></Row>
+</Dataset>
+<Dataset name='Result 27'>
+ <Row><Result_27>-1.99</Result_27></Row>
+</Dataset>
+<Dataset name='Result 28'>
+ <Row><Result_28>-9.99</Result_28></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><Result_29>-9.99</Result_29></Row>
+</Dataset>
+<Dataset name='Result 30'>
+ <Row><Result_30>-199.</Result_30></Row>
+</Dataset>
+<Dataset name='Result 31'>
+ <Row><Result_31>-199.</Result_31></Row>
+</Dataset>
+<Dataset name='Result 32'>
+ <Row><Result_32>-1999</Result_32></Row>
+</Dataset>
+<Dataset name='Result 33'>
+ <Row><Result_33>-1999</Result_33></Row>
+</Dataset>
+<Dataset name='Result 34'>
+ <Row><Result_34>-9999</Result_34></Row>
+</Dataset>
+<Dataset name='Result 35'>
+ <Row><Result_35>-9999</Result_35></Row>
+</Dataset>

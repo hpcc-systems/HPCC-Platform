@@ -799,11 +799,18 @@ double rtlUnicodeToReal(size32_t l, UChar const * t)
 
 //---------------------------------------------------------------------------
 
-void rtlRealToStr(size32_t l, char * t, double val)
+static void truncFixedReal(size32_t l, char * t, StringBuffer & temp)
 {
-    StringBuffer temp;
-    temp.append(val);
+    const char * str = temp.str();
     unsigned len = temp.length();
+    if (len > l)
+    {
+        //If we don't lose significant digits left of the decimal point then truncate the string.
+        const char * dot = strchr(str, '.');
+        if (dot && ((size_t)(dot - str) <= l))
+            len = l;
+    }
+
     if (len > l)
         memset(t,'*',l);
     else
@@ -813,11 +820,52 @@ void rtlRealToStr(size32_t l, char * t, double val)
     }
 }
 
-void rtlRealToStr(size32_t l, char * t, float val)
+static void roundFixedReal(size32_t l, char * t, StringBuffer & temp)
 {
-    StringBuffer temp;
-    temp.append(val);
+    const char * str = temp.str();
     unsigned len = temp.length();
+    if (len > l)
+    {
+        //If we don't lose significant digits left of the decimal point then truncate the string.
+        const char * dot = strchr(str, '.');
+        if (dot && ((size_t)(dot - str) <= l))
+        {
+            len = l;
+            //Unfortunately we now need to potentially round the number which could even lead to
+            //an extra digit, and failure to fit.  Is there a simpler way of handling this?
+            bool decimalIsNext = ((dot - str) == l);
+            char next = decimalIsNext ? dot[1] : str[len];
+            bool rounding = (next >= '5');
+            unsigned cur = len;
+            while ((cur > 0) && rounding)
+            {
+                next = str[cur-1];
+                if (next == '-')
+                    break;
+                if (next != '.')
+                {
+                    if (next != '9')
+                    {
+                        temp.setCharAt(cur-1, next+1);
+                        rounding = false;
+                        break;
+                    }
+                    else
+                        temp.setCharAt(cur-1, '0');
+                }
+                cur--;
+            }
+            if (rounding)
+            {
+                //Ugly, but it is an exceptional case.
+                if (!decimalIsNext)
+                    temp.insert(cur, '1');
+                else
+                    len++; // overflow
+            }
+        }
+    }
+
     if (len > l)
         memset(t,'*',l);
     else
@@ -825,6 +873,26 @@ void rtlRealToStr(size32_t l, char * t, float val)
         memcpy(t,temp.str(),len);
         memset(t+len, ' ', l-len);
     }
+}
+
+void rtlRealToStr(size32_t l, char * t, double val)
+{
+    StringBuffer temp;
+    temp.append(val);
+
+    //This could either truncate or round when converting a real to a string
+    //Rounding is more user friendly, but then (string3)(string)1.99 != (string3)1.99 which is
+    //rather count intuitive.  (That is still true if the value is out of range.)
+    truncFixedReal(l, t, temp);
+}
+
+void rtlRealToStr(size32_t l, char * t, float val)
+{
+    StringBuffer temp;
+    temp.append(val);
+
+    //See comment above
+    truncFixedReal(l, t, temp);
 }
 
 void rtlRealToStrX(size32_t & l, char * & t, double val)
