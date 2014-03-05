@@ -1,0 +1,27 @@
+[submodule "esp/src/topojson"]
+	path = esp/src/topojson
+	url = git@github.com:mbostock/topojson.git
+[submodule "esp/src/xstyle"]
+	path = esp/src/xstyle
+	url = git@github.com:kriszyp/xstyle.git
+[submodule "esp/src/put-selector"]
+	path = esp/src/put-selector
+	url = git@github.com:kriszyp/put-selector.git
+[submodule "esp/src/dgrid"]
+	path = esp/src/dgrid
+	url = git@github.com:SitePen/dgrid.git
+[submodule "esp/src/dojo"]
+	path = esp/src/dojo
+	url = git@github.com:dojo/dojo.git
+[submodule "esp/src/d3"]
+	path = esp/src/d3
+	url = git@github.com:mbostock/d3.git
+[submodule "esp/src/dijit"]
+	path = esp/src/dijit
+	url = git@github.com:dojo/dijit.git
+[submodule "esp/src/dojox"]
+	path = esp/src/dojox
+	url = git@github.com:dojo/dojox.git
+[submodule "esp/src/util"]
+	path = esp/src/util
+	url = git@github.com:dojo/util.git
