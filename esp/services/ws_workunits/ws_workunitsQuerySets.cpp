@@ -228,7 +228,7 @@ void copyWULogicalFilesToTarget(IEspContext &context, IConstWUClusterInfo &clust
 bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp)
 {
     StringBuffer wuid = req.getWuid();
-    WsWuProcess::checkAndTrimWorkunit("WUCopyLogicalFiles", wuid);
+    WsWuHelpers::checkAndTrimWorkunit("WUCopyLogicalFiles", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
@@ -502,7 +502,7 @@ bool CWsWorkunitsEx::isQuerySuspended(const char* query, IConstWUClusterInfo *cl
 bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWorkunitRequest & req, IEspWUPublishWorkunitResponse & resp)
 {
     StringBuffer wuid = req.getWuid();
-    WsWuProcess::checkAndTrimWorkunit("WUPublishWorkunit", wuid);
+    WsWuHelpers::checkAndTrimWorkunit("WUPublishWorkunit", wuid);
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
