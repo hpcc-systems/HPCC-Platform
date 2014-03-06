@@ -39,13 +39,15 @@ class ECLFile:
     elapsTime = 0
     jobname = ''
     abortReason = ''
-    taskId = -1;
+    taskId = -1
+    ignoreResult=False
 
-    def __init__(self, ecl, dir_a, dir_ex, dir_r):
+    def __init__(self, ecl, dir_a, dir_ex, dir_r,  cluster):
         self.dir_ec = os.path.dirname(ecl)
         self.dir_ex = dir_ex
         self.dir_r = dir_r
         self.dir_a = dir_a
+        self.cluster = cluster;
         baseEcl = os.path.basename(ecl)
         self.basename = os.path.splitext(baseEcl)[0]
         baseXml = self.basename + '.xml'
@@ -58,7 +60,21 @@ class ECLFile:
         self.abortReason =''
 
     def getExpected(self):
-        return os.path.join(self.dir_ex, self.xml_e)
+        path = os.path.join(self.dir_ec, self.cluster)
+        logging.debug("%3d. getExpected() checks path:'%s' ",  self.taskId,  path )
+        if os.path.isdir(path):
+            # we have cluster specific key dir, check keyfile
+            path = os.path.join(path, self.xml_e)
+            if not os.path.isfile(path):
+                # we haven't keyfile use the common
+                logging.debug("%3d. getExpected() cluster specific keyfile does not exist:'%s' ",  self.taskId,  path )
+                path =  os.path.join(self.dir_ex, self.xml_e)
+        else:
+            # we have not cluster specific key dir use common dir and file
+            path =  os.path.join(self.dir_ex, self.xml_e)
+
+        logging.debug("%3d. getExpected() returns with path:'%s'",  self.taskId,  path )
+        return path
 
     def getResults(self):
         return os.path.join(self.dir_r, self.xml_r)
@@ -112,14 +128,14 @@ class ECLFile:
 
     def __checkTag(self,  tag):
         tag = tag.lower()
-        logging.debug("__checkTag (ecl:'%s', tag:'%s')", self.ecl, tag)
+        logging.debug("%3d.__checkTag (ecl:'%s', tag:'%s')", self.taskId, self.ecl, tag)
         retVal = False
         eclText = open(self.getEcl(), 'rb')
         for line in eclText:
             if tag in line.lower():
                 retVal = True
                 break
-        logging.debug("__checkTag() returns with %s",  retVal)
+        logging.debug("%3d.__checkTag() returns with %s", self.taskId,  retVal)
         return retVal
 
     def testSkip(self, skip=None):
@@ -132,9 +148,9 @@ class ECLFile:
         # Standard string has a problem with unicode characters
         # use byte arrays and binary file open instead
         tag = b'//no' + target.encode()
-        logging.debug("testExclusion (ecl:'%s', target: '%s', tag:'%s')", self.ecl, target, tag)
+        logging.debug("%3d. testExclusion (ecl:'%s', target: '%s', tag:'%s')", self.taskId, self.ecl, target, tag)
         retVal = self.__checkTag(tag)
-        logging.debug("Exclude %s",  retVal)
+        logging.debug("%3d. testExclude() returns with: %s", self.taskId,  retVal)
         return retVal
 
     def testPublish(self):
@@ -143,7 +159,7 @@ class ECLFile:
         tag = b'//publish'
         logging.debug("%3d. testPublish (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
         retVal = self.__checkTag(tag)
-        logging.debug("%3d. Publish is %s",  self.taskId,  retVal)
+        logging.debug("%3d. testPublish() returns with: %s",  self.taskId,  retVal)
         return retVal
 
     def testNoKey(self):
@@ -152,7 +168,16 @@ class ECLFile:
         tag = b'//nokey'
         logging.debug("%3d. testNoKey (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
         retVal = self.__checkTag(tag)
-        logging.debug("%3d. No key is %s",  self.taskId,  retVal)
+        logging.debug("%3d. testNoKey() returns with: %s",  self.taskId,  retVal)
+        return retVal
+
+    def testNoOutput(self):
+        # Standard string has a problem with unicode characters
+        # use byte arrays and binary file open instead
+        tag = b'//nooutput'
+        logging.debug("%3d. testNoOutput (ecl:'%s', tag:'%s')", self.taskId, self.ecl,  tag)
+        retVal = self.__checkTag(tag)
+        logging.debug("%3d. testNoOutput() returns with: %s",  self.taskId,  retVal)
         return retVal
 
     def getTimeout(self):
@@ -175,15 +200,16 @@ class ECLFile:
     def testResults(self):
         d = difflib.Differ()
         try:
-            logging.debug("%3d. EXP: " + self.getExpected(),  self.taskId )
+            expectedKeyPath = self.getExpected()
+            logging.debug("%3d. EXP: " + expectedKeyPath,  self.taskId )
             logging.debug("%3d. REC: " + self.getResults(),  self.taskId )
-            if not os.path.isfile(self.getExpected()):
-                self.diff += "KEY FILE NOT FOUND. " + self.getExpected()
-                raise IOError("KEY FILE NOT FOUND. " + self.getExpected())
+            if not os.path.isfile(expectedKeyPath):
+                self.diff += "KEY FILE NOT FOUND. " + expectedKeyPath
+                raise IOError("KEY FILE NOT FOUND. " + expectedKeyPath)
             if not os.path.isfile(self.getResults()):
                 self.diff += "RESULT FILE NOT FOUND. " + self.getResults()
                 raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
-            expected = open(self.getExpected(), 'r').readlines()
+            expected = open(expectedKeyPath, 'r').readlines()
             recieved = open(self.getResults(), 'r').readlines()
             for line in difflib.unified_diff(expected,
                                              recieved,
@@ -221,3 +247,10 @@ class ECLFile:
 
     def getTaskId(self):
         return self.taskId
+
+    def setIgnoreResult(self,  ignoreResult):
+        self.ignoreResult=ignoreResult
+
+    def getIgnoreResult(self):
+        logging.debug("%3d. getIgnoreResult (ecl:'%s', ignore result is:'%s')", self.taskId,  self.ecl, self.ignoreResult)
+        return self.ignoreResult

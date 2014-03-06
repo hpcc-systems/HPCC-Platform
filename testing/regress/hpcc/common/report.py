@@ -119,10 +119,17 @@ class Report:
     def __addEclFile(self, eclfile):
         result = {}
         result['File'] = eclfile.ecl
-        if eclfile.diff:
+        if eclfile.wuid == 'Not found':
+            result['Result'] = 'Fail'
+            result['Diff'] = ''
+            self.report._fail.append(_dict(result))
+        elif eclfile.diff:
             if eclfile.testNoKey():
                 result['Result'] = 'Pass'
-                result['Diff'] = eclfile.diff
+                if eclfile.testNoOutput():
+                    result['Diff'] = ''
+                else:
+                    result['Diff'] = eclfile.diff
                 self.report._pass.append(_dict(result))
             else:
                 result['Result'] = 'Fail'

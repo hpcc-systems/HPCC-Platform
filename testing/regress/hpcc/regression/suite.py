@@ -58,7 +58,7 @@ class Suite:
             if file.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
-                                  self.dir_r)
+                                  self.dir_r,  self.name)
                 result = eclfile.testSkip(self.name)
                 if not result['skip']:
                     if not eclfile.testExclusion(self.name):
