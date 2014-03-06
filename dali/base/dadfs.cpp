@@ -11939,7 +11939,8 @@ IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
         {
             Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesTreeIterator(filters.get(),
                 localFilters, localFilterBuf.get(), udesc);
-            sortElements(fi, sortOrder.get(), NULL, NULL, elements);
+            StringArray unknownAttributes;
+            sortElements(fi, sortOrder.get(), NULL, NULL, unknownAttributes, elements);
             return NULL;
         }
     };
