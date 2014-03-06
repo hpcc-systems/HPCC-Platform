@@ -110,14 +110,6 @@ public:
     {
         ctx->restoreCluster();
     }
-    virtual IRemoteConnection *startPersist(const char * name)
-    {
-        return ctx->startPersist(name);
-    }
-    virtual void finishPersist(IRemoteConnection *persistLock)
-    {
-        ctx->finishPersist(persistLock);
-    }
     virtual bool queryResolveFilesLocally()
     {
         return ctx->queryResolveFilesLocally();
@@ -145,18 +137,6 @@ public:
     virtual IOrderedOutputSerializer * queryOutputSerializer() 
     { 
         return ctx->queryOutputSerializer();
-    }
-    virtual void clearPersist(const char * logicalName)
-    {
-        ctx->clearPersist(logicalName);
-    }
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
-    {
-        ctx->updatePersist(persistLock, logicalName, eclCRC, allCRC);
-    }
-    virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC)
-    {
-        ctx->checkPersistMatches(logicalName, eclCRC);
     }
     virtual void setWorkflowCondition(bool value)
     {
@@ -507,11 +487,11 @@ public:
     virtual IUserDescriptor *queryUserDescriptor();
     virtual void selectCluster(const char * cluster);
     virtual void restoreCluster();
-    virtual IRemoteConnection *startPersist(const char * name);
-    virtual void finishPersist(IRemoteConnection *persistLock);
-    virtual void clearPersist(const char * logicalName);
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
-    virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC);
+
+    IRemoteConnection *startPersist(const char * name);
+    void finishPersist(IRemoteConnection *persistLock);
+    void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
+    void checkPersistMatches(const char * logicalName, unsigned eclCRC);
     virtual void deleteLRUPersists(const char * logicalName, int keep);
     virtual bool queryResolveFilesLocally() { return resolveFilesLocally; }
     virtual bool queryRemoteWorkunit() { return isRemoteWorkunit; }

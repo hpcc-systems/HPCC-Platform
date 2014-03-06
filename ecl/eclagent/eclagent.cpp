@@ -2281,7 +2281,6 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     }
     else if(!agent.isPersistUptoDate(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC, thisPersist->isFile))
     {
-        // We used to call agent.clearPersist(logicalName) here - but that means if the persist rebuild fails, we forget WHY we wanted to.
         // New persist model allows dependencies to be executed AFTER checking if the persist is up to date
         if (agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
             doExecuteItemDependencies(item, wfid);
@@ -2630,18 +2629,6 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
     if (errText.length())
         logException(ExceptionSeverityInformation, 0, errText.str(), false);
     return false;
-}
-
-void EclAgent::clearPersist(const char * logicalName)
-{
-    StringBuffer lfn, crcName, eclName;
-    expandLogicalName(lfn, logicalName);
-    crcName.append(lfn).append("$crc");
-    eclName.append(lfn).append("$eclcrc");
-
-    setResultInt(crcName,(unsigned)-2,0);
-    setResultInt(eclName,(unsigned)-2,0);
-    LOG(MCrunlock, unknownJob, "Recalculate persistent value %s", logicalName);
 }
 
 void EclAgent::updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)

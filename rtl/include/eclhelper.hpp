@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      150
-#define MIN_ACTIVITY_INTERFACE_VERSION  150             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      151
+#define MIN_ACTIVITY_INTERFACE_VERSION  151             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -2788,13 +2788,6 @@ struct IGlobalCodeContext
 
     virtual void selectCluster(const char * cluster) = 0;
     virtual void restoreCluster() = 0;
-
-    // These next 5 are not used from generated code, and should be remove in 5.0
-    virtual IRemoteConnection *startPersist(const char * name) = 0;
-    virtual void finishPersist(IRemoteConnection *) = 0;
-    virtual void clearPersist(const char * logicalName) = 0;
-    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) = 0;
-    virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) = 0;
 
     virtual void setWorkflowCondition(bool value) = 0;
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) = 0;
