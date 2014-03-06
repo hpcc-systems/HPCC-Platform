@@ -335,10 +335,10 @@ void listPkgInfo(double version, const char *target, const char *process, IPrope
 void listPkgInfo(double version, const char *target, const char *process, IArrayOf<IConstPackageListMapData>* results)
 {
     Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry((process && *process) ? process : "*", true);
-    if (!pkgSetRegistry)
-        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process %s", (process && *process) ? process : "*");
-
-    listPkgInfo(version, target, process, pkgSetRegistry, results);
+    if (pkgSetRegistry) //will be NULL if no package map
+    {
+        listPkgInfo(version, target, process, pkgSetRegistry, results);
+    }
 }
 
 void getPkgInfo(const char *target, const char *process, StringBuffer &info)
