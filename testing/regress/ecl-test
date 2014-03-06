@@ -31,11 +31,12 @@ from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam,  getVersionNumbers
 
-prog_version = "0.0.12"
+prog_version = "0.0.13"
 
 if __name__ == "__main__":
 
-    prog = "regress v:"+prog_version
+    prog = "ecl-test"
+    versionStr = prog+" v:"+prog_version
     description = 'HPCC Platform Regression suite'
     pythonVer = getVersionNumbers()
 
@@ -56,24 +57,24 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog=prog, description=description)
     parser.add_argument('--version', '-v', action='version',
-                        version='%(prog)s')
-    parser.add_argument('--config', help="config file to use. Default: regress.json",
-                        nargs='?', default="regress.json")
+                        version=versionStr)
+    parser.add_argument('--config', help="config file to use. Default: ecl-test.json",
+                        nargs='?', default="ecl-test.json")
     parser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
                         nargs='?', default="info",
                         choices=['info', 'debug'])
     parser.add_argument('--suiteDir', '-s', help="suiteDir to use. Default value is the current directory and it can handle relative path.",
                         nargs='?', default=".")
-    parser.add_argument('--timeout', '-t', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in regress.json config file.",
+    parser.add_argument('--timeout', '-t', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file.",
                         nargs='?', default="0")
-    parser.add_argument('--keyDir', '-k', help="key file directory to compare test output. Default value defined in regress.json config file.",
+    parser.add_argument('--keyDir', '-k', help="key file directory to compare test output. Default value defined in ecl-test.json config file.",
                         nargs='?', default="ecl/key")
     parser.add_argument('--ignoreResult', '-i', help="completely ignore the result.",
                         action='store_true')
 
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
-    parser_list.add_argument('clusters', help="Print clusters from config (regress.json by default).",
+    parser_list.add_argument('clusters', help="Print clusters from config (ecl-test.json by default).",
                              action='store_true')
 
     parser_run = subparsers.add_parser('run', help='run help')
@@ -92,7 +93,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Resolve Regression Suite starting path for regress.json config file
+    # Resolve Regression Suite starting path for ecl-test.json config file
     # It is necessary when Regression Suite doesn't started from its home directory
     regressionSuiteMainDir = os.path.dirname(__file__)
     regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)

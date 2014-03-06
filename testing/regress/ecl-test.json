@@ -12,7 +12,7 @@
         "archiveDir": "archives",
         "resultDir": "results",
         "regressionDir": "~/HPCCSystems-regression",
-        "logDir": "~/HPCCSystems-regression/log",    
+        "logDir": "~/HPCCSystems-regression/log",
         "Clusters": [
             "hthor",
             "thor",
