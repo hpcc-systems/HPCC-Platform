@@ -345,12 +345,6 @@ public:
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
             prevtext.clear();
-
-            // Make sure there is a context class loader available; we need to
-            // do this before calling FindClass() on the class we need
-//            ensureContextClassLoaderAvailable();
-
-
             // Name should be in the form class.method:signature
             const char *funcname = strchr(text, '.');
             if (!funcname)
