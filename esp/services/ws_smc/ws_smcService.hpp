@@ -88,6 +88,7 @@ class CWsSMCEx : public CWsSMC
     StringBuffer m_PortalURL;
     int m_BannerAction;
     bool m_EnableChatURL;
+    CriticalSection crit;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -150,6 +151,7 @@ private:
     void getDFURecoveryJobs(IEspContext &context, IArrayOf<IEspDFUJob>& jobs);
     const char* createQueueActionInfo(IEspContext &context, const char* action, IEspSMCQueueRequest &req, StringBuffer& info);
     void setServerJobQueueStatus(double version, IEspServerJobQueue* jobQueue, const char* status, const char* details);
+    void setJobPriority(IWorkUnitFactory* factory, const char* wuid, const char* queue, WUPriorityClass& priority);
 };
 
 
