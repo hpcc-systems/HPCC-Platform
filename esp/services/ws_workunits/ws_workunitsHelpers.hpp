@@ -317,9 +317,22 @@ void xsltTransform(const char* xml, const char* sheet, IProperties *params, Stri
 
 class WUSchedule : public Thread
 {
+    bool stopping;
+    Semaphore semSchedule;
     IEspContainer* m_container;
 
 public:
+    WUSchedule()
+    {
+        stopping = false;
+    }
+    ~WUSchedule()
+    {
+        stopping = true;
+        semSchedule.signal();
+        join();
+    }
+
     virtual int run();
     virtual void setContainer(IEspContainer * container)
     {

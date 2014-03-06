@@ -48,7 +48,7 @@ int Schedule::run()
 {
     try
     {
-        while(true)
+        while(!stopping)
         {
             {
                 Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -78,7 +78,7 @@ int Schedule::run()
                     itr->next();
                 }
             }
-            sleep(60);
+            semSchedule.wait(1000*60);
         }
     }
     catch(IException *e)
@@ -91,7 +91,6 @@ int Schedule::run()
     {
         ERRLOG("Unknown exception in WS_FS Schedule::run");
     }
-
     return 0;
 }
 
