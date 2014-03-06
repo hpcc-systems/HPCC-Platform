@@ -1686,9 +1686,19 @@ public:
                 char *&v2 = vals[i2*nk+i];
                 if (!v2)
                     getkeyval(i2,i,v2);
+                if (!v1 || !v2)
+                    return 0;
                 int ret;
                 if (mod&SORT_NUMERIC)
-                    ret = (int)(_atoi64(v1)-_atoi64(v2));
+                {
+                    __int64 ret0 = _atoi64(v1)-_atoi64(v2);
+                    if (ret0 > 0)
+                        ret = 1;
+                    else if (ret0 < 0)
+                        ret = -1;
+                    else
+                        ret = 0;
+                }
                 else if (mod&SORT_NOCASE)
                     ret = stricmp(v1,v2);
                 else
@@ -1918,7 +1928,8 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
                                      const char *owner,
                                      __int64 *hint,
                                      IArrayOf<IPropertyTree> &results,
-                                     unsigned *total)
+                                     unsigned *total,
+                                     bool checkConn)
 {
     if ((pagesize==0) || !elementsPager)
         return NULL;
@@ -1935,11 +1946,12 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
         elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem)); // NB: removes from cache in process, added back at end
         postfilter = elem->postFilter; // reuse cached postfilter
     }
-    if (!elem)
+    else
+    {
         elem.setown(new CPECacheElem(owner, postfilter));
-    if (!elem->conn)
         elem->conn.setown(elementsPager->getElements(elem->totalres));
-    if (!elem->conn)
+    }
+    if (checkConn && !elem->conn)
         return NULL;
     unsigned n;
     if (total)
@@ -1989,7 +2001,9 @@ IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
             results.append(item);
         }
     }
-    IRemoteConnection *ret = elem->conn.getLink();
+    IRemoteConnection *ret = NULL;
+    if (elem->conn)
+        ret = elem->conn.getLink();
     if (hint) {
         *hint = elem->hint;
         pagedElementsCache->add(elem.getClear());
