@@ -67,7 +67,7 @@ if __name__ == "__main__":
                         nargs='?', default=".")
     parser.add_argument('--timeout', '-t', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file.",
                         nargs='?', default="0")
-    parser.add_argument('--keyDir', '-k', help="key file directory to compare test output. Default value defined in regress.json config file.",
+    parser.add_argument('--keyDir', '-k', help="key file directory to compare test output. Default value defined in ecl-test.json config file.",
                         nargs='?', default="ecl/key")
     parser.add_argument('--ignoreResult', '-i', help="completely ignore the result.",
                         action='store_true')
@@ -93,8 +93,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-
-    # Resolve Regression Suite starting path for regress.json config file
+    # Resolve Regression Suite starting path for ecl-test.json config file
     # It is necessary when Regression Suite doesn't started from its home directory
     regressionSuiteMainDir = os.path.dirname(__file__)
     regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)

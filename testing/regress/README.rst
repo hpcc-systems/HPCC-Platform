@@ -37,15 +37,10 @@ Result:
 |            --suiteDir [SUITEDIR], -s [SUITEDIR]
 |                                  suiteDir to use. Default value is the current directory and it can handle relative path.
 |            --timeout [TIMEOUT], -t [TIMEOUT]
-<<<<<<< HEAD
-|                                  timeout for query execution in sec. Use -1 to disable timeout. Default value defined in regress.json config file (see: 7.)
+|                                  timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
 |            --keyDir [KEYDIR], -k [KEYDIR]
 |                                  key file directory to compare test output. Default value defined in regress.json config file.
 |            --ignoreResult, -i    completely ignore the result.
-=======
-|                                  timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 7.)
-
->>>>>>> HPCC-10859 Change regress script and update README
 
 Parameters of Regression Suite list sub-command:
 ------------------------------------------------

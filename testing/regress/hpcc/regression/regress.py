@@ -85,7 +85,6 @@ class Regression:
         logging.debug("Log Dir        : %s", self.logDir)
         logging.debug("ECL Dir        : %s", self.dir_ec)
         logging.debug("Key Dir        : %s", self.dir_ex)
-        #logging.debug("Setup Dir      : %s", self.setupDir)
         logging.debug("Archive Dir    : %s", self.dir_a)
 
 
