@@ -35,21 +35,25 @@ set (    SRCS
          DeployTask.cpp 
          EspDeploymentEngine.cpp 
          espconfiggenengine.cpp 
-#        HoleDeploymentEngine.cpp 
          RoxieDeploymentEngine.cpp 
          thorconfiggenengine.cpp 
          ThorDeploymentEngine.cpp 
-         XslFunctions.cpp 
+         XslFunctions.cpp
+         ${HPCC_SOURCE_DIR}/deployment/deployutils/confighelper.cpp
     )
 
 include_directories ( 
-         ./../../system/include 
-         ./../../system/xmllib 
-         ./../../system/jlib 
-         ./../../system/mp 
-         ./../../common/environment
-         ./../../dali/base 
-         ./../../system/security/securesocket 
+         ${HPCC_SOURCE_DIR}/system/include
+         ${HPCC_SOURCE_DIR}/system/xmllib
+         ${HPCC_SOURCE_DIR}/system/jlib
+         ${HPCC_SOURCE_DIR}/system/mp
+         ${HPCC_SOURCE_DIR}/common/environment
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/system/security/securesocket
+         ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
+         ${HPCC_SOURCE_DIR}/deployment/deployutils
+         ${HPCC_SOURCE_DIR}/deployment/deploy
     )
 
 ADD_DEFINITIONS ( -D_USRDLL -DDEPLOY_EXPORTS )

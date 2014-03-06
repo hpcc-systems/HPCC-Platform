@@ -257,13 +257,6 @@ void CEspConfigGenEngine::processServiceModules(const char* moduleType,
          {
             if (m_deployFlags & DEFLAGS_CONFIGFILES)
             {
-               //each esp_service_module for a given service name is expected to produce necessary
-               //and sufficient information for itself (EspService node) and all its EspBindings 
-               //(we may have multiple bindings for the same service i.e. EspService[@name='xyz']).
-               //Therefore, we only need to process one instance of EspService exactly once. 
-               if (serviceNamesProcessed.find(serviceName) != serviceNamesProcessed.end())
-                  continue;
-
                serviceNamesProcessed.insert(serviceName);
 
                serviceXsltOutputFiles.append(dest.c_str());

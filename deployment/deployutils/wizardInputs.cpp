@@ -24,12 +24,11 @@
 #include "XMLTags.h"
 #include "jencrypt.hpp"
 #include "buildset.hpp"
+#include "confighelper.hpp"
 #include "build-config.h"
 
 #define STANDARD_CONFIGXMLDIR COMPONENTFILES_DIR"/configxml/"
-#define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
 #define STANDARD_CONFIG_DIR CONFIG_DIR
-#define STANDARD_CONFIG_ALGORITHMFILE "genenvrules.conf"
 
 //---------------------------------------------------------------------------
 //  CWizardInputs
@@ -125,13 +124,21 @@ void CWizardInputs::setEnvironment()
      Owned<IProperties> pEnvParams = createProperties(pEnvConfFile);
      StringBuffer sb, fileName;
      
-     fileName.append((pEnvParams->queryProp("path")!= NULL ? (sb.clear().append(pEnvParams->queryProp("path")).append("/componentfiles/configxml/")) : STANDARD_CONFIGXMLDIR));
-     fileName.append((pParams->queryProp("buildset") != NULL ? (sb.clear().append(pParams->queryProp("buildset"))) : STANDARD_CONFIG_BUILDSETFILE));
+     CConfigHelper *pConfigHelper = CConfigHelper::getInstance(m_cfg, m_service.str());
 
-     if(fileName.length() && checkFileExists(fileName.str()))
-       m_buildSetTree.setown(createPTreeFromXMLFile(fileName.str()));
-     else
-       throw MakeStringException( -1 , "The buildSetFile %s does not exists", fileName.str());
+     if (pConfigHelper == NULL)
+     {
+         throw MakeStringException( -1 , "Error loading buildset from configuration");
+     }
+
+     IPropertyTree* pBuildSet = pConfigHelper->getBuildSetTree();
+
+     if (strlen(pConfigHelper->getBuildSetFileName()) == 0 || pBuildSet == NULL)
+     {
+         throw MakeStringException( -1 , "The buildset file %s/%s does not exist", pConfigHelper->getBuildSetFilePath(), pConfigHelper->getBuildSetFileName());
+     }
+
+     m_buildSetTree.setown(pBuildSet);
      
      fileName.clear().append((pEnvParams->queryProp("configs") != NULL ? (sb.clear().append(pEnvParams->queryProp("configs")).append("/")): STANDARD_CONFIG_DIR));
      fileName.append((pParams->queryProp("wizardalgorithm") != NULL ? (sb.clear().append(pParams->queryProp("wizardalgorithm"))) : STANDARD_CONFIG_ALGORITHMFILE));
@@ -154,6 +161,7 @@ void CWizardInputs::setWizardRules()
 
    if(m_algProp)
    {
+     CConfigHelper::getInstance()->addPluginsToGenEnvRules(m_algProp.get());
      Owned<IPropertyIterator> iter = m_algProp->getIterator();
      StringBuffer prop;
      ForEach(*iter)
