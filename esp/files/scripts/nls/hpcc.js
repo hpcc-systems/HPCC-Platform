@@ -36,7 +36,7 @@ define({root:
     Close: "Close",
     Cluster: "Cluster",
     ClusterName: "Cluster Name",
-    ClusterPH: "r?x*",
+    ClusterPlaceholder: "r?x*",
     ClusterProcesses: "Cluster Processes",
     Code: "Code",
     Col: "Col",
@@ -251,7 +251,6 @@ define({root:
     Priority: "Priority",
     Process: "Process",
     ProcessFilter: "Process&nbsp;Filter",
-    ProcessFilter: "Process Filter",
     ProgressMessage: "Progress Message",
     Properties: "Properties",
     Property: "Property",
@@ -293,7 +292,6 @@ define({root:
     RetypePassword: "Retype Password",
     Rows: "Rows",
     RowTag: "Row Tag",
-    roxie: "r?x*",
     RoxieCluster: "Roxie Cluster",
     Sample: "Sample",
     SampleRequest: "Sample Request",
@@ -441,7 +439,9 @@ define({root:
     ZoomAll: "Zoom All",
     ZoomWidth: "Zoom Width"
 }),
+"bs": true,
 "es": true,
-"zh": true,
-"hu": true
+"hu": true,
+"hr": true,
+"zh": true
 });
