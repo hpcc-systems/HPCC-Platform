@@ -96,7 +96,7 @@ define([
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
                 if ((nval.id != context.id + "Packages") && (!nval.initalized)) {
-                    nval.init(nval.params);
+                    nval.init(nval.params, context.targets);
                 }
                 context.selectedTab = nval;
             });
@@ -105,7 +105,6 @@ define([
         startup: function (args) {
             this.inherited(arguments);
             this.refreshActionState();
-            this.getSelections();
         },
 
         resize: function (args) {
@@ -378,8 +377,6 @@ define([
                 if (target.Processes != undefined)
                     this.addProcessSelections(this.processSelect, this.processesToList, target.Processes.Item);
             }
-            if (this.validateTab != null)
-                this.validateTab.initSelections(this.targets);
         },
 
         init: function (params) {
@@ -397,6 +394,7 @@ define([
             this.tabContainer.addChild(this.validateTab, 1);
 
             this.tabContainer.selectChild(this.packagesTab);
+            this.getSelections();
         },
 
         initPackagesGrid: function() {
