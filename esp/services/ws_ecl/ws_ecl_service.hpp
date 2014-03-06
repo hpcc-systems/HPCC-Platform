@@ -139,6 +139,7 @@ public:
     void getDynNavData(IEspContext &context, IProperties *params, IPropertyTree & data);
     void addQueryNavLink(IPropertyTree &data, IPropertyTree *query, const char *setname, const char *qname=NULL);
     void getQueryNames(IPropertyTree* settree, const char *id, const char *qname, StringArray& qnames);
+    int getRestURL(IEspContext *context, CHttpRequest *request, CHttpResponse *response, WsEclWuInfo &wsinfo, IProperties *parms);
 
     virtual const char* getRootPage(IEspContext* ctx) {return "esp_app_tree.html";}
 

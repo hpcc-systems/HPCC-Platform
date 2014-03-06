@@ -27,6 +27,9 @@
                     <a  target="_blank" href="/WsEcl/forms/ecl/query/{$pathval}/{$queryname}">Form</a>
                 </li>
                 <li>
+                    Sample REST URL:&nbsp;&nbsp;<a  target="_blank" href="/WsEcl/example/url/query/{$pathval}/{$queryname}">link</a>
+                </li>
+                <li>
                     Sample Request:&nbsp;&nbsp;<a href="/WsEcl/example/request/query/{$pathval}/{$queryname}?display">display</a>&nbsp;&nbsp;<a  target="_blank" href="/WsEcl/example/request/query/{$pathval}/{$queryname}">link</a>
                 </li>
                 <li>
