@@ -1,0 +1,890 @@
+/*##############################################################################
+#    Copyright (C) 2011 HPCC Systems.
+#
+#    All rights reserved. This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+/*ELEMENT STYLES***************/
+html, body {
+    background: white;
+    width: 100%;
+    height: 100%;
+    margin: 0px;
+    color: rgb(51, 51, 51);
+    font-family: Lucida Sans,Lucida Grande,Arial !important;
+    font-size: 13px !important;
+    padding: 0;
+}
+
+button:hover {
+        color: rgb(0, 0, 0);
+        background-color: rgb(175, 217, 255);
+    }
+
+h1 {
+    font-size: 1.5em;
+}
+
+/*Use this when creating a small popup form*/
+.smallForm label{
+  float: left;
+    width: 26%;
+    margin: 0 15px 0 0;
+    text-align: left;
+    padding-top: 4px;
+    font-weight:bold;
+    height:20px;
+}
+
+form {
+    margin:0;
+    padding:0;
+    width:100%;
+}
+
+form label{
+    margin: 0 8px 0 0;
+    font-weight:bold;
+}
+
+form ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+
+form li{
+    margin: 0;
+    padding: 6px 1% 9px 1%;
+    clear: both;
+    position: relative;
+    height:20px;
+}
+
+form li label{
+    float: left;
+    width: 14%;
+    margin: 0 15px 0 0;
+    text-align: left;
+    padding-top: 4px;
+}
+
+form li textarea{
+    font-size: 13px;
+    font-family: Arial;
+    width:auto;
+    height:auto;
+    float:left;
+}
+
+form h1{
+    font-size: 1.5em;
+    margin-left:15px;
+}
+
+form h2{
+    padding:5px 0;
+    color:rgb(22, 22, 22);
+}
+
+/* Double-color dashed line */
+        
+hr.dashedLine {
+    border: 0;
+    border-bottom: 1px dashed #ccc;
+    background-color: rgb(0, 170, 213);
+    background: none;
+}
+
+ h2 img:first-of-type{
+    margin-left:15px;
+}
+/*IDs************************/
+.claro .hpccMainpage {
+    margin: 0;
+    padding: 0;
+    width: 100%; 
+    height: 100%; 
+}
+
+.claro .hpccTitlebar{
+    height: 50px;
+    margin: 0;
+    padding: 0;
+    padding-left: 6px;
+    padding-right: 6px;
+    width:100%;
+    overflow: hidden;
+}
+
+.claro #stubStackController{
+    height: 32px;
+    margin-top: 6px;
+}
+
+.claro .glow :hover{
+    background-color:rgb(118, 157, 192);
+    cursor: pointer;
+}
+
+.claro .glow .dijitToggleButton .dijitButtonNode {
+    background: none;
+    border:none;
+    box-shadow: none;
+    margin:0;
+    align-content:center;
+}
+
+.claro .hpccTitlebar .dijitToggleButtonChecked .dijitButtonNode {
+    border-width: 1px;
+    border-style: solid;
+    border-color: #759dc0;
+    margin: 0px;
+    align-content:center;
+}
+
+.claro .hpccTitlebar .dijitDropDownButton .dijitButtonNode {
+    background: none;
+    border:none;
+    box-shadow: none;
+    margin:0;
+    align-content:center;
+}
+
+.claro .miniTitlebar {
+    background: rgb(200, 200, 200);
+    margin: 0px;
+    padding: 0px;
+    padding-left: 6px;
+    padding-right: 6px;
+    width:100%;
+    overflow: hidden;
+}
+
+.claro .miniTitlebar .dijitToggleButton .dijitButtonNode {
+    background: none;
+    border: none;
+    box-shadow: none;
+    margin: 0px;
+    padding: 2px;
+    cursor: pointer;
+}
+
+.claro .miniTitlebar .dijitToggleButtonChecked .dijitButtonNode {
+    border-width: 1px;
+    border-style: solid;
+    background-image: none;
+    border-color: #759dc0;
+    background-color: #ffffff;
+    margin: 0px;
+    padding: 0px;
+    cursor: pointer;
+}
+
+.claro #stubTitlebar .dijitToggleButton, .dijitButton, .dijitDropDownButton, .dijitComboButton{
+    margin:0;
+    cursor: pointer;
+}
+
+.claro .dijitPopup .dijitMenuPopup{
+    top:56px !important;
+}
+
+.claro .dgridInfo {
+    background-position:left center;
+    background-repeat: no-repeat;
+    padding-left:25px;
+}
+
+#stubTitlebar :focus {
+    outline: none;
+}
+
+#stubTitlebar .dijitStackController .dijitToggleButtonChecked *{
+    cursor: pointer;
+}
+
+#search-form{
+    padding:0;
+    margin:0;
+    float:left;
+    width:290px;
+    margin-top:12px;
+}
+
+#search-form :focus{
+    outline: none;
+}
+
+#search-form input{
+    color:#666;
+}
+
+.roundForm {
+    width:250px;
+    border-radius: 5px;
+    padding: 1px 1px 1px 1px;
+}
+
+#userAccount{
+    float:left;
+    text-align: right;
+    padding:5px 5px 0 0;
+    padding-top:10px;
+}
+
+#userAccount a{
+    color:rgb(164, 220, 245);
+}
+
+#userIcons{
+    float:left;
+    text-align: center;
+}
+
+#userIcons img{
+    border:none;
+    margin-top:8px;
+}
+
+#userIcons .dijitDropDownButton .dijitButtonNode {
+    border:none;
+    background: none;
+}
+
+#userIcons .holder span:nth-child(1) {
+    border:none;
+    margin:0 0 0 0;
+    padding:0;
+    outline: none;
+}
+
+#userIcons .dijitButtonText{
+    padding:0px;
+}
+
+#userIcons .dijitFocused{
+    float:left;
+    border:none;
+}
+
+.claro #stubMore{
+    padding:0;
+    margin:0;
+    height: 32px;
+    margin-top: 6px;
+}
+
+#myProgressBar{
+    width:200px;
+}
+
+#borderContainer {
+    width:100%;
+    height:100%;
+}
+
+#helpAction, #helpScope{
+    width:12px; 
+    height:12px;
+}
+
+.iconLogo{
+    background-image: url("../img/hpcc_systems_logo.png");
+    width: 180px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconWu{
+    background-image: url("../img/WUCog.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconDFU{
+    background-image: url("../img/FolderSmart.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconGetDFU{
+    background-image: url("../img/LZFolder.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconOperations{
+    background-image: url("../img/Operations.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconLandingZone{
+    background-image: url("../img/LandingZone.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconTargets{
+    background-image: url("../img/Targets.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconFind{
+    background-image: url("../img/search_icon.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconAdvanced{
+    background-image: url("../img/Info.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconZap{
+    background-image: url("../img/zap.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconChart{
+    background-image: url("../img/chart.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconResult{
+    background-image: url("../img/result.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconErrWarn{
+    background-image: url("../img/errwarn.png"); 
+    width: 16px;
+    height: 16px;
+}
+/*###############################*/
+#appLayout {
+    height: 100%;
+}
+
+#longList label{
+    float: left;
+    width: 14%;
+    margin: 0 15px 0 0;
+    text-align: right;
+    padding-top: 4px;
+    font-weight:bold;
+    height:20px;
+}
+
+#loadingOverlay {
+    background: url("../img/loadingBar.gif") no-repeat 10px 23px;
+    background-position: center center;
+    background-attachment:fixed;
+    font-family: Arial, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    z-index:999;
+    position:absolute;
+}
+
+#loadingOverlay .loadingMessage {
+    padding: 25px 40px;
+    color: rgb(153, 153, 153);
+}
+
+#timings, #properties {
+    padding: 0;
+    overflow: hidden;
+}
+
+#container{
+    width:960px;
+}
+
+#mainMenu{
+    margin-bottom:10px;
+}
+
+#widgetWUInfoResponse{
+    padding-left:10px;
+}
+
+/*CLASSES******************/
+.claro #userIcons .dijitArrowButtonInner{
+    margin:5px auto 0 5px;
+}
+
+.holder :focus{
+    outline: none;
+}
+
+.holder{
+    width:40px;
+    height:60px;
+    float:left;
+}
+
+.seperator{
+    width:1px;
+    height:32px;
+    float:left;
+    margin-left: 4px;
+    margin-top: 9px;
+    margin-right: 12px;
+    margin-bottom: 9px;
+}
+
+.titleLowLite {
+    background-color: rgb(24, 59, 79);
+}
+
+/*  Primary colour palette */
+.hpccRed {
+    background-color: rgb(237, 28, 36);
+}
+
+.hpccBlack {
+    background-color: rgb(0, 0, 0);
+}
+
+.hpccWhite {
+    background-color: rgb(255, 255, 255);
+}
+/*  Secondart colour palette */
+.hpccGreyLight {
+    background-color: rgb(188, 190, 192);
+}
+
+.hpccGreyMedium {
+    background-color: rgb(147, 149, 152);
+}
+
+.hpccGreyDark {
+    background-color: rgb(109, 111, 113);
+}
+
+.hpccCyan {
+    background-color: rgb(0, 157, 219);
+}
+
+.hpccCyan70 {
+    background-color: rgb(77, 186, 230);
+}
+
+.hpccCyan50 {
+    background-color: rgb(128, 206, 237);
+}
+
+.hpccCyan30 {
+    background-color: rgb(179, 226, 244);
+}
+
+.hpccGreen {
+    background-color: rgb(119, 184, 0);
+}
+
+.hpccGreen70 {
+    background-color: rgb(160, 205, 77);
+}
+
+.hpccGreen50 {
+    background-color: rgb(187, 220, 128);
+}
+
+.hpccGreen30 {
+    background-color: rgb(214, 234, 179);
+}
+
+.hpccPurple {
+    background-color: rgb(143, 43, 140);
+}
+
+.hpccPurple70 {
+    background-color: rgb(177, 107, 175);
+}
+
+.hpccPurple50 {
+    background-color: rgb(199, 149, 198);
+}
+
+.hpccPurple30 {
+    background-color: rgb(221, 191, 221);
+}
+
+.grey{
+    background-color: rgb(80, 80, 80);
+}
+
+.white{
+    background-color:rgb(255,255,255);
+}
+
+.left{
+    float:left;
+}
+
+.right{
+    float:right;
+}
+
+.hidden{
+    color:rgb(214, 214, 214);
+    display: none !important;
+}
+
+.show{
+    display:block;
+}
+
+.hpccApp {
+    height: 100%;
+}
+
+.navBarLoggedin{
+    text-transform: uppercase;
+    color:rgb(255,255,255);
+    display: block;
+}
+
+.claro .hpccApp .hpccTitlebar {
+    background-color: rgb(0, 108, 204);
+}
+
+.hidden{
+    color:rgb(214, 214, 214);
+    display: none !important;
+}
+
+.hpccApp {
+    height: 100%;
+}
+
+.toolTip{
+width:inherit;
+}
+
+.toolTip img{
+vertical-align: middle;
+margin-left:-20px;
+}
+
+
+.pageOverlay{
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    position: absolute;
+    z-index: 1001;
+}
+
+.CodeMirror {
+}
+
+.CodeMirror-scroll {
+    position: absolute;
+    height: 100%;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+.claro .hpccApp .topPanel {
+    background-color: rgb(208, 233, 252);
+}
+
+.claro .hpccApp .edgePanel {
+    background-color: rgb(208, 233, 252);
+}
+
+.TimingTreeMapWidget p {
+    padding-left:5px;
+}
+
+.dijitValidationTextBoxLabel {
+    width:170px;
+    text-align: left;
+}
+
+.dijitToasterContainer {
+    width: 64em;
+}
+
+.smallForm .dijitValidationTextBoxLabel {
+    width: auto;
+}
+
+.iconAlign{
+    vertical-align: middle;
+}
+
+.iconFilter{
+    background-image: url("../img/filter.png");
+    width: 16px;
+    height: 16px;
+    border:none;
+    display:inline-block;
+    vertical-align: middle;
+}
+
+.iconNoFilter{
+    background-image: url("../img/noFilter.png");
+    width: 16px;
+    height: 16px;
+    border:none;
+    display:inline-block;
+    vertical-align: middle;
+}
+
+.iconRefresh {
+    background-image: url("../img/refresh2.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconNewPage {
+    background-image: url("../img/openNewPage.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconZoomOrig {
+    background-image: url("../img/zoomOrig.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconZoomAll {
+    background-image: url("../img/zoomAll.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconZoomWidth {
+    background-image: url("../img/zoomWidth.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconFind {
+    background-image: url("../img/find.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconFindNext {
+    background-image: url("../img/findNext.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconFindPrevious {
+    background-image: url("../img/findPrev.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconLogicalFile {
+    background-image: url("../img/folder_table.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+/*WUSTATES*/
+.iconWorkunit {
+    background-image: url("../img/workunit.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconCompiled, .iconCompleted{
+    background-image: url("../img/workunit_completed.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconRunning, .iconCompiling, .iconDebugRunning {
+    background-image: url("../img/workunit_running.png"); 
+    width: 16px;
+    height: 16px; 
+    display: inline-block;
+}
+
+.iconFailed, .iconStateAborted{
+    background-image: url("../img/workunit_failed.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+
+.iconArchived, .iconBlocked, .iconScheduled, .iconWait, .iconUploadingFiles, .iconDebugPaused{
+    background-image: url("../img/workunit_warning.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconAborting{
+    background-image: url("../img/workunit_aborting.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconSubmitted{
+    background-image: url("../img/workunit_submitted.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconDeleted{
+    background-image: url("../img/workunit_deleted.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconCluster{
+    background-image: url("../img/server.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconLeft {
+    background-image: url("../img/left.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconUp {
+    background-image: url("../img/up.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconRight {
+    background-image: url("../img/right.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconDown {
+    background-image: url("../img/down_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconLeftDisabled {
+    background-image: url("../img/left_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconUpDisabled {
+    background-image: url("../img/up_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconRightDisabled {
+    background-image: url("../img/right_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconDownDisabled {
+    background-image: url("../img/down_disabled.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconUpDown {
+    background-image: url("../img/updown.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconDepth {
+    background-image: url("../img/depth.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconDistance {
+    background-image: url("../img/distance.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconSync {
+    background-image: url("../img/sync.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconSyncDisabled {
+    background-image: url("../img/sync_disabled.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.ErrorCell{
+    background: red;
+    color: white;
+}
+
+.WarningCell{
+    background: yellow;
+}
+
+.Prompt{
+    font-weight:bold;
+}
+
+.resultGridCell {
+    vertical-align:text-top;
+    font-family: monospace;
+}
+
+.dgrid {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: auto;
+}
+

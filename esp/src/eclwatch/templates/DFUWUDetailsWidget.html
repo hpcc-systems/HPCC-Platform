@@ -1,0 +1,219 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props='title:"${i18n.Summary}", iconClass:"iconWorkunit"' data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}Save" data-dojo-attach-event="onClick:_onSave" data-dojo-type="dijit.form.Button">${i18n.Save}</div>
+                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}Abort" data-dojo-attach-event="onClick:_onAbort" data-dojo-type="dijit.form.Button">${i18n.Abort}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}Resubmit" data-dojo-attach-event="onClick:_onResubmit" data-dojo-type="dijit.form.Button">${i18n.Resubmit}</div>
+                    <div id="${id}Modify" data-dojo-attach-event="onClick:_onModify" data-dojo-type="dijit.form.Button">${i18n.Modify}</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
+                </div>
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                        <h2>
+                            <img id="${id}ProtectedImage" src="${dojoConfig.urlInfo.resourcePath}/img/locked.png" />&nbsp;<img id="${id}StateIdImage" src="${dojoConfig.urlInfo.resourcePath}/img/workunit.png" />&nbsp<span id="${id}Wuid" class="bold">WUID</span>&nbsp<span id="${id}CommandMessage2" class="bold">${i18n.Command}</span>
+                        </h2>
+                        <form>
+                            <ul>
+                                <li>
+                                    <label for="${id}ID">${i18n.ID}:</label>
+                                    <div id="${id}ID"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}ClusterName">${i18n.ClusterName}:</label>
+                                    <div id="${id}ClusterName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}JobName">${i18n.JobName}:</label>
+                                    <input id="${id}JobName" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" />
+                                </li>
+                                <li>
+                                    <label for="${id}DFUServerName">${i18n.DFUServerName}:</label>
+                                    <div id="${id}DFUServerName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}Queue">${i18n.Queue}:</label>
+                                    <div id="${id}Queue"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}User">${i18n.User}:</label>
+                                    <div id="${id}User"></div>
+                                </li>
+                                <li>
+                                    <label for="isProtected">${i18n.Protected}:</label>
+                                    <input id="${id}isProtected" value=true data-dojo-type="dijit.form.CheckBox" />
+                                </li>
+                                <li>
+                                    <label for="${id}CommandMessage">${i18n.Command}:</label>
+                                    <div id="${id}CommandMessage"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}StateMessage">${i18n.State}:</label>
+                                    <select id="${id}StateMessage" name="SelectType" data-dojo-type="dijit/form/Select">
+                                    </select>
+                                </li>
+                                <li>
+                                    <label for="${id}TimeStarted">${i18n.TimeStarted}:</label>
+                                    <div id="${id}TimeStarted"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}TimeStopped">${i18n.TimeStopped}:</label>
+                                    <div id="${id}TimeStopped"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}PercentDone">${i18n.PercentDone}:</label>
+                                    <div id="${id}PercentDone" style="width: 190px" data-dojo-props="maximum:10" data-dojo-type="dijit/ProgressBar"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}ProgressMessage">${i18n.ProgressMessage}:</label>
+                                    <div id="${id}ProgressMessage"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SecsLeft">${i18n.SecondsRemaining}:</label>
+                                    <div id="${id}SecsLeft"></div>
+                                </li>
+                                <li>
+                                    <label for="Summary Message">${i18n.SummaryMessage}:</label>
+                                    <div id="${id}SummaryMessage"></div>
+                                </li>
+                            </ul>
+                        </form>
+                    <hr class="dashedLine">
+                        <form>
+                            <h1>Source</h1>
+                            <ul>
+                                <li>
+                                    <label for="${id}SourceIP">${i18n.IP}:</label>
+                                    <div id="${id}SourceIP"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceDirectory">${i18n.Directory}:</label>
+                                    <div id="${id}SourceDirectory"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceFilePath">${i18n.FilePath}:</label>
+                                    <div id="${id}SourceFilePath"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceLogicalName">${i18n.LogicalName}:</label>
+                                    <div id="${id}SourceLogicalName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceNumParts">${i18n.NumberofParts}:</label>
+                                    <div id="${id}SourceNumParts"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceDali">${i18n.Dali}:</label>
+                                    <div id="${id}SourceDali"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceFormatMessage">${i18n.Format}:</label>
+                                    <div id="${id}SourceFormatMessage"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceRecordSize">${i18n.RecordSize}:</label>
+                                    <div id="${id}SourceRecordSize"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}RowTag">${i18n.RowTag}:</label>
+                                    <div id="${id}RowTag"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceSeperators">${i18n.Seperators}:</label>
+                                    <div id="${id}SourceSeperators"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceEscape">${i18n.Escape}:</label>
+                                    <div id="${id}SourceEscape"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceTerminators">${i18n.Terminators}:</label>
+                                    <div id="${id}SourceTerminators"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceQuote">${i18n.Quote}:</label>
+                                    <div id="${id}SourceQuote"></div>
+                                </li>
+                            </ul>
+                        </form>
+                    <hr class="dashedLine">
+                        <form>
+                            <h1>Target</h1>
+                            <ul>
+                                <li>
+                                    <label for="${id}DestIP">${i18n.IP}:</label>
+                                    <div id="${id}DestIP"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestDirectory">${i18n.Directory}:</label>
+                                    <div id="${id}DestDirectory"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestFilePath">${i18n.FilePath}:</label>
+                                    <div id="${id}DestFilePath"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestLogicalName">${i18n.LogicalName}:</label>
+                                    <div id="${id}DestLogicalName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestGroupName">${i18n.GroupName}:</label>
+                                    <div id="${id}DestGroupName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestNumParts">${i18n.NumberofParts}:</label>
+                                    <div id="${id}DestNumParts"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestFormatMessage">${i18n.Format}:</label>
+                                    <div id="${id}DestFormatMessage"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestRecordSize">${i18n.RecordSize}:</label>
+                                    <div id="${id}DestRecordSize"></div>
+                                </li>
+                            </ul>
+                        </form>
+                        <hr class="dashedLine">
+                        <form>
+                            <h1>Other</h1>
+                            <ul>
+                                <li>
+                                    <label for="${id}MonitorEventName">${i18n.MonitorEventName}:</label>
+                                    <div id="${id}MonitorEventName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}MonitorSub">${i18n.MonitorSub}:</label>
+                                    <div id="${id}MonitorSub"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}MonitorShotLimit">${i18n.MonitorShotLimit}:</label>
+                                    <div id="${id}MonitorShotLimit"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}Overwrite">${i18n.Overwrite}:</label>
+                                    <div id="${id}Overwrite"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}Replicate">${i18n.Replicate}:</label>
+                                    <div id="${id}Replicate"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}Compress">${i18n.Compress}:</label>
+                                    <div id="${id}Compress"></div>
+                                </li>
+                            </ul>
+                        </form>
+                </div>
+            </div>
+            <div id="${id}_XML" title="XML" data-dojo-props="WUXml: true" data-dojo-type="ECLSourceWidget">
+            </div>
+        </div>
+    </div>
+</div>

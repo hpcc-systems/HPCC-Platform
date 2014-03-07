@@ -1,0 +1,79 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="hpccMainpage" data-dojo-props="gutters:false, liveSplitters:false" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}Titlebar" class="hpccTitlebar" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
+            <div id="${id}StackController" class="left glow" data-dojo-props="containerId:'${id}TabContainer'" data-dojo-type="dijit.layout.StackController"></div>
+            <div class="right">
+                <div class="seperator grey"></div>
+                <form id="search-form" onsubmit="return false;">
+                    <input id="${id}FindText" class="roundForm" data-dojo-props="placeHolder: '${i18n.PlaceholderFindText}'" data-dojo-type="dijit.form.TextBox" />
+                    <button id="${id}Find" type="submit" data-dojo-props="iconClass:'iconFind', showLabel: false" data-dojo-attach-event="onClick:_onFind" data-dojo-type="dijit.form.Button">${i18n.Find}</button>
+                </form>
+                <div class="seperator grey"></div>
+                <div id="userAccount">
+                    <span class="navBarLoggedin">${i18n.LoggedInAs}:  </span>
+                    <a id="${id}UserID" href="#"></a>
+                </div>
+                <div class="seperator grey"></div>
+                <div id="${id}More" class="left glow" data-dojo-props="iconClass:'iconAdvanced', showLabel:false" data-dojo-type="dijit.form.DropDownButton">
+                    <span>${i18n.Advanced}</span>
+                    <div data-dojo-type="dijit.DropDownMenu">
+                        <div id="${id}SetBanner" data-dojo-attach-event="onClick:_onSetBanner" data-dojo-type="dijit.MenuItem">${i18n.SetBanner}</div>
+                        <div id="${id}ErrWarn" data-dojo-attach-event="onClick:_onOpenErrWarn" data-dojo-type="dijit.MenuItem">${i18n.ErrorWarnings}</div>
+                        <span data-dojo-type="dijit.MenuSeparator"></span>
+                        <div id="${id}Legacy" data-dojo-attach-event="onClick:_onOpenLegacy" data-dojo-type="dijit.MenuItem">${i18n.OpenLegacyECLWatch}</div>
+                        <span data-dojo-type="dijit.MenuSeparator"></span>
+                        <div id="${id}ReleaseNotes" data-dojo-attach-event="onClick:_onOpenReleaseNotes" data-dojo-type="dijit.MenuItem">${i18n.ReleaseNotes}</div>
+                        <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">${i18n.About}</div>
+                        <span data-dojo-type="dijit.MenuSeparator"></span>
+                        <div data-dojo-type="dijit/PopupMenuItem">
+                            <span>${i18n.Debug}</span>
+                            <div data-dojo-type="dijit/DropDownMenu">
+                                <div data-dojo-attach-event="onClick:_ondebugLanguageFiles" data-dojo-type="dijit/MenuItem">${i18n.LanguageFiles}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="${id}TabContainer" style="width: 100%; height: 100%" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.StackContainer">
+            <div id="${id}_Main" data-dojo-props="iconClass: 'iconLogo'" data-dojo-type="HPCCPlatformMainWidget">
+            </div>
+            <div id="${id}_ECL" data-dojo-props="iconClass: 'iconWu', showLabel: false" data-dojo-type="HPCCPlatformECLWidget">
+            </div>
+            <div id="${id}_Files" data-dojo-props="iconClass: 'iconLandingZone', showLabel: false" data-dojo-type="HPCCPlatformFilesWidget">
+            </div>
+            <div id="${id}_RoxieQueries" data-dojo-props="iconClass: 'iconTargets', showLabel: false" data-dojo-type="HPCCPlatformRoxieWidget">
+            </div>
+            <div id="${id}_OPS" data-dojo-props="iconClass: 'iconOperations', showLabel: false" data-dojo-type="HPCCPlatformOpsWidget">
+            </div>
+            <div id="${id}_ErrWarn" data-dojo-props="showLabel: false" data-dojo-type="dijit.layout.TabContainer">
+                <div id="${id}ErrWarnGrid" data-dojo-props="title: 'Error/Warning(s)', errWarn: true" data-dojo-type="InfoGridWidget">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="${id}AboutDialog" title="About HPCC Platform" style="width: 480px;" data-dojo-type="dijit/Dialog">
+        <div class="dijitDialogPaneContentArea">
+            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                <input id="${id}ServerVersion" title="Server:" name="ServerVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
+                <input id="${id}GraphControlVersion" title="Graph&nbsp;Control:" name="GraphControlVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
+            </div>
+            <div id="${id}GraphControl" style="width: 1px; height: 1px" data-dojo-props="minSize:120, region: 'right', splitter:true" data-dojo-type="GraphWidget">
+            </div>
+        </div>
+        <div class="dijitDialogPaneActionBar">
+            <button id="${id}Close" type="submit" data-dojo-attach-event="onClick:_onAboutClose" data-dojo-type="dijit/form/Button">${i18n.Close}</button>
+        </div>
+    </div>
+    <div id="${id}SetBannerDialog" title="Set Banner" style="width: 480px;" data-dojo-type="dijit/Dialog">
+        <div class="dijitDialogPaneContentArea">
+            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                <input id="${id}BannerText" title="Banner&nbsp;Message:" name="ServerVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+            </div>
+        </div>
+        <div class="dijitDialogPaneActionBar">
+            <button type="submit" data-dojo-attach-event="onClick:_onSetBannerOk" data-dojo-type="dijit/form/Button">${i18n.OK}</button>
+            <button data-dojo-attach-event="onClick:_onSetBannerCancel" data-dojo-type="dijit/form/Button">${i18n.Cancel}</button>
+        </div>
+    </div>
+</div>
