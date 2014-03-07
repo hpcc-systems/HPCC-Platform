@@ -266,6 +266,7 @@ define({root:
     PackageMaps: "Package Maps",
     PackagesNoQuery: "Packages without matching queries",
     ParameterXML: "Parameter XML",
+    Part: "Part",
     Parts: "Parts",
     Password: "Password",
     PasswordExpiration: "Password Expiration",

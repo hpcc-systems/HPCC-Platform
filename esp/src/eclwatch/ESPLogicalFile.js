@@ -32,6 +32,10 @@ define([
 
     var _logicalFiles = {};
 
+    var createID = function (Cluster, Name) {
+        return (Cluster ? Cluster : "") + "--" + Name;
+    };
+
     var Store = declare([ESPRequest.Store], {
         service: "WsDfu",
         action: "DFUQuery",
@@ -43,8 +47,10 @@ define([
 
         _watched: [],
         create: function (id) {
+            var idParts = id.split("--");
             return new LogicalFile({
-                Name: id
+                Cluster: idParts[0] ? idParts[0] : "",
+                Name: idParts[1]
             });
         },
         preRequest: function (request) {
@@ -74,7 +80,7 @@ define([
         },
         preProcessRow: function (item, request, query, options) {
             lang.mixin(item, {
-                __hpcc_id: item.Name,
+                __hpcc_id: createID(item.ClusterName, item.Name),
                 __hpcc_isDir: false,
                 __hpcc_displayName: item.Name
             });
@@ -178,8 +184,25 @@ define([
         _DirSetter: function (Dir) {
             this.set("Directory", Dir);
         },
+        _DFUFilePartsOnClustersSetter: function (DFUFilePartsOnClusters) {
+            var DFUFileParts = {
+                DFUPart: []
+            };
+            if (lang.exists("DFUFilePartsOnCluster", DFUFilePartsOnClusters)) {
+                arrayUtil.forEach(DFUFilePartsOnClusters.DFUFilePartsOnCluster, function (DFUFilePartsOnCluster, idx) {
+                    if (lang.exists("DFUFileParts.DFUPart", DFUFilePartsOnCluster)) {
+                        arrayUtil.forEach(DFUFilePartsOnCluster.DFUFileParts.DFUPart, function (DFUPart, idx) {
+                            DFUFileParts.DFUPart.push(lang.mixin({
+                                __hpcc__id: DFUPart.Id + "--" + DFUPart.Copy,
+                                Cluster: DFUFilePartsOnCluster.Cluster
+                            }, DFUPart));
+                        }, this);
+                    }
+                }, this);
+            }
+            this.set("DFUFileParts", DFUFileParts);
+        },
         constructor: function (args) {
-            this.inherited(arguments);
             if (args) {
                 declare.safeMixin(this, args);
             }
@@ -194,13 +217,12 @@ define([
                     Cluster: this.Cluster,
                     UpdateDescription: true,
                     FileDesc: description
-                },
-                load: function (response) {
-                    if (lang.exists("DFUInfoResponse.FileDetail", response)) {
-                        context.updateData(response.DFUInfoResponse.FileDetail);
-                        if (args && args.onAfterSend) {
-                            args.onAfterSend(response.DFUInfoResponse.FileDetail);
-                        }
+                }
+            }).then(function(response) {
+                if (lang.exists("DFUInfoResponse.FileDetail", response)) {
+                    context.updateData(response.DFUInfoResponse.FileDetail);
+                    if (args && args.onAfterSend) {
+                        args.onAfterSend(response.DFUInfoResponse.FileDetail);
                     }
                 }
             });
@@ -255,13 +277,27 @@ define([
                 request:{
                     Name: this.Name,
                     Cluster: this.Cluster
-                },
-                load: function (response) {
-                    if (lang.exists("DFUInfoResponse.FileDetail", response)) {
-                        context.updateData(response.DFUInfoResponse.FileDetail);
-                        if (args && args.onAfterSend) {
-                            args.onAfterSend(response.DFUInfoResponse.FileDetail);
-                        }
+                }
+            }).then(function (response) {
+                if (lang.exists("DFUInfoResponse.FileDetail", response)) {
+                    context.updateData(response.DFUInfoResponse.FileDetail);
+                    if (args && args.onAfterSend) {
+                        args.onAfterSend(response.DFUInfoResponse.FileDetail);
+                    }
+                }
+            });
+        },
+        getInfo2: function (args) {
+            var context = this;
+            return WsDfu.DFUQuery({
+                request: {
+                    LogicalName: this.Name
+                }
+            }).then(function (response) {
+                if (lang.exists("DFUQueryResponse.DFULogicalFiles.DFULogicalFile", response) && response.DFUQueryResponse.DFULogicalFiles.DFULogicalFile.length) {
+                    context.updateData(response.DFUQueryResponse.DFULogicalFiles.DFULogicalFile[0]);
+                    if (args && args.onAfterSend) {
+                        args.onAfterSend(response.DFUQueryResponse.DFULogicalFiles.DFULogicalFile[0]);
                     }
                 }
             });
@@ -296,15 +332,12 @@ define([
     });
 
     return {
-        Create: function (params) {
-            retVal = new LogicalFile(params);
-            retVal.create();
-            return retVal;
-        },
-
-        Get: function (name) {
+        Get: function (Cluster, Name) {
+            if (!Name) {
+                throw new Error("Invalid Logical File ID");
+            }
             var store = new Store();
-            return store.get(name);
+            return store.get(createID(Cluster, Name));
         },
 
         CreateLFQueryStore: function (options) {

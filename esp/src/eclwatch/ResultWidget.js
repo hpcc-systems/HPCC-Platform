@@ -128,7 +128,7 @@ define([
                     context.initResult(results[params.Sequence]);
                 });
             } else if (params.LogicalName) {
-                var logicalFile = ESPLogicalFile.Get(params.LogicalName);
+                var logicalFile = ESPLogicalFile.Get(params.ClusterName, params.LogicalName);
                 var context = this;
                 logicalFile.getInfo({
                     onAfterSend: function (response) {
@@ -136,7 +136,7 @@ define([
                     }
                 });
             } else if (params.result && params.result.Name) {
-                var logicalFile = ESPLogicalFile.Get(params.result.Name);
+                var logicalFile = ESPLogicalFile.Get(params.result.ClusterName, params.result.Name);
                 var context = this;
                 logicalFile.getInfo({
                     onAfterSend: function (response) {
