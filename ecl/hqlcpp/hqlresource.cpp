@@ -101,7 +101,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         }
         else
         {
-            resources.setHeavyweight().set(RESslavememory, MEM_Const_Minimal+SORT_BUFFER_TOTAL+JOINR_SMART_BUFFER_SIZE);
+            resources.setHeavyweight().set(RESslavememory, MEM_Const_Minimal+SORT_BUFFER_TOTAL+JOIN_SMART_BUFFER_SIZE);
             if (!isLocal)
             {
 #ifndef SORT_USING_MP
