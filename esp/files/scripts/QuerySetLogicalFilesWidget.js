@@ -62,7 +62,7 @@ define([
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Name: {label: this.i18n.LogicalFiles, width: 180, sortable: false}
+                    Name: {label: this.i18n.LogicalFiles}
                 }
             }, domID);
 
