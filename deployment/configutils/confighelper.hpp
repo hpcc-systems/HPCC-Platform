@@ -1,12 +1,24 @@
 #ifndef CONFIGHELPER_HPP_INCL
 #define CONFIGHELPER_HPP_INCL
 
-#include "deployutils.hpp"
-#include "deploy.hpp"
+#ifdef CONFIGUTILS_EXPORTS
+  #define CONFIGUTILS_API __declspec(dllexport)
+#else
+  #define CONFIGUTILS_API __declspec(dllimport)
+#endif
 
 #define STANDARD_CONFIG_ALGORITHMFILE "genenvrules.conf"
 
-class DEPLOYUTILS_API CConfigHelper
+#include "jmutex.hpp"
+#include "jstring.hpp"
+
+interface IDeploymentCallback;
+interface IPropertyTree;
+class StringArray;
+interface IPropertyTree;
+interface IProperties;
+
+class CONFIGUTILS_API CConfigHelper
 {
 public:
 

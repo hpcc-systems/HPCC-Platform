@@ -56,6 +56,7 @@ include_directories (
          ./../../../system/mp 
          ../../../deployment/deploy 
          ../../../deployment/deployutils 
+         ${HPCC_SOURCE_DIR}/deployment/configutils
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -75,8 +76,9 @@ target_link_libraries ( WsDeploy
          eclrtl 
          hql 
          securesocket 
-     deploy 
-     deployutils     
+         deploy
+         deployutils
+         configutils
     )
 
 
