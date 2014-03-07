@@ -42,6 +42,7 @@ export restarts=0
 
 ulimit -c unlimited
 ulimit -n $NUM_ROXIE_HANDLES
+ulimit -r 4
 
 killed() {
     if [ -n "$1" ]; then
