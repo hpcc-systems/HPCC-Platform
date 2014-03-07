@@ -11982,5 +11982,4 @@ extern da_decl void removeLogical(const char *fname, IUserDescriptor *user) {
         f->detachLogical();
     }
 }
-}
 #endif // _USE_CPPUNIT
