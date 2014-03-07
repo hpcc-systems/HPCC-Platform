@@ -77,7 +77,7 @@ for D in ${PATH//:/ } ; do
     fi
 done
 if [ -n "${NEW_PATH}" ]; then
-    NEW_PATH="${NEW_PATH}:${PATH_PREFIX}/sbin:${PATH_PREFIX}/etc/init.d"
+    NEW_PATH="${NEW_PATH}:${PATH_PREFIX}/sbin:${PATH_PREFIX}/etc/init.d:${PATH_PREFIX}/testing/regress"
 fi
 
 if [[ $platform == 'linux' ]]; then
