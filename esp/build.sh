@@ -62,4 +62,8 @@ perl -pe "
 #  s/<script src=\"$LOADERMID.*?\/script>//;  # Remove script eclwatch/run
   s/\s+/ /g;                                 # Collapse white-space" > "$DISTDIR/stub.htm"
 
+echo "Remove uncompressed files from $DISTDIR"
+list="$(find $DISTDIR -name '*.js.uncompressed.js' -type f -delete)"
+list="$(find $DISTDIR -name '*.js.map' -type f -delete)"
+
 echo "Build complete"

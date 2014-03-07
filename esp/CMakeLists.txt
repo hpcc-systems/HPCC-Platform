@@ -27,6 +27,11 @@ HPCC_ADD_SUBDIRECTORY (tools "CLIENTTOOLS")
 HPCC_ADD_SUBDIRECTORY (xslt "PLATFORM")
 
 if ( PLATFORM )
-    install ( CODE "message(\"Building ECL Watch\")\nexecute_process(COMMAND \"${CMAKE_CURRENT_SOURCE_DIR}/build.sh\" \"${CMAKE_CURRENT_BINARY_DIR}/tmp/files\" ERROR_QUIET)" COMPONENT Runtime)
+    install ( CODE "
+        message(\"Building ECL Watch\")\n
+        execute_process(COMMAND \"${CMAKE_CURRENT_SOURCE_DIR}/build.sh\" \"${CMAKE_CURRENT_BINARY_DIR}/tmp/files\" OUTPUT_QUIET ERROR_QUIET)\n
+        execute_process(COMMAND \"tail\" \"-n4\" \"${CMAKE_CURRENT_BINARY_DIR}/tmp/files/build-report.txt\")\n
+        message(\"\")
+    " COMPONENT Runtime)
     Install ( DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tmp/files" DESTINATION componentfiles COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN "CMakeLists.txt" EXCLUDE )
 endif ( PLATFORM )
