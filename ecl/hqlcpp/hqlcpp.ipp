@@ -598,6 +598,7 @@ struct HqlCppOptions
     bool                convertJoinToLookup;
     bool                convertJoinToLookupIfSorted;
     bool                spotCSE;
+    bool                spotCseInIfDatasetConditions;
     bool                noAllToLookupConversion;
     bool                optimizeNonEmpty;
     bool                allowVariableRoxieFilenames;

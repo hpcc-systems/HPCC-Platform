@@ -829,7 +829,7 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
         }
     case no_sum:
         {
-            OwnedHqlExpr cseArg = options.spotCSE ? spotScalarCSE(arg) : LINK(arg);
+            OwnedHqlExpr cseArg = options.spotCSE ? spotScalarCSE(arg, NULL, queryOptions().spotCseInIfDatasetConditions) : LINK(arg);
             buildIncrementAssign(loopctx, target, cseArg);
             break;
         }
@@ -839,7 +839,7 @@ void HqlCppTranslator::doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoun
             BuildCtx maxctx(loopctx);
             OwnedHqlExpr resultExpr = target.getTranslatedExpr();
 
-            OwnedHqlExpr cseArg = options.spotCSE ? spotScalarCSE(arg) : LINK(arg);
+            OwnedHqlExpr cseArg = options.spotCSE ? spotScalarCSE(arg, NULL, queryOptions().spotCseInIfDatasetConditions) : LINK(arg);
             OwnedHqlExpr simpleArg = buildSimplifyExpr(loopctx, cseArg);
             OwnedHqlExpr test = createBoolExpr((op == no_min) ? no_lt : no_gt, LINK(simpleArg), LINK(resultExpr));
             if (doneFirstVar)
@@ -3282,7 +3282,7 @@ void HqlCppTranslator::buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuil
     BoundRow * rightCursor = buildDatasetIterate(rightIterCtx, right, false);
     bindTableCursor(rightIterCtx, right, rightCursor->queryBound(), no_right, selSeq);
 
-    OwnedHqlExpr cseCond = options.spotCSE ? spotScalarCSE(cond) : LINK(cond);
+    OwnedHqlExpr cseCond = options.spotCSE ? spotScalarCSE(cond, NULL, queryOptions().spotCseInIfDatasetConditions) : LINK(cond);
     buildFilter(rightIterCtx, cseCond);
     if (!expr->hasAttribute(leftonlyAtom))
     {
