@@ -304,13 +304,16 @@ public:
             jmethodID URLclsMid = JNIenv->GetMethodID(URLcls, "<init>","(Ljava/lang/String;)V");
             checkException();
             StringArray paths;
-            paths.appendList(classPath, ENVSEPSTR);
+            paths.appendList(classPath, ";");  // NOTE - as we need to be able to include : in the urls, we can't use ENVSEP here
             jobjectArray URLArray = JNIenv->NewObjectArray(paths.length(), URLcls, NULL);
             ForEachItemIn(idx, paths)
             {
-                StringBuffer testpath;
-                testpath.append(paths.item(idx));
-                jstring jstr = JNIenv->NewStringUTF(testpath.str());
+                StringBuffer usepath;
+                const char *path = paths.item(idx);
+                if (!strchr(path, ':'))
+                    usepath.append("file:");
+                usepath.append(path);
+                jstring jstr = JNIenv->NewStringUTF(usepath.str());
                 checkException();
                 jobject URLobj = JNIenv->NewObject(URLcls, URLclsMid, jstr);
                 checkException();
