@@ -136,7 +136,7 @@ define([
             if (lang.exists(wuidQualifier, response)) {
                 var wu = ESPDFUWorkunit.Get(lang.getObject(wuidQualifier, false, response));
                 wu.startMonitor(true);
-                var tab = this.ensurePane("dfu", this.id + "_" + wu.ID, wu.ID, {
+                var tab = this.ensurePane("dfu", wu.ID, wu.ID, {
                     Wuid: wu.ID
                 });
                 if (tab) {
@@ -189,7 +189,7 @@ define([
             var firstTab = null;
             var context = this;
             arrayUtil.forEach(selections, function (item, idx) {
-                var tab = context.ensurePane("hex", context.id + "_" + item.calculatedID, item.displayName, {
+                var tab = context.ensurePane("hex", item.calculatedID, item.displayName, {
                     logicalFile: item.getLogicalFile()
                 });
                 if (firstTab === null) {
@@ -552,6 +552,7 @@ define([
         },
 
         ensurePane: function (type, id, title, params) {
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;

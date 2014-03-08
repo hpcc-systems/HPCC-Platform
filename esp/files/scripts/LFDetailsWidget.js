@@ -118,7 +118,7 @@ define([
             if (lang.exists(wuidQualifier, response)) {
                 var wu = ESPDFUWorkunit.Get(lang.getObject(wuidQualifier, false, response));
                 wu.startMonitor(true);
-                var tab = this.ensurePane(this.id + "_" + wu.ID, {
+                var tab = this.ensurePane(wu.ID, {
                     Wuid: wu.ID
                 });
                 if (tab) {
@@ -282,6 +282,7 @@ define([
         },
 
         ensurePane: function (id, params) {
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;

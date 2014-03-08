@@ -94,10 +94,43 @@ define([
             }
         },
 
-
         //  String functions  ---
         endsWith: function (str, suffix) {
             return str.indexOf(suffix, str.length - suffix.length) !== -1;
+        },
+
+        isCharCodePrintable: function (charCode) {
+            if (charCode < 32)
+                return false;
+            else if (charCode >= 127 && charCode <= 159)
+                return false;
+            else if (charCode === 173)
+                return false;
+            else if (charCode > 255)
+                return false;
+            return true;
+        },
+
+        isCharPrintable: function (_char) {
+            return this.isCharCodePrintable(_char.charCodeAt(0));
+        },
+
+        isalpha: function(c) {
+            return (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')));
+        },
+
+        isdigit: function(c) {
+            return ((c >= '0') && (c <= '9'));
+        },
+
+        isalnum: function(c) {
+            return (this.isalpha(c) || this.isdigit(c));
+        },
+
+        setCharAt: function(str, index, chr) {
+            if(index > str.length-1) 
+                return str;
+            return str.substr(0, index) + chr + str.substr(index + 1);
         },
 
         formatXml: function (xml) {
@@ -151,6 +184,18 @@ define([
             }
 
             return formatted;
+        },
+
+        //  Util functions  ---
+        createChildTabID: function (someStr) {
+            var retVal = "";
+            for (var i = 0; i < someStr.length; ++i) {
+                var c = someStr[i];
+                if (!this.isalnum(c)) {
+                    someStr = this.setCharAt(someStr, i, "x");
+                }
+            }
+            return this.id + "_" + someStr;
         }
     });
 });

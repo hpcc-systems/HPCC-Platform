@@ -121,7 +121,7 @@ define([
         },
 
         onRowDblClick: function (item) {
-            var tab = this.showPackageMapDetails(this.id + "_" + item.Id, {
+            var tab = this.showPackageMapDetails(item.Id, {
                     target: item.Target,
                     process: item.Process,
                     active: item.Active,
@@ -147,7 +147,7 @@ define([
             var selections = this.packagesGrid.selection.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.showPackageMapDetails(this.id + "_" + selections[i].Id, {
+                var tab = this.showPackageMapDetails(selections[i].Id, {
                     target: selections[i].Target,
                     process: selections[i].Process,
                     active: selections[i].Active,
@@ -470,8 +470,7 @@ define([
         },
 
         showPackageMapDetails: function (id, params) {
-            var obj = id.split(".");
-            id = obj.join("");
+            id = this.createChildTabID(id);
             params.tabId = id;
 
             var retVal = this.tabMap[id];

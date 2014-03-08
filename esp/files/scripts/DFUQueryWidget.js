@@ -123,7 +123,7 @@ define([
             var selections = this.workunitsGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensureLFPane(this.id + "_" + selections[i].Name, selections[i]);
+                var tab = this.ensureLFPane(selections[i].__hpcc_id, selections[i]);
                 if (i == 0) {
                     firstTab = tab;
                 }
@@ -148,7 +148,7 @@ define([
             if (lang.exists(wuidQualifier, response)) {
                 var wu = ESPDFUWorkunit.Get(lang.getObject(wuidQualifier, false, response));
                 wu.startMonitor(true);
-                var tab = this.ensureDFUWUPane(this.id + "_" + wu.ID, {
+                var tab = this.ensureDFUWUPane(wu.ID, {
                     Wuid: wu.ID
                 });
                 if (tab) {
@@ -243,7 +243,7 @@ define([
         },
 
         _onRowDblClick: function (item) {
-            var wuTab = this.ensureLFPane(this.id + "_" + item.Name, item);
+            var wuTab = this.ensureLFPane(item.__hpcc_id, item);
             this.selectChild(wuTab);
         },
 
@@ -589,6 +589,7 @@ define([
         },
 
         ensureDFUWUPane: function (id, params) {
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
@@ -604,10 +605,7 @@ define([
         },
 
         ensureLFPane: function (id, params) {
-            var obj = id.split("::");
-            id = obj.join("");
-            obj = id.split(".");
-            id = obj.join("");
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 if (params.isSuperfile) {

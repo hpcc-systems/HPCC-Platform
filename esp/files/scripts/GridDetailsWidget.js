@@ -182,11 +182,11 @@ define([
         },
 
         getDetailID: function (row, params) {
-            return this.id + "_" + "Detail" + row[this.idProperty];
+            return "Detail" + row[this.idProperty];
         },
 
         ensurePane: function (row, params) {
-            var id = this.getDetailID(row, params);
+            var id = this.createChildTabID(this.getDetailID(row, params));
             var retVal = registry.byId(id);
             if (!retVal) {
                 retVal = this.createDetail(id, row, params);

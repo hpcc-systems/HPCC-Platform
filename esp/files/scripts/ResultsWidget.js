@@ -146,9 +146,9 @@ define([
 
         getDetailID: function (row, params) {
             if (row.FileName && params && params.logicalFile) {
-                return this.id + "_" + "File" + row[this.idProperty];
+                return "File" + row[this.idProperty];
             } else if (params && params.resultView && params.viewName) {
-                return this.id + "_" + params.viewName + row[this.idProperty];
+                return params.viewName + row[this.idProperty];
             }
             return this.inherited(arguments);
         },

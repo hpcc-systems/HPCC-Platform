@@ -105,7 +105,7 @@ define([
             var selections = this.workunitsGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensurePane(this.id + "_" + selections[i].Wuid, {
+                var tab = this.ensurePane(selections[i].Wuid, {
                     Wuid: selections[i].Wuid
                 });
                 if (i == 0) {
@@ -152,7 +152,7 @@ define([
         },
 
         _onRowDblClick: function (wuid) {
-            var wuTab = this.ensurePane(this.id + "_" + wuid, {
+            var wuTab = this.ensurePane(wuid, {
                 Wuid: wuid
             });
             this.selectChild(wuTab);
@@ -479,6 +479,7 @@ define([
         },
 
         ensurePane: function (id, params) {
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;

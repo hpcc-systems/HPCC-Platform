@@ -260,12 +260,12 @@ define([
                     this.refreshActionState();
                     break;
                 case "SourceLogicalName":
-                    this.ensurePane(this.id + "_SourceLogicalName", this.i18n.Source, {
+                    this.ensurePane("SourceLogicalName", this.i18n.Source, {
                         Name: newValue
                     });
                     break;
                 case "DestLogicalName":
-                    this.ensurePane(this.id + "_DestLogicalName", this.i18n.Target, {
+                    this.ensurePane("DestLogicalName", this.i18n.Target, {
                         Name: newValue
                     });
                     break;
@@ -292,6 +292,7 @@ define([
         },
 
         ensurePane: function (id, title, params) {
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
