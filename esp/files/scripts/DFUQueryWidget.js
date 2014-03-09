@@ -407,8 +407,8 @@ define([
                     },
                     IsKeyFile: {
                         label: "K", width: 16, sortable: false,
-                        formatter: function (keyfile) {
-                            if (keyfile == true) {
+                        formatter: function (keyfile, row) {
+                            if (row.ContentType === "key") {
                                 return "K";
                             }
                             return "";
