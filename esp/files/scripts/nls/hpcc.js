@@ -47,6 +47,7 @@ define({root:
     Compress: "Compress",
     ConfirmPassword: "Confirm Password",
     Contents: "Contents",
+    ContentType: "Content Type",
     Copy: "Copy",
     Count: "Count",
     Created: "Created",
