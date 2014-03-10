@@ -1176,6 +1176,15 @@ public:
         }
     }
 
+    void stopDependencies(unsigned parentExtractSize, const byte *parentExtract, unsigned controlId)
+    {
+        ForEachItemIn(idx, dependencies)
+        {
+            if (dependencyControlIds.item(idx) == controlId)
+                dependencies.item(idx).stop(false);
+        }
+    }
+
     virtual unsigned __int64 queryTotalCycles() const
     {
         return totalCycles;
@@ -18887,12 +18896,13 @@ public:
 
     virtual void doExecuteAction(unsigned parentExtractSize, const byte * parentExtract) 
     {
-        int controlId;
+        bool cond;
         {
             ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-            controlId = helper.getCondition() ? 1 : 2;
+            cond = helper.getCondition();
         }
-        executeDependencies(parentExtractSize, parentExtract, controlId);
+        stopDependencies(parentExtractSize, parentExtract, cond ? 2 : 1);
+        executeDependencies(parentExtractSize, parentExtract, cond ? 1 : 2);
     }
 
 };
@@ -19042,7 +19052,10 @@ public:
     virtual void stop(bool aborting)
     {
         if (state != STATEstopped)
-            executeDependencies(savedExtractSize, savedExtract, aborting ? WhenFailureId : WhenSuccessId);
+        {
+            stopDependencies(savedExtractSize, savedExtract, aborting ? WhenSuccessId : WhenFailureId);  // These ones don't get executed
+            executeDependencies(savedExtractSize, savedExtract, aborting ? WhenFailureId : WhenSuccessId); // These ones do
+        }
         CRoxieServerActivity::stop(aborting);
     }
 
@@ -19102,7 +19115,10 @@ public:
     virtual void stop(bool aborting)
     {
         if (state != STATEstopped)
+        {
+            stopDependencies(savedExtractSize, savedExtract, aborting ? WhenSuccessId : WhenFailureId);  // these are NOT going to execute
             executeDependencies(savedExtractSize, savedExtract, aborting ? WhenFailureId : WhenSuccessId);
+        }
         CRoxieServerActionBaseActivity::stop(aborting);
     }
 
