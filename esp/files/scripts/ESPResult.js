@@ -18,19 +18,16 @@ define([
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/_base/lang",
-    "dojo/NodeList-manipulate",
-    "dojo/store/Observable",
     "dojo/dom-construct",
 
     "dojox/xml/parser",
-    "dojox/xml/DomParser",
     "dojox/html/entities",
 
     "hpcc/ESPBase",
     "hpcc/ESPRequest",
     "hpcc/WsWorkunits"
-], function (declare, arrayUtil, Deferred, lang, NodeListManipulate, Observable, domConstruct,
-            parser, DomParser, entities,
+], function (declare, arrayUtil, Deferred, lang, domConstruct,
+            parser, entities,
             ESPBase, ESPRequest, WsWorkunits) {
 
     var Store = declare([ESPRequest.Store, ESPBase], {
@@ -62,20 +59,14 @@ define([
             }
         },
         preProcessResponse: function (response, request) {
-            var xml = "<Result>" + response.Result + "</Result>";
-            var domXml = parser.parse(xml);
-            if (request.includeXmlSchema) {
-                this.XmlSchema = this.getValues(domXml, "XmlSchema");
-            } else {
-                this.XmlSchema = [];
+            if (lang.exists("Result.Row", response)) {
+                var context = this;
+                arrayUtil.forEach(response.Result.Row, function (item, index) {
+                    item.__hpcc_rowNum = request.Start + index + 1;
+                    item.__hpcc_id = context.idPrefix + "_" + item.__hpcc_rowNum;
+                });
+                response.Result = response.Result.Row;
             }
-            var rows = this.getValues(domXml, "Row", ["Row"]);
-            var context = this;
-            arrayUtil.forEach(rows, function(item, index) {
-                item.__hpcc_rowNum = request.Start + index + 1;
-                item.__hpcc_id = context.idPrefix + "_" + item.__hpcc_rowNum;
-            });
-            response.Result = rows;
         }
     });
 
@@ -161,8 +152,8 @@ define([
 
         rowToTable: function (cell, __row, node) {
             var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" }, node);
-            if (Object.prototype.toString.call(cell) === '[object Object]') {
-                cell = [cell];
+            if (lang.exists("Row", cell)) {
+                cell = cell.Row;
             } 
             if (Object.prototype.toString.call(cell) === '[object Array]') {
                 for (var i = 0; i < cell.length; ++i) {
@@ -184,7 +175,8 @@ define([
                                 var td = domConstruct.create("td", null, tr);
                                 this.injectJavascript(cell[i][key], cell[i], td);
                             } else {
-                                var td = domConstruct.create("td", { innerHTML: entities.encode(cell[i][key]) }, tr);
+                                var val = cell[i][key];
+                                var td = domConstruct.create("td", { innerHTML: Object.prototype.toString.call(val) === '[object String]' ? entities.encode(val) : val }, tr);
                             }
                         } else {
                             var td = domConstruct.create("td", { innerHTML: "" }, tr);
@@ -371,8 +363,8 @@ define([
                 WsWorkunits.WUResult({
                     request: request,
                     load: function (response) {
-                        if (lang.exists("WUResultResponse.Result", response)) {
-                            context.XmlSchema = "<Result>" + response.WUResultResponse.Result + "</Result>";
+                        if (lang.exists("WUResultResponse.Result.XmlSchema.xml", response)) {
+                            context.XmlSchema = "<Result>" + response.WUResultResponse.Result.XmlSchema.xml + "</Result>";
                             callback(context.getStructure());
                         }
                         /*
