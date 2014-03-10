@@ -12817,10 +12817,8 @@ IHqlExpression * HqlCppTranslator::separateLibraries(IHqlExpression * query, Hql
     return createComma(exprs);
 }
 
-
-bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & workflow)
+void HqlCppTranslator::normalizeGraphForGeneration(HqlExprArray & exprs, HqlQueryContext & query)
 {
-    HqlExprArray exprs;
     if (isLibraryScope(query.expr))
         outputLibrary->mapLogicalToImplementation(exprs, query.expr);
     else
@@ -12855,15 +12853,11 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
 
     traceExpressions("allocate Sequence", exprs);
     checkNormalized(exprs);
+}
 
-    if (options.generateLogicalGraph || options.generateLogicalGraphOnly)
-    {
-        LogicalGraphCreator creator(wu());
-        creator.createLogicalGraph(exprs);
-        if (options.generateLogicalGraphOnly)
-            return false;
-        curActivityId = creator.queryMaxActivityId();
-    }
+
+void HqlCppTranslator::applyGlobalOptimizations(HqlExprArray & exprs)
+{
     traceExpressions("begin transformGraphForGeneration", exprs);
     checkNormalized(exprs);
 
@@ -12904,12 +12898,139 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     traceExpressions("alloc", exprs);
     checkNormalized(exprs);
     modifyOutputLocations(exprs);
+}
+
+void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
+{
+#ifdef USE_SELSEQ_UID
+    if (options.normalizeSelectorSequence)
+    {
+        unsigned time = msTick();
+        LeftRightTransformer normalizer;
+        normalizer.process(curWorkflow.queryExprs());
+        updateTimer("workunit;tree transform: left right", msTick()-time);
+        //traceExpressions("after implicit alias", workflow);
+    }
+#endif
+
+    if (queryOptions().createImplicitAliases)
+    {
+        unsigned time = msTick();
+        ImplicitAliasTransformer normalizer;
+        normalizer.process(curWorkflow.queryExprs());
+        updateTimer("workunit;tree transform: implicit alias", msTick()-time);
+        //traceExpressions("after implicit alias", workflow);
+    }
+
+    {
+        unsigned startTime = msTick();
+        hoistNestedCompound(*this, curWorkflow.queryExprs());
+        updateTimer("workunit;tree transform: hoist nested compound", msTick()-startTime);
+    }
+
+    if (options.optimizeNestedConditional)
+    {
+        cycle_t time = msTick();
+        optimizeNestedConditional(curWorkflow.queryExprs());
+        updateTimer("workunit;optimize nested conditional", msTick()-time);
+        traceExpressions("nested", curWorkflow);
+        checkNormalized(curWorkflow);
+    }
+
+    checkNormalized(curWorkflow);
+    //sort(x)[n] -> topn(x, n)[]n, count(x)>n -> count(choosen(x,n+1)) > n and possibly others
+    {
+        unsigned startTime = msTick();
+        optimizeActivities(curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
+        updateTimer("workunit;tree transform: optimize activities", msTick()-startTime);
+    }
+    checkNormalized(curWorkflow);
+
+    //----------------------------- Transformations below this mark may have created globals so be very careful with hoisting ---------------------
+
+    unsigned time5 = msTick();
+    migrateExprToNaturalLevel(curWorkflow, wu(), *this);       // Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.
+    updateTimer("workunit;tree transform: migrate", msTick()-time5);
+    //transformToAliases(exprs);
+    traceExpressions("migrate", curWorkflow);
+    checkNormalized(curWorkflow);
+
+    unsigned time2 = msTick();
+    markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
+    updateTimer("workunit;tree transform: thor hole", msTick()-time2);
+    traceExpressions("boundary", curWorkflow);
+    checkNormalized(curWorkflow);
+
+    if (options.optimizeGlobalProjects)
+    {
+        cycle_t time = msTick();
+        insertImplicitProjects(*this, curWorkflow.queryExprs());
+        updateTimer("workunit;global implicit projects", msTick()-time);
+        traceExpressions("implicit", curWorkflow);
+        checkNormalized(curWorkflow);
+    }
+
+    unsigned time3 = msTick();
+    normalizeResultFormat(curWorkflow, options);
+    updateTimer("workunit;tree transform: normalize result", msTick()-time3);
+    traceExpressions("results", curWorkflow);
+    checkNormalized(curWorkflow);
+
+    optimizePersists(curWorkflow.queryExprs());
+
+    traceExpressions("per", curWorkflow);
+    checkNormalized(curWorkflow);
+//  flattenDatasets(workflow);
+//  traceExpressions("flatten", workflow);
+
+    {
+        unsigned startTime = msTick();
+        mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);          // reduces number of graphs sent to thor
+        updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
+    }
+
+    traceExpressions("merged", curWorkflow);
+    checkNormalized(curWorkflow);
+
+    if (queryOptions().normalizeLocations)
+        normalizeAnnotations(*this, curWorkflow.queryExprs());
+
+    spotGlobalCSE(curWorkflow);                                                        // spot CSE within those graphs, and create some more
+    checkNormalized(curWorkflow);
+
+    //expandGlobalDatasets(workflow, wu(), *this);
+
+    {
+        unsigned startTime = msTick();
+        mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);
+        updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
+    }
+    checkNormalized(curWorkflow);
+
+    removeTrivialGraphs(curWorkflow);
+    checkNormalized(curWorkflow);
+}
+
+bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & workflow)
+{
+    HqlExprArray exprs;
+    normalizeGraphForGeneration(exprs, query);
+
+    if (options.generateLogicalGraph || options.generateLogicalGraphOnly)
+    {
+        LogicalGraphCreator creator(wu());
+        creator.createLogicalGraph(exprs);
+        if (options.generateLogicalGraphOnly)
+            return false;
+        curActivityId = creator.queryMaxActivityId();
+    }
+
+    applyGlobalOptimizations(exprs);
     if (exprs.ordinality() == 0)
         return false;   // No action needed
 
     unsigned time4 = msTick();
     ::extractWorkflow(*this, exprs, workflow);
-
 
     traceExpressions("workflow", workflow);
     checkNormalized(workflow);
@@ -12934,114 +13055,8 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     ForEachItemIn(i, workflow)
     {
         WorkflowItem & curWorkflow = workflow.item(i);
-
-#ifdef USE_SELSEQ_UID
-        if (options.normalizeSelectorSequence)
-        {
-            unsigned time = msTick();
-            LeftRightTransformer normalizer;
-            normalizer.process(curWorkflow.queryExprs());
-            updateTimer("workunit;tree transform: left right", msTick()-time);
-            //traceExpressions("after implicit alias", workflow);
-        }
-#endif
-
-        if (queryOptions().createImplicitAliases)
-        {
-            unsigned time = msTick();
-            ImplicitAliasTransformer normalizer;
-            normalizer.process(curWorkflow.queryExprs());
-            updateTimer("workunit;tree transform: implicit alias", msTick()-time);
-            //traceExpressions("after implicit alias", workflow);
-        }
-
-        {
-            unsigned startTime = msTick();
-            hoistNestedCompound(*this, curWorkflow.queryExprs());
-            updateTimer("workunit;tree transform: hoist nested compound", msTick()-startTime);
-        }
-
-        if (options.optimizeNestedConditional)
-        {
-            cycle_t time = msTick();
-            optimizeNestedConditional(curWorkflow.queryExprs());
-            updateTimer("workunit;optimize nested conditional", msTick()-time);
-            traceExpressions("nested", curWorkflow);
-            checkNormalized(curWorkflow);
-        }
-
-        checkNormalized(curWorkflow);
-        //sort(x)[n] -> topn(x, n)[]n, count(x)>n -> count(choosen(x,n+1)) > n and possibly others
-        {
-            unsigned startTime = msTick();
-            optimizeActivities(curWorkflow.queryExprs(), !targetThor(), options.optimizeNonEmpty);
-            updateTimer("workunit;tree transform: optimize activities", msTick()-startTime);
-        }
-        checkNormalized(curWorkflow);
-
-        unsigned time5 = msTick();
-        migrateExprToNaturalLevel(curWorkflow, wu(), *this);       // Ensure expressions are evaluated at the best level - e.g., counts moved to most appropriate level.
-        updateTimer("workunit;tree transform: migrate", msTick()-time5);
-        //transformToAliases(exprs);
-        traceExpressions("migrate", curWorkflow);
-        checkNormalized(curWorkflow);
-
-        unsigned time2 = msTick();
-        markThorBoundaries(curWorkflow);                                               // work out which engine is going to perform which operation.
-        updateTimer("workunit;tree transform: thor hole", msTick()-time2);
-        traceExpressions("boundary", curWorkflow);
-        checkNormalized(curWorkflow);
-
-        if (options.optimizeGlobalProjects)
-        {
-            cycle_t time = msTick();
-            insertImplicitProjects(*this, curWorkflow.queryExprs());
-            updateTimer("workunit;global implicit projects", msTick()-time);
-            traceExpressions("implicit", curWorkflow);
-            checkNormalized(curWorkflow);
-        }
-
-        unsigned time3 = msTick();
-        normalizeResultFormat(curWorkflow, options);
-        updateTimer("workunit;tree transform: normalize result", msTick()-time3);
-        traceExpressions("results", curWorkflow);
-        checkNormalized(curWorkflow);
-
-        optimizePersists(curWorkflow.queryExprs());
-
-        traceExpressions("per", curWorkflow);
-        checkNormalized(curWorkflow);
-    //  flattenDatasets(workflow);
-    //  traceExpressions("flatten", workflow);
-
-        {
-            unsigned startTime = msTick();
-            mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);          // reduces number of graphs sent to thor
-            updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
-        }
-
-        traceExpressions("merged", curWorkflow);
-        checkNormalized(curWorkflow);
-
-        if (queryOptions().normalizeLocations)
-            normalizeAnnotations(*this, curWorkflow.queryExprs());
-
-        spotGlobalCSE(curWorkflow);                                                        // spot CSE within those graphs, and create some more
-        checkNormalized(curWorkflow);
-
-        //expandGlobalDatasets(workflow, wu(), *this);
-
-        {
-            unsigned startTime = msTick();
-            mergeThorGraphs(curWorkflow, options.resourceConditionalActions, options.resourceSequential);
-            updateTimer("workunit;tree transform: merge thor", msTick()-startTime);
-        }
-        checkNormalized(curWorkflow);
-
-        removeTrivialGraphs(curWorkflow);
-        checkNormalized(curWorkflow);
+        transformWorkflowItem(curWorkflow);
     }
-
 
 #ifndef PICK_ENGINE_EARLY
     if (options.pickBestEngine)

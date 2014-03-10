@@ -1834,6 +1834,9 @@ protected:
 
 
     void markThorBoundaries(WorkflowItem & curWorkflow);
+    void normalizeGraphForGeneration(HqlExprArray & exprs, HqlQueryContext & query);
+    void applyGlobalOptimizations(HqlExprArray & exprs);
+    void transformWorkflowItem(WorkflowItem & curWorkflow);
     bool transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & exprs);
     void processEmbeddedLibraries(HqlExprArray & exprs, HqlExprArray & internalLibraries, bool isLibrary);
     void pickBestEngine(WorkflowArray & array);
