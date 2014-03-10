@@ -26,6 +26,8 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/topic",
+    "dojo/has", 
+    "dojo/sniff",
 
     "dijit/registry",
 
@@ -46,9 +48,10 @@ define([
 
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
-    "dijit/form/CheckBox"
+    "dijit/form/CheckBox",
+    "dijit/Toolbar"
 ],
-    function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic,
+    function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has, sniff,
             registry, 
             AndOrReadStore, entities,
             OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
@@ -76,6 +79,11 @@ define([
             postCreate: function (args) {
                 this.inherited(arguments);
                 this.borderContainer = registry.byId(this.id + "BorderContainer");
+                this.toolbar = registry.byId(this.id + "Toolbar");
+                if (!this.showToolbar) {
+                    this.toolbar.destroyRecursive();
+                    this.toolbar = null;
+                }
                 this.errorsCheck = registry.byId(this.id + "Errors");
                 this.warningsCheck = registry.byId(this.id + "Warnings");
                 this.infoCheck = registry.byId(this.id + "Info");
@@ -84,6 +92,12 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
+                if (this.showToolbar) {
+                    if (has("ie") <= 9) {
+                        this.widget.Download.set("disabled", true);
+                    }
+                }
+
                 var context = this;
                 var store = new Memory({
                     idProperty: "id",
@@ -93,6 +107,7 @@ define([
 
                 this.infoGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                     selectionMode: "single",
+                    allowTextSelection: true,
                     columns: {
                         Severity: {
                             label: this.i18n.Severity, field: "", width: 72, sortable: false,
@@ -159,6 +174,83 @@ define([
             onErrorClick: function(line, col) {
             },
 
+            _onClear: function (evt) {
+                this.infoData = [];
+                this.refreshTopics();
+            },
+
+            toCSVCell: function (str) {
+                str = "" + str;
+                var mustQuote = (str.indexOf(",") >= 0 || str.indexOf("\"") >= 0 || str.indexOf("\r") >= 0 || str.indexOf("\n") >= 0);
+                if (mustQuote) {
+                    var retVal = "\"";
+                    for (var i = 0; i < str.length; ++i) {
+                        var c = str.charAt(i);
+                        retVal += c === "\"" ? "\"\"" : c;
+
+                    }
+                    retVal += "\"";
+                    return retVal;
+                }
+                return str;
+            },
+            csvFormatHeader: function (data, delim) {
+                var retVal = ""
+                if (data.length) {
+                    for (var key in data[0]) {
+                        if (retVal.length)
+                            retVal += delim;
+                        retVal += key;
+                    }
+                }
+                return retVal;
+            },
+            csvFormatRow: function (row, idx, delim) {
+                var retVal = ""
+                for (var key in row) {
+                    if (retVal.length)
+                        retVal += delim;
+                    retVal += this.toCSVCell(row[key]);
+                }
+                return retVal;
+            },
+            csvFormatFooter: function (data) {
+                return "";
+            },
+            toCSV: function(data, delim) {
+                var retVal = this.csvFormatHeader(data, delim) + "\n";
+                var context = this;
+                arrayUtil.forEach(data, function (item, idx) {
+                    retVal += context.csvFormatRow(item, idx, delim) + "\n";
+                });
+                retVal += this.csvFormatFooter(data);
+                return retVal;
+            },
+            _onCopy: function (evt) {
+                var csvContent = this.toCSV(this.infoData, "\t");
+                this.widget.ErrWarnDialog = registry.byId(this.id + "ErrWarnDialog");
+                this.widget.ErrWarnDialogTextArea = registry.byId(this.id + "ErrWarnDialogTextArea");
+                this.widget.ErrWarnDialogTextArea.set("value", csvContent);
+                this.widget.ErrWarnDialog.show();
+                this.widget.ErrWarnDialogTextArea.focus();
+                this.widget.ErrWarnDialogTextArea.domNode.select();
+            },
+            _onDownload: function (evt) {
+                var csvContent = this.toCSV(this.infoData, ",");
+                var encodedUri = "data:text/csv;charset=utf-8,\uFEFF" + encodeURI(csvContent);
+                if (navigator.msSaveBlob) {
+                    var blob = new Blob([csvContent], {
+                        type: "text/csv;charset=utf-8;",
+                    });
+                    navigator.msSaveBlob(blob, "ErrWarn.csv")
+                } else {
+                    var link = document.createElement("a");
+                    link.setAttribute("href", encodedUri);
+                    link.appendChild(document.createTextNode("ErrWarn.csv"));
+                    link.click();
+                }
+            },
+
             _onErrors: function (args) {
                 this.refreshFilter();
             },
@@ -171,6 +263,10 @@ define([
                 this.refreshFilter();
             },
 
+            _onErrWarnDialogClose: function (evt) {
+                this.widget.ErrWarnDialog.hide();
+            },
+                
             //  Plugin wrapper  ---
             _onStyleRow: function (row) {
                 var item = this.infoGrid.getItem(row.index);
@@ -215,7 +311,7 @@ define([
                 }
             },
 
-            refreshFilter: function (graphName) {
+            refreshFilter: function () {
                 var data = [];
                 var filter = "";
                 var errorChecked = this.errorsCheck.get("checked");
@@ -278,23 +374,28 @@ define([
                 this.refreshFilter();
             },
 
-            loadTopic: function (topic) {
+            loadTopic: function (topic, toEnd) {
                 if (lang.exists("Exceptions", topic)) {
                     var context = this;
                     arrayUtil.forEach(topic.Exceptions, function (item, idx) {
-                        context.infoData.unshift(lang.mixin({
+                        var errWarnRow = lang.mixin({
                             Severity: topic.Severity,
                             Source: topic.Source
-                        }, item));
+                        }, item);
+                        if (toEnd) {
+                            context.infoData.push(errWarnRow);
+                        } else {
+                            context.infoData.unshift(errWarnRow);
+                        }
                     });
                 }
 
                 this.refreshFilter();
                 if (this.errWarnCount) {
-                    this.errWarnCount.innerHTML = this.infoData.length;
+                    this.errWarnCount.innerHTML = this.infoData.length > 0 ? this.infoData.length : "";
                 }
                 if (this.errWarnMenuItem) {
-                    this.errWarnMenuItem.set("label", this.i18n.ErrorWarnings + " (" + this.infoData.length + ")");
+                    this.errWarnMenuItem.set("label", this.i18n.ErrorWarnings + (this.infoData.length > 0 ? " (" + this.infoData.length + ")" : ""));
                 }
             }
         });

@@ -80,6 +80,7 @@ define({root:
     DOT: "DOT",
     DOTAttributes: "DOT Attributes",
     Download: "Download",
+    ManualCopy: "Press Ctrl+C",
     DropZone: "Drop Zone",
     Duration: "Duration",
     EBCDIC: "EBCDIC",

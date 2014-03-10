@@ -155,7 +155,7 @@ define([
             return this._tabContainer.get("selectedChildWidget");
         },
 
-        getChildren: function () {
+        getTabChildren: function () {
             return this._tabContainer.getChildren();
         },
 

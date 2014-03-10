@@ -17,6 +17,15 @@ define([
         
         initalized: false,
 
+        constructor: function (args) {
+            this.widget = {};
+        },
+
+        startup: function (args) {
+            this.inherited(arguments);
+            this.registerChildWidgets(this.domNode);
+        },
+
         _onNewPage: function (event) {
             var baseUrl = document.URL.split("#")[0];
             baseUrl = baseUrl.split("?")[0];
@@ -35,6 +44,22 @@ define([
             }
             
             return false;
+        },
+
+        //  Dijit functions  ---
+        registerChildWidgets: function (domNode) {
+            var childWidgets = registry.findWidgets(domNode);
+            for (var i = 0; i < childWidgets.length; ++i) {
+                var childWidget = childWidgets[i];
+                if (!childWidget.registerChildWidgets) {
+                    this.registerChildWidgets(childWidget.domNode);
+                }
+                if (childWidget.params && childWidget.params.id) {
+                    if (childWidget.params.id.indexOf(this.id) === 0) {
+                        this.widget[childWidget.params.id.substring(this.id.length)] = childWidget;
+                    }
+                }
+            }
         },
 
         //  DOM functions  ---
