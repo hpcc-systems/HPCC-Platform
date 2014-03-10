@@ -2788,7 +2788,10 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                         bKeyFile = true;
                     }
 
-                    File->setIsKeyFile(bKeyFile);
+                    if (version < 1.24)
+                        File->setIsKeyFile(bKeyFile);
+                    else if (kind && *kind)
+                        File->setContentType(kind);
                 }
 
                 StringBuffer buf;
