@@ -489,9 +489,9 @@ bool wait_program(HANDLE handle,DWORD &runcode,bool block)
     return false;
 }
 
-jlib_decl bool interrupt_program(HANDLE handle,int signum)
+jlib_decl bool interrupt_program(HANDLE handle, bool stopChildren, int signum)
 {
-    if (signum==-9) 
+    if (signum==0)
         return TerminateProcess(handle,1)!=FALSE;
     ERRLOG("interrupt_program signal %d not supported in windows",signum);
     return false;
@@ -515,6 +515,8 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
     pid_t pid = fork();
     if (pid == 0) 
     {
+        //Force the child process into its own process group, so we can terminate it and its children.
+        setpgid(0,0);
         if (outfile&&*outfile) {
             int outh = open(outfile, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR);
             if(outh > 0)
@@ -622,11 +624,20 @@ bool wait_program(HANDLE handle,DWORD &runcode,bool block)
 }
 
 
-bool interrupt_program(HANDLE handle,int signum)
+bool interrupt_program(HANDLE handle, bool stopChildren, int signum)
 {
+    if (signum == 0)
+        signum = SIGINT;
+
     pid_t pid = (pid_t)handle;
     if ((int)pid<=0)
         return false;
+
+    //If we need to also stop child processes then kill the process group (same as the pid)
+    //Note: This will not apply to grand-children started by the children by calling invoke_program()
+    //since they will have a different process group
+    if (stopChildren)
+        pid = -pid;
     return (kill(pid, signum)==0);
 }
 
