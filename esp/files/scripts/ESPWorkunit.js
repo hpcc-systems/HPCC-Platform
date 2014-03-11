@@ -266,7 +266,9 @@ define([
             return this._action("Abort");
         },
         doDelete: function () {
-            return this._action("Delete");
+            return this._action("Delete").then(function(response) {
+                var d= 0;
+            });
         },
         publish: function (jobName, remoteDali) {
             this._assertHasWuid();
@@ -309,13 +311,12 @@ define([
             WsWorkunits.WUQuery({
                 request: {
                     Wuid: this.Wuid
-                },
-                load: function (response) {
-                    if (lang.exists("WUQueryResponse.Workunits.ECLWorkunit", response)) {
-                        arrayUtil.forEach(response.WUQueryResponse.Workunits.ECLWorkunit, function (item, index) {
-                            context.updateData(item);
-                        });
-                    }
+                }
+            }).then(function (response) {
+                if (lang.exists("WUQueryResponse.Workunits.ECLWorkunit", response)) {
+                    arrayUtil.forEach(response.WUQueryResponse.Workunits.ECLWorkunit, function (item, index) {
+                        context.updateData(item);
+                    });
                 }
             });
         },
