@@ -23,6 +23,7 @@
                         <div id="${id}Legacy" data-dojo-attach-event="onClick:_onOpenLegacy" data-dojo-type="dijit.MenuItem">${i18n.OpenLegacyECLWatch}</div>
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div id="${id}ReleaseNotes" data-dojo-attach-event="onClick:_onOpenReleaseNotes" data-dojo-type="dijit.MenuItem">${i18n.ReleaseNotes}</div>
+                        <div id="${id}Configuration" data-dojo-attach-event="onClick:_onOpenConfiguration" data-dojo-type="dijit.MenuItem">${i18n.Configuration}</div>
                         <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">${i18n.About}</div>
                     </div>
                 </div>
@@ -42,6 +43,9 @@
             <div id="${id}_ErrWarn" data-dojo-props="showLabel: false" data-dojo-type="dijit.layout.TabContainer">
                 <div id="${id}ErrWarnGrid" data-dojo-props="title: 'Error/Warning(s)', errWarn: true, showToolbar: true" data-dojo-type="InfoGridWidget">
                 </div>
+            </div>
+            <div id="${id}_Config" data-dojo-props="showLabel: false" data-dojo-type="dijit.layout.TabContainer">
+                <textarea id="${id}ConfigTextArea">...${i18n.Loading}...</textarea>
             </div>
         </div>
     </div>
