@@ -501,7 +501,7 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
 
                   <entry>Specifies to allow the use of foreign files in a
                   Roxie query. If a Roxie query references foreign files and
-                  this is not enabled, it will fail.</entry>
+                  this is not enabled, publish will fail.</entry>
                 </row>
 
                 <row>
@@ -1325,7 +1325,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
                   <entry>Specifies to allow the use of foreign files in a
                   Roxie query. If a Roxie query references foreign files and
-                  this is not enabled, it will fail.</entry>
+                  this is not enabled, copy will fail.</entry>
                 </row>
 
                 <row>
@@ -1620,7 +1620,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>Specifies to allow the use of foreign files. If a
                   packagemap references foreign files and this is not enabled,
-                  it will fail.</entry>
+                  packagemap add will fail.</entry>
                 </row>
 
                 <row>
