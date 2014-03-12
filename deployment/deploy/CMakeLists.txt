@@ -39,7 +39,6 @@ set (    SRCS
          thorconfiggenengine.cpp 
          ThorDeploymentEngine.cpp 
          XslFunctions.cpp
-         ${HPCC_SOURCE_DIR}/deployment/deployutils/confighelper.cpp
     )
 
 include_directories ( 
@@ -52,8 +51,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/system/security/securesocket
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
-         ${HPCC_SOURCE_DIR}/deployment/deployutils
-         ${HPCC_SOURCE_DIR}/deployment/deploy
+         ${HPCC_SOURCE_DIR}/deployment/configutils
     )
 
 ADD_DEFINITIONS ( -D_USRDLL -DDEPLOY_EXPORTS )
@@ -65,6 +63,7 @@ target_link_libraries ( deploy
          environment 
          xmllib 
          securesocket
+         configutils
     )
 
 if ( PLATFORM )

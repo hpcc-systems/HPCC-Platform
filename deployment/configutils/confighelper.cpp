@@ -1,4 +1,3 @@
-#include "confighelper.hpp"
 #include "jexcept.hpp"
 #include "jfile.hpp"
 #include "jmutex.hpp"
@@ -6,7 +5,9 @@
 #include "jfile.hpp"
 #include "jptree.hpp"
 #include "XMLTags.h"
+#include "deploy.hpp"
 #include "build-config.h"
+#include "confighelper.hpp"
 
 #define STANDARD_CONFIG_BUILDSETFILE "buildset.xml"
 #define STANDARD_CONFIG_CONFIGXML_DIR "/componentfiles/configxml/"
