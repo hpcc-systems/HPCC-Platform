@@ -186,6 +186,7 @@ define({root:
     Members: "Members",
     Message: "Message",
     Min: "Min",
+    Modified: "Modified",
     Modification: "Modification",
     ModifiedUTCGMT: "Modified (UTC/GMT)",
     Modify: "Modify",
