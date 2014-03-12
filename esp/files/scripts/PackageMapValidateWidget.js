@@ -79,14 +79,12 @@ define([
             this.inherited(arguments);
         },
 
-        init: function (params) {
+        init: function (params, targets) {
             if (this.initalized)
                 return;
             this.initalized = true;
             this.validateResult.set('style', 'visibility:hidden');
-            if (params.targets == undefined)
-                return;
-            this.initSelection(params.targets);
+            this.initSelections(targets);
         },
 
         initSelections: function (targets) {
