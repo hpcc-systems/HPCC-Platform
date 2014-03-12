@@ -73,6 +73,12 @@ ESPStruct DFUFileStat
     string MaxSkew;
 };
 
+ESPStruct DFUFilePartsOnCluster
+{
+    string Cluster;
+    ESParray<ESPstruct DFUPart> DFUFileParts;
+};
+
 ESPStruct DFUFileDetail
 {
     string Name;
@@ -86,7 +92,7 @@ ESPStruct DFUFileDetail
     string RecordCount;
     string Wuid;
     string Owner;
-    string Cluster;
+    [depr_ver("1.25")] string Cluster;
     string JobName;
     string Persistent;
     string Format;
@@ -100,7 +106,8 @@ ESPStruct DFUFileDetail
     string Ecl;
     [depr_ver("1.22")] bool ZipFile(false);
     ESPstruct DFUFileStat Stat;
-    ESParray<ESPstruct DFUPart> DFUFileParts;
+    [depr_ver("1.25")] ESParray<ESPstruct DFUPart> DFUFileParts;
+    [min_ver("1.25")] ESParray<ESPstruct DFUFilePartsOnCluster> DFUFilePartsOnClusters;
     bool isSuperfile(false);
     bool ShowFileContent(true);
     ESParray<string> subfiles;
@@ -631,7 +638,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.24"), default_client_version("1.24"),
+    version("1.25"), default_client_version("1.25"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
