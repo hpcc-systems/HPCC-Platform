@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="Repeat">
+  <title>Repeat</title>
+
+  <para><emphasis role="bold">STD.Str.Repeat<indexterm>
+      <primary>STD.Str.Repeat</primary>
+    </indexterm><indexterm>
+      <primary>Str.Repeat</primary>
+    </indexterm><indexterm>
+      <primary>Repeat</primary>
+    </indexterm>(</emphasis> <emphasis>text</emphasis>, <emphasis>n</emphasis>
+  <emphasis role="bold">)</emphasis> <emphasis role="bold"></emphasis></para>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
+    <tgroup cols="2">
+      <colspec colwidth="80.50pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>text</emphasis></entry>
+
+          <entry>The string to be repeated (maximum length is 255
+          characters).</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>n</emphasis></entry>
+
+          <entry>The number of repetitions.</entry>
+        </row>
+
+        <row>
+          <entry>Return:<emphasis> </emphasis></entry>
+
+          <entry>Repeat returns a STRING containing <emphasis>n</emphasis>
+          concatenations of the string text..</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">Repeat </emphasis>function returns the
+  <emphasis>source</emphasis> string repeated n times. </para>
+
+  <para>Example:</para>
+
+  <programlisting format="linespecific">A := STD.Str.Repeat('ABC',3); //A contains ‘ABCABCABC’
+</programlisting>
+</sect1>

@@ -304,6 +304,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/RemoveSuffix.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Repeat.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Reverse.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
