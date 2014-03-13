@@ -137,6 +137,7 @@ define([
         }),
 
         GridHelper: declare(null, {
+            allowTextSelection: true,
             pagedGridObserver: [],
 
             onSelectionChanged: function (callback) {
