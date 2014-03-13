@@ -1,5 +1,5 @@
 ################################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -15,48 +15,35 @@
 ################################################################################
 
 
-# Component: deployutils
+# Component: configutils
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for deployutils
+#    Cmake Input File for configutils
 #####################################################
 
-project( deployutils ) 
+project( configutils )
 
-set (    SRCS 
-         buildset.cpp 
-         computerpicker.cpp 
-         configenvhelper.cpp
-         wizardInputs.cpp
-         deployutils.cpp
+set (    SRCS
+         confighelper.cpp
     )
 
-include_directories ( 
+include_directories (
          ${HPCC_SOURCE_DIR}/system/include
          ${HPCC_SOURCE_DIR}/system/jlib
          ${HPCC_SOURCE_DIR}/system/mp
-         ${HPCC_SOURCE_DIR}/system/xmllib
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/dali/base
-         ${HPCC_SOURCE_DIR}/esp/esplib
-         ${HPCC_SOURCE_DIR}/deployment/configgen
          ${HPCC_SOURCE_DIR}/deployment/deploy
-         ${HPCC_SOURCE_DIR}/deployment/configutils
-         ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
+         ${CMAKE_BINARY_DIR}
     )
 
-ADD_DEFINITIONS ( -D_USRDLL -DDEPLOYUTILS_EXPORTS )
+ADD_DEFINITIONS ( -D_USRDLL -DCONFIGUTILS_EXPORTS )
 
-HPCC_ADD_LIBRARY( deployutils SHARED ${SRCS} )
-install ( TARGETS deployutils RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( deployutils
-         jlib 
-         environment 
-         xmllib
-         deploy
-         configutils
+HPCC_ADD_LIBRARY( configutils SHARED ${SRCS} )
+install ( TARGETS configutils RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+target_link_libraries ( configutils
+         jlib
+         environment
     )
-
-
