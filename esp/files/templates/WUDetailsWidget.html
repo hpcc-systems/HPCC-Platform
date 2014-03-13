@@ -82,7 +82,7 @@
                 <div id="${id}InfoContainer" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120" data-dojo-type="InfoGridWidget">
                 </div>
             </div>
-            <div id="${id}_Variables" title="Variables" data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}_Variables" title="${i18n.Variables}" data-dojo-type="dijit.layout.BorderContainer">
                 <div style="border: 0px; padding: 0px; border-color: none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}VariablesGrid">
                     </div>
@@ -92,7 +92,7 @@
             </div>
             <div id="${id}_Files" title="${i18n.Inputs}" data-dojo-type="SourceFilesWidget">
             </div>
-            <div id="${id}_Timers" title="${i18n.Timings}" data-dojo-type="TimingPageWidget">
+            <div id="${id}_Timers" title="${i18n.Timers}" data-dojo-type="TimingPageWidget">
             </div>
             <div id="${id}_Graphs" title="${i18n.Graphs}" data-dojo-type="GraphsWidget">
             </div>
@@ -108,7 +108,7 @@
             </div>
         </div>
     </div>
-    <div id="${id}ZapDialog" data-dojo-type="dijit.Dialog" title="Zipped Analysis Package">
+    <div id="${id}ZapDialog" data-dojo-type="dijit.Dialog" title="${i18n.ZippedAnalysisPackage}">
         <form id="${id}ZapForm" action="/WsWorkunits/WUCreateZAPInfo" style="width:400px" method="post" encType="application/x-www-form-urlencoded">
             <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                 <input id="${id}ZapWUID" title="${i18n.WUID}:" name="Wuid" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
