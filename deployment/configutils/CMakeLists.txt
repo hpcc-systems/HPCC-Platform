@@ -36,6 +36,7 @@ include_directories (
          ${HPCC_SOURCE_DIR}/dali/base
          ${HPCC_SOURCE_DIR}/deployment/deploy
          ${CMAKE_BINARY_DIR}/oss
+         ${CMAKE_BINARY_DIR}
     )
 
 ADD_DEFINITIONS ( -D_USRDLL -DCONFIGUTILS_EXPORTS )
