@@ -45,6 +45,7 @@ define({root:
     Completed: "Completed",
     Component: "Component",
     Compress: "Compress",
+    Configuration: "Configuration",
     ConfirmPassword: "Confirm Password",
     Contents: "Contents",
     ContentType: "Content Type",
