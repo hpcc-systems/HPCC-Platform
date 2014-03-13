@@ -68,19 +68,26 @@ define([
 
         preProcessRow: function (item, request, query, options) {
             var ErrorCount = 0;
-            var Suspended = false;
+            var SuspendedReason;
             item[this.idProperty] = item.QuerySetId + ":" + item.Id;
+
             if (lang.exists("Clusters", item)) {
                 arrayUtil.forEach(item.Clusters.ClusterQueryState, function(cqs, idx){
-                    if (lang.exists("Errors", cqs) && cqs.Errors != null && cqs.Errors != "" && cqs.State == "Suspended"){
+                    if (lang.exists("Errors", cqs) && cqs.Errors) {
                         ErrorCount++
-                        Suspended = true;
+                        if (cqs.State == "Suspended") {
+                            SuspendedReason = "Cluster";
+                        }
+                    }
+                    if (item.Suspended == true) {
+                        SuspendedReason = "User";
                     }
                 });
             }
+
             lang.mixin(item, {
-                ErrorCount:ErrorCount,
-                Suspended: Suspended
+                ErrorCount: ErrorCount,
+                SuspendedReason: SuspendedReason
             });
         }
     });

@@ -46,10 +46,7 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
-        
             this.refreshGrid();
-            //disabled buttons for now since we cannot open an error atm 
-            
         },
 
         createGrid: function (domID) {
@@ -82,7 +79,7 @@ define([
                 arrayUtil.forEach(this.params.Query.Clusters.ClusterQueryState, function (item, idx) {
                     var error = {
                         Cluster: item.Cluster,
-                        Errors: item.Error,
+                        Errors: item.Errors,
                         State: item.State
                     }
                     errors.push(error);

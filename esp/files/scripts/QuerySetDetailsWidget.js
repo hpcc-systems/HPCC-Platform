@@ -135,7 +135,7 @@ define([
             });
             this.query.refresh();
 
-            this.selectChild(this.summaryWidget, true);
+            this.selectChild(this.summaryTab, true);
         },
 
         initTab: function () {
@@ -199,13 +199,15 @@ define([
             if (name === "Wuid") {
                 this.workunitsTab.set("title", newValue);
             }
-            if (name === "Suspended") {
-                dom.byId(this.id + "SuspendImg").src = newValue ? "/esp/files/img/suspended.png" : "/esp/files/img/unsuspended.png";
+            else if (name === "Suspended") {
+                dom.byId(this.id + "SuspendImg").src = newValue ? "/esp/files/img/suspended.png" : "";
             }
-            if (name === "Activated") {
-                dom.byId(this.id + "ActiveImg").src = newValue ? "/esp/files/img/active.png" : "/esp/files/img/inactive.png";
+            else if (name === "Activated") {
+                dom.byId(this.id + "ActiveImg").src = newValue ? "/esp/files/img/active.png" : "";
             }
-
+            else if (name === "SuspendedReason" && newValue === "cluster"){
+                dom.byId(this.id + "SuspendCluster").src = "/esp/files/img/error-icon.png";
+            }
             else if (name === "CountGraphs" && newValue) {
                 this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue + ")");
             } else if (name === "graphs") {

@@ -47,6 +47,7 @@ define([
     "hpcc/WsWorkunits",
     "hpcc/ESPQuery",
     "hpcc/ESPUtil",
+    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/QuerySetQueryWidget.html",
 
@@ -67,7 +68,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domForm, iframe, arrayUtil, on,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, QuerySetDetailsWidget, WsWorkunits, ESPQuery, ESPUtil,
+                _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, QuerySetDetailsWidget, WsWorkunits, ESPQuery, ESPUtil, FilterDropDownWidget,
                 template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -78,6 +79,7 @@ define([
         queriesTab: null,
         querySetGrid: null,
         clusterTargetSelect: null,
+        filter: null,
 
         initalized: false,
         loaded: false,
@@ -91,6 +93,7 @@ define([
             this.queriesTab = registry.byId(this.id + "_PublishedQueries");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
             this.borderContainer = registry.byId(this.id + "BorderContainer");
+            this.filter = registry.byId(this.id + "Filter");
         },
 
         startup: function (args) {
@@ -115,8 +118,6 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            var context = this;
-            var firstCall = true;
             this.clusterTargetSelect.init({
                 Targets: true,
                 includeBlank: true,
@@ -124,6 +125,14 @@ define([
             });
             this.initQuerySetGrid();
             this.selectChild(this.queriesTab, true);
+
+            var context = this;
+            this.filter.on("clear", function (evt) {
+                context.refreshGrid();
+            });
+            this.filter.on("apply", function (evt) {
+                context.refreshGrid();
+            });
         },
 
         initTab: function () {
@@ -176,26 +185,48 @@ define([
             pMenu.addChild(new MenuSeparator());
             {
                 var pSubMenu = new Menu();
-                /*
+
                 this.menuFilterCluster = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
-                        context.clearFilter();
-                        registry.byId(context.id + "ClusterTargetSelect").set("value", context.menuFilterCluster.get("hpcc_value"));
-                        context._onFilterApply();
+                        context.filter.clear();
+                        context.filter.setValue(context.id + "ClusterTargetSelect", context.menuFilterCluster.get("hpcc_value"));
+                        context.refreshGrid();
                     }
-                });*/
-                this.menuFilterSuspend = this.addMenuItem(pSubMenu, {
+                });
+                this.menuFilterSuspended = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
-                        context.clearFilter();
-                        registry.byId(context.id + "Suspended").set("value", context.menuFilterSuspend.get("hpcc_value"));
-                        context._onFilterApply();
+                        context.filter.clear();
+                        context.filter.setValue(context.id + "SuspendedStates", context.menuFilterSuspended.get("hpcc_value"));
+                        context.refreshGrid();
+                    }
+                });
+                this.menuFilterUnsuspend = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context.filter.clear();
+                        context.filter.setValue(context.id + "SuspendedStates", context.menuFilterUnsuspend.get("hpcc_value"));
+                        context.refreshGrid();
+                    }
+                });
+                this.menuFilterActive = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context.filter.clear();
+                        context.filter.setValue(context.id + "ActiveStates", context.menuFilterActive.get("hpcc_value"));
+                        context.refreshGrid();
+                    }
+                });
+                this.menuFilterDeactivate = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context.filter.clear();
+                        context.filter.setValue(context.id + "ActiveStates", context.menuFilterDeactivate.get("hpcc_value"));
+                        context.refreshGrid();
                     }
                 });
                 pSubMenu.addChild(new MenuSeparator());
                 this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
                     label: this.i18n.Clear,
                     onClick: function () {
-                        context._onFilterClear();
+                        context.filter.clear();
+                        context.refreshGrid();
                     }
                 });
                 pMenu.addChild(new PopupMenuItem({
@@ -208,46 +239,43 @@ define([
 
         /*Not Applicable*/
         _onRowContextMenu: function (item, colField, mystring) {
-            this.menuFilterSuspend.set("disabled", false);
-            //this.menuFilterCluster.set("disabled", false);
-            //this.menuFilterUnsuspend.set("disabled", false);
-            //this.menuFilterActive.set("disabled", false);
-            //this.menuFilterDeactive.set("disabled", false);
+            this.menuFilterCluster.set("disabled", false);
+            this.menuFilterSuspended.set("disabled", false);
+            this.menuFilterUnsuspend.set("disabled", false);
+            this.menuFilterActive.set("disabled", false);
+            this.menuFilterDeactivate.set("disabled", false);
 
             if (item) {
-                /*this.menuFilterCluster.set("label", "Cluster: " + item.QuerySetName);
-                this.menuFilterCluster.set("hpcc_value", item.QuerySetName);*/
-                this.menuFilterSuspend.set("label", this.i18n.Suspend + ":  " + item.Suspended);
-                this.menuFilterSuspend.set("hpcc_value", item.Suspended);
-                /*
-                this.menuFilterUnsuspend.set("label", "Unsuspend:  " + item.Suspend);
-                this.menuFilterUnsuspend.set("hpcc_value", item.Suspend);
-                this.menuFilterActive.set("label", "Active:  " + item.Active);
-                this.menuFilterActive.set("hpcc_value", item.Active);
-                this.menuFilterDeactivate.set("label", "Deactivate:  " + item.Active);
-                this.menuFilterDeactivate.set("hpcc_value", item.Active);
+                this.menuFilterCluster.set("label", "Cluster: " + item.QuerySetId);
+                this.menuFilterCluster.set("hpcc_value", item.QuerySetId);
+                this.menuFilterSuspended.set("label", this.i18n.Suspended + ":  " + item.Suspended);
+                this.menuFilterSuspended.set("hpcc_value", 1);
+                this.menuFilterUnsuspend.set("label", this.i18n.Unsuspended + ":  true ");
+                this.menuFilterUnsuspend.set("hpcc_value", 0);
+                this.menuFilterActive.set("label", this.i18n.Active + ":  " + item.Activated);
+                this.menuFilterActive.set("hpcc_value", 1);
+                this.menuFilterDeactivate.set("label", this.i18n.Inactive + ":  true" );
+                this.menuFilterDeactivate.set("hpcc_value", 0);
             }
             if (item.Cluster == "") {
                 this.menuFilterCluster.set("disabled", true);
-                this.menuFilterCluster.set("label", "Cluster: " + "N/A");
-            }*/
-
-            if (item.Suspend == "") {
-                this.menuFilterSuspend.set("disabled", true);
-                this.menuFilterSuspend.set("label", this.i18n.Suspend + ": " + this.i18n.NA);
+                this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + this.i18n.NA);
             }
-            /*
-            if (item.Suspend == true) {
-                this.menuFilterUnsuspend.set("disabled", false);
-                this.menuFilterUnsuspend.set("label", "Unsuspend:  " + "N/A");
+            if (item.Suspended == false) {
+                this.menuFilterSuspended.set("disabled", true);
+                this.menuFilterSuspended.set("label", this.i18n.Suspended + ":  " + this.i18n.NA);
             }
-            if (item.Active == false) {
+            if (item.Suspended == true) {
+                this.menuFilterUnsuspend.set("disabled", true);
+                this.menuFilterUnsuspend.set("label", this.i18n.Unsuspended + ":  " + this.i18n.NA);
+            }
+           if (item.Activated == false) {
                 this.menuFilterActive.set("disabled", true);
-                this.menuFilterActive.set("label", "Active:  " + "N/A");
+                this.menuFilterActive.set("label", this.i18n.Active + ":  " + this.i18n.NA);
             }
-            if (item.Active == true) {
-                this.menuFilterState.set("disabled", false);
-                this.menuFilterState.set("label", "Deactivate:  " + "N/A");*/
+            if (item.Activated == true) {
+                this.menuFilterDeactivate.set("disabled", true);
+                this.menuFilterDeactivate.set("label", this.i18n.Inactive + ":  " + this.i18n.NA);
             }
         },
 
@@ -274,7 +302,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = "<img src='/esp/files/img/suspended.png'>";
                         },
-                        width: 20,
+                        width: 21,
                         sortable: false,
                         formatter: function (suspended) {
                             if (suspended == true) {
@@ -287,7 +315,7 @@ define([
                         renderHeaderCell: function (node) {
                             node.innerHTML = "<img src='/esp/files/img/active.png'>";
                         },
-                        width: 20,
+                        width: 21,
                         sortable: false,
                         formatter: function (activated) {
                             if (activated == true) {
@@ -298,13 +326,13 @@ define([
                     },
                     ErrorCount: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='/esp/files/img/errwarn.png'>";
+                            node.innerHTML = "<img src='/esp/files/img/error-icon.png'>";
                         },
-                        width: 20,
+                        width: 21,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
-                                return ("<img src='/esp/files/img/errwarn.png'>");
+                                return ("<img src='/esp/files/img/error-icon.png'>");
                             }
                             return "";
                         }
@@ -321,7 +349,7 @@ define([
                         label: this.i18n.Name
                     },
                     QuerySetId:{
-                        width: 180,
+                        width: 140,
                         label: this.i18n.Target,
                         sortable: false
                     },
@@ -333,8 +361,8 @@ define([
                         width: 180,
                         label: this.i18n.Dll
                     },
-                    Priority: {
-                        width: 100,
+                    priority: {
+                        width: 80,
                         label: this.i18n.Priority,
                         sortable: false
                     },
@@ -344,13 +372,28 @@ define([
                         sortable: false
                     },
                     PublishedBy: {
-                        width: 180,
+                        width: 100,
                         label: this.i18n.PublishedBy
+                    },
+                    SuspendedReason:{
+                        width: 100,
+                        label: context.i18n.SuspendedReason,
+                        formatter: function (sbe) {
+                            if(sbe === "User"){
+                                return context.i18n.User;
+                            }
+                            if (sbe === "Cluster"){
+                                return context.i18n.Cluster;
+                            }
+                            else{
+                                return "";
+                            }
+                        }
                     },
                 },
             },
             this.id + "QuerySetGrid");
-            //this.querySetGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
+            this.querySetGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
             on(document, "." + context.id + "WuidClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.querySetGrid.row(evt).data;
@@ -387,6 +430,8 @@ define([
             var hasSelection = false;
             var isSuspended = false;
             var isNotSuspended = false;
+            var isActive = false;
+            var isNotActive = false;
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i].Suspended != true) {
@@ -394,33 +439,29 @@ define([
                 } else {
                     isNotSuspended = true;
                 }
+                if (selection[i].Activated != true) {
+                    isActive = true;
+                } else {
+                    isNotActive = true;
+                }
             }
 
             registry.byId(this.id + "Delete").set("disabled", !hasSelection);
-            registry.byId(this.id + "unSuspend").set("disabled", !isNotSuspended);
-            registry.byId(this.id + "onSuspend").set("disabled", !isSuspended);
-            registry.byId(this.id + "Activate").set("disabled", !hasSelection);
-            registry.byId(this.id + "Deactivate").set("disabled", !hasSelection);
+            registry.byId(this.id + "UnSuspend").set("disabled", !isNotSuspended);
+            registry.byId(this.id + "OnSuspend").set("disabled", !isSuspended);
+            registry.byId(this.id + "Activate").set("disabled", !isActive);
+            registry.byId(this.id + "Deactivate").set("disabled", !isNotActive);
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
-        },
+
+
+            this.menuUnsuspend.set("disabled", !isNotSuspended);
+            this.menuSuspend.set("disabled", !isSuspended);
+            this.menuActivate.set("disabled", !isActive);
+            this.menuDeactivate.set("disabled", !isNotActive);
+         },
 
         _onRefresh: function (params) {
            this.refreshGrid();
-        },
-
-        _onFilterClear: function(event) {
-            this.clearFilter();
-            this.refreshGrid();
-        },
-
-        clearFilter: function () {
-            arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
-                item.set('value', null);
-            });
-        },
-
-        _onFilterApply: function(){
-            this.querySetGrid.set("query", this.getFilter());
         },
 
         _onDelete:function(){
@@ -435,7 +476,7 @@ define([
         refreshGrid: function (clearSelection) {
             this.querySetGrid.set("query", this.getFilter());
             if (clearSelection) {
-                this.workunitsGrid.clearSelection();
+              this.querySetGrid.clearSelection();
             }
         },
 
@@ -487,9 +528,7 @@ define([
         },
 
         getFilter: function(){
-            var context = this;
-            var retVal = domForm.toObject(this.id + "FilterForm");
-            return retVal;
+            return this.filter.toObject();
         },
 
         ensurePane: function (id, params) {
