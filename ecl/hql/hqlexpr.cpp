@@ -12233,6 +12233,17 @@ bool isDummySerializeDeserialize(IHqlExpression * expr)
 }
 
 
+bool isRedundantGlobalScope(IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_globalscope);
+    IHqlExpression * child = expr->queryChild(0);
+    if (child->getOperator() != no_globalscope)
+        return false;
+    if (expr->hasAttribute(optAtom) && !child->hasAttribute(optAtom))
+        return false;
+    return true;
+}
+
 bool isIndependentOfScope(IHqlExpression * expr)
 {
     return expr->isIndependentOfScope();
