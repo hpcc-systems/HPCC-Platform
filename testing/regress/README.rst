@@ -1,4 +1,4 @@
-Overview of Regression Suite usage
+Overview of Regression Suite usage (v:0.0.14)
 ==================================
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
 
@@ -92,17 +92,20 @@ Command:
 Result:
 
 |
-|       usage: ecl-test query [-h] [--publish] [ECL query] [target cluster | all]
+|       usage: ecl-test query [-h] [--cluster [target_cluster | all]] [--publish]
+|                  [--pq threadNumber]
+|                  ECL query [ECL query ...]
 |
 |       positional arguments:
-|         ECL query             Name of a single ECL query. It can contain wildcards. (mandatory).
-|         target cluster | all  Cluster for single query run. If cluster = 'all' then run single query on all clusters. Default value is thor.
+|         ECL query                   Name of one or more ECL file(s). It can contain wildcards. (mandatory).
 |
 |       optional arguments:
-|         -h, --help            show this help message and exit
-|         --publish             Publish compiled query instead of run.
-
-
+|         -h, --help                    Show this help message and exit
+|         --cluster [target_cluster | all], -c [target_cluster | all]
+|                                            Cluster for single query run. If cluster = 'all' then run query on all clusters. Default value is thor.
+|         --publish, -p               Publish compiled query instead of run.
+|         --pq threadNumber    Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )
+|
 
 Steps to run Regression Suite
 =============================
@@ -304,14 +307,12 @@ If --pq option used (in this case with 16 threads) then then the content of the 
 The logfile generated into the HPCCSystems-regression/log subfolder of the user personal folder and sorted by the test case number.
 
 
-5. To run Regression Suite with selected test case on a selected cluster (e.g. Thor): 
--------------------------------------------------------------------------------------
-
-(In this use case the default cluster is: thor)
+5. To run Regression Suite with selected test case on a selected cluster (e.g. Thor) or all:
+--------------------------------------------------------------------------------------------------------------------------
 
 Command:
 
-        ./ecl-test query [-h] [--publish] test_name [target cluster | all]
+        ./ecl-test query test_name [test_name...] [-h] [--cluster cluster|all] [--pq threadNumber|-1]
 
 Positional arguments:
         test_name               Name of a single ECL query. It can contain wildcards. (mandatory).
@@ -319,10 +320,96 @@ Positional arguments:
                                 If cluster = 'all' then run ECL query on all clusters.
 Optional arguments:
         -h, --help            Show help message and exit
+        --cluster [target_cluster | all]
+                                   Cluster for single query run. If cluster = 'all' then run query on all clusters. Default value is thor.
         --publish             Publish compiled query instead of run.
+        --pq threadNumber    Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )
 
 
-The format of result is same as above:
+
+The format of result is same as above, but there is log, result and diff for all cluster:
+
+|         [Action] Suite: hthor
+|         [Action] Queries: 9
+|         [Action]
+|         [Action]   1. Test: aggsq1.ecl
+|         [Action]   2. Test: aggsq1a.ecl
+|         [Action]   3. Test: aggsq1seq.ecl
+|         [Pass]   1. Pass W20140313-171024 (2 sec)
+|         [Pass]   1. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171024
+|         [Action]   4. Test: aggsq2.ecl
+|         [Action]   5. Test: aggsq2seq.ecl
+|         [Failure]   2. Fail W20140313-171025 (2 sec)
+|         [Failure]   2. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171025
+|         [Action]   6. Test: aggsq3.ecl
+|         [Pass]   3. Pass W20140313-171026 (2 sec)
+|         [Pass]   3. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171026
+|         [Action]   7. Test: aggsq3seq.ecl
+|         [Pass]   4. Pass W20140313-171027 (2 sec)
+|         [Pass]   4. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171027
+|         [Action]   8. Test: aggsq4.ecl
+|         [Pass]   5. Pass W20140313-171028 (2 sec)
+|         [Pass]   5. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171028
+|         [Action]   9. Test: aggsq4seq.ecl
+|         [Pass]   6. Pass W20140313-171029 (2 sec)
+|         [Pass]   6. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171029
+|         [Pass]   7. Pass W20140313-171029-1 (3 sec)
+|         [Pass]   7. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171029-1
+|         [Pass]   8. Pass W20140313-171030 (2 sec)
+|         [Pass]   8. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171030
+|         [Pass]   9. Pass W20140313-171031 (2 sec)
+|         [Pass]   9. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171031
+|         [Action]
+|         [Action]
+|             Results
+|             `-------------------------------------------------`
+|             Passing: 8
+|             Failure: 1
+|             `-------------------------------------------------`
+|             KEY FILE NOT FOUND. /home/ati/MyPython/RegressionSuite/ecl/key/aggsq1a.xml
+|             `-------------------------------------------------`
+|             Log: /home/ati/HPCCSystems-regression/log/hthor.14-03-13-17-10-24.log
+|             `-------------------------------------------------`
+|             Elapsed time: 10 sec  (00:00:10)
+|             `-------------------------------------------------`
+|
+|         [Action] Suite: thor
+|         [Action] Queries: 2
+|         [Action]
+|         [Action]   1. Test: aggsq2.ecl
+|         [Action]   2. Test: aggsq2seq.ecl
+|         [Pass]   1. Pass W20140313-171035 (3 sec)
+|         [Pass]   1. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171035
+|         [Pass]   2. Pass W20140313-171036 (4 sec)
+|         [Pass]   2. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140313-171036
+|         [Action]
+|         [Action]
+|             Results
+|             `-------------------------------------------------`
+|             Passing: 2
+|             Failure: 0
+|             `-------------------------------------------------`
+|             Log: /home/ati/HPCCSystems-regression/log/thor.14-03-13-17-10-35.log
+|             `-------------------------------------------------`
+|             Elapsed time: 7 sec  (00:00:07)
+|             `-------------------------------------------------`
+|
+|         [Action] Suite: roxie
+|         [Action] Queries: 0
+|         [Action]
+|         [Action]
+|         [Action]
+|             Results
+|             `-------------------------------------------------`
+|             Passing: 0
+|             Failure: 0
+|             `-------------------------------------------------`
+|             Log: /home/ati/HPCCSystems-regression/log/roxie.14-03-13-17-10-42.log
+|             `-------------------------------------------------`
+|             Elapsed time: 2 sec  (00:00:02)
+|             `-------------------------------------------------`
+|
+|         End.
 
 6. Tags used in testcases:
 --------------------------
