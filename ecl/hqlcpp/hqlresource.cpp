@@ -2056,6 +2056,16 @@ inline bool projectSelectorDatasetToField(IHqlExpression * row)
     return ((row->getOperator() == no_selectnth) && getFieldCount(row->queryRecord()) > 1);
 }
 
+static IHqlExpression * skipScalarWrappers(IHqlExpression * value)
+{
+    loop
+    {
+        node_operator op = value->getOperator();
+        if ((op != no_globalscope) && (op != no_thisnode) && (op != no_evalonce))
+            return value;
+        value = value->queryChild(0);
+    }
+}
 
 static HqlTransformerInfo eclHoistLocatorInfo("EclHoistLocator");
 class EclHoistLocator : public NewHqlTransformer
@@ -2098,6 +2108,8 @@ public:
         unsigned match = matched.findOriginal(expr);
         if (match == NotFound)
         {
+            value = skipScalarWrappers(value);
+
             OwnedHqlExpr hoisted;
             IHqlExpression * projected = NULL;
             if (value->getOperator() == no_select)
@@ -4541,15 +4553,8 @@ protected:
 
 static IHqlExpression * getScalarReplacement(CChildDependent & cur, ResourcerInfo * hoistedInfo, IHqlExpression * replacement)
 {
-    IHqlExpression * value = cur.original;
     //First skip any wrappers which are there to cause things to be hoisted.
-    loop
-    {
-        node_operator op = value->getOperator();
-        if ((op != no_globalscope) && (op != no_thisnode) && (op != no_evalonce))
-            break;
-        value = value->queryChild(0);
-    }
+    IHqlExpression * value = skipScalarWrappers(cur.original);
 
     //Now modify the spilled result depending on how the spilled result was created (see EclHoistLocator::noteScalar() above)
     if (value->getOperator() == no_select)

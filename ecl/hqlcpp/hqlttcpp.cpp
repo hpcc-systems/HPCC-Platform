@@ -7706,6 +7706,10 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
             }
             break;
         }
+    case no_globalscope:
+        if (isRedundantGlobalScope(transformed))
+            return LINK(transformed->queryChild(0));
+        break;
     }
     return transformed.getClear();
 }

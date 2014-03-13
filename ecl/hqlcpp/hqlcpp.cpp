@@ -3222,7 +3222,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         tgt.expr.set(expr);
         return;
     case no_globalscope:
-        if (options.regressionTest)
+        if (options.regressionTest && !ctx.queryMatchExpr(globalContextMarkerExpr))
             throwUnexpected();
         buildExpr(ctx, expr->queryChild(0), tgt);
         return;
@@ -8032,8 +8032,8 @@ void HqlCppTranslator::expandSimpleOrder(IHqlExpression * left, IHqlExpression *
     {
         IHqlExpression * record = left->queryRecord();
         assertex(right->isDatarow() && (record == right->queryRecord()));
-        expandRowOrder(left, record, leftValues, !isActiveRow(left));
-        expandRowOrder(right, record, rightValues, !isActiveRow(right));
+        expandRowOrder(left, record, leftValues, !isActiveRow(left) && (left->getOperator() != no_select));
+        expandRowOrder(right, record, rightValues, !isActiveRow(right) && (right->getOperator() != no_select));
     }
     else
     {

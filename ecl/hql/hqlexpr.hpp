@@ -1534,6 +1534,7 @@ extern HQL_API IHqlExpression * expandBetween(IHqlExpression * expr);
 extern HQL_API bool isAlwaysActiveRow(IHqlExpression * expr);
 extern HQL_API bool isAlwaysNewRow(IHqlExpression * expr);
 extern HQL_API IHqlExpression * ensureActiveRow(IHqlExpression * expr);
+extern HQL_API bool isRedundantGlobalScope(IHqlExpression * expr);
 extern HQL_API bool isIndependentOfScope(IHqlExpression * expr);
 extern HQL_API bool isActivityIndependentOfScope(IHqlExpression * expr);
 extern HQL_API bool exprReferencesDataset(IHqlExpression * expr, IHqlExpression * dataset);
