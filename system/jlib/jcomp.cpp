@@ -737,11 +737,16 @@ class CCompilerWorker : public CInterface, implements IPooledThread
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCompilerWorker(CppCompiler * _compiler) : compiler(_compiler)  { handle = 0; aborted = false; }
+    CCompilerWorker(CppCompiler * _compiler, bool _okToAbort) : compiler(_compiler), okToAbort(_okToAbort)
+    {
+        handle = 0;
+        aborted = false;
+    }
     bool canReuse()             { return true; }
     bool stop()
     {
-        interrupt_program(handle, true);
+        if (okToAbort)
+            interrupt_program(handle, true);
         aborted = true;
         return true;
     }
@@ -755,7 +760,7 @@ public:
         handle = 0;
         try
         {
-            success = invoke_program(params->cmdline, runcode, false, params->logfile, &handle);
+            success = invoke_program(params->cmdline, runcode, false, params->logfile, &handle, false, okToAbort);
             if (success)
                 wait_program(handle, runcode, true);
         }
@@ -781,9 +786,10 @@ private:
     Owned<CCompilerThreadParam> params;
     HANDLE handle;
     bool aborted;
+    bool okToAbort;
 };
 
 IPooledThread *CppCompiler::createNew()
 {
-    return new CCompilerWorker(this);
+    return new CCompilerWorker(this, (abortChecker != NULL));
 }

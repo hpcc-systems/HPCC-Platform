@@ -404,7 +404,7 @@ jlib_decl char* readarg(char*& curptr)
 }
 
 #ifdef _WIN32
-bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const char *outfile, HANDLE *rethandle, bool throwException)
+bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const char *outfile, HANDLE *rethandle, bool throwException, bool newProcessGroup)
 {
     runcode = 0;
     if (rethandle)
@@ -504,7 +504,7 @@ void close_program(HANDLE handle)
 
 
 #else
-bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const char *outfile, HANDLE *rethandle, bool throwException)
+bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const char *outfile, HANDLE *rethandle, bool throwException, bool newProcessGroup)
 {
     runcode = 0;
     if (rethandle)
@@ -516,7 +516,8 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
     if (pid == 0) 
     {
         //Force the child process into its own process group, so we can terminate it and its children.
-        setpgid(0,0);
+        if (newProcessGroup)
+            setpgid(0,0);
         if (outfile&&*outfile) {
             int outh = open(outfile, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR);
             if(outh > 0)
