@@ -121,14 +121,14 @@ class Regression:
     def setLogLevel(self, level):
         self.log.setLevel(level)
 
-    def bootstrap(self, cluster):
+    def bootstrap(self, cluster,  fileList=None):
         self.createDirectory(self.regressionDir)
         self.createDirectory(self.dir_a)
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
 
         if cluster in self.config.Clusters:
-            self.createSuite(cluster)
+            self.createSuite(cluster,  fileList)
             self.maxtasks = len(self.suites[cluster].getSuite())
         os.chdir(self.regressionDir)
 
@@ -137,9 +137,9 @@ class Regression:
         if not os.path.isdir(dir_n):
             os.makedirs(dir_n)
 
-    def createSuite(self, cluster):
+    def createSuite(self, cluster,  fileList):
         self.suites[cluster] = Suite(cluster, self.dir_ec,
-                                     self.dir_a, self.dir_ex, self.dir_r, self.logDir)
+                                     self.dir_a, self.dir_ex, self.dir_r, self.logDir,  fileList)
 
     def Setup(self):
         self.setupDir = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.setupDir), True)
@@ -160,7 +160,6 @@ class Regression:
         report[0].display(report[1],  elapsTime)
 
     def runSuiteP(self, name, suite):
-        print "runSuiteP"
         report = self.buildLogging(name)
         if name == "setup":
             cluster = 'hthor'
@@ -312,7 +311,6 @@ class Regression:
         time.sleep(2)
 
     def runSuite(self, name, suite):
-        print "runSuite"
         report = self.buildLogging(name)
         if name == "setup":
             cluster = 'hthor'
@@ -353,7 +351,6 @@ class Regression:
 
 
     def runSuiteQ(self, clusterName, eclfile):
-        #print "runSuiteQ"
         report = self.buildLogging(clusterName)
         logging.debug("runSuiteQ( clusterName:'%s', eclfile:'%s')",  clusterName,  eclfile.ecl,  extra={'taskId':0})
 
