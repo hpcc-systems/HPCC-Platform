@@ -271,8 +271,6 @@
 #define HQLERR_OnceCannotAccessStored           4618
 #define HQLERR_ThorCombineOnlyLocal             4619
 
-#define HQLERR_ErrorAlreadyReported             4799            // special case...
-
 //Internal errors....
 #define HQLERR_NoClearOnLocalDataset            4800
 #define HQLERR_NoCreateLocalDataset             4801

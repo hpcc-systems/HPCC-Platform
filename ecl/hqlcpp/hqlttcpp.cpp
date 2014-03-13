@@ -8988,8 +8988,8 @@ Note:
   */
 
 static HqlTransformerInfo hqlScopeTaggerInfo("HqlScopeTagger");
-HqlScopeTagger::HqlScopeTagger(IErrorReceiver * _errors)
-: ScopedDependentTransformer(hqlScopeTaggerInfo), errors(_errors)
+HqlScopeTagger::HqlScopeTagger(IErrorReceiver & _errors, ErrorSeverityMapper & _errorMapper)
+: ScopedDependentTransformer(hqlScopeTaggerInfo), errors(_errors), errorMapper(_errorMapper)
 {
 }
 
@@ -9051,7 +9051,7 @@ void HqlScopeTagger::checkActiveRow(IHqlExpression * expr)
         getECL(expr, exprText);
         elideString(exprText, 20);
         VStringBuffer msg("ROW(%s) - dataset argument is not in scope.  Did you mean dataset[1]?", exprText.str());
-        reportError(msg);
+        reportError(msg, SeverityFatal);
     }
 }
 
@@ -9082,7 +9082,7 @@ void HqlScopeTagger::reportSelectorError(IHqlExpression * selector, IHqlExpressi
             getExprIdentifier(datasetName, selector).str());
     }
 
-    reportError(msg);
+    reportError(msg, SeverityFatal);
 }
 
 
@@ -9100,7 +9100,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             case no_right:
                 StringBuffer exprText, datasetName;
                 VStringBuffer msg("%s - %s not in scope, possibly passed into a global/workflow definition", getECL(expr, exprText), getExprIdentifier(datasetName, ds).str());
-                reportError(msg);
+                reportError(msg, SeverityFatal);
                 break;
             }
         }
@@ -9114,7 +9114,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
         {
             StringBuffer exprText;
             VStringBuffer msg("dictionary %s must be explicitly NORMALIZED", getECL(expr, exprText));
-            reportError(msg, false);
+            reportError(msg, SeverityFatal);
         }
         else if (expr->isDataset())
         {
@@ -9122,7 +9122,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset %s may not be supported without using NORMALIZE", getECL(expr, exprText));
-                reportError(msg, true);
+                reportError(msg, SeverityWarning);
             }
         }
         else
@@ -9199,7 +9199,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
             {
                 StringBuffer exprText;
                 VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
-                reportError(msg, false);
+                reportError(msg, SeverityFatal);
             }
         }
         return transformed.getClear();
@@ -9211,7 +9211,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
         {
             StringBuffer exprText;
             VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
-            reportError(msg);
+            reportError(msg, SeverityFatal);
         }
 
         return ensureActiveRow(transformed->queryNormalizedSelector());
@@ -9319,7 +9319,7 @@ IHqlExpression * HqlScopeTagger::transformWithin(IHqlExpression * dataset, IHqlE
     {
         StringBuffer exprText;
         VStringBuffer msg("%s - dataset filtered by WITHIN is too complex", getECL(dataset, exprText));
-        reportError(msg);
+        reportError(msg, SeverityFatal);
         return transform(dataset);
     }
 
@@ -9343,7 +9343,7 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     {
         StringBuffer exprText;
         VStringBuffer msg("dataset \"%s\" used in WITHIN is not in scope", getECL(scope, exprText));
-        reportError(msg);
+        reportError(msg, SeverityFatal);
     }
 
     //Check the ds is a table
@@ -9352,7 +9352,7 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     {
         StringBuffer exprText;
         VStringBuffer msg("dataset \"%s\" used as parameter to WITHIN is too complex", getECL(expr, exprText));
-        reportError(msg);
+        reportError(msg, SeverityFatal);
     }
 
     return transformWithin(ds, scope->queryNormalizedSelector());
@@ -9367,19 +9367,23 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         switch (expr->getAnnotationKind())
         {
         case annotate_meta:
-            collector.processMetaAnnotation(expr);
-            break;
-        case annotate_symbol:
             {
-                WarningProcessor::OnWarningState saved;
-                collector.pushSymbol(saved, expr);
+                unsigned max = errorMapper.processMetaAnnotation(expr);
                 OwnedHqlExpr transformedBody = transform(body);
-                collector.popSymbol(saved);
+                errorMapper.restoreLocalOnWarnings(max);
                 if (body == transformedBody)
                     return LINK(expr);
                 return expr->cloneAnnotation(transformedBody);
             }
             break;
+        case annotate_symbol:
+            {
+                ErrorSeverityMapper::SymbolScope saved(errorMapper, expr);
+                OwnedHqlExpr transformedBody = transform(body);
+                if (body == transformedBody)
+                    return LINK(expr);
+                return expr->cloneAnnotation(transformedBody);
+            }
         case annotate_location:
             {
                 break;
@@ -9391,7 +9395,6 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         return expr->cloneAnnotation(transformedBody);
     }
 
-    collector.checkForGlobalOnWarning(expr);
     switch (expr->getOperator())
     {
     case no_left:
@@ -9425,7 +9428,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset %s mistakenly interpreted as a datarow, possibly due to missing dataset() in parameter type", getECL(ds, exprText));
-                reportError(msg);
+                reportError(msg, SeverityFatal);
             }
             return transformAmbiguousChildren(expr);
         }
@@ -9453,7 +9456,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), lhs->queryChild(1)->queryName()->str());
-                reportError(msg.str());
+                reportError(msg.str(), SeverityFatal);
             }
             if (rhs == newRhs)
                 return LINK(expr);
@@ -9469,7 +9472,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         {
             OwnedHqlExpr transformed = Parent::createTransformed(expr);
             if (transformed->queryChild(0)->isDataset())
-                reportError("PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?");
+                reportError("PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?", SeverityFatal);
             return transformed.getClear();
         }
     case no_merge:
@@ -9493,7 +9496,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
                 {
                     if (sorts.item(i).isAttribute())
                     {
-                        reportError(HQLWRN_MergeBadSortOrder_Text, true);
+                        reportError(HQLWRN_MergeBadSortOrder_Text, SeverityWarning);
                         sorts.remove(i);
                     }
                 }
@@ -9507,22 +9510,15 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
 }
 
 
-void HqlScopeTagger::reportWarnings()
+void HqlScopeTagger::reportError(const char * msg, ErrorSeverity severity)
 {
-    if (errors)
-        collector.report(*errors);
-}
-
-
-void HqlScopeTagger::reportError(const char * msg, bool warning)
-{
-    IHqlExpression * location = collector.queryActiveSymbol();
+    IHqlExpression * location = errorMapper.queryActiveSymbol();
     //Make this an error when we are confident...
     int startLine= location ? location->getStartLine() : 0;
     int startColumn = location ? location->getStartColumn() : 0;
     ISourcePath * sourcePath = location ? location->querySourcePath() : NULL;
-    Owned<IECLError> err = createECLError(!warning, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
-    collector.report(NULL, errors, err);        // will throw immediately if it is an error.
+    Owned<IECLError> err = createECLError(severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
+    errors.report(err);        // will throw immediately if it is an error.
 }
 
 
@@ -10540,7 +10536,7 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     options.constantFoldNormalize = translatorOptions.constantFoldNormalize;
     options.allowActivityForKeyedJoin = translatorOptions.allowActivityForKeyedJoin;
     options.implicitSubSort = translatorOptions.implicitBuildIndexSubSort;
-    errors = translator.queryErrors();
+    errorProcessor = &translator.queryErrorProcessor();
     nextSequenceValue = 1;
 }
 
@@ -11016,57 +11012,17 @@ IHqlExpression * HqlTreeNormalizer::transformMap(IHqlExpression * expr)
     return elseExpr.getClear();
 }
 
-class AbortingErrorReceiver : extends CInterface, implements IErrorReceiver
-{
-public:
-    AbortingErrorReceiver(IErrorReceiver * _errors)
-    {
-        errors = _errors ? _errors : &defaultReporter;
-    }
-    IMPLEMENT_IINTERFACE
-
-    virtual void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos)
-    {
-        errors->reportError(errNo, msg, filename, lineno, column, pos);
-        throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
-    }
-    virtual void report(IECLError* error)
-    {
-        errors->report(error);
-        throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
-    }
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
-    {
-        errors->reportWarning(warnNo, msg, filename, lineno, column, pos);
-    }
-    virtual size32_t errCount()
-    {
-        return errors->errCount();
-    }
-    virtual size32_t warnCount()
-    {
-        return errors->warnCount();
-    }
-
-protected:
-    IErrorReceiver * errors;
-    ThrowingErrorReceiver defaultReporter;
-};
-
-
 IHqlExpression * HqlTreeNormalizer::transformTempRow(IHqlExpression * expr)
 {
     ECLlocation dummyLocation(0, 0, 0, NULL);
-    AbortingErrorReceiver errorReporter(errors);
-    OwnedHqlExpr createRow = convertTempRowToCreateRow(&errorReporter, dummyLocation, expr);
+    OwnedHqlExpr createRow = convertTempRowToCreateRow(translator.queryErrorProcessor(), dummyLocation, expr);
     return transform(createRow);
 }
 
 IHqlExpression * HqlTreeNormalizer::transformTempTable(IHqlExpression * expr)
 {
     ECLlocation dummyLocation(0, 0, 0, NULL);
-    AbortingErrorReceiver errorReporter(errors);
-    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
+    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(translator.queryErrorProcessor(), dummyLocation, expr);
     if (expr != inlineTable)
         return transform(inlineTable);
 
@@ -12188,7 +12144,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         {
             IHqlExpression * child = expr->queryChild(0);
             OwnedHqlExpr ret = transform(child);
-            OwnedHqlExpr folded  = foldHqlExpression(ret, NULL, HFOforcefold);
+            OwnedHqlExpr folded  = foldHqlExpression(translator.queryErrorProcessor(), ret, NULL, HFOforcefold);
             if (!folded->isConstant())
             {
                 StringBuffer s;
@@ -12201,7 +12157,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         {
             ECLlocation errpos;
             errpos.extractLocationAttr(expr->queryChild(1));
-            reportAbstractModule(translator.queryErrors(), expr->queryChild(0), errpos);
+            reportAbstractModule(translator.queryErrorProcessor(), expr->queryChild(0), errpos);
             throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
         }
     case no_pat_instance:
@@ -12374,7 +12330,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 IHqlExpression * module = oldFuncdef->queryChild(1);
                 ECLlocation errpos(module);
                 //errpos.extractLocationAttr(expr->queryChild(1));
-                reportAbstractModule(translator.queryErrors(), module, errpos);
+                reportAbstractModule(translator.queryErrorProcessor(), module, errpos);
                 throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
             }
             assertex(oldFuncdef->getOperator() == no_funcdef);
@@ -12586,12 +12542,11 @@ void normalizeHqlTree(HqlCppTranslator & translator, HqlExprArray & exprs)
 
     {
         unsigned time = msTick();
-        HqlScopeTagger normalizer(translator.queryErrors());
+        HqlScopeTagger normalizer(translator.queryErrorProcessor(), translator.queryLocalOnWarningMapper());
         HqlExprArray transformed;
         normalizer.transformRoot(exprs, transformed);
         replaceArray(exprs, transformed);
         translator.updateTimer("workunit;tree transform: normalize.scope", msTick()-time);
-        normalizer.reportWarnings();
     }
 
     if (translator.queryOptions().normalizeLocations)
@@ -12833,7 +12788,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     //Don't change the engine if libraries are involved, otherwise things will get very confused.
 
     unsigned timeCall = msTick();
-    expandDelayedFunctionCalls(queryErrors(), exprs);
+    expandDelayedFunctionCalls(&queryErrorProcessor(), exprs);
     updateTimer("workunit;tree transform: expand delayed calls", msTick()-timeCall);
 
 
@@ -12884,7 +12839,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         if (options.globalFoldOptions != (unsigned)-1)
             foldOptions = options.globalFoldOptions;
 
-        foldHqlExpression(folded, exprs, foldOptions);
+        foldHqlExpression(queryErrorProcessor(), folded, exprs, foldOptions);
         replaceArray(exprs, folded);
         updateTimer("workunit;tree transform: global fold", msTick()-startTime);
     }
@@ -12896,7 +12851,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     {
         unsigned startTime = msTick();
         HqlExprArray folded;
-        optimizeHqlExpression(folded, exprs, HOOfold);
+        optimizeHqlExpression(queryErrorProcessor(), folded, exprs, HOOfold);
         replaceArray(exprs, folded);
         updateTimer("workunit;tree transform: global optimize", msTick()-startTime);
     }

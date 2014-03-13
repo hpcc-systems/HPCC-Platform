@@ -1666,9 +1666,11 @@ failure
     ;
 
 warningAction
-    : TOK_IGNORE        {   $$.setExpr(createAttribute(ignoreAtom), $1); }
+    : TOK_LOG           {   $$.setExpr(createAttribute(logAtom), $1); }
+    | TOK_IGNORE        {   $$.setExpr(createAttribute(ignoreAtom), $1); }
     | TOK_WARNING       {   $$.setExpr(createAttribute(warningAtom), $1); }
     | TOK_ERROR         {   $$.setExpr(createAttribute(errorAtom), $1); }
+    | FAIL              {   $$.setExpr(createAttribute(failAtom), $1); }
     ;
 
 optPersistOpts
@@ -5187,7 +5189,7 @@ compareExpr
                             parser->normalizeExpression($4, type_dictionary, false);
                             OwnedHqlExpr dict = $4.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
-                            OwnedHqlExpr indict = createINDictExpr(parser->errorHandler, $4.pos, row, dict);
+                            OwnedHqlExpr indict = createINDictExpr(*parser->errorHandler, $4.pos, row, dict);
                             $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
                         }
@@ -5198,7 +5200,7 @@ compareExpr
                             parser->normalizeExpression($4, type_dictionary, false);
                             OwnedHqlExpr dict = $4.getExpr();
                             OwnedHqlExpr row = $1.getExpr();
-                            OwnedHqlExpr indict = createINDictRow(parser->errorHandler, $4.pos, row, dict);
+                            OwnedHqlExpr indict = createINDictRow(*parser->errorHandler, $4.pos, row, dict);
                             $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
                         }
@@ -5209,7 +5211,7 @@ compareExpr
                             parser->normalizeExpression($3, type_dictionary, false);
                             OwnedHqlExpr dict = $3.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
-                            $$.setExpr(createINDictExpr(parser->errorHandler, $3.pos, row, dict));
+                            $$.setExpr(createINDictExpr(*parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
                         }
     | dataRow TOK_IN dictionary
@@ -5219,7 +5221,7 @@ compareExpr
                             parser->normalizeExpression($3, type_dictionary, false);
                             OwnedHqlExpr dict = $3.getExpr();
                             OwnedHqlExpr row = $1.getExpr();
-                            $$.setExpr(createINDictRow(parser->errorHandler, $3.pos, row, dict));
+                            $$.setExpr(createINDictRow(*parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
                         }
     | dataSet EQ dataSet    
@@ -6941,7 +6943,7 @@ dataRow
                             $3.unwindCommaList(args);
                             OwnedHqlExpr dict = $1.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), args);
-                            $$.setExpr(createSelectMapRow(parser->errorHandler, $3.pos, dict, row));
+                            $$.setExpr(createSelectMapRow(*parser->errorHandler, $3.pos, dict, row));
                         }
     | dataSet '[' NOBOUNDCHECK expression ']'
                         {   
@@ -7089,7 +7091,7 @@ simpleDataRow
     | ROW '(' inlineDatasetValue ',' recordDef ')'
                         {
                             OwnedHqlExpr row = createRow(no_temprow, $3.getExpr(), $5.getExpr());
-                            $$.setExpr(convertTempRowToCreateRow(parser->errorHandler, $3.pos, row));
+                            $$.setExpr(convertTempRowToCreateRow(*parser->errorHandler, $3.pos, row));
                             $$.setPosition($1);
                         }
     | ROW '(' startLeftSeqRow ',' recordDef ')' endSelectorSequence

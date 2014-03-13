@@ -710,7 +710,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
             newTransform.setown(expandDatasetReferences(newTransform, expandedKey));
     }
 
-    newTransform.setown(optimizeHqlExpression(newTransform, HOOfold|HOOcompoundproject));
+    newTransform.setown(optimizeHqlExpression(translator.queryErrorProcessor(), newTransform, HOOfold|HOOcompoundproject));
     newTransform.setown(foldHqlExpression(newTransform));
 
     BoundRow * selfCursor = translator.buildTransformCursors(ctx, newTransform, expr->queryChild(0), joinDataset, expr, joinSeq);

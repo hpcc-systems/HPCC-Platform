@@ -241,8 +241,8 @@ void ViewFieldECLTransformer::transform(unsigned & lenTarget, char * & target, u
     actuals.append(*LINK(sourceExpr));
     appendArray(actuals, extraArgs);
 
-    ThrowingErrorReceiver errors;
-    OwnedHqlExpr call = createBoundFunction(&errors, function, actuals, NULL, true);
+    Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
+    OwnedHqlExpr call = createBoundFunction(errorReporter, function, actuals, NULL, true);
     OwnedHqlExpr castValue = ensureExprType(call, utf8Type);
     OwnedHqlExpr folded = quickFoldExpression(castValue, NULL, 0);
     IValue * foldedValue = folded->queryValue();
@@ -294,12 +294,12 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     loadedPlugins.setown(new SafePluginMap(&pluginCtx, true));
     loadedPlugins->loadFromList(name);
 
-    ThrowingErrorReceiver errors;
-    dataServer.setown(createNewSourceFileEclRepository(&errors, name, ESFallowplugins, 0));
+    Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
+    dataServer.setown(createNewSourceFileEclRepository(errorReporter, name, ESFallowplugins, 0));
 
     HqlScopeArray scopes;
     HqlParseContext parseCtx(dataServer, NULL);
-    HqlLookupContext ctx(parseCtx, &errors);
+    HqlLookupContext ctx(parseCtx, errorReporter);
     getRootScopes(scopes, dataServer, ctx);
 
     ForEachItemIn(i, scopes)

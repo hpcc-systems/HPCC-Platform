@@ -939,14 +939,14 @@ public:
 
     unsigned getOptimizeFlags() const;
     unsigned getSourceAggregateOptimizeFlags() const;
-    inline void addGlobalOnWarning(IHqlExpression * setMetaExpr) { warningProcessor.addGlobalOnWarning(setMetaExpr); }
+    void addGlobalOnWarning(IHqlExpression * setMetaExpr);
 
     ClusterType getTargetClusterType() const { return targetClusterType; }
     inline bool targetRoxie() const { return targetClusterType == RoxieCluster; }
     inline bool targetHThor() const { return targetClusterType == HThorCluster; }
     inline bool targetThor() const { return isThorCluster(targetClusterType); }
-    inline IErrorReceiver * queryErrors() { return errors; }
-    inline WarningProcessor & queryWarningProcessor() { return warningProcessor; }
+    inline IErrorReceiver & queryErrorProcessor() { return *errorProcessor; }
+    inline ErrorSeverityMapper & queryLocalOnWarningMapper() { return *localOnWarnings; }
 
     void pushMemberFunction(MemberFunction & func);
     void popMemberFunction();
@@ -1903,7 +1903,9 @@ protected:
     ExprExprMap         physicalIndexCache;
     unsigned            litno;
     StringAttr          soName;
-    IErrorReceiver *    errors;
+    Owned<ErrorSeverityMapper> globalOnWarnings;
+    Owned<ErrorSeverityMapper> localOnWarnings;
+    Linked<IErrorReceiver> errorProcessor;
     HqlCppOptions       options;
     HqlCppDerived       derived;
     bool                checkedEmbeddedCpp;
@@ -1956,7 +1958,6 @@ protected:
     HqlExprArray activityExprStack;             //only used for improving the error reporting
     PointerArray recordIndexCache;
     Owned<ITimeReporter> timeReporter;
-    WarningProcessor warningProcessor;
     CIArrayOf<SourceFieldUsage> trackedSources;
 };
 

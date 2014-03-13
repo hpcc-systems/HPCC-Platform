@@ -8173,7 +8173,6 @@ extern HQL_API void ensureSymbolsDefined(IHqlExpression * scopeExpr, HqlLookupCo
 
 void exportSymbols(IPropertyTree* data, IHqlScope * scope, HqlLookupContext & ctx)
 {
-    ThrowingErrorReceiver errs;
     scope->ensureSymbolsDefined(ctx); 
 
     data->setProp("@name", scope->queryFullName());
@@ -9104,8 +9103,8 @@ IHqlScope * CHqlVirtualScope::deriveConcreteScope()
 void CHqlVirtualScope::resolveUnboundSymbols()
 {
     IHqlExpression * virtualAttr = queryAttribute(_virtualSeq_Atom);
-    ThrowingErrorReceiver errors;
-    HqlDummyLookupContext localCtx(&errors);
+    Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
+    HqlDummyLookupContext localCtx(errorReporter);
     SymbolTableIterator iter(symbols);
     HqlExprArray defines;
     ForEach(iter)
@@ -9256,8 +9255,8 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
     {
         //Generally we should have a lookup context passed in so the archive is updated correctly
         //But currently painful in one context, so allow it to be omitted.
-        ThrowingErrorReceiver errors;
-        HqlDummyLookupContext localCtx(&errors);
+        Owned<IErrorReceiver> errorReporter = createThrowingErrorReceiver();
+        HqlDummyLookupContext localCtx(errorReporter);
         HqlLookupContext * activeContext = context ? context : &localCtx;
         HqlExprArray syms;
         getSymbols(syms);
@@ -15701,8 +15700,8 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
     HqlParseContext parseCtx(dataServer, NULL);
     parseCtx.nestedDependTree.setown(createPTree("Dependencies"));
 
-    NullErrorReceiver errorHandler;
-    HqlLookupContext ctx(parseCtx, &errorHandler);
+    Owned<IErrorReceiver> errorHandler = createNullErrorReceiver();
+    HqlLookupContext ctx(parseCtx, errorHandler);
     if (items && *items)
     {
         loop
@@ -15747,49 +15746,6 @@ IHqlExpression * createGroupedAttribute(IHqlExpression * grouping)
 }
 
 
-static HqlTransformerInfo warningCollectingTransformerInfo("WarningCollectingTransformer");
-class WarningCollectingTransformer : public QuickHqlTransformer
-{
-public:
-    WarningCollectingTransformer(IErrorReceiver & _errs) : QuickHqlTransformer(warningCollectingTransformerInfo, &_errs) { }
-
-    virtual void doAnalyse(IHqlExpression * expr)
-    {
-        switch (expr->getAnnotationKind())
-        {
-        case annotate_meta:
-            collector.processMetaAnnotation(expr);
-            break;
-        case annotate_warning:
-            collector.processWarningAnnotation(expr);
-            break;
-        case annotate_symbol:
-            {
-                WarningProcessor::OnWarningState saved;
-                collector.pushSymbol(saved, expr);
-                QuickHqlTransformer::doAnalyse(expr);
-                collector.popSymbol(saved);
-                return;
-            }
-        case annotate_none:
-            collector.checkForGlobalOnWarning(expr);
-            break;
-        }
-        QuickHqlTransformer::doAnalyse(expr);
-    }
-
-    void report(IHqlExpression * expr)
-    {
-        analyse(expr);
-        collector.report(*errors);
-    }
-
-
-protected:
-    WarningProcessor collector;
-};
-
-
 IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * _newType)
 {
     Owned<ITypeInfo> newType = _newType;
@@ -15806,16 +15762,6 @@ IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * _newType)
     default:
         return createValue(no_typetransfer, newType.getClear(), expr);
     }
-}
-
-
-void gatherWarnings(IErrorReceiver * errs, IHqlExpression * expr)
-{
-    if (!errs || !expr)
-        return;
-
-    WarningCollectingTransformer collector(*errs);
-    collector.report(expr);
 }
 
 

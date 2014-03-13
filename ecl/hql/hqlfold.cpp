@@ -4854,8 +4854,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             if (expr->queryChild(0)->getOperator() == no_list)
             {
                 ECLlocation dummyLocation(0, 0, 0, NULL);
-                ThrowingErrorReceiver errorReporter;
-                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorProcessor, dummyLocation, expr);
                 if (expr != inlineTable)
                     return inlineTable.getClear();
             }
@@ -4888,8 +4887,8 @@ FolderTransformInfo::~FolderTransformInfo()
 }
 
 static HqlTransformerInfo cExprFolderTransformerInfo("CExprFolderTransformer");
-CExprFolderTransformer::CExprFolderTransformer(ITemplateContext * _templateContext, unsigned _options)
-: NewHqlTransformer(cExprFolderTransformerInfo), templateContext(_templateContext)
+CExprFolderTransformer::CExprFolderTransformer(IErrorReceiver & _errorProcessor, ITemplateContext * _templateContext, unsigned _options)
+: NewHqlTransformer(cExprFolderTransformerInfo), templateContext(_templateContext), errorProcessor(_errorProcessor)
 {
     foldOptions = _options;
 }
@@ -6044,7 +6043,13 @@ IHqlExpression * CExprFolderTransformer::transformExpanded(IHqlExpression * expr
 
 //---------------------------------------------------------------------------
 
-IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *templateContext, unsigned foldOptions)
+IHqlExpression * foldHqlExpression(IHqlExpression * expr)
+{
+    Owned<IErrorReceiver> errorProcessor = createNullErrorReceiver();
+    return foldHqlExpression(*errorProcessor, expr);
+}
+
+IHqlExpression * foldHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, ITemplateContext *templateContext, unsigned foldOptions)
 {
     if (!expr)
         return NULL;
@@ -6065,7 +6070,7 @@ IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *temp
         break;
     }
 
-    CExprFolderTransformer folder(templateContext, foldOptions);
+    CExprFolderTransformer folder(errorProcessor, templateContext, foldOptions);
 
 #if 0
     dbglogExpr(expr);
@@ -6080,12 +6085,12 @@ IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *temp
     return ret;
 }
 
-IHqlExpression * foldScopedHqlExpression(IHqlExpression * dataset, IHqlExpression * expr, unsigned foldOptions)
+IHqlExpression * foldScopedHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * dataset, IHqlExpression * expr, unsigned foldOptions)
 {
     if (!expr)
         return NULL;
 
-    CExprFolderTransformer folder(NULL, foldOptions);
+    CExprFolderTransformer folder(errorProcessor, NULL, foldOptions);
 
     if (dataset)
         folder.setScope(dataset);
@@ -6096,9 +6101,9 @@ IHqlExpression * foldScopedHqlExpression(IHqlExpression * dataset, IHqlExpressio
 }
 
 
-void foldHqlExpression(HqlExprArray & tgt, HqlExprArray & src, unsigned foldOptions)
+void foldHqlExpression(IErrorReceiver & errorProcessor, HqlExprArray & tgt, HqlExprArray & src, unsigned foldOptions)
 {
-    CExprFolderTransformer folder(NULL, foldOptions);
+    CExprFolderTransformer folder(errorProcessor, NULL, foldOptions);
     folder.transformRoot(src, tgt);
 }
 

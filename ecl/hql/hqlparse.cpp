@@ -1747,7 +1747,7 @@ IValue *HqlLex::foldConstExpression(const YYSTYPE & errpos, IHqlExpression * exp
         try 
         {
             CTemplateContext context(this, yyParser->lookupCtx, xmlScope, startLine, startCol);
-            OwnedHqlExpr folded = foldHqlExpression(expr, &context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
+            OwnedHqlExpr folded = foldHqlExpression(*yyParser, expr, &context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
             if (folded)
             {
                 if (folded->queryValue())
@@ -1815,7 +1815,7 @@ void HqlLex::doApply(YYSTYPE & returnToken)
     if (actions)
     {
         CTemplateContext context(this, yyParser->lookupCtx, xmlScope,line,col);
-        OwnedHqlExpr folded = foldHqlExpression(actions, &context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
+        OwnedHqlExpr folded = foldHqlExpression(*yyParser, actions, &context, HFOthrowerror|HFOfoldimpure|HFOforcefold);
     }
     else
         reportError(returnToken, ERR_EXPECTED_CONST, "Constant expression expected");

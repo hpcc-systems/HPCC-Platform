@@ -129,7 +129,7 @@ IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpressi
     return createDelayedScope(check.getClear());
 }
 
-void reportAbstractModule(IErrorReceiver * errors, IHqlExpression * expr, const ECLlocation & errpos)
+void reportAbstractModule(IErrorReceiver & errors, IHqlExpression * expr, const ECLlocation & errpos)
 {
     IHqlScope * scope = expr->queryScope();
     StringBuffer fieldText;
@@ -151,11 +151,11 @@ void reportAbstractModule(IErrorReceiver * errors, IHqlExpression * expr, const 
     }
 
     if (fieldText.length())
-        reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (%s undefined)", fieldText.str());
+        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (%s undefined)", fieldText.str());
     else if (expr->hasAttribute(interfaceAtom))
-        reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (INTERFACE must be instantiated)");
+        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (INTERFACE must be instantiated)");
     else
-        reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context");
+        reportError(&errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context");
 }
 
 IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const IHqlExpression * locationExpr)

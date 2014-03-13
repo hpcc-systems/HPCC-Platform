@@ -41,7 +41,7 @@ class CTreeOptimizer : public NewHqlTransformer, public NullFolderMixin
 {
     friend class ExpandMonitor;
 public:
-    CTreeOptimizer(unsigned _options);
+    CTreeOptimizer(IErrorReceiver & _errorProcessor, unsigned _options);
 
 protected:
     virtual void analyseExpr(IHqlExpression * expr);
@@ -123,6 +123,7 @@ protected:
 
 protected:
     typedef NewHqlTransformer PARENT;
+    IErrorReceiver & errorProcessor;
     unsigned options;
     StringBuffer nodeText[2];
     HqlExprAttr noHoistAttr;

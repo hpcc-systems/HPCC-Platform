@@ -51,9 +51,10 @@ extern HQLFOLD_API IHqlExpression * foldConstantOperator(IHqlExpression * expr, 
 extern HQLFOLD_API IHqlExpression * quickFoldExpression(IHqlExpression * expr, ITemplateContext *context=NULL, unsigned options=0);
 extern HQLFOLD_API void quickFoldExpressions(HqlExprArray & target, const HqlExprArray & source, ITemplateContext *context, unsigned options);
 
-extern HQLFOLD_API IHqlExpression * foldHqlExpression(IHqlExpression * expr, ITemplateContext *context=NULL, unsigned options=0);
-extern HQLFOLD_API IHqlExpression * foldScopedHqlExpression(IHqlExpression * dataset, IHqlExpression * expr, unsigned options=0);
-extern HQLFOLD_API void foldHqlExpression(HqlExprArray & tgt, HqlExprArray & src, unsigned options=0);
+extern HQLFOLD_API IHqlExpression * foldHqlExpression(IHqlExpression * expr); // No errors reported.
+extern HQLFOLD_API IHqlExpression * foldHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * expr, ITemplateContext *context=NULL, unsigned options=0);
+extern HQLFOLD_API IHqlExpression * foldScopedHqlExpression(IErrorReceiver & errorProcessor, IHqlExpression * dataset, IHqlExpression * expr, unsigned options=0);
+extern HQLFOLD_API void foldHqlExpression(IErrorReceiver & errorProcessor, HqlExprArray & tgt, HqlExprArray & src, unsigned options=0);
 extern HQLFOLD_API IHqlExpression * lowerCaseHqlExpr(IHqlExpression * expr);
 extern HQLFOLD_API IHqlExpression * foldExprIfConstant(IHqlExpression * expr);
 

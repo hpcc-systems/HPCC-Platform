@@ -67,7 +67,7 @@ class CExprFolderTransformer : public FOLD_PARENT, public NullFolderMixin
 {
     typedef FOLD_PARENT PARENT;
 public:
-    CExprFolderTransformer(ITemplateContext *templateContext, unsigned _options);
+    CExprFolderTransformer(IErrorReceiver & _errorProcessor, ITemplateContext *templateContext, unsigned _options);
 
     void setScope(IHqlExpression * expr)                { stopDatasetTransform(expr); }
 
@@ -112,6 +112,7 @@ private:
 
 protected:
     ITemplateContext *templateContext;
+    IErrorReceiver & errorProcessor;
     unsigned foldOptions;
     StringBuffer nodeText[2];
 };
