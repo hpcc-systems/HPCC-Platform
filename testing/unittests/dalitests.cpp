@@ -467,6 +467,7 @@ class DaliTests : public CppUnit::TestFixture
 // This test requires access to an external IP with dafilesrv running
 //        CPPUNIT_TEST(testDFSRename3);
         CPPUNIT_TEST(testDFSAddFailReAdd);
+        CPPUNIT_TEST(testDFSRetrySuperLock);
         CPPUNIT_TEST(testDFSHammer);
     CPPUNIT_TEST_SUITE_END();
 
@@ -1661,6 +1662,77 @@ public:
         ASSERT(NULL != sfile->querySubFileNamed("regress::addreadd::sub3") && "regress::addreadd::sub3, should be a subfile of super2");
         sfile.setown(dir.lookupSuperFile("regress::addreadd::super1", user));
         ASSERT(0 == sfile->numSubFiles() && "regress::addreadd::super1 should contain 0 subfiles");
+    }
+
+    void testDFSRetrySuperLock()
+    {
+        setupDFS("retrysuperlock");
+
+        logctx.CTXLOG("Creating regress::retrysuperlock::super1 and regress::retrysuperlock::sub1");
+        Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::retrysuperlock::super1", user, false, false);
+        sfile->addSubFile("regress::retrysuperlock::sub1", false, NULL, false);
+        sfile.clear();
+
+        class CShortLock : implements IThreaded
+        {
+            StringAttr fileName;
+            unsigned secDelay;
+            CThreaded threaded;
+        public:
+            CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
+            ~CShortLock()
+            {
+                threaded.join();
+            }
+            virtual void main()
+            {
+                Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
+
+                if (!file)
+                {
+                    PROGLOG("File %s not found", fileName.get());
+                    return;
+                }
+                PROGLOG("Locked file: %s, sleeping (before unlock) for %d secs", fileName.get(), secDelay);
+
+                MilliSleep(secDelay * 1000);
+
+                PROGLOG("Unlocking file: %s", fileName.get());
+            }
+            void start() { threaded.start(); }
+        };
+
+        /* Tests transaction failing, due to lock and retrying after having partial success */
+
+        CShortLock sL("regress::retrysuperlock::super1", 15);
+        sL.start();
+
+        sfile.setown(dir.lookupSuperFile("regress::retrysuperlock::super1", user));
+        if (sfile)
+        {
+            logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1");
+            sfile->removeSubFile(NULL, false, false);
+            logctx.CTXLOG("SUCCEEDED");
+        }
+        // put it back, for next test
+        sfile->addSubFile("regress::retrysuperlock::sub1", false, NULL, false);
+        sfile.clear();
+
+        // try again, this time in transaction
+        Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
+        logctx.CTXLOG("Starting transaction");
+        transaction->start();
+
+        sfile.setown(transaction->lookupSuperFile("regress::retrysuperlock::super1"));
+        if (sfile)
+        {
+            logctx.CTXLOG("Removing subfiles from regress::retrysuperlock::super1 with transaction");
+            sfile->removeSubFile(NULL, false, false, transaction);
+            logctx.CTXLOG("SUCCEEDED");
+        }
+        sfile.clear();
+        logctx.CTXLOG("Committing transaction");
+        transaction->commit();
     }
 
     void testDFSRename2()
