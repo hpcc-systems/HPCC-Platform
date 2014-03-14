@@ -41,7 +41,7 @@ bool checkForeign(const char *lfn)
     if (*lfn=='~')
         lfn++;
     static size_t l = strlen("foreign");
-    if (strncasecmp("foreign", lfn, l)==0)
+    if (strnicmp("foreign", lfn, l)==0)
     {
         lfn+=l;
         while (isspace(*lfn))
