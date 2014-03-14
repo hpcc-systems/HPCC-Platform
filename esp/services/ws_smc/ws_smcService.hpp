@@ -171,7 +171,7 @@ private:
     void readRunningWUsAndQueuedWUs(IEspContext &context, IPropertyTree* envRoot, IPropertyTree* serverStatusRoot,
             CIArrayOf<CWsSMCTargetCluster>& thorTargetClusters, CIArrayOf<CWsSMCTargetCluster>& roxieTargetClusters, CIArrayOf<CWsSMCTargetCluster>& hthorTargetClusters,
             IArrayOf<IEspActiveWorkunit>& aws, IArrayOf<IEspServerJobQueue>& serverJobQueues, IArrayOf<IEspDFUJob>& DFURecoveryJobs);
-    CWsSMCTargetCluster* getWUClusterInfo(IEspContext& context, const char* wuid, bool isOnECLAgent, SCMStringBuffer& clusterName,
+    CWsSMCTargetCluster* getWUClusterInfo(IEspContext& context, const char* wuid, bool isOnECLAgent,
             CIArrayOf<CWsSMCTargetCluster>& targetClusters, CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2);
     void readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, WsSMCStatusServerType statusServerType,
             CIArrayOf<CWsSMCTargetCluster>& targetClusters, CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2,

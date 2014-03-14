@@ -1393,16 +1393,11 @@ void CWsSMCEx::readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree*
     {
         IPropertyTree& serverStatusNode = itrStatusServer->query();
 
-        StringBuffer qname, instance;
-        serverStatusNode.getProp("@queue", qname);
+        StringBuffer instance;
         if ((statusServerType == WsSMCSSTThorLCRCluster) || (statusServerType == WsSMCSSTRoxieCluster))
             serverStatusNode.getProp("@cluster", instance);
         else
-        {
             instance.appendf("%s on %s", serverName, serverStatusNode.queryProp("@node"));
-            if (isECLAgent)
-                qname.append(serverName);
-        }
 
         const char* graph = NULL;
         int sgDuration = -1;
@@ -1417,27 +1412,18 @@ void CWsSMCEx::readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree*
             subgraphStr.appendf("%d", subgraph);
         }
 
-        const char *cluster = serverStatusNode.queryProp("Cluster");
         Owned<IPropertyTreeIterator> wuids(serverStatusNode.getElements("WorkUnit"));
         ForEach(*wuids)
         {
             const char* wuid=wuids->query().queryProp(NULL);
-            if (!wuid || !*wuid)
+            if (!wuid || !*wuid || (isECLAgent && uniqueWUIDs.getValue(wuid)))
                 continue;
 
-            if (isECLAgent)
-            {
-                if (uniqueWUIDs.getValue(wuid))
-                    continue;
-            }
-
-            SCMStringBuffer clusterName;
-            CWsSMCTargetCluster* targetCluster = getWUClusterInfo(context, wuid, isECLAgent, clusterName, targetClusters, targetClusters1, targetClusters2);
+            CWsSMCTargetCluster* targetCluster = getWUClusterInfo(context, wuid, isECLAgent, targetClusters, targetClusters1, targetClusters2);
             if (!targetCluster)
                 continue;
 
-            const char* targetClusterName = clusterName.str();
-
+            const char* targetClusterName = targetCluster->clusterName.get();
             CWsSMCQueue* jobQueue;
             if (statusServerType == WsSMCSSTThorLCRCluster)
                 jobQueue = &targetCluster->clusterQueue;
@@ -1449,17 +1435,14 @@ void CWsSMCEx::readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree*
             {
                 uniqueWUIDs.setValue(wuid, true);
 
-                const char* processName = NULL;
-                if (!strieq(targetClusterName, instance.str()))
-                    processName = instance.str();
-
+                const char *cluster = serverStatusNode.queryProp("Cluster");
                 StringBuffer queueName;
                 if (cluster) // backward compat check.
                     getClusterThorQueueName(queueName, cluster);
                 else
-                    queueName.append(qname);
+                    queueName.append(targetCluster->queueName.get());
 
-                createActiveWorkUnit(wu, context, wuid, processName, 0, serverName, queueName, instance.str(), targetClusterName);
+                createActiveWorkUnit(wu, context, wuid, !strieq(targetClusterName, instance.str()) ? instance.str() : NULL, 0, serverName, queueName, instance.str(), targetClusterName);
 
                 if (wu->getStateID() == WUStateRunning) //'aborting' may be another possible status
                 {
@@ -1478,20 +1461,12 @@ void CWsSMCEx::readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree*
             {
                 createActiveWorkUnit(wu, context, wuid, instance.str(), 0, serverName, serverName, instance.str(), targetClusterName);
 
-                const char *clusterType=NULL;
-                switch (targetCluster->clusterType)
-                {
-                    case ThorLCRCluster:
-                        clusterType = "Thor";
-                        break;
-                    case RoxieCluster:
-                        clusterType = "Roxie";
-                        break;
-                    case HThorCluster:
-                        clusterType = "HThor";
-                        break;
-                }
-                wu->setClusterType(clusterType);
+                if (targetCluster->clusterType == ThorLCRCluster)
+                    wu->setClusterType("Thor");
+                else if (targetCluster->clusterType == RoxieCluster)
+                    wu->setClusterType("Roxie");
+                else
+                    wu->setClusterType("HThor");
                 wu->setClusterQueueName(targetCluster->queueName.get());
 
                 if (wu->getStateID() != WUStateRunning)
@@ -1537,9 +1512,10 @@ void CWsSMCEx::readWUsAndStateFromJobQueue(IEspContext& context, CIArrayOf<CWsSM
 }
 
 
-CWsSMCTargetCluster* CWsSMCEx::getWUClusterInfo(IEspContext& context, const char* wuid, bool isOnECLAgent, SCMStringBuffer& clusterName,
-        CIArrayOf<CWsSMCTargetCluster>& targetClusters, CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2)
+CWsSMCTargetCluster* CWsSMCEx::getWUClusterInfo(IEspContext& context, const char* wuid, bool isOnECLAgent, CIArrayOf<CWsSMCTargetCluster>& targetClusters,
+    CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2)
 {
+    SCMStringBuffer clusterName;
     try
     {
         CWUWrapper cwu(wuid, context);
