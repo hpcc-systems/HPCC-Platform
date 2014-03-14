@@ -503,7 +503,7 @@
         <?dbfo keep-together="always"?>
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Roxie
-        Clusrer – myroxie </emphasis><graphic
+        Cluster – myroxie </emphasis><graphic
         fileref="../../images/LDAP_007.jpg" vendor="configmgrSS" /></para>
 
         <para><orderedlist continuation="restarts" numeration="loweralpha">
@@ -552,5 +552,29 @@
           </tbody>
         </tgroup>
       </informaltable></para>
+
+    <sect3>
+      <title>Using the addScopes tool</title>
+
+      <para>When a new ESP user account is created, a private
+      “hpccinternal::&lt;user&gt;” file scope is also created granting new
+      users full access to that scope and restricting access to other users.
+      This file scope is used to store temporary HPCC files such as spill
+      files and temp files. </para>
+
+      <para>If you are enabling LDAP file scope security and already have user
+      accounts, you should run the addScopes utility program to create the
+      hpccinternal::&lt;user&gt; scope for those existing users. </para>
+
+      <para>Users which already have this scope defined are ignored and so it
+      can be used on both new and legacy ESP user accounts safely. </para>
+
+      <para>The tool is located in the <emphasis
+      role="bold">/opt/HPCCSystems/bin/</emphasis> folder and to run it you
+      must pass the location of <emphasis role="bold">daliconf.xml</emphasis>,
+      for example: </para>
+
+      <para><programlisting>/opt/HPCCSystems/bin/addScopes /var/lib/HPCCSystems/mydali/daliconf.xml</programlisting></para>
+    </sect3>
   </sect2>
 </sect1>
