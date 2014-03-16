@@ -385,6 +385,7 @@ public:
     virtual IPropertyTreeIterator *getElements(const char *xpath, IPTIteratorCodes flags = iptiter_null) const;
     virtual void localizeElements(const char *xpath, bool allTail=false);
     virtual bool hasChildren() const { return children && children->count()?true:false; }
+    virtual bool isArrayItem() const { return parent!=NULL; }
     virtual unsigned numUniq() { return checkChildren()?children->count():0; }  
     virtual unsigned numChildren();
     virtual bool isCaseInsensitive() { return isnocase(); }

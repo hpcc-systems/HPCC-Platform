@@ -597,12 +597,16 @@ function switchInputForm()
             <xsl:value-of select="concat('GetInputCtrlHtml(node=', $translated_name, ',fieldId=', $fieldId, ',collapsed=',  $collapsed, ')&lt;br/&gt;') "/>
         </xsl:if>
         <xsl:choose>
+            <xsl:when test="not($type) and not($cpxType)">
+                <xsl:text disable-output-escaping="yes"><![CDATA[<input type='checkbox' name=']]></xsl:text><xsl:value-of select="$fieldId"/><xsl:text disable-output-escaping="yes"><![CDATA['/>]]></xsl:text>
+            </xsl:when>
             <xsl:when test="starts-with($type, 'xsd:') or starts-with($type, 'xs:')">
                 <xsl:call-template name="GenXsdTypeHtml">
                     <xsl:with-param name="typeName" select="substring-after($type,':')"/>
                     <xsl:with-param name="fieldId" select="$fieldId"/>
                     <xsl:with-param name="value" select="$node/@default"/>
                     <xsl:with-param name="annot" select="$node/xsd:annotation/xsd:appinfo/form"/>
+                    <xsl:with-param name="maxoccurs" select="$node/@maxOccurs"/>
                 </xsl:call-template>
             </xsl:when>
             <xsl:when test="starts-with($type, 'tns:ArrayOf')">
@@ -801,12 +805,16 @@ function switchInputForm()
                     <xsl:when test="$schemaRoot/xsd:complexType[@name=$bareType]/xsd:all">
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:value-of select="concat('WARNING[1]: unknown type: ', $type, ',fieldId=',$fieldId)"/>
+                        <xsl:if test="$type">
+                            <xsl:value-of select="concat('WARNING[1]: unknown type: ', $type, ',fieldId=',$fieldId)"/>
+                        </xsl:if>
                     </xsl:otherwise>
                 </xsl:choose>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:value-of select="concat('WARNING[1]: unknown type: ', $type, ',fieldId=',$fieldId)"/>
+                <xsl:if test="$type">
+                    <xsl:value-of select="concat('WARNING[1]: unknown type: ', $type, ',fieldId=',$fieldId)"/>
+                </xsl:if>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
@@ -1067,6 +1075,7 @@ function switchInputForm()
         <xsl:param name="value"/>
         <xsl:param name="annot"/>
         <xsl:param name="field_len"/>
+        <xsl:param name="maxoccurs"/>
         <xsl:choose>
             <!-- string -->
             <xsl:when test="$typeName='string'">
@@ -1074,6 +1083,9 @@ function switchInputForm()
                     <xsl:choose>
                         <xsl:when test="$annot/@formRows">
                             <xsl:value-of select="$annot/@formRows"/>
+                        </xsl:when>
+                        <xsl:when test="$maxoccurs='unbounded'">
+                            <xsl:number value="4"/>
                         </xsl:when>
                         <xsl:otherwise>0</xsl:otherwise>
                     </xsl:choose>
@@ -1092,12 +1104,16 @@ function switchInputForm()
                 <xsl:choose>
                     <!-- use text area for string type -->
                     <xsl:when test="number($inputRows)">
+                        <xsl:if test="$maxoccurs='unbounded'">
+                            <xsl:text disable-output-escaping="yes"><![CDATA[[Enter one item per line]<br/>]]></xsl:text>
+                        </xsl:if>
                         <xsl:text disable-output-escaping="yes"><![CDATA[<textarea rows=']]></xsl:text>
                         <xsl:value-of select="$inputRows"/>
                         <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
                         <xsl:value-of select="$inputCols"/>
                         <xsl:text disable-output-escaping="yes"><![CDATA[' name=']]></xsl:text>
                         <xsl:value-of select="$fieldId"/>
+                        <xsl:if test="$maxoccurs='unbounded'">$</xsl:if>
                         <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
                         <xsl:value-of select="$fieldId"/>
                         <xsl:text disable-output-escaping="yes"><![CDATA['>]]></xsl:text>
@@ -1153,22 +1169,61 @@ function switchInputForm()
                         <xsl:otherwise>20</xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
-                <xsl:text disable-output-escaping="yes"><![CDATA[<input type='text' name=']]></xsl:text>
-                <xsl:value-of select="$fieldId"/>
-                <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
-                <xsl:value-of select="$fieldId"/>
+                <xsl:variable name="inputRows">
+                    <xsl:choose>
+                        <xsl:when test="$maxoccurs='unbounded'">
+                            <xsl:number value="4"/>
+                        </xsl:when>
+                        <xsl:otherwise>0</xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
                 <xsl:choose>
-                    <xsl:when test="not($noDefaultValue) and $value">
-                        <xsl:text disable-output-escaping="yes"><![CDATA[' value=']]></xsl:text>
-                        <xsl:value-of select="$value"/>
+                    <!-- use text area for string type -->
+                    <xsl:when test="number($inputRows)">
+                        <xsl:if test="$maxoccurs='unbounded'">
+                            <xsl:text disable-output-escaping="yes"><![CDATA[[Enter one item per line]<br/>]]></xsl:text>
+                        </xsl:if>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[<textarea rows=']]></xsl:text>
+                        <xsl:value-of select="$inputRows"/>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' cols=']]></xsl:text>
+                        <xsl:value-of select="$inputCols"/>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' name=']]></xsl:text>
+                        <xsl:value-of select="$fieldId"/>
+                        <xsl:if test="$maxoccurs='unbounded'">$</xsl:if>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
+                        <xsl:value-of select="$fieldId"/>
+                        <xsl:text disable-output-escaping="yes"><![CDATA['>]]></xsl:text>
+                        <xsl:choose>
+                            <xsl:when test="not($noDefaultValue) and $value">
+                                <xsl:value-of select="$value"/>
+                            </xsl:when>
+                            <xsl:when test="$set_ctrl_value">
+                                <xsl:value-of select="$fieldId"/>
+                            </xsl:when>
+                        </xsl:choose>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[</textarea>]]></xsl:text>
                     </xsl:when>
-                    <xsl:when test="$set_ctrl_value">
-                        <xsl:text disable-output-escaping="yes"><![CDATA[' value='12]]></xsl:text>
-                    </xsl:when>
+                    <!-- use input for string type -->
+                    <!-- -->
+                    <xsl:otherwise>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[<input type='text' name=']]></xsl:text>
+                        <xsl:value-of select="$fieldId"/>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
+                        <xsl:value-of select="$fieldId"/>
+                        <xsl:choose>
+                            <xsl:when test="not($noDefaultValue) and $value">
+                                <xsl:text disable-output-escaping="yes"><![CDATA[' value=']]></xsl:text>
+                                <xsl:value-of select="$value"/>
+                            </xsl:when>
+                            <xsl:when test="$set_ctrl_value">
+                                <xsl:text disable-output-escaping="yes"><![CDATA[' value='12]]></xsl:text>
+                            </xsl:when>
+                        </xsl:choose>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' size=']]></xsl:text>
+                        <xsl:value-of select="$inputCols"/>
+                        <xsl:text disable-output-escaping="yes"><![CDATA[' ></input>]]></xsl:text>
+                    </xsl:otherwise>
                 </xsl:choose>
-                <xsl:text disable-output-escaping="yes"><![CDATA[' size=']]></xsl:text>
-                <xsl:value-of select="$inputCols"/>
-                <xsl:text disable-output-escaping="yes"><![CDATA[' ></input>]]></xsl:text>
             </xsl:when>
             <!-- boolean -->
             <xsl:when test="$typeName='boolean'">

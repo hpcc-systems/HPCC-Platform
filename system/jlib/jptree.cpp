@@ -5448,6 +5448,237 @@ void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, byte
     toXML(tree, stream, indent, flags);
 }
 
+/////////////////////////
+
+void checkWriteJSONDelimiter(IIOStream &out, bool &delimit)
+{
+    if (delimit)
+        writeCharToStream(out, ',');
+    delimit = false;
+}
+
+static void writeJSONNameToStream(IIOStream &out, const char *name, unsigned indent, bool &delimit)
+{
+    if (!name || !*name)
+        return;
+    checkWriteJSONDelimiter(out, delimit);
+    if (indent)
+    {
+        writeCharToStream(out, '\n');
+        writeCharsNToStream(out, ' ', indent);
+    }
+    else
+        writeCharToStream(out, ' ');
+
+    writeCharToStream(out, '"');
+    writeStringToStream(out, name);
+    writeStringToStream(out, "\": ");
+    delimit = false;
+}
+
+static void writeJSONValueToStream(IIOStream &out, const char *val, bool &delimit, bool hidden=false)
+{
+    checkWriteJSONDelimiter(out, delimit);
+    delimit = true;
+    if (!val)
+    {
+        writeStringToStream(out, "null");
+        return;
+    }
+    writeCharToStream(out, '"');
+    if (hidden)
+        writeCharsNToStream(out, '*', strlen(val));
+    else
+        writeStringToStream(out, val);
+    writeCharToStream(out, '"');
+}
+
+static void writeJSONBase64ValueToStream(IIOStream &out, const char *val, size32_t len, bool &delimit)
+{
+    checkWriteJSONDelimiter(out, delimit);
+    delimit = true;
+    if (!val)
+    {
+        writeStringToStream(out, "null");
+        return;
+    }
+    writeCharToStream(out, '"');
+    JBASE64_Encode(val, len, out);
+    writeCharToStream(out, '"');
+}
+
+static void checkWriteJSONCloseArrayToStream(IIOStream &out, StringAttr &prevItem, const char *name, bool format, unsigned &indent, bool &delimit)
+{
+    if (prevItem.isEmpty())
+        return;
+    if (!name || !streq(prevItem, name))
+    {
+        if (format)
+        {
+            writeCharToStream(out, '\n');
+            writeCharsNToStream(out, ' ', indent);
+            indent--;
+        }
+        writeCharToStream(out, ']');
+        prevItem.clear();
+        delimit = true;
+    }
+}
+
+static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags, bool &delimit, bool root=false)
+{
+    Owned<IAttributeIterator> it = tree->getAttributes(true);
+    bool hasAttributes = it->first();
+    bool complex = (hasAttributes || tree->hasChildren());
+    bool isBinary = tree->isBinary(NULL);
+    bool isItem = tree->isArrayItem();
+
+    const char *name = tree->queryName();
+    if (!root && !isItem)
+    {
+        if (!name || !*name)
+            name = "__unnamed__";
+        writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
+    }
+
+    checkWriteJSONDelimiter(out, delimit);
+
+    if (isItem && (flags & JSON_Format))
+    {
+        writeCharToStream(out, '\n');
+        writeCharsNToStream(out, ' ', indent);
+    }
+
+    if (root || complex)
+    {
+        writeCharToStream(out, '{');
+        delimit = false;
+    }
+
+    if (hasAttributes)
+    {
+        ForEach(*it)
+        {
+            const char *key = it->queryName();
+            if (!isBinary || stricmp(key, "@xsi:type")!=0)
+            {
+                const char *val = it->queryValue();
+                if (val)
+                {
+                    writeJSONNameToStream(out, key, (flags & JSON_Format) ? indent+1 : 0, delimit);
+                    if (flags & JSON_SanitizeAttributeValues)
+                    {
+                        bool hide = !(streq(val, "0") || streq(val, "1") || strieq(val, "true") || strieq(val, "false") || strieq(val, "yes") || strieq(val, "no"));
+                        writeJSONValueToStream(out, val, delimit, hide);
+                    }
+                    else
+                    {
+                        StringBuffer encoded;
+                        encodeJSON(encoded, val);
+                        writeJSONValueToStream(out, encoded.str(), delimit);
+                    }
+                }
+            }
+        }
+    }
+    MemoryBuffer thislevelbin;
+    StringBuffer _thislevel;
+    const char *thislevel = NULL; // to avoid uninitialized warning
+    bool empty;
+    if (isBinary)
+    {
+        empty = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
+    }
+    else
+    {
+        if (tree->isCompressed(NULL))
+        {
+            empty = false; // can't be empty if compressed;
+            verifyex(tree->getProp(NULL, _thislevel));
+            thislevel = _thislevel.toCharArray();
+        }
+        else
+            empty = (NULL == (thislevel = tree->queryProp(NULL)));
+    }
+
+    if (empty && !complex)
+    {
+        writeJSONValueToStream(out, NULL, delimit);
+        return;
+    }
+
+    Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & JSON_SortTags) ? iptiter_sort : iptiter_null);
+    StringAttr lastArrayItem;
+    ForEach(*sub)
+    {
+        IPropertyTree &element = sub->query();
+        const char *name = element.queryName();
+        checkWriteJSONCloseArrayToStream(out, lastArrayItem, name, (flags & JSON_Format), indent, delimit);
+
+        if (element.isArrayItem() && lastArrayItem.isEmpty())
+        {
+            if (flags & JSON_Format)
+                indent++;
+            writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
+            writeCharToStream(out, '[');
+            lastArrayItem.set(name);
+        }
+
+        _toJSON(&sub->query(), out, indent+1, flags, delimit);
+    }
+
+    checkWriteJSONCloseArrayToStream(out, lastArrayItem, NULL, (flags & JSON_Format), indent, delimit);
+
+    if (!empty)
+    {
+        if (complex)
+            writeJSONNameToStream(out, "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
+        if (isBinary)
+            writeJSONBase64ValueToStream(out, thislevelbin.toByteArray(), thislevelbin.length(), delimit);
+        else
+        {
+            // NOTE - JSON_Sanitize won't output anything for binary.... is that ok?
+            bool hide = (flags & JSON_Sanitize) && thislevel && !(streq(thislevel, "0") || streq(thislevel, "1") || strieq(thislevel, "true") || strieq(thislevel, "false") || strieq(thislevel, "yes") || strieq(thislevel, "no"));
+            writeJSONValueToStream(out, thislevel, delimit, hide);
+        }
+    }
+
+    if (root || complex)
+    {
+        if (flags & JSON_Format)
+        {
+            writeCharToStream(out, '\n');
+            writeCharsNToStream(out, ' ', indent);
+        }
+        writeCharToStream(out, '}');
+        delimit = true;
+    }
+}
+
+jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, byte flags)
+{
+    class CAdapter : public CInterface, implements IIOStream
+    {
+        StringBuffer &out;
+    public:
+        IMPLEMENT_IINTERFACE;
+        CAdapter(StringBuffer &_out) : out(_out) { }
+        virtual void flush() { }
+        virtual size32_t read(size32_t len, void * data) { UNIMPLEMENTED; return 0; }
+        virtual size32_t write(size32_t len, const void * data) { out.append(len, (const char *)data); return len; }
+    } adapter(ret);
+    bool delimit = false;
+    _toJSON(tree->queryBranch(NULL), adapter, indent, flags, delimit, true);
+    return ret;
+}
+
+void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags)
+{
+    bool delimit = false;
+    _toJSON(tree, out, indent, flags, delimit, true);
+}
+
+
 static inline void skipWS(const char *&xpath)
 {
     while (isspace(*xpath)) xpath++;

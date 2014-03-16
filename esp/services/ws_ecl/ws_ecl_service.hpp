@@ -162,13 +162,14 @@ public:
     int getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *formtype, WsEclWuInfo &wsinfo);
     int getXmlTestForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, const char *formtype);
 
-    void getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags);
+    void getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags, bool validate);
     void buildSampleResponseXml(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo);
-    void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, unsigned flags);
+    void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, unsigned flags, bool validate);
     int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  WsEclWuInfo &wsinfo);
     int onSubmitQueryOutput(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsEclWuInfo &wsinfo, const char *format);
     int onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
 
+    int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, IPropertyTree *reqTree, StringBuffer &out, unsigned flags, TextMarkupFormat fmt=MarkupFmt_XML, const char *viewname=NULL, const char *xsltname=NULL);
     int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, TextMarkupFormat fmt=MarkupFmt_XML, const char *viewname=NULL, const char *xsltname=NULL);
 
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
