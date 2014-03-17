@@ -737,18 +737,32 @@ class CCompilerWorker : public CInterface, implements IPooledThread
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCompilerWorker(CppCompiler * _compiler) : compiler(_compiler)  {}
+    CCompilerWorker(CppCompiler * _compiler, bool _okToAbort) : compiler(_compiler), okToAbort(_okToAbort)
+    {
+        handle = 0;
+        aborted = false;
+    }
     bool canReuse()             { return true; }
-    bool stop()                 { return true; }
+    bool stop()
+    {
+        if (okToAbort)
+            interrupt_program(handle, true);
+        aborted = true;
+        return true;
+    }
     void init(void *_params)    { params.set((CCompilerThreadParam *)_params); }
 
     void main()
     {
         DWORD runcode = 0;
         bool success;
+        aborted = false;
+        handle = 0;
         try
         {
-            success = invoke_program(params->cmdline, runcode, true, params->logfile) && (runcode == 0);
+            success = invoke_program(params->cmdline, runcode, false, params->logfile, &handle, false, okToAbort);
+            if (success)
+                wait_program(handle, runcode, true);
         }
         catch(IException* e)
         {
@@ -759,8 +773,9 @@ public:
                 PrintLog("%s", sb.str());
             success = false;
         }
+        handle = 0;
 
-        if (!success)
+        if (!success || aborted)
             atomic_inc(&compiler->numFailed);
         params->finishedCompiling.signal();
         return;
@@ -769,9 +784,12 @@ public:
 private:
     CppCompiler * compiler;
     Owned<CCompilerThreadParam> params;
+    HANDLE handle;
+    bool aborted;
+    bool okToAbort;
 };
 
 IPooledThread *CppCompiler::createNew()
 {
-    return new CCompilerWorker(this);
+    return new CCompilerWorker(this, (abortChecker != NULL));
 }

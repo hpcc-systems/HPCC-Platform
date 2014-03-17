@@ -264,11 +264,7 @@ public:
                         while (!wait_program(h,runcode,false)) {
                             stopsem.wait(1000*60);
                             if (stopped) {
-#ifdef _WIN32
-                                interrupt_program(h);
-#else
-                                interrupt_program(h,SIGINT);
-#endif
+                                interrupt_program(h, false);
                                 break;
                             }
                             PROGLOG("COALESCER running");
