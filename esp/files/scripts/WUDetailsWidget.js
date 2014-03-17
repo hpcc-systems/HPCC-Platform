@@ -88,8 +88,6 @@ define([
         graphsWidgetLoaded: false,
         vizWidget: null,
         vizWidgetLoaded: false,
-        sourceWidget: null,
-        sourceWidgetLoaded: false,
         logsWidget: null,
         logsWidgetLoaded: false,
         playgroundWidget: null,
@@ -117,7 +115,6 @@ define([
             this.vizWidget = registry.byId(this.id + "_Visualize");
             this.timersWidget = registry.byId(this.id + "_Timers");
             this.graphsWidget = registry.byId(this.id + "_Graphs");
-            this.sourceWidget = registry.byId(this.id + "_Source");
             this.logsWidget = registry.byId(this.id + "_Logs");
             this.playgroundWidget = registry.byId(this.id + "_Playground");
             this.xmlWidget = registry.byId(this.id + "_XML");
@@ -274,11 +271,6 @@ define([
             } else if (currSel.id == this.vizWidget.id && !this.vizWidgetLoaded) {
                 this.vizWidgetLoaded = true;
                 this.vizWidget.init({
-                    Wuid: this.wu.Wuid
-                });
-            } else if (currSel.id == this.sourceWidget.id && !this.sourceWidgetLoaded) {
-                this.sourceWidgetLoaded = true;
-                this.sourceWidget.init({
                     Wuid: this.wu.Wuid
                 });
             } else if (currSel.id == this.logsWidget.id && !this.logsWidgetLoaded) {
