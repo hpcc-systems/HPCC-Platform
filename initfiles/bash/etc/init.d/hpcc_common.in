@@ -379,7 +379,8 @@ createRuntime() {
     # setting up ulimit for thor and other component which needs it.
     ulimit -n 32768
     ulimit -c unlimited
-
+    # for rtprio in Roxie
+    ulimit -Hr 4
 }
 
 start_dafilesrv() {
