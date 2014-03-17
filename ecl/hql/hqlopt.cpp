@@ -282,15 +282,8 @@ IHqlExpression * CTreeOptimizer::swapNodeWithChild(IHqlExpression * parent)
 IHqlExpression * CTreeOptimizer::forceSwapNodeWithChild(IHqlExpression * parent)
 {
     OwnedHqlExpr swapped = swapNodeWithChild(parent);
-    return replaceOwnedAttribute(swapped, getNoHoistAttr());
-}
-
-IHqlExpression * CTreeOptimizer::getNoHoistAttr()
-{
-    //Ensure the attribute is unique for each call to the optimizer - otherwise it stops items being hoisted that could be.
-    if (!noHoistAttr)
-        noHoistAttr.setown(createAttribute(_noHoist_Atom, createUniqueId()));
-    return LINK(noHoistAttr);
+    queryBodyExtra(swapped)->setStopHoist();
+    return swapped.getClear();
 }
 
 IHqlExpression * CTreeOptimizer::swapNodeWithChild(IHqlExpression * parent, unsigned childIndex)
@@ -1560,6 +1553,10 @@ IHqlExpression * CTreeOptimizer::inheritUsage(IHqlExpression * newExpr, IHqlExpr
 {
     OptTransformInfo * newExtra = queryBodyExtra(newExpr);
     OptTransformInfo * oldExtra = queryBodyExtra(oldExpr);
+
+    if (oldExtra->getStopHoist())
+        newExtra->setStopHoist();
+
 #ifdef TRACE_USAGE
     if (newExpr->isDataset() || newExpr->isDatarow())
         DBGLOG("%lx inherit %d,%d (from %lx) [%s]", (unsigned)newExpr, newExtra->useCount, oldExtra->useCount, (unsigned)oldExpr, queryNode0Text(newExpr));
@@ -1736,7 +1733,7 @@ bool CTreeOptimizer::childrenAreShared(IHqlExpression * expr)
 
 bool CTreeOptimizer::isWorthMovingProjectOverLimit(IHqlExpression * project)
 {
-    if (noHoistAttr && project->queryAttribute(_noHoist_Atom) == noHoistAttr)
+    if (queryBodyExtra(project)->getStopHoist())
         return false;
 
     IHqlExpression * expr = project->queryChild(0);
