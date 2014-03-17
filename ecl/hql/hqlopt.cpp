@@ -320,26 +320,40 @@ IHqlExpression * CTreeOptimizer::swapIntoIf(IHqlExpression * expr, bool force)
     OwnedHqlExpr newLeft = replaceChildDataset(body, left, 0);
     OwnedHqlExpr newRight = replaceChildDataset(body, right, 0);
 
-    OwnedHqlExpr transformedLeft = transform(newLeft);
-    OwnedHqlExpr transformedRight = transform(newRight);
+    HqlExprArray args;
+    args.append(*LINK(cond));
+    args.append(*LINK(newLeft));
+    args.append(*LINK(newRight));
+    OwnedHqlExpr newIf = child->clone(args);
 
-    //Don't bother moving the condition over the if if it doesn't improve the code elsewhere
-    if (force || (newLeft != transformedLeft) || (newRight != transformedRight))
+    if (!alreadyHasUsage(newIf))
+    {
+        incUsage(newLeft);
+        incUsage(newRight);
+    }
+
+    OwnedHqlExpr transformedIf = transform(newIf);
+    if (force || (newIf != transformedIf))
     {
         //Need to call dec on all expressions that are no longer used... left and right still used by newLeft/newRight
+        if (!alreadyHasUsage(newIf))
+        {
+            //This may possibly leave left/right linked once if transformed(newLeft) doesn't use left any more.
+            //But a recursiveDecUsage could cause too much to be decremented.
+            if (newLeft != transformedIf->queryChild(1))
+                decUsage(newLeft);
+            if (newRight != transformedIf->queryChild(2))
+                decUsage(newRight);
+        }
         noteUnused(child);
         DBGLOG("Optimizer: Swap %s and %s", queryNode0Text(expr), queryNode1Text(child));
-        HqlExprArray args;
-        args.append(*LINK(cond));
-        args.append(*LINK(transformedLeft));
-        args.append(*LINK(transformedRight));
-        OwnedHqlExpr ret = child->clone(args);
-        if (!alreadyHasUsage(ret))
-        {
-            incUsage(transformedLeft);
-            incUsage(transformedRight);
-        }
-        return ret.getClear();
+        return transformedIf.getClear();
+    }
+
+    if (!alreadyHasUsage(newIf))
+    {
+        decUsage(newLeft);
+        decUsage(newRight);
     }
     return LINK(expr);
 }
@@ -1464,6 +1478,9 @@ IHqlExpression * CTreeOptimizer::optimizeProjectInlineTable(IHqlExpression * tra
         if (!next || monitor.isComplex())
             return NULL;
 
+        if (onlyFoldConstant)
+            next.setown(foldScopedHqlExpression(NULL, next));
+
         if (onlyFoldConstant && !isConstantTransform(next))
             return NULL;
         newValues.append(*ensureTransformType(next, no_transform));
@@ -1905,8 +1922,8 @@ ANewTransformInfo * CTreeOptimizer::createTransformInfo(IHqlExpression * expr)
 IHqlExpression * CTreeOptimizer::expandFields(TableProjectMapper * mapper, IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset, IExpandCallback * _expandCallback)
 {
     OwnedHqlExpr expandedFilter = mapper->expandFields(expr, oldDataset, newDataset, _expandCallback);
-    if (options & HOOfold)
-        expandedFilter.setown(foldHqlExpression(expandedFilter));
+    //There used to be code to constant fold filters here - but it can cause dataset expressions to become duplicated
+    //causing code to be duplicated.  Only fold expressions that are reduced to constants.
     return expandedFilter.getClear();
 }
 
@@ -3840,10 +3857,12 @@ IHqlExpression * optimizeHqlExpression(IHqlExpression * expr, unsigned options)
     unwindCommaCompound(args, expr);
     optimizeHqlExpression(newArgs, args, options);
     OwnedHqlExpr optimized = createActionList(newArgs);
+
+    if (expr == optimized)
+        return optimized.getClear();
+
     //If the graph was optimized then it is highly likely there are now constant folding opportunities
-    if (expr != optimized)
-        return foldHqlExpression(optimized);
-    return optimized.getClear();
+    return foldHqlExpression(optimized);
 }
 
 
