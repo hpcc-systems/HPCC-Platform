@@ -207,8 +207,8 @@ bool CseSpotterInfo::useInverseForAlias()
 
 
 static HqlTransformerInfo cseSpotterInfo("CseSpotter");
-CseSpotter::CseSpotter() 
-: NewHqlTransformer(cseSpotterInfo)
+CseSpotter::CseSpotter(bool _spotCseInIfDatasetConditions)
+: NewHqlTransformer(cseSpotterInfo), spotCseInIfDatasetConditions(_spotCseInIfDatasetConditions)
 {
     canAlias = true;
     isAssociated = false;
@@ -288,7 +288,7 @@ void CseSpotter::analyseExpr(IHqlExpression * expr)
         extra->canAlias = true;
 
     bool savedCanAlias = canAlias;
-    if (expr->isDataset() && (op != no_select))// && (op != no_if))
+    if (expr->isDataset() && (op != no_select) && (!spotCseInIfDatasetConditions || (op != no_if)))
     {
         //There is little point looking for CSEs within dataset expressions, because only a very small
         //minority which would correctly cse, and it can cause lots of problems - e.g., join conditions.
@@ -1113,7 +1113,7 @@ ANewTransformInfo * CseScopeTransformer::createTransformInfo(IHqlExpression * ex
 #endif
 
 
-IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit)
+IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit, bool spotCseInIfDatasetConditions)
 {
     if (expr->isConstant())
         return LINK(expr);
@@ -1130,7 +1130,7 @@ IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit)
     bool addedAliases = false;
     //First spot the aliases - so that restructuring the ands doesn't lose any existing aliases.
     {
-        CseSpotter spotter;
+        CseSpotter spotter(spotCseInIfDatasetConditions);
         spotter.analyse(transformed, 0);
         if (spotter.foundCandidates())
         {
@@ -1167,9 +1167,9 @@ IHqlExpression * spotScalarCSE(IHqlExpression * expr, IHqlExpression * limit)
 }
 
 
-void spotScalarCSE(SharedHqlExpr & expr, SharedHqlExpr & associated, IHqlExpression * limit, IHqlExpression * invariantSelector)
+void spotScalarCSE(SharedHqlExpr & expr, SharedHqlExpr & associated, IHqlExpression * limit, IHqlExpression * invariantSelector, bool spotCseInIfDatasetConditions)
 {
-    CseSpotter spotter;
+    CseSpotter spotter(spotCseInIfDatasetConditions);
     spotter.analyse(expr, 0);
     if (associated)
         spotter.analyseAssociated(associated, 0);
@@ -1184,9 +1184,9 @@ void spotScalarCSE(SharedHqlExpr & expr, SharedHqlExpr & associated, IHqlExpress
 }
 
 
-void spotScalarCSE(HqlExprArray & exprs, HqlExprArray & associated, IHqlExpression * limit, IHqlExpression * invariantSelector)
+void spotScalarCSE(HqlExprArray & exprs, HqlExprArray & associated, IHqlExpression * limit, IHqlExpression * invariantSelector, bool spotCseInIfDatasetConditions)
 {
-    CseSpotter spotter;
+    CseSpotter spotter(spotCseInIfDatasetConditions);
     spotter.analyseArray(exprs, 0);
     ForEachItemIn(ia, associated)
         spotter.analyseAssociated(&associated.item(ia), 0);
