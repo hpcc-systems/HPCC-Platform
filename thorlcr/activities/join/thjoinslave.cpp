@@ -234,14 +234,13 @@ public:
         Linked<IRowInterfaces> primaryRowIf, secondaryRowIf;
 
         StringAttr primaryInputStr, secondaryInputStr;
-        bool &secondaryInputStopped = rightInputStopped;
-        bool &primaryInputStopped = leftInputStopped;
+        bool *secondaryInputStopped, *primaryInputStopped;
         if (rightpartition)
         {
             primaryInput.set(inputs.item(1));
             secondaryInput.set(inputs.item(0));
-            secondaryInputStopped = leftInputStopped;
-            primaryInputStopped = rightInputStopped;
+            secondaryInputStopped = &leftInputStopped;
+            primaryInputStopped = &rightInputStopped;
             primaryInputStr.set("R");
             secondaryInputStr.set("L");
         }
@@ -249,6 +248,8 @@ public:
         {
             primaryInput.set(inputs.item(0));
             secondaryInput.set(inputs.item(1));
+            secondaryInputStopped = &rightInputStopped;
+            primaryInputStopped = &leftInputStopped;
             primaryInputStr.set("L");
             secondaryInputStr.set("R");
         }
@@ -258,11 +259,11 @@ public:
                                                     false, RCUNBOUND, this, false, &container.queryJob().queryIDiskUsage()));
         ActPrintLog("JOIN: Starting %s then %s", secondaryInputStr.get(), primaryInputStr.get());
         startInput(secondaryInput);
-        secondaryInputStopped = false;
+        *secondaryInputStopped = false;
         try
         {
             startInput(primaryInput);
-            primaryInputStopped = false;
+            *primaryInputStopped = false;
         }
         catch (IException *e)
         {
