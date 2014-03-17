@@ -22,6 +22,13 @@
                                 <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                     <input id="${id}Jobname2" title="${i18n.JobName}:" colspan="2" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
                                      <input id="${id}RemoteDali" title="${i18n.RemoteDali}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
+                                     <select id="${id}Priority" title="${i18n.Priority}:" colspan="2" data-dojo-type="dijit.form.Select">
+                                        <option value="" selected="selected">${i18n.None}</option>
+                                        <option value="SLA">${i18n.SLA}</option>
+                                        <option value="Low">${i18n.Low}</option>
+                                        <option value="High">${i18n.High}</option>
+                                    </select>
+                                     <input id="${id}Comment" title="${i18n.Comment}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
                                     <button type="submit" data-dojo-attach-event="onClick:_onPublish" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>
@@ -40,20 +47,20 @@
                     </h2>
                     <form id="${id}SummaryForm">
                         <ul>
-                            <li> 
+                            <li>
                                 <label class="Prompt" for="Action">${i18n.Action}:</label>
                                 <div id="${id}Action"></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="State">${i18n.State}:</label>
-                                <div id="${id}State"></div>                         
+                                <div id="${id}State"></div>
                             </li>
                             <li>
                                 <label class="Prompt" for="Owner">${i18n.Owner}:</label>
                                 <div id="${id}Owner"></div>
                             </li>
                             <li>
-                                <label class="Prompt" for="Scope">${i18n.Scope}:</label>  
+                                <label class="Prompt" for="Scope">${i18n.Scope}:</label>
                                 <div id="${id}Scope"></div>
                             </li>
                             <li>
@@ -72,7 +79,7 @@
                                 <label class="Prompt" for="Cluster">${i18n.Cluster}:</label>
                                 <div id="${id}Cluster"></div>
                             </li>
-                            <li>    
+                            <li>
                                 <label class="Prompt" for="Duration">${i18n.Duration}:</label>
                                 <div id="${id}Time"></div>
                             </li>
