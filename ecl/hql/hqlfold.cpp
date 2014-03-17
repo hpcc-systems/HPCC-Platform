@@ -1532,15 +1532,17 @@ static bool hashElement(node_operator op, IHqlExpression * expr, unsigned __int6
     ITypeInfo * type = value->queryType();
     switch (type->getTypeCode())
     {
+        case type_qstring:
         case type_string:
             {
-                const char * cdata = static_cast<const char *>(value->queryValue());
-                size32_t len = rtlTrimStrLen(type->getStringLen(), cdata);
+                Owned<ITypeInfo> unknownLengthString = makeStringType(UNKNOWN_LENGTH);
+                Owned<IValue> castValue = value->castTo(unknownLengthString);
+                const char * cdata = static_cast<const char *>(castValue->queryValue());
+                size32_t len = rtlTrimStrLen(castValue->queryType()->getStringLen(), cdata);
                 hashCode = (op == no_hash32) ? rtlHash32Data(len, cdata, (unsigned)hashCode) : rtlHash64Data(len, cdata, hashCode);
                 return true;
             }
         case type_data:
-        case type_qstring:
             {
                 size32_t len = type->getSize();
                 const char * cdata = static_cast<const char *>(value->queryValue());
