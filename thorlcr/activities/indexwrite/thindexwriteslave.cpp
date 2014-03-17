@@ -199,7 +199,9 @@ public:
         buildUserMetadata(metadata);                
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, fileSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount));
+
+        bool legacyCompat = getOptBool(THOROPT_KEYBUILD_LEGACYCOMPAT, true);
+        builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, fileSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount, legacyCompat));
     }
 
 
