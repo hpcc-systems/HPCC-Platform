@@ -6665,7 +6665,7 @@ protected:
 };
 
 
-void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr)
+void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLErrorArray & orphanedWarnings)
 {
     if (!errs || !expr)
         return;
@@ -6680,6 +6680,12 @@ void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr)
     //Now walk all expressions, outputting warnings and processing local onWarnings
     WarningCollectingTransformer warningCollector(*globalOnWarning);
     warningCollector.analyse(expr);
+
+    ForEachItemIn(i, orphanedWarnings)
+    {
+        Owned<IECLError> mappedError = globalOnWarning->mapError(&orphanedWarnings.item(i));
+        globalOnWarning->report(mappedError);
+    }
 }
 
 

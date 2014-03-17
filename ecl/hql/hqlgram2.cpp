@@ -263,6 +263,24 @@ bool HqlGramCtx::hasAnyActiveParameters()
     return false;
 }
 
+
+static IECLError * createErrorVA(ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args)
+{
+    StringBuffer msg;
+    msg.valist_appendf(format, args);
+    return createECLError(severity, errNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
+}
+
+static IECLError * createError(ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    IECLError * error = createErrorVA(severity, errNo, pos, format, args);
+    va_end(args);
+    return error;
+}
+
+
 void HqlGram::gatherActiveParameters(HqlExprCopyArray & target)
 {
     ForEachItemIn(i2, defineScopes)
@@ -5793,12 +5811,10 @@ void HqlGram::reportMacroExpansionPosition(int errNo, HqlLex * lexer, bool isErr
         doReportWarning(errNo, s.str(), lexer->querySourcePath()->str(), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
     expandingMacroPosition = false;
 }
-    
+
 void HqlGram::reportErrorVa(int errNo, const ECLlocation & pos, const char* format, va_list args)
 {
-    StringBuffer msg;
-    msg.valist_appendf(format, args);
-    Owned<IECLError> error = createECLError(errNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
+    Owned<IECLError> error = createErrorVA(SeverityFatal, errNo, pos, format, args);
     report(error);
 }
 
@@ -5815,13 +5831,25 @@ void HqlGram::reportWarning(int warnNo, const ECLlocation & pos, const char* for
 {
     if (errorHandler && !errorDisabled)
     {
+        va_list args;
+        va_start(args, format);
+        Owned<IECLError> error = createErrorVA(SeverityWarning, warnNo, pos, format, args);
+        va_end(args);
+
+        report(error);
+    }
+}
+
+void HqlGram::reportWarning(ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...)
+{
+    if (errorHandler && !errorDisabled)
+    {
         StringBuffer msg;
         va_list args;
         va_start(args, format);
-        msg.valist_appendf(format, args);
+        Owned<IECLError> error = createErrorVA(severity, warnNo, pos, format, args);
         va_end(args);
 
-        Owned<IECLError> error = createECLError(SeverityWarning, warnNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
         report(error);
     }
 }
@@ -5831,9 +5859,7 @@ void HqlGram::reportWarningVa(int warnNo, const attribute& a, const char* format
     const ECLlocation & pos = a.pos;
     if (errorHandler && !errorDisabled)
     {
-        StringBuffer msg;
-        msg.valist_appendf(format, args);
-        Owned<IECLError> error = createECLError(SeverityWarning, warnNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
+        Owned<IECLError> error = createErrorVA(SeverityWarning, warnNo, pos, format, args);
         report(error);
     }
 }
@@ -8880,8 +8906,16 @@ bool HqlGram::okToAddSideEffects(IHqlExpression * expr)
                 return false;
 
             type_t etc = type->getTypeCode();
-            if ((etc == type_pattern) || (etc == type_rule) || (etc == type_token) || (etc == type_feature) || (etc == type_event))
+            switch (etc)
+            {
+            case type_pattern:
+            case type_rule:
+            case type_token:
+            case type_feature:
+            case type_event:
+            case type_scope: // Tend to get lost!
                 return false;
+            }
             break;
         }
     }
@@ -8896,7 +8930,19 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
         {
             if (okToAddSideEffects(expr))
                 return addSideEffects(expr);
-            reportError(ERR_RESULT_IGNORED, errpos, "Cannot associate a side effect with this type of definition - action must precede an expression");
+            if (errorHandler && !errorDisabled)
+            {
+                if (expr->isScope())
+                {
+                    Owned<IECLError> error = createError(SeverityError, ERR_RESULT_IGNORED_SCOPE, errpos, "Cannot associate a side effect with a module - action will be lost");
+                    //Unusual processing.  Create a warning and save it in the parse context
+                    //The reason is that this error is reporting "the associated side-effects will be lost" - but
+                    //the same will apply to the warning, and if it's lost there will be no way to report it later...
+                    lookupCtx.queryParseContext().orphanedWarnings.append(*error.getClear());
+                }
+                else
+                    reportError(ERR_RESULT_IGNORED, errpos, "Cannot associate a side effect with this type of definition - action must precede an expression");
+            }
         }
         else
         {

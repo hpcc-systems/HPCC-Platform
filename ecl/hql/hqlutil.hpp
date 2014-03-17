@@ -725,6 +725,6 @@ protected:
 };
 
 extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch);
-extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr);
+extern HQL_API void gatherParseWarnings(IErrorReceiver * errs, IHqlExpression * expr, IECLErrorArray & warnings);
 
 #endif
