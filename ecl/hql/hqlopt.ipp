@@ -32,6 +32,9 @@ class OptTransformInfo : public NewTransformInfo
 public:
     OptTransformInfo(IHqlExpression * _expr) : NewTransformInfo(_expr) { useCount = 0; }
 
+    bool getStopHoist() { return spareByte1; }
+    void setStopHoist() { spareByte1 = true; }
+
 public:
     unsigned useCount;
 };
@@ -117,8 +120,6 @@ protected:
     inline const char * queryNode0Text(IHqlExpression * expr) { return queryChildNodeTraceText(nodeText[0], expr); }
     inline const char * queryNode1Text(IHqlExpression * expr) { return queryChildNodeTraceText(nodeText[1], expr); }
 
-    IHqlExpression * getNoHoistAttr();
-
     inline bool isAlwaysLocal() const { return (options & HOOalwayslocal) != 0; }
 
 protected:
@@ -126,7 +127,6 @@ protected:
     IErrorReceiver & errorProcessor;
     unsigned options;
     StringBuffer nodeText[2];
-    HqlExprAttr noHoistAttr;
 };
 
 
