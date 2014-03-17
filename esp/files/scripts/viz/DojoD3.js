@@ -74,7 +74,10 @@
                     id: this.target.domNodeID + "Style",
                     innerHTML: this.target.css
                 });
-                dojo.query("head").append(style);
+                dojo.query("head").some(function(item, idx) {
+                    item.appendChild(style);
+                    return false;
+                });
             }
         }
     });
