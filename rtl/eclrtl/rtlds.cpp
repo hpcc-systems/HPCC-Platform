@@ -980,7 +980,7 @@ public:
         buffer.append(len, ptr);
     }
 
-    virtual size32_t beginNested()
+    virtual size32_t beginNested(size32_t count)
     {
         unsigned pos = buffer.length();
         buffer.append((size32_t)0);
@@ -1014,7 +1014,7 @@ public:
         offset += len;
     }
 
-    virtual size32_t beginNested()
+    virtual size32_t beginNested(size32_t count)
     {
         unsigned pos = offset;
         offset += sizeof(size32_t);
@@ -1119,14 +1119,14 @@ extern ECLRTL_API void rtlDeserializeChildGroupedRowset(size32_t & count, byte *
 
 void rtlSerializeChildRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
-    size32_t marker = out.beginNested();
+    size32_t marker = out.beginNested(count);
     doSerializeRowset(out, serializer, count, rows, false);
     out.endNested(marker);
 }
 
 void rtlSerializeChildGroupedRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
-    size32_t marker = out.beginNested();
+    size32_t marker = out.beginNested(count);
     doSerializeRowset(out, serializer, count, rows, true);
     out.endNested(marker);
 }
@@ -1352,14 +1352,14 @@ extern ECLRTL_API void rtlDeserializeChildDictionaryFromDataset(size32_t & count
 
 extern ECLRTL_API void rtlSerializeChildDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
-    size32_t marker = out.beginNested();
+    size32_t marker = out.beginNested(count);
     doSerializeDictionary(out, serializer, count, rows);
     out.endNested(marker);
 }
 
 extern ECLRTL_API void rtlSerializeChildDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
-    size32_t marker = out.beginNested();
+    size32_t marker = out.beginNested(count);
     doSerializeRowsetStripNulls(out, serializer, count, rows);
     out.endNested(marker);
 }

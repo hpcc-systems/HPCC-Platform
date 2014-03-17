@@ -36,7 +36,7 @@ public:
 
     virtual const byte * peek(size32_t maxSize);
     virtual offset_t beginNested();
-    virtual bool finishedNested(offset_t len);
+    virtual bool finishedNested(offset_t & len);
 
     virtual size32_t read(size32_t len, void * ptr);
     virtual size32_t readSize();

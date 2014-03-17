@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      151
-#define MIN_ACTIVITY_INTERFACE_VERSION  151             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      152
+#define MIN_ACTIVITY_INTERFACE_VERSION  152             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -266,7 +266,7 @@ interface IEngineRowAllocator : extends IInterface
 interface IRowSerializerTarget
 {
     virtual void put(size32_t len, const void * ptr) = 0;
-    virtual size32_t beginNested() = 0;
+    virtual size32_t beginNested(size32_t count) = 0;
     virtual void endNested(size32_t position) = 0;
 };
 
@@ -274,7 +274,7 @@ interface IRowDeserializerSource
 {
     virtual const byte * peek(size32_t maxLen) = 0;     // try and ensure up to maxSize bytes are available.
     virtual offset_t beginNested() = 0;
-    virtual bool finishedNested(offset_t pos) = 0;
+    virtual bool finishedNested(offset_t & pos) = 0;
 
     virtual size32_t read(size32_t len, void * ptr) = 0;
     virtual size32_t readSize() = 0;

@@ -794,7 +794,6 @@ protected:
 
 WORKUNITSERVICES_API IRowStream * wsWorkunitStatistics( ICodeContext *ctx, IEngineRowAllocator * allocator, const char *wuid, bool includeActivities)
 {
-    unsigned tmp;
     MemoryBuffer mb;
     Owned<IPropertyTree> pt = getWorkUnitBranch(ctx,wuid,"Statistics");
     Owned<IPropertyTreeIterator> iter;
