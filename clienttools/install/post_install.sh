@@ -46,7 +46,9 @@ IS_UNINSTALL=0
 CUR_DIR=$(pwd)
 [ "$SRC_DIR" != "." ] && cd $SRC_DIR 
 SRC_DIR=$(pwd)
-CT_BIN=$(echo $SRC_DIR | sed -n "s/^\(.*clienttools\)\(.*\)/\1/p")/bin
+CT_HOME=$(echo $SRC_DIR | sed -n "s/^\(.*clienttools\)\(.*\)/\1/p")
+CT_BIN=${CT_HOME}/bin
+ECL_TEST_DIR=${CT_HOME}/testing/regress
 cd $CUR_DIR
 
 
@@ -63,15 +65,23 @@ then
        [ -e ${CT_BIN}/${file} ] && \
            ln -sf ${CT_BIN}/${file}  ${TARGET_DIR}/${file}  
     done
+    [ -e ${ECL_TEST_DIR}/ecl-test ] && \
+           ln -sf ${ECL_TEST_DIR}/ecl-test  ${TARGET_DIR}/ecl-test  
+    
 
 else
     # Remove symbolic link
     for file in ${files_to_link[@]}
     do
        [ ! -e ${TARGET_DIR}/${file} ] && continue
-       ls -l ${TARGET_DIR}/${file} | egrep -q "${CT_BIN}/${file}$" 
+       ls -l ${TARGET_DIR}/${file} | egrep -q "${CT_BIN}/${file}$"
        [ $? -eq 0 ] && rm -rf ${TARGET_DIR}/${file}
     done
+    if [ -e ${TARGET_DIR}/ecl-test ]
+    then
+       ls -l ${TARGET_DIR}/ecl-test | egrep -q "${ECL_TEST_DIR}/ecl-test"
+       [ $? -eq 0 ] && rm -rf ${TARGET_DIR}/ecl-test
+    fi
 fi
 
 exit 0
