@@ -357,7 +357,7 @@
     </xsl:template>
 
     <xsl:template match="DFUPart">
-        <xsl:if test="Copy=1"> <!-- Copy > 1: replicate copy -->
+        <xsl:if test="Copy=1"> <!-- Copy=1: display primary copy only -->
             <tr>
                 <td><xsl:value-of select="Id"/></td>
                 <td><xsl:value-of select="Ip"/></td>
