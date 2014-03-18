@@ -994,18 +994,14 @@ protected:
         // derived's prepare must call this before locking
         lockedFiles.append(*LINK(file));
     }
-    bool lock(bool *dirty=NULL)
+    bool lock()
     {
         // Files most have been acquired already by derived's class prepare
         ForEachItemIn(i,lockedFiles)
         {
             try
             {
-                if (lockedFiles.item(i).lockProperties(SDS_SUB_LOCK_TIMEOUT)) // returns true if needs reload
-                {
-                    if (dirty)
-                        *dirty = true;
-                }
+                lockedFiles.item(i).lockProperties(0);
             }
             catch (ISDSException *e)
             {
@@ -1329,6 +1325,11 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
     unsigned depth;
     unsigned prepared;
 
+    /* 'owner' is set if, transaction object is implicitly created, because none provided
+     * The owner cannot be release or unlocked. The transaction can still retry if other files are locked,
+     * so need to ensure 'owner' remains in tracked file cache.
+     */
+    IDistributedSuperFile *owner;
 
 
     void validateAddSubFile(IDistributedSuperFile *super, IDistributedFile *sub, const char *subName);
@@ -1354,8 +1355,8 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
 
 public:
     IMPLEMENT_IINTERFACE;
-    CDistributedFileTransaction(IUserDescriptor *user)
-        : isactive(false), depth(0), prepared(0)
+    CDistributedFileTransaction(IUserDescriptor *user, IDistributedSuperFile *_owner=NULL)
+        : isactive(false), depth(0), prepared(0), owner(_owner)
     {
         setUserDescriptor(udesc,user);
     }
@@ -1612,6 +1613,8 @@ public:
     {
         trackedFiles.kill();
         trackedFilesByName.kill();
+        if (owner)
+            addFile(owner); // ensure remains tracked
     }
     void clearFile(IDistributedFile *file)
     {
@@ -2575,7 +2578,10 @@ public:
 #endif
                 try
                 {
-                    safeChangeModeWrite(conn,queryLogicalName(),reload,timeoutms);
+                    if (0 == timeoutms)
+                        conn->changeMode(RTM_LOCK_WRITE, 0, true); // 0 timeout, test and fail immediately if contention
+                    else
+                        safeChangeModeWrite(conn,queryLogicalName(),reload,timeoutms);
                 }
                 catch(IException *)
                 {
@@ -4397,25 +4403,14 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             // Try to lock all files
             addFileLock(parent);
             addFileLock(sub);
-            bool dirty=false;
-            if (lock(&dirty))
+            if (lock())
             {
-                if (dirty)
-                {
-                    // in the process of previous attempt to lock for exclusive access, locks were released
-                    // need to reload to ensure position and # of files is correct
-                    CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());
-                    if (sf)
-                    {
-                        sf->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
-                        // Potentially the subfiles have changed format or file we wanted is already a member
-                        transaction->validateAddSubFile(parent, sub, subfile);
-                    }
-                }
                 transaction->noteAddSubFile(parent, parentlname, sub);
                 return true;
             }
             unlock();
+            parent.clear();
+            sub.clear();
             return false;
         }
         void run()
@@ -4475,25 +4470,8 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             addFileLock(parent);
             if (sub)
                 addFileLock(sub);
-            bool dirty=false;
-            if (lock(&dirty))
+            if (lock())
             {
-                if (dirty)
-                {
-                    // in the process of previous attempt to lock for exclusive access, locks were released
-                    // need to reload to ensure position and # of files is correct
-                    CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());
-                    if (sf)
-                    {
-                        sf->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
-                        // potentially subfile _was_ a subfile, but isn't anymore, after dirty update
-                        if (!subfile.isEmpty())
-                        {
-                            if (!transaction->isSubFile(parent, subfile, true))
-                                WARNLOG("addSubFile: File %s is not a subfile of %s", subfile.get(), parent->queryLogicalName());
-                        }
-                    }
-                }
                 if (sub)
                     transaction->noteRemoveSubFile(parent, sub);
                 else
@@ -4501,6 +4479,8 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 return true;
             }
             unlock();
+            parent.clear();
+            sub.clear();
             return false;
         }
         void run()
@@ -4552,20 +4532,10 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 throw MakeStringException(-1,"removeOwnedSubFiles: SuperFile %s cannot be found", parentlname.get());
             // Try to lock all files
             addFileLock(parent);
-            bool dirty=false;
-            if (lock(&dirty))
-            {
-                if (dirty)
-                {
-                    // in the process of previous attempt to lock for exclusive access, locks were released
-                    // need to reload to ensure position and # of files is correct
-                    CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());
-                    if (sf)
-                        sf->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
-                }
+            if (lock())
                 return true;
-            }
             unlock();
+            parent.clear();
             return false;
         }
         void run()
@@ -4618,33 +4588,6 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         Linked<IDistributedSuperFile> file;
         StringAttr parentlname;
         StringAttr filelname;
-
-        bool refresh(IDistributedSuperFile *super) // returns true if any changes
-        {
-            if (!super)
-                return false;
-            IArrayOf<IDistributedFile> copyOfSubFiles;
-            unsigned s=0;
-            for (; s<super->numSubFiles(); s++)
-               copyOfSubFiles.append(*LINK(&super->querySubFile(s)));
-            CDistributedSuperFile *_super = dynamic_cast<CDistributedSuperFile *>(super);
-            _super->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
-            if (copyOfSubFiles.ordinality() != super->numSubFiles())
-                return true;
-            for (s=0; s<super->numSubFiles(); s++)
-            {
-                IDistributedFile *file = &(super->querySubFile(s));
-                if (file != &copyOfSubFiles.item(s))
-                    return true;
-            }
-            return false;
-        }
-        bool refresh() // returns true if any changes
-        {
-            bool pChanged = refresh(parent);
-            bool fChanged = refresh(file);
-            return pChanged || fChanged;
-        }
     public:
         cSwapFileAction(const char *_parentlname,const char *_filelname)
             : parentlname(_parentlname), filelname(_filelname)
@@ -4668,17 +4611,11 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             addFileLock(file);
             for (unsigned i=0; i<file->numSubFiles(); i++)
                 addFileLock(&file->querySubFile(i));
-            bool dirty=false;
-            if (lock(&dirty))
-            {
-                if (!dirty)
-                    return true;
-                // in the process of previous attempt to lock for exclusive access, locks were released
-                // need to reload to ensure position and # of files is correct
-                if (!refresh()) // refreshes the supers and checks if any changes, if there are, transaction will unlock and retry
-                    return true;
-            }
+            if (lock())
+                return true;
             unlock();
+            parent.clear();
+            file.clear();
             return false;
         }
         void run()
@@ -5859,7 +5796,7 @@ public:
             localtrans.set(_transaction);
         }
         else
-            localtrans.setown(new CDistributedFileTransaction(udesc));
+            localtrans.setown(new CDistributedFileTransaction(udesc, this));
         localtrans->ensureFile(this);
 
         if (addcontents)
@@ -5906,7 +5843,7 @@ public:
             localtrans.set(_transaction);
         }
         else
-            localtrans.setown(new CDistributedFileTransaction(udesc));
+            localtrans.setown(new CDistributedFileTransaction(udesc, this));
 
         // Make sure this file is in cache (reuse below)
         localtrans->ensureFile(this);
@@ -5963,7 +5900,7 @@ public:
             localtrans.set(_transaction);
         }
         else
-            localtrans.setown(new CDistributedFileTransaction(udesc));
+            localtrans.setown(new CDistributedFileTransaction(udesc, this));
 
         // Make sure this file is in cache (reuse below)
         localtrans->addFile(this);
@@ -5993,7 +5930,7 @@ public:
             localtrans.set(_transaction);
         }
         else
-            localtrans.setown(new CDistributedFileTransaction(udesc));
+            localtrans.setown(new CDistributedFileTransaction(udesc, this));
         // Make sure this file is in cache
         localtrans->ensureFile(this);
 
@@ -7565,6 +7502,7 @@ public:
                 return true;
         }
         unlock();
+        super.clear();
         return false;
     }
     void retry()
@@ -7675,6 +7613,7 @@ public:
             return true;
         }
         unlock();
+        file.clear();
         return false;
     }
     void run()
