@@ -132,7 +132,7 @@ require([
                 }
             },
 
-            loadXGMML: function (xgmml, merge) {
+            loadXGMML: function (xgmml, merge, skipLayout) {
                 this.registerEvents();
                 if (this._plugin && this.xgmml != xgmml) {
                     this.setMessage("Loading Data...");
@@ -140,8 +140,12 @@ require([
                         this._plugin.mergeXGMML(xgmml);
                     else
                         this._plugin.loadXGMML(xgmml);
-                    this.setMessage("Performing Layout...");
-                    this._plugin.startLayout("dot");
+                    if (skipLayout) {
+                        this.setMessage("");
+                    } else {
+                        this.setMessage("Performing Layout...");
+                        this._plugin.startLayout("dot");
+                    }
                     this.xgmml = xgmml;
                 }
             },
