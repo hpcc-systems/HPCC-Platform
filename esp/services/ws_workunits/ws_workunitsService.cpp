@@ -1660,6 +1660,18 @@ bool addWUQueryFilterTime(WUSortField *filters, unsigned short &count, MemoryBuf
     return true;
 }
 
+bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *appname, const char *appkey, const char *appdata)
+{
+    if (isEmpty(appname) && isEmpty(appkey) && isEmpty(appdata)) //no application filter
+        return false;
+    VStringBuffer path("Application/%s/%s", appname && *appname ? appname : "*", appkey && *appkey ? appkey : "*");
+    if(appdata && *appdata)
+        path.append("=?~\"").append(appdata).append("\"");
+    filters[count++] = WUSFcustom;
+    buff.append(path.str());
+    return true;
+}
+
 void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
     SecAccessFlags accessOwn;
@@ -1748,9 +1760,11 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     addWUQueryFilter(filters, filterCount, filterbuf, req.getLogicalFile(), WUSFfileread);
     addWUQueryFilter(filters, filterCount, filterbuf, req.getOwner(), (WUSortField) (WUSFuser | WUSFnocase));
     addWUQueryFilter(filters, filterCount, filterbuf, req.getJobname(), (WUSortField) (WUSFjob | WUSFnocase));
+    addWUQueryFilter(filters, filterCount, filterbuf, req.getECL(), (WUSortField) (WUSFecl | WUSFwild));
 
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);
+    addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
 
     filters[filterCount] = WUSFterm;
 
@@ -2104,8 +2118,6 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
             doWUQueryFromArchive(context, sashaServerIp.get(), sashaServerPort, *archivedWuCache, awusCacheMinutes, req, resp);
         else if(notEmpty(wuid) && looksLikeAWuid(wuid))
             doWUQueryBySingleWuid(context, wuid, resp);
-        else if (notEmpty(req.getECL()) || notEmpty(req.getApplicationName()) || notEmpty(req.getApplicationKey()) || notEmpty(req.getApplicationData()))
-            doWUQueryByXPath(context, req, resp);
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
             doWUQueryByFile(context, req.getLogicalFile(), resp);
         else
