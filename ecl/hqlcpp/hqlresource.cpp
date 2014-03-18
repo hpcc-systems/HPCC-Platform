@@ -3024,7 +3024,7 @@ void EclResourcer::deriveUsageCounts(IHqlExpression * expr)
             else
             {
                 LinkedHqlExpr invariant;
-                OwnedHqlExpr cond = extractFilterConditions(invariant, expr, expr->queryNormalizedSelector(), false);
+                OwnedHqlExpr cond = extractFilterConditions(invariant, expr, expr->queryNormalizedSelector(), false, false);
                 if (invariant)
                     info->isConditionalFilter = true;
             }

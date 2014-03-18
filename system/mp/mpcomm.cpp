@@ -1842,6 +1842,7 @@ bool CMPServer::recv(CMessageBuffer &mbuf, const SocketEndpoint *ep, mptag_t tag
         bool aborted;
         CMessageBuffer *result;
         const SocketEndpoint *ep;
+        SocketEndpoint closedEp; // used if receiving on RANK_ALL
         mptag_t tag;
         Cnfy(const SocketEndpoint *_ep,mptag_t _tag) { ep = _ep; tag = _tag; result = NULL; aborted=false; }
         bool notify(CMessageBuffer *msg)
@@ -1858,9 +1859,15 @@ bool CMPServer::recv(CMessageBuffer &mbuf, const SocketEndpoint *ep, mptag_t tag
             }
             return false;
         }
-        bool notifyClosed(SocketEndpoint &closedep) // called when connection closed
+        bool notifyClosed(SocketEndpoint &_closedEp) // called when connection closed
         {
-            if (ep&&ep->equals(closedep)) {
+            if (NULL == ep) { // ep is NULL if receiving on RANK_ALL
+                closedEp = _closedEp;
+                ep = &closedEp; // used for abort info
+                aborted = true;
+                return true;
+            }
+            else if (ep->equals(_closedEp)) {
                 aborted = true;
                 return true;
             }
@@ -1877,7 +1884,7 @@ bool CMPServer::recv(CMessageBuffer &mbuf, const SocketEndpoint *ep, mptag_t tag
         LOG(MCdebugInfo(100), unknownJob, "CMPserver::recv closed on notify");
         PrintStackReport();
 #endif
-        IMP_Exception *e=new CMPException(MPERR_link_closed,*ep);
+        IMP_Exception *e=new CMPException(MPERR_link_closed,*nfy.ep);
         throw e;
     }
     return false;

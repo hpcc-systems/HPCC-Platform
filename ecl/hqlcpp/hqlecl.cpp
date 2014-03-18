@@ -60,8 +60,8 @@ class NullContextCallback : public CInterface, implements ICodegenContextCallbac
 class HqlDllGenerator : public CInterface, implements IHqlExprDllGenerator, implements IAbortRequestCallback
 {
 public:
-    HqlDllGenerator(IErrorReceiver * _errs, const char * _wuname, const char * _targetdir, IWorkUnit * _wu, const char * _template_dir, ClusterType _targetClusterType, ICodegenContextCallback * _ctxCallback, bool _checkForLocalFileUploads) :
-        errs(_errs), wuname(_wuname), targetDir(_targetdir), wu(_wu), template_dir(_template_dir), targetClusterType(_targetClusterType), ctxCallback(_ctxCallback), checkForLocalFileUploads(_checkForLocalFileUploads)
+    HqlDllGenerator(IErrorReceiver * _errs, const char * _wuname, const char * _targetdir, IWorkUnit * _wu, const char * _template_dir, ClusterType _targetClusterType, ICodegenContextCallback * _ctxCallback, bool _checkForLocalFileUploads, bool _okToAbort) :
+        errs(_errs), wuname(_wuname), targetDir(_targetdir), wu(_wu), template_dir(_template_dir), targetClusterType(_targetClusterType), ctxCallback(_ctxCallback), checkForLocalFileUploads(_checkForLocalFileUploads), okToAbort(_okToAbort)
     {
         if (!ctxCallback)
             ctxCallback.setown(new NullContextCallback);
@@ -121,6 +121,7 @@ protected:
     bool noOutput;
     EclGenerateTarget generateTarget;
     bool deleteGenerated;
+    bool okToAbort;
 };
 
 
@@ -537,7 +538,8 @@ bool HqlDllGenerator::doCompile(ICppCompiler * compiler)
     wu->getDebugValue("compileOptions", optionAdaptor);
     compiler->addCompileOption(options.str());
 
-    compiler->setAbortChecker(this);
+    if (okToAbort)
+        compiler->setAbortChecker(this);
 
     MTIME_SECTION (timer, "Compile_code");
     unsigned time = msTick();
@@ -613,14 +615,14 @@ offset_t HqlDllGenerator::getGeneratedSize() const
 
 extern HQLCPP_API double getECLcomplexity(IHqlExpression * exprs, IErrorReceiver * errs, IWorkUnit *wu, ClusterType targetClusterType)
 {
-    HqlDllGenerator generator(errs, "unknown", NULL, wu, NULL, targetClusterType, NULL, false);
+    HqlDllGenerator generator(errs, "unknown", NULL, wu, NULL, targetClusterType, NULL, false, false);
     return generator.getECLcomplexity(exprs);
 }
 
 
-extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, const char * template_dir, ClusterType targetClusterType, ICodegenContextCallback *ctxCallback, bool checkForLocalFileUploads)
+extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, const char * template_dir, ClusterType targetClusterType, ICodegenContextCallback *ctxCallback, bool checkForLocalFileUploads, bool okToAbort)
 {
-    return new HqlDllGenerator(errs, wuname, targetdir, wu, template_dir, targetClusterType, ctxCallback, checkForLocalFileUploads);
+    return new HqlDllGenerator(errs, wuname, targetdir, wu, template_dir, targetClusterType, ctxCallback, checkForLocalFileUploads, okToAbort);
 }
 
 /*

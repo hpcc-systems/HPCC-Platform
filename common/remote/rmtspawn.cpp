@@ -131,6 +131,12 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
     }
     cmd.append(' ').append(args);
 
+    if (abort && abort->abortRequested())
+    {
+        LOG(MCdetailDebugInfo, unknownJob, "Action aborted before connecting to slave (%3d)", replyTag);
+        return NULL;
+    }
+
     if (SSHusername.isEmpty())
     {
 #if defined(_WIN32)
@@ -162,9 +168,6 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
     ISocket * result = NULL;
     while (!result && attempts)
     {
-        if (abort && abort->abortRequested())
-            break;
-
         try
         {
             StringBuffer tmp;
@@ -238,6 +241,9 @@ ISocket * spawnRemoteChild(SpawnKind kind, const char * exe, const SocketEndpoin
             MilliSleep(rand()%400+100);
             attempts--;
         }
+
+        if (abort && abort->abortRequested())
+            break;
     }
     if (error)
         throw error;

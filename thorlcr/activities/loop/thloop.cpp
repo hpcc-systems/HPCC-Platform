@@ -25,6 +25,8 @@
 
 #include "thloop.ipp"
 
+#define SYNC_TIMEOUT (5*60*1000)
+
 class CLoopActivityMasterBase : public CMasterActivity
 {
 protected:
@@ -44,9 +46,15 @@ protected:
         CMessageBuffer msg;
         while (n--) // a barrier really
         {
-            rank_t sender;
-            if (!receiveMsg(msg, RANK_ALL, mpTag, &sender, LONGTIMEOUT))
-                return false;
+            loop
+            {
+                rank_t sender;
+                if (receiveMsg(msg, RANK_ALL, mpTag, &sender, SYNC_TIMEOUT))
+                    break;
+                if (abortSoon)
+                    return true; // NB: returning true, denotes end of loop
+                ActPrintLog("Still waiting for %d slaves to synchronize global loop", n+1);
+            }
             unsigned slaveLoopCounterReq, slaveEmptyIterations;
             msg.read(slaveLoopCounterReq);
             msg.read(slaveEmptyIterations);

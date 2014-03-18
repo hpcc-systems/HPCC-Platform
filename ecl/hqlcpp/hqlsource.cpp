@@ -1382,7 +1382,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
                         test.setown(foldScopedHqlExpression(translator.queryErrorProcessor(), ds->queryNormalizedSelector(), test));
 
                     if (translator.options.spotCSE)
-                        test.setown(spotScalarCSE(test, ds));
+                        test.setown(spotScalarCSE(test, ds, translator.queryOptions().spotCseInIfDatasetConditions));
 
                     if (!returnIfFilterFails)
                         translator.buildFilter(ctx, test);
@@ -4742,7 +4742,7 @@ void MonitorExtractor::spotSegmentCSE(BuildCtx & ctx)
     HqlExprArray associated;
     IHqlExpression * selector = tableExpr->queryNormalizedSelector();
     translator.traceExpressions("before seg spot", conditions);
-    spotScalarCSE(conditions, associated, NULL, selector);
+    spotScalarCSE(conditions, associated, NULL, selector, translator.queryOptions().spotCseInIfDatasetConditions);
     translator.traceExpressions("after seg spot", conditions);
 
     unsigned curCond = 0;
