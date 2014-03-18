@@ -55,7 +55,7 @@ public:
         CMasterActivity::init();
         workunitWriteLimit = activityMaxSize ? activityMaxSize : getOptInt(THOROPT_OUTPUTLIMIT, DEFAULT_WUIDWRITE_LIMIT);
         if (workunitWriteLimit>DALI_RESULT_OUTPUTMAX)
-            throw MakeActivityException(this, 0, "Dali result outputs are restricted to a maximum of %d MB, the current limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, DEFAULT_WUIDWRITE_LIMIT);
+            throw MakeActivityException(this, 0, "Configured max result size, %d MB, exceeds absolute max limit of %d MB. A huge Dali result usually indicates the ECL needs altering.", workunitWriteLimit, DALI_RESULT_OUTPUTMAX);
         assertex(workunitWriteLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
         workunitWriteLimit *= 0x100000;
     }
@@ -122,7 +122,7 @@ public:
                 unsigned l=mb.remaining();
                 if (workunitWriteLimit && totalSize+resultData.length()+l > workunitWriteLimit)
                 {
-                    StringBuffer errMsg("Dataset too large to output to workunit (limit ");
+                    StringBuffer errMsg("Dataset too large to output to workunit (limit is set to ");
                     errMsg.append(workunitWriteLimit/0x100000).append(") megabytes, in result (");
                     if (resultName.length())
                         errMsg.append("name=").append(resultName);
