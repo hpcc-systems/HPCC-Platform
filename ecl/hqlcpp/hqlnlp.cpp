@@ -259,7 +259,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
             validctx.associateExpr(activeValidateMarkerExpr, activeValidateMarkerExpr);
             translator.bindTableCursor(validctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
             if (translator.queryOptions().spotCSE)
-                validateExpr.setown(spotScalarCSE(validateExpr));
+                validateExpr.setown(spotScalarCSE(validateExpr, NULL, translator.queryOptions().spotCseInIfDatasetConditions));
             translator.buildReturn(validctx, validateExpr);
             translator.endNestedClass();
 

@@ -1577,6 +1577,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.convertJoinToLookup,"convertJoinToLookup", true),
         DebugOption(options.convertJoinToLookupIfSorted,"convertJoinToLookupIfSorted", false),
         DebugOption(options.spotCSE,"spotCSE", true),
+        DebugOption(options.spotCseInIfDatasetConditions,"spotCseInIfDatasetConditions", false),
         DebugOption(options.optimizeNonEmpty,"optimizeNonEmpty", !targetThor()),                // not sure that it will be conditional resourced correctly for thor
         DebugOption(options.allowVariableRoxieFilenames,"allowVariableRoxieFilenames", false),
         DebugOption(options.foldConstantDatasets,"foldConstantDatasets", true),
@@ -11406,7 +11407,7 @@ void HqlCppTranslator::doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * typ
             //optimize the way that cses are spotted to minimise unnecessary calculations
             OwnedHqlExpr branches = createComma(LINK(value->queryChild(1)), LINK(value->queryChild(2)));
             OwnedHqlExpr cond = LINK(value->queryChild(0));
-            spotScalarCSE(cond, branches, NULL, NULL);
+            spotScalarCSE(cond, branches, NULL, NULL, queryOptions().spotCseInIfDatasetConditions);
             BuildCtx subctx(ctx);
             IHqlStmt * stmt = buildFilterViaExpr(subctx, cond);
             doBuildUserFunctionReturn(subctx, type, branches->queryChild(0));
@@ -11416,7 +11417,7 @@ void HqlCppTranslator::doBuildUserFunctionReturn(BuildCtx & ctx, ITypeInfo * typ
         }
     default:
         {
-            OwnedHqlExpr optimized = spotScalarCSE(value);
+            OwnedHqlExpr optimized = spotScalarCSE(value, NULL, queryOptions().spotCseInIfDatasetConditions);
             if (value->isAction())
                 buildStmt(ctx, value);
             else
