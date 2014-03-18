@@ -467,7 +467,7 @@ define([
         },
 
         loadGraphFromXGMML: function (xgmml) {
-            this.global.loadXGMML(xgmml, false);
+            this.global.loadXGMML(xgmml, false, true);
             this.refreshMain();
             this.refreshOverview();
             this.loadSubgraphs();
