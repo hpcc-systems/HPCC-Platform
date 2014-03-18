@@ -2390,7 +2390,7 @@ public:
                     namefilterhi.set(fv);
                 else if (subfmt==WUSFwildwuid)
                     namefilter.set(fv);
-                else if (subfmt==WUSFapplication)
+                else if (subfmt==WUSFcustom)
                     query.append("[").append(fv).append("]");
                 else if (!fv || !*fv)
                     unknownAttributes.append(getEnumText(subfmt,workunitSortFields));

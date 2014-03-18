@@ -1660,14 +1660,14 @@ bool addWUQueryFilterTime(WUSortField *filters, unsigned short &count, MemoryBuf
     return true;
 }
 
-bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *appname, const char *appkey, const char *appdata, WUSortField sortField)
+bool addWUQueryFilterApplication(WUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char *appname, const char *appkey, const char *appdata)
 {
     if (isEmpty(appname) && isEmpty(appkey) && isEmpty(appdata)) //no application filter
         return false;
     VStringBuffer path("Application/%s/%s", appname && *appname ? appname : "*", appkey && *appkey ? appkey : "*");
     if(appdata && *appdata)
         path.append("=?~\"").append(appdata).append("\"");
-    filters[count++] = sortField;
+    filters[count++] = WUSFcustom;
     buff.append(path.str());
     return true;
 }
@@ -1764,7 +1764,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getStartDate(), WUSFwuid);
     addWUQueryFilterTime(filters, filterCount, filterbuf, req.getEndDate(), WUSFwuidhigh);
-    addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData(), WUSFapplication);
+    addWUQueryFilterApplication(filters, filterCount, filterbuf, req.getApplicationName(), req.getApplicationKey(), req.getApplicationData());
 
     filters[filterCount] = WUSFterm;
 
