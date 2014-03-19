@@ -1521,10 +1521,12 @@ IHqlExpression * CTreeOptimizer::optimizeProjectInlineTable(IHqlExpression * tra
             return NULL;
 
         if (onlyFoldConstant)
+        {
             next.setown(foldScopedHqlExpression(errorProcessor, NULL, next));
 
-        if (onlyFoldConstant && !isConstantTransform(next))
-            return NULL;
+            if (!isConstantTransform(next))
+                return NULL;
+        }
         newValues.append(*ensureTransformType(next, no_transform));
     }
 
