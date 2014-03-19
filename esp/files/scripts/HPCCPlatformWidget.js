@@ -246,8 +246,14 @@ define([
             if (!this._onAboutLoaded) {
                 this._onAboutLoaded = true;
                 dom.byId(this.id + "ServerVersion").value = this.build.version;
-                var gc = registry.byId(this.id + "GraphControl");
-                dom.byId(this.id + "GraphControlVersion").value = gc.getVersion();
+                var gc = new GraphWidget({
+                    id: this.id + "GraphControl"
+                }).placeAt(this.aboutDialog);
+                var context = this;
+                gc.checkPluginLoaded().then(function () {
+                    dom.byId(context.id + "GraphControlVersion").value = gc.getVersion();
+                    gc.destroyRecursive();
+                })
             }
             this.aboutDialog.show();
         },

@@ -571,25 +571,26 @@ define([
             createPlugin: function () {
                 if (!this.hasPlugin()) {
                     if (this._isPluginInstalled) {
-                        var pluginID = this.id + "Plugin";
+                        this.pluginID = this.id + "Plugin";
                         if (this.isIE || this.isIE11) {
                             this.graphContentPane.domNode.innerHTML = '<object type="application/x-hpccsystemsgraphviewcontrol" '
-                                                    + 'id="' + pluginID + '" '
-                                                    + 'name="' + pluginID + '" '
+                                                    + 'id="' + this.pluginID + '" '
+                                                    + 'name="' + this.pluginID + '" '
                                                     + 'width="100%" '
                                                     + 'height="100%">'
                                                     + '</object>';
                         } else {
                             this.graphContentPane.domNode.innerHTML = '<embed type="application/x-hpccsystemsgraphviewcontrol" '
-                                                    + 'id="' + pluginID + '" '
-                                                    + 'name="' + pluginID + '" '
+                                                    + 'id="' + this.pluginID + '" '
+                                                    + 'name="' + this.pluginID + '" '
                                                     + 'width="100%" '
                                                     + 'height="100%">'
                                                     + '</embed>';
                         }
-                        this.checkPluginLoaded(pluginID).then(lang.hitch(this, function (response) {
+                        var context = this;
+                        this.checkPluginLoaded().then(lang.hitch(this, function (response) {
                             this.version = response;
-                            this._plugin = dom.byId(pluginID);
+                            this._plugin = dom.byId(context.pluginID);
                             this.registerEvents();
                             this.emit("ready");
                         }));
@@ -603,10 +604,11 @@ define([
                 }
             },
 
-            checkPluginLoaded: function (pluginID) {
+            checkPluginLoaded: function () {
                 var deferred = new Deferred();
+                var context = this;
                 var doCheck = function () {
-                    domNode = dom.byId(pluginID);
+                    domNode = dom.byId(context.pluginID);
                     if (domNode && domNode.version) {
                         return {
                             version: domNode.version,
