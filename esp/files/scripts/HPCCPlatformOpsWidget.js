@@ -22,6 +22,7 @@ define([
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
+    "hpcc/DiskUsageWidget",
     "hpcc/ESPRequest",
 
     "dojo/text!../templates/HPCCPlatformOpsWidget.html",
@@ -33,7 +34,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC,
                 registry,
-                _TabContainerWidget, ESPRequest,
+                _TabContainerWidget, DiskUsageWidget, ESPRequest,
                 template) {
     return declare("HPCCPlatformOpsWidget", [_TabContainerWidget], {
         templateString: template,

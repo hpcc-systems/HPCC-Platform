@@ -19,17 +19,80 @@ define([
     "dojo/_base/lang",
     "dojo/_base/Deferred",
     "dojo/_base/array",
+    "dojo/store/Memory",
+    "dojo/store/Observable",
     "dojo/store/util/QueryResults",
 
     "dojox/xml/parser",
 
     "hpcc/ESPBase",
     "hpcc/ESPRequest"
-], function (declare, lang, Deferred, arrayUtil, QueryResults,
+], function (declare, lang, Deferred, arrayUtil, Memory, Observable, QueryResults,
     parser,
     ESPBase, ESPRequest) {
 
-    return {
+    var DiskUsageStore = declare([Memory], {
+
+        constructor: function () {
+            this.idProperty = "__hpcc_id";
+        },
+
+        query: function (query, options) {
+            switch (query.CountBy) {
+                case "Year":
+                case "Quarter":
+                case "Month":
+                case "Day":
+                    query.Interval = query.CountBy;
+                    query.CountBy = "Date";
+                    break;
+            }
+            var results = self.DFUSpace({
+                request: query
+            }).then(lang.hitch(this, function (response) {
+                var data = [];
+                if (lang.exists("DFUSpaceResponse.DFUSpaceItems.DFUSpaceItem", response)) {
+                    arrayUtil.forEach(response.DFUSpaceResponse.DFUSpaceItems.DFUSpaceItem, function (item, idx) {
+                        data.push(lang.mixin(item, {
+                            __hpcc_id: item.Name
+                        }));
+                    }, this);
+                }
+                if (options.sort && options.sort.length) {
+                    data.sort(function (_l, _r) {
+                        var l = _l[options.sort[0].attribute];
+                        var r = _r[options.sort[0].attribute];
+                        if (l === r) {
+                            return 0;
+                        }
+                        switch (options.sort[0].attribute) {
+                            case "TotalSize":
+                            case "LargestSize":
+                            case "SmallestSize":
+                            case "NumOfFiles":
+                            case "NumOfFilesUnknown":
+                                l = parseInt(l.split(",").join(""));
+                                r = parseInt(r.split(",").join(""));
+                        }
+                        if (options.sort[0].descending) {
+                            return r < l ? -1 : 1;
+                        }
+                        return l < r ? -1 : 1;
+                    })
+                }
+                this.setData(data);
+                return this.data;
+            }));
+            return QueryResults(results);
+        }
+    });
+
+    var self = {
+        CreateDiskUsageStore: function() {
+            var store = new DiskUsageStore();
+            return Observable(store);
+        },
+
         DFUArrayAction: function (logicalFiles, actionType, callback) {
             arrayUtil.forEach(logicalFiles, function (item, idx) {
                 item.qualifiedName = item.Name + "@" + item.ClusterName;
@@ -130,6 +193,10 @@ define([
             return ESPRequest.send("WsDfu", "DFUQuery", params);
         },
 
+        DFUSpace: function (params) {
+            return ESPRequest.send("WsDfu", "DFUSpace", params);
+        },
+
         DFUInfo: function (params) {
             return ESPRequest.send("WsDfu", "DFUInfo", params);
         },
@@ -152,5 +219,7 @@ define([
             });
         }
     };
+
+    return self;
 });
 
