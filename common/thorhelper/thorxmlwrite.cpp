@@ -260,12 +260,15 @@ void CommonXmlWriter::outputEndDataset(const char *dsname)
 
 void CommonXmlWriter::outputBeginNested(const char *fieldname, bool nestChildren, bool doIndent)
 {
+    if (!fieldname || !*fieldname)
+        return;
+
     const char * sep = strchr(fieldname, '/');
     if (sep)
     {
         StringAttr leading(fieldname, sep-fieldname);
-        outputBeginNested(leading, nestChildren);
-        outputBeginNested(sep+1, nestChildren);
+        outputBeginNested(leading, nestChildren, doIndent);
+        outputBeginNested(sep+1, nestChildren, doIndent);
         return;
     }
 
@@ -287,12 +290,15 @@ void CommonXmlWriter::outputBeginNested(const char *fieldname, bool nestChildren
 
 void CommonXmlWriter::outputEndNested(const char *fieldname, bool doIndent)
 {
+    if (!fieldname || !*fieldname)
+        return;
+
     const char * sep = strchr(fieldname, '/');
     if (sep)
     {
         StringAttr leading(fieldname, sep-fieldname);
-        outputEndNested(sep+1);
-        outputEndNested(leading);
+        outputEndNested(sep+1, doIndent);
+        outputEndNested(leading, doIndent);
         return;
     }
 
