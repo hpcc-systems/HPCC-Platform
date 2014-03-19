@@ -973,7 +973,7 @@ void CWsSMCEx::readRunningWUsOnServerNode(IEspContext& context, IPropertyTree& s
 }
 
 
-bool CWsSMCEx::foundQueueInStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, const char* serverName, const char* queueName)
+bool CWsSMCEx::findQueueInStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, const char* serverName, const char* queueName)
 {
     bool foundServer = false;
     VStringBuffer path("Server[@name=\"%s\"]", serverName);
@@ -1270,7 +1270,10 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             IArrayOf<IEspActiveWorkunit> aws;
             IArrayOf<IEspDFUJob> DFURecoveryJobs;
 
-            IPropertyTree* serverStatusRoot = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000)->queryRoot();
+            Owned<IRemoteConnection> connStatusServers = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
+            IPropertyTree* serverStatusRoot = connStatusServers->queryRoot();
+            if (!serverStatusRoot)
+                throw MakeStringException(ECLWATCH_CANNOT_GET_STATUS_INFO, "Failed to get status server information.");
             readTargetClusterInfo(context, clusters, serverStatusRoot, thorTargetClusters, roxieTargetClusters, hthorTargetClusters);
             readRunningWUsAndQueuedWUs(context, envRoot, serverStatusRoot, thorTargetClusters, roxieTargetClusters, hthorTargetClusters,
                     aws, serverJobQueues, DFURecoveryJobs);
@@ -1289,18 +1292,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
     return true;
 }
 
-struct WsSMCStatusServerTypeName { int val; const char *str; } WsSMCStatusServerTypeNames[] =
-{
-   { WsSMCSSTThorLCRCluster, "ThorMaster" },
-   { WsSMCSSTRoxieCluster, "RoxieServer" },
-   { WsSMCSSTHThorCluster, "HThorServer" },
-   { WsSMCSSTECLagent, "ECLagent" }
-};
+const char *WsSMCStatusServerTypeNames[] = { "ThorMaster", "RoxieServer", "HThorServer", "ECLagent" };
 
-const char *CWsSMCEx::getStatusServerName(WsSMCStatusServerType type)
+const char *CWsSMCEx::getStatusServerTypeName(WsSMCStatusServerType type)
 {
-    if (type < sizeof(WsSMCStatusServerTypeNames)/sizeof(WsSMCStatusServerTypeName))
-        return WsSMCStatusServerTypeNames[type].str;
+    if (type < sizeof(WsSMCStatusServerTypeNames)/sizeof(char *))
+        return WsSMCStatusServerTypeNames[type];
     return NULL;
 }
 
@@ -1310,14 +1307,14 @@ void CWsSMCEx::readTargetClusterInfo(IEspContext &context, CConstWUClusterInfoAr
     ForEachItemIn(c, clusters)
     {
         IConstWUClusterInfo &cluster = clusters.item(c);
-        CWsSMCTargetCluster* targetCluster = new CWsSMCTargetCluster();
+        Owned<CWsSMCTargetCluster> targetCluster = new CWsSMCTargetCluster();
         readTargetClusterInfo(context, cluster, serverStatusRoot, targetCluster);
         if (cluster.getPlatform() == ThorLCRCluster)
-            thorTargetClusters.append(*targetCluster);
+            thorTargetClusters.append(*targetCluster.getClear());
         else if (cluster.getPlatform() == RoxieCluster)
-            roxieTargetClusters.append(*targetCluster);
+            roxieTargetClusters.append(*targetCluster.getClear());
         else
-            hthorTargetClusters.append(*targetCluster);
+            hthorTargetClusters.append(*targetCluster.getClear());
     }
 }
 
@@ -1335,25 +1332,25 @@ void CWsSMCEx::readTargetClusterInfo(IEspContext& context, IConstWUClusterInfo& 
     CWsSMCQueue* jobQueue = NULL;
     if (targetCluster->clusterType == ThorLCRCluster)
     {
-        statusServerName.set(getStatusServerName(WsSMCSSTThorLCRCluster));
+        statusServerName.set(getStatusServerTypeName(WsSMCSSTThorLCRCluster));
         jobQueue = &targetCluster->clusterQueue;
         cluster.getThorQueue(jobQueue->queueName);
     }
     else if (targetCluster->clusterType == RoxieCluster)
     {
-        statusServerName.set(getStatusServerName(WsSMCSSTRoxieCluster));
+        statusServerName.set(getStatusServerTypeName(WsSMCSSTRoxieCluster));
         jobQueue = &targetCluster->agentQueue;
     }
     else
     {
-        statusServerName.set(getStatusServerName(WsSMCSSTHThorCluster));
+        statusServerName.set(getStatusServerTypeName(WsSMCSSTHThorCluster));
         jobQueue = &targetCluster->agentQueue;
     }
 
     targetCluster->statusServerName.set(statusServerName.str());
     targetCluster->queueName.set(jobQueue->queueName.str());
 
-    jobQueue->foundQueueInStatusServer = foundQueueInStatusServer(context, serverStatusRoot, statusServerName.str(), targetCluster->queueName.get());
+    jobQueue->foundQueueInStatusServer = findQueueInStatusServer(context, serverStatusRoot, statusServerName.str(), targetCluster->queueName.get());
     if (!jobQueue->foundQueueInStatusServer)
         targetCluster->clusterStatusDetails.appendf("Cluster %s not attached; ", clusterName.str());
 
@@ -1383,7 +1380,7 @@ void CWsSMCEx::readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree*
         CIArrayOf<CWsSMCTargetCluster>& targetClusters, CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2,
         BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws)
 {
-    const char* serverName = getStatusServerName(statusServerType);
+    const char* serverName = getStatusServerTypeName(statusServerType);
     if (!serverName || !*serverName)
         return;
     bool isECLAgent = (statusServerType == WsSMCSSTECLagent);
@@ -1419,7 +1416,7 @@ void CWsSMCEx::readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree*
             if (!wuid || !*wuid || (isECLAgent && uniqueWUIDs.getValue(wuid)))
                 continue;
 
-            CWsSMCTargetCluster* targetCluster = getWUClusterInfo(context, wuid, isECLAgent, targetClusters, targetClusters1, targetClusters2);
+            CWsSMCTargetCluster* targetCluster = findWUClusterInfo(context, wuid, isECLAgent, targetClusters, targetClusters1, targetClusters2);
             if (!targetCluster)
                 continue;
 
@@ -1511,8 +1508,18 @@ void CWsSMCEx::readWUsAndStateFromJobQueue(IEspContext& context, CIArrayOf<CWsSM
     }
 }
 
+CWsSMCTargetCluster* CWsSMCEx::findTargetCluster(const char* clusterName, CIArrayOf<CWsSMCTargetCluster>& targetClusters)
+{
+    ForEachItemIn(i, targetClusters)
+    {
+        CWsSMCTargetCluster& targetCluster = targetClusters.item(i);
+        if (strieq(targetCluster.clusterName.get(), clusterName))
+            return &targetCluster;
+    }
+    return NULL;
+}
 
-CWsSMCTargetCluster* CWsSMCEx::getWUClusterInfo(IEspContext& context, const char* wuid, bool isOnECLAgent, CIArrayOf<CWsSMCTargetCluster>& targetClusters,
+CWsSMCTargetCluster* CWsSMCEx::findWUClusterInfo(IEspContext& context, const char* wuid, bool isOnECLAgent, CIArrayOf<CWsSMCTargetCluster>& targetClusters,
     CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2)
 {
     SCMStringBuffer clusterName;
@@ -1531,28 +1538,16 @@ CWsSMCTargetCluster* CWsSMCEx::getWUClusterInfo(IEspContext& context, const char
         return NULL;
     }
 
-    ForEachItemIn(i, targetClusters)
-    {
-        CWsSMCTargetCluster& targetCluster = targetClusters.item(i);
-        if (strieq(targetCluster.clusterName.get(), clusterName.str()))
-            return &targetCluster;
-    }
-    if (!isOnECLAgent) return NULL;
+    const char* cluster = clusterName.str();
+    CWsSMCTargetCluster* targetCluster = findTargetCluster(cluster, targetClusters);
+    if (targetCluster || !isOnECLAgent)
+        return targetCluster;
 
-    ForEachItemIn(i1, targetClusters1)
-    {
-        CWsSMCTargetCluster& targetCluster = targetClusters1.item(i1);
-        if (strieq(targetCluster.clusterName.get(), clusterName.str()))
-            return &targetCluster;
-    }
+    targetCluster = findTargetCluster(cluster, targetClusters1);
+    if (targetCluster)
+        return targetCluster;
 
-    ForEachItemIn(i2, targetClusters2)
-    {
-        CWsSMCTargetCluster& targetCluster = targetClusters2.item(i2);
-        if (strieq(targetCluster.clusterName.get(), clusterName.str()))
-            return &targetCluster;
-    }
-    return NULL;
+    return findTargetCluster(cluster, targetClusters2);
 }
 
 void CWsSMCEx::updateActivityResponse(IEspContext &context,  IEspActivityRequest &req, IEspActivityResponse& resp,
@@ -1591,14 +1586,14 @@ void CWsSMCEx::setESPTargetClusters(IEspContext& context, CIArrayOf<CWsSMCTarget
     ForEachItemIn(i, targetClusters)
     {
         CWsSMCTargetCluster& targetCluster = targetClusters.item(i);
-        IEspTargetCluster* respTargetCluster = new CTargetCluster("", "");
+        Owned<IEspTargetCluster> respTargetCluster = new CTargetCluster("", "");
         respTargetCluster->setClusterName(targetCluster.clusterName.get());
         respTargetCluster->setClusterSize(targetCluster.clusterSize);
         respTargetCluster->setClusterType(targetCluster.clusterType);
         respTargetCluster->setQueueName(targetCluster.queueName.get());
         respTargetCluster->setQueueStatus(targetCluster.queueStatus.get());
         setClusterStatus(context, targetCluster, respTargetCluster);
-        respTargetClusters.append(*respTargetCluster);
+        respTargetClusters.append(*respTargetCluster.getClear());
     }
 }
 
