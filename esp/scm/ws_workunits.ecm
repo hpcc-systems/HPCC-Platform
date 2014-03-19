@@ -232,6 +232,7 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.29")] string ApplicationValuesDesc;
     [min_ver("1.29")] string WorkflowsDesc;
     [min_ver("1.31")] bool HasArchiveQuery(false);
+    [min_ver("1.49")] int64 WUXMLSize;
     [min_ver("1.38")] ESParray<ESPstruct ThorLogInfo> ThorLogList;
     [min_ver("1.47")] ESParray<string, URL> ResourceURLs;
 };
@@ -1450,7 +1451,7 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 };
 
 ESPservice [
-    version("1.48"), default_client_version("1.48"),
+    version("1.49"), default_client_version("1.49"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
