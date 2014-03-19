@@ -328,7 +328,7 @@ Optional arguments:
 
 
 
-The format of result is same as above, but there is log, result and diff for all cluster:
+The format of the output is the same as 'run', except there is a log, result and diff per cluster targeted:
 
 |         [Action] Suite: hthor
 |         [Action] Queries: 9

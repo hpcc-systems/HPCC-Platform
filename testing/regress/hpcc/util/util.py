@@ -71,6 +71,7 @@ def queryWuid(jobname,  taskId):
     opener.add_handler(auth_handler)
     urllib2.install_opener(opener)
 
+    result = "OK"
     try:
         response_stream = urllib2.urlopen(host)
         json_response = response_stream.read()
@@ -80,19 +81,24 @@ def queryWuid(jobname,  taskId):
             state =resp['WUQueryResponse']['Workunits']['ECLWorkunit'][0]['State']
         else:
             state = jobname+' not found'
+            result = "NotFound"
     except KeyError as ke:
         state = "Key error:"+ke.str()
+        result = "KeyError"
         logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
     except urllib2.HTTPError as ex:
         state = "HTTP Error: "+ str(ex.reason)
+        result = "HTTPError"
         logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
     except urllib2.URLError as ex:
         state = "URL Error: "+ str(ex.reason)
-        logging.error("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
+        result = "URLError"
+        logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
     except Exception as ex:
         state = "Unable to query "+ str(ex.reason)
+        result = "Exception"
         logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
-    return {'wuid':wuid, 'state':state}
+    return {'wuid':wuid, 'state':state,  'result':result}
 
 def abortWorkunit(wuid):
     host = "http://"+gConfig.server+"/WsWorkunits/WUAbort?Wuids="+wuid

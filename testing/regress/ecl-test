@@ -30,6 +30,7 @@ import glob
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam,  getVersionNumbers
+from hpcc.common.error import Error
 
 prog_version = "0.0.14"
 
@@ -121,7 +122,7 @@ if __name__ == "__main__":
             eclfiles=[]   # List for ECL filenames to be executed
             for ecl in args.query:
                 if not ('.ecl' in ecl):
-                    args.cluster = ecl
+                    logging.error("%s. Not an ECL file:'%s'!" % (1,  ecl))
                 elif  ('*' in ecl) or ('?' in ecl):
                     # If there is any wildcard in ECL file name, resolve it
                     eclwild = os.path.join(regress.dir_ec, ecl)
@@ -148,19 +149,18 @@ if __name__ == "__main__":
                     targetClusters.append(args.cluster)
                 else:
                     logging.error("%s. Unknown cluster:'%s'!" % (1,  args.cluster))
-                    print "Abend."
-                    exit()
+                    raise Error("4000")
             # Go through the cluster list
             for cluster in targetClusters:
                 try:
                     if len(eclfiles) > 1:
-                        #Execute multiple ECl files like RUN to generates summary results and diff report.
+                        #Execute multiple ECL files like RUN to generates summary results and diff report.
                         regress.bootstrap(cluster, eclfiles)
                         if  'pq' in args:
                             regress.runSuiteP(cluster, regress.suites[cluster])
                         else:
                             regress.runSuite(cluster, regress.suites[cluster])
-                    else:
+                    elif len(eclfiles) == 1:
                         # Execute one ECL file on the cluster
                         for ecl in eclfiles:
                             eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex, regress.dir_r, cluster)
@@ -172,6 +172,9 @@ if __name__ == "__main__":
                                     logging.warn("%s. %s excluded on %s cluster." % (1,  eclfile.getBaseEcl(), cluster))
                             else:
                                 logging.warn("%s. %s skipped on %s cluster." % (1, eclfile.getBaseEcl(), cluster))
+                    else:
+                        logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  args.cluster))
+                        raise Error("4001")
                 except IOError:
                     logging.error("%s. Query %s does not exist!" % (1,  eclfile.getBaseEcl()))
                     exit()
@@ -186,12 +189,15 @@ if __name__ == "__main__":
                 else:
                     regress.runSuite(args.cluster, regress.suites[args.cluster])
             print("End.")
+    except Error as e:
+        logging.critical(e)
+        exit(e.getErrorCode());
     except Exception as e:
         logging.critical(e)
         logging.critical(traceback.format_exc())
-        print "Abend."
     except KeyboardInterrupt:
         logging.critical("Keyboard Interrupt Caught.")
+    finally:
         regress.StopTimeoutThread()
 
     exit()

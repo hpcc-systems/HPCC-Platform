@@ -93,7 +93,12 @@ class ECLcmd(Shell):
             return err + "\n"
         finally:
             if wuid ==  'N/A':
-                wuid = queryWuid(eclfile.getJobname(), eclfile.getTaskId())['wuid']
+                res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
+                logging.debug("%3d. queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
+                wuid = res['wuid']
+                if res['result'] != "OK":
+                    eclfile.diff=eclfile.getBaseEcl()+'\n\t'+res['state']+'\n'
+                    logging.error("%3d. %s in queryWuid(%s)",  eclfile.getTaskId(),  res['state'],  eclfile.getJobname())
 
             eclfile.addResults(data, wuid)
             if cmd == 'publish':
