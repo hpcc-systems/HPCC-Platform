@@ -21,8 +21,8 @@
                         	<div id="${id}FilterForm" style="width:460px" data-dojo-type="dijit.form.Form">
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
                         			<input id="${id}ClusterTargetSelect" title="Cluster:" name="QuerySetName" colspan="2" data-dojo-props="trim: true, placeHolder:'r?x*'" data-dojo-type="TargetSelectWidget" />
-                        			<input id="${id}Active" title="Active:" name="Active" colspan="2" data-dojo-props="trim: true, placeHolder:'jsmi*'" data-dojo-type="dijit.form.CheckBox" />
-                        			<input id="${id}Suspended" title="Suspended:" name="Suspended" colspan="2" data-dojo-props="trim: true, placeHolder:'jsmi*'" data-dojo-type="dijit.form.CheckBox" />
+                                    <input id="${id}Active" title="Active:" name="Activated" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                    <input id="${id}Suspended" title="Suspended:" name="SuspendedByUser" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                         		</div>
 	                    		<button id="${id}FilterApply" data-dojo-attach-event="onClick:_onFilterApply" data-dojo-type="dijit.form.Button">Apply</button>
 	                            <button id="${id}FilterClear" data-dojo-attach-event="onClick:_onFilterClear" data-dojo-type="dijit.form.Button">Clear</button>
