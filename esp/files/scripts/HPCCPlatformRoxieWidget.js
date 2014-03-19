@@ -19,21 +19,18 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
-    "dijit/registry",
-
     "hpcc/_TabContainerWidget",
-    "hpcc/QuerySetQueryWidget",
-    "hpcc/PackageMapQueryWidget",
 
     "dojo/text!../templates/HPCCPlatformRoxieWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane"
+    "dijit/layout/ContentPane",
+
+    "hpcc/DelayLoadWidget"
 
 ], function (declare, lang, i18n, nlsHPCC,
-                registry,
-                _TabContainerWidget, QuerySetQueryWidget, PackageMapQueryWidget,
+                _TabContainerWidget,
                 template) {
     return declare("HPCCPlatformRoxieWidget", [_TabContainerWidget], {
         templateString: template,

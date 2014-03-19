@@ -165,10 +165,10 @@ define([
                                 WUQueryResponse: {
                                     Workunits: {
                                         ECLWorkunit: [{
-	                                        Wuid: params.request.Wuid,
-	                                        StateID: 999,
-	                                        State: "deleted"
-	                                    }]
+                                            Wuid: params.request.Wuid,
+                                            StateID: 999,
+                                            State: "deleted"
+                                        }]
                                     }
                                 }
                             });

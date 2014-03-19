@@ -44,7 +44,7 @@ define([
     "hpcc/WsWorkunits",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
-    "hpcc/WUDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
 
@@ -60,12 +60,13 @@ define([
     "dijit/form/RadioButton",
     "dijit/form/Select",
     "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, WUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
+                _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget,
                 template) {
     return declare("WUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -483,10 +484,11 @@ define([
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
-                retVal = new WUDetailsWidget({
+                retVal = new DelayLoadWidget({
                     id: id,
                     title: params.Wuid,
                     closable: true,
+                    delayWidget: "WUDetailsWidget",
                     params: params
                 });
                 this.addChild(retVal, 1);

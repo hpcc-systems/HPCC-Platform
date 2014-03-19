@@ -37,17 +37,14 @@ define([
     "hpcc/WsWorkunits",
     "hpcc/FileSpray",
     "hpcc/WsDfu",
-    "hpcc/WUDetailsWidget",
-    "hpcc/DFUWUDetailsWidget",
-    "hpcc/LFDetailsWidget",
-    "hpcc/SFDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, all,
                 Button,
                 Standby,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, WsWorkunits, FileSpray, WsDfu, WUDetailsWidget, DFUWUDetailsWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
+                GridDetailsWidget, WsWorkunits, FileSpray, WsDfu, DelayLoadWidget, ESPUtil) {
     return declare("SearchResultsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -120,10 +117,11 @@ define([
         createDetail: function (id, row, params) {
             switch (row._type) {
                 case "Wuid":
-                    return new WUDetailsWidget({
+                    return new DelayLoadWidget({
                         id: id,
                         title: row.Summary,
                         closable: true,
+                        delayWidget: "WUDetailsWidget",
                         hpcc: {
                             params: {
                                 Wuid: row._wuid
@@ -132,10 +130,11 @@ define([
                     });
                     break;
                 case "DFUWuid":
-                    return new DFUWUDetailsWidget.fixCircularDependency({
+                    return new DelayLoadWidget({
                         id: id,
                         title: row.Summary,
                         closable: true,
+                        delayWidget: "DFUWUDetailsWidget",
                         hpcc: {
                             params: {
                                 Wuid: row._wuid
@@ -145,10 +144,11 @@ define([
                     break;
                 case "LogicalFile":
                     if (row.isSuperfile) {
-                        return new SFDetailsWidget.fixCircularDependency({
+                        return new DelayLoadWidget({
                             id: id,
                             title: row.Summary,
                             closable: true,
+                            delayWidget: "SFDetailsWidget",
                             hpcc: {
                                 params: {
                                     Name: row._name
@@ -156,10 +156,11 @@ define([
                             }
                         });
                     } else {
-                        return new LFDetailsWidget.fixCircularDependency({
+                        return new DelayLoadWidget({
                             id: id,
                             title: row.Summary,
                             closable: true,
+                            delayWidget: "LFDetailsWidget",
                             hpcc: {
                                 params: {
                                     Name: row._name

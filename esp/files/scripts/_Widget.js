@@ -23,7 +23,7 @@ define([
             this.widget = {};
         },
 
-        startup: function (args) {
+        postCreate: function() {
             this.inherited(arguments);
             this.registerChildWidgets(this.domNode);
         },

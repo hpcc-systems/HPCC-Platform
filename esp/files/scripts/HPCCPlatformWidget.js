@@ -35,6 +35,7 @@ define([
     "hpcc/WsDfu",
     "hpcc/WsSMC",
     "hpcc/GraphWidget",
+    "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
@@ -50,17 +51,13 @@ define([
     "dijit/MenuSeparator",
 
     "hpcc/HPCCPlatformMainWidget",
-    "hpcc/HPCCPlatformECLWidget",
-    "hpcc/HPCCPlatformFilesWidget",
-    "hpcc/HPCCPlatformRoxieWidget",
-    "hpcc/HPCCPlatformOpsWidget",
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget,
+                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget, DelayLoadWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -75,12 +72,9 @@ define([
             this.searchText = registry.byId(this.id + "FindText");
             this.aboutDialog = registry.byId(this.id + "AboutDialog");
             this.setBannerDialog = registry.byId(this.id + "SetBannerDialog");
-            this.searchPage = registry.byId(this.id + "_Main" + "_Search");
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
             this.errWarnPage = registry.byId(this.id + "_ErrWarn");
-            this.mainStackContainer = registry.byId(this.mainPage.id + "TabContainer");
-            this.searchPage = registry.byId(this.id + "_Main" + "_Search");
 
             this.upgradeBar = new UpgradeBar({
                 notifications: [],
@@ -226,9 +220,13 @@ define([
 
         //  Hitched actions  ---
         _onFind: function (evt) {
+            var context = this;
             this.stackContainer.selectChild(this.mainPage);
-            this.mainStackContainer.selectChild(this.searchPage);
-            this.searchPage.doSearch(this.searchText.get("value"));
+            this.mainPage.ensureWidget().then(function (mainPage) {
+                mainPage.widget._Search.ensureWidget().then(function (searchPage) {
+                    searchPage.doSearch(context.searchText.get("value"));
+                });
+            });
         },
 
         _onOpenLegacy: function (evt) {

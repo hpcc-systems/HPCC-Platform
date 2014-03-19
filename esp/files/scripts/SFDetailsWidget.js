@@ -49,12 +49,6 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ResultWidget",
-    "hpcc/ECLSourceWidget",
-    "hpcc/FilePartsWidget",
-    "hpcc/WUDetailsWidget",
-    "hpcc/DFUWUDetailsWidget",
-    "hpcc/TargetSelectWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPLogicalFile",
 
@@ -64,7 +58,7 @@ define([
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget,
+                _TabContainerWidget,
                 ESPUtil, ESPLogicalFile,
                 template) {
     exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget], {

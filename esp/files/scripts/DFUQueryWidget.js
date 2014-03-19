@@ -52,9 +52,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPLogicalFile",
     "hpcc/ESPDFUWorkunit",
-    "hpcc/LFDetailsWidget",
-    "hpcc/SFDetailsWidget",
-    "hpcc/DFUWUDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
     "hpcc/SelectionGridWidget",
@@ -64,12 +62,15 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
+    "dijit/form/Form",
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
     "dijit/form/DropDownButton",
     "dijit/form/Select",
+    "dijit/form/CheckBox",
     "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
     "dijit/Fieldset",
 
@@ -78,7 +79,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
                 Grid, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget,
+                _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -151,9 +152,7 @@ define([
                 var tab = this.ensureDFUWUPane(wu.ID, {
                     Wuid: wu.ID
                 });
-                if (tab) {
-                    this.selectChild(tab);
-                }
+                return tab
             }
         },
 
@@ -593,10 +592,11 @@ define([
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
-                retVal = new DFUWUDetailsWidget.fixCircularDependency({
+                retVal = new DelayLoadWidget({
                     id: id,
                     title: params.Wuid,
                     closable: true,
+                    delayWidget: "DFUWUDetailsWidget",
                     _hpccParams: params
                 });
                 this.addChild(retVal, 1);
@@ -609,17 +609,19 @@ define([
             var retVal = registry.byId(id);
             if (!retVal) {
                 if (params.isSuperfile) {
-                    retVal = new SFDetailsWidget.fixCircularDependency({
+                    retVal = new DelayLoadWidget({
                         id: id,
                         title: params.Name,
                         closable: true,
+                        delayWidget: "SFDetailsWidget",
                         _hpccParams: params
                     });
                 } else {
-                    retVal = new LFDetailsWidget.fixCircularDependency({
+                    retVal = new DelayLoadWidget({
                         id: id,
                         title: params.Name,
                         closable: true,
+                        delayWidget: "LFDetailsWidget",
                         _hpccParams: {
                             Name: params.Name
                         }

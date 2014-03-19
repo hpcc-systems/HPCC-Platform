@@ -40,21 +40,23 @@ define([
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ResultWidget",
-    "hpcc/ECLSourceWidget",
-    "hpcc/FilePartsWidget",
-    "hpcc/WUDetailsWidget",
-    "hpcc/DFUWUDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/ESPLogicalFile",
     "hpcc/ESPDFUWorkunit",
 
     "dojo/text!../templates/LFDetailsWidget.html",
 
-    "dijit/TooltipDialog"
+    "dijit/ToolbarSeparator",
+    "dijit/TooltipDialog",
+    "dijit/form/ValidationTextBox",
+    "dijit/form/CheckBox",
+    
+    "hpcc/TableContainer"
+
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-                _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit,
+                _TabContainerWidget, DelayLoadWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit,
                 template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -286,10 +288,11 @@ define([
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
-                retVal = new DFUWUDetailsWidget.fixCircularDependency({
+                retVal = new DelayLoadWidget({
                     id: id,
                     title: params.Wuid,
                     closable: true,
+                    delayWidget: "DFUWUDetailsWidget",
                     params: params
                 });
                 this.addChild(retVal);

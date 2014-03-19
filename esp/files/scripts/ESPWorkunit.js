@@ -275,7 +275,6 @@ define([
         },
         doDelete: function () {
             return this._action("Delete").then(function(response) {
-                var d= 0;
             });
         },
         publish: function (jobName, remoteDali, priority, comment) {

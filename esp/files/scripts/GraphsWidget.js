@@ -32,14 +32,14 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
-    "hpcc/GraphPageWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/TimingTreeMapWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 Button,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, GraphPageWidget, TimingTreeMapWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
     return declare("GraphsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -167,10 +167,11 @@ define([
                     SafeMode: (params && params.safeMode) ? true : false
                 }
             }
-            return new GraphPageWidget({
+            return new DelayLoadWidget({
                 id: id,
                 title: row.Name,
                 closable: true,
+                delayWidget: "GraphPageWidget",
                 hpcc: {
                     type: "graph",
                     params: localParams

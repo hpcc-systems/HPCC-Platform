@@ -30,14 +30,12 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
-    "hpcc/ResultWidget",
-    "hpcc/LFDetailsWidget",
-    "hpcc/SFDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, ResultWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil) {
     return declare("SourceFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -99,20 +97,22 @@ define([
 
         createDetail: function (id, row) {
             if (lang.exists("IsSuperFile", row) && row.IsSuperFile) {
-                return new SFDetailsWidget.fixCircularDependency({
+                return new DelayLoadWidget({
                     id : id,
                     title: row.Name,
                     closable: true,
+                    delayWidget: "SFDetailsWidget",
                     hpcc: {
                         type: "SFDetailsWidget",
                         params: row
                     }
                 });
             } else {
-                return new LFDetailsWidget.fixCircularDependency({
+                return new DelayLoadWidget({
                     id: id,
                     title: row.Name,
                     closable: true,
+                    delayWidget: "LFDetailsWidget",
                     hpcc: {
                         type: "LFDetailsWidget",
                         params: {

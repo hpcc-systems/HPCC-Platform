@@ -37,15 +37,15 @@
             </div>
         </div>
         <div id="${id}TabContainer" style="width: 100%; height: 100%" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.StackContainer">
-            <div id="${id}_Main" data-dojo-props="iconClass: 'iconLogo'" data-dojo-type="HPCCPlatformMainWidget">
+            <div id="${id}_Main" data-dojo-props="iconClass: 'iconLogo', delayWidget: 'HPCCPlatformMainWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_ECL" data-dojo-props="iconClass: 'iconWu', showLabel: false" data-dojo-type="HPCCPlatformECLWidget">
+            <div id="${id}_ECL" data-dojo-props="iconClass: 'iconWu', showLabel: false, delayWidget: 'HPCCPlatformECLWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Files" data-dojo-props="iconClass: 'iconLandingZone', showLabel: false" data-dojo-type="HPCCPlatformFilesWidget">
+            <div id="${id}_Files" data-dojo-props="iconClass: 'iconLandingZone', showLabel: false, delayWidget: 'HPCCPlatformFilesWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_RoxieQueries" data-dojo-props="iconClass: 'iconTargets', showLabel: false" data-dojo-type="HPCCPlatformRoxieWidget">
+            <div id="${id}_RoxieQueries" data-dojo-props="iconClass: 'iconTargets', showLabel: false, delayWidget: 'HPCCPlatformRoxieWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_OPS" data-dojo-props="iconClass: 'iconOperations', showLabel: false" data-dojo-type="HPCCPlatformOpsWidget">
+            <div id="${id}_OPS" data-dojo-props="iconClass: 'iconOperations', showLabel: false, delayWidget: 'HPCCPlatformOpsWidget'" data-dojo-type="DelayLoadWidget">
             </div>
             <div id="${id}_ErrWarn" data-dojo-props="showLabel: false" data-dojo-type="dijit.layout.TabContainer">
                 <div id="${id}ErrWarnGrid" data-dojo-props="title: 'Error/Warning(s)', errWarn: true, showToolbar: true" data-dojo-type="InfoGridWidget">

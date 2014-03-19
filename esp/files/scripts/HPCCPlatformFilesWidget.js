@@ -19,23 +19,19 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
-    "dijit/registry",
-
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
-    "hpcc/GetDFUWorkunitsWidget",
-    "hpcc/DFUQueryWidget",
-    "hpcc/LZBrowseWidget",
 
     "dojo/text!../templates/HPCCPlatformFilesWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane"
+    "dijit/layout/ContentPane",
+
+    "hpcc/DelayLoadWidget"
 
 ], function (declare, lang, i18n, nlsHPCC,
-                registry,
-                _TabContainerWidget, ESPRequest, GetDFUWorkunitsWidget, DFUQueryWidget, LZBrowseWidget,
+                _TabContainerWidget, ESPRequest,
                 template) {
     return declare("HPCCPlatformFilesWidget", [_TabContainerWidget], {
         templateString: template,
