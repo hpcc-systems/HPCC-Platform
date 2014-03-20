@@ -28,6 +28,7 @@ define([
     "dojox/widget/UpgradeBar",
 
     "hpcc/_TabContainerWidget",
+    "hpcc/ESPRequest",
     "hpcc/ESPActivity",
     "hpcc/ws_account",
     "hpcc/ws_access",
@@ -59,7 +60,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle,
                 registry, Tooltip,
                 UpgradeBar,
-                _TabContainerWidget, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget,
+                _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -90,6 +91,9 @@ define([
         startup: function (args) {
             this.inherited(arguments);
             domStyle.set(dom.byId(this.id + "StackController_stub_ErrWarn").parentNode.parentNode, {
+                visibility: "hidden"
+            });
+            domStyle.set(dom.byId(this.id + "StackController_stub_Config").parentNode.parentNode, {
                 visibility: "hidden"
             });
         },
@@ -237,6 +241,32 @@ define([
             win.focus();
         },
 
+        _onOpenConfiguration: function (evt) {
+            var context = this;
+            if (!this.configText) {
+                ESPRequest.send("main", "", {
+                    request: {
+                        config_: "",
+                        PlainText: "yes"
+                    },
+                    handleAs: "text"
+                }).then(function(response) {
+                    context.configText = context.formatXml(response);
+                    context.configSourceCM = CodeMirror.fromTextArea(dom.byId(context.id + "ConfigTextArea"), {
+                        tabMode: "indent",
+                        matchBrackets: true,
+                        gutter: true,
+                        lineNumbers: true,
+                        mode: "xml",
+                        readOnly: true,
+                        onGutterClick: CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder)
+                    });
+                    context.configSourceCM.setValue(context.configText);
+                }); 
+            }
+            this.stackContainer.selectChild(this.widget._Config);
+        },
+        
         _onOpenErrWarn: function (evt) {
             this.stackContainer.selectChild(this.errWarnPage);
         },
