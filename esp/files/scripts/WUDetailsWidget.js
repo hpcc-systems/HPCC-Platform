@@ -193,7 +193,12 @@ define([
         _onPublish: function (event) {
             if (this.publishForm.validate()) {
                 registry.byId(this.id + "Publish").closeDropDown();
-                this.wu.publish(dom.byId(this.id + "Jobname2").value, dom.byId(this.id + "RemoteDali").value);
+                this.wu.publish(
+                    dom.byId(this.id + "Jobname2").value,
+                    dom.byId(this.id + "RemoteDali").value,
+                    registry.byId(this.id + "Priority").value,
+                    dom.byId(this.id + "Comment").value
+                );
             }
         },
 
