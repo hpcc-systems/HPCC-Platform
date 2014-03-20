@@ -144,6 +144,7 @@ extern mp_decl void initMyNode(unsigned short port);
 
 interface IMP_Exception: extends IException
 {
+    virtual const SocketEndpoint &queryEndpoint() const = 0;
 };
 
 enum MessagePassingError

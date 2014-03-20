@@ -195,10 +195,6 @@ public:
     {
     }
 
-    CMPException(MessagePassingError err) : error(err) 
-    {
-    }
-
     StringBuffer &  errorMessage(StringBuffer &str) const
     { 
         StringBuffer tmp;
@@ -216,6 +212,7 @@ public:
     { 
         return MSGAUD_user; 
     }
+    virtual const SocketEndpoint &queryEndpoint() const { return endpoint; }
 private:
     MessagePassingError error;
     SocketEndpoint endpoint;
@@ -1668,8 +1665,21 @@ int CMPConnectThread::run()
                 SocketEndpoint hostep;
                 SocketEndpointV4 id[2];
                 sock->readtms(&id[0],sizeof(id),sizeof(id),rd,CONFIRM_TIMEOUT); 
+                if (rd != sizeof(SocketEndpointV4[2]))
+                {
+                    FLLOG(MCoperatorWarning, unknownJob, "MP Connect Thread: invalid number of connection bytes serialized");
+                    sock->close();
+                    continue;
+                }
                 id[0].get(remoteep);
                 id[1].get(hostep);
+                if (remoteep.isNull() || hostep.isNull())
+                {
+                    // JCSMORE, I think remoteep really must/should match a IP of this local host
+                    FLLOG(MCoperatorWarning, unknownJob, "MP Connect Thread: invalid remote and/or host ep serialized");
+                    sock->close();
+                    continue;
+                }
 #ifdef _FULLTRACE       
                 StringBuffer tmp1;
                 remoteep.getUrlStr(tmp1);
@@ -2191,12 +2201,34 @@ public:
         if (sender)
             *sender = NULL;
         CTimeMon tm(timeout);
-        if (parent->recv(mbuf,src?&src->endpoint():NULL,tag,tm)) {
-            if (sender) 
-                *sender = createINode(mbuf.getSender());
-            return true;
+        loop
+        {
+            try
+            {
+                if (parent->recv(mbuf,src?&src->endpoint():NULL,tag,tm))
+                {
+                    if (sender)
+                        *sender = createINode(mbuf.getSender());
+                    return true;
+                }
+                return false;
+            }
+            catch (IMP_Exception *e)
+            {
+                if (MPERR_link_closed != e->errorCode())
+                    throw;
+                const SocketEndpoint &ep = e->queryEndpoint();
+                if (src)
+                {
+                    if (ep == src->endpoint())
+                        throw;
+                }
+                StringBuffer epStr;
+                ep.getUrlStr(epStr);
+                FLLOG(MCoperatorWarning, unknownJob, "CInterCommunicator: ignoring closed endpoint: %s", epStr.str());
+                e->Release();
+            }
         }
-        return false;
     }
 
 
@@ -2408,14 +2440,37 @@ public:
         else
             srcep = &queryEndpoint(srcrank);
         CTimeMon tm(timeout);
-        if (parent->recv(mbuf,(srcrank==RANK_ALL)?NULL:&queryEndpoint(srcrank),tag,tm)) {
-            if (sender)
-                *sender = group->rank(mbuf.getSender());
-            return true;
+        loop
+        {
+            try
+            {
+                if (parent->recv(mbuf,(srcrank==RANK_ALL)?NULL:&queryEndpoint(srcrank),tag,tm))
+                {
+                    if (sender)
+                        *sender = group->rank(mbuf.getSender());
+                    return true;
+                }
+                if (sender)
+                    *sender = RANK_NULL;
+                return false;
+            }
+            catch (IMP_Exception *e)
+            {
+                if (MPERR_link_closed == e->errorCode())
+                {
+                    const SocketEndpoint &ep = e->queryEndpoint();
+                    if (RANK_NULL == group->rank(ep))
+                    {
+                        StringBuffer epStr;
+                        ep.getUrlStr(epStr);
+                        FLLOG(MCoperatorWarning, unknownJob, "CCommunicator: ignoring closed endpoint from outside the communicator group: %s", epStr.str());
+                        e->Release();
+                        continue; // recv again
+                    }
+                }
+                throw;
+            }
         }
-        if (sender)
-            *sender = RANK_NULL;
-        return false;
     }
     
     void flush(mptag_t tag)
