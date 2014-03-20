@@ -5,28 +5,44 @@
 WsEclWuInfo::WsEclWuInfo(const char *wuid_, const char *qset, const char *qname, const char *user, const char *pw) :
     wuid(wuid_), username(user), password(pw), qsetname(qset), queryname(qname)
 {
-    Owned<IWorkUnitFactory> wf = getWorkUnitFactory();
-    if (!wuid.length() && qset && *qset && qname && *qname)
-    {
-        Owned<IPropertyTree> qstree = getQueryRegistry(qset, true);
-        if (!qstree)
-            throw MakeStringException(-1, "QuerySet %s not found", qset);
+}
 
-        Owned<IPropertyTree> query = resolveQueryAlias(qstree, qname);
+const char *WsEclWuInfo::ensureWuid()
+{
+    if (wuid.length())
+        return wuid.get();
+    if (qsetname.length() && queryname.length())
+    {
+        Owned<IPropertyTree> qstree = getQueryRegistry(qsetname, true);
+        if (!qstree)
+            throw MakeStringException(-1, "QuerySet %s not found", qsetname.get());
+
+        Owned<IPropertyTree> query = resolveQueryAlias(qstree, queryname);
         if (!query)
-            throw MakeStringException(-1, "Query %s/%s not found", qset, qname);
+            throw MakeStringException(-1, "Query %s/%s not found", qsetname.get(), queryname.get());
         if (query->getPropBool("@suspended"))
-            throw MakeStringException(-1, "Query %s/%s is currently suspended", qset, qname);
+            throw MakeStringException(-1, "Query %s/%s is currently suspended", qsetname.get(), queryname.get());
 
         wuid.set(query->queryProp("@wuid"));
     }
     if (!wuid.length())
         throw MakeStringException(-1, "Workunit not specified");
+    return wuid.get();
+}
+
+IConstWorkUnit *WsEclWuInfo::ensureWorkUnit()
+{
+    if (!wuid.length())
+        ensureWuid();
+    if (wu)
+        return wu;
+    Owned<IWorkUnitFactory> wf = getWorkUnitFactory();
     wu.setown(wf->openWorkUnit(wuid.sget(), false));
     if (!wu)
         throw MakeStringException(-1, "Could not open workunit: %s", wuid.sget());
     if (isLibrary(wu))
-        throw MakeStringException(-1, "%s/%s is a library", qset, qname);
+        throw MakeStringException(-1, "%s/%s %s is a library", qsetname.sget(), queryname.sget(), wuid.sget());
+    return wu;
 }
 
 bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
@@ -34,7 +50,7 @@ bool WsEclWuInfo::getWsResource(const char *name, StringBuffer &out)
     if (strieq(name, "SOAP"))
     {
         out.appendf("<message name=\"%s\">", queryname.sget());
-        IConstWUResultIterator &vars = wu->getVariables();
+        IConstWUResultIterator &vars = ensureWorkUnit()->getVariables();
         Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(username, password));
         ForEach(vars)
         {
@@ -166,13 +182,13 @@ void WsEclWuInfo::getSchemaFromResult(StringBuffer &schema, IConstWUResult &res)
 
 void WsEclWuInfo::getInputSchema(StringBuffer &schema, const char *name)
 {
-    Owned<IConstWUResult> res =  wu->getResultByName(name);
+    Owned<IConstWUResult> res =  ensureWorkUnit()->getResultByName(name);
     getSchemaFromResult(schema, *res);
 }
 
 void WsEclWuInfo::getOutputSchema(StringBuffer &schema, const char *name)
 {
-    Owned<IConstWUResult> res =  wu->getResultByName(name);
+    Owned<IConstWUResult> res =  ensureWorkUnit()->getResultByName(name);
     getSchemaFromResult(schema, *res);
 }
 
@@ -183,7 +199,7 @@ void WsEclWuInfo::updateSchemaCache()
     {
         schemacache.append("<SCHEMA>");
 
-        Owned<IConstWUResultIterator> inputs = &wu->getVariables();
+        Owned<IConstWUResultIterator> inputs = &ensureWorkUnit()->getVariables();
         addInputSchemas(schemacache, inputs, "Input");
 
         Owned<IConstWUResultIterator> results = &wu->getResults();

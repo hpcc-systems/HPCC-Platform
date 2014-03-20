@@ -214,7 +214,7 @@ const char *nextParameterTag(StringBuffer &tag, const char *path)
 
 void ensureParameter(IPropertyTree *pt, StringBuffer &tag, const char *path, const char *value, const char *fullpath)
 {
-    if (!tag || !*tag)
+    if (!tag.length())
         return;
 
     unsigned idx = 1;
@@ -901,7 +901,7 @@ JSONField_Category xsdTypeToJSONFieldCategory(const char *xsdtype)
         return JSONField_Real;
     if (!strncmp(xsdtype, "decimal", 7)) //ecl creates derived types of the form decimal#_#
         return JSONField_Real;
-    if (!strncmp(xsdtype, "none", 4)) //maps to an eml schema element with no type.  set to true or don't add
+    if (streq(xsdtype, "none")) //maps to an eml schema element with no type.  set to true or don't add
         return JSONField_Present;
     return JSONField_String;
 }
@@ -1173,11 +1173,12 @@ int CWsEclBinding::getWsEcl2TabView(CHttpRequest* request, CHttpResponse* respon
     splitLookupInfo(request->queryParameters(), thepath, wuid, qs, qid);
 
     WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
+    const char *w = wsinfo.ensureWuid();
 
     StringBuffer xml;
     xml.append("<tabview>");
     xml.append("<version>3</version>");
-    xml.appendf("<wuid>%s</wuid>", wsinfo.wuid.sget());
+    xml.appendf("<wuid>%s</wuid>", w);
     xml.appendf("<qset>%s</qset>", wsinfo.qsetname.sget());
     xml.appendf("<qname>%s</qname>", wsinfo.queryname.sget());
 
@@ -1624,6 +1625,7 @@ bool CWsEclBinding::getSchema(StringBuffer& schema, IEspContext &ctx, CHttpReque
 
 int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo, bool box)
 {
+    IConstWorkUnit *wu = wsinfo.ensureWorkUnit();
     IProperties *parms = request->queryParameters();
 
     StringBuffer page;
@@ -1631,13 +1633,13 @@ int CWsEclBinding::getGenForm(IEspContext &context, CHttpRequest* request, CHttp
 
     StringBuffer v;
     StringBuffer formxml("<FormInfo>");
-    appendXMLTag(formxml, "WUID", wsinfo.wuid.sget());
+    appendXMLTag(formxml, "WUID", wsinfo.queryWuid());
     appendXMLTag(formxml, "QuerySet", wsinfo.qsetname.sget());
     appendXMLTag(formxml, "QueryName", wsinfo.queryname.sget());
     appendXMLTag(formxml, "ClientVersion", v.appendf("%g",context.getClientVersion()).str());
     appendXMLTag(formxml, "RequestElement", v.clear().append(wsinfo.queryname).append("Request").str());
 
-    Owned<IWuWebView> web = createWuWebView(*wsinfo.wu.get(), wsinfo.queryname.get(), getCFD(), true);
+    Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.queryname.get(), getCFD(), true);
     if (web)
     {
         appendXMLTag(formxml, "Help", web->aggregateResources("HELP", v.clear()).str());
@@ -1816,7 +1818,7 @@ StringBuffer &appendJSONExceptions(StringBuffer &s, IMultiException *e, const ch
     return s;
 }
 
-void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags)
+void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, const char *xmltype, const char *ns, unsigned flags, bool validate)
 {
     size32_t start = jsonmsg.length();
     try
@@ -1824,6 +1826,14 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
         IProperties *parameters = context.queryRequestParameters();
         Owned<IPropertyTree> reqTree = createPTreeFromHttpParameters(wsinfo.queryname, parameters);
 
+        if (!validate)
+        {
+            jsonmsg.append('{');
+            appendJSONName(jsonmsg, wsinfo.queryname);
+            toJSON(reqTree, jsonmsg, 0, 0);
+            jsonmsg.append('}');
+            return;
+        }
         StringBuffer element;
         element.append(wsinfo.queryname.sget());
             element.append("Request");
@@ -1848,94 +1858,6 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
         jsonmsg.setLength(start);
         appendJSONException(jsonmsg.append('{'), e);
         jsonmsg.append('}');
-    }
-}
-
-void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &context, CHttpRequest *request, const char *xml, WsEclWuInfo &wsinfo)
-{
-    size32_t start = jsonmsg.length();
-    const char *jsonp = context.queryRequestParameters()->queryProp("jsonp");
-    try
-    {
-        Owned<IPropertyTree> parmtree = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
-
-        StringBuffer element;
-        element.append(wsinfo.queryname.sget());
-        element.append("Response");
-
-        IPropertyTree *node = parmtree;
-        if (node->hasProp("Body"))
-            node = node->queryPropTree("Body");
-        if (node->hasProp(element))
-            node = node->queryPropTree(element);
-        const char *wuid = node->queryProp("Wuid");
-        if (node->hasProp("Results"))
-            node = node->queryPropTree("Results");
-        if (node->hasProp("Result"))
-            node = node->queryPropTree("Result");
-
-        if (jsonp && *jsonp)
-            jsonmsg.append(jsonp).append('(');
-
-        jsonmsg.appendf("{\"%s\": {", element.str());
-        Owned<IPropertyTreeIterator> exceptions = node->getElements("Exception");
-        Owned<IPropertyTreeIterator> datasets = node->getElements("Dataset");
-        if (wuid && *wuid)
-            appendJSONValue(jsonmsg, "Wuid", wuid);
-        if ((!exceptions || !exceptions->first()) && (!datasets || !datasets->first()))
-        {
-            jsonmsg.append("  }\n}");
-            return;
-        }
-
-        appendJSONName(jsonmsg, "Results").append("{\n");
-        if (exceptions && exceptions->first())
-        {
-            appendJSONName(jsonmsg, "Exceptions").append("{");
-            appendJSONName(jsonmsg, "Exception").append("[");
-            ForEach(*exceptions)
-                appendJSONExceptionItem(jsonmsg, exceptions->query().getPropInt("Code"), exceptions->query().queryProp("Message"), NULL, NULL);
-            jsonmsg.append("]}");
-        }
-
-        ForEach(*datasets)
-        {
-            IPropertyTree &ds = datasets->query();
-            const char *dsname = ds.queryProp("@name");
-            if (dsname && *dsname)
-            {
-                StringBuffer schemaResult;
-                wsinfo.getOutputSchema(schemaResult, dsname);
-                if (schemaResult.length())
-                {
-                    Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaResult);
-                    if (schema.get())
-                    {
-                        IXmlType* type = schema->queryElementType("Dataset");
-                        if (type)
-                        {
-                            StringBuffer outname(dsname);
-                            delimitJSON(jsonmsg);
-                            StringArray parentTypes;
-                            buildJsonMsg(parentTypes, type, jsonmsg, outname.replace(' ', '_').str(), &ds, 0);
-                        }
-                    }
-                }
-            }
-        }
-        jsonmsg.append("}}}");
-        if (jsonp && *jsonp)
-            jsonmsg.append(");");
-    }
-    catch (IException *e)
-    {
-        jsonmsg.setLength(start);
-        if (jsonp && *jsonp)
-            jsonmsg.append(jsonp).append('(');
-        appendJSONException(jsonmsg.append('{'), e);
-        jsonmsg.append('}');
-        if (jsonp && *jsonp)
-            jsonmsg.append(");");
     }
 }
 
@@ -1967,7 +1889,7 @@ inline StringBuffer &buildWsEclTargetUrl(StringBuffer &url, WsEclWuInfo &wsinfo,
     if (wsinfo.qsetname.length() && wsinfo.queryname.length())
         url.append("query/").append(wsinfo.qsetname.get()).append('/').append(wsinfo.queryname.get());
     else
-        url.append("wuid/").append(wsinfo.wuid.sget());
+        url.append("wuid/").append(wsinfo.queryWuid());
     if (params && *params)
         url.append('?').append(params);
     return url;
@@ -2018,7 +1940,7 @@ int CWsEclBinding::getXmlTestForm(IEspContext &context, CHttpRequest* request, C
     xform->setStringParameter("pageName", pageName.str());
     xform->setStringParameter("serviceName", wsinfo.qsetname.sget());
     xform->setStringParameter("methodName", wsinfo.queryname.sget());
-    xform->setStringParameter("wuid", wsinfo.wuid.sget());
+    xform->setStringParameter("wuid", wsinfo.queryWuid());
     xform->setStringParameter("header", header.str());
 
     ISecUser* user = context.queryUser();
@@ -2044,7 +1966,7 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     IProperties *parms = context.queryRequestParameters();
 
     StringBuffer jsonmsg, pageName;
-    getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0);
+    getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0, true);
 
     StringBuffer params;
     const char* excludes[] = {"soap_builder_",NULL};
@@ -2069,7 +1991,7 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     xform->setStringParameter("pageName", pageName.str());
     xform->setStringParameter("serviceName", wsinfo.qsetname.sget());
     xform->setStringParameter("methodName", wsinfo.queryname.sget());
-    xform->setStringParameter("wuid", wsinfo.wuid.sget());
+    xform->setStringParameter("wuid", wsinfo.queryWuid());
     xform->setStringParameter("header", header.str());
 
     ISecUser* user = context.queryUser();
@@ -2154,11 +2076,13 @@ int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response,
 
 int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, IPropertyTree *reqTree, StringBuffer &out, unsigned flags, TextMarkupFormat fmt, const char *viewname, const char *xsltname)
 {
+    IConstWorkUnit *sourceWorkUnit = wsinfo.ensureWorkUnit();
+
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
     Owned <IWorkUnit> workunit = factory->createWorkUnit(NULL, "wsecl", context.queryUserId());
 
     IExtendedWUInterface *ext = queryExtendedWU(workunit);
-    ext->copyWorkUnit(wsinfo.wu, false);
+    ext->copyWorkUnit(sourceWorkUnit, false);
 
     workunit->clearExceptions();
     workunit->resetWorkflow();
@@ -2181,9 +2105,9 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     if (reqTree)
     {
         if (reqTree->hasProp("Envelope"))
-            reqTree=reqTree->queryPropTree("Envelope");
+            reqTree=reqTree->queryPropTree("Envelope[1]");
         if (reqTree->hasProp("Body"))
-            reqTree=reqTree->queryPropTree("Body/*[1]");
+            reqTree=reqTree->queryPropTree("Body[1]/*[1]");
         workunit->setXmlParams(LINK(reqTree));
     }
 
@@ -2290,7 +2214,7 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
     if (isRoxieReq && outputJSON)
     {
         StringBuffer jsonmsg;
-        getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0);
+        getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0, false);
         sendRoxieRequest(wsinfo.qsetname.get(), jsonmsg, output, status, wsinfo.queryname, "application/json");
     }
     else
@@ -2310,10 +2234,17 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
         else
         {
             StringBuffer roxieresp;
-            sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, roxieresp, status, wsinfo.queryname);
-            Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
-            if (web.get())
-                web->expandResults(roxieresp.str(), output, xmlflags);
+            sendRoxieRequest(wsinfo.qsetname, soapmsg, roxieresp, status, wsinfo.queryname);
+            if (xmlflags & WWV_OMIT_SCHEMAS)
+                expandWuXmlResults(output, wsinfo.queryname, roxieresp.str(), xmlflags);
+            else
+            {
+                IConstWorkUnit *wu = wsinfo.ensureWorkUnit();
+                Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.queryname.get(), getCFD(), true);
+                if (web.get())
+                    web->expandResults(roxieresp.str(), output, xmlflags);
+            }
+
         }
     }
 
@@ -2327,8 +2258,9 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
 
 int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo)
 {
-    StringBuffer soapmsg;
+    IConstWorkUnit *wu = wsinfo.ensureWorkUnit();
 
+    StringBuffer soapmsg;
     getSoapMessage(soapmsg, context, request, wsinfo, REQSF_TRIM|REQSF_ROOT, false);
     if (getEspLogLevel()>LogNormal)
         DBGLOG("submitQuery soap: %s", soapmsg.str());
@@ -2340,7 +2272,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     StringBuffer html;
 
     SCMStringBuffer clustertype;
-    wsinfo.wu->getDebugValue("targetclustertype", clustertype);
+    wu->getDebugValue("targetclustertype", clustertype);
 
     StringBuffer xsltfile(getCFD());
     xsltfile.append("xslt/wsecl3_result.xslt");
@@ -2348,7 +2280,7 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     if (strieq(clustertype.str(), "roxie"))
     {
         sendRoxieRequest(wsinfo.qsetname.get(), soapmsg, output, status, wsinfo.queryname);
-        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
+        Owned<IWuWebView> web = createWuWebView(*wu, wsinfo.queryname.get(), getCFD(), true);
         if (!view)
             web->applyResultsXSLT(xsltfile.str(), output.str(), html);
         else
@@ -3008,10 +2940,15 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
             soapresp.swapWith(output);
         else
         {
-            WsEclWuInfo wsinfo(wuid.str(), target.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
-            Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
-            if (web.get())
-                web->expandResults(output.str(), soapresp, xmlflags);
+            if (xmlflags & WWV_OMIT_SCHEMAS)
+                expandWuXmlResults(soapresp, queryname.str(), output.str(), xmlflags);
+            else
+            {
+                WsEclWuInfo wsinfo(wuid.str(), target.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
+                Owned<IWuWebView> web = createWuWebView(*wsinfo.ensureWorkUnit(), wsinfo.queryname.get(), getCFD(), true);
+                if (web.get())
+                    web->expandResults(output.str(), soapresp, xmlflags);
+            }
         }
     }
     else

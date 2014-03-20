@@ -127,6 +127,8 @@ public:
 
     void appendManifestSchemas(IPropertyTree &manifest, ILoadedDllEntry *dll)
     {
+        if (flags & WWV_OMIT_SCHEMAS)
+            return;
         assertex(!finalized);
         if (!dll)
             return;
@@ -655,13 +657,31 @@ void WuWebView::renderSingleResult(const char *viewName, const char *resultname,
     renderExpandedResults(viewName, buffer, out);
 }
 
-void WuWebView::expandResults(const char *xml, StringBuffer &out, unsigned flags)
+void expandWuXmlResults(StringBuffer &out, const char *name, const char *xml, unsigned flags, IPropertyTree *manifest, ILoadedDllEntry *dll)
 {
-    WuExpandedResultBuffer expander(name.str(), flags);
+    WuExpandedResultBuffer expander(name, flags);
     expander.appendDatasetsFromXML(xml);
-    expander.appendManifestSchemas(*ensureManifest(), loadDll());
+    if (!(flags & WWV_OMIT_SCHEMAS) && manifest && dll)
+        expander.appendManifestSchemas(*manifest, dll);
     expander.finalize();
     out.append(expander.buffer);
+}
+
+extern WUWEBVIEW_API void expandWuXmlResults(StringBuffer &out, const char *name, const char *xml, unsigned flags)
+{
+    expandWuXmlResults(out, name, xml, flags, NULL, NULL);
+}
+
+void WuWebView::expandResults(const char *xml, StringBuffer &out, unsigned flags)
+{
+    IPropertyTree *manifest = NULL;
+    ILoadedDllEntry *dll = NULL;
+    if (!(flags & WWV_OMIT_SCHEMAS))
+    {
+        manifest = ensureManifest();
+        dll = loadDll();
+    }
+    expandWuXmlResults(out, name.str(), xml, flags, manifest, dll);
 }
 
 void WuWebView::createWuidResponse(StringBuffer &out, unsigned flags)

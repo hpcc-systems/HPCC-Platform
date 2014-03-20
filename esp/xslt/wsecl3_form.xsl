@@ -805,9 +805,7 @@ function switchInputForm()
                     <xsl:when test="$schemaRoot/xsd:complexType[@name=$bareType]/xsd:all">
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:if test="$type">
-                            <xsl:value-of select="concat('WARNING[1]: unknown type: ', $type, ',fieldId=',$fieldId)"/>
-                        </xsl:if>
+                        <xsl:value-of select="concat('WARNING[1]: unknown type: ', $type, ',fieldId=',$fieldId)"/>
                     </xsl:otherwise>
                 </xsl:choose>
             </xsl:when>

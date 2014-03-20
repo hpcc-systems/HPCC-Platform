@@ -5507,34 +5507,15 @@ static void writeJSONBase64ValueToStream(IIOStream &out, const char *val, size32
     writeCharToStream(out, '"');
 }
 
-static void checkWriteJSONCloseArrayToStream(IIOStream &out, StringAttr &prevItem, const char *name, bool format, unsigned &indent, bool &delimit)
-{
-    if (prevItem.isEmpty())
-        return;
-    if (!name || !streq(prevItem, name))
-    {
-        if (format)
-        {
-            writeCharToStream(out, '\n');
-            writeCharsNToStream(out, ' ', indent);
-            indent--;
-        }
-        writeCharToStream(out, ']');
-        prevItem.clear();
-        delimit = true;
-    }
-}
-
-static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags, bool &delimit, bool root=false)
+static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags, bool &delimit, bool root=false, bool isArrayItem=false)
 {
     Owned<IAttributeIterator> it = tree->getAttributes(true);
     bool hasAttributes = it->first();
     bool complex = (hasAttributes || tree->hasChildren());
     bool isBinary = tree->isBinary(NULL);
-    bool isItem = tree->isArrayItem();
 
     const char *name = tree->queryName();
-    if (!root && !isItem)
+    if (!root && !isArrayItem)
     {
         if (!name || !*name)
             name = "__unnamed__";
@@ -5543,7 +5524,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
 
     checkWriteJSONDelimiter(out, delimit);
 
-    if (isItem && (flags & JSON_Format))
+    if (isArrayItem && (flags & JSON_Format))
     {
         writeCharToStream(out, '\n');
         writeCharsNToStream(out, ' ', indent);
@@ -5609,25 +5590,38 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
 
     Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & JSON_SortTags) ? iptiter_sort : iptiter_null);
     StringAttr lastArrayItem;
-    ForEach(*sub)
+    bool repeatingElement = false;
+    sub->first();
+    while(sub->isValid())
     {
         IPropertyTree &element = sub->query();
         const char *name = element.queryName();
-        checkWriteJSONCloseArrayToStream(out, lastArrayItem, name, (flags & JSON_Format), indent, delimit);
-
-        if (element.isArrayItem() && lastArrayItem.isEmpty())
+        if (sub->next() && !repeatingElement && streq(name, sub->query().queryName()))
         {
             if (flags & JSON_Format)
                 indent++;
             writeJSONNameToStream(out, name, (flags & JSON_Format) ? indent : 0, delimit);
             writeCharToStream(out, '[');
-            lastArrayItem.set(name);
+            repeatingElement = true;
+            delimit = false;
         }
 
-        _toJSON(&sub->query(), out, indent+1, flags, delimit);
+        _toJSON(&element, out, indent+1, flags, delimit, false, repeatingElement);
+
+        if (repeatingElement && (!sub->isValid() || !streq(name, sub->query().queryName())))
+        {
+            if (flags & JSON_Format)
+            {
+                writeCharToStream(out, '\n');
+                writeCharsNToStream(out, ' ', indent);
+                indent--;
+            }
+            writeCharToStream(out, ']');
+            repeatingElement = false;
+            delimit = true;
+        }
     }
 
-    checkWriteJSONCloseArrayToStream(out, lastArrayItem, NULL, (flags & JSON_Format), indent, delimit);
 
     if (!empty)
     {
