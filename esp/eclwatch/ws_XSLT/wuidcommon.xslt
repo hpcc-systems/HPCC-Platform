@@ -44,7 +44,14 @@
                 <xsl:otherwise>
                   <xsl:value-of select="$wuid"/>
                   &nbsp;
-                  <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML" >XML</a>
+                  <xsl:choose>
+                    <xsl:when test="WUXMLSize &lt; 5000000">
+                      <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML%26Option%3d1" >XML</a><xsl:value-of select="WUXMLSize"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                      <a href="/esp/iframe?esp_iframe_title=Download ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML%26Option%3d2" >Download XML</a>
+                    </xsl:otherwise>
+                  </xsl:choose>
                   &nbsp;
                   <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dECLPlaygroundWidget%26Wuid%3d{$wuid}%26Target%3d{Cluster}" >ECL Playground</a>
                 </xsl:otherwise>

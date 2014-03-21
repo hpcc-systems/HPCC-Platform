@@ -2430,12 +2430,20 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             else if (strieq(File_XML,req.getType()))
             {
                 winfo.getWorkunitXml(req.getPlainText(), mb);
-                resp.setThefile(mb);
-                const char* plainText = req.getPlainText();
-                if (plainText && (!stricmp(plainText, "yes")))
-                    resp.setThefile_mimetype(HTTP_TYPE_TEXT_PLAIN);
+                if (opt < 2)
+                {
+                    resp.setThefile(mb);
+                    const char* plainText = req.getPlainText();
+                    if (plainText && (!stricmp(plainText, "yes")))
+                        resp.setThefile_mimetype(HTTP_TYPE_TEXT_PLAIN);
+                    else
+                        resp.setThefile_mimetype(HTTP_TYPE_APPLICATION_XML);
+                }
                 else
-                    resp.setThefile_mimetype(HTTP_TYPE_APPLICATION_XML);
+                {
+                    VStringBuffer xmlName("%s.xml", wuid.get());
+                    openSaveFile(context, 2, xmlName.str(), HTTP_TYPE_APPLICATION_XML, mb, resp);
+                }
             }
         }
     }
