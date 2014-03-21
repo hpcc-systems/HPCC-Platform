@@ -157,10 +157,12 @@ define([
                         if (item.Code === 20081) {
                             lang.mixin(response, {
                                 WUQueryResponse: {
-                                    Workunit: {
-                                        Wuid: params.request.Wuid,
-                                        StateID: 999,
-                                        State: "deleted"
+                                    Workunits: {
+                                        ECLWorkunit: [{
+	                                        Wuid: params.request.Wuid,
+	                                        StateID: 999,
+	                                        State: "deleted"
+	                                    }]
                                     }
                                 }
                             });

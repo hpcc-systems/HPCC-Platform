@@ -170,7 +170,8 @@ define([
             5: "failed",
             6: "finished",
             7: "monitoring",
-            8: "aborting"
+            8: "aborting",
+            999: "deleted"
         },
 
         isComplete: function (state) {
@@ -178,6 +179,7 @@ define([
                 case 4:
                 case 5:
                 case 6:
+                case 999:
                     return true;
             }
             return false;
@@ -297,7 +299,24 @@ define([
             return ESPRequest.send("FileSpray", "Rename", params);
         },
         GetDFUWorkunit: function (params) {
-            return ESPRequest.send("FileSpray", "GetDFUWorkunit", params);
+            return ESPRequest.send("FileSpray", "GetDFUWorkunit", params).then(function(response) {
+                if (lang.exists("Exceptions.Exception", response)) {
+                    arrayUtil.forEach(response.Exceptions.Exception, function (item, idx) {
+                        if (item.Code === 20080) {
+                            lang.mixin(response, {
+                            	GetDFUWorkunitResponse: {
+                                    result: {
+                                        Wuid: params.request.Wuid,
+                                        State: 999,
+                                        StateMessage: "deleted"
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+                return response;
+            });
         },
         UpdateDFUWorkunit: function (params) {
             return ESPRequest.send("FileSpray", "UpdateDFUWorkunit", params);

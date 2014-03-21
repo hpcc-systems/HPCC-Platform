@@ -178,10 +178,9 @@ define([
 
             var context = this;
             FileSpray.UpdateDFUWorkunit({
-                request: outerRequest,
-                load: function (response) {
-                    context.refresh();
-                }
+                request: outerRequest
+            }).then(function (response) {
+                context.refresh();
             });
         },
         submit: function (target) {
@@ -190,17 +189,21 @@ define([
             FileSpray.DFUWUFile({
                 request: {
                     Wuid: this.Wuid
-                },
-                load: function (response) {
-                    onFetchXML(response);
                 }
+            }).then(function (response) {
+                onFetchXML(response);
             });
         },
         _resubmit: function (clone, resetWorkflow, callback) {
         },
         resubmit: function (callback) {
         },
-        _action: function (action, callback) {
+        _action: function (action) {
+            var context = this;
+            return FileSpray.DFUWorkunitsAction([this], action, {
+            }).then(function (response) {
+                context.refresh();
+            });
         },
         abort: function () {
             return FileSpray.AbortDFUWorkunit({
@@ -210,6 +213,7 @@ define([
             });
         },
         doDelete: function (callback) {
+            return this._action("Delete");
         },
         refresh: function (full) {
             this.getInfo({
@@ -223,14 +227,13 @@ define([
             FileSpray.GetDFUWorkunit({
                 request: {
                     wuid: this.Wuid
-                },
-                load: function (response) {
-                    if (lang.exists("GetDFUWorkunitResponse.result", response)) {
-                        context.updateData(response.GetDFUWorkunitResponse.result);
+                }
+            }).then(function (response) {
+                if (lang.exists("GetDFUWorkunitResponse.result", response)) {
+                    context.updateData(response.GetDFUWorkunitResponse.result);
 
-                        if (args.onAfterSend) {
-                            args.onAfterSend(context);
-                        }
+                    if (args.onAfterSend) {
+                        args.onAfterSend(context);
                     }
                 }
             });
@@ -285,6 +288,8 @@ define([
                     return "/esp/files/img/workunit_running.png";
                 case 8:
                     return "/esp/files/img/workunit_aborting.png";
+                case 999:
+                    return "/esp/files/img/workunit_deleted.png";                    
             }
             return "/esp/files/img/workunit.png";
         }
