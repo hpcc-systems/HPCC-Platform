@@ -19,6 +19,7 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
+    "dojo/topic",
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
@@ -31,7 +32,7 @@ define([
 
     "dojo/text!../templates/PackageSourceWidget.html"
 ],
-    function (declare, lang, i18n, nlsHPCC, dom,
+    function (declare, lang, i18n, nlsHPCC, dom, topic,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
             BorderContainer, ContentPane, registry,
             WsPackageMaps, template) {
@@ -112,7 +113,7 @@ define([
             },
 
             showErrors: function (errMsg, errStack) {
-                dojo.publish("hpcc/brToaster", {
+                topic.publish("hpcc/brToaster", {
                     Severity: "Error",
                     Source: errMsg,
                     Exceptions: [{ Message: errStack }]

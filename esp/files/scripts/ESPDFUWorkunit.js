@@ -21,12 +21,13 @@ define([
     "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/store/Observable",
+    "dojo/topic",
 
     "hpcc/FileSpray",
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, Observable,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, Observable, topic,
     FileSpray, ESPUtil, ESPRequest, ESPResult) {
 
     var i18n = nlsHPCC;
@@ -100,6 +101,14 @@ define([
         _StateSetter: function (state) {
             this.State = state;
             this.set("hasCompleted", FileSpray.isComplete(this.State));
+        },
+
+        _hasCompletedSetter: function(completed) {
+            var justCompleted = !this.hasCompleted && completed;
+            this.hasCompleted = completed;
+            if (justCompleted) {
+                topic.publish("hpcc/dfu_wu_completed", this);
+            }
         },
 
         _CommandSetter: function (command) {

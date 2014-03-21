@@ -22,9 +22,10 @@ define([
     "dojo/request",
     "dojo/request/script",
     "dojo/store/util/QueryResults",
-    "dojo/store/Observable"
+    "dojo/store/Observable",
+    "dojo/topic"
 
-], function (declare, arrayUtil, lang, config, Deferred, request, script, QueryResults, Observable) {
+], function (declare, arrayUtil, lang, config, Deferred, request, script, QueryResults, Observable, topic) {
     var RequestHelper = declare(null, {
 
         serverIP: null,
@@ -111,20 +112,18 @@ define([
             if (!params)
                 params = {};
 
-            dojo.publish("hpcc/standbyBackgroundShow");
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
                 if (!params.suppressExceptionToaster && handleAs == "json") {
                     var deletedWorkunit = false; //  Deleted WU
                     if (lang.exists("Exceptions.Source", response)) {
-                        dojo.publish("hpcc/brToaster", {
+                        topic.publish("hpcc/brToaster", {
                             Severity: "Error",
                             Source: service + "." + action,
                             Exceptions: response.Exceptions.Exception
                         });
                     }
                 }
-                dojo.publish("hpcc/standbyBackgroundHide");
                 return response;
             },
             function (error) {
@@ -136,12 +135,11 @@ define([
                     message += "<p>" + error.stack + "</p>";
                 }
 
-                dojo.publish("hpcc/brToaster", {
+                topic.publish("hpcc/brToaster", {
                     Severity: "Error",
                     Source: service + "." + action,
                     Exceptions: [{ Message: message }]
                 });
-                dojo.publish("hpcc/standbyBackgroundHide");
                 return error;
             });
         },

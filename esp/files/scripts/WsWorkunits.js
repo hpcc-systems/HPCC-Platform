@@ -20,9 +20,10 @@ define([
     "dojo/_base/Deferred",
     "dojo/promise/all",
     "dojo/store/Observable",
+    "dojo/topic",
 
     "hpcc/ESPRequest"
-], function (declare, lang, arrayUtil, Deferred, all, Observable,
+], function (declare, lang, arrayUtil, Deferred, all, Observable, topic,
     ESPRequest) {
 
     var EventScheduleStore = declare([ESPRequest.Store], {
@@ -53,7 +54,12 @@ define([
         },
 
         WUCreate: function (params) {
-            return ESPRequest.send("WsWorkunits", "WUCreate", params);
+            return ESPRequest.send("WsWorkunits", "WUCreate", params).then(function (response) {
+                topic.publish("hpcc/ecl_wu_created", {
+                    wuid: response.WUCreateResponse.Workunit.Wuid
+                });
+                return response;
+            });
         },
 
         WUUpdate: function (params) {
@@ -125,13 +131,13 @@ define([
             return ESPRequest.send("WsWorkunits", "WUPublishWorkunit", params).then(function (response) {
                 if (lang.exists("WUPublishWorkunitResponse", response)) {
                     if (response.WUPublishWorkunitResponse.ErrorMesssage) {
-                        dojo.publish("hpcc/brToaster", {
+                        topic.publish("hpcc/brToaster", {
                             Severity: "Error",
                             Source: service + "." + action,
                             Exceptions: response.Exceptions
                         });
                     } else {
-                        dojo.publish("hpcc/brToaster", {
+                        topic.publish("hpcc/brToaster", {
                             Severity: "Error",
                             Source: "WsWorkunits.WUPublishWorkunit",
                             Exceptions: [{
@@ -231,7 +237,7 @@ define([
                     if (lang.exists("WUActionResponse.ActionResults.WUActionResult", response)) {
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
                             if (item.Result.indexOf("Failed:") === 0) {
-                                dojo.publish("hpcc/brToaster", {
+                                topic.publish("hpcc/brToaster", {
                                     Severity: "Error",
                                     Source: "WsWorkunits.WUAction",
                                     Exceptions: [{Source: item.Action + " " + item.Wuid, Message: item.Result}]

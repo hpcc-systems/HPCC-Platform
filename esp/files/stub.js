@@ -26,10 +26,10 @@ define([
     "dojo/ready",
 
     "dojox/html/entities",
-    "dojox/widget/Toaster",
-    "dojox/widget/Standby"
+    "dojox/widget/Toaster"
+
 ], function (lang, arrayUtil, fx, baseWindow, dom, domStyle, domGeometry, ioQuery, topic, ready,
-        entities, Toaster, Standby) {
+        entities, Toaster) {
 
     var initUi = function () {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
@@ -54,48 +54,6 @@ define([
                 }
                 var widget = WidgetClass.fixCircularDependency ? new WidgetClass.fixCircularDependency(webParams) : new WidgetClass(webParams);
 
-                var standbyBackground = new Standby({
-                    color: "#FAFAFA",
-                    text: "",
-                    centerIndicator: "text",
-                    target: "stub"
-                });
-                dojo.body().appendChild(standbyBackground.domNode);
-                standbyBackground.startup();
-                standbyBackground.hpccShowCount = 0;
-
-                topic.subscribe("hpcc/standbyBackgroundShow", function () {
-                    if (standbyBackground.hpccShowCount++ == 0) {
-                        standbyBackground.show();
-                    }
-                });
-
-                topic.subscribe("hpcc/standbyBackgroundHide", function () {
-                    if (--standbyBackground.hpccShowCount <= 0) {
-                        standbyBackground.hpccShowCount = 0;
-                        standbyBackground.hide();
-                    }
-                });
-
-                var standbyForeground = new Standby({
-                    zIndex: 1000,
-                    target: "stub"
-                });
-                dojo.body().appendChild(standbyForeground.domNode);
-                standbyForeground.startup();
-                standbyForeground.hpccShowCount = 0;
-
-                topic.subscribe("hpcc/standbyForegroundShow", function () {
-                    standbyForeground.show();
-                    ++standbyForeground.hpccShowCount;
-                });
-
-                topic.subscribe("hpcc/standbyForegroundHide", function () {
-                    if (--standbyForeground.hpccShowCount <= 0) {
-                        standbyForeground.hpccShowCount = 0;
-                        standbyForeground.hide();
-                    }
-                });
                 var myToaster = new Toaster({
                     id: 'hpcc_toaster',
                     positionDirection: 'br-left'

@@ -24,6 +24,7 @@ define([
     "dojo/dom-form",
     "dojo/date",
     "dojo/on",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Dialog",
@@ -60,7 +61,7 @@ define([
     "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil,dom, domClass, domForm, date, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil,dom, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -199,6 +200,9 @@ define([
                 context.refreshGrid();
             });
             this.filter.on("apply", function (evt) {
+                context.refreshGrid();
+            });
+            topic.subscribe("hpcc/dfu_wu_created", function (topic) {
                 context.refreshGrid();
             });
         },

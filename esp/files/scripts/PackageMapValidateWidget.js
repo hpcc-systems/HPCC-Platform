@@ -190,7 +190,7 @@ define([
         },
 
         showErrors: function (errMsg, errStack) {
-            dojo.publish("hpcc/brToaster", {
+            topic.publish("hpcc/brToaster", {
                 Severity: "Error",
                 Source: errMsg,
                 Exceptions: [{ Message: errStack }]
