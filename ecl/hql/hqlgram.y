@@ -6056,7 +6056,7 @@ primexpr1
                         }
     | COUNT             {
                             $$.setExpr(parser->getActiveCounter($1));
-                            parser->reportError(ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
+                            parser->reportWarning(SeverityError, ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
                         }
     | COUNTER               {
                             $$.setExpr(parser->getActiveCounter($1));
