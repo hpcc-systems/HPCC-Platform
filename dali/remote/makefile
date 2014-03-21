@@ -42,20 +42,22 @@ OBJECTS    = $(SOURCES:%.cpp=$(OBJDIR)/%.o)
 
 CCFLAGS    = -w $(DB) -mt -D_PTHREADS -Dsun
 
+
 all: daliservix
-    @echo Build Complete
+	@echo Build Complete
 
 
 daliservix: $(OBJECTS)
-    CC $(CCFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS); 
+	CC $(CCFLAGS) $(LDFLAGS) -o $@ $(OBJECTS) $(LDLIBS);
 
 %.o: $(SOURCES)
-    @if test "$(*F).cpp" -nt "$@"; then   \
-       echo "     Compiling $(*F).cpp";   \
-       CC $(CCFLAGS) $(INCFLAGS) -c $(*F).cpp -o $@;   \
-    fi
+	@if test "$(*F).cpp" -nt "$@"; then   \
+	echo "     Compiling $(*F).cpp";   \
+	mkdir -p $(OBJDIR); \
+	CC $(CCFLAGS) $(INCFLAGS) -c $(*F).cpp -o $@;   \
+	fi
 
 clean:
-    @rm -rf $(OBJDIR) *.log *.trc 
+	@rm -rf $(OBJDIR) *.log *.trc
 
 
