@@ -2113,10 +2113,11 @@ public:
             JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, className);
             for (;;)
             {
-                const byte *thisRow = (const byte *) val->ungroupedNextRow();
+                roxiemem::OwnedConstRoxieRow thisRow = val->ungroupedNextRow();
                 if (!thisRow)
                     break;
-                typeInfo->process(thisRow, thisRow, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
+                const byte *brow = (const byte *) thisRow.get();
+                typeInfo->process(brow, brow, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
                 allRows.append(javaBuilder.getObject());
             }
             jobjectArray array = sharedCtx->JNIenv->NewObjectArray(allRows.length(), sharedCtx->JNIenv->FindClass(className), NULL);

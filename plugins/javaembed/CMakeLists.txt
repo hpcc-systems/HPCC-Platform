@@ -72,6 +72,7 @@ if (USE_JNI)
     #    ${JSIG_LIBRARY}
         ${JAVA_JVM_LIBRARY}
         eclrtl
+        roxiemem
         jlib
         )
   endif()
