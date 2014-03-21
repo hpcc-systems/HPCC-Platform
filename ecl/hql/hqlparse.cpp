@@ -1488,6 +1488,8 @@ void HqlLex::doIsValid(YYSTYPE & returnToken)
 
 void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, int startCol)
 {
+    if (yyParser->aborting)
+        return;
     if (loopTimes++ > MAX_LOOP_TIMES)
     {
         reportError(errpos, ERR_TMPLT_LOOPEXCESSMAX,"The loop exceeded the limit: infinite loop is suspected");
