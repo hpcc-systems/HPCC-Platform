@@ -15,6 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
+#onwarning (2387,warning);
+
 NamesRec := RECORD
         UNSIGNED1 numRows := 0;
         STRING20  thename;
