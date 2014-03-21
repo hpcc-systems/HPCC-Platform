@@ -4042,6 +4042,8 @@ void HqlCppTranslator::doBuildRowAssignAggregateClear(BuildCtx & ctx, IReference
     for (idx = 0; idx < numAggregates; idx++)
     {
         IHqlExpression * cur = transform->queryChild(idx);
+        if (cur->isAttribute())
+            continue;
         Owned<IReferenceSelector> curTarget = createSelfSelect(ctx, target, cur->queryChild(0), self);
         IHqlExpression * src = cur->queryChild(1);
 

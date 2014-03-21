@@ -2084,7 +2084,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             {
                 if (idx) s.append(", ");
                 IHqlExpression *child = expr->queryChild(idx);
-                getTypeString(child->queryChild(0)->queryType(), s);
+                if (!child->isAttribute())
+                    getTypeString(child->queryChild(0)->queryType(), s);
 
                 toECL(child, s.append(' '), child->getPrecedence() < 0, inType);
             }

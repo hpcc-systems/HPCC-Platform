@@ -2390,17 +2390,28 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                             IHqlExpression * cur = match;
                             while (isCast(cur))
                                 cur = cur->queryChild(0);
-                            switch (cur->getOperator())
+                            if (cur->isPure())
                             {
-                            case no_createrow:
-                            case no_constant:
-                            case no_select:
-                            case no_null:
-                            case no_getresult:
-                            case no_getgraphresult:
-                                DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
-                                noteUnused(child);
-                                return match.getClear();
+                                //This test should not be required, but it avoids problems with elements from rows
+                                //being used conditionally within transforms.  See HPCC-11018 for details.
+                                if (isIndependentOfScope(match))
+                                {
+                                    DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(cur), queryNode1Text(transformed));
+                                    noteUnused(child);
+                                    return match.getClear();
+                                }
+                                switch (cur->getOperator())
+                                {
+                                case no_createrow:
+                                case no_constant:
+                                case no_select:
+                                case no_null:
+                                case no_getresult:
+                                case no_getgraphresult:
+                                    DBGLOG("Optimizer: Extract value %s from %s", queryNode0Text(match), queryNode1Text(transformed));
+                                    noteUnused(child);
+                                    return match.getClear();
+                                }
                             }
                         }
                     }
@@ -3342,9 +3353,16 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     ForEachChild(idxt, transformExpr)
                     {
                         IHqlExpression * cur = transformExpr->queryChild(idxt);
-                        IHqlExpression * tgt = cur->queryChild(0);
-                        IHqlExpression * src = cur->queryChild(1);
-                        assigns.append(*createAssign(LINK(tgt), expandFields(mapper, src, child, grandchild, &monitor)));
+                        if (cur->getOperator() == no_assign)
+                        {
+                            IHqlExpression * tgt = cur->queryChild(0);
+                            IHqlExpression * src = cur->queryChild(1);
+                            assigns.append(*createAssign(LINK(tgt), expandFields(mapper, src, child, grandchild, &monitor)));
+                        }
+                        else
+                        {
+                            assigns.append(*LINK(cur));
+                        }
                     }
                     OwnedHqlExpr expandedTransform = transformExpr->clone(assigns);
                     args.append(*LINK(expandedTransform));

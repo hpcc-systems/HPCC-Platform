@@ -15221,8 +15221,9 @@ bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right)
 
 IHqlExpression * queryTransformSingleAssign(IHqlExpression * transform)
 {
-    if (transform->numChildren() != 1)
+    if ((transform->numChildren() == 0) || queryRealChild(transform, 1))
         return NULL;
+
     IHqlExpression * assign = transform->queryChild(0);
     if (assign->getOperator() == no_assignall)
     {
