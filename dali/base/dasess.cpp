@@ -888,7 +888,7 @@ public:
             *err = 0;
         if (securitydisabled)
             return -1;
-        if (queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->queryDaliServerVersion().compare("1.8") < 0) {
             securitydisabled = true;
             return -1;
         }
@@ -931,7 +931,7 @@ public:
     {
         if (securitydisabled)
             return true;
-        if (queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->queryDaliServerVersion().compare("1.8") < 0) {
             securitydisabled = true;
             return true;
         }
@@ -943,11 +943,11 @@ public:
 
     bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)
     {
-        if (queryDaliServerVersion().compare("3.10") < 0)
+        if (queryDefaultDali()->queryDaliServerVersion().compare("3.10") < 0)
         {
             *err = -1;
             StringBuffer ver;
-            queryDaliServerVersion().toString(ver);
+            queryDefaultDali()->queryDaliServerVersion().toString(ver);
             retMsg.appendf("Scope Scan status feature requires Dali V3.10 or newer, current Dali version %s",ver.str());
             return false;
         }
@@ -957,7 +957,7 @@ public:
             retMsg.append("Security not enabled");
             return false;
         }
-        if (queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->queryDaliServerVersion().compare("1.8") < 0) {
             *err = -1;
             retMsg.append("Security not enabled");
             securitydisabled = true;
@@ -981,11 +981,11 @@ public:
 
     bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)
     {
-        if (queryDaliServerVersion().compare("3.10") < 0)
+        if (queryDefaultDali()->queryDaliServerVersion().compare("3.10") < 0)
         {
             *err = -1;
             StringBuffer ver;
-            queryDaliServerVersion().toString(ver);
+            queryDefaultDali()->queryDaliServerVersion().toString(ver);
             retMsg.appendf("Scope Scan enable/disable feature requires Dali V3.10 or newer, current Dali version %s",ver.str());
             return false;
         }
@@ -996,7 +996,7 @@ public:
             retMsg.append("Security not enabled");
             return false;
         }
-        if (queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->queryDaliServerVersion().compare("1.8") < 0) {
             *err = -1;
             retMsg.append("Security not enabled");
             securitydisabled = true;

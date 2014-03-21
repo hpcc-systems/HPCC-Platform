@@ -40,11 +40,9 @@ extern void closedownDFS();
 #define ServerVersion    "3.11"
 #define MinClientVersion "1.5"
 
-
 // client side default versioning.
-static StringAttr ClientVersion("3.5");
-static StringAttr MinServerVersion("3.1");      // when this upped check initClientProcess instances
-static CDaliVersion _ServerVersion;
+#define DefaultClientVersion "3.5"
+#define DefaultMinServerVersion "3.1"           // when this upped check initClientProcess instances
 
 
 #define COVEN_SERVER_TIMEOUT (1000*120)
@@ -177,13 +175,15 @@ class CCovenBase: public CInterface, implements ICoven
 
 protected: 
     ICommunicator  *comm;
+    CDaliVersion    _ServerVersion;
 
 public:
+    //MORE: These should either be in a different class, or should not be static
     static CriticalSection uidcrit;
     static CIArrayOf<CDaliUidAllocator> uidallocators;
     
     IMPLEMENT_IINTERFACE;
-    CCovenBase(IGroup *grp,bool server)
+    CCovenBase(IGroup *grp, bool server)
     {
         comm = createCommunicator(grp,server); // if server outer == true as can recieve from outside
         ord = grp->ordinality();
@@ -195,36 +195,6 @@ public:
         {
             _ServerVersion.set(ServerVersion);
             LOG(MCdebugInfo(100), unknownJob, "Server Version = %s, required minimum client version %s", ServerVersion, MinClientVersion);
-        }
-        else
-        {
-            CMessageBuffer mb;
-            mb.append(MCR_GET_VERSION_INFO);
-            mb.append(ClientVersion);
-            mb.append(MinServerVersion);
-            if (!comm->sendRecv(mb, RANK_RANDOM, MPTAG_DALI_COVEN_REQUEST, VERSION_REQUEST_TIMEOUT))
-                throw MakeStringException(-1, "failed retrieving version information from server, legacy server?");
-            if (!mb.length())
-                throw MakeStringException(-1, "Failed to receive server information (probably communicating to legacy server)");
-            StringAttr serverVersion, minClientVersion;
-            mb.read(serverVersion);
-            _ServerVersion.set(serverVersion), 
-            mb.read(minClientVersion);
-
-            CDaliVersion clientV(ClientVersion), minClientV(minClientVersion);
-            if (clientV.compare(minClientV) < 0)
-            {
-                StringBuffer s("Client version ");
-                s.append(ClientVersion).append(", server requires minimum client version ").append(minClientVersion);
-                throw createClientException(DCERR_version_incompatibility, s.str());
-            }
-            CDaliVersion minServerV(MinServerVersion);
-            if (_ServerVersion.compare(minServerV) < 0)
-            {
-                StringBuffer s("Server version ");
-                s.append(serverVersion).append(", client requires minimum server version ").append(MinServerVersion);
-                throw createClientException(DCERR_version_incompatibility, s.str());
-            }
         }
     }
     ~CCovenBase()
@@ -315,6 +285,12 @@ public:
         assertex(comm);
         return comm->getGroup();
     }
+
+    const CDaliVersion &queryDaliServerVersion() const
+    {
+        return _ServerVersion;
+    }
+
 
     virtual void flush  (mptag_t tag)
     {
@@ -751,8 +727,39 @@ class CCovenClient: public CCovenBase
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCovenClient(IGroup *grp) : CCovenBase(grp,false)
+    CCovenClient(IGroup *grp) : CCovenBase(grp, false)
     {
+    }
+
+    void connect(const char * clientVersion, const char * minServerVersion)
+    {
+        CMessageBuffer mb;
+        mb.append(MCR_GET_VERSION_INFO);
+        mb.append(clientVersion);
+        mb.append(minServerVersion);
+        if (!comm->sendRecv(mb, RANK_RANDOM, MPTAG_DALI_COVEN_REQUEST, VERSION_REQUEST_TIMEOUT))
+            throw MakeStringException(-1, "failed retrieving version information from server, legacy server?");
+        if (!mb.length())
+            throw MakeStringException(-1, "Failed to receive server information (probably communicating to legacy server)");
+        StringAttr serverVersion, minClientVersion;
+        mb.read(serverVersion);
+        _ServerVersion.set(serverVersion),
+        mb.read(minClientVersion);
+
+        CDaliVersion clientV(clientVersion), minClientV(minClientVersion);
+        if (clientV.compare(minClientV) < 0)
+        {
+            StringBuffer s("Client version ");
+            s.append(clientVersion).append(", server requires minimum client version ").append(minClientVersion);
+            throw createClientException(DCERR_version_incompatibility, s.str());
+        }
+        CDaliVersion minServerV(minServerVersion);
+        if (_ServerVersion.compare(minServerV) < 0)
+        {
+            StringBuffer s("Server version ");
+            s.append(serverVersion).append(", client requires minimum server version ").append(minServerVersion);
+            throw createClientException(DCERR_version_incompatibility, s.str());
+        }
     }
 
     DALI_UID    getUniqueId(SocketEndpoint *foreignnode)
@@ -910,8 +917,6 @@ public:
 
 ICoven * initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,const char *minServerVersion)
 {
-    if (clientVersion) ClientVersion.set(clientVersion);
-    if (minServerVersion) MinServerVersion.set(minServerVersion);
     if (config&&(grp->rank()!=RANK_NULL) )
     {
         const char *s="dalicoven.xml";
@@ -939,7 +944,11 @@ ICoven * initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,c
         return new CCovenServer(grp,s,b.str());
     }
     else {
-        return new CCovenClient(grp);
+        if (!clientVersion) clientVersion = DefaultClientVersion;
+        if (!minServerVersion) minServerVersion = DefaultMinServerVersion;
+        Owned<CCovenClient> client = new CCovenClient(grp);
+        client->connect(clientVersion,minServerVersion);
+        return client.getClear();
     }
 }
 
@@ -956,12 +965,6 @@ void closeCoven(ICoven * coven)
         ::Release(coven);
     }
 }
-
-const CDaliVersion &queryDaliServerVersion()
-{
-    return _ServerVersion;
-}
-
 
 DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
 {

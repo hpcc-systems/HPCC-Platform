@@ -115,12 +115,19 @@ public:
         return coven->verifyAll(true, timeout);
     }
 
+    const CDaliVersion &queryDaliServerVersion() const
+    {
+        return coven->queryDaliServerVersion();
+    }
+
 protected:
     Owned<ICoven> coven;
     INode * daliClientLoggingParent;
     IArrayOf<IDaliClientShutdown> shutdownHooks;
 };
-static Owned<IDaliClient> defaultDaliClient;
+
+//Use a pointer instead of an Owned<IDaliClient> - to prevent the system crashing if closedownClientProcess not called.
+static IDaliClient * defaultDaliClient;
 
 class CDaliClientException: public CInterface, public IDaliClient_Exception
 {
@@ -164,7 +171,8 @@ IDaliClient_Exception *createClientException(DaliClientError err, const char *ms
 
 void closedownClientProcess()
 {
-    defaultDaliClient.clear();
+    ::Release(defaultDaliClient);
+    defaultDaliClient = NULL;
 }
 
 IDaliClient * createDaliClient(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout)
@@ -177,7 +185,8 @@ IDaliClient * createDaliClient(IGroup *servergrp, DaliClientRole role, unsigned 
 
 bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout)
 {
-    defaultDaliClient.setown(createDaliClient(servergrp, role, mpport, clientVersion, minServerVersion, timeout));
+    closedownClientProcess();
+    defaultDaliClient = createDaliClient(servergrp, role, mpport, clientVersion, minServerVersion, timeout);
     return defaultDaliClient != NULL;
 }
 
@@ -247,6 +256,10 @@ void disconnectLogMsgListenerFromDali()
         disconnectLogMsgListenerFromChild(&servers.queryNode(idx));
 }
 
+const CDaliVersion &queryDaliServerVersion()
+{
+    return queryDefaultDali()->queryDaliServerVersion();
+}
 
 bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp)
 {

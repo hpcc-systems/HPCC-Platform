@@ -1108,13 +1108,13 @@ void CClientRemoteTree::localizeElements(const char *xpath, bool allTail)
 CClientSDSManager::CClientSDSManager() 
 {
     CDaliVersion serverVersionNeeded("2.1"); // to ensure backward compatibility
-    childrenCanBeMissing = queryDaliServerVersion().compare(serverVersionNeeded) >= 0;
+    childrenCanBeMissing = compareDaliServerVersion(serverVersionNeeded) >= 0;
     CDaliVersion serverVersionNeeded2("3.4"); // to ensure backward compatibility
-    lazyExtFlag = queryDaliServerVersion().compare(serverVersionNeeded2) >= 0 ? DAMP_SDSCMD_LAZYEXT : 0;
+    lazyExtFlag = compareDaliServerVersion(serverVersionNeeded2) >= 0 ? DAMP_SDSCMD_LAZYEXT : 0;
     properties = NULL;
     IPropertyTree &props = queryProperties();
     CDaliVersion serverVersionNeeded3(MIN_GETXPATHS_CONNECT_SVER);
-    if (queryDaliServerVersion().compare(serverVersionNeeded3) < 0)
+    if (compareDaliServerVersion(serverVersionNeeded3) < 0)
         props.removeProp("Client/@serverIter");
     else
         props.setPropBool("Client/@serverIterAvailable", true);
@@ -1122,9 +1122,9 @@ CClientSDSManager::CClientSDSManager()
     clientThrottleDelay = props.getPropInt("Client/Throttle/@delay", CLIENT_THROTTLE_DELAY);
 
     CDaliVersion appendOptVersionNeeded(MIN_APPEND_OPT_SVER); // min version for append optimization
-    props.setPropBool("Client/@useAppendOpt", queryDaliServerVersion().compare(appendOptVersionNeeded) >= 0);
+    props.setPropBool("Client/@useAppendOpt", compareDaliServerVersion(appendOptVersionNeeded) >= 0);
     CDaliVersion serverVersionNeeded4(MIN_GETIDS_SVER); // min version for get xpath with server ids
-    if (queryDaliServerVersion().compare(serverVersionNeeded4) >= 0)
+    if (compareDaliServerVersion(serverVersionNeeded4) >= 0)
         props.setPropBool("Client/@serverGetIdsAvailable", true);
     concurrentRequests.signal(clientThrottleLimit);
 }
@@ -1139,6 +1139,12 @@ CClientSDSManager::~CClientSDSManager()
         conn.setOrphaned();
     }
     ::Release(properties);
+}
+
+int CClientSDSManager::compareDaliServerVersion(const CDaliVersion & version)
+{
+    //MORE: This should use the actual dali that it is connected to
+    return queryDefaultDali()->queryDaliServerVersion().compare(version);
 }
 
 bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
@@ -1543,8 +1549,7 @@ void CClientSDSManager::changeMode(CRemoteConnection &connection, unsigned mode,
 #define MIN_MCONNECT_SVER "1.5"
 IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, SessionId id, unsigned timeout)
 {
-    CDaliVersion serverVersionNeeded(MIN_MCONNECT_SVER);
-    if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
+    if (queryDaliServerVersion().compare(MIN_MCONNECT_SVER) < 0)
         throw MakeSDSException(SDSExcpt_VersionMismatch, "Multiple connect not supported by server versions prior to "MIN_MCONNECT_SVER);
 
     if (0 == id || id != myProcessSession())

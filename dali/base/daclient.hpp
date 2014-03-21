@@ -32,6 +32,7 @@ interface IDaliClientShutdown : extends IInterface
     virtual void clientShutdown() = 0;
 };
 
+class CDaliVersion;
 interface IDaliClient : public IInterface
 {
     virtual void addShutdownHook(IDaliClientShutdown &shutdown) = 0;
@@ -41,6 +42,7 @@ interface IDaliClient : public IInterface
     virtual void disconnectLogMsgManagerFromDali() = 0;
     virtual ICoven &queryCoven() = 0;
     virtual bool verifyCovenConnection(unsigned timeout) = 0;
+    virtual const CDaliVersion &queryDaliServerVersion() const = 0;
 };
 
 extern da_decl IDaliClient * queryDefaultDali();
@@ -67,6 +69,9 @@ extern da_decl IDaliClient_Exception *createClientException(DaliClientError err,
 
 extern da_decl void connectLogMsgListenerToDali();
 extern da_decl void disconnectLogMsgListenerFromDali();
+
+//MORE: The following function needs to go
+extern da_decl const CDaliVersion &queryDaliServerVersion();
 
 // initates client session and updates dali pointed to by environment, unless daliIp supplied
 extern da_decl bool updateDaliEnv(IPropertyTree *env, bool updateDaliEnv=false, const char *daliIp=NULL);

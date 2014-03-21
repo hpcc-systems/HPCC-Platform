@@ -30,6 +30,20 @@
 
 typedef __int64 DALI_UID;
 
+class da_decl CDaliVersion
+{
+    unsigned major, minor;
+public:
+    CDaliVersion() { major = minor = 0; }
+    CDaliVersion(const char *s) { set(s); }
+    void set(const char *s);
+    unsigned queryMinor() const { return minor; }
+    unsigned queryMajor() const { return major; }
+    int compare(const CDaliVersion &other) const;
+    int compare(const char *other) const;
+    StringBuffer &toString(StringBuffer &str) const;
+};
+
 interface ICoven: extends ICommunicator // ICoven can be used to communicate with the coven (or intra-coven)
 {
     virtual unsigned        size()=0;                                           // number of processes in Coven
@@ -49,26 +63,11 @@ interface ICoven: extends ICommunicator // ICoven can be used to communicate wit
     virtual DALI_UID        getUniqueIds(unsigned num,SocketEndpoint *foreigndali=NULL)=0;              // create unique ID range
     virtual rank_t          chooseServer(DALI_UID uid, int tag=0)=0;    // choose a server deterministically based on UID and tag
 
+    virtual const CDaliVersion &queryDaliServerVersion() const = 0;
+
     inline ICommunicator &queryComm() { return *this; }
 };
 
-class da_decl CDaliVersion
-{
-    unsigned major, minor;
-public:
-    CDaliVersion() { major = minor = 0; }
-    CDaliVersion(const char *s) { set(s); }
-    void set(const char *s);
-    unsigned queryMinor() const { return minor; }
-    unsigned queryMajor() const { return major; }
-    int compare(const CDaliVersion &other) const;
-    int compare(const char *other) const;
-    StringBuffer &toString(StringBuffer &str) const;
-};
-
-//extern da_decl ICoven &queryCoven();
-//extern da_decl bool isCovenActive();
-extern da_decl const CDaliVersion &queryDaliServerVersion();
 extern da_decl bool verifyCovenConnection(unsigned timeout=5*60*1000);
 extern da_decl DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode);
 
