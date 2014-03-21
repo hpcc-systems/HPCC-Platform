@@ -26,6 +26,7 @@
 #include "rtlds_imp.hpp"
 #include "rtlfield_imp.hpp"
 #include "nbcd.hpp"
+#include "roxiemem.hpp"
 #include <vector>
 
 #ifdef _WIN32
@@ -644,11 +645,12 @@ public:
         int idx = 0;
         loop
         {
-            const byte *row = (const byte *) val->ungroupedNextRow();
+            roxiemem::OwnedConstRoxieRow row = val->ungroupedNextRow();
             if (!row)
                 break;
             JSObjectBuilder objBuilder(&dummyField);
-            typeInfo->process(row, row, &dummyField, objBuilder); // Creates a JS object from the incoming ECL row
+            const byte *brow = (const byte *) row.get();
+            typeInfo->process(brow, brow, &dummyField, objBuilder); // Creates a JS object from the incoming ECL row
             array->Set(idx++, objBuilder.getObject());
         }
         context->Global()->Set(v8::String::New(name), array);

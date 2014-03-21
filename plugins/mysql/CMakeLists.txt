@@ -56,6 +56,7 @@ if (USE_MYSQL)
     target_link_libraries ( mysqlembed
          ${MYSQL_LIBRARIES}
         eclrtl
+        roxiemem
         jlib
         )
   endif()

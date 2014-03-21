@@ -27,6 +27,7 @@
 #include "rtlds_imp.hpp"
 #include "rtlfield_imp.hpp"
 #include "nbcd.hpp"
+#include "roxiemem.hpp"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -993,7 +994,7 @@ PyObject* ECLDatasetIterator_iternext(PyObject *self)
     ECLDatasetIterator *p = (ECLDatasetIterator *)self;
     if (p->val)
     {
-        const byte *nextRow = (const byte *) p->val->ungroupedNextRow();
+        roxiemem::OwnedConstRoxieRow nextRow = p->val->ungroupedNextRow();
         if (!nextRow)
         {
             p->val->stop();
@@ -1004,7 +1005,8 @@ PyObject* ECLDatasetIterator_iternext(PyObject *self)
         {
             RtlFieldStrInfo dummyField("<row>", NULL, p->typeInfo);
             PythonNamedTupleBuilder tupleBuilder(NULL, &dummyField);
-            p->typeInfo->process(nextRow, nextRow, &dummyField, tupleBuilder);
+            const byte *brow = (const byte *) nextRow.get();
+            p->typeInfo->process(brow, brow, &dummyField, tupleBuilder);
             return tupleBuilder.getTuple(p->typeInfo);
         }
     }
