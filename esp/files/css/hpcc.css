@@ -387,6 +387,12 @@ hr.dashedLine {
     width: 16px;
     height: 16px;
 }
+
+.iconFolderTree{
+    background-image: url("../img/folderTree.png"); 
+    width: 16px;
+    height: 16px;
+}
 /*###############################*/
 #appLayout {
     height: 100%;

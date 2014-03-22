@@ -194,6 +194,10 @@ define([
             return ESPRequest.send("WsDfu", "DFUQuery", params);
         },
 
+        DFUFileView: function (params) {
+            return ESPRequest.send("WsDfu", "DFUFileView", params);
+        },
+
         DFUSpace: function (params) {
             return ESPRequest.send("WsDfu", "DFUSpace", params);
         },

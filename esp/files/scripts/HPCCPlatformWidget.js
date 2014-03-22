@@ -49,6 +49,7 @@ define([
     "dijit/form/Textarea",
     "dijit/Dialog",
     "dijit/MenuSeparator",
+    "dijit/PopupMenuItem",
 
     "hpcc/HPCCPlatformMainWidget",
     "hpcc/TableContainer",
