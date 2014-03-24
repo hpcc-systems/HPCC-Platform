@@ -35,7 +35,10 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/ESPQuery",
 
-    "dojo/text!../templates/ECLPlaygroundWidget.html"
+    "dojo/text!../templates/ECLPlaygroundWidget.html",
+
+    "hpcc/InfoGridWidget"
+
 ], function (declare, lang, i18n, nlsHPCC, xhr, dom, query,
                 BorderContainer, TabContainer, ContentPane, registry,
                 _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit, ESPQuery,

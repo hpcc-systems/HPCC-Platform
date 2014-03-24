@@ -38,14 +38,17 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/FileSpray",
     "hpcc/ESPDFUWorkunit",
-    "hpcc/ECLSourceWidget",
-    "hpcc/LFDetailsWidget",
+    "hpcc/DelayLoadWidget",
 
-    "dojo/text!../templates/DFUWUDetailsWidget.html"
+    "dojo/text!../templates/DFUWUDetailsWidget.html",
+
+    "dijit/form/Select",
+    "dijit/form/CheckBox",
+    "dijit/ToolbarSeparator"
 
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domStyle, query,
                 BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
-                _TabContainerWidget, FileSpray, ESPDFUWorkunit, ECLSourceWidget, LFDetailsWidget,
+                _TabContainerWidget, FileSpray, ESPDFUWorkunit, DelayLoadWidget,
                 template) {
     exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -295,11 +298,11 @@ define([
             id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
-                var context = this;
-                retVal = new LFDetailsWidget.fixCircularDependency({
+                retVal = new DelayLoadWidget({
                     id: id,
                     title: title,
                     closable: false,
+                    delayWidget: "LFDetailsWidget",
                     _hpccParams: params
                 });
                 this.addChild(retVal);

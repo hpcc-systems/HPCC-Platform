@@ -207,14 +207,18 @@ define([
                 handleAs: "text"
             });
             return ESPRequest.send("WsDfu", "DFUDefFile", params).then(function (response) {
-                var domXml = parser.parse(response);
-                var espBase = new ESPBase();
-                var exceptions = espBase.getValues(domXml, "Exception", ["Exception"]);
-                if (exceptions.length) {
-                    response = "";
-                    arrayUtil.forEach(exceptions, function (item, idx) {
-                        response += item.Message + "\n";
-                    });
+                try {
+                    var domXml = parser.parse(response);
+                    var espBase = new ESPBase();
+                    var exceptions = espBase.getValues(domXml, "Exception", ["Exception"]);
+                    if (exceptions.length) {
+                        response = "";
+                        arrayUtil.forEach(exceptions, function (item, idx) {
+                            response += item.Message + "\n";
+                        });
+                    }
+                } catch (e) {
+                    //  No errors  ---
                 }
                 return response;
             });

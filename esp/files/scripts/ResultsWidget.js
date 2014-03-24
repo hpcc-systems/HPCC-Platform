@@ -33,15 +33,13 @@ define([
     "hpcc/GridDetailsWidget",
     "hpcc/ESPRequest",
     "hpcc/ESPWorkunit",
-    "hpcc/ResultWidget",
-    "hpcc/LFDetailsWidget",
-    "hpcc/SFDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 ContentPane,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPRequest, ESPWorkunit, ResultWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
+                GridDetailsWidget, ESPRequest, ESPWorkunit, DelayLoadWidget, ESPUtil) {
     return declare("ResultsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -155,10 +153,11 @@ define([
 
         createDetail: function (id, row, params) {
             if (row.FileName && params && params.logicalFile) {
-                return new LFDetailsWidget.fixCircularDependency({
+                return new DelayLoadWidget({
                     id: id,
                     title: "[F] " + row.Name,
                     closable: true,
+                    delayWidget: "LFDetailsWidget",
                     hpcc: {
                         type: "LFDetailsWidget",
                         params: {
@@ -185,11 +184,12 @@ define([
                     noRefresh: true
                 });
             } else {
-                return new ResultWidget({
+                return new DelayLoadWidget({
                     id: id,
                     title: row.Name,
                     closable: true,
                     style: "padding: 0px; overflow: hidden",
+                    delayWidget: "ResultWidget",
                     hpcc: {
                         type: "ResultWidget",
                         params: {

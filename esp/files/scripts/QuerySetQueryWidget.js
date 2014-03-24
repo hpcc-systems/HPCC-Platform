@@ -43,7 +43,7 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/ESPLogicalFile",
     "hpcc/TargetSelectWidget",
-    "hpcc/QuerySetDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/WsWorkunits",
     "hpcc/ESPQuery",
     "hpcc/ESPUtil",
@@ -68,7 +68,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domForm, iframe, arrayUtil, on,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, QuerySetDetailsWidget, WsWorkunits, ESPQuery, ESPUtil, FilterDropDownWidget,
+                _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, FilterDropDownWidget,
                 template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -536,10 +536,11 @@ define([
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
-                retVal = new QuerySetDetailsWidget({
+                retVal = new DelayLoadWidget({
                     id: id,
                     title: params.Id,
                     closable: true,
+                    delayWidget: "QuerySetDetailsWidget",
                     hpcc: {
                         type: "QuerySetDetailsWidget",
                         params: params

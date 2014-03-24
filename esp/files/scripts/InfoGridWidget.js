@@ -48,8 +48,12 @@ define([
 
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
+    "dijit/form/Button",
     "dijit/form/CheckBox",
-    "dijit/Toolbar"
+    "dijit/form/SimpleTextarea",
+    "dijit/Dialog",
+    "dijit/Toolbar",
+    "dijit/ToolbarSeparator"
 ],
     function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has, sniff,
             registry, 
@@ -177,7 +181,7 @@ define([
 
             _onClear: function (evt) {
                 this.infoData = [];
-                this.refreshTopics();
+                this.refreshFilter();
             },
 
             toCSVCell: function (str) {

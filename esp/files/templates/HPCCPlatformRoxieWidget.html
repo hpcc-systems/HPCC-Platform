@@ -4,9 +4,9 @@
             <div id="${id}StackController" style="width: 100%" data-dojo-props="containerId:'${id}TabContainer'" data-dojo-type="dijit.layout.StackController"></div>
         </div>
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.StackContainer">
-            <div id="${id}_Queries" title="${i18n.Queries}" data-dojo-type="QuerySetQueryWidget">
+            <div id="${id}_Queries" title="${i18n.Queries}" data-dojo-props="delayWidget: 'QuerySetQueryWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_PackageMaps" title="${i18n.PackageMaps}" data-dojo-type="PackageMapQueryWidget">
+            <div id="${id}_PackageMaps" title="${i18n.PackageMaps}" data-dojo-props="delayWidget: 'PackageMapQueryWidget'" data-dojo-type="DelayLoadWidget">
             </div>
         </div>
     </div>

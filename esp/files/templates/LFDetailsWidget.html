@@ -124,19 +124,19 @@
                     </form>
                 </div>
             </div>
-            <div id="${id}_Content" title="${i18n.Contents}" data-dojo-type="ResultWidget">
+            <div id="${id}_Content" title="${i18n.Contents}" data-dojo-props="delayWidget: 'ResultWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Source" title="${i18n.ECL}" data-dojo-type="ECLSourceWidget">
+            <div id="${id}_Source" title="${i18n.ECL}" data-dojo-props="delayWidget: 'ECLSourceWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_DEF" title="${i18n.DEF}" data-dojo-type="ECLSourceWidget">
+            <div id="${id}_DEF" title="${i18n.DEF}" data-dojo-props="delayWidget: 'ECLSourceWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_XML" title="${i18n.XML}" data-dojo-props="WUXml: true" data-dojo-type="ECLSourceWidget">
+            <div id="${id}_XML" title="${i18n.XML}" data-dojo-props="delayProps: {WUXml: true}, delayWidget: 'ECLSourceWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_FileParts" title="${i18n.FileParts}" data-dojo-type="FilePartsWidget">
+            <div id="${id}_FileParts" title="${i18n.FileParts}" data-dojo-props="delayWidget: 'FilePartsWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Workunit" title="${i18n.Workunit}" data-dojo-type="WUDetailsWidget">
+            <div id="${id}_Workunit" title="${i18n.Workunit}" data-dojo-props="delayWidget: 'WUDetailsWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_DFUWorkunit" title="${i18n.Workunit}" data-dojo-type="DFUWUDetailsWidget">
+            <div id="${id}_DFUWorkunit" title="${i18n.Workunit}" data-dojo-props="delayWidget: 'DFUWUDetailsWidget'" data-dojo-type="DelayLoadWidget">
             </div>
         </div>
     </div>

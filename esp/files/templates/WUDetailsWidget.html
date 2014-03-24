@@ -95,21 +95,21 @@
                     </div>
                 </div>
             </div>
-            <div id="${id}_Results" title="${i18n.Outputs}" data-dojo-type="ResultsWidget">
+            <div id="${id}_Results" title="${i18n.Outputs}" data-dojo-props="delayWidget: 'ResultsWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Files" title="${i18n.Inputs}" data-dojo-type="SourceFilesWidget">
+            <div id="${id}_Files" title="${i18n.Inputs}" data-dojo-props="delayWidget: 'SourceFilesWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Timers" title="${i18n.Timers}" data-dojo-type="TimingPageWidget">
+            <div id="${id}_Timers" title="${i18n.Timers}" data-dojo-props="delayWidget: 'TimingPageWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Graphs" title="${i18n.Graphs}" data-dojo-type="GraphsWidget">
+            <div id="${id}_Graphs" title="${i18n.Graphs}" data-dojo-props="delayWidget: 'GraphsWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Visualize" title="${i18n.Visualize}" data-dojo-type="VizWidget">
+            <div id="${id}_Visualize" title="${i18n.Visualize}" data-dojo-props="delayWidget: 'VizWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Logs" title="${i18n.Helpers}" data-dojo-type="LogsWidget">
+            <div id="${id}_Logs" title="${i18n.Helpers}" data-dojo-props="delayWidget: 'LogsWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Playground" title="${i18n.Playground}" data-dojo-type="ECLPlaygroundWidget">
+            <div id="${id}_Playground" title="${i18n.Playground}" data-dojo-props="delayWidget: 'ECLPlaygroundWidget'" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_XML" title="${i18n.XML}" data-dojo-props="WUXml: true" data-dojo-type="ECLSourceWidget">
+            <div id="${id}_XML" title="${i18n.XML}" data-dojo-props="delayProps: {WUXml: true}, delayWidget: 'ECLSourceWidget'" data-dojo-type="DelayLoadWidget">
             </div>
         </div>
     </div>

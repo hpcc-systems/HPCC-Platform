@@ -31,7 +31,19 @@ define([
     "hpcc/ESPUtil",
     "hpcc/FilterDropDownWidget",
 
-    "dojo/text!../templates/DiskUsageWidget.html"
+    "dojo/text!../templates/DiskUsageWidget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
+    "dijit/layout/ContentPane",
+    "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
+    "dijit/form/Button",
+    "dijit/form/Select",
+    "dijit/form/TextBox",
+    "dijit/form/DateTextBox",
+    "dijit/form/TimeTextBox"
+
 ], function (declare, lang, i18n, nlsHPCC, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 WsDfu, ESPUtil, FilterDropDownWidget,

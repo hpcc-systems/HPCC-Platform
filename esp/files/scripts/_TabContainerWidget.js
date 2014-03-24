@@ -1,6 +1,7 @@
 define([
-    "dojo/_base/declare", // declare
-    "dojo/_base/lang", // lang.mixin
+    "dojo/_base/declare", 
+    "dojo/_base/lang", 
+    "dojo/_base/array",
     "dojo/dom",
     "dojo/hash",
     "dojo/router",
@@ -8,7 +9,7 @@ define([
     "hpcc/_Widget",
 
     "dijit/registry"
-], function (declare, lang, dom, hash, router,
+], function (declare, lang, arrayUtil, dom, hash, router,
     _Widget,
     registry) {
 
@@ -26,8 +27,13 @@ define([
 
         //  String helpers  ---
         idToPath: function (id) {
-            var obj = id.split("_");
-            return "/" + obj.join("/");
+            var parts = id.split("_");
+            arrayUtil.forEach(parts, function (item, idx) {
+                if (this.endsWith(item, "-DL")) {
+                    parts[idx] = item.substring(0, item.length - 3);
+                }
+            }, this);
+            return "/" + parts.join("/");
         },
 
         pathToId: function (path) {
@@ -178,14 +184,15 @@ define([
             }
         },
 
-        selectChild: function (child, doHash) {
+        selectChild: function (childID, doHash) {
             if (!doHash) {
                 this.disableHashing++;
             }
             var currSel = this.getSelectedChild();
+            var child = registry.byId(childID);
             if (currSel != child) {
-                var nodeExists = dom.byId(child);
-                if (nodeExists) {
+                var childIndex = this._tabContainer.getIndexOfChild(child);
+                if (childIndex >= 0) {
                     this._tabContainer.selectChild(child);
                 }
             } else {

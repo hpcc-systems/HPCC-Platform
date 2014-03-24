@@ -19,21 +19,18 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
-    "dijit/registry",
-
     "hpcc/_TabContainerWidget",
-    "hpcc/WUQueryWidget",
-    "hpcc/ECLPlaygroundWidget",
 
     "dojo/text!../templates/HPCCPlatformECLWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane"
+    "dijit/layout/ContentPane",
+
+    "hpcc/DelayLoadWidget"
 
 ], function (declare, lang, i18n, nlsHPCC,
-                registry,
-                _TabContainerWidget, WUQueryWidget, ECLPlaygroundWidget,
+                _TabContainerWidget,
                 template) {
     return declare("HPCCPlatformECLWidget", [_TabContainerWidget], {
         templateString: template,

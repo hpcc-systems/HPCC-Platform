@@ -35,14 +35,13 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPActivity",
-    "hpcc/WUDetailsWidget",
-    "hpcc/DFUWUDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 registry, Button, ToolbarSeparator,
                 OnDemandGrid, Keyboard, Selection, selector, tree, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPActivity, WUDetailsWidget, DFUWUDetailsWidget, ESPUtil) {
+                GridDetailsWidget, ESPActivity, DelayLoadWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
         i18n: nlsHPCC,
@@ -357,10 +356,11 @@ define([
             if (this.activity.isInstanceOfQueue(row)) {
             } else if (this.activity.isInstanceOfWorkunit(row)) {
                 if (row.Server === "DFUserver") {
-                    return new DFUWUDetailsWidget.fixCircularDependency({
+                    return new DelayLoadWidget({
                         id: id,
                         title: row.ID,
                         closable: true,
+                        delayWidget: "DFUWUDetailsWidget",
                         hpcc: {
                             params: {
                                 Wuid: row.ID
@@ -368,10 +368,11 @@ define([
                         }
                     });
                 }
-                return new WUDetailsWidget({
+                return new DelayLoadWidget({
                     id: id,
                     title: row.Wuid,
                     closable: true,
+                    delayWidget: "WUDetailsWidget",
                     hpcc: {
                         params: {
                             Wuid: row.Wuid

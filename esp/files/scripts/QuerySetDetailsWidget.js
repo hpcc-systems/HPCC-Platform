@@ -40,9 +40,7 @@ define([
     "hpcc/WsWorkunits",
     "hpcc/WsTopology",
     "hpcc/_TabContainerWidget",
-    "hpcc/QuerySetLogicalFilesWidget",
-    "hpcc/QuerySetErrorsWidget",
-    "hpcc/QueryTestWidget",
+    "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/QuerySetDetailsWidget.html",
 
@@ -55,14 +53,12 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
-    "dijit/TitlePane",
-
-    "hpcc/WUDetailsWidget"
+    "dijit/TitlePane"
 
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, query, Memory, Observable, all,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                ESPWorkunit, ESPQuery, WsWorkunits, WsTopology, _TabContainerWidget, QuerySetLogicalFilesWidget, QuerySetErrorsWidget, QueryTestWidget,
+                ESPWorkunit, ESPQuery, WsWorkunits, WsTopology, _TabContainerWidget, DelayLoadWidget,
                 template) {
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,

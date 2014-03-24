@@ -37,7 +37,8 @@ define([
 
     "dijit/Toolbar", 
     "dijit/ToolbarSeparator", 
-    "dijit/form/Button"
+    "dijit/form/Button",
+    "dijit/form/NumberSpinner"
     
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle,
             registry, BorderContainer, ContentPane,

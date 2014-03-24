@@ -27,9 +27,7 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
 
-    "hpcc/ActivityWidget",
-    "hpcc/SearchResultsWidget",
-    "hpcc/EventScheduleWorkunitWidget"
+    "hpcc/DelayLoadWidget"
 
 ], function (declare, lang, i18n, nlsHPCC,
                 _TabContainerWidget,

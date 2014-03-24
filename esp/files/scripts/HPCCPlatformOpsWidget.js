@@ -19,10 +19,7 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
-    "dijit/registry",
-
     "hpcc/_TabContainerWidget",
-    "hpcc/DiskUsageWidget",
     "hpcc/ESPRequest",
 
     "dojo/text!../templates/HPCCPlatformOpsWidget.html",
@@ -30,11 +27,12 @@ define([
     "hpcc/UserQueryWidget",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane"
+    "dijit/layout/ContentPane",
+
+    "hpcc/DelayLoadWidget"
 
 ], function (declare, lang, i18n, nlsHPCC,
-                registry,
-                _TabContainerWidget, DiskUsageWidget, ESPRequest,
+                _TabContainerWidget, ESPRequest,
                 template) {
     return declare("HPCCPlatformOpsWidget", [_TabContainerWidget], {
         templateString: template,

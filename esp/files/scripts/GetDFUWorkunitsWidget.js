@@ -45,7 +45,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPDFUWorkunit",
     "hpcc/FileSpray",
-    "hpcc/DFUWUDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/FilterDropDownWidget",
 
@@ -59,12 +59,15 @@ define([
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
     "dijit/form/Select",
+    "dijit/form/CheckBox",
     "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
     "dijit/TooltipDialog"
+
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,dom, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
+                _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget,
                 template) {
     return declare("GetDFUWorkunitsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -430,11 +433,11 @@ define([
             id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
-                var context = this;
-                retVal = new DFUWUDetailsWidget.fixCircularDependency({
+                retVal = new DelayLoadWidget({
                     id: id,
                     title: params.Wuid,
                     closable: true,
+                    delayWidget: "DFUWUDetailsWidget",
                     params: params
                 });
                 this.addChild(retVal, 1);

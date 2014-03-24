@@ -49,8 +49,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPDFUWorkunit",
-    "hpcc/HexViewWidget",
-    "hpcc/DFUWUDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/SelectionGridWidget",
 
@@ -79,7 +78,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, iframe, date, on,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 OnDemandGrid, tree, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, HexViewWidget, DFUWUDetailsWidget, TargetSelectWidget, SelectionGridWidget,
+                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, SelectionGridWidget,
                 template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -558,18 +557,20 @@ define([
                 var context = this;
                 switch (type) {
                     case "hex":
-                        retVal = new HexViewWidget({
+                        retVal = new DelayLoadWidget({
                             id: id,
                             title: title,
                             closable: true,
+                            delayWidget: "HexViewWidget",
                             params: params
                         });
                         break;
                     case "dfu":
-                        retVal = new DFUWUDetailsWidget.fixCircularDependency({
+                        retVal = new DelayLoadWidget({
                             id: id,
                             title: title,
                             closable: true,
+                            delayWidget: "DFUWUDetailsWidget",
                             params: params
                         });
                         break;
