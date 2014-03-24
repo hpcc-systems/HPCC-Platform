@@ -21,10 +21,15 @@
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
 #include "deftype.hpp"
+#include "eclhelper.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlfield_imp.hpp"
+#include "rtlds_imp.hpp"
 #include "jprop.hpp"
 #include "build-config.h"
+#include "roxiemem.hpp"
+#include "nbcd.hpp"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -56,7 +61,15 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
+static void UNSUPPORTED(const char *feature) __attribute__((noreturn));
+
+static void UNSUPPORTED(const char *feature)
+{
+    throw MakeStringException(-1, "UNSUPPORTED feature: %s not supported in java plugin", feature);
+}
+
 namespace javaembed {
+
 
 // Use a global object to ensure that the Java VM  is initialized once only.
 // We would like to create it lazily for two reasons:
@@ -117,8 +130,10 @@ public:
         optionStrings.append("-Xrs");
 
         // These may be useful for debugging
-        // optionStrings.append("-Xcheck:jni");
+#ifdef _DEBUG
+        optionStrings.append("-Xcheck:jni");
         // optionStrings.append("-verbose:jni");
+#endif
 
         JavaVMOption* options = new JavaVMOption[optionStrings.length()];
         ForEachItemIn(idx, optionStrings)
@@ -147,6 +162,8 @@ public:
     JavaVM *javaVM;       /* denotes a Java VM */
 } *globalState;
 
+static char helperLibraryName[_MAX_PATH];
+
 #ifdef _WIN32
     EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #endif
@@ -157,11 +174,10 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     // Make sure we are never unloaded (as JVM does not support it)
     // we do this by doing a dynamic load of the javaembed library
 #ifdef _WIN32
-    char path[_MAX_PATH];
-    ::GetModuleFileName((HINSTANCE)&__ImageBase, path, _MAX_PATH);
+    ::GetModuleFileName((HINSTANCE)&__ImageBase, helperLibraryName, _MAX_PATH);
     if (strstr(path, "javaembed"))
     {
-        HINSTANCE h = LoadSharedObject(path, false, false);
+        HINSTANCE h = LoadSharedObject(helperLibraryName, false, false);
         DBGLOG("LoadSharedObject returned %p", h);
     }
 #else
@@ -180,6 +196,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
                     if (tail)
                     {
                         tail[strlen(SharedObjectExtension)] = 0;
+                        strcpy(helperLibraryName, fullName);
                         HINSTANCE h = LoadSharedObject(fullName, false, false);
                         break;
                     }
@@ -203,6 +220,937 @@ static void checkType(type_t javatype, size32_t javasize, type_t ecltype, size32
     if (javatype != ecltype || javasize != eclsize)
         throw MakeStringException(0, "javaembed: Type mismatch"); // MORE - could provide some details!
 }
+
+static void checkException(JNIEnv *JNIenv)
+{
+    if (JNIenv->ExceptionCheck())
+    {
+        jthrowable exception = JNIenv->ExceptionOccurred();
+        JNIenv->ExceptionClear();
+        jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
+        jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
+        jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
+        const char *text = JNIenv->GetStringUTFChars(cause, 0);
+        VStringBuffer message("javaembed: %s", text);
+        JNIenv->ReleaseStringUTFChars(cause, text);
+        rtlFail(0, message.str());
+    }
+}
+
+//-------------------------------------------
+
+// A JavaObject accessor has common functionality shared by both the builders below (Java-> ECL and ECL->Java)
+
+class JavaObjectAccessor : public CInterface
+{
+protected:
+    JavaObjectAccessor(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jobject _row)
+    : JNIenv(_JNIenv), row(_row), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
+    {
+        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->GetObjectClass(row));
+    }
+    JavaObjectAccessor(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow)
+    : JNIenv(_JNIenv), outerRow(_outerRow), idx(0), limit(0), inSet(false), inDataSet(false)
+    {
+        row = NULL;
+        Class = NULL;
+    }
+    ~JavaObjectAccessor()
+    {
+        // Unwind anything left on the stack (in case we had exceptions), to make sure the Class we release is the global one
+        if (stack.length())
+            Class = (jclass) stack.item(0);
+        if (Class)
+            JNIenv->DeleteGlobalRef(Class);
+    }
+    void push()
+    {
+        stack.append(Class);
+        stack.append(row);
+    }
+    void pop()
+    {
+        row = (jobject) stack.pop();
+        Class = (jclass) stack.pop();
+    }
+    jfieldID getFieldId(const RtlFieldInfo * field, const char *sig, const char *expected)
+    {
+        // MORE - if we are going to stream a dataset we really should be caching these somehow
+        JNIenv->ExceptionClear();
+        jfieldID fieldId = 0;
+        if (sig)
+        {
+            if (inSet)
+            {
+                VStringBuffer arraySig("[%s", sig);
+                fieldId = JNIenv->GetFieldID(Class, field->name->getAtomNamePtr(), arraySig.str());
+            }
+            else
+                fieldId = JNIenv->GetFieldID(Class, field->name->getAtomNamePtr(), sig);
+        }
+        else
+        {
+            // Do it the hard way via reflection API
+            // Equivalent java:
+            // Field field = object.getClass().getDeclaredField(fieldName);
+            jclass classClass =JNIenv->GetObjectClass(Class);
+            checkException();
+            jmethodID getDeclaredField = JNIenv->GetMethodID(classClass, "getDeclaredField", "(Ljava/lang/String;)Ljava/lang/reflect/Field;" );
+            checkException();
+            jstring fieldName = JNIenv->NewStringUTF(field->name->getAtomNamePtr());
+            checkException();
+            jobject reflectedField = JNIenv->CallObjectMethod(Class, getDeclaredField, fieldName);
+            checkException();
+            fieldId = JNIenv->FromReflectedField(reflectedField);
+        }
+        if (!fieldId && expected)
+            throw MakeStringException(0, "javaembed: Unable to retrieve field %s of type %s", field->name->getAtomNamePtr(), expected);
+        if (expected)
+            checkException();
+        else
+            JNIenv->ExceptionClear();
+        return fieldId;
+    }
+    void checkException()
+    {
+        javaembed::checkException(JNIenv);
+    }
+
+    JNIEnv *JNIenv;
+    jobject row;
+    const RtlFieldInfo *outerRow;
+    jclass Class;
+    ConstPointerArray stack;
+    unsigned idx;
+    UnsignedArray idxStack;
+    unsigned limit;
+    bool inSet;
+    bool inDataSet;
+};
+
+// A JavaRowBuilder object is used to construct an ECL row from a Java object
+
+class JavaRowBuilder : public JavaObjectAccessor, implements IFieldSource
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    JavaRowBuilder(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, jobject _row)
+    : JavaObjectAccessor(_JNIenv, _outerRow, _row)
+    {
+    }
+    virtual bool getBooleanResult(const RtlFieldInfo *field)
+    {
+        jboolean b;
+        if (inSet)
+        {
+            JNIenv->GetBooleanArrayRegion((jbooleanArray) row, idx, 1, &b);
+        }
+        else
+        {
+            jfieldID fieldId = getFieldId(field, "Z", "boolean");
+            b = JNIenv->GetBooleanField(row, fieldId);
+        }
+        checkException();
+        return b;
+    }
+    virtual void getDataResult(const RtlFieldInfo *field, size32_t &__len, void * &__result)
+    {
+        jbyteArray array;
+        if (inSet)
+        {
+            array = (jbyteArray) JNIenv->GetObjectArrayElement((jobjectArray) row, idx);
+        }
+        else
+        {
+            jfieldID fieldId = getFieldId(field, "[B", "DATA");
+            array = (jbyteArray) JNIenv->GetObjectField(row, fieldId);
+        }
+        checkException();
+        __len = (array != NULL ? JNIenv->GetArrayLength(array) : 0);
+        __result = (__len > 0 ? rtlMalloc(__len) : NULL);
+        if (__result)
+            JNIenv->GetByteArrayRegion(array, 0, __len, (jbyte *) __result);
+        checkException();
+    }
+    virtual double getRealResult(const RtlFieldInfo *field)
+    {
+        double d;
+        if (inSet)
+        {
+            float f;
+            switch (field->size(NULL, NULL))
+            {
+            case 4:
+                JNIenv->GetFloatArrayRegion((jfloatArray) row, idx, 1, &f);
+                d = f;
+                break;
+            case 8:
+                JNIenv->GetDoubleArrayRegion((jdoubleArray) row, idx, 1, &d);
+                break;
+            default:
+                throwUnexpected();
+            }
+        }
+        else
+        {
+            jfieldID fieldId;
+            switch (field->size(NULL, NULL))
+            {
+            case 4:
+                fieldId = getFieldId(field, "F", "float");
+                d = JNIenv->GetFloatField(row, fieldId);
+                break;
+            case 8:
+                fieldId = getFieldId(field, "D", "double");
+                d = JNIenv->GetDoubleField(row, fieldId);
+                break;
+            default:
+                throwUnexpected();
+            }
+        }
+        checkException();
+        return d;
+    }
+    virtual __int64 getSignedResult(const RtlFieldInfo *field)
+    {
+        __int64 ret;
+        if (inSet)
+        {
+            jbyte b;
+            jshort s;
+            jint i;
+            jlong l;
+            switch (field->size(NULL, NULL))
+            {
+            case 1:
+                JNIenv->GetByteArrayRegion((jbyteArray) row, idx, 1, &b);
+                ret = b;
+                break;
+            case 2:
+                JNIenv->GetShortArrayRegion((jshortArray) row, idx, 1, &s);
+                ret = s;
+                break;
+            case 4:
+                JNIenv->GetIntArrayRegion((jintArray) row, idx, 1, &i);
+                ret = i;
+                break;
+            case 8:
+                JNIenv->GetLongArrayRegion((jlongArray) row, idx, 1, &l);
+                ret = l;
+                break;
+            default:
+                UNSUPPORTED("non-standard integer sizes");
+            }
+        }
+        else
+        {
+            jfieldID fieldId;
+            switch (field->size(NULL, NULL))
+            {
+            case 1:
+                fieldId = getFieldId(field, "B", "byte");
+                ret = JNIenv->GetByteField(row, fieldId);
+                break;
+            case 2:
+                fieldId = getFieldId(field, "S", "short");
+                ret = JNIenv->GetShortField(row, fieldId);
+                break;
+            case 4:
+                fieldId = getFieldId(field, "I", "int");
+                ret = JNIenv->GetIntField(row, fieldId);
+                break;
+            case 8:
+                fieldId = getFieldId(field, "J", "long");
+                ret = JNIenv->GetLongField(row, fieldId);
+                break;
+            default:
+                UNSUPPORTED("non-standard integer sizes");
+            }
+        }
+        checkException();
+        return ret;
+    }
+    virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field)
+    {
+        UNSUPPORTED("unsigned fields");  // No unsigned types in Java
+    }
+    virtual void getStringResult(const RtlFieldInfo *field, size32_t &__len, char * &__result)
+    {
+        jstring result;
+        if (inSet)
+        {
+            // MORE - set of string1 mapping to Java array of char ? Not sure it's worth it.
+            result = (jstring) JNIenv->GetObjectArrayElement((jobjectArray) row, idx);
+        }
+        else
+        {
+            if (field->isFixedSize() && field->size(NULL, NULL)==1)
+            {
+                // See if there's a char field
+                jfieldID charFieldId = getFieldId(field, "C", NULL);
+                if (charFieldId)
+                {
+                    jchar resultChar = JNIenv->GetCharField(row, charFieldId);
+                    rtlUnicodeToStrX(__len, __result, 1, &resultChar);
+                    return;
+                }
+            }
+            jfieldID fieldId = getFieldId(field, "Ljava/lang/String;", "String");
+            result = (jstring) JNIenv->GetObjectField(row, fieldId);
+        }
+        if (!result)
+        {
+            __len = 0;
+            __result = NULL;
+            return;
+        }
+        size_t size = JNIenv->GetStringUTFLength(result);  // in bytes
+        const char *text =  JNIenv->GetStringUTFChars(result, NULL);
+        size32_t chars = rtlUtf8Length(size, text);
+        rtlUtf8ToStrX(__len, __result, chars, text);
+        JNIenv->ReleaseStringUTFChars(result, text);
+        JNIenv->DeleteLocalRef(result);
+    }
+    virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &__len, char * &__result)
+    {
+        jstring result;
+        if (inSet)
+        {
+            // MORE - set of string1 mapping to Java array of char ? Not sure it's worth it.
+            result = (jstring) JNIenv->GetObjectArrayElement((jobjectArray) row, idx);
+        }
+        else
+        {
+            if (field->isFixedSize() && field->size(NULL, NULL)==1)
+            {
+                // See if there's a char field
+                jfieldID charFieldId = getFieldId(field, "C", NULL);
+                if (charFieldId)
+                {
+                    jchar resultChar = JNIenv->GetCharField(row, charFieldId);
+                    rtlUnicodeToUtf8X(__len, __result, 1, &resultChar);
+                    return;
+                }
+            }
+            jfieldID fieldId = getFieldId(field, "Ljava/lang/String;", "String");
+            result = (jstring) JNIenv->GetObjectField(row, fieldId);
+        }
+        if (!result)
+        {
+            __len = 0;
+            __result = NULL;
+            return;
+        }
+        size_t size = JNIenv->GetStringUTFLength(result);  // in bytes
+        const char *text =  JNIenv->GetStringUTFChars(result, NULL);
+        size32_t chars = rtlUtf8Length(size, text);
+        rtlUtf8ToUtf8X(__len, __result, chars, text);
+        JNIenv->ReleaseStringUTFChars(result, text);
+        JNIenv->DeleteLocalRef(result);
+    }
+    virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &__len, UChar * &__result)
+    {
+        jstring result;
+        if (inSet)
+        {
+            // MORE - set of string1 mapping to Java array of char ? Not sure it's worth it.
+            result = (jstring) JNIenv->GetObjectArrayElement((jobjectArray) row, idx);
+        }
+        else
+        {
+            if (field->isFixedSize() && field->size(NULL, NULL)==1)
+            {
+                // See if there's a char field
+                jfieldID charFieldId = getFieldId(field, "C", NULL);
+                if (charFieldId)
+                {
+                    jchar resultChar = JNIenv->GetCharField(row, charFieldId);
+                    rtlUnicodeToUnicodeX(__len, __result, 1, &resultChar);
+                    return;
+                }
+            }
+            jfieldID fieldId = getFieldId(field, "Ljava/lang/String;", "String");
+            result = (jstring) JNIenv->GetObjectField(row, fieldId);
+        }
+        if (!result)
+        {
+            __len = 0;
+            __result = NULL;
+            return;
+        }
+        size_t size = JNIenv->GetStringUTFLength(result);  // in bytes
+        const char *text =  JNIenv->GetStringUTFChars(result, NULL);
+        size32_t chars = rtlUtf8Length(size, text);
+        rtlUtf8ToUnicodeX(__len, __result, chars, text);
+        JNIenv->ReleaseStringUTFChars(result, text);
+        JNIenv->DeleteLocalRef(result);
+    }
+    virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value)
+    {
+        double ret = getRealResult(field);
+        value.setReal(ret);
+    }
+
+    virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
+    {
+        isAll = false;  // No concept of an 'all' set in Java
+        push();
+        jfieldID fieldId = getFieldId(field, NULL, "object");  // We assume it will be an array, but not sure of what...
+        row = JNIenv->GetObjectField(row, fieldId);
+        inSet = true;
+        idx = -1;  // First call to next() increments it to 0
+        limit = row != NULL ? JNIenv->GetArrayLength((jarray) row) : 0;
+        checkException();
+    }
+    virtual bool processNextSet(const RtlFieldInfo * field)
+    {
+        assertex(inSet);
+        idx++;
+        return idx < limit;
+    }
+    virtual void processBeginDataset(const RtlFieldInfo * field)
+    {
+        push();
+        jfieldID fieldId = getFieldId(field, NULL, "object");  // We assume it will be an array, but not sure of what...
+        row = JNIenv->GetObjectField(row, fieldId);
+        inDataSet = true;
+        idx = -1;  // First call to next() increments it to 0
+        limit = row != NULL ? JNIenv->GetArrayLength((jarray) row) : 0;
+        checkException();
+    }
+    virtual void processBeginRow(const RtlFieldInfo * field)
+    {
+        if (field != outerRow)
+        {
+            push();
+            if (inDataSet)
+            {
+                row = JNIenv->GetObjectArrayElement((jobjectArray) row, idx);
+            }
+            else
+            {
+                jfieldID fieldId = getFieldId(field, NULL, "object");
+                row = JNIenv->GetObjectField(row, fieldId);
+            }
+            if (!row)
+                rtlFail(0, "javaembed: child dataset object should not be NULL");
+            Class = JNIenv->GetObjectClass(row);
+        }
+    }
+    virtual bool processNextRow(const RtlFieldInfo * field)
+    {
+        assertex(inDataSet);
+        idx++;
+        return idx < limit;
+    }
+    virtual void processEndSet(const RtlFieldInfo * field)
+    {
+        inSet = false;
+        JNIenv->DeleteLocalRef(row);
+        pop();
+    }
+    virtual void processEndDataset(const RtlFieldInfo * field)
+    {
+        inDataSet = false;
+        JNIenv->DeleteLocalRef(row);
+        pop();
+    }
+    virtual void processEndRow(const RtlFieldInfo * field)
+    {
+        if (field != outerRow)
+        {
+            JNIenv->DeleteLocalRef(row);
+            JNIenv->DeleteLocalRef(Class);
+            pop();
+        }
+    }
+};
+
+//-------------------------------------------
+
+// A JavaObjectBuilder object is used to construct a Java object from an ECL row
+
+class JavaObjectBuilder : public JavaObjectAccessor, implements IFieldProcessor
+{
+public:
+    IMPLEMENT_IINTERFACE;
+    JavaObjectBuilder(JNIEnv *_JNIenv, const RtlFieldInfo *_outerRow, const char *className)
+    : JavaObjectAccessor(_JNIenv, _outerRow)
+    {
+        JNIenv->ExceptionClear();
+        Class = (jclass) JNIenv->NewGlobalRef(JNIenv->FindClass(className));  // MORE - should use the custom classloader, once that fix is merged
+        checkException();
+        setConstructor();
+    }
+    virtual void processString(unsigned numchars, const char *text, const RtlFieldInfo * field)
+    {
+        if (field->isFixedSize() && field->size(NULL, NULL)==1 && !inSet)  // SET OF STRING1 is not mapped to array of char...
+        {
+            // See if there's a char field
+            jfieldID charFieldId = getFieldId(field, "C", NULL);
+            if (charFieldId)
+            {
+                assertex(numchars==1);
+                jchar c;
+                rtlStrToUnicode(1, &c, 1, text);
+                JNIenv->SetCharField(row, charFieldId, c);
+                checkException();
+                return;
+            }
+        }
+        jfieldID fieldId = getFieldId(field, "Ljava/lang/String;", "String");
+        size32_t numchars16;
+        rtlDataAttr unicode16;
+        rtlStrToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+        jstring value = JNIenv->NewString(unicode16.getustr(), numchars16);
+        checkException();
+        if (inSet)
+            JNIenv->SetObjectArrayElement((jobjectArray) row, idx, value);
+        else
+            JNIenv->SetObjectField(row, fieldId, value);
+        JNIenv->DeleteLocalRef(value);
+        checkException();
+    }
+    virtual void processBool(bool value, const RtlFieldInfo * field)
+    {
+        jfieldID fieldId = getFieldId(field, "Z", "boolean");
+        JNIenv->SetBooleanField(row, fieldId, value);
+        checkException();
+    }
+    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field)
+    {
+        jfieldID fieldId = getFieldId(field, "[B", "data");
+        jbyteArray javaData = JNIenv->NewByteArray(len);
+        JNIenv->SetByteArrayRegion(javaData, 0, len, (jbyte *) value);
+        checkException();
+        if (inSet)
+            JNIenv->SetObjectArrayElement((jobjectArray) row, idx, javaData);
+        else
+            JNIenv->SetObjectField(row, fieldId, javaData);
+        checkException();
+    }
+    virtual void processInt(__int64 value, const RtlFieldInfo * field)
+    {
+        jfieldID fieldId;
+        switch (field->size(NULL, NULL))
+        {
+        case 1:
+            fieldId = getFieldId(field, "B", "byte");
+            JNIenv->SetByteField(row, fieldId, value);
+            break;
+        case 2:
+            fieldId = getFieldId(field, "S", "short");
+            JNIenv->SetShortField(row, fieldId, value);
+            break;
+        case 4:
+            fieldId = getFieldId(field, "I", "int");
+            JNIenv->SetIntField(row, fieldId, value);
+            break;
+        case 8:
+            fieldId = getFieldId(field, "J", "long");
+            JNIenv->SetLongField(row, fieldId, value);
+            break;
+        default:
+            UNSUPPORTED("non-standard integer sizes");
+            break;
+        }
+        checkException();
+    }
+    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("unsigned fields");  // No unsigned types in Java
+    }
+    virtual void processReal(double value, const RtlFieldInfo * field)
+    {
+        jfieldID fieldId;
+        switch (field->size(NULL, NULL))
+        {
+        case 4:
+            fieldId = getFieldId(field, "F", "float");
+            JNIenv->SetFloatField(row, fieldId, (float) value);
+            break;
+        case 8:
+            fieldId = getFieldId(field, "D", "double");
+            JNIenv->SetDoubleField(row, fieldId, value);
+            break;
+        default:
+            throwUnexpected();
+        }
+        checkException();
+    }
+    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    {
+        // we could map to doubles, but probably better to let the ECL programmer do that themselves
+        UNSUPPORTED("DECIMAL fields");
+    }
+    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("UDECIMAL fields");
+    }
+    virtual void processUnicode(unsigned numchars, const UChar *text, const RtlFieldInfo * field)
+    {
+        jfieldID fieldId = getFieldId(field, "Ljava/lang/String;", "String");
+        jstring value = JNIenv->NewString(text, numchars);
+        checkException();
+        if (inSet)
+            JNIenv->SetObjectArrayElement((jobjectArray) row, idx, value);
+        else
+            JNIenv->SetObjectField(row, fieldId, value);
+        JNIenv->DeleteLocalRef(value);
+        checkException();
+    }
+    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        size32_t charCount;
+        rtlDataAttr text;
+        rtlQStrToStrX(charCount, text.refstr(), len, value);
+        processString(charCount, text.getstr(), field);
+    }
+    virtual void processUtf8(unsigned numchars, const char *text, const RtlFieldInfo * field)
+    {
+        jfieldID fieldId = getFieldId(field, "Ljava/lang/String;", "String");
+        size32_t numchars16;
+        rtlDataAttr unicode16;
+        rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+        jstring value = JNIenv->NewString(unicode16.getustr(), numchars16);
+        checkException();
+        if (inSet)
+            JNIenv->SetObjectArrayElement((jobjectArray) row, idx, value);
+        else
+            JNIenv->SetObjectField(row, fieldId, value);
+        JNIenv->DeleteLocalRef(value);
+        checkException();
+    }
+
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElems, bool isAll, const byte *data)
+    {
+        push();
+        idx = 0;
+        limit = numElems;
+        const char *javaTypeSignature = NULL;
+        bool processElements = false;
+        // row needs to be created as an array of <whatever>
+        if (isAll)
+            UNSUPPORTED("ALL sets");
+        const RtlTypeInfo *childType = field->type->queryChildType();
+        jobject newRow;
+        switch(childType->fieldType & RFTMkind)
+        {
+        case type_boolean:
+            newRow = JNIenv->NewBooleanArray(numElems);
+            JNIenv->SetBooleanArrayRegion((jbooleanArray) newRow, 0, numElems, (jboolean *) data);
+            javaTypeSignature = "[Z";
+            break;
+        case type_int:
+            if (childType->fieldType & RFTMunsigned)
+                UNSUPPORTED("unsigned integers");
+            switch (childType->length)
+            {
+            case 1:
+                newRow = JNIenv->NewByteArray(numElems);
+                JNIenv->SetByteArrayRegion((jbyteArray) newRow, 0, numElems, (jbyte *) data);
+                javaTypeSignature = "[B";
+                break;
+            case 2:
+                newRow = JNIenv->NewShortArray(numElems);
+                JNIenv->SetShortArrayRegion((jshortArray) newRow, 0, numElems, (jshort *) data);
+                javaTypeSignature = "[S";
+                break;
+            case 4:
+                newRow = JNIenv->NewIntArray(numElems);
+                JNIenv->SetIntArrayRegion((jintArray) newRow, 0, numElems, (jint *) data);
+                javaTypeSignature = "[I";
+                break;
+            case 8:
+                newRow = JNIenv->NewLongArray(numElems);
+                JNIenv->SetLongArrayRegion((jlongArray) newRow, 0, numElems, (jlong *) data);
+                javaTypeSignature = "[J";
+                break;
+            default:
+                UNSUPPORTED("non-standard integer sizes");
+                break;
+            }
+            break;
+        case type_real:
+            switch (childType->length)
+            {
+            case 4:
+                newRow = JNIenv->NewFloatArray(numElems);
+                JNIenv->SetFloatArrayRegion((jfloatArray) newRow, 0, numElems, (float *) data);
+                javaTypeSignature = "[F";
+                break;
+            case 8:
+                newRow = JNIenv->NewDoubleArray(numElems);
+                JNIenv->SetDoubleArrayRegion((jdoubleArray) newRow, 0, numElems, (double *) data);
+                javaTypeSignature = "[D";
+                break;
+            default:
+                throwUnexpected();
+                break;
+            }
+            break;
+        case type_string:
+        case type_varstring:
+        case type_unicode:
+        case type_utf8:
+            newRow = JNIenv->NewObjectArray(numElems, JNIenv->FindClass("java/lang/String"), NULL);
+            javaTypeSignature = "[Ljava/lang/String;";
+            processElements = true;
+            break;
+        case type_data:
+            newRow = JNIenv->NewObjectArray(numElems, JNIenv->FindClass("[B"), NULL);
+            javaTypeSignature = "[[B";
+            processElements = true;
+            break;
+        default:
+            throwUnexpected();
+        }
+        checkException();
+        jfieldID fieldId = getFieldId(field, javaTypeSignature, "Array");
+        JNIenv->SetObjectField(row, fieldId, newRow);
+        row = newRow;
+        inSet = true;
+        return processElements;
+    }
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows)
+    {
+        push();
+        idxStack.append(idx);
+        idx = 0;
+        inDataSet = true;
+        // Create an empty array
+        jfieldID childId = getFieldId( field, NULL, "RECORD");
+        jobject newRow = NULL;
+        if (numRows)
+        {
+            jclass arrayClass = getClassForChild(childId);
+            jmethodID isArrayMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(arrayClass), "isArray", "()Z" );
+            checkException();
+            if (!JNIenv->CallBooleanMethod(arrayClass, isArrayMethod))
+            {
+                JNIenv->ExceptionClear();
+                VStringBuffer message("javaembed: Array expected for field %s", field->name->getAtomNamePtr());
+                rtlFail(0, message.str());
+            }
+            // Set up constructor etc for the child rows, so we don't do it per row
+            jmethodID getTypeMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(arrayClass), "getComponentType", "()Ljava/lang/Class;" );
+            checkException();
+            Class = (jclass) JNIenv->CallObjectMethod(arrayClass, getTypeMethod);
+            checkException();
+            setConstructor();
+            // Now we need to create the array
+            newRow = JNIenv->NewObjectArray(numRows, Class, NULL);
+            checkException();
+        }
+        JNIenv->SetObjectField(row, childId, newRow);
+        checkException();
+        row = newRow;
+
+        return true;
+    }
+    virtual bool processBeginRow(const RtlFieldInfo * field)
+    {
+        if (field == outerRow)
+            row = JNIenv->NewObject(Class, constructor);
+        else
+        {
+            push();
+            stack.append(constructor);
+            // Now we have to create the child object
+            jobject newRow = NULL;
+            if (inDataSet)
+            {
+                newRow = JNIenv->NewObject(Class, constructor);
+                checkException();
+                JNIenv->SetObjectArrayElement((jobjectArray) row, idx++, newRow);
+            }
+            else
+            {
+                // All this is done once per dataset in the nested dataset case. But for embedded record case we have to do it here
+                jfieldID childId = getFieldId( field, NULL, "RECORD");
+                Class = getClassForChild(childId);
+                setConstructor();
+                newRow = JNIenv->NewObject(Class, constructor);
+                checkException();
+                JNIenv->SetObjectField(row, childId, newRow);
+            }
+            row = newRow;
+        }
+        checkException();
+        return true;
+    }
+    virtual void processEndSet(const RtlFieldInfo * field)
+    {
+        JNIenv->DeleteLocalRef(row);
+        pop();
+        inSet = false;
+    }
+    virtual void processEndDataset(const RtlFieldInfo * field)
+    {
+        inDataSet = false;
+        idx = idxStack.pop();
+        pop();
+    }
+    virtual void processEndRow(const RtlFieldInfo * field)
+    {
+        if (field != outerRow)
+        {
+            constructor = (jmethodID) stack.pop();
+            JNIenv->DeleteLocalRef(row);
+            pop();
+        }
+    }
+    inline jobject getObject()
+    {
+        return row;
+    }
+protected:
+    jclass getClassForChild(jfieldID childId)
+    {
+        jobject reflectedField = JNIenv->ToReflectedField(Class, childId, false);
+        checkException();
+        jclass fieldClass =JNIenv->GetObjectClass(reflectedField);
+        checkException();
+        jmethodID getTypeMethod = JNIenv->GetMethodID(fieldClass, "getType", "()Ljava/lang/Class;" );
+        checkException();
+        jclass result = (jclass) JNIenv->CallObjectMethod(reflectedField, getTypeMethod);
+        checkException();
+        JNIenv->DeleteLocalRef(reflectedField);
+        JNIenv->DeleteLocalRef(fieldClass);
+        return result;
+
+    }
+    void setConstructor()
+    {
+        constructor = JNIenv->GetMethodID(Class, "<init>", "()V");
+        if (!constructor)
+        {
+            JNIenv->ExceptionClear();
+            jmethodID getNameMethod = JNIenv->GetMethodID(JNIenv->GetObjectClass(Class), "getName", "()Ljava/lang/String;" );
+            checkException();
+            jstring name = (jstring) JNIenv->CallObjectMethod(Class, getNameMethod);
+            checkException();
+            const char *nameText = JNIenv->GetStringUTFChars(name, NULL);
+            VStringBuffer message("javaembed: no suitable constructor for field %s", nameText);
+            JNIenv->ReleaseStringUTFChars(name, nameText);
+            rtlFail(0, message.str());
+        }
+    }
+    jmethodID constructor;
+};
+
+//----------------------------------------------------------------------
+
+// Wrap an IRowStream into a Java Iterator
+
+class ECLDatasetIterator : public CInterfaceOf<IInterface>
+{
+public:
+    ECLDatasetIterator(JNIEnv *JNIenv, const RtlTypeInfo *_typeInfo, const char *className, IRowStream * _val)
+    : typeInfo(_typeInfo), val(_val),
+      dummyField("<row>", NULL, typeInfo),
+      javaBuilder(JNIenv, &dummyField, className)
+    {
+        nextRead = false;
+        nextPending = NULL;
+    }
+
+    bool hasNext()
+    {
+        if (!nextRead)
+        {
+            nextPending = (const byte *) val->ungroupedNextRow();
+            nextRead = true;
+            if (!nextPending)
+                val->stop();
+        }
+        return nextPending != NULL;
+    }
+
+    jobject next()
+    {
+        if (!hasNext())
+            return NULL;
+        typeInfo->process(nextPending, nextPending, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
+        nextRead = false;
+        return javaBuilder.getObject();
+    }
+protected:
+    const RtlTypeInfo *typeInfo;  // Not linked (or linkable)
+    Linked<IRowStream> val;
+    RtlFieldStrInfo dummyField;
+    JavaObjectBuilder javaBuilder;
+    const byte *nextPending;
+    bool nextRead;
+};
+
+//-------------------------------------------
+
+// A Java function that returns a dataset will return a JavaRowStream object that can be
+// interrogated to return each row of the result in turn
+// Note that we can't cache the JNIEnv here - calls may be made on different threads (though not at the same time).
+
+static JNIEnv *queryJNIEnv();
+
+class JavaRowStream : public CInterfaceOf<IRowStream>
+{
+public:
+    JavaRowStream(jobject _iterator, IEngineRowAllocator *_resultAllocator)
+    : resultAllocator(_resultAllocator)
+    {
+        iterator = queryJNIEnv()->NewGlobalRef(_iterator);
+    }
+    virtual const void *nextRow()
+    {
+        if (!iterator)
+            return NULL;
+        JNIEnv *JNIenv = queryJNIEnv();
+        // Java code would be
+        // if (!iterator.hasNext)
+        // {
+        //    stop();
+        //    return NULL;
+        // }
+        // result = iterator.next();
+        jclass iterClass =JNIenv->GetObjectClass(iterator);
+        javaembed::checkException(JNIenv);
+        jmethodID hasNextMethod = JNIenv->GetMethodID(iterClass, "hasNext", "()Z" );
+        javaembed::checkException(JNIenv);
+        jboolean hasNext = JNIenv->CallBooleanMethod(iterator, hasNextMethod);
+        if (!hasNext)
+        {
+            stop();
+            return NULL;
+        }
+        jmethodID nextMethod = JNIenv->GetMethodID(iterClass, "next", "()Ljava/lang/Object;" );
+        javaembed::checkException(JNIenv);
+        jobject result = JNIenv->CallObjectMethod(iterator, nextMethod);
+        RtlDynamicRowBuilder rowBuilder(resultAllocator);
+        const RtlTypeInfo *typeInfo = resultAllocator->queryOutputMeta()->queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        JavaRowBuilder javaRowBuilder(queryJNIEnv(), &dummyField, result);
+        size32_t len = typeInfo->build(rowBuilder, 0, &dummyField, javaRowBuilder);
+        return rowBuilder.finalizeRowClear(len);
+    }
+    virtual void stop()
+    {
+        resultAllocator.clear();
+        if (iterator)
+        {
+            queryJNIEnv()->DeleteGlobalRef(iterator);
+            iterator = NULL;
+        }
+    }
+
+protected:
+    Linked<IEngineRowAllocator> resultAllocator;
+    jobject iterator;;
+};
+
+
+//-------------------------------------------
 
 // There is a singleton JavaThreadContext per thread. This allows us to
 // ensure that we can make repeated calls to a Java function efficiently.
@@ -359,6 +1307,22 @@ public:
             funcname++;  // skip the '.'
             StringBuffer methodname(signature-funcname, funcname);
             signature++; // skip the ':'
+            // We need to patch up the provided signature - any instances of <classname; need to be replaced by Ljava.utils.iterator
+            StringBuffer javaSignature;
+            const char *finger = signature;
+            while (*finger)
+            {
+                if (*finger == '<')
+                {
+                    javaSignature.append("Ljava/util/Iterator;");
+                    finger = strchr(finger, ';');
+                    if (!finger)
+                        throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid java function signature %s", signature);
+                }
+                else
+                    javaSignature.append(*finger);
+                finger++;
+            }
             if (javaClass)
                 JNIenv->DeleteGlobalRef(javaClass);
 
@@ -369,7 +1333,7 @@ public:
 
             if (!javaClass)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s", classname.str());
-            javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodname, signature);
+            javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodname, javaSignature);
             if (!javaMethodID)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve method name %s with signature %s", methodname.str(), signature);
             const char *returnSig = strrchr(signature, ')');
@@ -443,7 +1407,7 @@ public:
             throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
     }
-    inline bool getBooleanResult(jvalue &result)
+    bool getBooleanResult(jvalue &result)
     {
         switch (returnType.get()[0])
         {
@@ -698,6 +1662,14 @@ public:
     {
         return argsig.get();
     }
+    size32_t getRowResult(jobject result, ARowBuilder &builder)
+    {
+        const RtlTypeInfo *typeInfo = builder.queryAllocator()->queryOutputMeta()->queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        JavaRowBuilder javaRowBuilder(JNIenv, &dummyField, result);
+        return typeInfo->build(builder, 0, &dummyField, javaRowBuilder);
+    }
 
 private:
     StringAttr returnType;
@@ -785,19 +1757,21 @@ public:
     }
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
-        UNIMPLEMENTED;
+        return new JavaRowStream(result.l, _resultAllocator);
     }
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
-        UNIMPLEMENTED;
+        RtlDynamicRowBuilder rowBuilder(_resultAllocator);
+        size32_t len = sharedCtx->getRowResult(result.l, rowBuilder);
+        return (byte *) rowBuilder.finalizeRowClear(len);
     }
     virtual size32_t getTransformResult(ARowBuilder & builder)
     {
-        UNIMPLEMENTED;
+        return sharedCtx->getRowResult(result.l, builder);
     }
     virtual void bindBooleanParam(const char *name, bool val)
     {
-        if (*argsig != 'B')
+        if (*argsig != 'Z')
             typeError("BOOLEAN");
         argsig++;
         jvalue v;
@@ -1100,11 +2074,89 @@ public:
     }
     virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
     {
-        UNIMPLEMENTED;
+        if (*argsig != 'L')  // should tell us the type of the object we need to create to pass in
+            typeError("RECORD");
+        // Class name is from the char after the L up to the first ;
+        const char *tail = strchr(argsig, ';');
+        if (!tail)
+            typeError("RECORD");
+        StringAttr className(argsig+1, tail - (argsig+1));
+        argsig = tail+1;
+        const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, className);
+        typeInfo->process(val, val, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
+        jvalue v;
+        v.l = javaBuilder.getObject();
+        addArg(v);
     }
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
     {
-        UNIMPLEMENTED;
+        jvalue v;
+        if (*argsig == '[')
+        {
+            ++argsig;
+            // At present, dataset parameters have to map to arrays. May support iterators later
+            if (*argsig != 'L')  // should tell us the type of the object we need to create to pass in
+                typeError("DATASET");
+            // Class name is from the char after the L up to the first ;
+            const char *tail = strchr(argsig, ';');
+            if (!tail)
+                typeError("RECORD");
+            StringAttr className(argsig+1, tail - (argsig+1));
+            argsig = tail+1;
+            PointerArrayOf<_jobject> allRows;
+            const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
+            assertex(typeInfo);
+            RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+            JavaObjectBuilder javaBuilder(sharedCtx->JNIenv, &dummyField, className);
+            for (;;)
+            {
+                roxiemem::OwnedConstRoxieRow thisRow = val->ungroupedNextRow();
+                if (!thisRow)
+                    break;
+                const byte *brow = (const byte *) thisRow.get();
+                typeInfo->process(brow, brow, &dummyField, javaBuilder); // Creates a java object from the incoming ECL row
+                allRows.append(javaBuilder.getObject());
+            }
+            jobjectArray array = sharedCtx->JNIenv->NewObjectArray(allRows.length(), sharedCtx->JNIenv->FindClass(className), NULL);
+            ForEachItemIn(idx, allRows)
+            {
+                sharedCtx->JNIenv->SetObjectArrayElement(array, idx, allRows.item(idx));
+            }
+            v.l = array;
+        }
+        else if (*argsig == '<') // An extension to the Java signatures, used to indicate
+                                  // that we will pass an iterator that generates objects of the specified type
+        {
+            ++argsig;
+            if (*argsig != 'L')  // should tell us the type of the object we need to create to pass in
+                typeError("DATASET");
+            // Class name is from the char after the L up to the first ;
+            const char *tail = strchr(argsig, ';');
+            if (!tail)
+                typeError("RECORD");
+            StringAttr className(argsig+1, tail - (argsig+1));
+            argsig = tail+1;
+            // Create a java object of type com.HPCCSystems.HpccUtils - this acts as a proxy for the iterator
+            sharedCtx->JNIenv->ExceptionClear();
+            jclass proxyClass = sharedCtx->JNIenv->FindClass("com/HPCCSystems/HpccUtils");
+            sharedCtx->checkException();
+            jmethodID constructor = sharedCtx->JNIenv->GetMethodID(proxyClass, "<init>", "(JLjava/lang/String;)V");
+            sharedCtx->checkException();
+            jvalue param;
+            const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
+            ECLDatasetIterator *iterator = new ECLDatasetIterator(sharedCtx->JNIenv, typeInfo, className, val);
+            param.j = (jlong) iterator;
+            iterators.append(*iterator);
+            jobject proxy = sharedCtx->JNIenv->NewObject(proxyClass, constructor, param, sharedCtx->JNIenv->NewStringUTF(helperLibraryName));
+            sharedCtx->checkException();
+            v.l = proxy;
+        }
+        else
+            typeError("DATASET");
+        addArg(v);
     }
 
     virtual void importFunction(size32_t lenChars, const char *utf)
@@ -1127,6 +2179,7 @@ protected:
     JavaThreadContext *sharedCtx;
     jvalue result;
     StringAttr classpath;
+    IArrayOf<ECLDatasetIterator> iterators;   // to make sure they get freed
 private:
 
     void typeError(const char *ECLtype) __attribute__((noreturn))
@@ -1189,18 +2242,28 @@ static void releaseContext()
     }
 }
 
+static JavaThreadContext *queryContext()
+{
+    if (!threadContext)
+    {
+        threadContext = new JavaThreadContext;
+        threadHookChain = addThreadTermFunc(releaseContext);
+    }
+    return threadContext;
+}
+
+static JNIEnv *queryJNIEnv()
+{
+    return queryContext()->JNIenv;
+}
+
 class JavaEmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
     virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
     {
-        if (!threadContext)
-        {
-            threadContext = new JavaThreadContext;
-            threadHookChain = addThreadTermFunc(releaseContext);
-        }
         assertex(isImport);
-        return new JavaEmbedImportContext(threadContext, options);
+        return new JavaEmbedImportContext(queryContext(), options);
     }
 };
 
@@ -1210,3 +2273,48 @@ extern IEmbedContext* getEmbedContext()
 }
 
 } // namespace
+
+// Callbacks from java
+
+extern "C" {
+JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1hasNext (JNIEnv *, jclass, jlong);
+JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *, jclass, jlong);
+}
+
+JNIEXPORT jboolean JNICALL Java_com_HPCCSystems_HpccUtils__1hasNext (JNIEnv *JNIenv, jclass, jlong proxy)
+{
+    try
+    {
+        javaembed::ECLDatasetIterator *e = (javaembed::ECLDatasetIterator *) proxy;
+        return e->hasNext();
+    }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        E->errorMessage(msg);
+        E->Release();
+        jclass eClass = JNIenv->FindClass("java/lang/IllegalArgumentException");
+        if (eClass)
+            JNIenv->ThrowNew(eClass, msg.str());
+        return false;
+    }
+}
+
+JNIEXPORT jobject JNICALL Java_com_HPCCSystems_HpccUtils__1next (JNIEnv *JNIenv, jclass, jlong proxy)
+{
+    try
+    {
+        javaembed::ECLDatasetIterator *e = (javaembed::ECLDatasetIterator *) proxy;
+        return e->next();
+    }
+    catch (IException *E)
+    {
+        StringBuffer msg;
+        E->errorMessage(msg);
+        E->Release();
+        jclass eClass = JNIenv->FindClass("java/lang/IllegalArgumentException");
+        if (eClass)
+            JNIenv->ThrowNew(eClass, msg.str());
+        return NULL;
+    }
+}

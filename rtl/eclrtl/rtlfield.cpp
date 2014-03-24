@@ -56,6 +56,30 @@ static void queryNestedOuterXPath(StringAttr & ret, const RtlFieldInfo * field)
     ret.set(xpath, (size32_t)(sep-xpath));
 }
 
+//-------------------------------------------------------------------------------------------------------------------
+
+class DummyFieldProcessor : public CInterfaceOf<IFieldProcessor>
+{
+public:
+    virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field) {}
+    virtual void processBool(bool value, const RtlFieldInfo * field) {}
+    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field) {}
+    virtual void processInt(__int64 value, const RtlFieldInfo * field) {}
+    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field) {}
+    virtual void processReal(double value, const RtlFieldInfo * field) {}
+    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field) {}
+    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field) {}
+    virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field) {}
+    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field) {}
+    virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field) {}
+
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data) { return false; }
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows) { return true; }
+    virtual bool processBeginRow(const RtlFieldInfo * field) { return true; }
+    virtual void processEndSet(const RtlFieldInfo * field) {}
+    virtual void processEndDataset(const RtlFieldInfo * field) {}
+    virtual void processEndRow(const RtlFieldInfo * field) {}
+};
 
 //-------------------------------------------------------------------------------------------------------------------
 
@@ -998,19 +1022,34 @@ size32_t RtlSetTypeInfo::process(const byte * self, const byte * selfrow, const 
 {
     unsigned offset = sizeof(bool) + sizeof(size32_t);
     unsigned max = offset + rtlReadUInt4(self + sizeof(bool));
-    if (target.processBeginSet(field))
+    unsigned elements = 0;
+    if (!*(bool *)self)
     {
-        if (*(bool *)self)
-            target.processSetAll(field);
+        unsigned tempOffset = sizeof(bool) + sizeof(size32_t);
+        if (child->isFixedSize())
+        {
+            unsigned elemSize = child->size(NULL, NULL);
+            elements = (max-offset) / elemSize;
+            assert(elements*elemSize == max-offset);
+        }
         else
         {
-            while (offset < max)
+            DummyFieldProcessor dummy;
+            while (tempOffset < max)
             {
-                offset += child->process(self+offset, selfrow, field, target);
+                tempOffset += child->process(self+tempOffset, selfrow, field, dummy);  // NOTE - good thing we can't have a set of sets, or this would recurse
+                elements++;
             }
         }
-        target.processEndSet(field);
     }
+    if (target.processBeginSet(field, elements, *(bool *)self, self+offset))
+    {
+        while (offset < max)
+        {
+            offset += child->process(self+offset, selfrow, field, target);
+        }
+    }
+    target.processEndSet(field);
     return max;
 }
 
@@ -1132,9 +1171,9 @@ size32_t RtlDatasetTypeInfo::process(const byte * self, const byte * selfrow, co
 {
     if (isLinkCounted())
     {
-        if (target.processBeginDataset(field))
+        size32_t thisCount = rtlReadUInt4(self);
+        if (target.processBeginDataset(field, thisCount))
         {
-            size32_t thisCount = rtlReadUInt4(self);
             const byte * * rows = *reinterpret_cast<const byte * * const *>(self + sizeof(size32_t));
             for (unsigned i= 0; i < thisCount; i++)
             {
@@ -1149,7 +1188,15 @@ size32_t RtlDatasetTypeInfo::process(const byte * self, const byte * selfrow, co
     {
         unsigned offset = sizeof(size32_t);
         unsigned max = offset + rtlReadUInt4(self);
-        if (target.processBeginDataset(field))
+        unsigned thisCount = 0;
+        DummyFieldProcessor dummy;
+        while (offset < max)
+        {
+            offset += child->process(self+offset, self+offset, field, dummy);
+            thisCount++;
+        }
+        offset = sizeof(size32_t);
+        if (target.processBeginDataset(field, thisCount))
         {
             while (offset < max)
             {
@@ -1246,9 +1293,9 @@ size32_t RtlDictionaryTypeInfo::process(const byte * self, const byte * selfrow,
 {
     if (isLinkCounted())
     {
-        if (target.processBeginDataset(field))
+        size32_t thisCount = rtlReadUInt4(self);
+        if (target.processBeginDataset(field, thisCount))
         {
-            size32_t thisCount = rtlReadUInt4(self);
             const byte * * rows = *reinterpret_cast<const byte * * const *>(self + sizeof(size32_t));
             for (unsigned i= 0; i < thisCount; i++)
             {

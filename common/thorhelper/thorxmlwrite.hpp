@@ -248,11 +248,10 @@ public:
     virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field);
     virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field);
     virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field);
-    virtual void processSetAll(const RtlFieldInfo * field);
     virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field);
 
-    virtual bool processBeginSet(const RtlFieldInfo * field);
-    virtual bool processBeginDataset(const RtlFieldInfo * field); 
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data);
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows);
     virtual bool processBeginRow(const RtlFieldInfo * field);
     virtual void processEndSet(const RtlFieldInfo * field);
     virtual void processEndDataset(const RtlFieldInfo * field);

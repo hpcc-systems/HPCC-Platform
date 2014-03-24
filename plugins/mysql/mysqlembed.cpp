@@ -667,10 +667,6 @@ public:
         rtlQStrToStrX(charCount, text.refstr(), len, value);
         processString(charCount, text.getstr(), field);
     }
-    virtual void processSetAll(const RtlFieldInfo * field)
-    {
-        UNSUPPORTED("ALL sets");
-    }
     virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
     {
         size32_t utf8chars;
@@ -682,11 +678,11 @@ public:
         bindInfo.length = &bindInfo.buffer_length;
     }
 
-    virtual bool processBeginSet(const RtlFieldInfo * field)
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned numElements, bool isAll, const byte *data)
     {
         UNSUPPORTED("SET fields");
     }
-    virtual bool processBeginDataset(const RtlFieldInfo * field)
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned numRows)
     {
         UNSUPPORTED("Nested datasets");
     }
