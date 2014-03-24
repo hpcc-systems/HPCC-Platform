@@ -297,21 +297,14 @@ public:
             {
                 StringBuffer cleanedParam(bundle);
                 removeTrailingPathSepChar(cleanedParam);
-                StringBuffer drive, path;
-                splitFilename(cleanedParam, &drive, &path, &bundleName, NULL, true);
-                if (bundleFile->isDirectory())
-                {
-                    // Distinguish a directory containing a single file (zipped single module case) from a
-                    // directory containing multiple exported files. Somehow.
-                    if (directoryContainsBundleFile(bundleFile))
-                        includeOpt.appendf(" -I%s%s", drive.str(), path.str());
-                    else
-                        includeOpt.appendf(" -I%s", bundle);
-                }
-                else if (drive.length() + path.length())
-                    includeOpt.appendf(" -I%s%s", drive.str(), path.str());
+                StringBuffer path;
+                splitFilename(cleanedParam, &path, &path, &bundleName, NULL, true);
+                if (!path.length())
+                    path.append(".");
+                if (bundleFile->isDirectory() && !directoryContainsBundleFile(bundleFile))
+                    includeOpt.appendf(" -I%s", bundle);
                 else
-                    includeOpt.appendf(" -I.");
+                    includeOpt.appendf(" -I%s", path.str());
             }
             else
                 throw MakeStringException(0, "File not found");
