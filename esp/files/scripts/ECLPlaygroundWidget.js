@@ -232,7 +232,7 @@ define([
                         a.style.visibility = "hidden"
                     } else if (this.wu && this.wu.Wuid) {
                         a.style.visibility = "visible"
-                        a.href = "/esp/files/stub.htm?Widget=WUDetailsWidget&Wuid=" + this.wu.Wuid;
+                        a.href = dojoConfig.urlInfo.pathname + "?Widget=WUDetailsWidget&Wuid=" + this.wu.Wuid;
                     }
                 }
             }

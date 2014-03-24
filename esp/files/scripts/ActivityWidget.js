@@ -272,16 +272,16 @@ define([
                     }),
                     Priority: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = "<img src='/esp/files/img/priority.png'>";
+                            node.innerHTML = dojoConfig.getImageHTML("priority.png");
                         },
                         width: 25,
                         sortable: false,
                         formatter: function (Priority) {
                             switch (Priority) {
                                 case "high":
-                                    return "<img src='/esp/files/img/priority_high.png'>";
+                                    return dojoConfig.getImageHTML("priority_high.png");
                                 case "low":
-                                    return "<img src='/esp/files/img/priority_low.png'>";
+                                    return dojoConfig.getImageHTML("priority_low.png");
                             }
                             return "";
                         }
@@ -298,9 +298,9 @@ define([
                             var name = "";
                             if (context.activity.isInstanceOfQueue(row)) {
                                 if (row.isPaused()) {
-                                    img = "/esp/files/img/server_paused.png";
+                                    img = dojoConfig.getImageURL("server_paused.png");
                                 } else {
-                                    img = "/esp/files/img/server.png";
+                                    img = dojoConfig.getImageURL("server.png");
                                 }
                                 name = _name;
                             } else {

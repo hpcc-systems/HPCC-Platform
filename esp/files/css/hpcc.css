@@ -27,20 +27,6 @@ html, body {
     padding: 0;
 }
 
-button {
-    background-position: top;
-    padding: 2px 8px 4px;
-    border-radius: 4px;
-    border: 1px solid rgb(118, 157, 192);
-    font-size: 1em;
-    background-image: url("esp/files/dijit/themes/claro/form/images/button.png");
-    background-repeat: repeat-x;
-    background-color: rgb(228, 242, 255);
-    -webkit-transition: background-color 0.2s linear;
-    -moz-border-radius: 4px 4px 4px 4px;
-    -moz-box-shadow: 0 1px 1px rgba(0, 0, 0, 0.15);
-}
-
 button:hover {
         color: rgb(0, 0, 0);
         background-color: rgb(175, 217, 255);
@@ -417,7 +403,7 @@ hr.dashedLine {
 }
 
 #loadingOverlay {
-    background: url("/esp/files/img/loadingBar.gif") no-repeat 10px 23px;
+    background: url("../img/loadingBar.gif") no-repeat 10px 23px;
     background-position: center center;
     background-attachment:fixed;
     font-family: Arial, Verdana, sans-serif;

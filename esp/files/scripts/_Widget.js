@@ -14,6 +14,8 @@ define([
 
     return declare("_Widget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         baseClass: "_Widget",
+
+        dojoConfig: dojoConfig,
         
         initalized: false,
 
