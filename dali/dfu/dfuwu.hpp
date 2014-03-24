@@ -170,6 +170,8 @@ interface IConstDFUoptions : extends IInterface
     virtual bool getFailIfNoSourceFile() const = 0;
 
     virtual bool getRecordStructurePresent() const = 0;
+
+    virtual bool getQuotedTerminator() const = 0;
 };
 
 interface IDFUoptions : extends IConstDFUoptions
@@ -206,6 +208,7 @@ interface IDFUoptions : extends IConstDFUoptions
     virtual void setEncDec(const char *enc,const char *dec) = 0;
     virtual void setFailIfNoSourceFile(bool val=false) = 0;
     virtual void setRecordStructurePresent(bool val=false) = 0;
+    virtual void setQuotedTerminator(bool val=true) = 0;
 };
 
 interface IConstDFUfileSpec: extends IInterface

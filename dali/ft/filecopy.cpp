@@ -1132,6 +1132,7 @@ void FileSprayer::calculateSprayPartition()
         FilePartInfo & cur = sources.item(idx);
         cur.filename.getRemotePath(remoteFilename.clear());
 
+        srcFormat.quotedTerminator = options->getPropBool("@quotedTerminator", true);
         LOG(MCdebugInfoDetail, job, "Partition %d(%s)", idx, remoteFilename.str());
         const SocketEndpoint & ep = cur.filename.queryEndpoint();
         IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);

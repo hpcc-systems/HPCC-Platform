@@ -2081,7 +2081,7 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
         case FFTblocked:
             return new CSimpleBlockedPartitioner(sameFormats);
         case FFTcsv:
-            if (srcFormat.hasQuote())
+            if (srcFormat.hasQuote() && srcFormat.hasQuotedTerminator())
                 return new CCsvPartitioner(srcFormat);
             else
                 return new CCsvQuickPartitioner(srcFormat, sameFormats);
@@ -2091,7 +2091,7 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
                 return new CXmlQuickPartitioner(srcFormat, sameFormats);
             else
             {
-                if (srcFormat.hasQuote())
+                if (srcFormat.hasQuote() && srcFormat.hasQuotedTerminator())
                     return new CUtfPartitioner(srcFormat);
                 else
                     return new CUtfQuickPartitioner(srcFormat, sameFormats);

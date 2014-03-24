@@ -1956,6 +1956,8 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         if (req.getRecordStructurePresent())
             options->setRecordStructurePresent(true);
 
+        options->setQuotedTerminator(req.getQuotedTerminator());
+
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
         submitDFUWorkUnit(wu.getClear());
@@ -2121,6 +2123,8 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
 
         if (req.getRecordStructurePresent())
             options->setRecordStructurePresent(true);
+
+        options->setQuotedTerminator(req.getQuotedTerminator());
 
         resp.setWuid(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());

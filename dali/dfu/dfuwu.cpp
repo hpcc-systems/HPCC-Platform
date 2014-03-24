@@ -2044,6 +2044,17 @@ public:
     {
         queryRoot()->setPropBool("@recordStructurePresent",val);
     }
+
+    bool getQuotedTerminator() const
+    {
+        return queryRoot()->getPropBool("@quotedTerminator");
+    }
+
+    void setQuotedTerminator(bool val)
+    {
+        queryRoot()->setPropBool("@quotedTerminator",val);
+    }
+
 };
 
 class CExceptionIterator: public CInterface, implements IExceptionIterator

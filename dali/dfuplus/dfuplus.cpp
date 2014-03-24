@@ -436,6 +436,9 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     if(globals->hasProp("recordStructurePresent"))
         req->setRecordStructurePresent(globals->getPropBool("recordStructurePresent",false));
 
+    if(globals->hasProp("quotedTerminator"))
+            req->setQuotedTerminator(globals->getPropBool("quotedTerminator",true));
+
     if(srcxml == NULL)
         info("\nVariable spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
