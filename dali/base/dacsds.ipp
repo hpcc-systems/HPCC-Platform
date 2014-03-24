@@ -407,7 +407,7 @@ public:
 
 private:
     void noteDisconnected(CRemoteConnection &connection);
-    int compareDaliServerVersion(const CDaliVersion & version);
+    int compareDaliServerVersion(const char * version) const;
 
     CriticalSection crit;
     CCopyConnectionHashTable connections;

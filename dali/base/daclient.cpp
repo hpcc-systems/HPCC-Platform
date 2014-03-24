@@ -115,6 +115,11 @@ public:
         return coven->verifyAll(true, timeout);
     }
 
+    int compareDaliServerVersion(const char * version) const
+    {
+        return coven->queryDaliServerVersion().compare(version);
+    }
+
     const CDaliVersion &queryDaliServerVersion() const
     {
         return coven->queryDaliServerVersion();
@@ -260,6 +265,12 @@ const CDaliVersion &queryDaliServerVersion()
 {
     return queryDefaultDali()->queryDaliServerVersion();
 }
+
+int compareDaliServerVersion(const char * version)
+{
+    return queryDefaultDali()->compareDaliServerVersion(version);
+}
+
 
 bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp)
 {

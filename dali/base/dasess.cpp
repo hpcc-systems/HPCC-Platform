@@ -888,7 +888,7 @@ public:
             *err = 0;
         if (securitydisabled)
             return -1;
-        if (queryDefaultDali()->queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->compareDaliServerVersion("1.8") < 0) {
             securitydisabled = true;
             return -1;
         }
@@ -931,7 +931,7 @@ public:
     {
         if (securitydisabled)
             return true;
-        if (queryDefaultDali()->queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->compareDaliServerVersion("1.8") < 0) {
             securitydisabled = true;
             return true;
         }
@@ -943,7 +943,7 @@ public:
 
     bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)
     {
-        if (queryDefaultDali()->queryDaliServerVersion().compare("3.10") < 0)
+        if (queryDefaultDali()->compareDaliServerVersion("3.10") < 0)
         {
             *err = -1;
             StringBuffer ver;
@@ -957,7 +957,7 @@ public:
             retMsg.append("Security not enabled");
             return false;
         }
-        if (queryDefaultDali()->queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->compareDaliServerVersion("1.8") < 0) {
             *err = -1;
             retMsg.append("Security not enabled");
             securitydisabled = true;
@@ -981,7 +981,7 @@ public:
 
     bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)
     {
-        if (queryDefaultDali()->queryDaliServerVersion().compare("3.10") < 0)
+        if (queryDefaultDali()->compareDaliServerVersion("3.10") < 0)
         {
             *err = -1;
             StringBuffer ver;
@@ -996,7 +996,7 @@ public:
             retMsg.append("Security not enabled");
             return false;
         }
-        if (queryDefaultDali()->queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->compareDaliServerVersion("1.8") < 0) {
             *err = -1;
             retMsg.append("Security not enabled");
             securitydisabled = true;

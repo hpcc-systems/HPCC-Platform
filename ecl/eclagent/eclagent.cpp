@@ -2197,7 +2197,7 @@ void EclAgentWorkflowMachine::obtainRunlock()
 void EclAgentWorkflowMachine::releaseRunlock()
 {
     LOG(MCrunlock, unknownJob, "Releasing run lock");
-    if(runlock && queryDaliServerVersion().compare("1.3") < 0)
+    if(runlock && queryDefaultDali()->compareDaliServerVersion("1.3") < 0)
         runlock->close(true);
     runlock.clear();
 }
@@ -2559,7 +2559,7 @@ IRemoteConnection *EclAgent::getPersistReadLock(const char * logicalName)
         try
         {
             unsigned mode = RTM_CREATE_QUERY | RTM_LOCK_READ;
-            if (queryDaliServerVersion().compare("1.4") >= 0)
+            if (queryDefaultDali()->compareDaliServerVersion("1.4") >= 0)
                 mode |= RTM_DELETE_ON_DISCONNECT;
             persistLock.setown(querySDS().connect(xpath.str(), myProcessSession(), mode, PERSIST_LOCK_TIMEOUT));
         }

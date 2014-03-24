@@ -2949,8 +2949,7 @@ public:
         Owned<IRemoteConnection> conn = querySDS().connect(wuRoot.str(), myProcessSession() , 0, SDS_LOCK_TIMEOUT);
         if (!conn.get())
             return new CConstDFUWorkUnitIterator(this,NULL,NULL);
-        CDaliVersion serverVersionNeeded("3.2");
-        Owned<IPropertyTreeIterator> iter(queryDaliServerVersion().compare(serverVersionNeeded) < 0 ? 
+        Owned<IPropertyTreeIterator> iter(queryDefaultDali()->compareDaliServerVersion("3.2") < 0 ?
             conn->queryRoot()->getElements(xpath) : 
             conn->getElements(xpath));
         return new CConstDFUWorkUnitIterator(this,conn,iter);
