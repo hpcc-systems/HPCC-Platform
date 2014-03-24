@@ -22,12 +22,13 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/store/util/QueryResults",
+    "dojo/topic",
 
     "dojox/xml/parser",
 
     "hpcc/ESPBase",
     "hpcc/ESPRequest"
-], function (declare, lang, Deferred, arrayUtil, Memory, Observable, QueryResults,
+], function (declare, lang, Deferred, arrayUtil, Memory, Observable, QueryResults, topic,
     parser,
     ESPBase, ESPRequest) {
 
@@ -107,7 +108,7 @@ define([
                 request: request,
                 load: function (response) {
                     if (lang.exists("DFUArrayActionResponse.DFUArrayActionResult", response)) {
-                        dojo.publish("hpcc/brToaster", {
+                        topic.publish("hpcc/brToaster", {
                             Severity: "Error",
                             Source: "WsDfu.DFUArrayAction",
                             Exceptions: [{ Message: response.DFUArrayActionResponse.DFUArrayActionResult }]
@@ -139,7 +140,7 @@ define([
                 request: request,
                 load: function (response) {
                     if (lang.exists("SuperfileActionResponse", response) && response.SuperfileActionResponse.retcode) {
-                        dojo.publish("hpcc/brToaster", {
+                        topic.publish("hpcc/brToaster", {
                             Severity: "Error",
                             Source: "WsDfu.SuperfileAction",
                             Exceptions: [{ Message: dojo.toJson(response.SuperfileActionResponse) }]
@@ -170,7 +171,7 @@ define([
                 request: request,
                 load: function (response) {
                     if (lang.exists("AddtoSuperfileResponse.Subfiles", response)) {
-                        dojo.publish("hpcc/brToaster", {
+                        topic.publish("hpcc/brToaster", {
                             Severity: "Error",
                             Source: "WsDfu.AddtoSuperfile",
                             Exceptions: [{ Message: response.AddtoSuperfileResponse.Subfiles }]

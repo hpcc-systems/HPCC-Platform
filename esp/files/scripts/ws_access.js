@@ -22,11 +22,12 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
     "dojo/store/util/QueryResults",
+    "dojo/topic",
 
     "hpcc/ESPRequest",
     "hpcc/ESPUtil"
 
-], function (declare, lang, arrayUtil, Deferred, all, Memory, Observable, QueryResults,
+], function (declare, lang, arrayUtil, Deferred, all, Memory, Observable, QueryResults, topic,
     ESPRequest, ESPUtil) {
 
     var UsersStore = declare([Memory], {
@@ -322,7 +323,7 @@ define([
             var retCode = lang.getObject(sourceMethod + "Response.retcode", false, response);
             var retMsg = lang.getObject(sourceMethod + "Response.retmsg", false, response);
             if (retCode) {
-                dojo.publish("hpcc/brToaster", {
+                topic.publish("hpcc/brToaster", {
                     Severity: "Error",
                     Source: "WsAccess." + sourceMethod,
                     Exceptions: [{ Message: retMsg }]

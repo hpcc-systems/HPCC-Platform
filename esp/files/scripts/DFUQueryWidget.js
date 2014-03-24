@@ -26,6 +26,7 @@ define([
     "dojo/dom-form",
     "dojo/date",
     "dojo/on",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Dialog",
@@ -74,7 +75,7 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
                 Grid, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget,
@@ -165,6 +166,7 @@ define([
                 }).then(function (response) {
                     context._handleResponse("CopyResponse.result", response);
                 });
+                topic.publish("hpcc/dfu_wu_created");
                 registry.byId(this.id + "ImportDropDown").closeDropDown();
             }
         },
@@ -183,6 +185,7 @@ define([
                         context._handleResponse("CopyResponse.result", response);
                     });
                 });
+                topic.publish("hpcc/dfu_wu_created");
                 registry.byId(this.id + "CopyDropDown").closeDropDown();
             }
         },
@@ -201,6 +204,7 @@ define([
                         context._handleResponse("RenameResponse.wuid", response);
                     });
                 });
+                topic.publish("hpcc/dfu_wu_created");
                 registry.byId(this.id + "RenameDropDown").closeDropDown();
             }
         },
@@ -233,6 +237,7 @@ define([
                         context._handleResponse("DesprayResponse.wuid", response);
                     });
                 });
+                topic.publish("hpcc/dfu_wu_created");
                 registry.byId(this.id + "DesprayDropDown").closeDropDown();
             }
         },
@@ -302,6 +307,9 @@ define([
                 context.refreshGrid();
             });
             this.filter.on("apply", function (evt) {
+                context.refreshGrid();
+            });
+            topic.subscribe("hpcc/dfu_wu_completed", function (topic) {
                 context.refreshGrid();
             });
         },

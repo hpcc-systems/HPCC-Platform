@@ -20,13 +20,14 @@ define([
     "dojo/_base/Deferred",
     "dojo/promise/all",
     "dojo/store/Observable",
+    "dojo/topic",
 
     "hpcc/WsWorkunits",
     "hpcc/WsTopology",
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, all, Observable,
+], function (declare, arrayUtil, lang, Deferred, all, Observable, topic,
     WsWorkunits, WsTopology, ESPUtil, ESPRequest, ESPResult) {
 
     var _workunits = {};
@@ -82,6 +83,13 @@ define([
             if (this.StateID) {
                 this.ActionEx = ActionEx;
                 this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, this.ActionEx));
+            }
+        },
+        _hasCompletedSetter: function (completed) {
+            var justCompleted = !this.hasCompleted && completed;
+            this.hasCompleted = completed;
+            if (justCompleted) {
+                topic.publish("hpcc/ecl_wu_completed", this);
             }
         },
         _VariablesSetter: function (Variables) {

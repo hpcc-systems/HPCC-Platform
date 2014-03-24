@@ -24,6 +24,7 @@ define([
     "dojo/dom-form",
     "dojo/date",
     "dojo/on",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Menu",
@@ -61,7 +62,7 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domClass, domForm, date, on, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, WUDetailsWidget, TargetSelectWidget, FilterDropDownWidget,
@@ -239,6 +240,10 @@ define([
                 context.refreshGrid();
             });
             this.filter.on("apply", function (evt) {
+                context.refreshGrid();
+            });
+
+            topic.subscribe("hpcc/ecl_wu_created", function (topic) {
                 context.refreshGrid();
             });
         },
