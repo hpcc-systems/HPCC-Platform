@@ -108,7 +108,7 @@ define([
 
             this.standby = new Standby({
                 target: domID,
-                image: "/esp/files/img/loadingBar.gif",
+                image: dojoConfig.getImageURL("loadingBar.gif"),
                 color: null
             });
             document.body.appendChild(this.standby.domNode);

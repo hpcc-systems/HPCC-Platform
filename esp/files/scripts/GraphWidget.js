@@ -33,7 +33,7 @@ define([
 
     "hpcc/_Widget",
 
-    "dojo/text!/esp/files/templates/GraphWidget.html",
+    "dojo/text!../templates/GraphWidget.html",
 
     "dijit/Toolbar", 
     "dijit/ToolbarSeparator", 

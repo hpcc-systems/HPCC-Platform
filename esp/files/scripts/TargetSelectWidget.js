@@ -210,14 +210,14 @@ define([
 
         loadECLSamples: function () {
             var sampleStore = new ItemFileReadStore({
-                url: "ecl/ECLPlaygroundSamples.json"
+                url: dojoConfig.getURL("ecl/ECLPlaygroundSamples.json")
             });
             this.setStore(sampleStore);
             var context = this;
             this.on("change", function (evt) {
                 var filename = this.get("value");
                 xhr.get({
-                    url: "ecl/" + filename,
+                    url: dojoConfig.getURL("ecl/" + filename),
                     handleAs: "text",
                     load: function (eclText) {
                         context.onNewSelection(eclText);

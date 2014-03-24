@@ -465,50 +465,62 @@ define([
             }
             return "iconWorkunit";
         },
-        getStateImage: function () {
+        getStateImageName: function () {
             switch (this.StateID) {
                 case 1:
-                    return "/esp/files/img/workunit_completed.png";
+                    return "workunit_completed.png";
                 case 2:
-                    return "/esp/files/img/workunit_running.png";
+                    return "workunit_running.png";
                 case 3:
-                    return "/esp/files/img/workunit_completed.png";
+                    return "workunit_completed.png";
                 case 4:
-                    return "/esp/files/img/workunit_failed.png";
+                    return "workunit_failed.png";
                 case 5:
-                    return "/esp/files/img/workunit_warning.png";
+                    return "workunit_warning.png";
                 case 6:
-                    return "/esp/files/img/workunit_aborting.png";
+                    return "workunit_aborting.png";
                 case 7:
-                    return "/esp/files/img/workunit_failed.png";
+                    return "workunit_failed.png";
                 case 8:
-                    return "/esp/files/img/workunit_warning.png";
+                    return "workunit_warning.png";
                 case 9:
-                    return "/esp/files/img/workunit_submitted.png";
+                    return "workunit_submitted.png";
                 case 10:
-                    return "/esp/files/img/workunit_warning.png";
+                    return "workunit_warning.png";
                 case 11:
-                    return "/esp/files/img/workunit_running.png";
+                    return "workunit_running.png";
                 case 12:
-                    return "/esp/files/img/workunit_warning.png";
+                    return "workunit_warning.png";
                 case 13:
-                    return "/esp/files/img/workunit_warning.png";
+                    return "workunit_warning.png";
                 case 14:
-                    return "/esp/files/img/workunit_warning.png";
+                    return "workunit_warning.png";
                 case 15:
-                    return "/esp/files/img/workunit_running.png";
+                    return "workunit_running.png";
                 case 16:
-                    return "/esp/files/img/workunit_warning.png";
+                    return "workunit_warning.png";
                 case 999:
-                    return "/esp/files/img/workunit_deleted.png";
+                    return "workunit_deleted.png";
             }
-            return "/esp/files/img/workunit.png";
+            return "workunit.png";
+        },
+        getStateImage: function () {
+            return dojoConfig.getImageURL(this.getStateImageName());
+        },
+        getStateImageHTML: function () {
+            return dojoConfig.getImageHTML(this.getStateImageName());
+        },
+        getProtectedImageName: function () {
+            if (this.Protected) {
+                return "locked.png";
+            }
+            return "unlocked.png";
         },
         getProtectedImage: function () {
-            if (this.Protected) {
-                return "/esp/files/img/locked.png"
-            }
-            return "/esp/files/img/unlocked.png"
+            return dojoConfig.getImageURL(this.getProtectedImageName());
+        },
+        getProtectedHTML: function () {
+            return dojoConfig.getImageHTML(this.getProtectedImageName());
         },
         fetchText: function (onFetchText) {
             var context = this;

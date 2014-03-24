@@ -200,13 +200,13 @@ define([
                 this.workunitsTab.set("title", newValue);
             }
             else if (name === "Suspended") {
-                dom.byId(this.id + "SuspendImg").src = newValue ? "/esp/files/img/suspended.png" : "";
+                dom.byId(this.id + "SuspendImg").src = newValue ? dojoConfig.getImageURL("suspended.png") : "";
             }
             else if (name === "Activated") {
-                dom.byId(this.id + "ActiveImg").src = newValue ? "/esp/files/img/active.png" : "";
+                dom.byId(this.id + "ActiveImg").src = newValue ? dojoConfig.getImageURL("active.png") : "";
             }
             else if (name === "SuspendedReason" && newValue === "cluster"){
-                dom.byId(this.id + "SuspendCluster").src = "/esp/files/img/error-icon.png";
+                dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("error-icon.png");
             }
             else if (name === "CountGraphs" && newValue) {
                 this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue + ")");

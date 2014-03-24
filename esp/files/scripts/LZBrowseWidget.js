@@ -393,15 +393,15 @@ define([
                         collapseOnRefresh: true,
                         sortable: false,
                         formatter: function (name, row) {
-                            var img = "/esp/files/img/";
+                            var img = "";
                             if (row.isDir === undefined) {
-                                img += "server.png";
+                                img = dojoConfig.getImageHTML("server.png");
                             } else if (row.isDir) {
-                                img += "folder.png";
+                                img = dojoConfig.getImageHTML("folder.png");
                             } else {
-                                img += "file.png";
+                                img = dojoConfig.getImageHTML("file.png");
                             }
-                            return "<img src='" + img + "'/>&nbsp;" + name;
+                            return img + "&nbsp;" + name;
                         }
                     }),
                     filesize: { label: this.i18n.Size, width: 108, sortable: false },

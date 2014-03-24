@@ -76,7 +76,7 @@ define([
             if (this.WsEclIFrameURL === "") {
                 var context = this;
                 this.GetESPServiceBaseURL("ws_ecl").then(function (response) {
-                    context.WsEclIFrameURL = response + "/esp/files/stub.htm?Widget=IFrameWidget&src=" + encodeURIComponent("/WsEcl/");
+                    context.WsEclIFrameURL = response + dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent("/WsEcl/");
                     deferred.resolve(context.WsEclIFrameURL + encodeURIComponent(type + "/query/"));
                 });
             } else {

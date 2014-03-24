@@ -113,7 +113,7 @@ define([
         },
 
         refreshState: function () {
-            this.iconFilter.src = this.exists() ? "/esp/files/img/filter.png" : "/esp/files/img/noFilter.png";
+            this.iconFilter.src = this.exists() ? dojoConfig.getImageURL("filter.png") : dojoConfig.getImageURL("noFilter.png");
         }
     });
 });
