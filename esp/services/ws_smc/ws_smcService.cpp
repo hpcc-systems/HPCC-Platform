@@ -1292,13 +1292,9 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
     return true;
 }
 
-const char *WsSMCStatusServerTypeNames[] = { "ThorMaster", "RoxieServer", "HThorServer", "ECLagent" };
-
 const char *CWsSMCEx::getStatusServerTypeName(WsSMCStatusServerType type)
 {
-    if (type < sizeof(WsSMCStatusServerTypeNames)/sizeof(char *))
-        return WsSMCStatusServerTypeNames[type];
-    return NULL;
+    return (type < WsSMCSSTterm) ? WsSMCStatusServerTypeNames[type] : NULL;
 }
 
 void CWsSMCEx::readTargetClusterInfo(IEspContext &context, CConstWUClusterInfoArray& clusters, IPropertyTree* serverStatusRoot,

@@ -50,6 +50,8 @@ enum WsSMCStatusServerType
     WsSMCSSTterm = 4
 };
 
+static const char *WsSMCStatusServerTypeNames[] = { "ThorMaster", "RoxieServer", "HThorServer", "ECLagent" };
+
 class CWsSMCQueue
 {
 public:
