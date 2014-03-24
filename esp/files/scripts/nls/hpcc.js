@@ -475,5 +475,6 @@ define({root:
 "es": true,
 "hu": true,
 "hr": true,
+"sr": true,
 "zh": true
 });
