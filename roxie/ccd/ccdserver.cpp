@@ -5218,6 +5218,7 @@ class CRoxieServerInlineTableActivity : public CRoxieServerActivity
     IHThorInlineTableArg &helper;
     __uint64 curRow;
     __uint64 numRows;
+    __uint64 timerInterval;
 
 public:
     CRoxieServerInlineTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
@@ -5232,12 +5233,16 @@ public:
         curRow = 0;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         numRows = helper.numRows();
+        timerInterval = numRows / 1000ULL;
+        if (timerInterval < 2)
+            timerInterval = 2;
     }
 
     virtual bool needsAllocator() const { return true; }
     virtual const void *nextInGroup()
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        if ( (curRow == numRows-1) || (curRow % timerInterval) == 0)
+            ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
         // Filtering empty rows, returns the next valid row
         while (curRow < numRows)
         {
