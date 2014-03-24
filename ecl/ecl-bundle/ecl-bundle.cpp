@@ -723,7 +723,7 @@ private:
         assertex(version && *version);
         ForEachItemIn(idx, bundles)
         {
-            if (strieq(version, bundles.item(idx).queryVersion()))
+            if (bundles.item(idx).queryVersion() && strieq(version, bundles.item(idx).queryVersion()))
                 return idx;
         }
         return NotFound;
