@@ -39,6 +39,7 @@ if (USE_V8)
              ./../../rtl/nbcd
              ./../../rtl/include
              ./../../common/deftype
+             ./../../roxie/roxiemem
              ./../../system/jlib
         )
 
@@ -55,6 +56,7 @@ if (USE_V8)
 
     target_link_libraries ( v8embed
         ${V8_LIBRARIES}
+        roxiemem
         eclrtl
         jlib
         )

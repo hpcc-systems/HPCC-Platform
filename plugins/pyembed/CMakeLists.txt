@@ -42,6 +42,7 @@ if (USE_PYTHON)
          ./../../rtl/include
          ./../../rtl/nbcd
          ./../../common/deftype
+         ./../../roxie/roxiemem
          ./../../system/jlib
        )
 
@@ -66,6 +67,7 @@ if (USE_PYTHON)
 
     target_link_libraries ( pyembed
         eclrtl
+        roxiemem
         jlib
         )
   endif()
