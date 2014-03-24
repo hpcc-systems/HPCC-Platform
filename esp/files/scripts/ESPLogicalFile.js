@@ -19,6 +19,7 @@ define([
     "dojo/_base/lang",
     "dojo/_base/Deferred",
     "dojo/store/Observable",
+    "dojo/store/util/QueryResults",
     "dojo/Stateful",
 
     "hpcc/WsDfu",
@@ -26,7 +27,7 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, Observable, Stateful,
+], function (declare, arrayUtil, lang, Deferred, Observable, QueryResults, Stateful,
         WsDfu, FileSpray, ESPRequest, ESPUtil, ESPResult) {
 
     var _logicalFiles = {};
@@ -36,7 +37,7 @@ define([
         action: "DFUQuery",
         responseQualifier: "DFUQueryResponse.DFULogicalFiles.DFULogicalFile",
         responseTotalQualifier: "DFUQueryResponse.NumFiles",
-        idProperty: "Name",
+        idProperty: "__hpcc_id",
         startProperty: "PageStartFrom",
         countProperty: "PageSize",
 
@@ -70,6 +71,102 @@ define([
                     }
                 });
             }
+        },
+        preProcessRow: function (item, request, query, options) {
+            lang.mixin(item, {
+                __hpcc_id: item.Name,
+                __hpcc_isDir: false,
+                __hpcc_displayName: item.Name,
+            });
+        },
+        mayHaveChildren: function (object) {
+            return object.__hpcc_isDir;
+        }
+    });
+
+    var TreeStore = declare(null, {
+        idProperty: "__hpcc_id",
+        cache: null,
+
+        constructor: function (options) {
+            this.cache = {};
+        },
+
+        _fetchFiles: function (scope) {
+            var context = this;
+            results = WsDfu.DFUFileView({
+                request: {
+                    Scope: scope
+                }
+            }).then(function (response) {
+                var retVal = [];
+                if (lang.exists("DFUFileViewResponse.DFULogicalFiles.DFULogicalFile", response)) {
+                    arrayUtil.forEach(response.DFUFileViewResponse.DFULogicalFiles.DFULogicalFile, function (item, idx) {
+                        var isDir = !(item.Name);
+
+                        var childScope = "";
+                        var leafName = "";
+                        if (isDir) {
+                            childScope = scope;
+                            if (childScope)
+                                childScope += "::";
+                            childScope += item.Directory;
+                        } else {
+                            var parts = item.Name.split("::");
+                            if (parts.length) {
+                                leafName = parts[parts.length - 1];
+                            }
+                        }
+
+                        lang.mixin(item, {
+                            __hpcc_id: isDir ? childScope : item.Name,
+                            __hpcc_isDir: isDir,
+                            __hpcc_childScope: childScope,
+                            __hpcc_displayName: isDir ? item.Directory : leafName
+                        });
+                        retVal.push(item);
+                        context.cache[context.getIdentity(item)] = item;
+                    });
+                }
+                retVal.sort(function (l, r) {
+                    if (l.__hpcc_isDir === r.__hpcc_isDir) {
+                        return ((l.__hpcc_displayName > r.__hpcc_displayName) - (l.__hpcc_displayName < r.__hpcc_displayName));
+                    }
+                    return ((l.__hpcc_isDir < r.__hpcc_isDir) - (l.__hpcc_isDir > r.__hpcc_isDir));
+                });
+                return retVal;
+            });
+            results.total = results.then(function (response) {
+                return response.length;
+            });
+            return results;
+        },
+
+        //  Store API ---
+        get: function (id) {
+            return this.cache[id];
+        },
+        getIdentity: function (object) {
+            return object[this.idProperty];
+        },
+        put: function (object, directives) {
+        },
+        add: function (object, directives) {
+        },
+        remove: function (id) {
+        },
+        query: function (query, options) {
+            return QueryResults(this._fetchFiles(""));
+        },
+        transaction: function () {
+        },
+        mayHaveChildren: function (object) {
+            return object.__hpcc_isDir;
+        },
+        getChildren: function (parent, options) {
+            return QueryResults(this._fetchFiles(parent.__hpcc_childScope));
+        },
+        getMetadata: function (object) {
         }
     });
 
@@ -212,6 +309,11 @@ define([
 
         CreateLFQueryStore: function (options) {
             var store = new Store(options);
+            return Observable(store);
+        },
+
+        CreateLFQueryTreeStore: function (options) {
+            var store = new TreeStore(options);
             return Observable(store);
         }
     };

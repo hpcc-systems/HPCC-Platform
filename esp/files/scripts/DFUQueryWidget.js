@@ -42,6 +42,7 @@ define([
     "dgrid/Selection",
     "dgrid/editor",
     "dgrid/selector",
+    "dgrid/tree",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
     "dgrid/extensions/Pagination",
@@ -57,6 +58,8 @@ define([
     "hpcc/FilterDropDownWidget",
     "hpcc/SelectionGridWidget",
 
+    "put-selector/put",
+
     "dojo/text!../templates/DFUQueryWidget.html",
 
     "dijit/layout/BorderContainer",
@@ -66,6 +69,7 @@ define([
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
+    "dijit/form/ToggleButton",
     "dijit/form/DropDownButton",
     "dijit/form/Select",
     "dijit/form/CheckBox",
@@ -78,8 +82,9 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
-                Grid, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
+                Grid, Keyboard, Selection, editor, selector, tree, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget,
+                put,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
@@ -118,6 +123,12 @@ define([
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.refreshGrid();
+        },
+
+        _onTree: function (event) {
+            this.treeMode = this.widget.Tree.get("checked");
+            this.refreshGrid();
+            this.refreshActionState();
         },
 
         _onOpen: function (event) {
@@ -388,11 +399,12 @@ define([
         },
 
         initWorkunitsGrid: function() {
-            var store = new ESPLogicalFile.CreateLFQueryStore();
+            this.listStore = new ESPLogicalFile.CreateLFQueryStore();
+            this.treeStore = new ESPLogicalFile.CreateLFQueryTreeStore();
             this.workunitsGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
-                store: store,
+                store: this.listStore,
                 rowsPerPage: 50,
                 pagingLinks: 1,
                 pagingTextBox: true,
@@ -401,6 +413,9 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
+                        disabled: function (item) {
+                            return item ? item.__hpcc_isDir : true;
+                        },
                         selectorType: 'checkbox'
                     }),
                     isZipfile: {
@@ -430,12 +445,25 @@ define([
                             return "";
                         }
                     },
-                    Name: {
+                    __hpcc_displayName: tree({
                         label: this.i18n.LogicalName,
-                        formatter: function (name, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
+                        formatter: function (name, row) {
+                            if (row.__hpcc_isDir) {
+                                return name;
+                            }
+                            return "<a href='#' rowIndex=" + row + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
+                        },
+                        renderExpando: function (level, hasChildren, expanded, object) {
+                            var dir = this.grid.isRTL ? "right" : "left";
+                            var cls = ".dgrid-expando-icon";
+                            if (hasChildren) {
+                                cls += ".ui-icon.ui-icon-triangle-1-" + (expanded ? "se" : "e");
+                            }
+                            var node = put("div" + cls + "[style=margin-" + dir + ": " + (level * (this.indentWidth || 9)) + "px; float: " + dir + (!object.__hpcc_isDir && level === 0 ? ";display: none" : "") + "]");
+                            node.innerHTML = "&nbsp;";
+                            return node;
                         }
-                    },
+                    }),
                     Owner: { label: this.i18n.Owner, width: 72 },
                     Description: { label: this.i18n.Description, width: 153 },
                     ClusterName: { label: this.i18n.Cluster, width: 108 },
@@ -446,6 +474,7 @@ define([
                 }
             }, this.id + "WorkunitsGrid");
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
+            this.workunitsGrid.loadingMessage = "<span class='dojoxGridNoData'>" + this.i18n.loadingMessage + "</span>";
 
             var context = this;
             on(document, "." + context.id + "LogicalNameClick:click", function (evt) {
@@ -534,7 +563,7 @@ define([
         },
 
         refreshGrid: function (clearSelection) {
-            this.workunitsGrid.set("query", this.getFilter());
+            this.workunitsGrid.set("store", this.treeMode ? this.treeStore : this.listStore, this.getFilter());
             if (clearSelection) {
                 this.workunitsGrid.clearSelection();
             }
@@ -554,30 +583,33 @@ define([
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
             registry.byId(this.id + "DesprayDropDown").set("disabled", !hasSelection);
+            registry.byId(this.id + "FilterFilterDropDown").set("disabled", this.treeMode);
 
             if (hasSelection) {
                 var context = this;
                 var data = [];
                 var matchedPrefix = [];
                 arrayUtil.forEach(selection, function (item, idx) {
-                    var nameParts = item.Name.split("::");
-                    if (idx === 0) {
-                        matchedPrefix = nameParts.slice(0, nameParts.length - 1);
-                    } else {
-                        var i = 0;
-                        for (var i = 0; i < matchedPrefix.length && i < nameParts.length - 1; ++i) {
-                            if (matchedPrefix[i] !== nameParts[i]) {
-                                break;
+                    if (item.Name) {
+                        var nameParts = item.Name.split("::");
+                        if (idx === 0) {
+                            matchedPrefix = nameParts.slice(0, nameParts.length - 1);
+                        } else {
+                            var i = 0;
+                            for (var i = 0; i < matchedPrefix.length && i < nameParts.length - 1; ++i) {
+                                if (matchedPrefix[i] !== nameParts[i]) {
+                                    break;
+                                }
                             }
+                            matchedPrefix = matchedPrefix.slice(0, i);
                         }
-                        matchedPrefix = matchedPrefix.slice(0, i);
+                        lang.mixin(item, {
+                            targetName: nameParts[nameParts.length - 1],
+                            targetCopyName: item.Name + "_copy",
+                            targetRenameName: item.Name + "_rename"
+                        });
+                        data.push(item);
                     }
-                    lang.mixin(item, {
-                        targetName:  nameParts[nameParts.length - 1],
-                        targetCopyName: item.Name + "_copy",
-                        targetRenameName: item.Name + "_rename"
-                });
-                    data.push(item);
                 });
                 registry.byId(this.id + "AddToSuperfileTargetName").set("value", matchedPrefix.join("::") + "::superfile");
                 this.copyGrid.setData(data);
