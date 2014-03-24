@@ -51,6 +51,8 @@ extern da_decl IDaliClient * queryDefaultDali();
 extern da_decl bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport=0, const char *clientVersion=NULL, const char *minServerVersion=NULL, unsigned timeout=MP_WAIT_FOREVER);
 extern da_decl void closedownClientProcess();
 extern da_decl bool daliClientActive();
+// initialize defaultDali for a server...  could be removed once queryDefaultDali() is removed from everywhere!
+extern da_decl void initPseudoDaliClient(ICoven * coven);
 
 #define DALI_SERVER_PORT     7070 // default Dali server port
 

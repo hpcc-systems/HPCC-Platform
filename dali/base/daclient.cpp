@@ -66,8 +66,8 @@ public:
         shutdownHooks.zap(shutdown);
     }
 
-    //MOE: These should be in a different interface
-    void connectLogMsgManagerToDali()
+    //MORE: These should be in a different interface
+    virtual void connectLogMsgManagerToDali()
     {
         IGroup & servers = queryDefaultDali()->queryCoven().queryGroup();
         unsigned parentRank = getRandom() % servers.ordinality();    // PG: Not sure if logging to random parent is best?
@@ -75,7 +75,7 @@ public:
         connectLogMsgManagerToParent(LINK(daliClientLoggingParent));   // PG: This may be nasty if node chosen is down
     }
 
-    void disconnectLogMsgManagerFromDali()
+    virtual void disconnectLogMsgManagerFromDali()
     {
         disconnectLogMsgManagerFromParentOwn(daliClientLoggingParent);
         daliClientLoggingParent = 0;
@@ -205,6 +205,64 @@ bool daliClientActive()
     return defaultDaliClient != NULL;
 }
 
+//--------------------------------------------------------------------------------------------------------------------
+
+
+class CDaliServerAsClient : public CInterfaceOf<IDaliClient>
+{
+public:
+    CDaliServerAsClient(ICoven * _coven) : coven(_coven)
+    {
+    }
+
+    virtual void addShutdownHook(IDaliClientShutdown &shutdown)
+    {
+        //MORE: Does this need to be implemented?
+        throwUnexpected();
+    }
+
+    virtual void removeShutdownHook(IDaliClientShutdown &shutdown)
+    {
+    }
+
+    virtual void connectLogMsgManagerToDali()
+    {
+    }
+
+    virtual void disconnectLogMsgManagerFromDali()
+    {
+    }
+
+
+    virtual ICoven &queryCoven()
+    {
+        return *coven;
+    }
+
+    virtual bool verifyCovenConnection(unsigned timeout)
+    {
+        return coven->verifyAll(true, timeout);
+    }
+
+    int compareDaliServerVersion(const char * version) const
+    {
+        return coven->queryDaliServerVersion().compare(version);
+    }
+
+    const CDaliVersion &queryDaliServerVersion() const
+    {
+        return coven->queryDaliServerVersion();
+    }
+
+protected:
+    Linked<ICoven> coven;
+};
+
+void initPseudoDaliClient(ICoven * coven)
+{
+    defaultDaliClient = new CDaliServerAsClient(coven);
+}
+
 // Server status
 
 CSDSServerStatus::CSDSServerStatus(const char *servername)
@@ -260,17 +318,6 @@ void disconnectLogMsgListenerFromDali()
     for(idx = 0; idx < max; idx++)
         disconnectLogMsgListenerFromChild(&servers.queryNode(idx));
 }
-
-const CDaliVersion &queryDaliServerVersion()
-{
-    return queryDefaultDali()->queryDaliServerVersion();
-}
-
-int compareDaliServerVersion(const char * version)
-{
-    return queryDefaultDali()->compareDaliServerVersion(version);
-}
-
 
 bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp)
 {

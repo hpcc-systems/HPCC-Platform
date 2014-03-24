@@ -369,6 +369,8 @@ int main(int argc, char* argv[])
 
         IGroup *group = createIGroup(epa); 
         Owned<ICoven> coven = initCoven(group,serverConfig);
+        initPseudoDaliClient(coven);
+
         group->Release();
         epa.kill();
 
