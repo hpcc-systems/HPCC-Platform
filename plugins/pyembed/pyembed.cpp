@@ -331,7 +331,8 @@ public:
                 PyErr_Clear();
                 StringBuffer wrapped;
                 wrapPythonText(wrapped, text);
-                code.setown(Py_CompileString(wrapped, "<embed>", Py_file_input));
+                PyCompilerFlags flags = { PyCF_SOURCE_IS_UTF8 };
+                code.setown(Py_CompileStringFlags(wrapped, "<embed>", Py_file_input, &flags));
             }
             checkPythonError();
             if (code)
