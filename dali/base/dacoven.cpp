@@ -66,9 +66,9 @@ enum MCovenRequestKind {
 void CDaliVersion::set(const char *s)
 {
     const char *dot = strchr(s, '.');
-    StringAttr _major(s, dot-s);
-    major = atoi(_major);
-    minor = atoi(dot+1);
+    //atoi will stop at the '.'
+    major = atoi(s);
+    minor = dot ? atoi(dot+1) : 0;
 }
 
 int CDaliVersion::compare(const CDaliVersion &other) const
@@ -81,8 +81,14 @@ int CDaliVersion::compare(const CDaliVersion &other) const
 
 int CDaliVersion::compare(const char *other) const
 {
-    CDaliVersion _other(other);
-    return compare(_other);
+    //Other has the form <major>.<minor>.
+    unsigned otherMajor = atoi(other);
+    int d = major-otherMajor;
+    if (d) return d;
+
+    const char *dot = strchr(other, '.');
+    unsigned otherMinor = dot ? atoi(dot+1) : 0;
+    return minor-otherMinor;
 }
 
 
