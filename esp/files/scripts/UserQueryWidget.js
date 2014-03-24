@@ -90,7 +90,7 @@ define([
             var selections = this.groupsGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensureGroupPane(this.id + "_Group" + selections[i].name, {
+                var tab = this.ensureGroupPane("Group" + selections[i].name, {
                     Name: selections[i].name
                 });
                 if (i == 0) {
@@ -122,7 +122,7 @@ define([
         },
 
         _onGroupsRowDblClick: function (name) {
-            var groupTab = this.ensureGroupPane(this.id + "_Group" + name, {
+            var groupTab = this.ensureGroupPane("Group" + name, {
                 Name: name
             });
             this.selectChild(groupTab);
@@ -150,7 +150,7 @@ define([
             var selections = this.usersGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensureUserPane(this.id + "_User" + selections[i].username, {
+                var tab = this.ensureUserPane(selections[i].username, {
                     Username: selections[i].username,
                     Fullname: selections[i].fullname,
                     Passwordexpiration: selections[i].passwordexpiration
@@ -183,7 +183,7 @@ define([
         },
 
         _onUsersRowDblClick: function (username, fullname, passwordexpiration) {
-            var userTab = this.ensureUserPane(this.id + "_" + username, {
+            var userTab = this.ensureUserPane(username, {
                 Username: username,
                 Fullname: fullname,
                 Passwordexpiration: passwordexpiration
@@ -295,6 +295,7 @@ define([
         },
 
         ensureGroupPane: function (id, params) {
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 retVal = new GroupDetailsWidget({
@@ -383,6 +384,7 @@ define([
         },
 
         ensureUserPane: function (id, params) {
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 retVal = new UserDetailsWidget({

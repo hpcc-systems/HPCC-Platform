@@ -213,7 +213,7 @@ define([
             var selections = this.eventGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensurePane(this.id + "_" + selections[i].Wuid, selections[i]);
+                var tab = this.ensurePane(selections[i].Wuid, selections[i]);
                 if (i == 0) {
                     firstTab = tab;
                 }
@@ -238,7 +238,7 @@ define([
         },
 
         _onRowDblClick: function (item) {
-            var wuTab = this.ensurePane(this.id + "_" + item.Wuid, item);
+            var wuTab = this.ensurePane(item.Wuid, item);
             this.selectChild(wuTab);
         },
 
@@ -247,7 +247,7 @@ define([
         },
 
         ensurePane: function (id, params) {
-            id = id.split(".").join("x");
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 retVal = new WUDetailsWidget({

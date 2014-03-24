@@ -53,6 +53,7 @@ define([
         },
 
         ensurePane: function (id, title, params) {
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 if (lang.exists("Wuid", params) && lang.exists("Sequence", params)) {
@@ -88,7 +89,7 @@ define([
                             onGetResults: function (results) {
                                 if (!params.SourceFiles) {
                                     for (var i = 0; i < results.length; ++i) {
-                                        var tab = context.ensurePane(context.id + "_result" + i, results[i].Name, {
+                                        var tab = context.ensurePane("result" + i, results[i].Name, {
                                             Wuid: results[i].Wuid,
                                             Sequence: results[i].Sequence
                                         });
@@ -110,7 +111,7 @@ define([
                 this.query.SubmitXML(params.RequestXml).then(function (response) {
                     var firstTab = true;
                     for (var key in response) {
-                        var tab = context.ensurePane(context.id + "_result" + key, key, {
+                        var tab = context.ensurePane("result" + key, key, {
                             QuerySetId: params.QuerySetId,
                             Id: params.Id,
                             FullResult: response[key]

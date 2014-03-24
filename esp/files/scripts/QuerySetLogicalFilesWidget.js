@@ -92,7 +92,7 @@ define([
             var selections = this.grid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensurePane(this.id + "_" + selections[i].Id, selections[i]);
+                var tab = this.ensurePane(selections[i].Id, selections[i]);
                 if (i == 0) {
                     firstTab = tab;
                 }

@@ -512,7 +512,7 @@ define([
             var selections = this.querySetGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensurePane(this.id + "_" + selections[i].Id, selections[i]);
+                var tab = this.ensurePane(selections[i].Id, selections[i]);
                 if (i == 0) {
                     firstTab = tab;
                 }
@@ -523,7 +523,7 @@ define([
         },
 
         _onRowDblClick: function (item) {
-            var wuTab = this.ensurePane(this.id + "_" + item.Id, item);
+            var wuTab = this.ensurePane(item.Id, item);
             this.selectChild(wuTab);
         },
 
@@ -532,7 +532,7 @@ define([
         },
 
         ensurePane: function (id, params) {
-            id = id.split(".").join("x");
+            id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;

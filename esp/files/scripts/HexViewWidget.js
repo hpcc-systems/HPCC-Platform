@@ -149,23 +149,7 @@ define([
                 });
             },
 
-            isCharCodePrintable: function (charCode) {
-                if (charCode < 32)
-                    return false;
-                else if (charCode >= 127 && charCode <= 159)
-                    return false;
-                else if (charCode === 173)
-                    return false;
-                else if (charCode > 255)
-                    return false;
-                return true;
-            },
-
-            isCharPrintable: function (char) {
-                return this.isCharCodePrintable(char.charCodeAt(0));
-            },
-
-            displayHex: function() {
+            displayHex: function () {
                 var context = this;
                 var formatRow = function (row, strRow, hexRow, length) {
                     if (row) {
