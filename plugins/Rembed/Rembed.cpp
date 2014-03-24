@@ -17,12 +17,16 @@
 
 #include "platform.h"
 #include "RInside.h"
+
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
 #include "deftype.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
+#include "rtlds_imp.hpp"
+#include "rtlfield_imp.hpp"
+#include "nbcd.hpp"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -57,8 +61,21 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #endif
 
+#define UNSUPPORTED(feature) throw MakeStringException(MSGAUD_user, 0, "Rembed: UNSUPPORTED feature: %s", feature)
+#define FAIL(msg) throw MakeStringException(MSGAUD_user, 0, "Rembed: Rcpp error: %s", msg)
+
 namespace Rembed
 {
+
+class OwnedRoxieRowSet : public ConstPointerArray
+{
+public:
+    ~OwnedRoxieRowSet()
+    {
+        ForEachItemIn(idx, *this)
+            rtlReleaseRow(item(idx));
+    }
+};
 
 // Use a global object to ensure that the R instance is initialized only once
 // Because of R's dodgy stack checks, we also have to do so on main thread
@@ -147,6 +164,393 @@ MODULE_EXIT()
 //    unload();
 }
 
+// A RDataFrameHeaderBuilder object is used to construct the header for an R dataFrame from an ECL row
+
+class RDataFrameHeaderBuilder : public CInterfaceOf<IFieldProcessor>
+{
+public:
+    RDataFrameHeaderBuilder()
+    {
+    }
+    virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processBool(bool value, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processInt(__int64 value, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processReal(double value, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Unicode/UTF8 fields");
+    }
+    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        addField(field);
+    }
+    virtual void processSetAll(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Unicode/UTF8 fields");
+    }
+
+    virtual bool processBeginSet(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual bool processBeginDataset(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Nested datasets");
+    }
+    virtual bool processBeginRow(const RtlFieldInfo * field)
+    {
+        return true;
+    }
+    virtual void processEndSet(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual void processEndDataset(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Nested datasets");
+    }
+    virtual void processEndRow(const RtlFieldInfo * field)
+    {
+    }
+    Rcpp::CharacterVector namevec;
+protected:
+    void addField(const RtlFieldInfo * field)
+    {
+        namevec.push_back(field->name->str());
+    }
+};
+
+// A RDataFrameHeaderBuilder object is used to construct the header for an R dataFrame from an ECL row
+
+class RDataFrameAppender : public CInterfaceOf<IFieldProcessor>
+{
+public:
+    RDataFrameAppender(Rcpp::List &_list) : list(_list)
+    {
+        colIdx = 0;
+        rowIdx = 0;
+    }
+    inline void setRowIdx(unsigned _idx)
+    {
+        colIdx = 0;
+        rowIdx = _idx;
+    }
+    virtual void processString(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        std::string s(value, len);
+        Rcpp::List column = list[colIdx];
+        column[rowIdx] = s;
+        colIdx++;
+    }
+    virtual void processBool(bool value, const RtlFieldInfo * field)
+    {
+        Rcpp::List column = list[colIdx];
+        column[rowIdx] = value;
+        colIdx++;
+    }
+    virtual void processData(unsigned len, const void *value, const RtlFieldInfo * field)
+    {
+        std::vector<byte> vval;
+        const byte *cval = (const byte *) value;
+        vval.assign(cval, cval+len);
+        Rcpp::List column = list[colIdx];
+        column[rowIdx] = vval;
+        colIdx++;
+    }
+    virtual void processInt(__int64 value, const RtlFieldInfo * field)
+    {
+        Rcpp::List column = list[colIdx];
+        column[rowIdx] = (long int) value;  // Rcpp does not support int64
+        colIdx++;
+    }
+    virtual void processUInt(unsigned __int64 value, const RtlFieldInfo * field)
+    {
+        Rcpp::List column = list[colIdx];
+        column[rowIdx] = (unsigned long int) value; // Rcpp does not support int64
+        colIdx++;
+    }
+    virtual void processReal(double value, const RtlFieldInfo * field)
+    {
+        Rcpp::List column = list[colIdx];
+        column[rowIdx] = value;
+        colIdx++;
+    }
+    virtual void processDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    {
+        Decimal val;
+        val.setDecimal(digits, precision, value);
+        Rcpp::List column = list[colIdx];
+        column[rowIdx] = val.getReal();
+        colIdx++;
+    }
+    virtual void processUDecimal(const void *value, unsigned digits, unsigned precision, const RtlFieldInfo * field)
+    {
+        Decimal val;
+        val.setUDecimal(digits, precision, value);
+        Rcpp::List column = list[colIdx];
+        column[rowIdx] = val.getReal();
+        colIdx++;
+    }
+    virtual void processUnicode(unsigned len, const UChar *value, const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Unicode/UTF8 fields");
+    }
+    virtual void processQString(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        size32_t charCount;
+        rtlDataAttr text;
+        rtlQStrToStrX(charCount, text.refstr(), len, value);
+        processString(charCount, text.getstr(), field);
+    }
+    virtual void processSetAll(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual void processUtf8(unsigned len, const char *value, const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Unicode/UTF8 fields");
+    }
+
+    virtual bool processBeginSet(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual bool processBeginDataset(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Nested datasets");
+    }
+    virtual bool processBeginRow(const RtlFieldInfo * field)
+    {
+        return true;
+    }
+    virtual void processEndSet(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual void processEndDataset(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Nested datasets");
+    }
+    virtual void processEndRow(const RtlFieldInfo * field)
+    {
+    }
+protected:
+    unsigned rowIdx;
+    unsigned colIdx;
+    Rcpp::List &list;
+};
+
+// A RRowBuilder object is used to construct an ECL row from a R dataframe and row index
+
+class RRowBuilder : public CInterfaceOf<IFieldSource>
+{
+public:
+    RRowBuilder(Rcpp::DataFrame &_frame)
+    : frame(_frame)
+    {
+        rowIdx = 0;
+        colIdx = 0;
+    }
+    inline void setRowIdx(unsigned _rowIdx)
+    {
+        rowIdx = _rowIdx;
+        colIdx = 0;
+    }
+    virtual bool getBooleanResult(const RtlFieldInfo *field)
+    {
+        nextField(field);
+        return ::Rcpp::as<bool>(elem);
+    }
+    virtual void getDataResult(const RtlFieldInfo *field, size32_t &__len, void * &__result)
+    {
+        nextField(field);
+        std::vector<byte> vval = ::Rcpp::as<std::vector<byte> >(elem);
+        rtlStrToDataX(__len, __result, vval.size(), vval.data());
+    }
+    virtual double getRealResult(const RtlFieldInfo *field)
+    {
+        nextField(field);
+        return ::Rcpp::as<double>(elem);
+    }
+    virtual __int64 getSignedResult(const RtlFieldInfo *field)
+    {
+        nextField(field);
+        return ::Rcpp::as<long int>(elem); // Should really be long long, but RInside does not support that
+    }
+    virtual unsigned __int64 getUnsignedResult(const RtlFieldInfo *field)
+    {
+        nextField(field);
+        return ::Rcpp::as<unsigned long int>(elem); // Should really be long long, but RInside does not support that
+    }
+    virtual void getStringResult(const RtlFieldInfo *field, size32_t &__len, char * &__result)
+    {
+        nextField(field);
+        std::string str = ::Rcpp::as<std::string>(elem);
+        rtlStrToStrX(__len, __result, str.length(), str.data());
+    }
+    virtual void getUTF8Result(const RtlFieldInfo *field, size32_t &chars, char * &result)
+    {
+        UNSUPPORTED("Unicode/UTF8 fields");
+    }
+    virtual void getUnicodeResult(const RtlFieldInfo *field, size32_t &chars, UChar * &result)
+    {
+        UNSUPPORTED("Unicode/UTF8 fields");
+    }
+    virtual void getDecimalResult(const RtlFieldInfo *field, Decimal &value)
+    {
+        nextField(field);
+        double ret = ::Rcpp::as<double>(elem);
+        value.setReal(ret);
+    }
+
+    virtual void processBeginSet(const RtlFieldInfo * field, bool &isAll)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual bool processNextSet(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual void processBeginDataset(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Nested datasets");
+    }
+    virtual void processBeginRow(const RtlFieldInfo * field)
+    {
+    }
+    virtual bool processNextRow(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Nested datasets");
+    }
+    virtual void processEndSet(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("SET fields");
+    }
+    virtual void processEndDataset(const RtlFieldInfo * field)
+    {
+        UNSUPPORTED("Nested datasets");
+    }
+    virtual void processEndRow(const RtlFieldInfo * field)
+    {
+    }
+protected:
+    void nextField(const RtlFieldInfo * field)
+    {
+        // NOTE - we could put support for looking up columns by name here, but for efficiency reasons we only support matching by position
+        Rcpp::RObject colObject = frame[colIdx];
+        Rcpp::List column = ::Rcpp::as<Rcpp::List>(colObject); // MORE - this can crash if wrong type came from R. But I can't work out how to test that
+        Rcpp::RObject t = column[rowIdx];
+        elem = t;
+        colIdx++;
+    }
+    Rcpp::DataFrame frame;
+    unsigned rowIdx;
+    unsigned colIdx;
+    Rcpp::RObject elem;
+};
+
+static size32_t getRowResult(RInside::Proxy &result, ARowBuilder &builder)
+{
+     // To return a single row, we expect a dataframe (with 1 row)...
+     Rcpp::DataFrame dFrame = ::Rcpp::as<Rcpp::DataFrame>(result);   // Note that this will also accept (and convert) a list
+     RRowBuilder myRRowBuilder(dFrame);
+     const RtlTypeInfo *typeInfo = builder.queryAllocator()->queryOutputMeta()->queryTypeInfo();
+     assertex(typeInfo);
+     RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+     return typeInfo->build(builder, 0, &dummyField, myRRowBuilder);
+}
+
+// A R function that returns a dataset will return a RRowStream object that can be
+// interrogated to return each row of the result in turn
+
+class RRowStream : public CInterfaceOf<IRowStream>
+{
+public:
+    RRowStream(RInside::Proxy &_result, IEngineRowAllocator *_resultAllocator)
+      : dFrame(::Rcpp::as<Rcpp::DataFrame>(_result)),
+        myRRowBuilder(dFrame)
+    {
+        resultAllocator.set(_resultAllocator);
+        // A DataFrame is a list of columns
+        // Each column is a vector (and all columns should be the same length)
+        unsigned numColumns = dFrame.length();
+        assertex(numColumns > 0);
+        Rcpp::List col1 = dFrame[0];
+        numRows = col1.length();
+        idx = 0;
+    }
+    virtual const void *nextRow()
+    {
+        CriticalBlock b(RCrit);
+        if (!resultAllocator)
+            return NULL;
+        if (idx >= numRows)
+        {
+            stop();
+            return NULL;
+        }
+        RtlDynamicRowBuilder builder(resultAllocator);
+        const RtlTypeInfo *typeInfo = builder.queryAllocator()->queryOutputMeta()->queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+        myRRowBuilder.setRowIdx(idx);
+        try
+        {
+            size32_t len = typeInfo->build(builder, 0, &dummyField, myRRowBuilder);
+            idx++;
+            return builder.finalizeRowClear(len);
+        }
+        catch (std::exception &E)
+        {
+            FAIL(E.what());
+        }
+    }
+    virtual void stop()
+    {
+        resultAllocator.clear();
+    }
+
+protected:
+    Rcpp::DataFrame dFrame;
+    Linked<IEngineRowAllocator> resultAllocator;
+    RRowBuilder myRRowBuilder;
+    unsigned numRows;
+    unsigned idx;
+};
+
+
 // Each call to a R function will use a new REmbedFunctionContext object
 // This takes care of ensuring that the critsec is locked while we are executing R code,
 // and released when we are not
@@ -168,9 +572,9 @@ public:
         {
             return ::Rcpp::as<bool>(result);
         }
-        catch (std::runtime_error &E)
+        catch (std::exception &E)
         {
-            rtlFail(0, E.what());
+            FAIL(E.what());
         }
     }
     virtual void getDataResult(size32_t &__len, void * &__result)
@@ -180,9 +584,9 @@ public:
             std::vector<byte> vval = ::Rcpp::as<std::vector<byte> >(result);
             rtlStrToDataX(__len, __result, vval.size(), vval.data());
         }
-        catch (std::runtime_error &E)
+        catch (std::exception &E)
         {
-            rtlFail(0, E.what());
+            FAIL(E.what());
         }
     }
     virtual double getRealResult()
@@ -191,9 +595,9 @@ public:
         {
             return ::Rcpp::as<double>(result);
         }
-        catch (std::runtime_error &E)
+        catch (std::exception &E)
         {
-            rtlFail(0, E.what());
+            FAIL(E.what());
         }
     }
     virtual __int64 getSignedResult()
@@ -202,9 +606,9 @@ public:
         {
             return ::Rcpp::as<long int>(result); // Should really be long long, but RInside does not support that
         }
-        catch (std::runtime_error &E)
+        catch (std::exception &E)
         {
-            rtlFail(0, E.what());
+            FAIL(E.what());
         }
     }
     virtual unsigned __int64 getUnsignedResult()
@@ -213,9 +617,9 @@ public:
         {
             return ::Rcpp::as<unsigned long int>(result); // Should really be long long, but RInside does not support that
         }
-        catch (std::runtime_error &E)
+        catch (std::exception &E)
         {
-            rtlFail(0, E.what());
+            FAIL(E.what());
         }
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
@@ -225,18 +629,18 @@ public:
             std::string str = ::Rcpp::as<std::string>(result);
             rtlStrToStrX(__len, __result, str.length(), str.data());
         }
-        catch (std::runtime_error &E)
+        catch (std::exception &E)
         {
-            rtlFail(0, E.what());
+            FAIL(E.what());
         }
     }
     virtual void getUTF8Result(size32_t &chars, char * &result)
     {
-        throw MakeStringException(MSGAUD_user, 0, "Rembed: %s: Unicode/UTF8 results not supported", func.c_str());
+        UNSUPPORTED("Unicode/UTF8 results");
     }
     virtual void getUnicodeResult(size32_t &chars, UChar * &result)
     {
-        throw MakeStringException(MSGAUD_user, 0, "Rembed: %s: Unicode/UTF8 results not supported", func.c_str());
+        UNSUPPORTED("Unicode/UTF8 results");
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int _elemType, size32_t elemSize)
     {
@@ -360,23 +764,46 @@ public:
                 break;
             }
         }
-        catch (std::runtime_error &E)
+        catch (std::exception &E)
         {
-            rtlFail(0, E.what());
+            FAIL(E.what());
         }
     }
 
     virtual IRowStream *getDatasetResult(IEngineRowAllocator * _resultAllocator)
     {
-        UNIMPLEMENTED;
+        try
+        {
+            return new RRowStream(result, _resultAllocator);
+        }
+        catch (std::exception &E)
+        {
+            FAIL(E.what());
+        }
     }
     virtual byte * getRowResult(IEngineRowAllocator * _resultAllocator)
     {
-        UNIMPLEMENTED;
+        try
+        {
+            RtlDynamicRowBuilder rowBuilder(_resultAllocator);
+            size32_t len = Rembed::getRowResult(result, rowBuilder);
+            return (byte *) rowBuilder.finalizeRowClear(len);
+        }
+        catch (std::exception &E)
+        {
+            FAIL(E.what());
+        }
     }
     virtual size32_t getTransformResult(ARowBuilder & builder)
     {
-        UNIMPLEMENTED;
+        try
+        {
+            return Rembed::getRowResult(result, builder);
+        }
+        catch (std::exception &E)
+        {
+            FAIL(E.what());
+        }
     }
 
     virtual void bindBooleanParam(const char *name, bool val)
@@ -506,13 +933,70 @@ public:
             break;
         }
     }
-    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *val)
+    virtual void bindRowParam(const char *name, IOutputMetaData & metaVal, byte *row)
     {
-        UNIMPLEMENTED;
+        // We create a single-row dataframe
+        const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+
+        RDataFrameHeaderBuilder headerBuilder;
+        typeInfo->process(row, row, &dummyField, headerBuilder); // Sets up the R dataframe from the first ECL row
+        Rcpp::List myList(headerBuilder.namevec.length());
+        myList.attr("names") = headerBuilder.namevec;
+        for (int i=0; i<myList.length(); i++)
+        {
+            Rcpp::List column(1);
+            myList[i] = column;
+        }
+        RDataFrameAppender frameBuilder(myList);
+        Rcpp::StringVector row_names(1);
+        frameBuilder.setRowIdx(0);
+        typeInfo->process(row, row, &dummyField, frameBuilder);
+        row_names(0) = "1";
+        myList.attr("class") = "data.frame";
+        myList.attr("row.names") = row_names;
+        R[name] = myList;
     }
     virtual void bindDatasetParam(const char *name, IOutputMetaData & metaVal, IRowStream * val)
     {
-        UNIMPLEMENTED;
+        const RtlTypeInfo *typeInfo = metaVal.queryTypeInfo();
+        assertex(typeInfo);
+        RtlFieldStrInfo dummyField("<row>", NULL, typeInfo);
+
+        OwnedRoxieRowSet rows;
+        loop
+        {
+            const byte *row = (const byte *) val->ungroupedNextRow();
+            if (!row)
+                break;
+            rows.append(row);
+        }
+        const byte *firstrow = (const byte *) rows.item(0);
+
+        RDataFrameHeaderBuilder headerBuilder;
+        typeInfo->process(firstrow, firstrow, &dummyField, headerBuilder); // Sets up the R dataframe from the first ECL row
+        Rcpp::List myList(headerBuilder.namevec.length());
+        myList.attr("names") = headerBuilder.namevec;
+        for (int i=0; i<myList.length(); i++)
+        {
+            Rcpp::List column(rows.length());
+            myList[i] = column;
+        }
+        RDataFrameAppender frameBuilder(myList);
+        Rcpp::StringVector row_names(rows.length());
+        ForEachItemIn(idx, rows)
+        {
+            const byte * row = (const byte *) rows.item(idx);
+            frameBuilder.setRowIdx(idx);
+            typeInfo->process(row, row, &dummyField, frameBuilder);
+            StringBuffer rowname;
+            rowname.append(idx+1);
+            row_names(idx) = rowname.str();
+        }
+        myList.attr("class") = "data.frame";
+        myList.attr("row.names") = row_names;
+        R[name] = myList;
     }
 
     virtual void importFunction(size32_t lenChars, const char *utf)
@@ -532,9 +1016,9 @@ public:
         {
             result = R.parseEval(func);
         }
-        catch (std::runtime_error &E)
+        catch (std::exception &E)
         {
-            rtlFail(0, E.what());
+            FAIL(E.what());
         }
     }
 private:
