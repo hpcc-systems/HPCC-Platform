@@ -111,7 +111,7 @@
     FileParts: "Dio Datoteke",
     FilePath: "Lokacija Datoteke",
     Files: "Datoteke",
-    FileSize: Veličina Datoteke",
+    FileSize: "Veličina Datoteke",
     FilesNoPackage: "Datoteke koje ne pripadaju paketu",
     FileType: "Tip Datoteke",
     FileUploader: "Proces za premiještanje Datoteke na Server (Uploader)",
