@@ -22,7 +22,7 @@ define([
                 slider: {
                     display: "Slider Data",
                     fields: {
-                        label: "Label",
+                        label: "Label"
                     }
                 }
             });

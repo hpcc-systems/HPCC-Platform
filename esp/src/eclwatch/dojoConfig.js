@@ -12,8 +12,8 @@ var dojoConfig = (function () {
             hash: hashNodes.length >= 2 ? hashNodes[1] : "",
             params: searchNodes.length >= 2 ? searchNodes[1] : "",
             basePath: "/esp/files",
-            resourcePath: "/esp/files",
-            scriptsPath: "/esp/files/scripts"
+            resourcePath: "/esp/files/eclwatch",
+            scriptsPath: "/esp/files/eclwatch"
         };
     }
 
@@ -33,6 +33,12 @@ var dojoConfig = (function () {
             return "<img src='" + this.getImageURL(name) + "'/>";
         },
         packages: [{
+            name: "d3",
+            location: urlInfo.basePath + "/d3"
+        }, {
+            name: "topojson",
+            location: urlInfo.basePath + "/topojson"
+        }, {
             name: "hpcc",
             location: urlInfo.scriptsPath
         }, {

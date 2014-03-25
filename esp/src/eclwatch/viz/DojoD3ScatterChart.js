@@ -5,9 +5,13 @@ define([
   "./DojoD3",
   "./Mapping",
 
+  "d3/d3",
+
   "dojo/text!./templates/DojoD3ScatterChart.css"
+
 ], function (declare, lang,
     DojoD3, Mapping,
+    d3,
     css) {
     return declare([Mapping, DojoD3], {
         mapping: {

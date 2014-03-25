@@ -6,8 +6,10 @@
   "dojo/dom-geometry",
   "dojo/Evented",
 
-  "d3/d3.v3.min"
-], function (declare, lang, dom, domConstruct, domGeom, Evented) {
+  "d3/d3"
+
+], function (declare, lang, dom, domConstruct, domGeom, Evented,
+    d3) {
     return declare([Evented], {
         constructor: function () {
         },
