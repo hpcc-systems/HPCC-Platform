@@ -69,6 +69,8 @@ public:
     StringAttr          terminate;
     StringAttr          escape;
     StringAttr          rowTag;
+
+    //This value isn't serialized/deserialized.
     bool                quotedTerminator;
 };
 UtfReader::UtfFormat getUtfFormatType(FileFormatType type);
