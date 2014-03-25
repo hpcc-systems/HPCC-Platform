@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<!--
+##############################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+##############################################################################
+-->
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>HPCC: Stub</title>
+    <link href="/esp/files/CodeMirror2/lib/codemirror.css" rel="stylesheet">
+    <script src="/esp/files/CodeMirror2/lib/codemirror.js"></script>
+    <script src="/esp/files/CodeMirror2/lib/util/foldcode.js"></script>
+    <script src="/esp/files/CodeMirror2/mode/ecl/ecl.js"></script>
+    <script src="/esp/files/CodeMirror2/mode/xml/xml.js"></script>
+    <link href="/esp/files/eclwatch/css/ecl.css" rel="stylesheet">
+    <link href="/esp/files/dijit/themes/claro/claro.css" media="screen" rel="stylesheet">
+    <link href="/esp/files/dojox/grid/resources/Grid.css" rel="stylesheet">
+    <link href="/esp/files/dojox/grid/enhanced/resources/claro/EnhancedGrid.css" rel="stylesheet">
+    <link href="/esp/files/dojox/grid/resources/claroGrid.css" rel="stylesheet">
+    <link href="/esp/files/dojox/widget/Toaster/Toaster.css" rel="stylesheet">
+    <link href="/esp/files/dojox/widget/UpgradeBar/UpgradeBar.css" rel="stylesheet">
+    <link href="/esp/files/dojox/form/resources/FileUploader.css" rel="stylesheet">
+    <link href="/esp/files/dojox/form/resources/UploaderFileList.css" rel="stylesheet">
+    <link href="/esp/files/dgrid/css/dgrid.css" rel="stylesheet">
+    <link href="/esp/files/dgrid/css/skins/claro.css" rel="stylesheet">
+    <link href="/esp/files/eclwatch/css/hpcc.css" rel="stylesheet">
+    <!-- load dojo and provide config via dojoConfig global -->
+    <script src="/esp/files/eclwatch/dojoConfig.js"></script>
+    <script src="/esp/files/dojo/dojo.js"></script>
+    <script>
+        require(["hpcc/stub"], function (stub) {
+            stub.init();
+        });
+    </script>
+</head>
+<body class="claro">
+    <!-- overlay -->
+    <div id="loadingOverlay" class="loadingOverlay pageOverlay">
+    </div>
+    <!-- application -->
+</body>
+</html>
