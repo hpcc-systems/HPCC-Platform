@@ -1665,7 +1665,7 @@ int CMPConnectThread::run()
                 SocketEndpoint hostep;
                 SocketEndpointV4 id[2];
                 sock->readtms(&id[0],sizeof(id),sizeof(id),rd,CONFIRM_TIMEOUT); 
-                if (rd != sizeof(SocketEndpointV4[2]))
+                if (rd != sizeof(id))
                 {
                     FLLOG(MCoperatorWarning, unknownJob, "MP Connect Thread: invalid number of connection bytes serialized");
                     sock->close();
@@ -2218,15 +2218,13 @@ public:
                 if (MPERR_link_closed != e->errorCode())
                     throw;
                 const SocketEndpoint &ep = e->queryEndpoint();
-                if (src)
-                {
-                    if (ep == src->endpoint())
-                        throw;
-                }
+                if (src && (ep == src->endpoint()))
+                    throw;
                 StringBuffer epStr;
                 ep.getUrlStr(epStr);
                 FLLOG(MCoperatorWarning, unknownJob, "CInterCommunicator: ignoring closed endpoint: %s", epStr.str());
                 e->Release();
+                // loop around and recv again
             }
         }
     }
@@ -2456,19 +2454,16 @@ public:
             }
             catch (IMP_Exception *e)
             {
-                if (MPERR_link_closed == e->errorCode())
-                {
-                    const SocketEndpoint &ep = e->queryEndpoint();
-                    if (RANK_NULL == group->rank(ep))
-                    {
-                        StringBuffer epStr;
-                        ep.getUrlStr(epStr);
-                        FLLOG(MCoperatorWarning, unknownJob, "CCommunicator: ignoring closed endpoint from outside the communicator group: %s", epStr.str());
-                        e->Release();
-                        continue; // recv again
-                    }
-                }
-                throw;
+                if (MPERR_link_closed != e->errorCode())
+                    throw;
+                const SocketEndpoint &ep = e->queryEndpoint();
+                if (RANK_NULL != group->rank(ep))
+                    throw;
+                StringBuffer epStr;
+                ep.getUrlStr(epStr);
+                FLLOG(MCoperatorWarning, unknownJob, "CCommunicator: ignoring closed endpoint from outside the communicator group: %s", epStr.str());
+                e->Release();
+                // loop around and recv again
             }
         }
     }
