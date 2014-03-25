@@ -654,6 +654,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="reloadRetriesFailed" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Retry loading of failed queries whenever QuerySet reloads</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="remoteFilesExpire" type="xs:integer" use="optional" default="3600000">
       <xs:annotation>
         <xs:appinfo>
