@@ -76,7 +76,7 @@ define([
             lang.mixin(item, {
                 __hpcc_id: item.Name,
                 __hpcc_isDir: false,
-                __hpcc_displayName: item.Name,
+                __hpcc_displayName: item.Name
             });
         },
         mayHaveChildren: function (object) {
