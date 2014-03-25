@@ -3332,8 +3332,8 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
         return true;
     }
 
-    if (queryDaliServerVersion().compare("5.0") < 0)
-    {
+    if (queryDaliServerVersion().compare("3.11") < 0)
+    {//Dali server does not support Filtered File Query. Use legacy code.
         getAPageOfSortedLogicalFile(context, udesc, req, resp);
         return true;
     }
