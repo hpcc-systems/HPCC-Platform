@@ -74,8 +74,6 @@ define([
             if (params.callback) {
                 this.callback = params.callback;
             }
-            if (params.includeBlank) {
-            }
         },
 
         _setValueAttr: function (target) {

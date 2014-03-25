@@ -72,7 +72,7 @@ define([
                         }
 
                     },*/
-                    LogicalFiles: { label: this.i18n.LogicalFiles, width: 108, sortable: false },
+                    LogicalFiles: { label: this.i18n.LogicalFiles, width: 108, sortable: false }
                     /*State: {
                         label: "State", width: 180, sortable: true, formatter: function (state, row) {
                             return state + (row.Duration ? " (" + row.Duration + ")" : "");

@@ -187,7 +187,7 @@ define([
                     }
                     if (hexRow) 
                         hexRow += " ";
-                    hexRow += item.char;
+                    hexRow += item["char"];
 
                     if (context.showEbcdic) {
                         strRow += context.isCharPrintable(item.estr1) ? item.estr1 : context.unknownChar;
@@ -216,7 +216,7 @@ define([
                         "    self.estr1 := transfer(l.char, string1);\n" +
                         "end;\n" +
                         "analysis_dataset := project(data_dataset, calcAnalysis(left));\n" +
-                        "choosen(analysis_dataset, " + this.bufferLength + ");\n"
+                        "choosen(analysis_dataset, " + this.bufferLength + ");\n";
             }
         });
     });

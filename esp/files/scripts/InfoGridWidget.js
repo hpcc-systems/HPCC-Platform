@@ -245,7 +245,7 @@ define([
                 var encodedUri = "data:text/csv;charset=utf-8,\uFEFF" + encodeURI(csvContent);
                 if (navigator.msSaveBlob) {
                     var blob = new Blob([csvContent], {
-                        type: "text/csv;charset=utf-8;",
+                        type: "text/csv;charset=utf-8;"
                     });
                     navigator.msSaveBlob(blob, "ErrWarn.csv")
                 } else {
