@@ -1171,11 +1171,14 @@ void FileSprayer::calculateSprayPartition()
     ForEachItemIn(idx2, partitioners)
         partitioners.item(idx2).getResults(partition);
 
-    // Store discovered CSV record structure into target logical file.
-    StringBuffer recStru;
-    partitioners.item(0).getRecordStructure(recStru);
-    IDistributedFile * target = distributedTarget.get();
-    target->setECL(recStru.str());
+    if (partitioners.ordinality() > 0)
+    {
+        // Store discovered CSV record structure into target logical file.
+        StringBuffer recStru;
+        partitioners.item(0).getRecordStructure(recStru);
+        IDistributedFile * target = distributedTarget.get();
+        target->setECL(recStru.str());
+    }
 
 }
 
@@ -2687,13 +2690,8 @@ void FileSprayer::spray()
     aindex_t sourceSize = sources.ordinality();
     bool failIfNoSourceFile = options->getPropBool("@failIfNoSourceFile");
 
-    if (sourceSize == 0)
-    {
-        if (failIfNoSourceFile)
-            throwError(DFTERR_NoFilesMatchWildcard);
-        else
-            return;
-    }
+    if ((sourceSize == 0) && failIfNoSourceFile)
+        throwError(DFTERR_NoFilesMatchWildcard);
 
     LocalAbortHandler localHandler(daftAbortHandler);
 
