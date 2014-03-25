@@ -38,6 +38,9 @@ EXPORT TestEditDistance := MODULE
     EXPORT Test23 := ASSERT(Uni.EditDistance(alpha,manyDigits+U'12345') = 255, CONST);
     EXPORT Test24 := ASSERT(Uni.EditDistance(alpha,manyDigits+U'123456') = 255, CONST);
     EXPORT Test25 := ASSERT(Uni.EditDistance(U'123456789',U'987654321') = 8, CONST);
+    EXPORT Test26 := ASSERT(Uni.EditDistance(U'AVILÉS',U'AVILES') = 1, CONST);
+    EXPORT Test27 := ASSERT(Uni.EditDistance(U'MOMBRU',U'MOMBRÚ') = 1, CONST);
+    EXPORT Test28 := ASSERT(Uni.EditDistance(U'ALVAREZ',U'ÁLVAREZ') = 1, CONST);
   END;
 
 END;
