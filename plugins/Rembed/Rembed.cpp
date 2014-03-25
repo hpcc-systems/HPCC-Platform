@@ -220,12 +220,11 @@ public:
     {
         UNSUPPORTED("Unicode/UTF8 fields");
     }
-
-    virtual bool processBeginSet(const RtlFieldInfo * field)
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned elements, bool isAll, const byte *data)
     {
         UNSUPPORTED("SET fields");
     }
-    virtual bool processBeginDataset(const RtlFieldInfo * field)
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned rows)
     {
         UNSUPPORTED("Nested datasets");
     }
@@ -343,11 +342,11 @@ public:
         UNSUPPORTED("Unicode/UTF8 fields");
     }
 
-    virtual bool processBeginSet(const RtlFieldInfo * field)
+    virtual bool processBeginSet(const RtlFieldInfo * field, unsigned elements, bool isAll, const byte *data)
     {
         UNSUPPORTED("SET fields");
     }
-    virtual bool processBeginDataset(const RtlFieldInfo * field)
+    virtual bool processBeginDataset(const RtlFieldInfo * field, unsigned rows)
     {
         UNSUPPORTED("Nested datasets");
     }
