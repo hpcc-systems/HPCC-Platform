@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -334,13 +334,16 @@ class CEnvironmentFactory : public CInterface,
 {
 public:
     IMPLEMENT_IINTERFACE;
-   MAKEValueArray(SubscriptionId, SubscriptionIDs);
-   SubscriptionIDs subIDs;
+    MAKEValueArray(SubscriptionId, SubscriptionIDs);
+    SubscriptionIDs subIDs;
     Mutex mutex;
-   Owned<CSdsSubscription> subscription;
+    Owned<CSdsSubscription> subscription;
+    IDaliClient * dali;
     
-    CEnvironmentFactory()
+    CEnvironmentFactory(IDaliClient * _dali) : dali(_dali)
     {
+        if (dali)
+            dali->addShutdownHook(*this);
     }
 
     virtual void clientShutdown();
@@ -501,6 +504,11 @@ public:
 
     void close()
     {
+        if (dali)
+        {
+            dali->removeShutdownHook(*this);
+            dali = NULL;
+        }
         SubscriptionIDs copySubIDs;
         {
             synchronized procedure(mutex);
@@ -560,6 +568,7 @@ private:
     }
 };
 
+//HPCC-10593 How does this fit into allowing multiple dali connections?
 static CEnvironmentFactory *factory=NULL;
 
 void CEnvironmentFactory::clientShutdown()
@@ -1351,8 +1360,10 @@ extern ENVIRONMENT_API IEnvironmentFactory * getEnvironmentFactory()
     CriticalBlock block(getEnvSect);
     if (!factory)
     {
-        factory = new CEnvironmentFactory();
-        queryDefaultDali()->addShutdownHook(*factory);
+        //Don't cache the factory if there is no default dali yet
+        if (!queryDefaultDali())
+            return new CEnvironmentFactory(NULL);
+        factory = new CEnvironmentFactory(queryDefaultDali());
     }
     return LINK(factory);
 }
@@ -1373,7 +1384,6 @@ extern ENVIRONMENT_API void closeEnvironment()
         clearPasswordsFromSDS();
         if (pFactory)
         {
-            queryDefaultDali()->removeShutdownHook(*pFactory);
             pFactory->close();
             pFactory->Release();
         }

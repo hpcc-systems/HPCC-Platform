@@ -154,6 +154,7 @@ bool SDSPasswordProvider::getPassword(const IpAddress & ip, StringBuffer & usern
     return match->matched;
 }
 
+//HPCC-10593 How does this fit into allowing multiple dali connections?
 static CriticalSection passwordProviderCrit;
 static SDSPasswordProvider * passwordProvider = NULL;
 MODULE_INIT(INIT_PRIORITY_ENV_ENVIRONMENT)

@@ -256,6 +256,7 @@ public:
 
     bool inCoven(INode *node)
     {
+        //GH: Surely coven == *this??
         ICoven &coven=queryDefaultDali()->queryCoven();
         return (coven.queryGroup().rank(node)!=RANK_NULL);
     }
