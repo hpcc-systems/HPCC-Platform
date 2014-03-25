@@ -196,7 +196,20 @@ void CMasterWatchdogBase::main()
         {
             HeartBeatPacketHeader hb;
             MemoryBuffer progressData;
-            unsigned sz = readPacket(hb, progressData);
+            unsigned sz;
+            try
+            {
+                sz = readPacket(hb, progressData);
+            }
+            catch (IMP_Exception *e)
+            {
+                if (MPERR_link_closed != e->errorCode())
+                    throw;
+                const SocketEndpoint &ep = e->queryEndpoint();
+                StringBuffer epStr;
+                ep.getUrlStr(epStr);
+                abortThor(MakeThorOperatorException(TE_AbortException, "Watchdog has lost connectivity with Thor slave: %s (Process terminated or node down?)", epStr.str()));
+            }
             if (stopped)
                 break;
             else if (sz)
