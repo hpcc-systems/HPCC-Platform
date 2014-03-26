@@ -4448,8 +4448,7 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
     IHqlExpression * targetRecord = ::queryRecord(target->queryType());
 
     //if record structures are identical, then we must just be able to block copy the information across.
-    bool useMemcpy = (sourceRecord == targetRecord) && source->isBinary() && !source->isConditional() && 
-                     !recordRequiresLinkCount(sourceRecord);
+    bool useMemcpy = (sourceRecord == targetRecord) && source->isBinary() && !source->isConditional();
 
     if (useMemcpy)
     {

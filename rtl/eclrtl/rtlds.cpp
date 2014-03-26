@@ -518,6 +518,19 @@ const void * rtlCloneRow(IEngineRowAllocator * rowAllocator, size32_t len, const
     return builder.finalizeRowClear(len);
 }
 
+void rtlLinkChildren(void * self, IOutputMetaData & meta)
+{
+    RtlChildRowLinkerWalker walker;
+    meta.walkIndirectMembers(static_cast<byte *>(self), walker);
+}
+
+void rtlCopyRowLinkChildren(void * self, size32_t len, const void * row, IOutputMetaData & meta)
+{
+    memcpy(self, row, len);
+
+    RtlChildRowLinkerWalker walker;
+    meta.walkIndirectMembers(static_cast<byte *>(self), walker);
+}
 
 
 //---------------------------------------------------------------------------

@@ -26,6 +26,7 @@ const char * cppSystemText[]  = {
     "shared IOutputRowSerializer := boolean;",
     "shared IOutputRowDeserializer := boolean;",
     "shared IHThorHashLookupInfo := boolean;",
+    "shared IOutputMetaData := boolean;",
     
     "export InternalCppService := SERVICE",
     //  searchTableStringN(unsigned4 num, string table, string search) : library='eclrtl';
@@ -425,6 +426,9 @@ const char * cppSystemText[]  = {
     "   _linkcounted_ row(dummyRecord) createRowFromXml(utf8 _text, boolean xmltransformer, boolean _stripWhitespace) : ctxmethod,pure,entrypoint='fromXml';",
 
     "   _linkcounted_ dataset appendRowsToRowset(_array_ dataset _in) : pure,eclrtl,include,entrypoint='appendRowsToRowset';",
+
+    "   rtlCopyRowLinkChildren(row self, unsigned4 len, const row src, IOutputMetaData meta) : pure,eclrtl,include;",
+    "   rtlLinkChildren(row _self, IOutputMetaData _meta) : pure,eclrtl,include;",
 
     "   set of any deserializeSet(boolean o) :  eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeSet',newSet;",
     "   set of any set2SetX(set of any i) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='rtlSetToSetX',newSet;",

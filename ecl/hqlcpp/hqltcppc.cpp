@@ -965,7 +965,6 @@ void CContainerInfo::setRow(HqlCppTranslator & translator, BuildCtx & ctx, IRefe
     if (!recordTypesMatch(selector->queryType(), source->queryType()))
         throwError(HQLERR_RecordNotCompatible);
 
-    assertex(!recordRequiresLinkCount(column->queryRecord()));
     CHqlBoundExpr targetAddress, sourceAddress, length;
     source->buildAddress(ctx, sourceAddress);
 
@@ -988,12 +987,23 @@ void CContainerInfo::setRow(HqlCppTranslator & translator, BuildCtx & ctx, IRefe
     buildAddress(translator, ctx, selector, targetAddress);
 
     HqlExprArray args;
-    args.append(*LINK(targetAddress.expr));
-    args.append(*LINK(sourceAddress.expr));
-    args.append(*LINK(length.expr));
-    translator.callProcedure(ctx, memcpyId, args);
+    if (recordRequiresLinkCount(column->queryRecord()))
+    {
+        args.append(*LINK(targetAddress.expr));
+        args.append(*LINK(length.expr));
+        args.append(*LINK(sourceAddress.expr));
+        args.append(*translator.buildMetaParameter(column));
+        translator.callProcedure(ctx, rtlCopyRowLinkChildrenId, args);
+    }
+    else
+    {
+        args.append(*LINK(targetAddress.expr));
+        args.append(*LINK(sourceAddress.expr));
+        args.append(*LINK(length.expr));
+        translator.callProcedure(ctx, memcpyId, args);
+    }
 
-    //Use the size just calulated for the field
+    //Use the size just calculated for the field
     associateSizeOf(ctx, selector, length.expr, 0);
 }
 
