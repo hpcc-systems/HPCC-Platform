@@ -2718,16 +2718,20 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
 
     bool hasLocal = isLocalActivity(expr);
     bool alwaysLocal = !translator.targetThor();
+    if (alwaysLocal)
+    {
+        if (expr->hasAttribute(hashAtom))
+            return removeAttribute(expr, hashAtom);
+        //Hthor and roxie don't currently support smart joins since the normal join requires the input to be sorted
+        if (expr->hasAttribute(smartAtom))
+            return removeAttribute(expr, smartAtom);
+    }
+
     bool isLocal = hasLocal || alwaysLocal;
     //hash,local doesn't make sense (hash is only used for distribution) => remove hash
     //but also prevent it being converted to a lookup join??
     if (isLocal && expr->hasAttribute(hashAtom))
-    {
-        HqlExprArray args;
-        unwindChildren(args, expr);
-        removeAttribute(args, hashAtom);
-        return expr->clone(args);
-    }
+        return removeAttribute(expr, hashAtom);
 
     //Check to see if this join should be done as a keyed join...
     if (!expr->hasAttribute(lookupAtom) && !expr->hasAttribute(smartAtom) && !expr->hasAttribute(allAtom))

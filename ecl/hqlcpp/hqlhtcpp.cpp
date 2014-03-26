@@ -11648,6 +11648,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (expr->hasAttribute(groupedAtom) && targetThor())
         WARNING(HQLWRN_GroupedJoinIsLookupJoin);
 
+    //Hash and smart joins are not valid inside child queries - convert to a normal join.
+    //The flags should already have been stripped if targetting hthor/roxie
+    if (insideChildQuery(ctx) && (isHashJoin || isSmartJoin))
+    {
+        assertex(targetThor());
+        isHashJoin = false;
+        isSmartJoin = false;
+    }
+
     if ((op == no_denormalize || op == no_denormalizegroup) && targetThor() && options.checkThorRestrictions)
     {
         if (isHashJoin)
