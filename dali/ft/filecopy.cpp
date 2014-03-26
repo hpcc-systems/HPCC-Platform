@@ -1171,11 +1171,14 @@ void FileSprayer::calculateSprayPartition()
     ForEachItemIn(idx2, partitioners)
         partitioners.item(idx2).getResults(partition);
 
-    // Store discovered CSV record structure into target logical file.
-    StringBuffer recStru;
-    partitioners.item(0).getRecordStructure(recStru);
-    IDistributedFile * target = distributedTarget.get();
-    target->setECL(recStru.str());
+    if (partitioners.ordinality() > 0)
+    {
+        // Store discovered CSV record structure into target logical file.
+        StringBuffer recStru;
+        partitioners.item(0).getRecordStructure(recStru);
+        IDistributedFile * target = distributedTarget.get();
+        target->setECL(recStru.str());
+    }
 
 }
 
