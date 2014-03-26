@@ -1811,6 +1811,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 bool first = true;
                 expandTransformValues(s, cur, first);
                 s.append("}");
+                queryNewline(s);
                 if (xgmmlGraphText)
                 {
                     if (child0->numChildren() != 1)
@@ -2035,7 +2036,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 IValue * value = child0->queryValue();
                 if (value)
                     value->getUTF8Value(s);
-                s.append("ENDC++");
+                s.append("ENDC++\n");
                 break;
             }
         case no_nofold:
