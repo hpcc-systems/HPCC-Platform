@@ -25,16 +25,16 @@ PROFILE="$BASEDIR/profiles/eclwatch.profile.js"
 
 # Configuration over. Main application start up!
 
-if [ ! -d "$TOOLSDIR" ]; then
-    echo "Can't find Dojo build tools -- did you initialise submodules? (git submodule update --init --recursive)"
-    exit 1
-fi
-
 echo "Building application with $PROFILE to $DISTDIR."
 
 echo -n "Cleaning old files..."
 rm -rf "$DISTDIR"
 echo " Done"
+
+if [ ! -d "$TOOLSDIR" ]; then
+    echo "Can't find Dojo build tools -- did you initialise submodules? (git submodule update --init --recursive)"
+    exit 1
+fi
 
 mkdir -p "$DISTDIR"
 cp -r "$SRCDIR/CodeMirror2" "$DISTDIR/CodeMirror2"
