@@ -315,7 +315,7 @@
                     <col span="3" class="number"/>
                 </colgroup>
                 <tr class="grey"><th>Number</th><th>IP</th><th>Size</th><xsl:if test="string-length($actualSize)"><th>Actual Size</th></xsl:if></tr>
-                <xsl:apply-templates select="DFUFileParts/DFUPart">
+                <xsl:apply-templates select="DFUFilePartsOnClusters/DFUFilePartsOnCluster/DFUFileParts/DFUPart">
                     <xsl:sort select="Id" data-type="number"/>
                     <xsl:sort select="Copy" data-type="number"/>
                 </xsl:apply-templates>
@@ -357,13 +357,13 @@
     </xsl:template>
 
     <xsl:template match="DFUPart">
-    <xsl:if test="Copy mod  2 > 0">
+        <xsl:if test="Copy=1"> <!-- Copy=1: display primary copy only -->
             <tr>
-        <td><xsl:value-of select="Id"/></td>
-        <td><xsl:value-of select="Ip"/></td>
-        <td class="number"><xsl:value-of select="Partsize"/></td>
-        <xsl:if test="string-length($actualSize)"><td class="number"><xsl:value-of select="ActualSize"/></td></xsl:if>
-        </tr>
+                <td><xsl:value-of select="Id"/></td>
+                <td><xsl:value-of select="Ip"/></td>
+                <td class="number"><xsl:value-of select="Partsize"/></td>
+                <xsl:if test="string-length($actualSize)"><td class="number"><xsl:value-of select="ActualSize"/></td></xsl:if>
+            </tr>
         </xsl:if>
     </xsl:template>
 

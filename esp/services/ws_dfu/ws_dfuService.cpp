@@ -1623,6 +1623,62 @@ bool CWsDfuEx::getUserFilePermission(IEspContext &context, IUserDescriptor* udes
     return true;
 }
 
+void CWsDfuEx::getFilePartsOnClusters(IEspContext &context, const char* clusterReq, StringArray& clusters, IDistributedFile* df, IEspDFUFileDetail& FileDetails,
+    offset_t& mn, offset_t& mx, offset_t& sum, offset_t& count)
+{
+    IArrayOf<IConstDFUFilePartsOnCluster>& partsOnClusters = FileDetails.getDFUFilePartsOnClusters();
+    ForEachItemIn(i, clusters)
+    {
+        const char* clusterName = clusters.item(i);
+        if (!clusterName || !*clusterName || (clusterReq && *clusterReq && !strieq(clusterReq, clusterName)))
+            continue;
+
+        Owned<IEspDFUFilePartsOnCluster> partsOnCluster = createDFUFilePartsOnCluster("","");
+        partsOnCluster->setCluster(clusterName);
+        IArrayOf<IConstDFUPart>& filePartList = partsOnCluster->getDFUFileParts();
+
+        Owned<IFileDescriptor> fdesc = df->getFileDescriptor(clusterName);
+        Owned<IPartDescriptorIterator> pi = fdesc->getIterator();
+        ForEach(*pi)
+        {
+            IPartDescriptor *part = &pi->get();
+            unsigned partIndex = part->queryPartIndex();
+
+            StringBuffer partSizeStr;
+            IPropertyTree *partPropertyTree = part->getProperties();
+            if (!partPropertyTree)
+                partSizeStr.set("<N/A>");
+            else
+            {
+                __uint64 size = partPropertyTree->getPropInt("@size");
+                comma c4(size);
+                partSizeStr<<c4;
+
+                count++;
+                sum+=size;
+                if(size>mx) mx=size;
+                if(size<mn) mn=size;
+            }
+
+            for (unsigned int i=0; i<part->numCopies(); i++)
+            {
+                StringBuffer b;
+                part->queryNode(i)->endpoint().getUrlStr(b);
+
+                Owned<IEspDFUPart> FilePart = createDFUPart("","");
+                FilePart->setId(partIndex+1);
+                FilePart->setPartsize(partSizeStr.str());
+                FilePart->setIp(b.str());
+                FilePart->setCopy(i+1);
+
+                filePartList.append(*FilePart.getClear());
+            }
+        }
+
+        partsOnClusters.append(*partsOnCluster.getClear());
+    }
+}
+
 void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name, const char *cluster, 
     const char *description,IEspDFUFileDetail& FileDetails)
 {
@@ -1633,12 +1689,9 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
 
     StringArray clusters;
-    if (cluster && *cluster)
-    {
-        df->getClusterNames(clusters);
-        if(!FindInStringArray(clusters, cluster))
-            throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
-    }
+    df->getClusterNames(clusters);
+    if (cluster && *cluster && !FindInStringArray(clusters, cluster))
+        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s on %s.", name, cluster);
 
     double version = context.getClientVersion();
     offset_t size=queryDistributedFileSystem().getSize(df), recordSize=df->queryAttributes().getPropInt64("@recordSize",0);
@@ -1785,24 +1838,22 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
         FileDetails.setEcl(df->queryAttributes().queryProp("ECL"));
 
     StringBuffer clusterStr;
-    if ((!cluster || !*cluster) && clusters.ordinality())
+    ForEachItemIn(i, clusters)
     {
-        clusterStr.append(clusters.item(0));
-    }
-    else if (cluster && *cluster)
-    {
-        clusterStr.append(cluster);
+        if (!clusterStr.length())
+            clusterStr.append(clusters.item(i));
+        else
+            clusterStr.append(",").append(clusters.item(i));
     }
 
     if (clusterStr.length() > 0)
     {
-        FileDetails.setCluster(clusterStr.str());
         if (!checkFileContent(context, udesc, name, clusterStr.str()))
             FileDetails.setShowFileContent(false);
 
         if (version > 1.05)
         {
-            FileDetails.setFromRoxieCluster(false);
+            bool fromRoxieCluster = false;
 
             StringArray roxieClusterNames;
             IArrayOf<IEspTpCluster> roxieclusters;
@@ -1812,62 +1863,69 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
             {
                 IEspTpCluster& r_cluster = roxieclusters.item(k);
                 StringBuffer sName = r_cluster.getName();
-                if (!stricmp(sName.str(), clusterStr.str()))
+                if (FindInStringArray(clusters, sName.str()))
                 {
-                    FileDetails.setFromRoxieCluster(true);
+                    fromRoxieCluster = true;
                     break;
                 }
             }
+            FileDetails.setFromRoxieCluster(fromRoxieCluster);
         }
     }
 
-    IArrayOf<IConstDFUPart>& PartList = FileDetails.getDFUFileParts();
-
-    Owned<IDistributedFilePartIterator> pi = df->getIterator();
     offset_t mn=LLC(0x7fffffffffffffff), mx=0, sum=0, count=0;
-    ForEach(*pi)
+    if (version >= 1.25)
+        getFilePartsOnClusters(context, cluster, clusters, df, FileDetails, mn, mx, sum, count);
+    else
     {
-        Owned<IDistributedFilePart> part = &pi->get();
-        for (unsigned int i=0; i<part->numCopies(); i++)
+        FileDetails.setCluster(clusters.item(0));
+        IArrayOf<IConstDFUPart>& PartList = FileDetails.getDFUFileParts();
+
+        Owned<IDistributedFilePartIterator> pi = df->getIterator();
+        ForEach(*pi)
         {
-            Owned<IEspDFUPart> FilePart = createDFUPart("","");
-
-            StringBuffer b;
-            part->queryNode(i)->endpoint().getUrlStr(b);
-
-            FilePart->setId(part->getPartIndex()+1);
-            FilePart->setCopy(i+1);
-            FilePart->setIp(b.str());
-            FilePart->setPartsize("<N/A>");
-
-           try
+            Owned<IDistributedFilePart> part = &pi->get();
+            for (unsigned int i=0; i<part->numCopies(); i++)
             {
-                offset_t size=queryDistributedFileSystem().getSize(part);
-                comma c4(size);
-                tmpstr.clear();
-                tmpstr<<c4;
-                FilePart->setPartsize(tmpstr.str());
+                Owned<IEspDFUPart> FilePart = createDFUPart("","");
 
-                if(size!=-1)
+                StringBuffer b;
+                part->queryNode(i)->endpoint().getUrlStr(b);
+
+                FilePart->setId(part->getPartIndex()+1);
+                FilePart->setCopy(i+1);
+                FilePart->setIp(b.str());
+                FilePart->setPartsize("<N/A>");
+
+               try
                 {
-                    count+=1;
-                    sum+=size;
-                    if(size>mx) mx=size;
-                    if(size<mn) mn=size;
-                }
-            }
-            catch(IException *e)
-            {
-                StringBuffer msg;
-                ERRLOG("Exception %d:%s in WS_DFU queryDistributedFileSystem().getSize()", e->errorCode(), e->errorMessage(msg).str());
-                e->Release();
-            }
-            catch(...)
-            {
-                ERRLOG("Unknown exception in WS_DFU queryDistributedFileSystem().getSize()");
-            }
+                    offset_t size=queryDistributedFileSystem().getSize(part);
+                    comma c4(size);
+                    tmpstr.clear();
+                    tmpstr<<c4;
+                    FilePart->setPartsize(tmpstr.str());
 
-            PartList.append(*FilePart.getClear());
+                    if(size!=-1)
+                    {
+                        count+=1;
+                        sum+=size;
+                        if(size>mx) mx=size;
+                        if(size<mn) mn=size;
+                    }
+                }
+                catch(IException *e)
+                {
+                    StringBuffer msg;
+                    ERRLOG("Exception %d:%s in WS_DFU queryDistributedFileSystem().getSize()", e->errorCode(), e->errorMessage(msg).str());
+                    e->Release();
+                }
+                catch(...)
+                {
+                    ERRLOG("Unknown exception in WS_DFU queryDistributedFileSystem().getSize()");
+                }
+
+                PartList.append(*FilePart.getClear());
+            }
         }
     }
     if(count)
