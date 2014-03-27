@@ -664,7 +664,22 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 if (local->exists())  // Implies local dali and local file out of sync
                     throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
                 else
+                {
+                    if (traceLevel > 2)
+                    {
+                        DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
+                        ForEachItemIn(local_idx, localLocations)
+                        {
+                            DBGLOG("%d: %s", local_idx+1, localLocations.item(local_idx));
+                        }
+                        DBGLOG("Or at any of the following %d remote locations:", remoteLocationInfo.length());
+                        ForEachItemIn(remote_idx, remoteLocationInfo)
+                        {
+                            DBGLOG("%d: %s", remote_idx+1, remoteLocationInfo.item(remote_idx));
+                        }
+                    }
                     throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
+                }
             }
             ret->setRemote(true);
         }
