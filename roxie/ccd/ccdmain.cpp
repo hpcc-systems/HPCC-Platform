@@ -867,13 +867,15 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 1);
             for (int i=0; i<numNodes; i++)
             {
+                // Note this code is a little confusing - easy to get the cyclic offset backwards
+                // cyclic offset means node n+offset has copy 2 for channel n, so node n has copy 2 for channel n-offset
                 int channel = i+1;
                 for (int copy=0; copy<numDataCopies; copy++)
                 {
-                    if (channel > numNodes)
-                        channel = channel - numNodes;
+                    if (channel < 1)
+                        channel = channel + numNodes;
                     addChannel(i, channel, copy);
-                    channel = channel + cyclicOffset;
+                    channel = channel - cyclicOffset;
                 }
             }
         }

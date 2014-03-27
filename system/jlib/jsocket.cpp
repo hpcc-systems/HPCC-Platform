@@ -3079,8 +3079,8 @@ void IpAddress::setNetAddress(size32_t sz,const void *src)
     if (sz==sizeof(unsigned)) { // IPv4
         netaddr[0] = 0;
         netaddr[1] = 0;
-        netaddr[2]=0xffff0000;
         netaddr[3] = *(const unsigned *)src;
+        netaddr[2] = netaddr[3] ? 0xffff0000 : 0; // leave as null if Ipv4 address is null
     }
     else if (!IP4only&&(sz==sizeof(netaddr))) { // IPv6
         memcpy(&netaddr,src,sz);

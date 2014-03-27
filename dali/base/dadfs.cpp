@@ -9061,7 +9061,7 @@ class CInitGroups
             messages.append(msg).newline();
             matchExisting = matchOldEnv = false;
         }
-        if (!matchExisting && !matchOldEnv)
+        if (!existingClusterGroup || (!matchExisting && !matchOldEnv))
         {
             VStringBuffer msg("New cluster layout for cluster %s", gname.str());
             WARNLOG("%s", msg.str());
