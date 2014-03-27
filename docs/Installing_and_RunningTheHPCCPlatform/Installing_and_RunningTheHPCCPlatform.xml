@@ -871,8 +871,9 @@
                       <entry>There are log files for each component in
                       directories below <emphasis
                       role="bold">/var/log/HPCCSystems</emphasis> (default
-                      location). If any component fails to start, these logs
-                      can help in troubleshooting.</entry>
+                      location) including an hpcc-init log for the start up
+                      process. If any component fails to start, these logs can
+                      help in troubleshooting.</entry>
                     </row>
                   </tbody>
                 </tgroup>
