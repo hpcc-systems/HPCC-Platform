@@ -2040,6 +2040,7 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
 
                     Owned<IEspECLWorkunit> info= createECLWorkunit("","");
                     info->setWuid(wuid);
+                    info->setArchived(true);
                     if (notEmpty(wuidArray.item(1)))
                           info->setOwner(wuidArray.item(1));
                     if (notEmpty(wuidArray.item(2)))
