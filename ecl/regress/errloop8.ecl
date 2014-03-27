@@ -16,7 +16,7 @@
 ############################################################################## */
 
 /* Can not detect by just counting the #BREAK */
-LOADXML('<xml></xml>');
+
 #LOOP
   #IF (false)
     #BREAK

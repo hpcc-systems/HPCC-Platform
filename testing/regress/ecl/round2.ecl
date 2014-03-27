@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-LOADXML('<xml/>');
+
 
 show(value) := macro
     output((string) value + ' =\n');

@@ -17,7 +17,7 @@
 
 import jfgao;
 
-LOADXML('<xml></xml>');
+
 #DECLARE(s1)
 #SET(s1, 'TMPT call external func: ' + jfgao.MyStringLib.TestExternalFunc(3))
 %'s1'%;

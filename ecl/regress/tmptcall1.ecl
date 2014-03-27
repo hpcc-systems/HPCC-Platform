@@ -19,7 +19,7 @@
 // Test calling stuff from template command
 // Everything in default module works
 
-LOADXML('<xml></xml>');
+
 
 export YorN(boolean flag) := MAP(flag = true => 'Y', 'N');
 EXPORT testmacro(x) := MACRO

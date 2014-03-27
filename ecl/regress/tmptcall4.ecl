@@ -39,7 +39,7 @@ s1;
 s2;
 s3;
 
-LOADXML('<xml>dummy</xml>');
+
 
 #DECLARE(s1,s2,s3,s1x,s2x,s3x)
 

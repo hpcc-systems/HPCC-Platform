@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-LOADXML('<xml/>');
+
 
 NamesRecord := record
 string10 first;

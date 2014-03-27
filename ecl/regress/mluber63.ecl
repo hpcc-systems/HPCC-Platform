@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-LOADXML('<xml/>');
+
 
 string zz := '' : stored('zz');
 

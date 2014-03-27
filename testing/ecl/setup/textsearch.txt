@@ -18,7 +18,7 @@
 
 //Code that is common to text searching
 
-LOADXML('<xml/>');
+
 INCLUDE_DEBUG_INFO := false;
 import lib_stringlib;
 
