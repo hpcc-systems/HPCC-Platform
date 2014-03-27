@@ -641,7 +641,6 @@ const char *queryNextUnquoted(const char *str, char c)
     bool quote = false;
     while (end != str)
     {
-        ++str;
         if ('"' == *str)
         {
             if (quote) quote = false;
@@ -649,6 +648,7 @@ const char *queryNextUnquoted(const char *str, char c)
         }
         else if (c == *str && !quote)
             break;
+        ++str;
     }
     return str==end?NULL:str;
 }
@@ -1878,6 +1878,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
 
 bool PTree::removeTree(IPropertyTree *child)
 {
+    if (child == this)
+        throw MakeIPTException(-1, "Cannot remove self");
     if (children)
     {
         Owned<IPropertyTreeIterator> iter = children->getIterator(false);
