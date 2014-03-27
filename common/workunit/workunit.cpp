@@ -558,6 +558,7 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
     mutable bool activitiesCached;
     mutable bool webServicesInfoCached;
     mutable bool roxieQueryInfoCached;
+    mutable bool timerCached;
     mutable IArrayOf<IWUActivity> activities;
     mutable IArrayOf<IWUPlugin> plugins;
     mutable IArrayOf<IWULibrary> libraries;
@@ -566,6 +567,7 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
     mutable IArrayOf<IWUResult> results;
     mutable IArrayOf<IWUResult> temporaries;
     mutable IArrayOf<IWUResult> variables;
+    mutable IArrayOf<IWUTimer> timers;
     mutable CachedTags<CLocalWUTimeStamp,IConstWUTimeStamp> timestamps;
     mutable CachedTags<CLocalWUAppValue,IConstWUAppValue> appvalues;
     mutable CachedTags<CLocalWUStatistic,IConstWUStatistic> statistics;
@@ -657,6 +659,7 @@ public:
     virtual unsigned getTimerDuration(const char * timerName) const;
     virtual IStringVal & getTimerDescription(const char * timerName, IStringVal & str) const;
     virtual IStringIterator & getTimers() const;
+    virtual IConstWUTimerIterator & getTimerIterator() const;
     virtual IConstWUTimeStampIterator & getTimeStamps() const;
     virtual IConstWUStatisticIterator & getStatistics() const;
     virtual IConstWUStatistic * getStatistic(const char * name) const;
@@ -812,6 +815,7 @@ private:
     void loadLibraries() const;
     void loadClusters() const;
     void loadActivities() const;
+    void loadTimers() const;
     void unsubscribe();
     void checkAgentRunning(WUState & state);
 
@@ -1072,6 +1076,8 @@ public:
             { return c->getTimeStamp(name, instance, str); }
     virtual IStringIterator & getTimers() const
             { return c->getTimers(); }
+    virtual IConstWUTimerIterator & getTimerIterator() const
+            { return c->getTimerIterator(); }
     virtual IConstWUTimeStampIterator & getTimeStamps() const
             { return c->getTimeStamps(); }
     virtual IConstWUStatisticIterator & getStatistics() const
@@ -2987,6 +2993,7 @@ void CLocalWorkUnit::init()
     activities.kill();
     exceptions.kill();
     temporaries.kill();
+    timers.kill();
     roxieQueryInfo.clear();
     webServicesInfo.clear();
     workflowIteratorCached = false;
@@ -2999,6 +3006,7 @@ void CLocalWorkUnit::init()
     activitiesCached = false;
     webServicesInfoCached = false;
     roxieQueryInfoCached = false;
+    timerCached = false;
     dirty = false;
     abortDirty = true;
     abortState = false;
@@ -5480,6 +5488,49 @@ IStringIterator& CLocalWorkUnit::getTimers() const
 
     //Backward compatibility - but only use it if no statistics
     return *new CStringPTreeAttrIterator(p->getElements("Timings/Timing"), "@name");
+}
+
+IConstWUTimerIterator& CLocalWorkUnit::getTimerIterator() const
+{
+    CriticalBlock block(crit);
+    loadTimers();
+    return *new CArrayIteratorOf<IConstWUTimer,IConstWUTimerIterator> (timers, 0, (IConstWorkUnit *) this);
+
+}
+
+class CLocalWUTimer : public CInterface, implements IWUTimer
+{
+    StringAttr name;
+    unsigned count;
+    unsigned duration;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    CLocalWUTimer(const char* _name, unsigned _count, unsigned _duration) : name(_name), count(_count), duration(_duration) { };
+
+    virtual IStringVal & getName(IStringVal & str) const { str.set(name.get()); return str; } ;
+    virtual unsigned getCount() const { return count; };
+    virtual unsigned getDuration() const { return duration; };
+
+    virtual void setName(const char * str) { name.set(str); };
+    virtual void setCount(unsigned c) { count = c; };
+    virtual void setDuration(unsigned d) { duration = d; };
+};
+
+void CLocalWorkUnit::loadTimers() const
+{
+    CriticalBlock block(crit);
+    if (timerCached)
+        return;
+
+    assertex(timers.length() == 0);
+    Owned<IPropertyTreeIterator> r = p->getElements("Timings/Timing");
+    ForEach(*r)
+    {
+        IPropertyTree *rp = &r->query();
+        timers.append(*new CLocalWUTimer(rp->queryProp("@name"), rp->getPropInt("@count"), rp->getPropInt("@duration")));
+    }
+    timerCached = true;
 }
 
 StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId)
