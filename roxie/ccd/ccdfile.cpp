@@ -502,14 +502,14 @@ static bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const 
     return strieq(name, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
 }
 
-static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster)
+static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster, bool includeFromCluster)
 {
     UnsignedArray clusterCounts;
     unsigned numCopies = pdesc->numCopies();
     for (unsigned copy = 0; copy < numCopies; copy++)
     {
         unsigned clusterNo = pdesc->copyClusterNum(copy);
-        if (fromCluster && *fromCluster && !isCopyFromCluster(pdesc, clusterNo, fromCluster))
+        if (fromCluster && *fromCluster && isCopyFromCluster(pdesc, clusterNo, fromCluster)!=includeFromCluster)
             continue;
         RemoteFilename r;
         pdesc->getFilename(copy,r);
@@ -538,7 +538,7 @@ static void appendPeerLocations(IPartDescriptor *pdesc, StringArray &locations, 
         if (streq(peerCluster, roxieName))
             peerCluster=NULL;
     }
-    appendRemoteLocations(pdesc, locations, localFileName, peerCluster);
+    appendRemoteLocations(pdesc, locations, localFileName, peerCluster, true);
 }
 
 
@@ -566,6 +566,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
     RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed)
     {
+        cacheFileConnect(f, dafilesrvLookupTimeout);  // set timeout to 10 seconds
         if (f->exists())
         {
             // only check size if specified
@@ -611,20 +612,23 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
-            appendPeerLocations(pdesc, localLocations, localLocation);
+            appendRemoteLocations(pdesc, localLocations, localLocation, roxieName, true);  // Adds all locations on the same cluster
             ForEachItemIn(roxie_idx, localLocations)
             {
                 try
                 {
                     const char *remoteName = localLocations.item(roxie_idx);
                     Owned<IFile> remote = createIFile(remoteName);
-                    if (fileUpToDate(remote, size, modified, crc, isCompressed)==FileIsValid)
+                    RoxieFileStatus status = fileUpToDate(remote, size, modified, crc, isCompressed);
+                    if (status==FileIsValid)
                     {
-                        if (miscDebugTraceLevel > 10)
-                            DBGLOG("adding peer roxie location %s", remoteName);
+                        if (miscDebugTraceLevel > 5)
+                            DBGLOG("adding peer location %s", remoteName);
                         ret->addSource(remote.getClear());
                         addedOne = true;
                     }
+                    else if (miscDebugTraceLevel > 10)
+                        DBGLOG("Checked peer roxie location %s, status=%d", remoteName, (int) status);
                 }
                 catch (IException *E)
                 {
@@ -643,13 +647,16 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                         Owned<IFile> remote = createIFile(remoteName);
                         if (traceLevel > 5)
                             DBGLOG("checking remote location %s", remoteName);
-                        if (fileUpToDate(remote, size, modified, crc, isCompressed)==FileIsValid)
+                        RoxieFileStatus status = fileUpToDate(remote, size, modified, crc, isCompressed);
+                        if (status==FileIsValid)
                         {
-                            if (miscDebugTraceLevel > 10)
+                            if (miscDebugTraceLevel > 5)
                                 DBGLOG("adding remote location %s", remoteName);
                             ret->addSource(remote.getClear());
                             addedOne = true;
                         }
+                        else if (miscDebugTraceLevel > 10)
+                            DBGLOG("Checked remote file location %s, status=%d", remoteName, (int) status);
                     }
                     catch (IException *E)
                     {
@@ -664,7 +671,22 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 if (local->exists())  // Implies local dali and local file out of sync
                     throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
                 else
+                {
+                    if (traceLevel > 2)
+                    {
+                        DBGLOG("Failed to open file at any of the following %d local locations:", localLocations.length());
+                        ForEachItemIn(local_idx, localLocations)
+                        {
+                            DBGLOG("%d: %s", local_idx+1, localLocations.item(local_idx));
+                        }
+                        DBGLOG("Or at any of the following %d remote locations:", remoteLocationInfo.length());
+                        ForEachItemIn(remote_idx, remoteLocationInfo)
+                        {
+                            DBGLOG("%d: %s", remote_idx+1, remoteLocationInfo.item(remote_idx));
+                        }
+                    }
                     throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
+                }
             }
             ret->setRemote(true);
         }
@@ -1317,8 +1339,16 @@ public:
 ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy, unsigned channel)
 {
     StringArray remoteLocations;
+    const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
+    if (peerCluster)
+    {
+        if (*peerCluster!='-') // a remote cluster was specified explicitly
+            appendRemoteLocations(pdesc, remoteLocations, NULL, peerCluster, true);  // Add only from specified cluster
+    }
+    else
+        appendRemoteLocations(pdesc, remoteLocations, NULL, roxieName, false);      // Add from any cluster on same dali, other than mine
     if (remotePDesc)
-        appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL);
+        appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL, false);    // Then any remote on remote dali
 
     return queryFileCache().lookupFile(id, fileType, pdesc, numParts, replicationLevel[channel], remoteLocations, startCopy);
 }
