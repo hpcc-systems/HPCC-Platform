@@ -283,7 +283,7 @@ private:
 };
 
 ////////////////////
-class CClientRemoteTree : public CRemoteTreeBase, implements ITrackChanges
+class CClientRemoteTree : implements ITrackChanges, public CRemoteTreeBase
 {
     DECL_NAMEDCOUNT;
     IPropertyTree *_queryBranch(const char *xpath);
@@ -359,8 +359,8 @@ public:
     virtual void registerPropAppend(size32_t l);
 
 private: // data
-    CRemoteConnection &connection;
     mutable byte serverTreeInfo;
+    CRemoteConnection &connection;
 };
 
 //////////
