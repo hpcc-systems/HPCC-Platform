@@ -1,27 +1,27 @@
 [submodule "esp/src/topojson"]
 	path = esp/src/topojson
-	url = git@github.com:hpcc-systems/topojson.git
+	url = https://github.com/hpcc-systems/topojson.git
 [submodule "esp/src/xstyle"]
 	path = esp/src/xstyle
-	url = git@github.com:hpcc-systems/xstyle.git
+	url = https://github.com/hpcc-systems/xstyle.git
 [submodule "esp/src/put-selector"]
 	path = esp/src/put-selector
-	url = git@github.com:hpcc-systems/put-selector.git
+	url = https://github.com/hpcc-systems/put-selector.git
 [submodule "esp/src/dgrid"]
 	path = esp/src/dgrid
-	url = git@github.com:hpcc-systems/dgrid.git
+	url = https://github.com/hpcc-systems/dgrid.git
 [submodule "esp/src/dojo"]
 	path = esp/src/dojo
-	url = git@github.com:hpcc-systems/dojo.git
+	url = https://github.com/hpcc-systems/dojo.git
 [submodule "esp/src/d3"]
 	path = esp/src/d3
-	url = git@github.com:hpcc-systems/d3.git
+	url = https://github.com/hpcc-systems/d3.git
 [submodule "esp/src/dijit"]
 	path = esp/src/dijit
-	url = git@github.com:hpcc-systems/dijit.git
+	url = https://github.com/hpcc-systems/dijit.git
 [submodule "esp/src/dojox"]
 	path = esp/src/dojox
-	url = git@github.com:hpcc-systems/dojox.git
+	url = https://github.com/hpcc-systems/dojox.git
 [submodule "esp/src/util"]
 	path = esp/src/util
-	url = git@github.com:hpcc-systems/util.git
+	url = https://github.com/hpcc-systems/util.git
