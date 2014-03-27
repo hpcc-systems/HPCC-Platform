@@ -5237,7 +5237,7 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
     bindTableCursor(funcctx, datasetLeft, "left", no_left, selSeq);
     bindTableCursor(funcctx, datasetRight, "right", no_right, selSeq);
     if (orderExpr->getOperator() == no_order)
-        doBuildReturnCompare(funcctx, orderExpr, no_order, false);
+        doBuildReturnCompare(funcctx, orderExpr, no_order, false, false);
     else
         buildReturn(funcctx, orderExpr);
 
@@ -5284,7 +5284,7 @@ void HqlCppTranslator::buildCompareEqClass(BuildCtx & ctx, const char * name, IH
     bindTableCursor(funcctx, datasetLeft, "left", no_left, selSeq);
     bindTableCursor(funcctx, datasetRight, "right", no_right, selSeq);
     if (orderExpr->getOperator() == no_order)
-        doBuildReturnCompare(funcctx, orderExpr, no_eq, true);
+        doBuildReturnCompare(funcctx, orderExpr, no_eq, true, false);
     else
         buildReturn(funcctx, orderExpr);
 
@@ -13635,33 +13635,36 @@ void HqlCppTranslator::buildDedupFilterFunction(BuildCtx & ctx, HqlExprArray & e
             i1++;
     }
 
-    ForEachItemIn(i, comparisons)
+    if (comparisons.ordinality() || allEqualities.ordinality())
     {
-        IHqlExpression * cur = &comparisons.item(i);
-        //if no equalities to follow, generate a return for the last non-equality
-        if (allEqualities.empty() && (i+1 == numComparisons))
+        ForEachItemIn(i, comparisons)
         {
-            buildReturn(filterctx, cur);
+            IHqlExpression * cur = &comparisons.item(i);
+            //if no equalities to follow, generate a return for the last non-equality
+            if (allEqualities.empty() && (i+1 == numComparisons))
+            {
+                buildReturn(filterctx, cur);
+            }
+            else
+            {
+                OwnedHqlExpr inverse = getInverse(cur);
+                buildFilteredReturn(filterctx, inverse, queryBoolExpr(false));
+            }
         }
-        else
+
+        if (allEqualities.ordinality())
         {
-            OwnedHqlExpr inverse = getInverse(cur);
-            buildFilteredReturn(filterctx, inverse, queryBoolExpr(false));
+            HqlExprArray optimized;
+            //Even better... sort the equality list by the field order...
+            if (options.optimizeGrouping && (allEqualities.ordinality() > 1))
+                optimizeGroupOrder(optimized, dataset, allEqualities);
+            appendArray(optimized, allEqualities);
+
+            OwnedHqlExpr order = createOrderFromCompareArray(optimized, dataset, lRow->querySelector(), rRow->querySelector());
+            doBuildReturnCompare(filterctx, order, no_eq, true, false);
         }
     }
-
-    if (allEqualities.ordinality())
-    {
-        HqlExprArray optimized;
-        //Even better... sort the equality list by the field order...
-        if (options.optimizeGrouping && (allEqualities.ordinality() > 1))
-            optimizeGroupOrder(optimized, dataset, allEqualities);
-        appendArray(optimized, allEqualities);
-
-        OwnedHqlExpr order = createOrderFromCompareArray(optimized, dataset, lRow->querySelector(), rRow->querySelector());
-        doBuildReturnCompare(filterctx, order, no_eq, true);
-    }
-    else if (comparisons.ordinality() == 0)
+    else
         functionStmt->setIncluded(false);           // Use the implementation in the base class
 }
 
@@ -15589,7 +15592,7 @@ void HqlCppTranslator::buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList
     bindTableCursor(ctx, dataset.queryDataset(), "left", no_left, selSeq);
     bindTableCursor(ctx, dataset.queryDataset(), "right", no_right, selSeq);
 
-    doBuildReturnCompare(ctx, order, no_order, false);
+    doBuildReturnCompare(ctx, order, no_order, false, false);
 }
 
 void HqlCppTranslator::doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * sortlist)
@@ -15666,7 +15669,7 @@ void HqlCppTranslator::doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * d
             if (orderResult)
             {
                 buildFilteredReturn(funcctx, result, trueExpr);
-                doBuildReturnCompare(funcctx, orderResult, no_eq, true);
+                doBuildReturnCompare(funcctx, orderResult, no_eq, true, false);
             }
             else
             {
@@ -15676,7 +15679,7 @@ void HqlCppTranslator::doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * d
         else
         {
             if (orderResult)
-                doBuildReturnCompare(funcctx, orderResult, no_eq, true);
+                doBuildReturnCompare(funcctx, orderResult, no_eq, true, false);
             else
                 buildReturn(funcctx, trueExpr);
         }

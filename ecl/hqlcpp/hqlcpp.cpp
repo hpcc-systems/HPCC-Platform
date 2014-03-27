@@ -8523,7 +8523,7 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
             subctx.addBreak();
             break;
         case return_stmt:
-            if (!isLast || info.hasDefault)
+            if (!isLast || info.neverReturnMatch)
                 subctx.addFilter(info.target.expr);
             else
                 info.alwaysReturns = true;
@@ -8580,7 +8580,7 @@ void HqlCppTranslator::doBuildAssignOrder(BuildCtx & ctx, const CHqlBoundTarget 
         buildExprAssign(ctx, target, queryZero());
 }
 
-void HqlCppTranslator::doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * expr, node_operator op, bool isBoolEquality)
+void HqlCppTranslator::doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * expr, node_operator op, bool isBoolEquality, bool neverReturnTrue)
 {
     HqlExprArray leftValues, rightValues;
     OwnedHqlExpr defaultValue;
@@ -8590,13 +8590,14 @@ void HqlCppTranslator::doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * exp
     EvaluateCompareInfo info(op);
     info.actionIfDiffer = return_stmt;
     info.isBoolEquality = isBoolEquality;
-    info.hasDefault = (defaultValue != NULL);
+    info.neverReturnMatch = (defaultValue != NULL) || neverReturnTrue;
 
     createTempFor(ctx, expr, info.target);
 
     doBuildAssignCompare(ctx, info, leftValues, rightValues, true, true);
 
-    if (!info.alwaysReturns)
+    assertex(!(neverReturnTrue && info.alwaysReturns));
+    if (!info.alwaysReturns && !neverReturnTrue)
     {
         if (info.isBoolEquality)
         {
