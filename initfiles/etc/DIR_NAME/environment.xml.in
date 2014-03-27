@@ -159,6 +159,10 @@
                           path="FileDkcAccess"
                           resource="FileDkcAccess"
                           service="ws_fs"/>
+     <AuthenticateFeature description="Access to file upload"
+                          path="FileUploadAccess"
+                          resource="FileUploadAccess"
+                          service="ws_fs"/>
      <AuthenticateFeature description="Access to files in dropzone"
                           path="FileIOAccess"
                           resource="FileIOAccess"
@@ -521,6 +525,11 @@
                          resource="FileDkcAccess"
                          service="ws_fs"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to file upload"
+                         path="FileUploadAccess"
+                         resource="FileUploadAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to files in dropzone"
                          path="FileIOAccess"
                          resource="FileIOAccess"
@@ -677,6 +686,10 @@
     <AuthenticateFeature description="Access to dkcing of key files"
                          path="FileDkcAccess"
                          resource="FileDkcAccess"
+                         service="ws_fs"/>
+    <AuthenticateFeature description="Access to file upload"
+                         path="FileUploadAccess"
+                         resource="FileUploadAccess"
                          service="ws_fs"/>
     <AuthenticateFeature description="Access to files in dropzone"
                          path="FileIOAccess"
