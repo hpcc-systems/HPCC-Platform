@@ -586,7 +586,7 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
                         {
                             StringBuffer subfile;
                             ssfe->getSubFileName(count, subfile);
-                            ensureFile(subfile, RefSubFile | RefFileInPackage, NULL);
+                            ensureFile(subfile, RefSubFile | RefFileInPackage, pkgid);
                         }
                     }
                 }
