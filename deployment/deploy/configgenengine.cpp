@@ -108,7 +108,7 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
             bool bCacheable     = pFile->getPropBool("@cache", false);
 
             // Get source filespec
-            if (srcPath && !strcmp(srcPath, "@temp"))
+            if (srcPath && !strcmp(srcPath, "atmark_temp"))
             {
                 char tempfile[_MAX_PATH];
                 getTempPath(tempfile, sizeof(tempfile), m_name);
@@ -231,8 +231,8 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
             StringBuffer destFilePath;
             destFilePath.ensureCapacity(_MAX_PATH);
 
-            bool bTempFile = (destPath && !stricmp(destPath, "@temp")) ||
-                !strnicmp(name, "@temp", 5); //@name starts with @temp or @tmp
+            bool bTempFile = (destPath && !stricmp(destPath, "atmark_temp")) ||
+                !strnicmp(name, "atmark_temp", 5); //@name starts with atmark_temp or @tmp
             if (bTempFile)
             {
                 if (sDestName.empty())//dest name not specified
@@ -258,7 +258,7 @@ int CConfigGenEngine::determineInstallFiles(IPropertyTree& processNode, CInstall
                             sDestName.append(pExt);
                     }
                 }
-                destFilePath.append("@temp" PATHSEPSTR);
+                destFilePath.append("atmark_temp" PATHSEPSTR);
             }
             else
             {
@@ -376,13 +376,13 @@ void CConfigGenEngine::createFakePlugins(StringBuffer& destFilePath) const
     StringBuffer tmpoutbuf("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Plugins/>");
 
     if (m_instances.ordinality() > 1 && strcmp(m_process.queryName(), XML_TAG_ESPPROCESS))
-        destFilePath.replaceString("@temp"PATHSEPSTR, m_cachePath);
+        destFilePath.replaceString("atmark_temp"PATHSEPSTR, m_cachePath);
     else
     {
         char tempPath[_MAX_PATH];
         getTempPath(tempPath, sizeof(tempPath), m_name);
         ensurePath(tempPath);
-        destFilePath.replaceString("@temp"PATHSEPSTR, tempPath);
+        destFilePath.replaceString("atmark_temp"PATHSEPSTR, tempPath);
     }
 
     Owned<IFile> pTargetFile = createIFile(destFilePath.str());

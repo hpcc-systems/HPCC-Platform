@@ -89,4 +89,4 @@ FOREACH( iFILES
     Install ( FILES ${iFILES} DESTINATION componentfiles/configxml COMPONENT Runtime)
 ENDFOREACH ( iFILES )
 
-add_subdirectory (@temp)
+add_subdirectory (atmark_temp)

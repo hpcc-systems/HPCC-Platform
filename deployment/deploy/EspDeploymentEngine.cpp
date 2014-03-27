@@ -247,8 +247,8 @@ void CEspDeploymentEngine::processServiceModules(const char* moduleType,
             std::string serviceName = dest.substr(pos+1);
             dest.erase(pos);
 
-         if ((pos = dest.find("@temp" PATHSEPSTR)) != std::string::npos)
-            dest.replace(pos, strlen("@temp" PATHSEPSTR), tempPath);
+         if ((pos = dest.find("atmark_temp" PATHSEPSTR)) != std::string::npos)
+            dest.replace(pos, strlen("atmark_temp" PATHSEPSTR), tempPath);
 
          //if method is esp_service_module then check to see if not processing config files
          //

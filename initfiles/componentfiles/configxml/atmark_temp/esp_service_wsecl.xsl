@@ -24,7 +24,7 @@
     <xsl:param name="isLinuxInstance" select="0"/>
     <xsl:param name="espServiceName" select="'wsecl'"/>
 
-    
+
     <xsl:template match="text()"/>
 
     <xsl:variable name="serviceModuleType" select="'wsecl'"/>
@@ -54,7 +54,6 @@
    <xsl:template match="EspService">
    <xsl:param name="authNode"/>
    <xsl:param name="bindingNode"/>
-      
       <xsl:variable name="serviceType" select="'ws_ecl_attribute'"/>
       <xsl:variable name="bindType" select="'scrubbed_binding'"/>
       <xsl:variable name="servicePlugin">
@@ -63,15 +62,14 @@
          <xsl:otherwise>ws_ecl_attribute.dll</xsl:otherwise>
       </xsl:choose>
       </xsl:variable>
-      
+
       <xsl:variable name="serviceName" select="concat('wsecl', '_', @name, '_', $process)"/>
       <xsl:variable name="bindName" select="concat('wsecl', '_', $bindingNode/@name, '_', $process)"/>
-      
       <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
          <xsl:if test="string(@clusterName) != ''">
             <ClusterName><xsl:value-of select="@clusterName"/></ClusterName>
          </xsl:if>
-         <!--Did you know that the eclServer prompt in wsecl actually meant to ask for eclserver queue and not just its name?  
+         <!--Did you know that the eclServer prompt in wsecl actually meant to ask for eclserver queue and not just its name?
               There may be configurations with eclserver queue names specified as @eclServer so handle them as well-->
          <xsl:variable name="eclServerName" select="@eclServer"/>
          <xsl:variable name="eclServerNode" select="/Environment/Software/EclServerProcess[@name=$eclServerName]"/>
@@ -118,7 +116,6 @@
                 <xsl:message terminate="yes">Either roxieAddress or ECL server attribute must be specified for '<xsl:value-of select="$espServiceName"/> service!</xsl:message>
              </xsl:otherwise>
          </xsl:choose>
-            
             <xsl:if test="string(@eclWatch) != ''">
                <EclWatch>
                 <xsl:call-template name="GetEspBindingAddress">
@@ -167,9 +164,8 @@
                     <xsl:if test="@failSafe='true'">
                             <failsafe>true</failsafe>
                     </xsl:if>
-                </loggingserver> 
-            </xsl:if>   
-
+                </loggingserver>
+            </xsl:if>
             <!--hard coded values-->
             <FilesPath>files/</FilesPath>
         </EspService>
@@ -204,14 +200,12 @@
          <xsl:when test="$authMethod='ldap' or $authMethod='ldaps'">
             <Authenticate method="LdapSecurity" config="ldapserver">
                <xsl:copy-of select="$bindingNode/@resourcesBasedn"/> <!--if binding has an ldap resourcebasedn specified then copy it out -->
-               
                <xsl:for-each select="$bindingNode/Authenticate[string(@path) != '']">
                   <Location path="{@path}" resource="{@resource}" access="{@access}" description="{@description}"/>
                </xsl:for-each>
-               
                <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                   <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
-               </xsl:for-each>                              
+               </xsl:for-each>
             </Authenticate>
          </xsl:when>
          <xsl:when test="$authMethod='htpasswd'">
@@ -221,17 +215,13 @@
          </xsl:when>
       </xsl:choose>
    </xsl:template>
-   
-
     <xsl:template name="GetEspBindingAddress">
     <xsl:param name="espBindingInfo"/><!--format is "esp_name/binding_name" -->
     <xsl:param name="addProtocolPrefix" select="'true'"/>
-
       <xsl:variable name="espName" select="substring-before($espBindingInfo, '/')"/>
       <xsl:variable name="bindingName" select="substring-after($espBindingInfo, '/')"/>
       <xsl:variable name="espNode" select="/Environment/Software/EspProcess[@name=$espName]"/>
       <xsl:variable name="bindingNode" select="$espNode/EspBinding[@name=$bindingName]"/>
-      
       <xsl:if test="not($espNode) or not($bindingNode)">
          <xsl:message terminate="yes">Invalid ESP process and/or ESP binding information in '<xsl:value-of select="$espBindingInfo"/>'.</xsl:message>
       </xsl:if>
@@ -240,11 +230,10 @@
       <xsl:if test="string($espIP) = ''">
          <xsl:message terminate="yes">The ESP server defined in '<xsl:value-of select="$espBindingInfo"/>' has invalid instance!</xsl:message>
       </xsl:if>
-      
+
       <xsl:if test="string($bindingNode/@port) = ''">
          <xsl:message terminate="yes">The ESP binding defined in '<xsl:value-of select="$espBindingInfo"/>' has invalid port!</xsl:message>
       </xsl:if>
-      
       <xsl:if test="boolean($addProtocolPrefix)">
          <xsl:if test="string($bindingNode/@protocol) = ''">
             <xsl:message terminate="yes">The ESP binding defined in '<xsl:value-of select="$espBindingInfo"/>' has no protocol!</xsl:message>
@@ -253,5 +242,4 @@
       </xsl:if>
       <xsl:value-of select="concat($espIP, ':', $bindingNode/@port)"/>
    </xsl:template>
-    
 </xsl:stylesheet>

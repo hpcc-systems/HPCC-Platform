@@ -56,7 +56,7 @@
     <File name="runregress.xsl" method="xslt" destName="regress.ini"/>
   </Component>
   <Component name="roxie" processName='RoxieCluster' schema='roxie.xsd'>
-    <File name="roxiePlugins.xsl" method="xslt_deployment" destName="roxiePlugins.xml" destPath="@temp" cache="true"/>
+    <File name="roxiePlugins.xsl" method="xslt_deployment" destName="roxiePlugins.xml" destPath="atmark_temp" cache="true"/>
     <File name="slaves.xsl" method="xslt" destName="slaves" cache="true"/>
     <File name="roxievars_linux.xsl" method="xslt" destName="roxievars" cache="true"/>
     <File name="RoxieTopology.xsl" method="xslt" destName="RoxieTopology.xml" cache="true"/>
@@ -69,158 +69,158 @@
     <File name="setvars_linux.xsl" method="xslt" destName="setvars"/>
   </Component>
   <Component name="ecldirect" processName='EspService' schema='esp_service_ecldirect.xsd' deployable='no'>
-    <File name="@temp/esp_service_ecldirect.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_ecldirect.xsl" method="esp_service_module"/>
   </Component>
   <Component name="esp_wubilling" processName='EspService' schema='esp_service_wubilling.xsd' deployable='no'>
-    <File name="@temp/esp_service_wubilling.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_wubilling.xsl" method="esp_service_module"/>
   </Component>
   <Component name="espadl" processName='EspService' schema='esp_service_wsadl.xsd' deployable='no'>
-    <File name="@temp/esp_service_wsadl.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_wsadl.xsl" method="esp_service_module"/>
   </Component>
   <Component name="espbatchwatch" processName='EspService' schema='espbatchwatchservice.xsd' deployable='no'>
-    <File name="@temp/esp_service_ws_batchwatch.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_ws_batchwatch.xsl" method="esp_service_module"/>
   </Component>
   <Component name="espjavelinapi" processName='EspService' schema='espjavelinapi.xsd' deployable='no'>
-    <File name="@temp/esp_service_javelinapi.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_javelinapi.xsl" method="esp_service_module"/>
   </Component>
   <Component name="espjavelinapiau" processName='EspService' schema='espjavelinapi.xsd' deployable='no'>
-    <File name="@temp/esp_service_javelinapiau.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_javelinapiau.xsl" method="esp_service_module"/>
   </Component>
   <Component name="espsmc" processName='EspService' schema='espsmcservice.xsd' deployable='no'>
-    <File name="plugins.xsl" method="esp_plugin" destName="plugins.xml" destPath="@temp"/>
-    <File name="@temp/esp_service_WsSMC.xsl" method="esp_service_module"/>
+    <File name="plugins.xsl" method="esp_plugin" destName="plugins.xml" destPath="atmark_temp"/>
+    <File name="atmark_temp/esp_service_WsSMC.xsl" method="esp_service_module"/>
   </Component>
   <Component name="ws_account" processName='EspService' schema='esp_service_account.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsAccount.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsAccount.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="ws_accurintAccess" processName='EspService' schema='ws_accurintAccess.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsAccurintAccess.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsAccurintAccess.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="ws_log" processName='EspService' schema='ws_log.xsd' deployable='no'>
-    <File name="@temp/ws_log.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/ws_log.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsLogListener" processName='WsLogListener' schema='ws_log_listener.xsd' deployable='no'>
   </Component>
   <Component name="ws_notify" processName='EspService' schema='ws_notify.xsd' deployable='no'>
-    <File name="@temp/esp_service_notify.xslt" method="esp_service_module" destName="ws_notify.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service_notify.xslt" method="esp_service_module" destName="ws_notify.xml" destPath="atmark_temp"/>
   </Component>
 <Component name="ws_ecl" processName='EspService' schema='esp_service_wsecl2.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>  
   <Component name="ws_ssn" processName='EspService' schema='ws_ssn.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="ws_ssn.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="ws_ssn.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="ws_thing_finder" processName='EspService' schema='WsThingFinder.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsaccurint" processName='EspService' schema='wsaccurint.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsAccurintAuthentication" processName='EspService' schema='WsAccurintAuthentication.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsAnalytics" processName='EspService' schema='WsAnalytics.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsAttributes" processName='EspService' schema='WsAttributes.xsd' deployable='no'>
-    <File name="plugins.xsl" method="esp_plugin" destName="plugins.xml" destPath="@temp"/>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="plugins.xsl" method="esp_plugin" destName="plugins.xml" destPath="atmark_temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsAutoUpdate" processName='EspService' schema='WsAutoUpdate.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsDataAccess" processName='EspService' schema='WsDataAccess.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsDeploy" processName='EspService' schema='WsDeploy.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsDeploy.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsDeploy.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="wsdistrix" processName='EspService' schema='wsdistrix.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsecl" processName='EspService' schema='esp_service_wsecl.xsd' deployable='no'>
-    <File name="@temp/esp_service_wsecl.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_wsecl.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsEda" processName='EspService' schema='WsEda.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsEda.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsEda.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="wsfacts" processName='EspService' schema='wsfacts.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsFcicEclQuery" processName='EspService' schema='WsFcicEclQuery.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsFcicQuery" processName='EspService' schema='WsFcicQuery.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsFcicReport" processName='EspService' schema='WsFcicReport.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsfcra" processName='EspService' schema='wsfcra.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsfcrainquiry" processName='EspService' schema='WsFCRAInquiry.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsFCRAInquiry.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsFCRAInquiry.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="wsgateway" processName='EspService' schema='wsgateway.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsGIS" processName='EspService' schema='WsGIS.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsidentity" processName='EspService' schema='wsidentity.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsImageAccess" processName='EspService' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsImageTransfer" processName='EspService' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="espImgTransfer.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="espImgTransfer.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="WsJabber" processName='EspService' schema='WsJabber.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsJabber.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsJabber.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="WsOnDemand" processName='EspService' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsPrism" processName='EspService' schema='WsPrism.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsReferenceTracker" processName='EspService' schema='WsReferenceTracker.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsRemoteNS" processName='EspService' schema='WsRemoteNS.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsRemoteNSReplication" processName='EspService' schema='WsRemoteNSReplication.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsRiskView" processName='EspService' schema='WsRiskView.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsriskwise" processName='EspService' schema='WsRiskWise.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsRiskWise.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsRiskWise.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="WsSAML" processName='EspService' schema='wssaml.xsd' deployable='no'>
-    <File name="@temp/esp_service_wssaml.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_wssaml.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsSciab" processName='EspService' schema='WsSciab.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsSciab.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsSciab.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="WsScreening" processName='EspService' schema='wsscreening.xsd' deployable='no'>
-    <File name="@temp/esp_service_wsscreening.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_wsscreening.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wssecurint" processName='EspService' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component name="WsSNM" processName='EspService' schema='WsSNM.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module" destName="WsSNM.xml" destPath="@temp"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module" destName="WsSNM.xml" destPath="atmark_temp"/>
   </Component>
   <Component name="WsXForm" processName='EspService' schema='wsxform.xsd' deployable='no'>
-    <File name="@temp/esp_service_wsxform.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service_wsxform.xsl" method="esp_service_module"/>
   </Component>
   <Component name="wsZipResolver" processName='EspService' schema='WsZipResolver.xsd' deployable='no'>
-    <File name="@temp/esp_service.xsl" method="esp_service_module"/>
+    <File name="atmark_temp/esp_service.xsl" method="esp_service_module"/>
   </Component>
   <Component deployable="no"
           installSet="addrcleanlib_deploy_map.xml"

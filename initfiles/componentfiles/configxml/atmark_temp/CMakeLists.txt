@@ -23,5 +23,5 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_WsSMC.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/roxiePlugins.xsl
 )
-    Install ( FILES ${iFILES} DESTINATION componentfiles/configxml/@temp COMPONENT Runtime )
+    Install ( FILES ${iFILES} DESTINATION componentfiles/configxml/atmark_temp COMPONENT Runtime )
 ENDFOREACH ( iFILES )
