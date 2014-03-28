@@ -15,9 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//noThor
-//noRoxie
-
 namesRecord := 
             RECORD
 string20        surname;
@@ -48,9 +45,9 @@ d := dataset([
             }
         ], houseRecord);
 
-output(d,,'houses1',overwrite);
+output(d,,'~regresstemp::houses1',overwrite);
 
-houseTable := dataset('houses1', houseRecord, thor);
+houseTable := dataset('~regresstemp::houses1', houseRecord, thor);
 
 //--- End of common ---
 

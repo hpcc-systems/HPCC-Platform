@@ -1,0 +1,158 @@
+<Dataset name='Result 1'>
+ <Row><name>To kill a mocking bird</name><author>Harper Lee</author><rating100>95</rating100></Row>
+ <Row><name>Clarion Language Manual</name><author>Richard Taylor</author><rating100>1</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>98</rating100></Row>
+ <Row><name>Compilers</name><author>Aho, Sethi, Ullman</author><rating100>80</rating100></Row>
+ <Row><name>Lord of the Rings</name><author>JRR Tolkien</author><rating100>95</rating100></Row>
+ <Row><name>The thinks you can think</name><author>Dr. Seuss</author><rating100>90</rating100></Row>
+ <Row><name>Where is flop?</name><author></author><rating100>85</rating100></Row>
+ <Row><name>David and Goliath</name><author></author><rating100>20</rating100></Row>
+ <Row><name>The story of Jonah</name><author></author><rating100>80</rating100></Row>
+ <Row><name>The Life of Pi</name><author>Yan Martel</author><rating100>90</rating100></Row>
+ <Row><name>BNF</name><author>Various</author><rating100>60</rating100></Row>
+ <Row><name>The Third Policeman</name><author>Flann O&apos;Brien</author><rating100>85</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>93</rating100></Row>
+ <Row><name>The Prince</name><author>Machiavelli</author><rating100>40</rating100></Row>
+ <Row><name>Atlas of the world</name><author>Times</author><rating100>70</rating100></Row>
+ <Row><name>Girl guide annual</name><author>Various</author><rating100>50</rating100></Row>
+ <Row><name>Rwandan war dances</name><author>Unknown</author><rating100>30</rating100></Row>
+ <Row><name>Greek tragedies</name><author>Various</author><rating100>30</rating100></Row>
+ <Row><name>Social etiquette</name><author>RU Correct</author><rating100>10</rating100></Row>
+ <Row><name>The Rituals of Dinner: The Origins, Evolution, Eccentricities and the Meaning of Table Manners</name><author>Margaret Visser</author><rating100>60</rating100></Row>
+ <Row><name>The cat in the hat</name><author>Dr. Seuss</author><rating100>85</rating100></Row>
+ <Row><name>Dinosaur stews</name><author>Trog</author><rating100>55</rating100></Row>
+ <Row><name>Pride and prejudice, 1st edition</name><author>Jane Austen</author><rating100>95</rating100></Row>
+ <Row><name>Mein Kampf, 1st edition</name><author>Adolph Hitler</author><rating100>80</rating100></Row>
+ <Row><name>All quiet on the western front</name><author>Erich Maria Remarque</author><rating100>85</rating100></Row>
+ <Row><name>Fox in Socks</name><author>Dr. Seuss</author><rating100>99</rating100></Row>
+ <Row><name>Zen and the art of motorcyle maintenance</name><author>Robert Pirsig</author><rating100>90</rating100></Row>
+ <Row><name>Where the wild things are</name><author>Maurice Sendak</author><rating100>70</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>10</rating100></Row>
+ <Row><name>The cat in the hat</name><author>Dr. Seuss</author><rating100>80</rating100></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>To kill a mocking bird</name><author>Harper Lee</author><rating100>95</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>98</rating100></Row>
+ <Row><name>Compilers</name><author>Aho, Sethi, Ullman</author><rating100>80</rating100></Row>
+ <Row><name>Lord of the Rings</name><author>JRR Tolkien</author><rating100>95</rating100></Row>
+ <Row><name>The thinks you can think</name><author>Dr. Seuss</author><rating100>90</rating100></Row>
+ <Row><name>Where is flop?</name><author></author><rating100>85</rating100></Row>
+ <Row><name>The story of Jonah</name><author></author><rating100>80</rating100></Row>
+ <Row><name>The Life of Pi</name><author>Yan Martel</author><rating100>90</rating100></Row>
+ <Row><name>BNF</name><author>Various</author><rating100>60</rating100></Row>
+ <Row><name>The Third Policeman</name><author>Flann O&apos;Brien</author><rating100>85</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>93</rating100></Row>
+ <Row><name>Atlas of the world</name><author>Times</author><rating100>70</rating100></Row>
+ <Row><name>The Rituals of Dinner: The Origins, Evolution, Eccentricities and the Meaning of Table Manners</name><author>Margaret Visser</author><rating100>60</rating100></Row>
+ <Row><name>The cat in the hat</name><author>Dr. Seuss</author><rating100>85</rating100></Row>
+ <Row><name>Dinosaur stews</name><author>Trog</author><rating100>55</rating100></Row>
+ <Row><name>Pride and prejudice, 1st edition</name><author>Jane Austen</author><rating100>95</rating100></Row>
+ <Row><name>Mein Kampf, 1st edition</name><author>Adolph Hitler</author><rating100>80</rating100></Row>
+ <Row><name>All quiet on the western front</name><author>Erich Maria Remarque</author><rating100>85</rating100></Row>
+ <Row><name>Fox in Socks</name><author>Dr. Seuss</author><rating100>99</rating100></Row>
+ <Row><name>Zen and the art of motorcyle maintenance</name><author>Robert Pirsig</author><rating100>90</rating100></Row>
+ <Row><name>Where the wild things are</name><author>Maurice Sendak</author><rating100>70</rating100></Row>
+ <Row><name>The cat in the hat</name><author>Dr. Seuss</author><rating100>80</rating100></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><name>To kill a mocking bird</name><author>Harper Lee</author><rating100>95</rating100></Row>
+ <Row><name>Clarion Language Manual</name><author>Richard Taylor</author><rating100>1</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>98</rating100></Row>
+ <Row><name>Compilers</name><author>Aho, Sethi, Ullman</author><rating100>80</rating100></Row>
+ <Row><name>Lord of the Rings</name><author>JRR Tolkien</author><rating100>95</rating100></Row>
+ <Row><name>The thinks you can think</name><author>Dr. Seuss</author><rating100>90</rating100></Row>
+ <Row><name>Where is flop?</name><author></author><rating100>85</rating100></Row>
+ <Row><name>David and Goliath</name><author></author><rating100>20</rating100></Row>
+ <Row><name>The story of Jonah</name><author></author><rating100>80</rating100></Row>
+ <Row><name>The Life of Pi</name><author>Yan Martel</author><rating100>90</rating100></Row>
+ <Row><name>BNF</name><author>Various</author><rating100>60</rating100></Row>
+ <Row><name>The Third Policeman</name><author>Flann O&apos;Brien</author><rating100>85</rating100></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><name>To kill a mocking bird</name><author>Harper Lee</author><rating100>95</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>98</rating100></Row>
+ <Row><name>Compilers</name><author>Aho, Sethi, Ullman</author><rating100>80</rating100></Row>
+ <Row><name>Lord of the Rings</name><author>JRR Tolkien</author><rating100>95</rating100></Row>
+ <Row><name>The thinks you can think</name><author>Dr. Seuss</author><rating100>90</rating100></Row>
+ <Row><name>Where is flop?</name><author></author><rating100>85</rating100></Row>
+ <Row><name>The story of Jonah</name><author></author><rating100>80</rating100></Row>
+ <Row><name>The Life of Pi</name><author>Yan Martel</author><rating100>90</rating100></Row>
+ <Row><name>BNF</name><author>Various</author><rating100>60</rating100></Row>
+ <Row><name>The Third Policeman</name><author>Flann O&apos;Brien</author><rating100>85</rating100></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><name>To kill a mocking bird</name><author>Harper Lee</author><rating100>95</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>98</rating100></Row>
+ <Row><name>Compilers</name><author>Aho, Sethi, Ullman</author><rating100>80</rating100></Row>
+ <Row><name>Lord of the Rings</name><author>JRR Tolkien</author><rating100>95</rating100></Row>
+ <Row><name>The thinks you can think</name><author>Dr. Seuss</author><rating100>90</rating100></Row>
+ <Row><name>Where is flop?</name><author></author><rating100>85</rating100></Row>
+ <Row><name>The story of Jonah</name><author></author><rating100>80</rating100></Row>
+ <Row><name>The Life of Pi</name><author>Yan Martel</author><rating100>90</rating100></Row>
+ <Row><name>BNF</name><author>Various</author><rating100>60</rating100></Row>
+ <Row><name>The Third Policeman</name><author>Flann O&apos;Brien</author><rating100>85</rating100></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><id>1</id><name>To kill a mocking bird</name><author>Harper Lee</author><rating100>95</rating100><price>0</price></Row>
+ <Row><id>2</id><name>Clarion Language Manual</name><author>Richard Taylor</author><rating100>1</rating100><price>399.99</price></Row>
+ <Row><id>3</id><name>The bible</name><author>Various</author><rating100>98</rating100><price>0</price></Row>
+ <Row><id>4</id><name>Compilers</name><author>Aho, Sethi, Ullman</author><rating100>80</rating100><price>0</price></Row>
+ <Row><id>5</id><name>Lord of the Rings</name><author>JRR Tolkien</author><rating100>95</rating100><price>0</price></Row>
+ <Row><id>6</id><name>The thinks you can think</name><author>Dr. Seuss</author><rating100>90</rating100><price>5.99</price></Row>
+ <Row><id>7</id><name>Where is flop?</name><author></author><rating100>85</rating100><price>4.99</price></Row>
+ <Row><id>8</id><name>David and Goliath</name><author></author><rating100>20</rating100><price>2.99</price></Row>
+ <Row><id>9</id><name>The story of Jonah</name><author></author><rating100>80</rating100><price>6.99</price></Row>
+ <Row><id>10</id><name>The Life of Pi</name><author>Yan Martel</author><rating100>90</rating100><price>0</price></Row>
+ <Row><id>11</id><name>BNF</name><author>Various</author><rating100>60</rating100><price>0</price></Row>
+ <Row><id>12</id><name>The Third Policeman</name><author>Flann O&apos;Brien</author><rating100>85</rating100><price>0</price></Row>
+ <Row><id>13</id><name>The bible</name><author>Various</author><rating100>93</rating100><price>0</price></Row>
+ <Row><id>14</id><name>The Prince</name><author>Machiavelli</author><rating100>40</rating100><price>0</price></Row>
+ <Row><id>15</id><name>Atlas of the world</name><author>Times</author><rating100>70</rating100><price>0</price></Row>
+ <Row><id>16</id><name>Girl guide annual</name><author>Various</author><rating100>50</rating100><price>0</price></Row>
+ <Row><id>17</id><name>Rwandan war dances</name><author>Unknown</author><rating100>30</rating100><price>0</price></Row>
+ <Row><id>18</id><name>Greek tragedies</name><author>Various</author><rating100>30</rating100><price>0</price></Row>
+ <Row><id>19</id><name>Social etiquette</name><author>RU Correct</author><rating100>10</rating100><price>0</price></Row>
+ <Row><id>20</id><name>The Rituals of Dinner: The Origins, Evolution, Eccentricities and the Meaning of Table Manners</name><author>Margaret Visser</author><rating100>60</rating100><price>0</price></Row>
+ <Row><id>21</id><name>The cat in the hat</name><author>Dr. Seuss</author><rating100>85</rating100><price>0</price></Row>
+ <Row><id>22</id><name>Dinosaur stews</name><author>Trog</author><rating100>55</rating100><price>0</price></Row>
+ <Row><id>23</id><name>Pride and prejudice, 1st edition</name><author>Jane Austen</author><rating100>95</rating100><price>12000</price></Row>
+ <Row><id>24</id><name>Mein Kampf, 1st edition</name><author>Adolph Hitler</author><rating100>80</rating100><price>10000</price></Row>
+ <Row><id>25</id><name>All quiet on the western front</name><author>Erich Maria Remarque</author><rating100>85</rating100><price>4.99</price></Row>
+ <Row><id>26</id><name>Fox in Socks</name><author>Dr. Seuss</author><rating100>99</rating100><price>4.99</price></Row>
+ <Row><id>27</id><name>Zen and the art of motorcyle maintenance</name><author>Robert Pirsig</author><rating100>90</rating100><price>7.99</price></Row>
+ <Row><id>28</id><name>Where the wild things are</name><author>Maurice Sendak</author><rating100>70</rating100><price>4.79</price></Row>
+ <Row><id>29</id><name>The bible</name><author>Various</author><rating100>10</rating100><price>5.99</price></Row>
+ <Row><id>30</id><name>The cat in the hat</name><author>Dr. Seuss</author><rating100>80</rating100><price>0</price></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><name>To kill a mocking bird</name><author>Harper Lee</author><rating100>95</rating100></Row>
+ <Row><name>Clarion Language Manual</name><author>Richard Taylor</author><rating100>1</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>98</rating100></Row>
+ <Row><name>Compilers</name><author>Aho, Sethi, Ullman</author><rating100>80</rating100></Row>
+ <Row><name>Lord of the Rings</name><author>JRR Tolkien</author><rating100>95</rating100></Row>
+ <Row><name>The thinks you can think</name><author>Dr. Seuss</author><rating100>90</rating100></Row>
+ <Row><name>Where is flop?</name><author></author><rating100>85</rating100></Row>
+ <Row><name>David and Goliath</name><author></author><rating100>20</rating100></Row>
+ <Row><name>The story of Jonah</name><author></author><rating100>80</rating100></Row>
+ <Row><name>The Life of Pi</name><author>Yan Martel</author><rating100>90</rating100></Row>
+ <Row><name>BNF</name><author>Various</author><rating100>60</rating100></Row>
+ <Row><name>The Third Policeman</name><author>Flann O&apos;Brien</author><rating100>85</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>93</rating100></Row>
+ <Row><name>The Prince</name><author>Machiavelli</author><rating100>40</rating100></Row>
+ <Row><name>Atlas of the world</name><author>Times</author><rating100>70</rating100></Row>
+ <Row><name>Girl guide annual</name><author>Various</author><rating100>50</rating100></Row>
+ <Row><name>Rwandan war dances</name><author>Unknown</author><rating100>30</rating100></Row>
+ <Row><name>Greek tragedies</name><author>Various</author><rating100>30</rating100></Row>
+ <Row><name>Social etiquette</name><author>RU Correct</author><rating100>10</rating100></Row>
+ <Row><name>The Rituals of Dinner: The Origins, Evolution, Eccentricities and the Meaning of Table Manners</name><author>Margaret Visser</author><rating100>60</rating100></Row>
+ <Row><name>The cat in the hat</name><author>Dr. Seuss</author><rating100>85</rating100></Row>
+ <Row><name>Dinosaur stews</name><author>Trog</author><rating100>55</rating100></Row>
+ <Row><name>Pride and prejudice, 1st edition</name><author>Jane Austen</author><rating100>95</rating100></Row>
+ <Row><name>Mein Kampf, 1st edition</name><author>Adolph Hitler</author><rating100>80</rating100></Row>
+ <Row><name>All quiet on the western front</name><author>Erich Maria Remarque</author><rating100>85</rating100></Row>
+ <Row><name>Fox in Socks</name><author>Dr. Seuss</author><rating100>99</rating100></Row>
+ <Row><name>Zen and the art of motorcyle maintenance</name><author>Robert Pirsig</author><rating100>90</rating100></Row>
+ <Row><name>Where the wild things are</name><author>Maurice Sendak</author><rating100>70</rating100></Row>
+ <Row><name>The bible</name><author>Various</author><rating100>10</rating100></Row>
+ <Row><name>The cat in the hat</name><author>Dr. Seuss</author><rating100>80</rating100></Row>
+</Dataset>

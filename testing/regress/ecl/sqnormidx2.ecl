@@ -15,26 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
+//Normalized, count
+output(table(sq.SimplePersonBookIndex.books(rating100>50), { count(group) }, keyed));
 
+//Normalized, aggregate
+output(table(sq.SimplePersonBookIndex(surname != '').books, { max(group, rating100) }, keyed));
 
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
+//Normalized, grouped aggregate
+output(sort(table(sq.SimplePersonBookIndex.books, { count(group), rating100}, rating100, keyed),RECORD));
 
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+//Normalized, grouped aggregate - criteria is in parent dataset
+output(sort(table(sq.SimplePersonBookIndex(surname != '').books, { count(group), sq.SimplePersonBookIndex.surname }, sq.SimplePersonBookIndex.surname, keyed),RECORD));  //more: Make the ,few implicit...

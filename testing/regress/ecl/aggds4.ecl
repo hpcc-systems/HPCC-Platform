@@ -15,26 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
+pr:= table(sq.SimplePersonBookDs, { fullname := trim(surname) + ', ' + trim(forename), aage });
 
+//Aggregate on a projected table that can't be merged
+pr2:= table(sq.SimplePersonBookDs, { surname, forename, aage, unsigned8 seq := (random() % 100) / 2000 + aage; });
 
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
+//Filtered Aggregate on a projected table.
+output(sort(table(pr(aage > 20), { aage, max(group, fullname) }, aage, few), record));
 
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+//Filtered Aggregate on a projected table.
+output(sort(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few), record));

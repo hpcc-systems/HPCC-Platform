@@ -15,26 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
+import $.setup.sq;
+
+myPeople := sq.SimplePersonBookDs(surname <> '');
+
+childBookRec :=
             RECORD
-string20        surname;
+dataset(sq.BookIdRec)        books{blob};
             END;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
+slimPeopleRec :=
+            RECORD
+string20        surname;
+childBookRec        child;
+            END;
 
-
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
-
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+//Perverse coding to ensure we sort by a linked child record - to ensure it is correctly serialised
+p := project(myPeople, transform(slimPeopleRec, self.child.books := left.books; self := left));
+s := sort(p, -p.child);
+output(s);

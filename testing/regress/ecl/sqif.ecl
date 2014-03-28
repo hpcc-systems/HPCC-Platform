@@ -15,26 +15,24 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
+trueValue := true : stored('true');
+subLength := 20 : stored('subLength');
+
+integer searchValue := 1234567890123456789;
+string searchName := 'Gavin Halliday' : stored('SearchName');
+
+
+lhs := sq.HousePersonBookDs;
+
+sq.HousePersonBookIdExRec t(sq.HousePersonBookIdExRec l) := transform
+    self.persons := sort(l.persons, TRIM(searchName)[id], INTFORMAT(searchValue, subLength, 20)[id]);
+    self := l;
     end;
 
+rhs  := project(sq.HousePersonBookDs, t(left));
 
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
+cond := IF(trueValue, lhs, rhs);
 
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+output(cond);

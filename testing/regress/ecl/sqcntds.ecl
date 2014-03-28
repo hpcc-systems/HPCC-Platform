@@ -15,26 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
+output(count(sq.HouseDs));
+output(count(sq.HouseDs)=5);
+output(count(choosen(sq.HouseDs, 10)));
+output(count(choosen(sq.HouseDs, 10))=5);
+output(count(choosen(sq.HouseDs, 4)));
+output(count(choosen(sq.HouseDs, 4))=4);
+output(count(choosen(sq.HouseDs, 0)));
+output(count(choosen(sq.HouseDs, 0))=0);
 
-
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
-
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+output(count(sq.HouseDs(postCode != 'WC1')));
+output(count(sq.HouseDs(postCode != 'WC1'))=4);
+output(count(choosen(sq.HouseDs(postCode != 'WC1'), 10)));
+output(count(choosen(sq.HouseDs(postCode != 'WC1'), 10))=4);
+output(count(choosen(sq.HouseDs(postCode != 'WC1'), 3)));
+output(count(choosen(sq.HouseDs(postCode != 'WC1'), 3))=3);
+output(count(choosen(sq.HouseDs(postCode != 'WC1'), 0)));
+output(count(choosen(sq.HouseDs(postCode != 'WC1'), 0))=0);
