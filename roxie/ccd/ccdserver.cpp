@@ -17180,8 +17180,30 @@ private:
     class LookupTable : public CInterface
     {
     public:
-        LookupTable(unsigned _size, ICompare * _leftRightCompare, ICompare * _rightCompare, IHash * _leftHash, IHash * _rightHash, bool _dedupOnAdd)
-        : leftRightCompare(_leftRightCompare), rightCompare(_rightCompare), leftHash(_leftHash), rightHash(_rightHash), dedupOnAdd(_dedupOnAdd)
+        LookupTable(IHThorHashJoinArg &helper)
+        : leftRightCompare(helper.queryCompareLeftRight()), rightCompare(helper.queryCompareRight()),
+          leftHash(helper.queryHashLeft()), rightHash(helper.queryHashRight())
+        {
+            size = 0;
+            mask = 0;
+        }
+        virtual const void *find(const void * left) const = 0;
+        virtual const void *findNext(const void * left) const = 0;
+
+    protected:
+        ICompare * leftRightCompare;
+        ICompare * rightCompare;
+        IHash * leftHash;
+        IHash * rightHash;
+        unsigned size;
+        unsigned mask;
+    };
+
+    class DedupLookupTable : public LookupTable
+    {
+    public:
+        DedupLookupTable(unsigned _size, IHThorHashJoinArg &helper, bool _dedupOnAdd)
+        : LookupTable(helper), dedupOnAdd(_dedupOnAdd)
         {
             unsigned minsize = (4*_size)/3;
             size = 2;
@@ -17192,7 +17214,7 @@ private:
             findex = fstart = BadIndex;
         }
 
-        ~LookupTable()
+        ~DedupLookupTable()
         {
             unsigned i;
             for(i=0; i<size; i++)
@@ -17221,30 +17243,28 @@ private:
             table[index] = right;
         }
 
-        const void *find(const void * left) const
+        virtual const void *find(const void * left) const
         {
             fstart = leftHash->hash(left) & mask;
             findex = fstart;
             return doFind(left);
         }
-
-        const void *findNext(const void * left) const
+        virtual const void *findNext(const void * left) const
         {
             if(findex == BadIndex)
                 return NULL;
             advance();
             return doFind(left);
         }
-
+    protected:
         void advance() const
         {
             findex++;
             if(findex==size)
                 findex = 0;
             if(findex==fstart)
-                throw MakeStringException(ROXIE_JOIN_ERROR, "Internal error hthor lookup join activity (hash table full on lookup)");
+                throw MakeStringException(ROXIE_JOIN_ERROR, "Internal error in lookup join activity (hash table full on lookup)");
         }
-
         const void *doFind(const void * left) const
         {
             while(table[findex])
@@ -17257,18 +17277,115 @@ private:
             return NULL;
         }
 
-    private:
-        ICompare * leftRightCompare;
-        ICompare * rightCompare;
-        IHash * leftHash;
-        IHash * rightHash;
-        unsigned size;
-        unsigned mask;
         const void * * table;
         bool dedupOnAdd;
         unsigned mutable fstart;
         unsigned mutable findex;
         static unsigned const BadIndex;
+    };
+
+    class ManyLookupTable : public LookupTable
+    {
+    public:
+        ManyLookupTable(ConstPointerArray &rightRows, IHThorHashJoinArg &helper)
+        : LookupTable(helper)
+        {
+            rightRows.swapWith(rowtable);
+            UInt64Array groups;
+            unsigned numRows = rowtable.length();
+            if (rowtable.length())
+            {
+                unsigned groupStart = 0;
+                const void *groupStartRow = rowtable.item(0);
+                for(unsigned i=1; i < numRows; i++)
+                {
+                    const void *thisRow = rowtable.item(i);
+                    if (rightCompare->docompare(groupStartRow, thisRow))
+                    {
+                        groups.append(makeint64(groupStart, i-groupStart));
+                        groupStart = i;
+                        groupStartRow = thisRow;
+                    }
+                }
+                groups.append(makeint64(groupStart, numRows-groupStart));
+            }
+            unsigned minsize = (4*groups.length())/3;
+            size = 2;
+            while((minsize >>= 1) > 0)
+                size <<= 1;
+            mask = size - 1;
+            table = (__uint64 *) calloc(size, sizeof(__uint64));
+            ForEachItemIn(idx, groups)
+            {
+                unsigned __int64 group = groups.item(idx);
+                unsigned groupstart = high(group);
+                unsigned grouplen = low(group);
+                const void *row = rowtable.item(groupstart);
+                add(row, group);
+            }
+        }
+
+        ~ManyLookupTable()
+        {
+            ForEachItemIn(idx, rowtable)
+            {
+                ReleaseRoxieRow(rowtable.item(idx));
+            }
+            free(table);
+        }
+
+        void add(const void *row, unsigned __int64 group)
+        {
+            unsigned start = rightHash->hash(row) & mask;
+            unsigned index = start;
+            while(table[index])
+            {
+                index++;
+                if(index==size)
+                    index = 0;
+                if(index==start)
+                    throwUnexpected(); //table is full, should never happen
+            }
+            table[index] = group;
+        }
+
+        virtual const void *find(const void * left) const
+        {
+            unsigned fstart = leftHash->hash(left) & mask;
+            unsigned findex = fstart;
+            while(table[findex])
+            {
+                __uint64 group = table[findex];
+                groupStart = high(group);
+                const void *right = rowtable.item(groupStart);
+                if(leftRightCompare->docompare(left, right) == 0)
+                {
+                    groupStart++;
+                    groupLength = low(group) - 1;
+                    return right;
+                }
+                findex++;
+                if(findex==size)
+                    findex = 0;
+                if(findex==fstart)
+                    throw MakeStringException(ROXIE_JOIN_ERROR, "Internal error in lookup join activity (hash table full on lookup)");
+            }
+            groupLength = 0;
+            return NULL;
+        }
+        virtual const void *findNext(const void * left) const
+        {
+            if (!groupLength)
+                return NULL;
+            groupLength--;
+            return rowtable.item(groupStart++);
+        }
+
+    protected:
+        __uint64 *table;
+        ConstPointerArray rowtable;
+        mutable unsigned groupStart;
+        mutable unsigned groupLength;
     };
 
     IHThorHashJoinArg &helper;
@@ -17356,10 +17473,30 @@ public:
                 rightset.append(next);
             }
             unsigned rightord = rightset.ordinality();
-            table.setown(new LookupTable(rightord, helper.queryCompareLeftRight(), helper.queryCompareRight(), helper.queryHashLeft(), helper.queryHashRight(), dedupRHS));
-
-            for(i=0; i<rightord; i++)
-                table->add(rightset.item(i));
+            if (!dedupRHS)
+            {
+                if (!helper.isRightAlreadySorted())
+                {
+                    if (helper.getJoinFlags() & JFunstable)
+                    {
+                        qsortvec(const_cast<void * *>(rightset.getArray()), rightset.ordinality(), *helper.queryCompareRight());
+                    }
+                    else
+                    {
+                        MemoryAttr indexbuff(rightord*sizeof(void **));
+                        void *** index = (void ***)indexbuff.bufferBase();
+                        qsortvecstable(const_cast<void * *>(rightset.getArray()), rightset.ordinality(), *helper.queryCompareRight(), index);
+                    }
+                }
+                table.setown(new ManyLookupTable(rightset, helper));  // NOTE - takes ownership of rightset
+            }
+            else
+            {
+                DedupLookupTable *ltable = new DedupLookupTable(rightord, helper, dedupRHS);
+                table.setown(ltable);
+                for(i=0; i<rightord; i++)
+                    ltable->add(rightset.item(i));
+            }
         }
         catch (...)
         {
@@ -17739,7 +17876,7 @@ private:
     
 };
 
-unsigned const CRoxieServerLookupJoinActivity::LookupTable::BadIndex(static_cast<unsigned>(-1));
+unsigned const CRoxieServerLookupJoinActivity::DedupLookupTable::BadIndex(static_cast<unsigned>(-1));
 
 class CRoxieServerLookupJoinActivityFactory : public CRoxieServerJoinActivityFactory
 {
