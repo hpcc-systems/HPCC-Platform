@@ -99,7 +99,7 @@
         <table cellSpacing="0" cellPadding="1" width="100%" bgColor="#4775FF" border="0" >
           <tr align="left">
             <td height="23" bgcolor="000099" align="center"><font color="#ffffff"><b><xsl:value-of select="concat('  ', $pageName, '  ')"/></b></font></td>
-            <td height="23" align="center"><font color="#ffffff"><b><xsl:value-of select="concat($serviceName, ' s/s ', $methodName)"/></b></font></td>
+            <td height="23" align="center"><font color="#ffffff"><b><xsl:value-of select="concat($serviceName, ' / ', $methodName)"/></b></font></td>
           </tr>
         </table>
       </h3>
