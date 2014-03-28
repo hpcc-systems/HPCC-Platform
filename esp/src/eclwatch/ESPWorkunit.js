@@ -277,6 +277,9 @@ define([
             return this._action("Delete").then(function(response) {
             });
         },
+        restore: function () {
+            return this._action("Restore");
+        },
         publish: function (jobName, remoteDali, priority, comment) {
             this._assertHasWuid();
             var context = this;
@@ -297,7 +300,7 @@ define([
             });
         },
         refresh: function (full) {
-            if (full || this.changedCount === 0) {
+            if (full || this.Archived || this.changedCount === 0) {
                 this.getInfo({
                     onGetText: function () {
                     },
@@ -436,6 +439,9 @@ define([
             return this.State;
         },
         getStateIconClass: function () {
+            if (this.Archived) {
+                return "iconArchived";
+            }
             switch (this.StateID) {
                 case 1:
                 case 3:
@@ -465,6 +471,9 @@ define([
             return "iconWorkunit";
         },
         getStateImageName: function () {
+            if (this.Archived) {
+                return "workunit_archived.png";
+            }
             switch (this.StateID) {
                 case 1:
                     return "workunit_completed.png";

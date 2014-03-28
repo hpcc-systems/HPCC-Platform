@@ -165,6 +165,9 @@ define([
                 Protected: protectedCheckbox.get("value")
             }, null);
         },
+        _onRestore: function (event) {
+            this.wu.restore();
+        },
         _onRefresh: function (event) {
             this.wu.refresh(true);
         },
@@ -399,6 +402,8 @@ define([
                         tooltip += " " + newValue[i].Time;
                 }
                 this.graphsWidget.set("tooltip", tooltip);
+            } else if (name === "Archived") {
+                this.refreshActionState();
             } else if (name === "StateID") {
                 this.refreshActionState();
             } else if (name === "ActionEx") {
@@ -409,13 +414,16 @@ define([
         },
 
         refreshActionState: function () {
-            registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete());
-            registry.byId(this.id + "Clone").set("disabled", !this.wu.isComplete());
-            registry.byId(this.id + "Delete").set("disabled", !this.wu.isComplete());
-            registry.byId(this.id + "Abort").set("disabled", this.wu.isComplete());
-            registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete());
-            registry.byId(this.id + "Restart").set("disabled", !this.wu.isComplete());
-            registry.byId(this.id + "Publish").set("disabled", !this.wu.isComplete());
+            var isArchived = this.wu.get("Archived");
+            registry.byId(this.id + "Save").set("disabled", isArchived || !this.wu.isComplete());
+            registry.byId(this.id + "Delete").set("disabled", isArchived || !this.wu.isComplete());
+            registry.byId(this.id + "Restore").set("disabled", !isArchived);
+            registry.byId(this.id + "SetToFailed").set("disabled", isArchived || this.wu.isComplete());
+            registry.byId(this.id + "Abort").set("disabled", isArchived || this.wu.isComplete());
+            registry.byId(this.id + "Clone").set("disabled", isArchived || !this.wu.isComplete());
+            registry.byId(this.id + "Resubmit").set("disabled", isArchived || !this.wu.isComplete());
+            registry.byId(this.id + "Restart").set("disabled", isArchived || !this.wu.isComplete());
+            registry.byId(this.id + "Publish").set("disabled", isArchived || !this.wu.isComplete());
 
             registry.byId(this.id + "Jobname").set("readOnly", !this.wu.isComplete());
             registry.byId(this.id + "Description").set("readOnly", !this.wu.isComplete());

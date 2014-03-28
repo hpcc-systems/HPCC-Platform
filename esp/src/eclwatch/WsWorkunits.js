@@ -283,7 +283,10 @@ define([
         },
 
         //  Helpers  ---
-        isComplete: function (stateID, actionEx) {
+        isComplete: function (stateID, actionEx, archived) {
+            if (archived) {
+                return true;
+            }
             switch (stateID) {
                 case 1: //WUStateCompiled
                     if (actionEx && actionEx == "compile") {
