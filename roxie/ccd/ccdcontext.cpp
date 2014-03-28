@@ -3653,7 +3653,7 @@ public:
     virtual void deleteFile(const char * logicalName) { throwUnexpected(); }
 
     virtual unsigned getNodes() { return numChannels; }
-    virtual unsigned getNodeNum() { return 1; }
+    virtual unsigned getNodeNum() { return 0; }
     virtual char *getFilePart(const char *logicalPart, bool create=false) { UNIMPLEMENTED; }
     virtual unsigned __int64 getFileOffset(const char *logicalPart) { throwUnexpected(); }
 
