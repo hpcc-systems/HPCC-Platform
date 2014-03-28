@@ -34,7 +34,29 @@
 
 #ifdef _WIN32
 #include "process.h"
+#else
+#include <pwd.h>
 #endif
+
+static bool getHomeDir(StringBuffer & homepath)
+{
+#ifdef _WIN32
+    const char *home = getenv("APPDATA");
+    // Not the 'official' way - which changes with every windows version
+    // but should work well enough for us (and avoids sorting out windows include mess)
+#else
+    const char *home = getenv("HOME");
+    if (!home)
+    {
+        struct passwd *pw = getpwuid(getuid());
+        home = pw->pw_dir;
+    }
+#endif
+    if (!home)
+        return false;
+    homepath.append(home);
+    return true;
+}
 
 int EclCMDShell::callExternal(ArgvIterator &iter)
 {
@@ -109,15 +131,13 @@ int EclCMDShell::run()
 
         if (!optIniFilename)
         {
+            StringBuffer fn;
             if (checkFileExists(INIFILE))
                 optIniFilename.set(INIFILE);
-            else
-            {
-                StringBuffer fn(SYSTEMCONFDIR);
-                fn.append(PATHSEPSTR).append(DEFAULTINIFILE);
-                if (checkFileExists(fn))
-                    optIniFilename.set(fn);
-            }
+            else if (getHomeDir(fn) && checkFileExists(addPathSepChar(fn).append(INIFILE)))
+                optIniFilename.set(fn);
+            else if (fn.set(SYSTEMCONFDIR).append(PATHSEPSTR).append(DEFAULTINIFILE))
+                optIniFilename.set(fn);
         }
 
         globals.setown(createProperties(optIniFilename, true));
