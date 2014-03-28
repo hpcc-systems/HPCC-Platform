@@ -251,16 +251,20 @@ public:
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         dst.append(initMb);
-        IDistributedFile *dataFile = queryReadFile(1); // 0 == indexFile, 1 == dataFile
-        if (dataFile)
+        IDistributedFile *indexFile = queryReadFile(0); // 0 == indexFile, 1 == dataFile
+        if (indexFile && helper->diskAccessRequired())
         {
-            dataFileMapping->serializeMap(slave, dst);
-            dst.append(offsetMapMb);
-        }
-        else
-        {
-            CSlavePartMapping::serializeNullMap(dst);
-            CSlavePartMapping::serializeNullOffsetMap(dst);
+            IDistributedFile *dataFile = queryReadFile(1);
+            if (dataFile)
+            {
+                dataFileMapping->serializeMap(slave, dst);
+                dst.append(offsetMapMb);
+            }
+            else
+            {
+                CSlavePartMapping::serializeNullMap(dst);
+                CSlavePartMapping::serializeNullOffsetMap(dst);
+            }
         }
     }
     virtual void deserializeStats(unsigned node, MemoryBuffer &mb)
