@@ -12,9 +12,9 @@
                 <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 <span data-dojo-attach-point="containerNode"></span>
                 <div title="${i18n.Depth}" data-dojo-props="iconClass:'iconDepth', showLabel:false, disabled: true" data-dojo-type="dijit.form.Button"></div>
-                <input id="${id}Depth" style="width: 60px" value="2" title="${i18n.Depth}" data-dojo-attach-event="onChange:_onDepthChange" data-dojo-props="placeHolder:'${i18n.Depth}', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+                <input id="${id}Depth" style="width: 60px" value="2" title="${i18n.Depth}" data-dojo-attach-event="onChange:_onDepthChange" data-dojo-props="placeHolder:'${i18n.Depth}', intermediateChanges:true, constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
                 <div id="${id}DistanceLabel" title="${i18n.Distance}" data-dojo-props="iconClass:'iconDistance', showLabel:false, disabled: true" data-dojo-type="dijit.form.Button"></div>
-                <input id="${id}Distance" style="width: 60px" value="2" title="${i18n.Distance}" data-dojo-attach-event="onChange:_onDistanceChange" data-dojo-props="placeHolder:'${i18n.Depth}', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+                <input id="${id}Distance" style="width: 60px" value="2" title="${i18n.Distance}" data-dojo-attach-event="onChange:_onDistanceChange" data-dojo-props="placeHolder:'${i18n.Depth}', intermediateChanges:true, constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
                 <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 <div id="${id}SyncSelection" data-dojo-attach-event="onClick:_onSyncSelection" data-dojo-props="iconClass:'iconSync', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.SyncSelection}</div>
             </div>
