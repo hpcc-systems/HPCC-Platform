@@ -1449,6 +1449,7 @@ protected:
  * 10) The LHS side is loaded and spilt and sorted if necessary
  * 11) A regular join helper is created to perform a local join against the two hash distributed sorted sides.
  */
+        bool rhsAlreadySorted = helper->isRightAlreadySorted();
         CMarker marker(*this);
         if (needGlobal)
         {
@@ -1460,7 +1461,7 @@ protected:
             }
             if (!hasBroadcastSpilt())
             {
-                if (stable)
+                if (stable && !rhsAlreadySorted)
                     rhs.setup(NULL, false, stableSort_earlyAlloc);
                 rhs.ensure(rhsRows);
             }
@@ -1486,7 +1487,7 @@ protected:
                         rows.kill(); // free up ptr table asap
                     }
                     // Have to keep broadcastSpillingLock locked until sort and calculate are done
-                    uniqueKeys = marker.calculate(rhs, compareRight, true);
+                    uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted);
                     rhsCollated = true;
                 }
             }
@@ -1592,18 +1593,19 @@ protected:
         if (localLookupJoin)
         {
             Owned<IThorRowLoader> rowLoader;
+            ICompare *cmp = rhsAlreadySorted ? NULL : compareRight;
             if (failoverToStdJoin)
             {
                 dbgassertex(!stable);
                 if (getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)) // for testing only (force to disk, as if spilt)
-                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, stableSort_none, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
+                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
                 else
-                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
+                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
             }
             else
             {
                 // i.e. will fire OOM if runs out of memory loading local right
-                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, stable ? stableSort_lateAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE));
+                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), cmp, stable ? stableSort_lateAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE));
             }
 
             Owned<IRowStream> rightStream = rowLoader->load(right, abortSoon, false, &rhs);
@@ -1621,7 +1623,7 @@ protected:
                 rowLoader.clear();
 
                 // If stable already sorted by rowLoader
-                rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, !stable);
+                rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted && !stable);
 
                 Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), compareRight, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
                 collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
