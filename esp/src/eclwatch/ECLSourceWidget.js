@@ -19,6 +19,7 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
+    "dojo/request/xhr",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
@@ -29,9 +30,11 @@ define([
 
     "dojo/text!../templates/ECLSourceWidget.html",
 
-    "dijit/Toolbar", "dijit/ToolbarSeparator", "dijit/form/Button"
-],
-    function (declare, lang, i18n, nlsHPCC, dom,
+    "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
+    "dijit/form/Button"
+
+], function (declare, lang, i18n, nlsHPCC, dom, xhr,
             BorderContainer, ContentPane, registry,
             _Widget, ESPWorkunit,
             template) {
@@ -101,14 +104,19 @@ define([
                         this.wu.fetchXML(function (xml) {
                             context.editor.setValue(xml);
                         });
-                    }
-                    else {
+                    } else {
                         this.wu.fetchText(function (text) {
                             context.editor.setValue(text);
                         });
                     }
-                } else if (lang.exists("ECL"), params) {
+                } else if (lang.exists("ECL", params)) {
                     context.editor.setValue(params.ECL ? params.ECL : "");
+                } else if (lang.exists("sourceURL", params)) {
+                    xhr(params.sourceURL, {
+                        handleAs: "text"
+                    }).then(function (data) {
+                        context.editor.setValue(data);
+                    });
                 }
             },
 
