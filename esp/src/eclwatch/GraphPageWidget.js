@@ -389,7 +389,7 @@ define([
                 dotAttrs = dotAttrs.replace("\n//graph[splines=\"line\"];", "\ngraph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
             } else {
-                this.overview.depth.set("value", 1);
+                this.overview.depth.set("value", -1);
                 var dotAttrs = this.global.getDotMetaAttributes();
                 dotAttrs = dotAttrs.replace("\ngraph[splines=\"line\"];", "\n//graph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
@@ -449,6 +449,15 @@ define([
         loadGraphFromXGMML: function (xgmml) {
             if (this.global.loadXGMML(xgmml, false)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
+                if (this.overview.depth.get("value") === -1) {
+                    var newDepth = 0;
+                    for (; newDepth < 5; ++newDepth) {
+                        if (this.global.getLocalisedXGMML([0], newDepth, this.overview.distance.get("value")) !== "") {
+                            break;
+                        }
+                    }
+                    this.overview.depth.set("value", newDepth);
+                }
                 this.setOverviewRootItems([0]);
                 this.setMainRootItems([]);
                 this.setLocalRootItems([]);
