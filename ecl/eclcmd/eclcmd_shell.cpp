@@ -38,26 +38,6 @@
 #include <pwd.h>
 #endif
 
-static bool getHomeDir(StringBuffer & homepath)
-{
-#ifdef _WIN32
-    const char *home = getenv("APPDATA");
-    // Not the 'official' way - which changes with every windows version
-    // but should work well enough for us (and avoids sorting out windows include mess)
-#else
-    const char *home = getenv("HOME");
-    if (!home)
-    {
-        struct passwd *pw = getpwuid(getuid());
-        home = pw->pw_dir;
-    }
-#endif
-    if (!home)
-        return false;
-    homepath.append(home);
-    return true;
-}
-
 int EclCMDShell::callExternal(ArgvIterator &iter)
 {
     const char *argv[100];
