@@ -284,6 +284,7 @@ protected:
 
     bool dynamic;
     bool isSuspended;
+    bool isLoadFailed;
     bool enableFieldTranslation;
     ClusterType targetClusterType;
     unsigned timeLimit;
@@ -854,6 +855,7 @@ public:
     {
         package.Link();
         isSuspended = false;
+        isLoadFailed = false;
         libraryInterfaceHash = 0;
         priority = 0;
         memoryLimit = defaultMemoryLimit;
@@ -962,7 +964,7 @@ public:
                     {
                         StringBuffer m;
                         E->errorMessage(m);
-                        suspend(true, m.str(), NULL, false);
+                        suspend(m.str());
                         ERRLOG("Query %s suspended: %s", id.get(), m.str());
                         E->Release();
                     }
@@ -1149,25 +1151,17 @@ public:
     {
         return libraryInterfaceHash;
     }
-    virtual void suspend(bool suspendit, const char* errMsg, const char *userId, bool appendIfNewError)
+    virtual void suspend(const char* errMsg)
     {
-        // MORE - should wait until no queries active before returning
-        isSuspended = suspendit; // Atomic enough for our purposes I think - at least until the wait stuff is in place
-        if (appendIfNewError)
-        {
-            if (errorMessage.length())
-            {
-                // MORE - not the most efficient code, but this error condition should not occur in production
-                if (strstr(errorMessage.str(), errMsg) == 0)
-                    errorMessage.appendf(", %s", errMsg);
-            }
-            else
-                errorMessage.append(errMsg);
-        }
-        else
-            errorMessage.clear().append(errMsg);
+        isSuspended = true;
+        isLoadFailed = true;
+        errorMessage.append(errMsg);
     }
 
+    virtual bool loadFailed() const
+    {
+        return isLoadFailed;
+    }
     virtual bool suspended() const
     {
         return isSuspended;
@@ -1416,12 +1410,12 @@ static void checkWorkunitVersionConsistency(const IQueryDll *dll)
         throw MakeStringException(ROXIE_MISMATCH, "Workunit did not export createProcess function");
 }
 
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool isDynamic)
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
     hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo);
     IQueryFactory *cached = getQueryFactory(hashValue, 0);
-    if (cached)
+    if (cached && !(cached->loadFailed() && (reloadRetriesFailed || forceRetry)))
     {
         ::Release(dll);
         return cached;
@@ -1452,7 +1446,7 @@ extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu)
     if (!dll)
         return NULL;
     SCMStringBuffer wuid;
-    return createServerQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), NULL, true); // MORE - if use a constant for id might cache better?
+    return createServerQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), NULL, true, false); // MORE - if use a constant for id might cache better?
 }
 
 //==============================================================================================================================================
@@ -1682,7 +1676,7 @@ public:
     }
 };
 
-IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned channel, const IPropertyTree *stateInfo, bool isDynamic)
+IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned channel, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
     hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo);
@@ -1695,7 +1689,7 @@ IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, con
     if (dll)
     {
         checkWorkunitVersionConsistency(dll);
-        Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo, false); // Should always find a cached one
+        Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo, false, forceRetry); // Should always find a cached one
         Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, serverFactory->querySharedOnceContext(), isDynamic);
         newFactory->load(stateInfo);
         return newFactory.getClear();
@@ -1710,7 +1704,7 @@ extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned
     if (!dll)
         return NULL;
     SCMStringBuffer wuid;
-    return createSlaveQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true);  // MORE - if use a constant for id might cache better?
+    return createSlaveQueryFactory(wu->getWuid(wuid).str(), dll.getClear(), queryRootRoxiePackage(), channelNo, NULL, true, false);  // MORE - if use a constant for id might cache better?
 }
 
 IRecordLayoutTranslator * createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta)

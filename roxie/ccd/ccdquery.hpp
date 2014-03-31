@@ -88,7 +88,8 @@ interface IQueryFactory : extends IInterface
     virtual hash64_t queryHash() const = 0;
     virtual const char *queryQueryName() const = 0;
     virtual const char *queryErrorMessage() const = 0;
-    virtual void suspend(bool suspendIt, const char *errMsg, const char *userId, bool appendIfNewError) = 0;
+    virtual void suspend(const char *errMsg) = 0;
+    virtual bool loadFailed() const = 0;
     virtual bool suspended() const = 0;
     virtual void getStats(StringBuffer &reply, const char *graphName) const = 0;
     virtual void resetQueryTimings() = 0;
@@ -245,8 +246,8 @@ extern const IQueryDll *createExeQueryDll(const char *exeName);
 extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu);
 
 extern IRecordLayoutTranslator *createRecordLayoutTranslator(const char *logicalName, IDefRecordMeta const * diskMeta, IDefRecordMeta const * activityMeta);
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool isDynamic);
-extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, bool isDynamic);
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
+extern IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned _channelNo, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry);
 extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel);
 extern IQueryFactory *createServerQueryFactoryFromWu(IConstWorkUnit *wu);
 extern IQueryFactory *createSlaveQueryFactoryFromWu(IConstWorkUnit *wu, unsigned channelNo);

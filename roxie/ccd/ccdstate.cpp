@@ -707,7 +707,7 @@ protected:
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Invalid parameters to addAlias");
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo) = 0;
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool forceRetry) = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -727,7 +727,7 @@ public:
         return active;
     }
 
-    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash)
+    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry)
     {
         Owned<IPropertyTreeIterator> queryNames = querySet->getElements("Query");
         ForEach (*queryNames)
@@ -755,7 +755,7 @@ public:
                     if (!package) package = &queryRootRoxiePackage();
                 }
                 assertex(package);
-                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query), hash);
+                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query, forceRetry), hash);
             }
             catch (IException *E)
             {
@@ -767,8 +767,8 @@ public:
                 {
                     StringBuffer emsg;
                     E->errorMessage(emsg);
-                    Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), NULL);
-                    dummyQuery->suspend(true, emsg.str(), "roxie", true);
+                    Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), NULL, false);
+                    dummyQuery->suspend(emsg.str());
                     addQuery(id, dummyQuery.getClear(), hash);
                 }
                 E->Release();
@@ -883,9 +883,9 @@ public:
     {
     }
 
-    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
+    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool forceRetry)
     {
-        return createServerQueryFactory(id, dll, package, stateInfo, false);
+        return createServerQueryFactory(id, dll, package, stateInfo, false, forceRetry);
     }
 
 };
@@ -907,9 +907,9 @@ public:
         channelNo = _channelNo;
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool forceRetry)
     {
-        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo, false);
+        return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo, false, forceRetry);
     }
 
 };
@@ -948,11 +948,11 @@ public:
         return managers[idx];
     }
 
-    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash)
+    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash, bool forceRetry)
     {
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
-                managers[channel]->load(querySets, packages, hash); // MORE - this means the hash depends on the number of channels. Is that desirable?
+                managers[channel]->load(querySets, packages, hash, forceRetry); // MORE - this means the hash depends on the number of channels. Is that desirable?
     }
 
 private:
@@ -1050,7 +1050,7 @@ public:
         // Default is to do nothing...
     }
 
-    virtual void load() = 0;
+    virtual void load(bool forceReload) = 0;
 
     virtual hash64_t getHash()
     {
@@ -1199,24 +1199,24 @@ public:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        reload();
+        reload(false);
         daliHelper->commitCache();
     }
 
-    virtual void load()
+    virtual void load(bool forceReload)
     {
         notifier.setown(daliHelper->getQuerySetSubscription(querySet, this));
-        reload();
+        reload(forceReload);
     }
 
-    virtual void reload()
+    virtual void reload(bool forceRetry)
     {
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = daliHelper->getQuerySet(querySet);
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
-        newServerManager->load(newQuerySet, *packages, newHash);
-        newSlaveManagers->load(newQuerySet, *packages, newHash);
+        newServerManager->load(newQuerySet, *packages, newHash, forceRetry);
+        newSlaveManagers->load(newQuerySet, *packages, newHash, forceRetry);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
         clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
     }
@@ -1240,7 +1240,7 @@ public:
     {
     }
 
-    virtual void load()
+    virtual void load(bool forceReload)
     {
         hash64_t newHash = numChannels;
         Owned<IPropertyTree> newQuerySet = createPTree("QuerySet");
@@ -1248,8 +1248,8 @@ public:
         newQuerySet->addPropTree("Query", standaloneDll.getLink());
         Owned<CRoxieSlaveQuerySetManagerSet> newSlaveManagers = new CRoxieSlaveQuerySetManagerSet(numChannels, querySet);
         Owned<IRoxieQuerySetManager> newServerManager = createServerManager(querySet);
-        newServerManager->load(newQuerySet, *packages, newHash);
-        newSlaveManagers->load(newQuerySet, *packages, newHash);
+        newServerManager->load(newQuerySet, *packages, newHash, forceReload);
+        newSlaveManagers->load(newQuerySet, *packages, newHash, forceReload);
         reloadQueryManagers(newSlaveManagers.getClear(), newServerManager.getClear(), newHash);
     }
 };
@@ -1267,7 +1267,7 @@ class CRoxiePackageSetWatcher : public CInterface, implements ISDSSubscription
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, ISDSSubscription *_owner, unsigned numChannels)
+    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, ISDSSubscription *_owner, unsigned numChannels, bool forceReload)
     : stateHash(0), daliHelper(_daliHelper), owner(_owner)
     {
         Owned<IDaliPackageWatcher> notifier = daliHelper->getPackageSetsSubscription(this);
@@ -1275,11 +1275,11 @@ public:
             notifiers.append(*notifier.getClear());
         ForEachItemIn(idx, allQuerySetNames)
         {
-            createQueryPackageManagers(numChannels, allQuerySetNames.item(idx));
+            createQueryPackageManagers(numChannels, allQuerySetNames.item(idx), forceReload);
         }
     }
 
-    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, ISDSSubscription *_owner, const IQueryDll *standAloneDll, unsigned numChannels, const char *querySet)
+    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, ISDSSubscription *_owner, const IQueryDll *standAloneDll, unsigned numChannels, const char *querySet, bool forceReload)
     : stateHash(0), daliHelper(_daliHelper), owner(_owner)
     {
         Owned<IPropertyTree> standAloneDllTree;
@@ -1287,7 +1287,7 @@ public:
         standAloneDllTree->setProp("@id", "roxie");
         standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
         Owned<CRoxieQueryPackageManager> qpm = new CStandaloneQueryPackageManager(numChannels, querySet, LINK(&queryEmptyRoxiePackageMap()), standAloneDllTree.getClear());
-        qpm->load();
+        qpm->load(forceReload);
         stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, qpm->getHash());
         allQueryPackages.append(*qpm.getClear());
     }
@@ -1412,15 +1412,15 @@ private:
     Linked<IRoxieDaliHelper> daliHelper;
     hash64_t stateHash;
 
-    void createQueryPackageManager(unsigned numChannels, const IRoxiePackageMap *packageMap, const char *querySet)
+    void createQueryPackageManager(unsigned numChannels, const IRoxiePackageMap *packageMap, const char *querySet, bool forceReload)
     {
         Owned<CRoxieQueryPackageManager> qpm = new CRoxieDaliQueryPackageManager(numChannels, packageMap, querySet);
-        qpm->load();
+        qpm->load(forceReload);
         stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, qpm->getHash());
         allQueryPackages.append(*qpm.getClear());
     }
 
-    void createQueryPackageManagers(unsigned numChannels, const char *querySet)
+    void createQueryPackageManagers(unsigned numChannels, const char *querySet, bool forceReload)
     {
         int loadedPackages = 0;
         int activePackages = 0;
@@ -1453,7 +1453,7 @@ private:
                             Owned<CRoxiePackageMap> packageMap = new CRoxiePackageMap(packageMapId, packageMapFilter, isActive);
                             Owned<IPropertyTree> xml = daliHelper->getPackageMap(packageMapId);
                             packageMap->load(xml);
-                            createQueryPackageManager(numChannels, packageMap.getLink(), querySet);
+                            createQueryPackageManager(numChannels, packageMap.getLink(), querySet, forceReload);
                             loadedPackages++;
                             if (isActive)
                                 activePackages++;
@@ -1474,7 +1474,7 @@ private:
         {
             if (traceLevel)
                 DBGLOG("Loading empty package for QuerySet %s", querySet);
-            createQueryPackageManager(numChannels, LINK(&queryEmptyRoxiePackageMap()), querySet);
+            createQueryPackageManager(numChannels, LINK(&queryEmptyRoxiePackageMap()), querySet, forceReload);
         }
         else if (traceLevel)
             DBGLOG("Loaded %d packages (%d active)", loadedPackages, activePackages);
@@ -1508,7 +1508,7 @@ public:
     {
         try
         {
-            reload();
+            reload(false);
             daliHelper->commitCache();
             controlSem.signal();
         }
@@ -1563,7 +1563,7 @@ public:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        reload();
+        reload(false);
         daliHelper->commitCache();
     }
 
@@ -1575,16 +1575,16 @@ private:
     InterruptableSemaphore controlSem;
     Owned<CRoxiePackageSetWatcher> allQueryPackages;
 
-    void reload()
+    void reload(bool forceRetry)
     {
         clearDaliMisses();
         // We want to kill the old packages, but not until we have created the new ones
         // So that the query/dll caching will work for anything that is not affected by the changes
         Owned<CRoxiePackageSetWatcher> newPackages;
         if (standAloneDll)
-            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, standAloneDll, numChannels, "roxie"));
+            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, standAloneDll, numChannels, "roxie", forceRetry));
         else
-            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, numChannels));
+            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, numChannels, forceRetry));
         // Hold the lock for as little time as we can
         // Note that we must NOT hold the lock during the delete of the old object - or we deadlock.
         // Hence the slightly convoluted code below
@@ -2115,7 +2115,7 @@ private:
         case 'R':
             if (stricmp(queryName, "control:reload")==0)
             {
-                reload();
+                reload(control->getPropBool("@forceRetry", false));
                 if (daliHelper && daliHelper->connected())
                     reply.appendf("<Dali connected='1'/>");
                 else
