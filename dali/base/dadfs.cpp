@@ -849,6 +849,7 @@ interface IDistributedFileTransactionExt : extends IDistributedFileTransaction
     virtual void clearFiles()=0;
     virtual void noteAddSubFile(IDistributedSuperFile *super, const char *superName, IDistributedFile *sub) = 0;
     virtual void noteRemoveSubFile(IDistributedSuperFile *super, IDistributedFile *sub) = 0;
+    virtual void noteSuperSwap(IDistributedSuperFile *super1, IDistributedSuperFile *super2) = 0;
     virtual void clearSubFiles(IDistributedSuperFile *super) = 0;
     virtual void noteRename(IDistributedFile *file, const char *newName) = 0;
     virtual void validateAddSubFile(IDistributedSuperFile *super, IDistributedFile *sub, const char *subName) = 0;
@@ -1405,6 +1406,25 @@ public:
         CTransactionFile *trackedSuper = lookupTrackedFile(super);
         if (trackedSuper)
             trackedSuper->clearSubs();
+    }
+    virtual void noteSuperSwap(IDistributedSuperFile *super1, IDistributedSuperFile *super2)
+    {
+        CTransactionFile *trackedSuper1 = lookupTrackedFile(super1);
+        CTransactionFile *trackedSuper2 = lookupTrackedFile(super2);
+        assertex(trackedSuper1 && trackedSuper2);
+        ICopyArrayOf<IDistributedFile> super1Subs, super2Subs;
+        Owned<IDistributedFileIterator> iter = trackedSuper1->getSubFiles();
+        ForEach(*iter)
+            super1Subs.append(iter->query());
+        trackedSuper1->clearSubs();
+        iter.setown(trackedSuper2->getSubFiles());
+        ForEach(*iter)
+            super2Subs.append(iter->query());
+        trackedSuper2->clearSubs();
+        ForEachItemIn(s, super2Subs)
+            trackedSuper1->noteAddSubFile(&super2Subs.item(s));
+        ForEachItemIn(s2, super1Subs)
+            trackedSuper2->noteAddSubFile(&super1Subs.item(s2));
     }
     void noteRename(IDistributedFile *file, const char *newName)
     {
@@ -4584,45 +4604,46 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
      */
     class cSwapFileAction: public CDFAction
     {
-        Linked<IDistributedSuperFile> parent;
-        Linked<IDistributedSuperFile> file;
-        StringAttr parentlname;
-        StringAttr filelname;
+        Linked<IDistributedSuperFile> super1, super2;
+        StringAttr super1Name, super2Name;
     public:
-        cSwapFileAction(const char *_parentlname,const char *_filelname)
-            : parentlname(_parentlname), filelname(_filelname)
+        cSwapFileAction(const char *_super1Name, const char *_super2Name)
+            : super1Name(_super1Name), super2Name(_super2Name)
         {
         }
         bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname));
-            if (!parent)
-                throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",parentlname.get());
-            file.setown(transaction->lookupSuperFile(filelname));
-            if (!file)
+            super1.setown(transaction->lookupSuperFile(super1Name));
+            if (!super1)
+                throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found", super1Name.get());
+            super2.setown(transaction->lookupSuperFile(super2Name));
+            if (!super2)
             {
-                parent.clear();
-                throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",filelname.get());
+                super1.clear();
+                throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found", super2Name.get());
             }
             // Try to lock all files
-            addFileLock(parent);
-            for (unsigned i=0; i<parent->numSubFiles(); i++)
-                addFileLock(&parent->querySubFile(i));
-            addFileLock(file);
-            for (unsigned i=0; i<file->numSubFiles(); i++)
-                addFileLock(&file->querySubFile(i));
+            addFileLock(super1);
+            for (unsigned i=0; i<super1->numSubFiles(); i++)
+                addFileLock(&super1->querySubFile(i));
+            addFileLock(super2);
+            for (unsigned i=0; i<super2->numSubFiles(); i++)
+                addFileLock(&super2->querySubFile(i));
             if (lock())
+            {
+                transaction->noteSuperSwap(super1, super2);
                 return true;
+            }
             unlock();
-            parent.clear();
-            file.clear();
+            super1.clear();
+            super2.clear();
             return false;
         }
         void run()
         {
-            CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
+            CDistributedSuperFile *sf = QUERYINTERFACE(super1.get(),CDistributedSuperFile);
             if (sf)
-                sf->doSwapSuperFile(file,transaction);
+                sf->doSwapSuperFile(super2,transaction);
         }
     };
 
@@ -7445,6 +7466,10 @@ class CRemoveSuperFileAction: public CDFAction
         virtual void noteRemoveSubFile(IDistributedSuperFile *super, IDistributedFile *sub)
         {
             transaction->noteRemoveSubFile(super, sub);
+        }
+        virtual void noteSuperSwap(IDistributedSuperFile *super1, IDistributedSuperFile *super2)
+        {
+            transaction->noteSuperSwap(super1, super2);
         }
         virtual void clearSubFiles(IDistributedSuperFile *super)
         {
