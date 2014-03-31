@@ -47,6 +47,7 @@ class CSashaCommand: public CInterface, implements ISashaCommand
     bool archived;
     bool dfu;
     bool wuservices;
+    int numberOfIdsMatching; //default to -1 (for input: if >0, ask for number OfIdsMatching; for output:if >=0, this is the number OfIdsMatching)
     unsigned start;
     unsigned limit;
     CMessageBuffer msgbuf;  // used for reply
@@ -75,6 +76,7 @@ public:
         wuservices = false;
         dts = NULL;
         numdts = 0;
+        numberOfIdsMatching = -1;
     }
 
     CSashaCommand(MemoryBuffer &mb)
@@ -98,6 +100,8 @@ public:
         unsigned v;
         mb.read(v);
         action = (SashaCommandAction)v;
+        if (action == SCA_LIST_WITH_MATCHING_COUNT)
+            mb.read(numberOfIdsMatching);
         unsigned n;
         mb.read(n);
         while (n--) {
@@ -157,6 +161,8 @@ public:
         unsigned version=1;
         mb.append(version);
         mb.append((unsigned)action);
+        if (action == SCA_LIST_WITH_MATCHING_COUNT)
+            mb.append(numberOfIdsMatching);
         unsigned n = ids.ordinality();
         mb.append(n);
         unsigned i;
@@ -542,6 +548,13 @@ public:
                         mb.swapWith(wusbuf);
                     }
                     else {
+                        if (action==SCA_LIST_WITH_MATCHING_COUNT) {
+                            if (mb.length()-mb.getPos()>=sizeof(int)) {
+                                int numberOfIdsMatchingReq = -1;
+                                mb.read(numberOfIdsMatchingReq);
+                                setNumberOfIdsMatching(numberOfIdsMatchingReq);
+                            }
+                        }
                         unsigned n=0;
                         unsigned i;
                         if (mb.length()-mb.getPos()>=sizeof(unsigned)) {
@@ -614,9 +627,10 @@ public:
     }
 
 
-    bool reply()
+    bool reply(bool clearBuf)
     {
-        msgbuf.clear();
+        if (clearBuf)
+            msgbuf.clear();
         unsigned n = ids.ordinality();
         msgbuf.append(n);
         unsigned i;
@@ -633,6 +647,13 @@ public:
         bool ret = queryWorldCommunicator().reply(msgbuf,1000*5*60);
         msgbuf.clear();
         return ret;
+    }
+
+    bool IDSWithMatchingNumberReply()
+    {
+        msgbuf.clear();
+        msgbuf.append(numberOfIdsMatching);
+        return reply(false);
     }
 
     bool WUSreply()
@@ -658,6 +679,16 @@ public:
     virtual void setWUSresult(MemoryBuffer &mb)
     {
         mb.swapWith(wusbuf);
+    }
+
+    int getNumberOfIdsMatching()
+    {
+        return numberOfIdsMatching;
+    }
+
+    void setNumberOfIdsMatching(int val)
+    {
+        numberOfIdsMatching = val;
     }
 
 };

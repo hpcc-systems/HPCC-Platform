@@ -346,6 +346,7 @@ ESPrequest [nil_remove] WUQueryRequest
     string After;
     string Before;
     int Count;
+    [min_ver("1.50")] bool CountArchivedWUsMatching(false);
     [min_ver("1.03")] int64 PageSize(0);
     [min_ver("1.03")] int64 PageStartFrom(0);
     [min_ver("1.03")] int64 PageEndAt;
@@ -1451,7 +1452,7 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
 };
 
 ESPservice [
-    version("1.49"), default_client_version("1.49"),
+    version("1.50"), default_client_version("1.50"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

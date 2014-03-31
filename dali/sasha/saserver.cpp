@@ -44,7 +44,7 @@
 
 extern void LDStest();
 
-#define SASHAVERSION "1.4"
+#define SASHAVERSION "1.5"
 
 #define DEFAULT_PERF_REPORT_DELAY (60*5)
 
@@ -179,8 +179,10 @@ public:
             WARNLOG("Command %d not handled",cmd->getAction());
         if (cmd->getAction()==SCA_WORKUNIT_SERVICES_GET)
             cmd->WUSreply();
+        else if (cmd->getAction()==SCA_LIST_WITH_MATCHING_COUNT)
+            cmd->IDSWithMatchingNumberReply();
         else
-            cmd->reply();
+            cmd->reply(true);
     }
     bool stop() 
     { 

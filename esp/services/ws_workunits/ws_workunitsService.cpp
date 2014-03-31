@@ -1875,120 +1875,234 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsigned sashaServerPort,
        ArchivedWuCache &archivedWuCache, int cacheTime, IEspWUQueryRequest & req, IEspWUQueryResponse & resp)
 {
-    SecAccessFlags accessOwn;
-    SecAccessFlags accessOthers;
-    getUserWuAccessFlags(context, accessOwn, accessOthers, true);
-
-    __int64 pageSize = req.getPageSize();
-    if(pageSize < 1)
-        pageSize=100;
-    __int64 displayStart = req.getPageStartFrom();
-    __int64 displayEnd = displayStart + pageSize;
-    unsigned dateLimit = 0;
-    bool hasNextPage = true;
-
-    SocketEndpoint ep;
-    if (sashaServerIP && *sashaServerIP)
-        ep.set(sashaServerIP, sashaServerPort);
-    else
-        getSashaNode(ep);
-
-    Owned<INode> sashaserver = createINode(ep);
-
-    CDateTime wuTimeFrom, wuTimeTo;
-    if(notEmpty(req.getEndDate()))
-        wuTimeTo.setString(req.getEndDate(), NULL, true);
-    else
-        wuTimeTo.setNow();
-
-    if(notEmpty(req.getStartDate()))
+    class CArchivedWUsReader : public CInterface, implements IArchivedWUsReader
     {
-        wuTimeFrom.setString(req.getStartDate(), NULL, true);
-        dateLimit = 1;
-    }
+        IEspContext& context;
+        IEspWUQueryRequest& req;
+        StringAttr sashaServerIP;
+        unsigned sashaServerPort;
+        ArchivedWuCache& archivedWuCache;
+        int cacheTime;
+        StringBuffer filterStr;
 
-    IArrayOf<IEspECLWorkunit> results;
+        int numberOfWUsMatching; //-1: not set
+        unsigned numberOfWUsReturned;
+        bool countNumberOfWUsMatching;
+        bool hasMoreWU;
 
-    StringBuffer filter;
-    addToQueryString(filter, "cluster", req.getCluster(), ';');
-    addToQueryString(filter, "owner", req.getOwner(), ';');
-    addToQueryString(filter, "jobName", req.getJobname(), ';');
-    addToQueryString(filter, "state", req.getState(), ';');
-    StringBuffer s;
-    if (!req.getLastNDays_isNull() && req.getLastNDays()>0)
-        addToQueryString(filter, "LastNDays", s.clear().append(req.getLastNDays()).str(), ';');
-    else
-    {
-        addToQueryString(filter, "wuTimeFrom", req.getStartDate(), ';');
-        addToQueryString(filter, "wuTimeTo", req.getEndDate(), ';');
-    }
-    addToQueryString(filter, "displayStart", s.append(displayStart).str(), ';');
-    addToQueryString(filter, "pageSize", s.clear().append(pageSize).str(), ';');
-
-    Owned<ArchivedWuCacheElement> found = archivedWuCache.lookup(context, filter, "AddWhenAvailable", cacheTime);
-    if (found)
-    {
-        hasNextPage = found->m_hasNextPage;
-        if (found->m_results.length())
+        float getSashaServerVersion(INode* sashaserver)
         {
-            ForEachItemIn(ai, found->m_results)
+            Owned<ISashaCommand> cmd = createSashaCommand();
+            cmd->setAction(SCA_GETVERSION);
+            if (!cmd->send(sashaserver))
             {
-                Owned<IEspECLWorkunit> info= createECLWorkunit("","");
-                info->copy(found->m_results.item(ai));
-                results.append(*info.getClear());
+                StringBuffer msg("Cannot connect to archive server at ");
+                sashaserver->endpoint().getUrlStr(msg);
+                throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
             }
+            if (cmd->numIds() < 1)
+            {
+                StringBuffer msg("Failed to get archive server version at ");
+                sashaserver->endpoint().getUrlStr(msg);
+                throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
+            }
+            const char *ver = cmd->queryId(0);
+            if (!ver || !*ver)
+            {
+                StringBuffer msg("Failed to get archive server version at ");
+                sashaserver->endpoint().getUrlStr(msg);
+                throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
+            }
+            return atof(ver);
         }
-    }
-    else
-    {
-        IArrayOf<IEspECLWorkunit> resultList;
 
-        CDateTime timeTo = wuTimeTo;
-        __int64 totalWus = 0;
-        bool complete = false;
-        while (!complete)
+        void readDateFilters(StringBuffer& from, StringBuffer& to)
         {
-            CDateTime timeFrom = timeTo;
-            timeFrom.adjustTime(-1439); //one day earlier
-            if (dateLimit > 0 && wuTimeFrom > timeFrom)
-                timeFrom = wuTimeFrom;
-
-            unsigned year0, month0, day0, hour0, minute0, second0, nano0;
-            timeFrom.getDate(year0, month0, day0, true);
-            timeFrom.getTime(hour0, minute0, second0, nano0, true);
-            VStringBuffer wuFrom("%4d%02d%02d%02d%02d", year0, month0, day0, hour0, minute0);
+            CDateTime wuTimeFrom, wuTimeTo;
+            if(notEmpty(req.getEndDate()))
+                wuTimeTo.setString(req.getEndDate(), NULL, true);
+            else
+                wuTimeTo.setNow();
 
             unsigned year, month, day, hour, minute, second, nano;
-            timeTo.getDate(year, month, day, true);
-            timeTo.getTime(hour, minute, second, nano, true);
-            VStringBuffer wuTo("%4d%02d%02d%02d%02d", year, month, day, hour, minute);
+            wuTimeTo.getDate(year, month, day, true);
+            wuTimeTo.getTime(hour, minute, second, nano, true);
+            to.setf("%4d%02d%02d%02d%02d", year, month, day, hour, minute);
 
-            __int64 begin = 0;
-            unsigned limit = 1000;
-            bool continueSashaLoop = true;
-            while (continueSashaLoop)
+            if(!notEmpty(req.getStartDate()))
+                return;
+
+            wuTimeFrom.setString(req.getStartDate(), NULL, true);
+            if (wuTimeFrom >= wuTimeTo)
+                return;
+
+            unsigned year0, month0, day0, hour0, minute0, second0, nano0;
+            wuTimeFrom.getDate(year0, month0, day0, true);
+            wuTimeFrom.getTime(hour0, minute0, second0, nano0, true);
+            from.setf("%4d%02d%02d%02d%02d", year0, month0, day0, hour0, minute0);
+
+            return;
+        }
+
+        bool addToQueryString(const char *name, const char *value)
+        {
+            if (isEmpty(name) || isEmpty(value))
+                return false;
+            if (filterStr.length() > 0)
+                filterStr.append(';');
+            filterStr.append(name).append("=").append(value);
+            return true;
+        }
+
+        void setFilterString(unsigned startFrom, unsigned maxNumWUs)
+        {
+            bool countNumberOfWUsMatching = req.getCountArchivedWUsMatching();
+            addToQueryString("cluster", req.getCluster());
+            addToQueryString("owner", req.getOwner());
+            addToQueryString("jobName", req.getJobname());
+            addToQueryString("state", req.getState());
+            addToQueryString("wuTimeFrom", req.getStartDate());
+            addToQueryString("wuTimeTo", req.getEndDate());
+            StringBuffer s;
+            addToQueryString("displayStart", s.append(startFrom).str());
+            addToQueryString("pageSize", s.clear().append(maxNumWUs).str());
+            if (sashaServerIP && *sashaServerIP)
             {
-                Owned<ISashaCommand> cmd = createSashaCommand();
+                addToQueryString("sashaServerIP", sashaServerIP.get());
+                addToQueryString("sashaServerPort", s.clear().append(sashaServerPort).str());
+            }
+            addToQueryString("CountWUs", s.clear().append(req.getCountArchivedWUsMatching()).str());
+        }
 
+        void setSashaCommand(INode* sashaserver, unsigned startFrom, unsigned maxNumWUs, ISashaCommand* cmd)
+        {
+            cmd->setOnline(false);
+            cmd->setArchived(true);
+            cmd->setStart(startFrom);
+            cmd->setLimit(maxNumWUs);
+            if (notEmpty(req.getCluster()))
+                cmd->setCluster(req.getCluster());
+            if (notEmpty(req.getOwner()))
+                cmd->setOwner(req.getOwner());
+            if (notEmpty(req.getJobname()))
+                cmd->setJobName(req.getJobname());
+            if (notEmpty(req.getState()))
+                cmd->setState(req.getState());
+
+            StringBuffer wuTimeFrom, wuTimeTo;
+            readDateFilters(wuTimeFrom, wuTimeTo);
+            if (wuTimeFrom.length())
+                cmd->setAfter(wuTimeFrom.str());
+            if (wuTimeTo.length())
+                cmd->setBefore(wuTimeTo.str());
+
+            cmd->setOutputFormat("owner,jobname,cluster,state");
+
+            if (getSashaServerVersion(sashaserver) < 1.5)
                 cmd->setAction(SCA_LIST);
-                cmd->setOnline(false);
-                cmd->setArchived(true);
-                cmd->setAfter(wuFrom.str());
-                cmd->setBefore(wuTo.str());
-                cmd->setStart((unsigned)begin);
-                cmd->setLimit(limit);
+            else
+            {
+                cmd->setAction(SCA_LIST_WITH_MATCHING_COUNT);
+                countNumberOfWUsMatching = req.getCountArchivedWUsMatching();
+                cmd->setNumberOfIdsMatching(countNumberOfWUsMatching);
+            }
+            if (!countNumberOfWUsMatching)
+                cmd->setLimit(maxNumWUs+1); //to set hasMoreWU
 
-                if (notEmpty(req.getCluster()))
-                    cmd->setCluster(req.getCluster());
-                if (notEmpty(req.getOwner()))
-                    cmd->setOwner(req.getOwner());
-                if (notEmpty(req.getJobname()))
-                    cmd->setJobName(req.getJobname());
-                if (notEmpty(req.getState()))
-                    cmd->setState(req.getState());
+            return;
+        }
 
-                cmd->setOutputFormat("owner,jobname,cluster,state");
+        void addArchivedWU(const char* archiveWUData, SecAccessFlags accessOwn, SecAccessFlags accessOthers, IArrayOf<IEspECLWorkunit>& results)
+        {
+            StringArray wuidArray;
+            wuidArray.appendList(archiveWUData, ",");
 
+            const char* wuid = wuidArray.item(0);
+            if (isEmpty(wuid))
+            {
+                WARNLOG("Empty WUID in SCA_LIST_WITH_MATCHING_COUNT response");
+                return;
+            }
+
+            const char* owner =  NULL;
+            if (notEmpty(wuidArray.item(1)))
+                owner = wuidArray.item(1);
+
+            Owned<IEspECLWorkunit> info= createECLWorkunit("","");
+            info->setWuid(wuid);
+            if (chooseWuAccessFlagsByOwnership(context.queryUserId(), owner, accessOwn, accessOthers) < SecAccess_Read)
+            {
+                info->setState("Hidden");
+            }
+            else
+            {
+                if (notEmpty(owner))
+                      info->setOwner(owner);
+                if (notEmpty(wuidArray.item(2)))
+                    info->setJobname(wuidArray.item(2));
+                if (notEmpty(wuidArray.item(3)))
+                      info->setCluster(wuidArray.item(3));
+                if (notEmpty(wuidArray.item(4)))
+                      info->setState(wuidArray.item(4));
+            }
+
+            ForEachItemIn(ii, results)
+            {
+                IEspECLWorkunit& w = results.item(ii);
+                if (!isEmpty(w.getWuid()) && strcmp(wuid, w.getWuid())>0)
+                {
+                    results.add(*info.getClear(), (aindex_t) ii);
+                    return;
+                }
+            }
+
+            results.append(*info.getClear());
+            return;
+        }
+
+    public:
+        IMPLEMENT_IINTERFACE_USING(CInterface);
+
+        CArchivedWUsReader(IEspContext& _context, const char* _sashaServerIP, unsigned _sashaServerPort, ArchivedWuCache& _archivedWuCache,
+            int _cacheTime, IEspWUQueryRequest& _req) : context(_context), sashaServerIP(_sashaServerIP), sashaServerPort(_sashaServerPort),
+            archivedWuCache(_archivedWuCache), cacheTime(_cacheTime), req(_req)
+        {
+            hasMoreWU = false;
+            countNumberOfWUsMatching = false;
+            numberOfWUsMatching = -1;
+            numberOfWUsReturned = 0;
+        };
+
+        void getArchivedWUs(unsigned startFrom, unsigned maxNumWUs, IArrayOf<IEspECLWorkunit>& archivedWUs)
+        {
+            setFilterString(startFrom, maxNumWUs);
+            Owned<ArchivedWuCacheElement> cachedResults = archivedWuCache.lookup(context, filterStr, "AddWhenAvailable", cacheTime);
+            if (cachedResults)
+            {
+                hasMoreWU = cachedResults->m_hasNextPage;
+                numberOfWUsMatching = cachedResults->numWUsMatching;
+                numberOfWUsReturned = cachedResults->numWUsReturned;
+                if (cachedResults->m_results.length())
+                {
+                    ForEachItemIn(ai, cachedResults->m_results)
+                    {
+                        Owned<IEspECLWorkunit> info= createECLWorkunit("","");
+                        info->copy(cachedResults->m_results.item(ai));
+                        archivedWUs.append(*info.getClear());
+                    }
+                }
+            }
+            else
+            {
+                SocketEndpoint ep;
+                if (sashaServerIP && *sashaServerIP)
+                    ep.set(sashaServerIP, sashaServerPort);
+                else
+                    getSashaNode(ep);
+                Owned<INode> sashaserver = createINode(ep);
+
+                Owned<ISashaCommand> cmd = createSashaCommand();
+                setSashaCommand(sashaserver, startFrom, maxNumWUs, cmd);
                 if (!cmd->send(sashaserver))
                 {
                     StringBuffer msg("Cannot connect to archive server at ");
@@ -1996,115 +2110,68 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
                     throw MakeStringException(ECLWATCH_CANNOT_CONNECT_ARCHIVE_SERVER, "%s", msg.str());
                 }
 
-                unsigned actualCount = cmd->numIds();
-                if (actualCount < 1)
-                    break;
-
-                totalWus += actualCount;
-
-                if (actualCount < limit)
-                    continueSashaLoop = false;
-
-                for (unsigned ii=0; ii<actualCount; ii++)
+                numberOfWUsReturned = cmd->numIds();
+                if (countNumberOfWUsMatching)
                 {
-                    const char *csline = cmd->queryId(ii);
-                    if (!csline)
-                        continue;
-
-                    StringArray wuidArray;
-                    wuidArray.appendList(csline, ",");
-
-                    if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cmd->queryOwner(), accessOwn, accessOthers) < SecAccess_Read)
-                        continue;
-
-                    const char* wuid = wuidArray.item(0);
-                    if (isEmpty(wuid))
-                        continue;
-
-                    __int64 addToPos = -1;
-                    ForEachItemIn(ridx, resultList)
-                    {
-                        IEspECLWorkunit& w = resultList.item(ridx);
-                        if (isEmpty(w.getWuid()))
-                            continue;
-
-                        if (strcmp(wuid, w.getWuid())>0)
-                        {
-                            addToPos = ridx;
-                            break;
-                        }
-                    }
-
-                    if (addToPos < 0 && (ridx > displayEnd))
-                        continue;
-
-                    Owned<IEspECLWorkunit> info= createECLWorkunit("","");
-                    info->setWuid(wuid);
-                    info->setArchived(true);
-                    if (notEmpty(wuidArray.item(1)))
-                          info->setOwner(wuidArray.item(1));
-                    if (notEmpty(wuidArray.item(2)))
-                        info->setJobname(wuidArray.item(2));
-                    if (notEmpty(wuidArray.item(3)))
-                          info->setCluster(wuidArray.item(3));
-                    if (notEmpty(wuidArray.item(4)))
-                          info->setState(wuidArray.item(4));
-
-                    if (addToPos < 0)
-                        resultList.append(*info.getClear());
-                    else
-                        resultList.add(*info.getClear(), (aindex_t) addToPos);
-                    if (resultList.length() > displayEnd)
-                        resultList.pop();
+                    numberOfWUsMatching = cmd->getNumberOfIdsMatching();
+                    hasMoreWU = (numberOfWUsMatching > startFrom + maxNumWUs);
+                }
+                else
+                {
+                    hasMoreWU = (numberOfWUsReturned > maxNumWUs);
+                    if (hasMoreWU)
+                        numberOfWUsReturned--;
                 }
 
-                begin += limit;
+                if (numberOfWUsReturned > 0)
+                {
+                    SecAccessFlags accessOwn, accessOthers;
+                    getUserWuAccessFlags(context, accessOwn, accessOthers, true);
+
+                    for (unsigned i=0; i<numberOfWUsReturned; i++)
+                    {
+                        const char *csline = cmd->queryId(i);
+                        if (csline && *csline)
+                            addArchivedWU(csline, accessOwn, accessOthers, archivedWUs);
+                    }
+
+                    archivedWuCache.add(filterStr, "AddWhenAvailable", hasMoreWU, numberOfWUsMatching, numberOfWUsReturned, archivedWUs);
+                }
             }
+            return;
+        };
 
-            timeTo.adjustTime(-1440);//one day earlier
-            if (dateLimit > 0 && wuTimeFrom > timeTo) //we reach the date limit
-            {
-                if (totalWus <= displayEnd)
-                    hasNextPage = false;
-                complete = true;
-            }
-            else if ( resultList.length() >= displayEnd) //we have all we need
-                complete = true;
-        }
+        bool getHasMoreWU() { return hasMoreWU; };
+        int getNumberOfWUsMatching() { return numberOfWUsMatching; };
+        unsigned getNumberOfWUsReturned() { return numberOfWUsReturned; };
+    };
 
-        if (displayEnd > resultList.length())
-            displayEnd = resultList.length();
+    unsigned displayStart = (unsigned) req.getPageStartFrom();
+    unsigned pageSize = (unsigned) req.getPageSize();
+    if(pageSize < 1)
+        pageSize=1000;
 
-        for (aindex_t i = (aindex_t)displayStart; i < (aindex_t)displayEnd; i++)
-        {
-            Owned<IEspECLWorkunit> info = createECLWorkunit("","");
-            info->copy(resultList.item(i));
-            results.append(*info.getClear());
-        }
+    IArrayOf<IEspECLWorkunit> archivedWUs;
+    Owned<IArchivedWUsReader> archiveWUsReader = new CArchivedWUsReader(context, sashaServerIP, sashaServerPort, archivedWuCache, cacheTime, req);
+    archiveWUsReader->getArchivedWUs(displayStart, pageSize, archivedWUs);
 
-        archivedWuCache.add(filter, "AddWhenAvailable", hasNextPage, results);
-    }
-
-    resp.setPageStartFrom(displayStart+1);
-    resp.setPageEndAt(displayEnd);
-
-    if(dateLimit < 1 || hasNextPage)
-        resp.setNextPage(displayStart + pageSize);
-    else
-        resp.setNextPage(-1);
-
-    if(displayStart > 0)
-    {
-        resp.setFirst(false);
-        if (displayStart - pageSize > 0)
-            resp.setPrevPage(displayStart - pageSize);
-        else
-            resp.setPrevPage(0);
-    }
+    resp.setType("archived only");
+    resp.setWorkunits(archivedWUs);
+    int numWUs = archiveWUsReader->getNumberOfWUsMatching();
+    if (numWUs >= 0)
+        resp.setNumWUs(numWUs);
 
     resp.setPageSize(pageSize);
-    resp.setWorkunits(results);
-    resp.setType("archived only");
+    resp.setPageStartFrom(displayStart+1);
+    resp.setPageEndAt(displayStart + archiveWUsReader->getNumberOfWUsReturned());
+    if(displayStart > 0)
+    { //This is not the first page;
+        resp.setFirst(false);
+        resp.setPrevPage((displayStart > pageSize) ? displayStart - pageSize: 0);
+    }
+    //resp.setNextPage(archiveWUsReader->getHasMoreWU() ? displayStart + pageSize : -1);
+    if (archiveWUsReader->getHasMoreWU())
+        resp.setNextPage(displayStart + pageSize);
     return;
 }
 

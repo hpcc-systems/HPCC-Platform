@@ -15,7 +15,8 @@ enum SashaCommandAction
     SCA_COALESCE_SUSPEND,
     SCA_COALESCE_RESUME,
     SCA_WORKUNIT_SERVICES_GET,
-    SCA_LISTDT
+    SCA_LISTDT,
+    SCA_LIST_WITH_MATCHING_COUNT
 };
 
 
@@ -65,7 +66,8 @@ interface ISashaCommand: extends IInterface
     virtual bool send(INode *node,unsigned timeout=0) = 0;
     virtual bool accept(unsigned timeout) = 0;
     virtual void cancelaccept() = 0;
-    virtual bool reply() = 0;
+    virtual bool reply(bool clearBuf) = 0;
+    virtual bool IDSWithMatchingNumberReply() = 0;
 
     virtual bool getDFU() = 0;
     virtual void setDFU(bool val) = 0;
@@ -89,6 +91,8 @@ interface ISashaCommand: extends IInterface
     virtual void addDT(CDateTime &dt) = 0;
     virtual void getDT(CDateTime &dt,unsigned i) = 0;   // returned by SCA_LISTDT
 
+    virtual int getNumberOfIdsMatching() = 0;
+    virtual void setNumberOfIdsMatching(int val) = 0;
 };
 
 #define WUS_STATUS_OK           ((byte)0)
