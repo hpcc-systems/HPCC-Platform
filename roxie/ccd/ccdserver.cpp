@@ -17202,16 +17202,18 @@ private:
     class DedupLookupTable : public LookupTable
     {
     public:
-        DedupLookupTable(unsigned _size, IHThorHashJoinArg &helper, bool _dedupOnAdd)
+        DedupLookupTable(ConstPointerArray &rightRows, IHThorHashJoinArg &helper, bool _dedupOnAdd)
         : LookupTable(helper), dedupOnAdd(_dedupOnAdd)
         {
-            unsigned minsize = (4*_size)/3;
+            unsigned minsize = (4*rightRows.length())/3;
             size = 2;
             while((minsize >>= 1) > 0)
                 size <<= 1;
             mask = size - 1;
-            table = (const void * *)calloc(size, sizeof(void *));
+            table = (const void * *)calloc(size, sizeof(void *)); // This should probably be allocated from roxiemem
             findex = fstart = BadIndex;
+            ForEachItemIn(idx, rightRows)
+                add(rightRows.item(idx));
         }
 
         ~DedupLookupTable()
@@ -17222,6 +17224,20 @@ private:
             free(table);
         }
 
+        virtual const void *find(const void * left) const
+        {
+            fstart = leftHash->hash(left) & mask;
+            findex = fstart;
+            return doFind(left);
+        }
+        virtual const void *findNext(const void * left) const
+        {
+            if(findex == BadIndex)
+                return NULL;
+            advance();
+            return doFind(left);
+        }
+    protected:
         void add(const void * right)
         {
             findex = BadIndex;
@@ -17242,21 +17258,6 @@ private:
             }
             table[index] = right;
         }
-
-        virtual const void *find(const void * left) const
-        {
-            fstart = leftHash->hash(left) & mask;
-            findex = fstart;
-            return doFind(left);
-        }
-        virtual const void *findNext(const void * left) const
-        {
-            if(findex == BadIndex)
-                return NULL;
-            advance();
-            return doFind(left);
-        }
-    protected:
         void advance() const
         {
             findex++;
@@ -17314,7 +17315,7 @@ private:
             while((minsize >>= 1) > 0)
                 size <<= 1;
             mask = size - 1;
-            table = (__uint64 *) calloc(size, sizeof(__uint64));
+            table = (__uint64 *) calloc(size, sizeof(__uint64)); // This should probably be allocated from roxiemem
             ForEachItemIn(idx, groups)
             {
                 unsigned __int64 group = groups.item(idx);
@@ -17356,12 +17357,12 @@ private:
             while(table[findex])
             {
                 __uint64 group = table[findex];
-                groupStart = high(group);
-                const void *right = rowtable.item(groupStart);
+                currentMatch = high(group);
+                const void *right = rowtable.item(currentMatch);
                 if(leftRightCompare->docompare(left, right) == 0)
                 {
-                    groupStart++;
-                    groupLength = low(group) - 1;
+                    currentMatch++;
+                    matchCount = low(group) - 1;
                     return right;
                 }
                 findex++;
@@ -17370,22 +17371,22 @@ private:
                 if(findex==fstart)
                     throw MakeStringException(ROXIE_JOIN_ERROR, "Internal error in lookup join activity (hash table full on lookup)");
             }
-            groupLength = 0;
+            matchCount = 0;
             return NULL;
         }
         virtual const void *findNext(const void * left) const
         {
-            if (!groupLength)
+            if (!matchCount)
                 return NULL;
-            groupLength--;
-            return rowtable.item(groupStart++);
+            matchCount--;
+            return rowtable.item(currentMatch++);
         }
 
     protected:
         __uint64 *table;
         ConstPointerArray rowtable;
-        mutable unsigned groupStart;
-        mutable unsigned groupLength;
+        mutable unsigned currentMatch;
+        mutable unsigned matchCount;
     };
 
     IHThorHashJoinArg &helper;
@@ -17459,7 +17460,6 @@ public:
     void loadRight()
     {
         ConstPointerArray rightset;
-        unsigned i = 0;
         try
         {
             const void * next;
@@ -17483,7 +17483,7 @@ public:
                     }
                     else
                     {
-                        MemoryAttr indexbuff(rightord*sizeof(void **));
+                        MemoryAttr indexbuff(rightord*sizeof(void **)); // This should probably be allocated from roxiemem
                         void *** index = (void ***)indexbuff.bufferBase();
                         qsortvecstable(const_cast<void * *>(rightset.getArray()), rightset.ordinality(), *helper.queryCompareRight(), index);
                     }
@@ -17492,17 +17492,13 @@ public:
             }
             else
             {
-                DedupLookupTable *ltable = new DedupLookupTable(rightord, helper, dedupRHS);
-                table.setown(ltable);
-                for(i=0; i<rightord; i++)
-                    ltable->add(rightset.item(i));
+                table.setown(new DedupLookupTable(rightset, helper, dedupRHS)); // NOTE - takes ownership of rightset
             }
         }
         catch (...)
         {
-            unsigned rightord = rightset.ordinality();
-            for ( ; i<rightord; i++)
-                ReleaseRoxieRow(rightset.item(i));
+            ForEachItemIn(idx, rightset)
+                ReleaseRoxieRow(rightset.item(idx));
             throw;
         }
     };
