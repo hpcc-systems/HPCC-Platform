@@ -465,7 +465,7 @@ public:
 
     int run()
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
 
         CMessageHandler<CSessionRequestServer> handler("CSessionRequestServer",this,&CSessionRequestServer::processMessage);
         stopped = false;
@@ -489,7 +489,7 @@ public:
 
     void processMessage(CMessageBuffer &mb)
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         SessionId id;
         int fn;
         mb.read(fn);
@@ -665,7 +665,7 @@ public:
     {
         if (!stopped) {
             stopped = true;
-            queryCoven().cancel(RANK_ALL, MPTAG_DALI_SESSION_REQUEST);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL, MPTAG_DALI_SESSION_REQUEST);
         }
         join();
     }
@@ -705,7 +705,7 @@ public:
             MemoryBuffer mb;
             mb.append(sessid);
             ma.set(mb.length(),mb.toByteArray());
-            id = queryCoven().getUniqueId();
+            id = queryDefaultDali()->queryCoven().getUniqueId();
         }
 
         ~CSessionSubscriptionProxy()
@@ -858,7 +858,7 @@ public:
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_PROCESS_SESSION);
         node->serialize(mb);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        if (!queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return 0;
         SessionId ret;
         mb.read(ret);
@@ -873,7 +873,7 @@ public:
         mb.append((int)MSR_LOOKUP_PROCESS_SESSION);
         queryNullNode()->serialize(mb);
         mb.append(id);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        if (!queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return NULL;
         Owned<INode> node = deserializeINode(mb);
         if (node->endpoint().isNull())
@@ -888,7 +888,7 @@ public:
             *err = 0;
         if (securitydisabled)
             return -1;
-        if (queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->compareDaliServerVersion("1.8") < 0) {
             securitydisabled = true;
             return -1;
         }
@@ -908,7 +908,7 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        if (!queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return 0;
         int ret=-1;
         if (mb.remaining()>=sizeof(ret)) {
@@ -931,23 +931,23 @@ public:
     {
         if (securitydisabled)
             return true;
-        if (queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->compareDaliServerVersion("1.8") < 0) {
             securitydisabled = true;
             return true;
         }
         CMessageBuffer mb;
         mb.append((int)MSR_CLEAR_PERMISSIONS_CACHE);
         udesc->serialize(mb);
-        return queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
+        return queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
     }
 
     bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)
     {
-        if (queryDaliServerVersion().compare("3.10") < 0)
+        if (queryDefaultDali()->compareDaliServerVersion("3.10") < 0)
         {
             *err = -1;
             StringBuffer ver;
-            queryDaliServerVersion().toString(ver);
+            queryDefaultDali()->queryDaliServerVersion().toString(ver);
             retMsg.appendf("Scope Scan status feature requires Dali V3.10 or newer, current Dali version %s",ver.str());
             return false;
         }
@@ -957,7 +957,7 @@ public:
             retMsg.append("Security not enabled");
             return false;
         }
-        if (queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->compareDaliServerVersion("1.8") < 0) {
             *err = -1;
             retMsg.append("Security not enabled");
             securitydisabled = true;
@@ -966,7 +966,7 @@ public:
         CMessageBuffer mb;
         CQueryScopeScansEnabledReq req(udesc);
         req.serializeReq(mb);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        if (!queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
         {
             *err = -1;
             retMsg.append("DALI Send/Recv error");
@@ -981,11 +981,11 @@ public:
 
     bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)
     {
-        if (queryDaliServerVersion().compare("3.10") < 0)
+        if (queryDefaultDali()->compareDaliServerVersion("3.10") < 0)
         {
             *err = -1;
             StringBuffer ver;
-            queryDaliServerVersion().toString(ver);
+            queryDefaultDali()->queryDaliServerVersion().toString(ver);
             retMsg.appendf("Scope Scan enable/disable feature requires Dali V3.10 or newer, current Dali version %s",ver.str());
             return false;
         }
@@ -996,7 +996,7 @@ public:
             retMsg.append("Security not enabled");
             return false;
         }
-        if (queryDaliServerVersion().compare("1.8") < 0) {
+        if (queryDefaultDali()->compareDaliServerVersion("1.8") < 0) {
             *err = -1;
             retMsg.append("Security not enabled");
             securitydisabled = true;
@@ -1005,7 +1005,7 @@ public:
         CMessageBuffer mb;
         CEnableScopeScansReq req(udesc,enable);
         req.serializeReq(mb);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        if (!queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
         {
             *err = -1;
             retMsg.append("DALI Send/Recv error");
@@ -1050,7 +1050,7 @@ public:
     {
         CMessageBuffer mb;
         mb.append((int)MSR_REGISTER_SESSION).append(tok).append(parentid);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        if (!queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return 0;
         SessionId ret;
         mb.read(ret);
@@ -1065,17 +1065,17 @@ public:
         }
         CMessageBuffer mb;
         mb.append((int)MSR_STOP_SESSION).append(sessid).append(failed);
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
     }
 
     void onClose(SocketEndpoint &ep)
     {
         CHECKEDCRITICALBLOCK(sessmanagersect,60000);
         Owned<INode> node = createINode(ep);
-        if (queryCoven().inCoven(node)) {
+        if (queryDefaultDali()->queryCoven().inCoven(node)) {
             StringBuffer str;
             PROGLOG("Coven Session Stopping (%s)",ep.getUrlStr(str).str());
-            if (queryCoven().size()==1)
+            if (queryDefaultDali()->queryCoven().size()==1)
                 notifyServerStopped(true); 
         }
     }
@@ -1117,7 +1117,7 @@ public:
         CMessageBuffer msg;
         msg.append((int)MSR_IMPORT_CAPABILITIES);
         msg.append(mb.length(), mb.toByteArray());
-        queryCoven().sendRecv(msg,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
+        queryDefaultDali()->queryCoven().sendRecv(msg,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
     }
 };
 
@@ -1232,7 +1232,7 @@ class CCovenSessionManager: public CSessionManagerBase, implements ISessionManag
         node->serialize(mb);
         int r = (int)role;
         mb.append(role);
-        queryCoven().sendRecv(mb,dst,MPTAG_DALI_SESSION_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,dst,MPTAG_DALI_SESSION_REQUEST);
         // no fail currently
     }
 
@@ -1240,7 +1240,7 @@ class CCovenSessionManager: public CSessionManagerBase, implements ISessionManag
     {
         CMessageBuffer mb;
         mb.append((int)MSR_SECONDARY_REGISTER_SESSION).append(id);
-        queryCoven().sendRecv(mb,dst,MPTAG_DALI_SESSION_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,dst,MPTAG_DALI_SESSION_REQUEST);
         // no fail currently
     }
 
@@ -1250,7 +1250,7 @@ public:
     CCovenSessionManager()
         : sessionrequestserver(*this)
     {
-        mySessionId = queryCoven().getUniqueId(); // tell others in coven TBD
+        mySessionId = queryDefaultDali()->queryCoven().getUniqueId(); // tell others in coven TBD
         registerSubscriptionManager(SESSION_PUBLISHER,this);
         atomic_set(&ldapwaiting,0);
         workthreadsem.signal(10);
@@ -1345,7 +1345,7 @@ public:
         // this is where security token should be checked
 
         // not in critical block (otherwise possibility of deadlock)
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         SessionId id = coven.getUniqueId();
         rank_t myrank = coven.getServerRank();
         rank_t ownerrank = coven.chooseServer(id);
@@ -1366,7 +1366,7 @@ public:
     {
         // not in critical block (otherwise possibility of deadlock)
         retcoven = NULL;
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         SessionId id = coven.getUniqueId();
         rank_t myrank = coven.getServerRank();
         rank_t ownerrank = coven.chooseServer(id);
@@ -1735,7 +1735,7 @@ protected:
         {
             CHECKEDCRITICALBLOCK(sessmanagersect,60000);
             Owned<INode> node = createINode(ep);
-            if (queryCoven().inCoven(node))
+            if (queryDefaultDali()->queryCoven().inCoven(node))
             {
                 PROGLOG("Coven Session Stopping (%s)", clientStr.str());
                 // more TBD here
@@ -1797,7 +1797,7 @@ ISessionManager &querySessionManager()
 {
     CriticalBlock block(sessionCrit);
     if (!SessionManager) {
-        assertex(!isCovenActive()||!queryCoven().inCoven()); // Check not Coven server (if occurs - not initialized correctly;
+        assertex(!queryDefaultDali()||!queryDefaultDali()->queryCoven().inCoven()); // Check not Coven server (if occurs - not initialized correctly;
                                                    // If !coven someone is checking for dali so allow
         SessionManager = new CClientSessionManager();
     
@@ -1818,7 +1818,7 @@ public:
     void start()
     {
         CriticalBlock block(sessionCrit);
-        assertex(queryCoven().inCoven()); // must be member of coven
+        assertex(queryDefaultDali()->queryCoven().inCoven()); // must be member of coven
         CCovenSessionManager *serv = new CCovenSessionManager();
         SessionManagerServer = serv;
         SessionManager = serv;

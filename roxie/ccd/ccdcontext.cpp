@@ -421,7 +421,7 @@ private:
             try
             {
                 unsigned mode = RTM_CREATE_QUERY | RTM_LOCK_READ;
-                if (queryDaliServerVersion().compare("1.4") >= 0)
+                if (queryDefaultDali()->compareDaliServerVersion("1.4") >= 0)
                     mode |= RTM_DELETE_ON_DISCONNECT;
                 persistLock.setown(querySDS().connect(xpath.str(), myProcessSession(), mode, PERSIST_LOCK_TIMEOUT));
             }

@@ -443,6 +443,7 @@ void dispFDesc(IFileDescriptor *fdesc)
 class DaliTests : public CppUnit::TestFixture
 {
     CPPUNIT_TEST_SUITE( DaliTests );
+        CPPUNIT_TEST(testVersion);
         CPPUNIT_TEST(testDFS);
 //        CPPUNIT_TEST(testReadAllSDS); // Ignoring this test; See comments below
         CPPUNIT_TEST(testSDSRW);
@@ -734,7 +735,39 @@ public:
         ASSERT(!conn && "RTM_DELETE_ON_DISCONNECT failed");
     }
 
-    /*
+    void testVersion()
+    {
+        CDaliVersion v1_0("1.0");
+        CDaliVersion v1_3("1.3");
+        CDaliVersion v3_1("3.1");
+        CDaliVersion v4_0("4");
+
+        ASSERT(v1_3.queryMajor() == 1);
+        ASSERT(v1_3.queryMinor() == 3);
+        ASSERT(v3_1.queryMajor() == 3);
+        ASSERT(v3_1.queryMinor() == 1);
+        ASSERT(v4_0.queryMajor() == 4);
+        ASSERT(v4_0.queryMinor() == 0);
+
+        ASSERT(v1_0.compare(v1_0) == 0);
+        ASSERT(v1_3.compare(v1_3) == 0);
+        ASSERT(v1_0.compare(v1_3) < 0);
+        ASSERT(v1_3.compare(v1_0) > 0);
+        ASSERT(v1_0.compare(v3_1) < 0);
+        ASSERT(v3_1.compare(v1_0) > 0);
+        ASSERT(v1_3.compare(v3_1) < 0);
+        ASSERT(v3_1.compare(v1_3) > 0);
+        ASSERT(v1_0.compare("1.0") == 0);
+        ASSERT(v1_3.compare("1.3") == 0);
+        ASSERT(v1_0.compare("1.3") < 0);
+        ASSERT(v1_3.compare("1.0") > 0);
+        ASSERT(v1_0.compare("3.1") < 0);
+        ASSERT(v3_1.compare("1.0") > 0);
+        ASSERT(v1_3.compare("3.1") < 0);
+        ASSERT(v3_1.compare("1.3") > 0);
+        ASSERT(v4_0.compare("4.0") == 0);
+    }
+   /*
      * This test is invasive, obsolete and the main source of
      * errors in the DFS code. It was created on a time where
      * the DFS API was spread open and methods could openly

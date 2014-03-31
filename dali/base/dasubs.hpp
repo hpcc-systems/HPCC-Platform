@@ -24,7 +24,7 @@
 #define da_decl __declspec(dllimport)
 #endif
 
-typedef DALI_UID SubscriptionId; // allocated by queryCoven().getUniqueId() 
+typedef DALI_UID SubscriptionId; // allocated by queryDefaultDali()->queryCoven().getUniqueId()
 
 
 

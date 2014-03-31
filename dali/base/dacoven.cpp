@@ -40,11 +40,9 @@ extern void closedownDFS();
 #define ServerVersion    "3.11"
 #define MinClientVersion "1.5"
 
-
 // client side default versioning.
-static StringAttr ClientVersion("3.5");
-static StringAttr MinServerVersion("3.1");      // when this upped check initClientProcess instances
-static CDaliVersion _ServerVersion;
+#define DefaultClientVersion "3.5"
+#define DefaultMinServerVersion "3.1"           // when this upped check initClientProcess instances
 
 
 #define COVEN_SERVER_TIMEOUT (1000*120)
@@ -68,9 +66,9 @@ enum MCovenRequestKind {
 void CDaliVersion::set(const char *s)
 {
     const char *dot = strchr(s, '.');
-    StringAttr _major(s, dot-s);
-    major = atoi(_major);
-    minor = atoi(dot+1);
+    //atoi will stop at the '.'
+    major = atoi(s);
+    minor = dot ? atoi(dot+1) : 0;
 }
 
 int CDaliVersion::compare(const CDaliVersion &other) const
@@ -83,8 +81,14 @@ int CDaliVersion::compare(const CDaliVersion &other) const
 
 int CDaliVersion::compare(const char *other) const
 {
-    CDaliVersion _other(other);
-    return compare(_other);
+    //Other has the form <major>.<minor>.
+    unsigned otherMajor = atoi(other);
+    int d = major-otherMajor;
+    if (d) return d;
+
+    const char *dot = strchr(other, '.');
+    unsigned otherMinor = dot ? atoi(dot+1) : 0;
+    return minor-otherMinor;
 }
 
 
@@ -177,13 +181,15 @@ class CCovenBase: public CInterface, implements ICoven
 
 protected: 
     ICommunicator  *comm;
+    CDaliVersion    _ServerVersion;
 
 public:
+    //MORE: These should either be in a different class, or should not be static
     static CriticalSection uidcrit;
     static CIArrayOf<CDaliUidAllocator> uidallocators;
     
     IMPLEMENT_IINTERFACE;
-    CCovenBase(IGroup *grp,bool server)
+    CCovenBase(IGroup *grp, bool server)
     {
         comm = createCommunicator(grp,server); // if server outer == true as can recieve from outside
         ord = grp->ordinality();
@@ -195,36 +201,6 @@ public:
         {
             _ServerVersion.set(ServerVersion);
             LOG(MCdebugInfo(100), unknownJob, "Server Version = %s, required minimum client version %s", ServerVersion, MinClientVersion);
-        }
-        else
-        {
-            CMessageBuffer mb;
-            mb.append(MCR_GET_VERSION_INFO);
-            mb.append(ClientVersion);
-            mb.append(MinServerVersion);
-            if (!comm->sendRecv(mb, RANK_RANDOM, MPTAG_DALI_COVEN_REQUEST, VERSION_REQUEST_TIMEOUT))
-                throw MakeStringException(-1, "failed retrieving version information from server, legacy server?");
-            if (!mb.length())
-                throw MakeStringException(-1, "Failed to receive server information (probably communicating to legacy server)");
-            StringAttr serverVersion, minClientVersion;
-            mb.read(serverVersion);
-            _ServerVersion.set(serverVersion), 
-            mb.read(minClientVersion);
-
-            CDaliVersion clientV(ClientVersion), minClientV(minClientVersion);
-            if (clientV.compare(minClientV) < 0)
-            {
-                StringBuffer s("Client version ");
-                s.append(ClientVersion).append(", server requires minimum client version ").append(minClientVersion);
-                throw createClientException(DCERR_version_incompatibility, s.str());
-            }
-            CDaliVersion minServerV(MinServerVersion);
-            if (_ServerVersion.compare(minServerV) < 0)
-            {
-                StringBuffer s("Server version ");
-                s.append(serverVersion).append(", client requires minimum server version ").append(MinServerVersion);
-                throw createClientException(DCERR_version_incompatibility, s.str());
-            }
         }
     }
     ~CCovenBase()
@@ -280,13 +256,14 @@ public:
 
     bool inCoven(INode *node)
     {
-        ICoven &coven=queryCoven();
+        //GH: Surely coven == *this??
+        ICoven &coven=queryDefaultDali()->queryCoven();
         return (coven.queryGroup().rank(node)!=RANK_NULL);
     }
 
     bool inCoven(SocketEndpoint &ep)
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         return (coven.queryGroup().rank(ep)!=RANK_NULL);
     }
 
@@ -315,6 +292,12 @@ public:
         assertex(comm);
         return comm->getGroup();
     }
+
+    const CDaliVersion &queryDaliServerVersion() const
+    {
+        return _ServerVersion;
+    }
+
 
     virtual void flush  (mptag_t tag)
     {
@@ -351,7 +334,7 @@ protected:
 
     void processMessage(CMessageBuffer &mb) 
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         int fn;
         mb.read(fn);
         switch (fn) {
@@ -653,7 +636,7 @@ public:
 
     void main() 
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         CMessageHandler<CCovenServer> handler("CCovenServer",this,&CCovenServer::processMessage);
         stopped = false;
         CMessageBuffer mb;
@@ -680,7 +663,7 @@ public:
         if (!stopped) {
             stopped = true;
             PROGLOG("Stopping server");
-            queryCoven().cancel(RANK_ALL, MPTAG_DALI_COVEN_REQUEST);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL, MPTAG_DALI_COVEN_REQUEST);
         }
         done.wait();
         done.signal();  // in case anyone else calls stop
@@ -751,8 +734,39 @@ class CCovenClient: public CCovenBase
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCovenClient(IGroup *grp) : CCovenBase(grp,false)
+    CCovenClient(IGroup *grp) : CCovenBase(grp, false)
     {
+    }
+
+    void connect(const char * clientVersion, const char * minServerVersion)
+    {
+        CMessageBuffer mb;
+        mb.append(MCR_GET_VERSION_INFO);
+        mb.append(clientVersion);
+        mb.append(minServerVersion);
+        if (!comm->sendRecv(mb, RANK_RANDOM, MPTAG_DALI_COVEN_REQUEST, VERSION_REQUEST_TIMEOUT))
+            throw MakeStringException(-1, "failed retrieving version information from server, legacy server?");
+        if (!mb.length())
+            throw MakeStringException(-1, "Failed to receive server information (probably communicating to legacy server)");
+        StringAttr serverVersion, minClientVersion;
+        mb.read(serverVersion);
+        _ServerVersion.set(serverVersion),
+        mb.read(minClientVersion);
+
+        CDaliVersion clientV(clientVersion), minClientV(minClientVersion);
+        if (clientV.compare(minClientV) < 0)
+        {
+            StringBuffer s("Client version ");
+            s.append(clientVersion).append(", server requires minimum client version ").append(minClientVersion);
+            throw createClientException(DCERR_version_incompatibility, s.str());
+        }
+        CDaliVersion minServerV(minServerVersion);
+        if (_ServerVersion.compare(minServerV) < 0)
+        {
+            StringBuffer s("Server version ");
+            s.append(serverVersion).append(", client requires minimum server version ").append(minServerVersion);
+            throw createClientException(DCERR_version_incompatibility, s.str());
+        }
     }
 
     DALI_UID    getUniqueId(SocketEndpoint *foreignnode)
@@ -908,30 +922,8 @@ public:
 
 };
 
-static CCovenServer *covenServer=NULL;
-static ICoven *coven=NULL;
-
-ICoven &queryCoven()
+ICoven * initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,const char *minServerVersion)
 {
-    if (coven==NULL)
-    {
-        Owned<IException> e = MakeStringException(-1, "No access to Dali - this normally means a plugin call is being called from a thorslave");
-        EXCLOG(e, NULL);
-        throw e.getClear();
-    }
-    return *coven;
-}
-
-bool isCovenActive()
-{
-    return coven != NULL;
-}
-
-void initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,const char *minServerVersion)
-{
-    assertex(!coven);
-    if (clientVersion) ClientVersion.set(clientVersion);
-    if (minServerVersion) MinServerVersion.set(minServerVersion);
     if (config&&(grp->rank()!=RANK_NULL) )
     {
         const char *s="dalicoven.xml";
@@ -956,48 +948,37 @@ void initCoven(IGroup *grp,IPropertyTree *config,const char *clientVersion,const
             s = covenPath.str();
         }
 
-        covenServer = new CCovenServer(grp,s,b.str());
-        coven = covenServer;
+        return new CCovenServer(grp,s,b.str());
     }
     else {
-        covenServer = NULL;
-        coven = new CCovenClient(grp);
+        if (!clientVersion) clientVersion = DefaultClientVersion;
+        if (!minServerVersion) minServerVersion = DefaultMinServerVersion;
+        Owned<CCovenClient> client = new CCovenClient(grp);
+        client->connect(clientVersion,minServerVersion);
+        return client.getClear();
     }
 }
 
-bool verifyCovenConnection(unsigned timeout)
-{
-    if (!coven) return false;
-    return coven->verifyAll(true, timeout);
-}
-
-void covenMain()
+void covenMain(ICoven * coven)
 { 
-    assertex(covenServer);
-    covenServer->main();
+    assertex(coven);
+    static_cast<CCovenServer *>(coven)->main();
 }
 
-void closeCoven()
+void closeCoven(ICoven * coven)
 {
     if (coven) {
         closedownDFS();                 // TBD convert DFS to IDaliProcess
         ::Release(coven);
-        coven = NULL;
     }
 }
-
-const CDaliVersion &queryDaliServerVersion()
-{
-    return _ServerVersion;
-}
-
 
 DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
 {
     if (num==0)
         return 0;
-    if (coven)
-        return coven->getUniqueIds(num,_foreignnode);
+    if (queryDefaultDali())
+        return queryDefaultDali()->queryCoven().getUniqueIds(num,_foreignnode);
     if (!_foreignnode||_foreignnode->isNull())
         throw MakeStringException(99,"getUniqueIds: Not connected to dali");
     SocketEndpoint foreignnode;

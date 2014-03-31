@@ -73,14 +73,14 @@ public:
     {
         if (!stopped) {
             stopped = true;
-            queryCoven().cancel(RANK_ALL,MPTAG_DALI_DIAGNOSTICS_REQUEST);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL,MPTAG_DALI_DIAGNOSTICS_REQUEST);
         }
         join();
     }
 
     int run()
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         CMessageBuffer mb;
         stopped = false;
         CMessageHandler<CDaliDiagnosticsServer> handler("CDaliDiagnosticsServer",this,&CDaliDiagnosticsServer::processMessage);
@@ -105,7 +105,7 @@ public:
 
     void processMessage(CMessageBuffer &mb)
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         MemoryBuffer params;
         params.swapWith(mb);
         int fn;
@@ -183,7 +183,7 @@ public:
                     SocketEndpoint ep(client);
                     PROGLOG("Dalidiag request to close client connection: %s", client.get());
                     Owned<INode> node = createINode(ep);
-                    queryCoven().disconnect(node);
+                    queryDefaultDali()->queryCoven().disconnect(node);
                 }
                 else if (0 == stricmp(id, "unlock")) {
                     __int64 connectionId;
@@ -262,7 +262,7 @@ MemoryBuffer & getDaliDiagnosticValue(MemoryBuffer &m)
 {
     CMessageBuffer mb;
     mb.append((int)MDR_GET_VALUE).append(m);
-    queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_DIAGNOSTICS_REQUEST);
+    queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_DIAGNOSTICS_REQUEST);
     m.swapWith(mb);
     return m;
 }
@@ -271,7 +271,7 @@ StringBuffer & getDaliDiagnosticValue(const char *name,StringBuffer &ret)
 {
     CMessageBuffer mb;
     mb.append((int)MDR_GET_VALUE).append(name);
-    queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_DIAGNOSTICS_REQUEST);
+    queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_DIAGNOSTICS_REQUEST);
     StringAttr str;
     mb.read(str);
     ret.append(str);

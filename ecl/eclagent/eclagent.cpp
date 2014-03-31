@@ -2197,7 +2197,7 @@ void EclAgentWorkflowMachine::obtainRunlock()
 void EclAgentWorkflowMachine::releaseRunlock()
 {
     LOG(MCrunlock, unknownJob, "Releasing run lock");
-    if(runlock && queryDaliServerVersion().compare("1.3") < 0)
+    if(runlock && queryDefaultDali()->compareDaliServerVersion("1.3") < 0)
         runlock->close(true);
     runlock.clear();
 }
@@ -2559,7 +2559,7 @@ IRemoteConnection *EclAgent::getPersistReadLock(const char * logicalName)
         try
         {
             unsigned mode = RTM_CREATE_QUERY | RTM_LOCK_READ;
-            if (queryDaliServerVersion().compare("1.4") >= 0)
+            if (queryDefaultDali()->compareDaliServerVersion("1.4") >= 0)
                 mode |= RTM_DELETE_ON_DISCONNECT;
             persistLock.setown(querySDS().connect(xpath.str(), myProcessSession(), mode, PERSIST_LOCK_TIMEOUT));
         }
@@ -2984,10 +2984,10 @@ IDistributedFileTransaction *EclAgent::querySuperFileTransaction()
 
 char * EclAgent::getDaliServers()
 {
-    if (!isCovenActive())
+    if (!queryDefaultDali())
         return strdup("");
     StringBuffer dali;
-    IGroup &group = queryCoven().queryComm().queryGroup();
+    IGroup &group = queryDefaultDali()->queryCoven().queryComm().queryGroup();
     Owned<INodeIterator> coven = group.getIterator();
     bool first = true;
     ForEach(*coven)
@@ -3330,7 +3330,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             }
             PrintLog("ECLAGENT build %s", BUILD_TAG);
             startLogMsgParentReceiver();    
-            connectLogMsgManagerToDali();
+            queryDefaultDali()->connectLogMsgManagerToDali();
 
             StringBuffer baseDir;
             if (getConfigurationDirectory(agentTopology->queryPropTree("Directories"),"data","eclagent",agentTopology->queryProp("@name"),baseDir.clear()))

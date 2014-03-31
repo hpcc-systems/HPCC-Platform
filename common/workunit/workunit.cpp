@@ -2030,12 +2030,12 @@ public:
         sdsManager = &querySDS();
         session = myProcessSession();
         deletedllworkq.setown(createWorkQueueThread());
-        addShutdownHook(*this);
+        queryDefaultDali()->addShutdownHook(*this);
     }
 
     ~CWorkUnitFactory()
     {
-        removeShutdownHook(*this);
+        queryDefaultDali()->removeShutdownHook(*this);
         // deletepool->joinAll();
     }
     void clientShutdown();
@@ -2067,7 +2067,7 @@ public:
         StringBuffer wuRoot;
         getXPath(wuRoot, wuid);
         IRemoteConnection *conn;
-        if (queryDaliServerVersion().compare("2.0") >= 0)
+        if (queryDefaultDali()->compareDaliServerVersion("2.0") >= 0)
              conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE_UNIQUE, SDS_LOCK_TIMEOUT);
         else
             conn = sdsManager->connect(wuRoot.str(), session, RTM_LOCK_WRITE|RTM_CREATE, SDS_LOCK_TIMEOUT);
@@ -2090,7 +2090,7 @@ public:
         tm *today = localtime( &ltime );   // MORE - this is not threadsafe. But I probably don't care that much!
         strftime(result, sizeof(result), "%Y%m%d-%H%M%S", today);
         wuid.append(result);
-        if (queryDaliServerVersion().compare("2.0") < 0)
+        if (queryDefaultDali()->compareDaliServerVersion("2.0") < 0)
             wuid.append('-').append(startSession());
         if (workUnitTraceLevel > 1)
             PrintLog("createWorkUnit created %s", wuid.str());
@@ -2287,8 +2287,7 @@ public:
         Owned<IRemoteConnection> conn = sdsManager->connect("/WorkUnits", session, 0, SDS_LOCK_TIMEOUT);
         if (conn)
         {
-            CDaliVersion serverVersionNeeded("3.2");
-            Owned<IPropertyTreeIterator> iter(queryDaliServerVersion().compare(serverVersionNeeded) < 0 ? 
+            Owned<IPropertyTreeIterator> iter(queryDefaultDali()->compareDaliServerVersion("3.2") < 0 ?
                 conn->queryRoot()->getElements(xpath) : 
                 conn->getElements(xpath));
             return new CConstWUIterator(conn, iter, secmgr, secuser);
@@ -4014,7 +4013,7 @@ void CLocalWorkUnit::setIsQueryService(bool value)
 
 void CLocalWorkUnit::checkAgentRunning(WUState & state) 
 {
-    if (queryDaliServerVersion().compare("2.1")<0)
+    if (!queryDefaultDali() || queryDefaultDali()->compareDaliServerVersion("2.1")<0)
         return;
     switch(state)
     {
@@ -9276,7 +9275,7 @@ static WUState _waitForWorkUnit(const char * wuid, unsigned timeout, bool compil
             case WUStateDebugRunning:
             case WUStateBlocked:
             case WUStateAborting:
-                if (queryDaliServerVersion().compare("2.1")>=0)
+                if (queryDefaultDali()->compareDaliServerVersion("2.1")>=0)
                 {
                     SessionId agent = conn->queryRoot()->getPropInt64("@agentSession", -1);
                     if((agent>0) && querySessionManager().sessionStopped(agent, 0))

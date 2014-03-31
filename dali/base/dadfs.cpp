@@ -278,7 +278,7 @@ public:
                 unsigned mode = write ? RTM_LOCK_WRITE : RTM_LOCK_READ;
                 if (preload) mode |= RTM_SUB;
                 if (hold) mode |= RTM_LOCK_HOLD;
-                conn.setown(querySDS().connect(name, queryCoven().inCoven() ? 0 : myProcessSession(), mode, (timeout==INFINITE)?1000*60*5:timeout));
+                conn.setown(querySDS().connect(name, queryDefaultDali()->queryCoven().inCoven() ? 0 : myProcessSession(), mode, (timeout==INFINITE)?1000*60*5:timeout));
 #ifdef TRACE_LOCKS
                 PROGLOG("%s: LOCKGOT(%x) %s %s",caller,(unsigned)(memsize_t)conn.get(),name,write?"WRITE":"");
                 LogRemoteConn(conn);
@@ -625,7 +625,7 @@ static bool isLocalDali(const INode *foreigndali)
         node.setown(createINode(ep));
         foreigndali = node.get();
     }
-    return queryCoven().inCoven((INode *)foreigndali);
+    return queryDefaultDali()->queryCoven().inCoven((INode *)foreigndali);
 }
 
 
@@ -9355,14 +9355,14 @@ public:
     {
         if (!stopped) {
             stopped = true;
-            queryCoven().cancel(RANK_ALL,MPTAG_DFS_REQUEST);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL,MPTAG_DFS_REQUEST);
         }
         join();
     }
 
     int run()
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         CMessageHandler<CDaliDFSServer> handler("CDaliDFSServer", this, &CDaliDFSServer::processMessage, this, numThreads, TIMEOUT_ON_CLOSEDOWN, INFINITE);
         CMessageBuffer mb;
         stopped = false;
@@ -9711,7 +9711,7 @@ public:
     void processMessage(CMessageBuffer &mb)
     {
         CheckTime block0("CDaliDFSServer::processMessage ");
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         StringBuffer trc;
         int fn;
         mb.read(fn);
@@ -9822,7 +9822,7 @@ IDFAttributesIterator *CDistributedFileDirectory::getDFAttributesIterator(const 
     if (foreigndali) 
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
     else
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
     checkDfsReplyException(mb);
     return new CDFAttributeIterator(mb);
 }
@@ -9952,7 +9952,7 @@ void CDistributedFileDirectory::setFileAccessed(CDfsLogicalFileName &dlfn,IUserD
     if (foreigndali) 
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
     else
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
     checkDfsReplyException(mb);
 }
 
@@ -9991,7 +9991,7 @@ void CDistributedFileDirectory::setFileProtect(CDfsLogicalFileName &dlfn,IUserDe
     if (foreigndali) 
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
     else
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
     checkDfsReplyException(mb);
 }
 
@@ -10026,7 +10026,7 @@ IPropertyTree *CDistributedFileDirectory::getFileTree(const char *lname, IUserDe
     if (foreigndali) 
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
     else
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
     checkDfsReplyException(mb);
     if (mb.length()==0)
         return NULL;
@@ -11840,7 +11840,7 @@ IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(co
     if (foreigndali)
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
     else
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
     checkDfsReplyException(mb);
 
     return deserializeFileAttrIterator(mb, localFilters, localFilterBuf);

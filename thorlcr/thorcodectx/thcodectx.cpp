@@ -24,6 +24,7 @@
 #include "eclrtl.hpp"
 #include "thcodectx.hpp"
 #include "dacoven.hpp"
+#include "daclient.hpp"
 #include "dasess.hpp"
 #include "dadfs.hpp"
 #include "thorxmlread.hpp"
@@ -74,7 +75,7 @@ const char *CThorCodeContextBase::loadResource(unsigned id)
 char *CThorCodeContextBase::getDaliServers()
 {
     StringBuffer dali;
-    IGroup &group = queryCoven().queryComm().queryGroup();
+    IGroup &group = queryDefaultDali()->queryCoven().queryComm().queryGroup();
     Owned<INodeIterator> coven = group.getIterator();
     bool first = true;
     ForEach(*coven)

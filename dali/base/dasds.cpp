@@ -1972,7 +1972,7 @@ private:
 
 ISDSManagerServer &querySDSServer()
 {
-    assertex(queryCoven().inCoven());
+    assertex(queryDefaultDali()->queryCoven().inCoven());
     return *SDSManager;
 }
 
@@ -3089,7 +3089,7 @@ class CLockInfo : public CInterface, implements IInterface
                                 out.appendf("%"I64F"x], connectionId [%"I64F"x]", lD->sessId, * ((ConnectionId *) imap.getKey()));
                                 out.append(" xpath [").append(xpath).append("]");
                                 PROGLOG("%s", out.str());
-                                queryCoven().disconnect(node);
+                                queryDefaultDali()->queryCoven().disconnect(node);
                                 ret = true;
                             }
                         }
@@ -3583,7 +3583,7 @@ CSDSTransactionServer::CSDSTransactionServer(CCovenSDSManager &_manager)
 
 int CSDSTransactionServer::run()
 {
-    ICoven &coven=queryCoven();
+    ICoven &coven=queryDefaultDali()->queryCoven();
     CMessageHandler<CSDSTransactionServer> handler("CSDSTransactionServer",this,&CSDSTransactionServer::processMessage, &manager, 100, TIMEOUT_ON_CLOSEDOWN);
     stopped = false;
     CMessageBuffer mb;
@@ -3938,7 +3938,7 @@ bool translateOldFormat(CServerRemoteTree *parentServerTree, IPropertyTree *pare
 void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
 {
     TimingBlock xactTimingBlock(xactTimingStats);
-    ICoven &coven = queryCoven();
+    ICoven &coven = queryDefaultDali()->queryCoven();
 
     StringAttr xpath;
     ConnectionId connectionId;
@@ -4500,7 +4500,7 @@ void CSDSTransactionServer::stop()
 {
     if (!stopped) {
         stopped = true;
-        queryCoven().cancel(RANK_ALL, MPTAG_DALI_SDS_REQUEST);
+        queryDefaultDali()->queryCoven().cancel(RANK_ALL, MPTAG_DALI_SDS_REQUEST);
     }
     PROGLOG("clearing remaining sds locks");
     manager.clearSDSLocks();
@@ -5596,7 +5596,7 @@ CCovenSDSManager::CCovenSDSManager(ICoven &_coven, IPropertyTree &_config, const
     writeTransactions=0;
     externalEnvironment = false;
     ignoreExternals=false;
-    unsigned initNodeTableSize = queryCoven().getInitSDSNodes();
+    unsigned initNodeTableSize = queryDefaultDali()->queryCoven().getInitSDSNodes();
     allNodes.ensure(initNodeTableSize?initNodeTableSize:INIT_NODETABLE_SIZE);
     externalSizeThreshold = config.getPropInt("@externalSizeThreshold", DEFAULT_EXTERNAL_SIZE_THRESHOLD);
     remoteBackupLocation.set(config.queryProp("@remoteBackupLocation"));
@@ -6207,7 +6207,7 @@ void CCovenSDSManager::saveStore(const char *storeName, bool currentEdition)
     } ignore;
     iStoreHelper->saveStore(root, NULL, currentEdition);
     unsigned initNodeTableSize = allNodes.maxElements()+OVERFLOWSIZE;
-    queryCoven().setInitSDSNodes(initNodeTableSize>INIT_NODETABLE_SIZE?initNodeTableSize:INIT_NODETABLE_SIZE);
+    queryDefaultDali()->queryCoven().setInitSDSNodes(initNodeTableSize>INIT_NODETABLE_SIZE?initNodeTableSize:INIT_NODETABLE_SIZE);
 }
 
 CServerRemoteTree *CCovenSDSManager::queryRegisteredTree(__int64 uniqId)
@@ -8391,7 +8391,7 @@ public:
     void start()
     {
         CriticalBlock b(crit);
-        ICoven  &coven=queryCoven();
+        ICoven  &coven=queryDefaultDali()->queryCoven();
         assertex(coven.inCoven()); // must be member of coven
         if (config)
             sdsConfig.setown(config->getPropTree("SDS"));

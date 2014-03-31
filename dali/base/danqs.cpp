@@ -76,7 +76,7 @@ public:
         CHECKEDCRITICALBLOCK(sect,60000);
         if(transactionId)
             throw MakeStringException(0, "Dali Named Queues: trying to start nested transaction frames");
-        transactionId = queryCoven().getUniqueId();
+        transactionId = queryDefaultDali()->queryCoven().getUniqueId();
     }
 
     bool commit()
@@ -97,7 +97,7 @@ private:
             return false;
         CMessageBuffer mb;
         mb.append((int)kind).append(transactionId);
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST);
         unsigned ret;
         mb.read(ret);
         if(mb.getPos()>mb.length())
@@ -129,7 +129,7 @@ public:
     CNamedQueueHandler(const char *_name, int _priority, bool _oneshot, SessionId _transaction)
         : name(_name)
     {
-        id = queryCoven().getUniqueId();
+        id = queryDefaultDali()->queryCoven().getUniqueId();
         priority = _priority;
         oneshot = _oneshot;
         transaction = _transaction;
@@ -140,7 +140,7 @@ public:
         bool osdummy = true; // serverside always one shot currently
         CMessageBuffer mb;
         mb.append((int)MQR_GET_QUEUE).append(id).append(name).append(priority).append(osdummy).append(transaction);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST)) 
+        if (!queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST))
             mb.clear();
         mbout.swapWith(mb);
         return mbout.length()!=0;
@@ -254,7 +254,7 @@ public:
         size32_t len = buf.length();
         CMessageBuffer mb;
         mb.append((int)MQR_ADD_QUEUE).append(name).append(parent->queryTransactionId()).append(priority).append(len).append(buf);
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST);
         unsigned ret;
         StringAttr except;
         mb.read(ret);
@@ -316,7 +316,7 @@ public:
             size32_t maxsz = 0x100000;  // 1MB
             mb.append(maxsz);
         }
-        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST);
+        queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST);
         unsigned ret;
         mb.read(ret);
         if (!buf||!ret) {
@@ -368,7 +368,7 @@ public:
             try {
                 CMessageBuffer mb;
                 mb.append((int)MQR_CANCEL_SUB).append(id);
-                queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST);
+                queryDefaultDali()->queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_NAMED_QUEUE_REQUEST);
             }
             catch (IException *e)
             {   
@@ -460,7 +460,7 @@ class CDaliNamedQueueServer: public IDaliServer, public Thread, implements IConn
             CMessageBuffer mb;
             mb.init(client,MPTAG_DALI_NAMED_QUEUE_REQUEST,replytag);
             mb.swapWith(buf);
-            queryCoven().reply(mb);     // may fail
+            queryDefaultDali()->queryCoven().reply(mb);     // may fail
         }
         void cancel() 
         { 
@@ -510,7 +510,7 @@ public:
     {
         if (!stopped) {
             stopped = true;
-            queryCoven().cancel(RANK_ALL,MPTAG_DALI_NAMED_QUEUE_REQUEST);
+            queryDefaultDali()->queryCoven().cancel(RANK_ALL,MPTAG_DALI_NAMED_QUEUE_REQUEST);
         }
         if (!join(1000*60*5)) {
             PROGLOG("CDaliNamedQueueServer::stop timed out - active function is %d",fn);
@@ -519,7 +519,7 @@ public:
 
     int run()
     {
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         CMessageBuffer mb;
         stopped = false;
         while (!stopped) {
@@ -544,7 +544,7 @@ public:
     void processMessage(CMessageBuffer &mb)
     {
         // single threaded by caller
-        ICoven &coven=queryCoven();
+        ICoven &coven=queryDefaultDali()->queryCoven();
         mb.read(fn);
         unsigned ret = 0;
         try {

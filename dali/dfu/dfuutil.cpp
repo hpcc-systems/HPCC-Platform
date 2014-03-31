@@ -610,7 +610,7 @@ public:
         }
         dstlfn = dstname.append(dstlfn).str();
         dlfn.set(dstname.str());
-        if (!srcdali.get()||queryCoven().inCoven(srcdali)) {
+        if (!srcdali.get()||queryDefaultDali()->queryCoven().inCoven(srcdali)) {
             // if dali is local and filenames same
             if (strcmp(slfn.get(),dlfn.get())==0) {
                 if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
@@ -697,7 +697,7 @@ public:
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s in Dali %s is not a simple file",filename,srcdali?srcdali->endpoint().getUrlStr(s).str():"(local)");
         }
-        if (!srcdali.get()||queryCoven().inCoven(srcdali)) {
+        if (!srcdali.get()||queryDefaultDali()->queryCoven().inCoven(srcdali)) {
             // if dali is local and filenames same
             if (strcmp(slfn.get(),dlfn.get())==0) {
                 extendSubFile(ftree,dlfn.get());
@@ -903,7 +903,7 @@ public:
         if (daliep.port==0)
             daliep.port= DALI_SERVER_PORT;
         Owned<INode> srcnode = createINode(daliep);
-        if (queryCoven().inCoven(srcnode))
+        if (queryDefaultDali()->queryCoven().inCoven(srcnode))
         {
             // if dali is local and filenames same
             CDfsLogicalFileName dlfn;

@@ -34,19 +34,105 @@
 extern bool registerClientProcess(ICommunicator *comm, IGroup *& retcoven,unsigned timeout,DaliClientRole role);
 extern void stopClientProcess();
 
-static bool daliClientIsActive = false;
-static INode * daliClientLoggingParent = 0;
-
-static IArrayOf<IDaliClientShutdown> shutdownHooks;
-MODULE_INIT(INIT_PRIORITY_STANDARD)
+class CDaliClient : public CInterfaceOf<IDaliClient>
 {
-    return true;
-}
-MODULE_EXIT()
-{
-    shutdownHooks.kill();
-}
+public:
+    CDaliClient()
+    {
+        daliClientLoggingParent = 0;
+    }
+    ~CDaliClient()
+    {
+        while (shutdownHooks.ordinality())
+        {
+            Owned<IDaliClientShutdown> c = &shutdownHooks.popGet();
+            c->clientShutdown();
+        }
+        clearPagedElementsCache(); // has connections
+        closeSDS();
+        closeSubscriptionManager();
+        stopClientProcess();
+        closeCoven(coven);
+        stopMPServer();
+    }
 
+    virtual void addShutdownHook(IDaliClientShutdown &shutdown)
+    {
+        shutdownHooks.append(*LINK(&shutdown));
+    }
+
+    virtual void removeShutdownHook(IDaliClientShutdown &shutdown)
+    {
+        shutdownHooks.zap(shutdown);
+    }
+
+    //MORE: These should be in a different interface
+    virtual void connectLogMsgManagerToDali()
+    {
+        IGroup & servers = queryDefaultDali()->queryCoven().queryGroup();
+        unsigned parentRank = getRandom() % servers.ordinality();    // PG: Not sure if logging to random parent is best?
+        daliClientLoggingParent = &servers.queryNode(parentRank);
+        connectLogMsgManagerToParent(LINK(daliClientLoggingParent));   // PG: This may be nasty if node chosen is down
+    }
+
+    virtual void disconnectLogMsgManagerFromDali()
+    {
+        disconnectLogMsgManagerFromParentOwn(daliClientLoggingParent);
+        daliClientLoggingParent = 0;
+    }
+
+
+    bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout)
+    {
+        assertex(servergrp);
+        startMPServer(mpport);
+        Owned<ICommunicator> comm(createCommunicator(servergrp,true));
+        IGroup * covengrp;
+        if (!registerClientProcess(comm.get(),covengrp,timeout,role))
+        {
+            return false;
+        }
+        coven.setown(initCoven(covengrp,NULL,clientVersion, minServerVersion));
+        covengrp->Release();
+        queryLogMsgManager()->setSession(myProcessSession());
+        return true;
+    }
+
+    virtual ICoven &queryCoven()
+    {
+        //MORE: This doesn't work
+        if (!coven)
+        {
+            Owned<IException> e = MakeStringException(-1, "No access to Dali - this normally means a plugin call is being called from a thorslave");
+            EXCLOG(e, NULL);
+            throw e.getClear();
+        }
+        return *coven;
+    }
+
+    virtual bool verifyCovenConnection(unsigned timeout)
+    {
+        return coven->verifyAll(true, timeout);
+    }
+
+    int compareDaliServerVersion(const char * version) const
+    {
+        return coven->queryDaliServerVersion().compare(version);
+    }
+
+    const CDaliVersion &queryDaliServerVersion() const
+    {
+        return coven->queryDaliServerVersion();
+    }
+
+protected:
+    Owned<ICoven> coven;
+    INode * daliClientLoggingParent;
+    IArrayOf<IDaliClientShutdown> shutdownHooks;
+};
+
+//Use a pointer instead of an Owned<IDaliClient> - to prevent the system crashing if closedownClientProcess not called.
+static IDaliClient * defaultDaliClient;
 
 class CDaliClientException: public CInterface, public IDaliClient_Exception
 {
@@ -88,77 +174,93 @@ IDaliClient_Exception *createClientException(DaliClientError err, const char *ms
 
 
 
-bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout)
-{
-    assertex(servergrp);
-    daliClientIsActive = true;
-    startMPServer(mpport);
-    Owned<ICommunicator> comm(createCommunicator(servergrp,true));
-    IGroup * covengrp;
-    if (!registerClientProcess(comm.get(),covengrp,timeout,role))
-    {
-        daliClientIsActive = false;
-        return false;
-    }
-    initCoven(covengrp,NULL,clientVersion, minServerVersion);
-    covengrp->Release();
-    queryLogMsgManager()->setSession(myProcessSession());
-    return true;
-}
-
-void addShutdownHook(IDaliClientShutdown &shutdown)
-{
-    shutdownHooks.append(*LINK(&shutdown));
-}
-
-void removeShutdownHook(IDaliClientShutdown &shutdown)
-{
-    shutdownHooks.zap(shutdown);
-}
-
 void closedownClientProcess()
 {
-    if (!daliClientIsActive)
-        return;
-    while (shutdownHooks.ordinality())
-    {
-        Owned<IDaliClientShutdown> c = &shutdownHooks.popGet();
-        c->clientShutdown();
-    }
-    clearPagedElementsCache(); // has connections
-    closeSDS();
-    closeSubscriptionManager();
-    stopClientProcess();
-    closeCoven();
-    stopMPServer();
-    daliClientIsActive = false;
+    ::Release(defaultDaliClient);
+    defaultDaliClient = NULL;
 }
 
-bool reinitClientProcess(IGroup *servergrp, DaliClientRole role, const char *clientVersion, const char *minServerVersion, unsigned timeout)
+IDaliClient * createDaliClient(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout)
 {
-    if (!daliClientIsActive)
-        return false;
-    while (shutdownHooks.ordinality())
-    {
-        Owned<IDaliClientShutdown> c = &shutdownHooks.popGet();
-        c->clientShutdown();
-    }
-    stopClientProcess();
-    closeSDS();
-    closeSubscriptionManager();
-    closeCoven();
-    Owned<ICommunicator> comm(createCommunicator(servergrp,true));
-    IGroup * covengrp;
-    if (!registerClientProcess(comm.get(),covengrp,timeout,role))   // should be save as before TBD
-        return false;
-    initCoven(covengrp,NULL,clientVersion,minServerVersion);
-    covengrp->Release();
-    return true;
+    Owned<CDaliClient> client = new CDaliClient;
+    if (client->initClientProcess(servergrp, role, mpport, clientVersion, minServerVersion, timeout))
+        return client.getClear();
+    return NULL;
+}
+
+bool initClientProcess(IGroup *servergrp, DaliClientRole role, unsigned mpport, const char *clientVersion, const char *minServerVersion, unsigned timeout)
+{
+    closedownClientProcess();
+    defaultDaliClient = createDaliClient(servergrp, role, mpport, clientVersion, minServerVersion, timeout);
+    return defaultDaliClient != NULL;
+}
+
+IDaliClient * queryDefaultDali()
+{
+    return defaultDaliClient;
 }
 
 bool daliClientActive()
 {
-    return daliClientIsActive;
+    return defaultDaliClient != NULL;
+}
+
+//--------------------------------------------------------------------------------------------------------------------
+
+
+class CDaliServerAsClient : public CInterfaceOf<IDaliClient>
+{
+public:
+    CDaliServerAsClient(ICoven * _coven) : coven(_coven)
+    {
+    }
+
+    virtual void addShutdownHook(IDaliClientShutdown &shutdown)
+    {
+        //MORE: Does this need to be implemented?
+        throwUnexpected();
+    }
+
+    virtual void removeShutdownHook(IDaliClientShutdown &shutdown)
+    {
+    }
+
+    virtual void connectLogMsgManagerToDali()
+    {
+    }
+
+    virtual void disconnectLogMsgManagerFromDali()
+    {
+    }
+
+
+    virtual ICoven &queryCoven()
+    {
+        return *coven;
+    }
+
+    virtual bool verifyCovenConnection(unsigned timeout)
+    {
+        return coven->verifyAll(true, timeout);
+    }
+
+    int compareDaliServerVersion(const char * version) const
+    {
+        return coven->queryDaliServerVersion().compare(version);
+    }
+
+    const CDaliVersion &queryDaliServerVersion() const
+    {
+        return coven->queryDaliServerVersion();
+    }
+
+protected:
+    Linked<ICoven> coven;
+};
+
+void initPseudoDaliClient(ICoven * coven)
+{
+    defaultDaliClient = new CDaliServerAsClient(coven);
 }
 
 // Server status
@@ -197,24 +299,10 @@ void CSDSServerStatus::stop()
 
 
 
-void connectLogMsgManagerToDali()
-{
-    IGroup & servers = queryCoven().queryGroup();
-    unsigned parentRank = getRandom() % servers.ordinality();    // PG: Not sure if logging to random parent is best?
-    daliClientLoggingParent = &servers.queryNode(parentRank);
-    connectLogMsgManagerToParent(LINK(daliClientLoggingParent));   // PG: This may be nasty if node chosen is down
-}
-
-void disconnectLogMsgManagerFromDali()
-{
-    disconnectLogMsgManagerFromParentOwn(daliClientLoggingParent);
-    daliClientLoggingParent = 0;
-}
-
 void connectLogMsgListenerToDali()
 {
     // MORE: may be better to make daservers share messages, in which case only need to listen to one member of coven
-    IGroup & servers = queryCoven().queryGroup();
+    IGroup & servers = queryDefaultDali()->queryCoven().queryGroup();
     unsigned idx;
     unsigned max = servers.ordinality();
     for(idx = 0; idx < max; idx++)
@@ -224,13 +312,12 @@ void connectLogMsgListenerToDali()
 void disconnectLogMsgListenerFromDali()
 {
     // MORE: may be better to make daservers share messages, in which case only need to listen to one member of coven
-    IGroup & servers = queryCoven().queryGroup();
+    IGroup & servers = queryDefaultDali()->queryCoven().queryGroup();
     unsigned idx;
     unsigned max = servers.ordinality();
     for(idx = 0; idx < max; idx++)
         disconnectLogMsgListenerFromChild(&servers.queryNode(idx));
 }
-
 
 bool updateDaliEnv(IPropertyTree *env, bool forceGroupUpdate, const char *daliIp)
 {

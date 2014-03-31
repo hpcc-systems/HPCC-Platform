@@ -43,6 +43,7 @@ static unsigned clientThrottleDelay;
 #define MIN_GETIDS_SVER "3.5"
 
 
+//GH:HPCC-10593 This needs to be removed to allow multiple dali connections.
 static ISDSManager *SDSManager=NULL;
 
 static CriticalSection SDScrit;
@@ -688,7 +689,7 @@ IPropertyTree *CClientRemoteTree::_queryBranch(const char *xpath)
             {
                 bool useServerIter = connection.queryServerGetIdsAvailable();
                 // bug in matching tree creation caused failure if path pointed to self
-                if (useServerIter && queryDaliServerVersion().compare("3.7") < 0)
+                if (useServerIter && queryDefaultDali()->compareDaliServerVersion("3.7") < 0)
                 {
                     CDisableLazyFetchBlock b2(connection);
                     const IPropertyTree *me = queryPropTree(xpath);
@@ -1107,24 +1108,21 @@ void CClientRemoteTree::localizeElements(const char *xpath, bool allTail)
 
 CClientSDSManager::CClientSDSManager() 
 {
-    CDaliVersion serverVersionNeeded("2.1"); // to ensure backward compatibility
-    childrenCanBeMissing = queryDaliServerVersion().compare(serverVersionNeeded) >= 0;
-    CDaliVersion serverVersionNeeded2("3.4"); // to ensure backward compatibility
-    lazyExtFlag = queryDaliServerVersion().compare(serverVersionNeeded2) >= 0 ? DAMP_SDSCMD_LAZYEXT : 0;
+    childrenCanBeMissing = compareDaliServerVersion("2.1") >= 0;
+    lazyExtFlag = compareDaliServerVersion("3.4") >= 0 ? DAMP_SDSCMD_LAZYEXT : 0;
     properties = NULL;
     IPropertyTree &props = queryProperties();
-    CDaliVersion serverVersionNeeded3(MIN_GETXPATHS_CONNECT_SVER);
-    if (queryDaliServerVersion().compare(serverVersionNeeded3) < 0)
+    if (compareDaliServerVersion(MIN_GETXPATHS_CONNECT_SVER) < 0)
         props.removeProp("Client/@serverIter");
     else
         props.setPropBool("Client/@serverIterAvailable", true);
     clientThrottleLimit = props.getPropInt("Client/Throttle/@limit", CLIENT_THROTTLE_LIMIT);
     clientThrottleDelay = props.getPropInt("Client/Throttle/@delay", CLIENT_THROTTLE_DELAY);
 
-    CDaliVersion appendOptVersionNeeded(MIN_APPEND_OPT_SVER); // min version for append optimization
-    props.setPropBool("Client/@useAppendOpt", queryDaliServerVersion().compare(appendOptVersionNeeded) >= 0);
-    CDaliVersion serverVersionNeeded4(MIN_GETIDS_SVER); // min version for get xpath with server ids
-    if (queryDaliServerVersion().compare(serverVersionNeeded4) >= 0)
+    // min version for append optimization
+    props.setPropBool("Client/@useAppendOpt", compareDaliServerVersion(MIN_APPEND_OPT_SVER) >= 0);
+    // min version for get xpath with server ids
+    if (compareDaliServerVersion(MIN_GETIDS_SVER) >= 0)
         props.setPropBool("Client/@serverGetIdsAvailable", true);
     concurrentRequests.signal(clientThrottleLimit);
 }
@@ -1141,6 +1139,12 @@ CClientSDSManager::~CClientSDSManager()
     ::Release(properties);
 }
 
+int CClientSDSManager::compareDaliServerVersion(const char * version) const
+{
+    //MORE: This should use the actual dali that it is connected to
+    return queryDefaultDali()->compareDaliServerVersion(version);
+}
+
 bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
 {
     if (throttle)
@@ -1149,7 +1153,7 @@ bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
         if (!avail)
             WARNLOG("Excessive concurrent Dali SDS client transactions. Transaction delayed.");
         bool res;
-        try { res = queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST); }
+        try { res = queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST); }
         catch (IException *)
         {
             if (avail)
@@ -1161,7 +1165,7 @@ bool CClientSDSManager::sendRequest(CMessageBuffer &mb, bool throttle)
         return res;
     }
     else
-        return queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST);
+        return queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST);
 }
 
 CRemoteTreeBase *CClientSDSManager::get(CRemoteConnection &connection, __int64 serverId)
@@ -1543,8 +1547,7 @@ void CClientSDSManager::changeMode(CRemoteConnection &connection, unsigned mode,
 #define MIN_MCONNECT_SVER "1.5"
 IRemoteConnections *CClientSDSManager::connect(IMultipleConnector *mConnect, SessionId id, unsigned timeout)
 {
-    CDaliVersion serverVersionNeeded(MIN_MCONNECT_SVER);
-    if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
+    if (compareDaliServerVersion(MIN_MCONNECT_SVER) < 0)
         throw MakeSDSException(SDSExcpt_VersionMismatch, "Multiple connect not supported by server versions prior to "MIN_MCONNECT_SVER);
 
     if (0 == id || id != myProcessSession())
@@ -1676,7 +1679,7 @@ StringBuffer &CClientSDSManager::getInfo(SdsDiagCommand cmd, StringBuffer &out)
     mb.append((int)DAMP_SDSCMD_DIAGNOSTIC);
     mb.append((int)cmd);
 
-    if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+    if (!queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnositc info");
 
     SdsReply replyMsg;  
@@ -1739,12 +1742,11 @@ StringBuffer &CClientSDSManager::getExternalReport(StringBuffer &out)
 IPropertyTree &CClientSDSManager::queryProperties() const
 {
     if (properties) return *properties;
-    CDaliVersion serverVersionNeeded("3.1");
-    if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
+    if (compareDaliServerVersion("3.1") < 0)
         throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= 3.1 for getProperties usage");
     CMessageBuffer mb;
     mb.append((int)DAMP_SDSCMD_GETPROPS);
-    if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+    if (!queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnostic info");
     SdsReply replyMsg;  
     mb.read((int &)replyMsg);
@@ -1942,8 +1944,7 @@ void CClientSDSManager::setConfigOpt(const char *opt, const char *value)
 #define MIN_QUERYCOUNT_SVER "3.8"
 unsigned CClientSDSManager::queryCount(const char *xpath)
 {
-    CDaliVersion serverVersionNeeded(MIN_QUERYCOUNT_SVER);
-    if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
+    if (compareDaliServerVersion(MIN_QUERYCOUNT_SVER) < 0)
         throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " MIN_QUERYCOUNT_SVER " for queryCount(<xpath>)");
 
     CMessageBuffer mb;
@@ -1969,8 +1970,7 @@ unsigned CClientSDSManager::queryCount(const char *xpath)
 #define MIN_UPDTENV_SVER "3.9"
 bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroupUpdate, StringBuffer &response)
 {
-    CDaliVersion serverVersionNeeded(MIN_QUERYCOUNT_SVER);
-    if (queryDaliServerVersion().compare(serverVersionNeeded) < 0)
+    if (compareDaliServerVersion(MIN_QUERYCOUNT_SVER) < 0)
     {
         // have to do the old fashioned way, from client
         Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),0, INFINITE);
@@ -2004,7 +2004,7 @@ bool CClientSDSManager::updateEnvironment(IPropertyTree *newEnv, bool forceGroup
     newEnv->serialize(mb);
     mb.append(forceGroupUpdate);
 
-    if (!queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
+    if (!queryDefaultDali()->queryCoven().sendRecv(mb, RANK_RANDOM, MPTAG_DALI_SDS_REQUEST))
         throw MakeSDSException(SDSExcpt_FailedToCommunicateWithServer, "querying sds diagnositc info");
 
     bool result = false;
@@ -2035,7 +2035,7 @@ ISDSManager &querySDS()
     CriticalBlock block(SDScrit);
     if (SDSManager)
         return *SDSManager;
-    else if (!queryCoven().inCoven())
+    else if (!queryDefaultDali()->queryCoven().inCoven())
     {
         if (!SDSManager)
             SDSManager = new CClientSDSManager();
@@ -2053,7 +2053,7 @@ void closeSDS()
 {
     CriticalBlock block(SDScrit);
     if (SDSManager) {
-        assertex(!queryCoven().inCoven()); // only called by client
+        assertex(!queryDefaultDali()->queryCoven().inCoven()); // only called by client
         try {
             delete SDSManager;
         }

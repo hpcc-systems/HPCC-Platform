@@ -219,7 +219,7 @@ void SashaMain()
                 PROGLOG("Sasha stopping");
                 break;
             }
-            else if (!verifyCovenConnection(30*1000)) {
+            else if (!queryDefaultDali() || !queryDefaultDali()->verifyCovenConnection(30*1000)) {
                 PROGLOG("Dali stopped");
                 stopped = true;
             }
@@ -326,7 +326,7 @@ int main(int argc, const char* argv[])
         setPasswordsFromSDS(); 
         if (!stop&!coalescer) {
             startLogMsgParentReceiver();    // for auditing
-            connectLogMsgManagerToDali();
+            queryDefaultDali()->connectLogMsgManagerToDali();
         }
             
         if (stop) {

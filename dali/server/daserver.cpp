@@ -92,7 +92,7 @@ void AddServers(const char *auditdir)
 }
 
 static bool serverStopped = false;
-static void stopServer()
+static void stopServer(ICoven * coven)
 {
     CriticalBlock b(*stopServerCrit); // NB: will not protect against abort handler, which will interrupt thread and be on same TID.
     if (serverStopped) return;
@@ -109,7 +109,7 @@ static void stopServer()
         LOG(MCprogress, unknownJob, "Stopping %d",i);
         server.stop();
     }
-    closeCoven();
+    closeCoven(coven);
     ForEachItemInRev(j,servers)
     {
         servers.remove(j);      // ensure correct order for destruction
@@ -118,11 +118,20 @@ static void stopServer()
     stopMPServer();
 }
 
-bool actionOnAbort()
+class ServerAbortHandler : public CInterfaceOf<IAbortHandler>
 {
-    stopServer();
-    return true;
-} 
+public:
+    ServerAbortHandler(ICoven * _coven) : coven(_coven) {}
+
+    virtual bool onAbort()
+    {
+        stopServer(coven);
+        return true;
+    }
+
+protected:
+    Linked<ICoven> coven;
+};
 
 #ifdef _WIN32
 class CReleaseMutex : public CInterface, public Mutex
@@ -359,7 +368,9 @@ int main(int argc, char* argv[])
         startLogMsgParentReceiver();
 
         IGroup *group = createIGroup(epa); 
-        initCoven(group,serverConfig);
+        Owned<ICoven> coven = initCoven(group,serverConfig);
+        initPseudoDaliClient(coven);
+
         group->Release();
         epa.kill();
 
@@ -382,7 +393,9 @@ int main(int argc, char* argv[])
         if (serverConfig->getPropBool("SDS/@enableSysLog",true))
             UseSysLogForOperatorMessages();
         AddServers(auditDir.str());
-        addAbortHandler(actionOnAbort);
+
+        Owned<IAbortHandler> abortHandler = new ServerAbortHandler(coven);
+        addAbortHandler(*abortHandler);
         Owned<IPerfMonHook> perfMonHook;
         startPerformanceMonitor(serverConfig->getPropInt("Coven/@perfReportDelay", DEFAULT_PERF_REPORT_DELAY)*1000, PerfMonStandard, perfMonHook);
         StringBuffer absPath;
@@ -409,7 +422,7 @@ int main(int argc, char* argv[])
         catch (IException *e)
         {
             EXCLOG(e, "Failed whilst starting servers");
-            stopServer();
+            stopServer(coven);
             stopPerformanceMonitor();
             throw;
         }
@@ -420,7 +433,7 @@ int main(int argc, char* argv[])
         }
         catch (IException *e) {
             EXCLOG(e, "LDAP initialization error");
-            stopServer();
+            stopServer(coven);
             stopPerformanceMonitor();
             throw;
         }
@@ -441,11 +454,11 @@ int main(int argc, char* argv[])
         }
         if (ok) {
             writeSentinelFile(sentinelFile);
-            covenMain();
-            removeAbortHandler(actionOnAbort);
+            covenMain(coven);
+            removeAbortHandler(*abortHandler);
         }
         stopLogMsgListener();
-        stopServer();
+        stopServer(coven);
         stopPerformanceMonitor();
     }
     catch (IException *e) {

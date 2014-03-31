@@ -72,7 +72,7 @@ void cmdServer(int argc, const char *argv[])
 }
 
 
-bool actionOnAbort()
+static bool actionOnAbort()
 {
     LOG(MCprogress, unknownJob, "Exiting");
     closeEnvironment();

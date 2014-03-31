@@ -1759,7 +1759,7 @@ public:
     CTimedCacheItem(const char *_owner)
         : owner(_owner)
     {
-        hint = queryCoven().getUniqueId();
+        hint = queryDefaultDali()->queryCoven().getUniqueId();
         due = msTick()+PAGE_CACHE_TIMEOUT;
     }
 };
