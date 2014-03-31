@@ -624,13 +624,13 @@ class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiR
     IRowInterfaces *rowIf;
     Owned<IThorRowCollector> collector;
     Owned<IRowWriter> writer;
-    bool eoi, grouped, shared;
+    bool eoi, shared;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _grouped, bool _shared, unsigned spillPriority)
-        : activity(_activity), rowIf(_rowIf), grouped(_grouped), shared(_shared)
+    COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool grouped, bool _shared, unsigned spillPriority)
+        : activity(_activity), rowIf(_rowIf), shared(_shared)
     {
         collector.setown(createThorRowCollector(activity, rowIf, NULL, stableSort_none, rc_mixed, spillPriority, grouped));
         writer.setown(collector->getWriter());

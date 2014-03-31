@@ -190,11 +190,13 @@ protected:
         if (0 == numRows)
             return false;
 
-        StringBuffer tempname;
-        GetTempName(tempname,"streamspill", true);
-        spillFile.setown(createIFile(tempname.str()));
+        StringBuffer tempName;
+        VStringBuffer tempPrefix("streamspill_%d", activity.queryActivityId());
+        GetTempName(tempName, tempPrefix.str(), true);
+        spillFile.setown(createIFile(tempName.str()));
 
-        rows.save(*spillFile, useCompression); // saves committed rows
+        VStringBuffer spillPrefixStr("SpillableStream(%d)", SPILL_PRIORITY_SPILLABLE_STREAM); // const for now
+        rows.save(*spillFile, useCompression, spillPrefixStr.str()); // saves committed rows
         rows.noteSpilled(numRows);
         return true;
     }
@@ -1181,12 +1183,12 @@ static int callbackSortRev(IInterface **cb2, IInterface **cb1)
     return 1;
 }
 
-rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression)
+rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression, const char *tracingPrefix)
 {
     rowidx_t n = numCommitted();
     if (0 == n)
         return 0;
-    ActPrintLog(&activity, "CThorSpillableRowArray::save %"RIPF"d rows", n);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save %"RIPF"d rows", tracingPrefix, n);
 
     if (useCompression)
         assertex(0 == writeCallbacks.ordinality()); // incompatible
@@ -1237,7 +1239,7 @@ rowidx_t CThorSpillableRowArray::save(IFile &iFile, bool useCompression)
     writer->flush();
     offset_t bytesWritten = writer->getPosition();
     writer.clear();
-    ActPrintLog(&activity, "CThorSpillableRowArray::save done, bytes = %"I64F"d", (__int64)bytesWritten);
+    ActPrintLog(&activity, "%s: CThorSpillableRowArray::save done, bytes = %"I64F"d", tracingPrefix, (__int64)bytesWritten);
     return n;
 }
 
@@ -1366,19 +1368,21 @@ protected:
             return false;
 
         totalRows += numRows;
+        StringBuffer tempPrefix, tempName;
         if (iCompare)
         {
             ActPrintLog(&activity, "Sorting %"RIPF"d rows", spillableRows.numCommitted());
             CCycleTimer timer;
             spillableRows.sort(*iCompare, maxCores); // sorts committed rows
             ActPrintLog(&activity, "Sort took: %f", ((float)timer.elapsedMs())/1000);
+            tempPrefix.append("srt");
         }
-
-        StringBuffer tempname;
-        GetTempName(tempname,"srtspill",true);
-        Owned<IFile> iFile = createIFile(tempname.str());
+        tempPrefix.appendf("spill_%d", activity.queryActivityId());
+        GetTempName(tempName, tempPrefix.str(), true);
+        Owned<IFile> iFile = createIFile(tempName.str());
         spillFiles.append(new CFileOwner(iFile.getLink()));
-        spillableRows.save(*iFile, activity.getOptBool(THOROPT_COMPRESS_SPILLS, true)); // saves committed rows
+        VStringBuffer spillPrefixStr("RowCollector(%d)", spillPriority);
+        spillableRows.save(*iFile, activity.getOptBool(THOROPT_COMPRESS_SPILLS, true), spillPrefixStr.str()); // saves committed rows
         spillableRows.noteSpilled(numRows);
 
         ++overflowCount;
