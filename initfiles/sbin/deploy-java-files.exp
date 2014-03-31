@@ -1,0 +1,288 @@
+#!/usr/bin/env expect
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+
+proc usage {} {
+
+   puts ""
+   puts "Usage: [lindex [split $::argv0 '/'] end]  --ip <value> --source <value>"
+   puts "       --sudo --target <value> --user <value> --userhome <value>"
+   puts ""
+
+}
+
+proc validateParameters {} {
+   global ip user target source user_home
+
+   set message ""
+   if { [string length $user] == 0 } {
+      set message " ${message} user,"
+   }
+   if { [string length $ip] == 0 } {
+      set message "${message} ip,"
+   }
+   if { [string length ${target}] == 0 } {
+      set message "${message} target,"
+   }
+   if { [string length ${source}] == 0 } {
+      set message "${message} source,"
+   }
+   if { [string length $user_home] == 0 } {
+      set message "${message} userhome,"
+   }
+
+   if { [string length $message] > 0 } {
+       puts ""
+       puts "Missing[string trimright $message ,]"
+       usage
+       exit 1
+   }
+}
+
+##############################################################
+#                                                            #
+# Check ssh connection and target directory                  #
+#                                                            #
+##############################################################
+proc checkConnectionAndTarget {} {
+   global ip user target target_dir prefix prompt password user_home
+
+   set timeout 30
+   #exp_internal 1
+   puts "Test connection and make sure target directory exists."
+   if { [ string length $::env(password)] == 0 } {
+      spawn ssh -i ${user_home}/.ssh/id_rsa -o BatchMode=yes \
+          -o StrictHostKeyChecking=no ${user}@${ip}
+   } else {
+      spawn ssh ${user}@${ip}
+   }
+
+   expect {
+      *?assword:* {
+         send "${password}\r"
+         exp_continue
+      } "*?ermission denied*" {
+         puts "The user or password is wrong"
+         exit 1
+      } yes/no)? {
+         send "yes\r"
+         exp_continue
+      } timeout {
+         exit 1;
+      } eof {
+         wait
+         exit 1;
+      }  -re "${prompt}" { }
+   }
+   send "if \[ ! -d ${target} \]; then  mkdir -p ${target}; fi\r"
+   expect   -re ".*"
+   send "echo \$?\r"
+   expect   -re "(\r\n| )(\[0-9]*)\r\n" {
+       if { [string compare $expect_out(2,string) "0" ] != 0 } {
+          puts "Failed to check ${target}"
+          close;wait
+          exit 1
+       }
+   }
+
+   if { [string compare $prefix "sudo"] == 0 } {
+      send "mkdir ${target_dir}\r"
+      expect   -re ".*"
+      send "echo \$?\r"
+      expect   -re "(\r\n| )(\[0-9]*)\r\n" {
+         if { [string compare $expect_out(2,string) "0" ] != 0 } {
+            puts "Failed to check ${target}"
+            close;wait
+            exit 1
+         }
+      }
+   }
+   send "exit\r "
+   interact
+}
+
+
+##############################################################
+#                                                            #
+# Transfer file to remote system                             #
+#                                                            #
+##############################################################
+proc transferFiles {} {
+
+   global ip user source target_dir prompt password user_home
+
+   set timeout 60
+   puts "${ip}: Copying ${source} to ${target_dir} on ${ip}"
+   if { [ string length ${password}] == 0 } {
+      spawn bash -c "scp -r -i ${user_home}/.ssh/id_rsa ${source} ${user}@${ip}:${target_dir}"
+   } else {
+      spawn bash -c "scp -r ${source}  ${user}@$ip:${target_dir}"
+   }
+   expect {
+      *?assword:* {
+         send "${password}\r"
+         exp_continue
+      } "*?ermission denied*" {
+         puts "The user or password is wrong"
+         exit 1
+      } yes/no)? {
+         send "yes\r"
+         exp_continue
+      } timeout {
+         exit 1;
+      } eof {
+         catch wait result
+         if { [lindex $result 3] != 0 } {
+            exit [lindex $result 3]
+         }
+      }
+   }
+
+}
+
+
+
+##############################################################
+#                                                            #
+# mv transfered files to target directory through sudo       #
+#                                                            #
+##############################################################
+proc moveFiles {} {
+   global ip user prefix target target_dir prompt password user_home
+
+   set timeout 30
+   #exp_internal 1
+
+   if { [string compare $prefix "sudo" ] != 0 } {
+      return
+   }
+
+   puts "Move files from temporay directory to target through sudo"
+   if { [string length ${password}] == 0 } {
+      spawn ssh -i ${user_home}/.ssh/id_rsa -o BatchMode=yes \
+         -o StrictHostKeyChecking=no ${user}@${ip}
+   } else {
+      spawn ssh ${user}@${ip}
+   }
+
+   expect {
+      *?assword:* {
+         send "${password}\r"
+         exp_continue
+      } "*?ermission denied*" {
+         puts "The user or password is wrong"
+         exit 1
+      } yes/no)? {
+         send "yes\r"
+         exp_continue
+      } timeout {
+         exit 1;
+      } eof {
+         exit 1;
+      }  -re "${prompt}" { }
+   }
+
+   sleep 1
+   expect  -re .*
+
+   send "sudo cp -r ${target_dir}/* ${target}\r"
+   sleep 2
+   expect {
+      *?assword* {
+         send "${password}\r"
+         exp_continue
+      } "orry, try again" {
+          puts "The user or password is wrong"
+          exit 1
+      } timeout {
+          exit 1;
+      } eof {
+          exit 1;
+      }  -re "${prompt}" { }
+   }
+   expect  -re .*
+   send "echo \$?\r"
+   expect   -re "(\r\n| )(\[0-9]*)\r\n" {
+       if { [string compare $expect_out(2,string) "0" ] == 0 } {
+          send "rm -rf ${target_dir}\r"
+          expect {
+            timeout {
+               exit 1;
+            } eof {
+               exit 1;
+            }  -re "${prompt}" { }
+          }
+          send "exit\r"
+       } else {
+          puts "Failed to copy to $target through sudo"
+          close;wait
+          exit 1
+       }
+   }
+   interact
+}
+
+
+##############################################################
+#                                                            #
+# Main                                                       #
+#                                                            #
+##############################################################
+
+set user ""
+set ip ""
+set prefix ""
+set source ""
+set target ""
+set user_home ""
+
+for { set i 0 } { $i < $argc } { incr i } {
+    if {  [string compare -nocase [lindex $argv $i] "--ip"] == 0 } {
+       incr i
+       set ip [lindex $argv $i]
+    } elseif {  [string compare -nocase [lindex $argv $i] "--user"] == 0 } {
+       incr i
+       set user [lindex $argv $i]
+    } elseif {  [string compare -nocase [lindex $argv $i] "--source"] == 0 } {
+       incr i
+       set source [lindex $argv $i]
+    } elseif {  [string compare -nocase [lindex $argv $i] "--target"] == 0 } {
+       incr i
+       set target [lindex $argv $i]
+    } elseif {  [string compare -nocase [lindex $argv $i] "--userhome"] == 0 } {
+       incr i
+       set user_home [lindex $argv $i]
+    } elseif {  [string compare -nocase [lindex $argv $i] "--sudo"] == 0 } {
+       set prefix "sudo"
+    }
+}
+
+
+
+set prompt  "(${user}@|\\r\\n\\$ |\\r\\n# )"
+set password $::env(password)
+
+validateParameters
+
+if { [string compare $prefix "sudo"] == 0 } {
+   set target_dir /tmp/target_dir_[pid]
+} else {
+   set target_dir ${target}
+}
+
+checkConnectionAndTarget
+transferFiles
+moveFiles

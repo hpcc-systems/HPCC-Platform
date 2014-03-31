@@ -25,4 +25,7 @@
 
 if [ -f "${INSTALL_DIR}/etc/init.d/install-init" ]; then
     ${INSTALL_DIR}/etc/init.d/install-init
+else
+   [ -d ${INSTALL_DIR}/sbin ] && rm -rf  ${INSTALL_DIR}/sbin
+   [ -d ${INSTALL_DIR}/bin ] && rm -rf  ${INSTALL_DIR}/bin
 fi
