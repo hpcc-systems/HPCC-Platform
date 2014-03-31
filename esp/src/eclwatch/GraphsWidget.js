@@ -80,7 +80,13 @@ define([
                 this.refreshGrid();
             }
 
-            this.timingTreeMap.init(params);
+            this.timingTreeMap.init(lang.mixin(params, {
+                query: {
+                    graphsOnly: true,
+                    graphName: "*",
+                    subGraphId: "*"
+                }
+            }));
             this.timingTreeMap.onClick = function (value) {
                 context.syncSelectionFrom(context.timingTreeMap);
             }
@@ -114,8 +120,8 @@ define([
                     }),
                     Name: {
                         label: this.i18n.Name, width: 72, sortable: true,
-                        formatter: function (Name, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "GraphClick'>" + Name + "</a>";
+                        formatter: function (Name, row) {
+                            return "<a href='#' class='" + context.id + "GraphClick'>" + Name + "</a>";
                         }
                     },
                     Label: { label: this.i18n.Label, sortable: true },
@@ -134,7 +140,6 @@ define([
                 }
             }, domID);
 
-            var context = this;
             retVal.on(".dgrid-row:click", function (evt) {
                 context.syncSelectionFrom(context.grid);
             });

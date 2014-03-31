@@ -132,6 +132,7 @@ define([
                 }
 
                 timers.push(lang.mixin(Timers.ECLTimer[i], {
+                    __hpcc_id: i + 1,
                     Seconds: Math.round(secs * 1000) / 1000,
                     HasSubGraphId: Timers.ECLTimer[i].SubGraphId && Timers.ECLTimer[i].SubGraphId != "" ? true : false
                 }));
