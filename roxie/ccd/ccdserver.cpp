@@ -17185,7 +17185,6 @@ private:
           leftHash(helper.queryHashLeft()), rightHash(helper.queryHashRight())
         {
             size = 0;
-            mask = 0;
         }
         virtual const void *find(const void * left) const = 0;
         virtual const void *findNext(const void * left) const = 0;
@@ -17196,22 +17195,16 @@ private:
         IHash * leftHash;
         IHash * rightHash;
         unsigned size;
-        unsigned mask;
     };
 
     class DedupLookupTable : public LookupTable
     {
     public:
-        DedupLookupTable(ConstPointerArray &rightRows, IHThorHashJoinArg &helper, bool _dedupOnAdd)
-        : LookupTable(helper), dedupOnAdd(_dedupOnAdd)
+        DedupLookupTable(ConstPointerArray &rightRows, IHThorHashJoinArg &helper)
+        : LookupTable(helper)
         {
-            unsigned minsize = (4*rightRows.length())/3;
-            size = 2;
-            while((minsize >>= 1) > 0)
-                size <<= 1;
-            mask = size - 1;
-            table = (const void * *)calloc(size, sizeof(void *)); // This should probably be allocated from roxiemem
-            findex = fstart = BadIndex;
+            size = (4*rightRows.length())/3 + 1;
+            table = (const void * *)calloc(size, sizeof(void *)); // This should probably be allocated from roxiemem (and size rounded up to actual available size)
             ForEachItemIn(idx, rightRows)
                 add(rightRows.item(idx));
         }
@@ -17226,13 +17219,80 @@ private:
 
         virtual const void *find(const void * left) const
         {
-            fstart = leftHash->hash(left) & mask;
+            unsigned index = leftHash->hash(left) % size;
+            unsigned start = index;
+            while (table[index])
+            {
+                if(leftRightCompare->docompare(left, table[index]) == 0)
+                    return table[index];
+                index++;
+                if (index==size)
+                    index = 0;
+                if (index==start)
+                    throw MakeStringException(ROXIE_JOIN_ERROR, "Internal error in lookup join activity (hash table full on lookup)");
+            }
+            return NULL;
+        }
+
+        virtual const void *findNext(const void * left) const
+        {
+            return NULL;
+        }
+
+    protected:
+        void add(const void * right)
+        {
+            unsigned index = rightHash->hash(right) % size;
+            unsigned start = index;
+            while (table[index])
+            {
+                if (rightCompare->docompare(table[index], right) == 0)
+                {
+                    ReleaseRoxieRow(right);
+                    return;
+                }
+                index++;
+                if (index==size)
+                    index = 0;
+                if (index==start)
+                    throw MakeStringException(ROXIE_JOIN_ERROR, "Internal error in lookup join activity (hash table full on add)");
+            }
+            table[index] = right;
+        }
+
+        const void * * table;
+    };
+
+    class FewLookupTable : public LookupTable
+    {
+    public:
+        FewLookupTable(ConstPointerArray &rightRows, IHThorHashJoinArg &helper)
+        : LookupTable(helper)
+        {
+            size = (4*rightRows.length())/3 + 1;
+            table = (const void * *)calloc(size, sizeof(void *)); // This should probably be allocated from roxiemem
+            findex = fstart = BadIndex;
+            ForEachItemIn(idx, rightRows)
+                add(rightRows.item(idx));
+        }
+
+        ~FewLookupTable()
+        {
+            unsigned i;
+            for(i=0; i<size; i++)
+                ReleaseRoxieRow(table[i]);
+            free(table);
+        }
+
+        virtual const void *find(const void * left) const
+        {
+            fstart = leftHash->hash(left) % size;
             findex = fstart;
             return doFind(left);
         }
         virtual const void *findNext(const void * left) const
         {
-            if(findex == BadIndex)
+            if (findex == BadIndex)
                 return NULL;
             advance();
             return doFind(left);
@@ -17240,20 +17300,14 @@ private:
     protected:
         void add(const void * right)
         {
-            findex = BadIndex;
-            unsigned start = rightHash->hash(right) & mask;
+            unsigned start = rightHash->hash(right) % size;
             unsigned index = start;
-            while(table[index])
+            while (table[index])
             {
-                if(dedupOnAdd && (rightCompare->docompare(table[index], right) == 0))
-                {
-                    ReleaseRoxieRow(right);
-                    return;
-                }
                 index++;
-                if(index==size)
+                if (index==size)
                     index = 0;
-                if(index==start)
+                if (index==start)
                     throwUnexpected(); //table is full, should never happen
             }
             table[index] = right;
@@ -17270,7 +17324,7 @@ private:
         {
             while(table[findex])
             {
-                if(leftRightCompare->docompare(left, table[findex]) == 0)
+                if (leftRightCompare->docompare(left, table[findex]) == 0)
                     return table[findex];
                 advance();
             }
@@ -17279,7 +17333,6 @@ private:
         }
 
         const void * * table;
-        bool dedupOnAdd;
         unsigned mutable fstart;
         unsigned mutable findex;
         static unsigned const BadIndex;
@@ -17294,11 +17347,11 @@ private:
             rightRows.swapWith(rowtable);
             UInt64Array groups;
             unsigned numRows = rowtable.length();
-            if (rowtable.length())
+            if (numRows)
             {
                 unsigned groupStart = 0;
                 const void *groupStartRow = rowtable.item(0);
-                for(unsigned i=1; i < numRows; i++)
+                for (unsigned i=1; i < numRows; i++)
                 {
                     const void *thisRow = rowtable.item(i);
                     if (rightCompare->docompare(groupStartRow, thisRow))
@@ -17310,17 +17363,12 @@ private:
                 }
                 groups.append(makeint64(groupStart, numRows-groupStart));
             }
-            unsigned minsize = (4*groups.length())/3;
-            size = 2;
-            while((minsize >>= 1) > 0)
-                size <<= 1;
-            mask = size - 1;
+            size = (4*groups.length())/3 + 1;
             table = (__uint64 *) calloc(size, sizeof(__uint64)); // This should probably be allocated from roxiemem
             ForEachItemIn(idx, groups)
             {
                 unsigned __int64 group = groups.item(idx);
                 unsigned groupstart = high(group);
-                unsigned grouplen = low(group);
                 const void *row = rowtable.item(groupstart);
                 add(row, group);
             }
@@ -17337,14 +17385,14 @@ private:
 
         void add(const void *row, unsigned __int64 group)
         {
-            unsigned start = rightHash->hash(row) & mask;
+            unsigned start = rightHash->hash(row) % size;
             unsigned index = start;
-            while(table[index])
+            while (table[index])
             {
                 index++;
-                if(index==size)
+                if (index==size)
                     index = 0;
-                if(index==start)
+                if (index==start)
                     throwUnexpected(); //table is full, should never happen
             }
             table[index] = group;
@@ -17352,28 +17400,29 @@ private:
 
         virtual const void *find(const void * left) const
         {
-            unsigned fstart = leftHash->hash(left) & mask;
-            unsigned findex = fstart;
-            while(table[findex])
+            unsigned index = leftHash->hash(left) % size;
+            unsigned start = index;
+            while (table[index])
             {
-                __uint64 group = table[findex];
+                __uint64 group = table[index];
                 currentMatch = high(group);
                 const void *right = rowtable.item(currentMatch);
-                if(leftRightCompare->docompare(left, right) == 0)
+                if (leftRightCompare->docompare(left, right) == 0)
                 {
                     currentMatch++;
                     matchCount = low(group) - 1;
                     return right;
                 }
-                findex++;
-                if(findex==size)
-                    findex = 0;
-                if(findex==fstart)
+                index++;
+                if (index==size)
+                    index = 0;
+                if (index==start)
                     throw MakeStringException(ROXIE_JOIN_ERROR, "Internal error in lookup join activity (hash table full on lookup)");
             }
             matchCount = 0;
             return NULL;
         }
+
         virtual const void *findNext(const void * left) const
         {
             if (!matchCount)
@@ -17395,6 +17444,7 @@ private:
     bool eog;
     bool many;
     bool dedupRHS;
+    bool useFewTable;
     bool matchedGroup;
     const void *left;
     OwnedConstRoxieRow defaultRight;
@@ -17431,8 +17481,8 @@ private:
     }
 
 public:
-    CRoxieServerLookupJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorHashJoinArg &)basehelper)
+    CRoxieServerLookupJoinActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _useFewTable)
+        : CRoxieServerTwoInputActivity(_factory, _probeManager), helper((IHThorHashJoinArg &)basehelper), useFewTable(_useFewTable)
     {
         unsigned joinFlags = helper.getJoinFlags();
         leftOuterJoin = (joinFlags & JFleftouter) != 0;
@@ -17472,27 +17522,41 @@ public:
                     break;
                 rightset.append(next);
             }
-            unsigned rightord = rightset.ordinality();
             if (!dedupRHS)
             {
-                if (!helper.isRightAlreadySorted())
+                if (useFewTable)
                 {
-                    if (helper.getJoinFlags() & JFunstable)
-                    {
-                        qsortvec(const_cast<void * *>(rightset.getArray()), rightset.ordinality(), *helper.queryCompareRight());
-                    }
-                    else
-                    {
-                        MemoryAttr indexbuff(rightord*sizeof(void **)); // This should probably be allocated from roxiemem
-                        void *** index = (void ***)indexbuff.bufferBase();
-                        qsortvecstable(const_cast<void * *>(rightset.getArray()), rightset.ordinality(), *helper.queryCompareRight(), index);
-                    }
+                    table.setown(new FewLookupTable(rightset, helper));  // NOTE - takes ownership of rightset
                 }
-                table.setown(new ManyLookupTable(rightset, helper));  // NOTE - takes ownership of rightset
+                else
+                {
+                    if (!helper.isRightAlreadySorted())
+                    {
+                        if (helper.getJoinFlags() & JFunstable)
+                        {
+                            qsortvec(const_cast<void * *>(rightset.getArray()), rightset.ordinality(), *helper.queryCompareRight());
+                        }
+                        else
+                        {
+                            unsigned rightord = rightset.ordinality();
+                            MemoryAttr tempAttr(rightord*sizeof(void **)); // Temp storage for stable sort. This should probably be allocated from roxiemem
+                            void **temp = (void **) tempAttr.bufferBase();
+                            void **_rows = const_cast<void * *>(rightset.getArray());
+                            memcpy(temp, _rows, rightord*sizeof(void **));
+                            qsortvecstable(temp, rightord, *helper.queryCompareRight(), (void ***)_rows);
+                            for (int i = 0; i < rightord; i++)
+                            {
+                                *_rows = **((void ***)_rows);
+                                _rows++;
+                            }
+                        }
+                    }
+                    table.setown(new ManyLookupTable(rightset, helper));  // NOTE - takes ownership of rightset
+                }
             }
             else
             {
-                table.setown(new DedupLookupTable(rightset, helper, dedupRHS)); // NOTE - takes ownership of rightset
+                table.setown(new DedupLookupTable(rightset, helper)); // NOTE - takes ownership of rightset
             }
         }
         catch (...)
@@ -17872,28 +17936,31 @@ private:
     
 };
 
-unsigned const CRoxieServerLookupJoinActivity::DedupLookupTable::BadIndex(static_cast<unsigned>(-1));
+unsigned const CRoxieServerLookupJoinActivity::FewLookupTable::BadIndex(static_cast<unsigned>(-1));
 
 class CRoxieServerLookupJoinActivityFactory : public CRoxieServerJoinActivityFactory
 {
 public:
-    CRoxieServerLookupJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+    CRoxieServerLookupJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
         : CRoxieServerJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
     {
         Owned<IHThorHashJoinArg> helper = (IHThorHashJoinArg *) helperFactory();
+        useFewTable = _graphNode.getPropBool("hint[@name='usefewtable']/@value", false);
         if((helper->getJoinFlags() & (JFfirst | JFfirstleft | JFfirstright | JFslidingmatch)) != 0)
             throw MakeStringException(ROXIE_INVALID_FLAGS, "Invalid flags for lookup join activity"); // code generator should never create such an activity
     }
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        return new CRoxieServerLookupJoinActivity(this, _probeManager);
+        return new CRoxieServerLookupJoinActivity(this, _probeManager, useFewTable);
     }
+protected:
+    bool useFewTable;
 };
 
-IRoxieServerActivityFactory *createRoxieServerLookupJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
+IRoxieServerActivityFactory *createRoxieServerLookupJoinActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode)
 {
-    return new CRoxieServerLookupJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
+    return new CRoxieServerLookupJoinActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind, _graphNode);
 }
 
 //=====================================================================================================
