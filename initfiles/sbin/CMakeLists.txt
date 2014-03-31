@@ -26,6 +26,7 @@ GENERATE_BASH(processor ${bash-vars} "install-cluster.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc-push.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "hpcc-run.sh.in" outFiles)
 GENERATE_BASH(processor ${bash-vars} "remote-install-engine.sh.in" outFiles)
+GENERATE_BASH(processor ${bash-vars} "deploy-java-files.sh.in" outFiles)
 
 SET(noInstall)
 GENERATE_BASH(processor ${bash-vars} "prerm.in" noInstall)
@@ -38,6 +39,12 @@ FOREACH( oFILES
     ${outFiles}
     ${CMAKE_CURRENT_BINARY_DIR}/regex.awk
     ${CMAKE_CURRENT_SOURCE_DIR}/alter_confs.sh
+    ${CMAKE_CURRENT_SOURCE_DIR}/cluster_script.py
+    ${CMAKE_CURRENT_SOURCE_DIR}/deploy-java-files.exp
 )
     install ( PROGRAMS ${oFILES} DESTINATION sbin COMPONENT Runtime )
 ENDFOREACH ( oFILES )
+
+install( DIRECTORY hpcc DESTINATION sbin COMPONENT Runtime
+         USE_SOURCE_PERMISSIONS
+         PATTERN *.pyc EXCLUDE )
