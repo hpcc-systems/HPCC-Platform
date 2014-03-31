@@ -26276,7 +26276,7 @@ protected:
         package.setown(createRoxiePackage(NULL, NULL));
         ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
-        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, false));
+        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, false, false));
         timer->reset();
     }
 
