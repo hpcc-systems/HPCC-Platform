@@ -27,13 +27,11 @@
 #include "hqlerrors.hpp"
 #include "hql.hpp"
 #include "hqlgram.hpp"
+#include "eclrtl.hpp"
 
 #include "hqlgram.h"
 
 #define YY_DECL int HqlLex::doyyFlex(YYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState)
-
-//declare this rather than including the header because VC++ seems to get very upset running out of heap if you do.
-extern int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char const * outcodepage);
 
 //#define DEBUG_TOKEN 
 
@@ -1632,12 +1630,18 @@ FUNCTIONMACRO|MACRO {
                             lexer->reportError(returnToken, ERR_ESCAPE_UNKNOWN, "%s", msg.str());
                             returnToken.setPosition(lexer->yyLineNo, oldColumn, lexer->yyPosition, lexer->querySourcePath());
                         }
-                        Owned<IValue> unicodeValue = createUnicodeValue(CUR_TOKEN_TEXT + start, CUR_TOKEN_LENGTH - (start+1), "", true, true);
+
+                        size32_t size = CUR_TOKEN_LENGTH - (start+1);
+                        const char * value = CUR_TOKEN_TEXT + start;
+                        Owned<IValue> unicodeValue;
                         if (utf8)
                         {
-                            Owned<ITypeInfo> castType = makeUtf8Type(UNKNOWN_LENGTH, NULL);
-                            unicodeValue.setown(unicodeValue->castTo(castType));
+                            size32_t length = rtlUtf8Length(size, value);
+                            unicodeValue.setown(createUtf8Value(length, value, "", true));
                         }
+                        else
+                            unicodeValue.setown(createUnicodeValue(value, size, "", true, true));
+                        
                         returnToken.setExpr(createConstant(unicodeValue.getClear()));
                         return (UNICODE_CONST);
                     }
