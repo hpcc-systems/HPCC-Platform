@@ -365,6 +365,7 @@ public:
                         eof = true;
                         return NULL;
                     }
+                    finishedLooping = false; // reset because global and execute may feed rows back to this node
                 }
                 else if (finishedLooping)
                 {
