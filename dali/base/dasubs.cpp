@@ -230,51 +230,58 @@ public:
         case MSR_ADD_SUBSCRIPTION_PRIMARY:
         case MSR_ADD_SUBSCRIPTION_SECONDARY:
             {
-                SubscriptionId sid;
-                mb.read(subtag).read(sid);
-                INode * subscriber = deserializeINode(mb);
-                size32_t dsize;
-                mb.read(dsize);
-                CSubscriptionStub *sub = new CSubscriptionStub(subtag,sid,dsize,mb.readDirect(dsize),subscriber);
-                mb.clear();
+                Owned<IException> exception;
+                Owned<CSubscriptionStub> sub;
+                try
                 {
-                    CHECKEDCRITICALBLOCK(stubsect,60000);
-                    removeAborted();
+                    SubscriptionId sid;
+                    mb.read(subtag).read(sid);
+                    Owned<INode> subscriber = deserializeINode(mb);
+                    size32_t dsize;
+                    mb.read(dsize);
+                    sub.setown(new CSubscriptionStub(subtag,sid,dsize,mb.readDirect(dsize),subscriber));
+                    mb.clear();
+                    {
+                        CHECKEDCRITICALBLOCK(stubsect,60000);
+                        removeAborted();
+                    }
+                    manager = queryManager(subtag);
+                    if (manager) {
+                        if (fn==MSR_ADD_SUBSCRIPTION_PRIMARY) {
+                            rank_t n = coven.queryGroup().ordinality();
+                            rank_t mr = coven.queryGroup().rank();
+                            for (rank_t r = 0;r<n;r++) {
+                                if (r!=mr) {
+                                    int fn = MSR_ADD_SUBSCRIPTION_SECONDARY;
+                                    mb.clear().append(fn).append(subtag).append(sid);
+                                    subscriber->serialize(mb);
+                                    mb.append(dsize).append(dsize,sub->queryData().get());
+                                    coven.sendRecv(mb,r,MPTAG_DALI_SUBSCRIPTION_REQUEST);
+                                    // should check for server failure here
+                                }
+                            }
+                        }
+                        manager->add(sub.getLink(),sid);
+                    }
+                }
+                catch (IException *e) {
+                    exception.setown(e);
+                    sub.clear();
                 }
                 unsigned retry=0;
+                if (exception)
+                    serializeException(exception, mb);
                 while (!coven.reply(mb,60000)) {
                         StringBuffer eps;
                         DBGLOG("MSR_ADD_SUBSCRIPTION_PRIMARY reply timed out to %s try %d",mb.getSender().getUrlStr(eps).str(),retry+1);
-                        if (retry++==3) {
-                            sub->Release();
+                        if (retry++==3)
                             return;
-                        }
                 }
+                if (sub)
                 {
                     CHECKEDCRITICALBLOCK(stubsect,60000);
                     stubs.append(*sub);
                 }
-                manager = queryManager(subtag);
-                if (manager) {
-                    if (fn==MSR_ADD_SUBSCRIPTION_PRIMARY) {
-                        rank_t n = coven.queryGroup().ordinality();
-                        rank_t mr = coven.queryGroup().rank();
-                        for (rank_t r = 0;r<n;r++) {
-                            if (r!=mr) {
-                                int fn = MSR_ADD_SUBSCRIPTION_SECONDARY;
-                                mb.clear().append(fn).append(subtag).append(sid);
-                                subscriber->serialize(mb);
-                                mb.append(dsize).append(dsize,sub->queryData().get());
-                                coven.sendRecv(mb,r,MPTAG_DALI_SUBSCRIPTION_REQUEST);
-                                // should check for server failure here
-                            }
-                        }
-                    }
-                    manager->add(sub,sid);
-                }
-                else 
-                    sub->Release();
-                subscriber->Release();
             }
             break;
         case MSR_REMOVE_SUBSCRIPTION_PRIMARY:
@@ -461,8 +468,10 @@ public:
         mb.append(dlen,data.get());
         try {
             queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SUBSCRIPTION_REQUEST);
+            if (mb.length())
+                throw deserializeException(mb);
         }
-        catch (IDaliClient_Exception *e) {
+        catch (IException *e) {
             PrintExceptionLog(e,"Dali CDaliSubscriptionManagerStub::add");
             throw;
         }
