@@ -407,12 +407,7 @@ define([
                     modifiedtime: { label: this.i18n.Date, width: 180, sortable: false }
                 },
                 getSelected: function () {
-                    var retVal = [];
-                    var store = FileSpray.CreateFileListStore();
-                    for (var key in this.selection) {
-                        retVal.push(store.get(key));
-                    }
-                    return retVal;
+                    return this.inherited(arguments, [FileSpray.CreateFileListStore()]);
                 }
             }, this.id + "LandingZonesGrid");
             this.landingZonesGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
