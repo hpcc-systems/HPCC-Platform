@@ -102,20 +102,20 @@ define([
                     this.wu = ESPWorkunit.Get(params.Wuid);
                     if (this.WUXml) {
                         this.wu.fetchXML(function (xml) {
-                            context.editor.setValue(xml);
+                            context.setText(xml);
                         });
                     } else {
                         this.wu.fetchText(function (text) {
-                            context.editor.setValue(text);
+                            context.setText(text);
                         });
                     }
                 } else if (lang.exists("ECL", params)) {
-                    context.editor.setValue(params.ECL ? params.ECL : "");
+                    this.setText(params.ECL ? params.ECL : "");
                 } else if (lang.exists("sourceURL", params)) {
                     xhr(params.sourceURL, {
                         handleAs: "text"
                     }).then(function (data) {
-                        context.editor.setValue(data);
+                        context.setText(data);
                     });
                 }
             },
@@ -150,8 +150,19 @@ define([
                 this.highlightLines.push(this.editor.setLineClass(line - 1, "highlightline"));
             },
 
-            setText: function (ecl) {
-                this.editor.setValue(ecl);
+            setText: function (text) {
+                try {
+                    this.editor.setValue(text);
+                } catch (e) {
+                    topic.publish("hpcc/brToaster", {
+                        Severity: "Error",
+                        Source: "ECLSourceWidget.setText",
+                        Exceptions: [
+                            { Message: this.i18n.SetTextError },
+                            { Message: e.toString ? (this.i18n.Details + ":\n" + e.toString()) : e }
+                        ]
+                    });
+                }
             },
 
             setReadOnly: function (readonly) {
