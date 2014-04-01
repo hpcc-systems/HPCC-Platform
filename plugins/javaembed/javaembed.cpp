@@ -131,7 +131,7 @@ public:
 
         // These may be useful for debugging
 #ifdef _DEBUG
-        optionStrings.append("-Xcheck:jni");
+        // optionStrings.append("-Xcheck:jni");
         // optionStrings.append("-verbose:jni");
 #endif
 
