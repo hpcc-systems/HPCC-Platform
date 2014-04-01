@@ -193,11 +193,14 @@ define([
                 });
             },
 
-            getSelected: function() {
+            getSelected: function(store) {
+                if (!store) {
+                    store = this.store;
+                }
                 var retVal = [];
                 for (var id in this.selection) {
                     if (this.selection[id]) {
-                        var storeItem = this.store.get(id);
+                        var storeItem = store.get(id);
                         if (storeItem) {
                             retVal.push(storeItem);
                         }
