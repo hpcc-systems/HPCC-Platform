@@ -992,6 +992,7 @@ protected:
     unsigned ctxPrefetchProjectPreload;
     bool traceActivityTimes;
     bool checkingHeap;
+    bool timeActivities;
 
     Owned<IConstWorkUnit> workUnit;
     Owned<IRoxieDaliHelper> daliHelperLink;
@@ -1057,7 +1058,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive, bool _checkingHeap)
+    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive, bool _checkingHeap, bool _timeActivities=defaultTimeActivities)
         : factory(_factory), logctx(_logctx)
     {
         if (_packet)
@@ -1087,6 +1088,7 @@ public:
             probeManager.setown(createDebugManager(debugContext, "slaveDebugger"));
         }
         checkingHeap = _checkingHeap;
+        timeActivities = _timeActivities;
 
         aborted = false;
         exceptionLogged = false;
@@ -1228,7 +1230,7 @@ public:
         }
     }
 
-    virtual bool queryTimeActivities() const
+    virtual bool queryTraceActivityTimes() const
     {
         return traceActivityTimes;
     }
@@ -1236,6 +1238,11 @@ public:
     virtual bool queryCheckingHeap() const
     {
         return checkingHeap;
+    }
+
+    virtual bool queryTimeActivities() const
+    {
+        return timeActivities;
     }
 
     virtual void checkAbort()
@@ -2341,7 +2348,7 @@ protected:
 
 IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *packet)
 {
-    return new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryTraceActivityTimes(), _logctx.queryDebuggerActive(), _logctx.queryCheckingHeap());
+    return new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryTraceActivityTimes(), _logctx.queryDebuggerActive(), _logctx.queryCheckingHeap(), _logctx.queryTimeActivities());
 }
 
 class CRoxieServerDebugContext : extends CBaseServerDebugContext
@@ -2697,8 +2704,14 @@ public:
         ctxFetchPreload = context->getPropInt("_FetchPreload", defaultFetchPreload);
         ctxPrefetchProjectPreload = context->getPropInt("_PrefetchProjectPreload", defaultPrefetchProjectPreload);
 
-        traceActivityTimes = context->getPropBool("_TraceActivityTimes", false) || context->getPropBool("@timing", false);
         checkingHeap = context->getPropBool("_CheckingHeap", defaultCheckingHeap) || context->getPropBool("@checkingHeap", defaultCheckingHeap);
+
+        traceActivityTimes = context->getPropBool("_TraceActivityTimes", false) || context->getPropBool("@timing", false);
+
+        timeActivities = context->getPropBool("@timeActivities", defaultTimeActivities);
+
+        if (traceActivityTimes && !timeActivities)
+            timeActivities = true;
     }
 
     virtual roxiemem::IRowManager &queryRowManager()
