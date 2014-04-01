@@ -739,6 +739,25 @@ IValue *createUnicodeValue(char const * value, unsigned size, char const * local
     return ret;
 }
 
+IValue *createUtf8Value(size32_t len, char const * value, char const * locale, bool unescape)
+{
+    if (unescape)
+    {
+        rtlDataAttr temp;
+        size32_t newlen = 0;
+        size32_t size = rtlUtf8Size(len, value);
+        rtlCodepageToUtf8XUnescape(newlen, temp.refstr(), size, value, "UTF-8");
+
+        ITypeInfo * type = makeUtf8Type(newlen, createLowerCaseAtom(locale));
+        return createUtf8Value(temp.getstr(), type);
+    }
+    else
+    {
+        ITypeInfo * type = makeUtf8Type(len, createLowerCaseAtom(locale));
+        return createUtf8Value(value, type);
+    }
+}
+
 IValue *createUnicodeValue(char const * value, ITypeInfo * type)
 {
     if(type->getSize() == UNKNOWN_LENGTH)

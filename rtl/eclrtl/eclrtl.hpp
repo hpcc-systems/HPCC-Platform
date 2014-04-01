@@ -322,6 +322,8 @@ ECLRTL_API void rtlCodepageToVUnicode(unsigned outlen, UChar * out, unsigned inl
 ECLRTL_API void rtlVCodepageToUnicode(unsigned outlen, UChar * out, char const * in, char const * codepage);
 ECLRTL_API void rtlVCodepageToVUnicode(unsigned outlen, UChar * out, char const * in, char const * codepage);
 ECLRTL_API void rtlCodepageToUnicodeUnescape(unsigned outlen, UChar * out, unsigned inlen, char const * in, char const * codepage);
+ECLRTL_API void rtlCodepageToUtf8XUnescape(unsigned & outlen, char * & out, unsigned inlen, char const * in, char const * codepage);
+
 ECLRTL_API void rtlUnicodeToCodepage(unsigned outlen, char * out, unsigned inlen, UChar const * in, char const * codepage);
 ECLRTL_API void rtlUnicodeToData(unsigned outlen, void * out, unsigned inlen, UChar const * in);
 ECLRTL_API void rtlUnicodeToVCodepage(unsigned outlen, char * out, unsigned inlen, UChar const * in, char const * codepage);

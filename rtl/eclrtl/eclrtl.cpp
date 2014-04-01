@@ -3181,6 +3181,24 @@ void rtlCodepageToUnicodeXUnescape(unsigned & outlen, UChar * & out, unsigned in
     normalized.extract(0, outlen, out);
 }
 
+void rtlCodepageToUtf8XUnescape(unsigned & outlen, char * & out, unsigned inlen, char const * in, char const * codepage)
+{
+    //If the input contains a character which doesn't exist in its claimed codepage, this will
+    //generate U+FFFD (substitution character). This most likely won't be displayed.
+    UnicodeString raw(in, inlen, codepage);
+    UnicodeString unescaped = raw.unescape();
+    UnicodeString normalized;
+    normalizeUnicodeString(unescaped, normalized);
+
+    UConverter * utf8Conv = queryRTLUnicodeConverter(UTF8_CODEPAGE)->query();
+    UErrorCode err = U_ZERO_ERROR;
+    size32_t outsize = normalized.extract(NULL, 0, utf8Conv, err);
+    err = U_ZERO_ERROR;
+    out = (char *)rtlMalloc(outsize);
+    outsize = normalized.extract(out, outsize, utf8Conv, err);
+    outlen = rtlUtf8Length(outsize, out);
+}
+
 void rtlUnicodeToCodepageX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in, char const * codepage)
 {
     //If the unicode contains a character which doesn't exist in the destination codepage,
