@@ -2162,7 +2162,7 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
     translator.bindTableCursor(funcctx, aggregate, "right", no_right, selSeq);
-    translator.doBuildReturnCompare(funcctx, order, no_eq, false);
+    translator.doBuildReturnCompare(funcctx, order, no_eq, false, false);
 
     translator.endNestedClass();
 }

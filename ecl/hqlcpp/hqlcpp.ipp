@@ -749,12 +749,12 @@ class NlpParseContext;
 struct EvaluateCompareInfo
 {
 public:
-    EvaluateCompareInfo(node_operator _op) { actionIfDiffer = null_stmt; op = _op; isBoolEquality = false; hasDefault = true; alwaysReturns = false; }
+    EvaluateCompareInfo(node_operator _op) { actionIfDiffer = null_stmt; op = _op; isBoolEquality = false; neverReturnMatch = true; alwaysReturns = false; }
     EvaluateCompareInfo(const EvaluateCompareInfo & info)
     {
         target.set(info.target); actionIfDiffer = info.actionIfDiffer; op = info.op; isBoolEquality = info.isBoolEquality;
         alwaysReturns = false;
-        hasDefault = true;
+        neverReturnMatch = true;
     }
 
     bool isEqualityCompare() const { return op == no_eq; }
@@ -764,7 +764,7 @@ public:
     node_operator op;
     StmtKind actionIfDiffer;
     bool isBoolEquality;
-    bool hasDefault;
+    bool neverReturnMatch;
     bool alwaysReturns;
 };
 
@@ -1263,7 +1263,7 @@ public:
 
     void doBuildRowIfBranch(BuildCtx & initctx, BuildCtx & ctx, BoundRow * targetRow, IHqlExpression * branchExpr);
 
-    void doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * expr, node_operator op, bool isBoolEquality);
+    void doBuildReturnCompare(BuildCtx & ctx, IHqlExpression * expr, node_operator op, bool isBoolEquality, bool neverReturnTrue);
     void buildReturnOrder(BuildCtx & ctx, IHqlExpression *sortList, const DatasetReference & dataset);
 
     IHqlExpression * createLoopSubquery(IHqlExpression * dataset, IHqlExpression * selSeq, IHqlExpression * rowsid, IHqlExpression * body, IHqlExpression * filter, IHqlExpression * again, IHqlExpression * counter, bool multiInstance, unsigned & loopAgainResult);
