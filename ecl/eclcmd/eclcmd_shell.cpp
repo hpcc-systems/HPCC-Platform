@@ -34,6 +34,8 @@
 
 #ifdef _WIN32
 #include "process.h"
+#else
+#include <pwd.h>
 #endif
 
 int EclCMDShell::callExternal(ArgvIterator &iter)
@@ -109,15 +111,13 @@ int EclCMDShell::run()
 
         if (!optIniFilename)
         {
+            StringBuffer fn;
             if (checkFileExists(INIFILE))
                 optIniFilename.set(INIFILE);
-            else
-            {
-                StringBuffer fn(SYSTEMCONFDIR);
-                fn.append(PATHSEPSTR).append(DEFAULTINIFILE);
-                if (checkFileExists(fn))
-                    optIniFilename.set(fn);
-            }
+            else if (getHomeDir(fn) && checkFileExists(addPathSepChar(fn).append(INIFILE)))
+                optIniFilename.set(fn);
+            else if (fn.set(SYSTEMCONFDIR).append(PATHSEPSTR).append(DEFAULTINIFILE))
+                optIniFilename.set(fn);
         }
 
         globals.setown(createProperties(optIniFilename, true));

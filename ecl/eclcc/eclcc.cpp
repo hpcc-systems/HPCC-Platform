@@ -169,26 +169,13 @@ static bool getPackageFolder(StringBuffer & path)
 
 static bool getHomeFolder(StringBuffer & homepath)
 {
-#ifdef _WIN32
-    const char *home = getenv("APPDATA");
-    if (!home)
+    if (!getHomeDir(homepath))
         return false;
-    // Not the 'official' way - which changes with every windows version
-    // but should work well enough for us (and avoids sorting out windows include mess)
-    homepath.append(home);
-    addPathSepChar(homepath).append(DIR_NAME);
-#else
-    const char *home = getenv("HOME");
-    if (!home)
-    {
-        struct passwd *pw = getpwuid(getuid());
-        home = pw->pw_dir;
-        if (!home)
-            return false;
-    }
-    homepath.append(home);
-    addPathSepChar(homepath).append(".").append(DIR_NAME);
+    addPathSepChar(homepath);
+#ifndef WIN32
+    homepath.append('.');
 #endif
+    homepath.append(DIR_NAME);
     return true;
 }
 
