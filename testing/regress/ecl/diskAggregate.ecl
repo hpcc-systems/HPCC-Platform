@@ -15,26 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
+// Test a case that needs serialize due to child dataset...
+table(sq.SimplePersonBookds, { dataset books := sq.SimplePersonBookDs.books, sq.SimplePersonBookDs.surname, count(group) });
 
-
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
-
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+// ... and a case that doesn't
+table(sq.SimplePersonBookds, { sq.SimplePersonBookDs.surname, count(group) });

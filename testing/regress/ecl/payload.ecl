@@ -15,26 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
+//Sample query for pulling across some sample related payload indexes
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
+i1 := index({ string40 forename, string40 surname }, { unsigned4 id }, sq.PersonIndexName);
+i2 := index({ unsigned4 id }, { unsigned8 filepos }, sq.PersonIndexName+'ID');
 
+ds1 := i1(KEYED(forename = 'Liz'));
+ds2 := JOIN(ds1, i2, KEYED(LEFT.id = RIGHT.id));
+ds3 := FETCH(sq.PersonExDs, ds2, RIGHT.filepos);
 
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
-
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+output(ds1);
+output(ds2);
+output(ds3);

@@ -15,26 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
-
-
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
-
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+//A mistyped query, but interesting never the less - needs to access a stored variable from the child.
+secondBookNameX := (string20)sort(sq.SimplePersonBookDs.books, name)[2].name;
+output(sq.HousePersonBookDs, { dataset people := table(persons, { secondBookNameX, sumage := sum(group, aage) }, secondBookNameX, few)});

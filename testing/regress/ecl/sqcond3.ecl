@@ -15,26 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
+ded := dedup(sq.HousePersonBookDs.persons, forename);
+cnt := table(ded, { cnt := count(group); })[1].cnt;
 
+cond := if (cnt > 2, sort(ded[2..99], forename), sort(sq.HousePersonBookDs.persons, surname, -forename));
 
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
-
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
-
-output(project(ds, t(left)));
+p := table(sq.HousePersonBookDs, { id, dataset children := cond });
+output(p);

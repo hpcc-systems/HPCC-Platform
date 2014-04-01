@@ -10,24 +10,6 @@
 <Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_VAR&apos;,&apos;REGRESS::hthor::DG_VARINDEX&apos;,&apos;__fileposition__&apos;,&apos;__filepos&apos;,&apos;link&apos;) done</Message></Info>
 <Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_VAR&apos;,&apos;REGRESS::hthor::DG_VARVARINDEX&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
 <Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_VAR&apos;,&apos;REGRESS::hthor::DG_VARVARINDEX&apos;,&apos;__fileposition__&apos;,&apos;__filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::SimplePersonBook&apos;,&apos;REGRESS::hthor::SimplePersonBookIndex&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::SimplePersonBook&apos;,&apos;REGRESS::hthor::SimplePersonBookIndex&apos;,&apos;__fileposition__&apos;,&apos;filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::House&apos;,&apos;REGRESS::hthor::Person&apos;,&apos;id&apos;,&apos;houseid&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::Person&apos;,&apos;REGRESS::hthor::Book&apos;,&apos;id&apos;,&apos;personid&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::House&apos;,&apos;REGRESS::hthor::HousePersonBook&apos;,&apos;id&apos;,&apos;id&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::House&apos;,&apos;REGRESS::hthor::PersonBook&apos;,&apos;id&apos;,&apos;houseid&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::House&apos;,&apos;REGRESS::hthor::HouseIndexID&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::House&apos;,&apos;REGRESS::hthor::HouseIndexID&apos;,&apos;__fileposition__&apos;,&apos;filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::Person&apos;,&apos;REGRESS::hthor::PersonIndexID&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::Person&apos;,&apos;REGRESS::hthor::PersonIndexID&apos;,&apos;__fileposition__&apos;,&apos;filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::Book&apos;,&apos;REGRESS::hthor::BookIndexID&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::Book&apos;,&apos;REGRESS::hthor::BookIndexID&apos;,&apos;__fileposition__&apos;,&apos;filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::House&apos;,&apos;REGRESS::hthor::HouseIndex&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::House&apos;,&apos;REGRESS::hthor::HouseIndex&apos;,&apos;__fileposition__&apos;,&apos;filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::Person&apos;,&apos;REGRESS::hthor::PersonIndex&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::PersonIndexID&apos;,&apos;REGRESS::hthor::PersonIndex&apos;,&apos;id&apos;,&apos;id&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::Book&apos;,&apos;REGRESS::hthor::BookIndex&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::BookIndexID&apos;,&apos;REGRESS::hthor::BookIndex&apos;,&apos;id&apos;,&apos;id&apos;,&apos;link&apos;) done</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>
@@ -57,30 +39,4 @@
 <Dataset name='Result 14'>
 </Dataset>
 <Dataset name='Result 15'>
-</Dataset>
-<Dataset name='Result 16'>
-</Dataset>
-<Dataset name='Result 17'>
-</Dataset>
-<Dataset name='Result 18'>
-</Dataset>
-<Dataset name='Result 19'>
-</Dataset>
-<Dataset name='Result 20'>
-</Dataset>
-<Dataset name='Result 21'>
-</Dataset>
-<Dataset name='Result 22'>
-</Dataset>
-<Dataset name='Result 23'>
-</Dataset>
-<Dataset name='Result 24'>
-</Dataset>
-<Dataset name='Result 25'>
-</Dataset>
-<Dataset name='Result 26'>
-</Dataset>
-<Dataset name='Result 27'>
-</Dataset>
-<Dataset name='Result 28'>
 </Dataset>

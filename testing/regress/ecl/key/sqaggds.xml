@@ -1,0 +1,71 @@
+<Dataset name='Result 1'>
+ <Row><addr>99 Maltings Road</addr><_unnamed_2>3</_unnamed_2><_unnamed_3>23.66666666666667</_unnamed_3><_unnamed_4>20000101</_unnamed_4></Row>
+ <Row><addr>Buckingham Palace</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>80.0</_unnamed_3><_unnamed_4>19260421</_unnamed_4></Row>
+ <Row><addr>Bedrock</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>2003.0</_unnamed_3><_unnamed_4>20202</_unnamed_4></Row>
+ <Row><addr>Wimpole Hall</addr><_unnamed_2>1</_unnamed_2><_unnamed_3>67.0</_unnamed_3><_unnamed_4>19361008</_unnamed_4></Row>
+ <Row><addr>56 New Road</addr><_unnamed_2>2</_unnamed_2><_unnamed_3>49.5</_unnamed_3><_unnamed_4>19550312</_unnamed_4></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><addr>99 Maltings Road</addr><oldest>Gavin Halliday</oldest></Row>
+ <Row><addr>Buckingham Palace</addr><oldest>Philip Windsor</oldest></Row>
+ <Row><addr>Bedrock</addr><oldest>Fred Flintstone</oldest></Row>
+ <Row><addr>Wimpole Hall</addr><oldest>John Grabdale</oldest></Row>
+ <Row><addr>56 New Road</addr><oldest>Brian Jones</oldest></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><addr>99 Maltings Road</addr><firstperson>Gavin Halliday</firstperson></Row>
+ <Row><addr>Buckingham Palace</addr><firstperson>Elizabeth Windsor</firstperson></Row>
+ <Row><addr>Bedrock</addr><firstperson>Fred Flintstone</firstperson></Row>
+ <Row><addr>Wimpole Hall</addr><firstperson>John Grabdale</firstperson></Row>
+ <Row><addr>56 New Road</addr><firstperson>Brian Jones</firstperson></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><addr>99 Maltings Road</addr><numbooks>12</numbooks><_unnamed_3>98</_unnamed_3></Row>
+ <Row><addr>Buckingham Palace</addr><numbooks>9</numbooks><_unnamed_3>93</_unnamed_3></Row>
+ <Row><addr>Bedrock</addr><numbooks>1</numbooks><_unnamed_3>55</_unnamed_3></Row>
+ <Row><addr>Wimpole Hall</addr><numbooks>2</numbooks><_unnamed_3>95</_unnamed_3></Row>
+ <Row><addr>56 New Road</addr><numbooks>6</numbooks><_unnamed_3>99</_unnamed_3></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><addr>99 Maltings Road</addr><firstbook>To kill a mocking bird: Harper Lee</firstbook></Row>
+ <Row><addr>Buckingham Palace</addr><firstbook>The bible: Various</firstbook></Row>
+ <Row><addr>Bedrock</addr><firstbook>: </firstbook></Row>
+ <Row><addr>Wimpole Hall</addr><firstbook>Pride and prejudice, 1st edition: Jane Austen</firstbook></Row>
+ <Row><addr>56 New Road</addr><firstbook>All quiet on the western front: Erich Maria Remarque</firstbook></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><surname>Halliday</surname><numbooks>5</numbooks><_unnamed_3>73.8</_unnamed_3><_unnamed_4>98</_unnamed_4></Row>
+ <Row><surname>Halliday</surname><numbooks>4</numbooks><_unnamed_3>68.75</_unnamed_3><_unnamed_4>90</_unnamed_4></Row>
+ <Row><surname>Halliday</surname><numbooks>3</numbooks><_unnamed_3>78.33333333333333</_unnamed_3><_unnamed_4>90</_unnamed_4></Row>
+ <Row><surname>Windsor</surname><numbooks>5</numbooks><_unnamed_3>56.6</_unnamed_3><_unnamed_4>93</_unnamed_4></Row>
+ <Row><surname>Windsor</surname><numbooks>4</numbooks><_unnamed_3>46.25</_unnamed_3><_unnamed_4>85</_unnamed_4></Row>
+ <Row><surname>Flintstone</surname><numbooks>0</numbooks><_unnamed_3>0.0</_unnamed_3><_unnamed_4>0</_unnamed_4></Row>
+ <Row><surname>Flintstone</surname><numbooks>1</numbooks><_unnamed_3>55.0</_unnamed_3><_unnamed_4>55</_unnamed_4></Row>
+ <Row><surname>Grabdale</surname><numbooks>2</numbooks><_unnamed_3>87.5</_unnamed_3><_unnamed_4>95</_unnamed_4></Row>
+ <Row><surname>Jones</surname><numbooks>2</numbooks><_unnamed_3>92.0</_unnamed_3><_unnamed_4>99</_unnamed_4></Row>
+ <Row><surname>Jones</surname><numbooks>4</numbooks><_unnamed_3>62.5</_unnamed_3><_unnamed_4>90</_unnamed_4></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><surname>Halliday</surname><bestbook>The bible: Various</bestbook></Row>
+ <Row><surname>Halliday</surname><bestbook>The thinks you can think: Dr. Seuss</bestbook></Row>
+ <Row><surname>Halliday</surname><bestbook>The Life of Pi: Yan Martel</bestbook></Row>
+ <Row><surname>Windsor</surname><bestbook>The bible: Various</bestbook></Row>
+ <Row><surname>Windsor</surname><bestbook>The cat in the hat: Dr. Seuss</bestbook></Row>
+ <Row><surname>Flintstone</surname><bestbook>: </bestbook></Row>
+ <Row><surname>Flintstone</surname><bestbook>Dinosaur stews: Trog</bestbook></Row>
+ <Row><surname>Grabdale</surname><bestbook>Pride and prejudice, 1st edition: Jane Austen</bestbook></Row>
+ <Row><surname>Jones</surname><bestbook>Fox in Socks: Dr. Seuss</bestbook></Row>
+ <Row><surname>Jones</surname><bestbook>Zen and the art of motorcyle maintenance: Robert Pirsig</bestbook></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><surname>Halliday</surname><firstbook>To kill a mocking bird: Harper Lee</firstbook></Row>
+ <Row><surname>Halliday</surname><firstbook>The thinks you can think: Dr. Seuss</firstbook></Row>
+ <Row><surname>Halliday</surname><firstbook>The Life of Pi: Yan Martel</firstbook></Row>
+ <Row><surname>Windsor</surname><firstbook>The bible: Various</firstbook></Row>
+ <Row><surname>Windsor</surname><firstbook>Greek tragedies: Various</firstbook></Row>
+ <Row><surname>Flintstone</surname><firstbook>: </firstbook></Row>
+ <Row><surname>Flintstone</surname><firstbook>Dinosaur stews: Trog</firstbook></Row>
+ <Row><surname>Grabdale</surname><firstbook>Pride and prejudice, 1st edition: Jane Austen</firstbook></Row>
+ <Row><surname>Jones</surname><firstbook>All quiet on the western front: Erich Maria Remarque</firstbook></Row>
+ <Row><surname>Jones</surname><firstbook>Zen and the art of motorcyle maintenance: Robert Pirsig</firstbook></Row>
+</Dataset>

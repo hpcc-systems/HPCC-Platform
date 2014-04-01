@@ -15,26 +15,21 @@
     limitations under the License.
 ############################################################################## */
 
-namesRecord := 
-            RECORD
-string20        surname;
-            END;
+import $.setup.sq;
 
-idRecord := record
-boolean include;
-dataset(namesRecord) people{maxcount(20)};
-    end;
+forceSubQuery(a) := macro
+    { dedup(a,true)[1] }
+endmacro;
 
+persons := sq.HousePersonBookDs.persons;
 
-ds := dataset([
-        {false,[{'Gavin'},{'Liz'}]},
-        {true,[{'Richard'},{'Jim'}]},
-        {false,[]}], idRecord);
+pr:= table(persons, { fullname := trim(surname) + ', ' + trim(forename), aage });
 
-idRecord t(idRecord l) := transform
-    sortedPeople := sort(l.people, surname);
-    self.people := if(not l.include, sortedPeople(l.include)) + sortedPeople;
-    self := l;
-end;
+//Filtered Aggregate on a projected table.
+a1 := table(pr(aage > 20), { max(group, fullname) });
+output(sq.HousePersonBookDs, forceSubQuery(a1));
 
-output(project(ds, t(left)));
+//Aggregate on a projected table that can't be merged.  seq is actually set to aage
+pr2:= table(persons, { surname, forename, aage, unsigned8 seq := (random() % 100) / 2000 + aage; });
+a2 := table(pr2(seq > 30), { ave(group, aage) });
+output(sq.HousePersonBookDs, forceSubQuery(a2));
