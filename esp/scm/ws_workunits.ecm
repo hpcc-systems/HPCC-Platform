@@ -1252,6 +1252,34 @@ ESPresponse [exceptions_inline] WUListQueriesResponse
     ESParray<ESPstruct QuerySetQuery> QuerysetQueries;
 };
 
+ESPrequest [nil_remove] WUListQueriesUsingFileRequest
+{
+    string Target;
+    string Process;
+    string FileName;
+};
+
+ESPStruct [nil_remove] QueryUsingFile
+{
+    string Id;
+    string Package;
+};
+
+ESPStruct [nil_remove] TargetQueriesUsingFile
+{
+    string Target;
+    string PackageMap;
+    ESParray<ESPstruct QueryUsingFile> Queries;
+};
+
+
+ESPresponse [exceptions_inline] WUListQueriesUsingFileResponse
+{
+    string Process;
+    string FileName;
+    ESParray<ESPstruct TargetQueriesUsingFile> Targets;
+};
+
 ESPrequest WUQueryDetailsRequest
 {
     string QueryId;
@@ -1515,6 +1543,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
     ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
 };

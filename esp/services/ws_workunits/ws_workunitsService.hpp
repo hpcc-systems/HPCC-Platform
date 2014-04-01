@@ -21,9 +21,118 @@
 #include "ws_workunits_esp.ipp"
 #include "workunit.hpp"
 #include "ws_workunitsHelpers.hpp"
+#include "dasds.hpp"
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
 #endif
+
+#define UFO_RELOAD_TARGETS_CHANGED_PMID          0x01
+#define UFO_RELOAD_MAPPED_QUERIES                0x02
+#define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x04
+
+class QueryFilesInUse : public CInterface, implements ISDSSubscription
+{
+    mutable CriticalSection crit;
+    Owned<IPropertyTree> tree;
+    SubscriptionId qsChange;
+    SubscriptionId pmChange;
+    SubscriptionId psChange;
+    bool aborting;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0)
+    {
+        tree.setown(createPTree("QueryFilesInUse"));
+    }
+
+    const char *getPackageMap(const char *target)
+    {
+        VStringBuffer xpath("%s/@pmid", target);
+        return tree->queryProp(xpath);
+    }
+
+    void loadTarget(IPropertyTree *tree, const char *target, unsigned flags);
+    void loadTargets(IPropertyTree *tree, unsigned flags);
+    void reload(unsigned flags)
+    {
+        Owned<IPropertyTree> t = createPTreeFromIPT(tree);
+        loadTargets(t, flags);
+        CriticalBlock b(crit);
+        tree.setown(t.getClear());
+    }
+
+    virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    {
+        Linked<QueryFilesInUse> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
+        if (subid == qsChange)
+            reload(UFO_REMOVE_QUERIES_NOT_IN_QUERYSET);
+        else if (subid == pmChange)
+            reload(UFO_RELOAD_MAPPED_QUERIES);
+        else if (subid == psChange)
+            reload(UFO_RELOAD_TARGETS_CHANGED_PMID);
+    }
+    virtual void subscribe()
+    {
+        CriticalBlock b(crit);
+        try
+        {
+            qsChange = querySDS().subscribe("QuerySets", *this, true);
+            pmChange = querySDS().subscribe("PackageMaps", *this, true);
+            psChange = querySDS().subscribe("PackageSets", *this, true);
+        }
+        catch (IException *E)
+        {
+            //TBD failure to subscribe implies dali is down...
+            E->Release();
+        }
+    }
+    virtual void unsubscribe()
+    {
+        CriticalBlock b(crit);
+        try
+        {
+            if (qsChange)
+                querySDS().unsubscribe(qsChange);
+            if (pmChange)
+                querySDS().unsubscribe(pmChange);
+            if (psChange)
+                querySDS().unsubscribe(psChange);
+        }
+        catch (IException *E)
+        {
+            E->Release();
+        }
+        qsChange = 0;
+        pmChange = 0;
+        psChange = 0;
+    }
+
+    void abort()
+    {
+        aborting=true;
+        CriticalBlock b(crit);
+    }
+    IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn);
+};
+
+class QueryFilesInUseUpdateThread : public Thread
+{
+    QueryFilesInUse &filesInUse;
+
+public:
+    QueryFilesInUseUpdateThread(QueryFilesInUse &_filesInUse) : filesInUse(_filesInUse) {}
+
+    virtual int run()
+    {
+        filesInUse.reload(0);
+        return 0;
+    }
+    virtual void start()
+    {
+        Thread::start();
+    }
+};
 
 class CWsWorkunitsEx : public CWsWorkunits
 {
@@ -32,7 +141,11 @@ public:
 
     CWsWorkunitsEx(){port=8010;}
 
-    virtual ~CWsWorkunitsEx(){};
+    virtual ~CWsWorkunitsEx()
+    {
+        filesInUse.unsubscribe();
+        filesInUse.abort();
+    };
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
     virtual void setContainer(IEspContainer * container)
     {
@@ -59,6 +172,8 @@ public:
     bool onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetCopyQueryRequest &req, IEspWUQuerySetCopyQueryResponse &resp);
     bool onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp);
     bool onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRequest & req, IEspWUQueryDetailsResponse & resp);
+    bool onWUListQueries(IEspContext &context, IEspWUListQueriesRequest &req, IEspWUListQueriesResponse &resp);
+    bool onWUListQueriesUsingFile(IEspContext &context, IEspWUListQueriesUsingFileRequest &req, IEspWUListQueriesUsingFileResponse &resp);
 
     bool onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
     bool onWUInfoDetails(IEspContext &context, IEspWUInfoRequest &req, IEspWUInfoResponse &resp);
@@ -114,7 +229,6 @@ public:
     void setPort(unsigned short _port){port=_port;}
 
     bool isQuerySuspended(const char* query, IConstWUClusterInfo *clusterInfo, unsigned wait, StringBuffer& errorMessage);
-    bool onWUListQueries(IEspContext &context, IEspWUListQueriesRequest &req, IEspWUListQueriesResponse &resp);
     bool onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp);
     bool onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoRequest &req, IEspWUGetZAPInfoResponse &resp);
 private:
@@ -132,6 +246,7 @@ private:
     WUSchedule m_sched;
     unsigned short port;
     Owned<IPropertyTree> directories;
+    QueryFilesInUse filesInUse;
 };
 
 class CWsWorkunitsSoapBindingEx : public CWsWorkunitsSoapBinding
