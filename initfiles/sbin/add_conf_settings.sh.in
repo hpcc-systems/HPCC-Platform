@@ -42,5 +42,7 @@ ${USER_NAME}    soft    nproc     4096
 ${USER_NAME}    hard    nproc     8192
 ${USER_NAME}    soft    rtprio    0
 ${USER_NAME}    hard    rtprio    4
+${USER_NAME}    soft    memlock   unlimited
+${USER_NAME}    hard    memlock   unlimited
 %EOF
 

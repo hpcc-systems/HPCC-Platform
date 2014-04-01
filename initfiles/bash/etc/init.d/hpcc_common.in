@@ -381,6 +381,8 @@ createRuntime() {
     ulimit -c unlimited
     # for rtprio in Roxie
     ulimit -Hr 4
+    # to enable, must also increase vm.nr_hugepages and/or vm.nr_overcommit_hugepages
+    ulimit -l unlimited
 }
 
 start_dafilesrv() {
