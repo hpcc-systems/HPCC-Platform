@@ -339,6 +339,8 @@ protected:
 };
 
 extern ECLRTL_API const void * rtlCloneRow(IEngineRowAllocator * rowAllocator, size32_t len, const void * row);
+extern ECLRTL_API void rtlCopyRowLinkChildren(void * self, size32_t len, const void * row, IOutputMetaData & meta);
+extern ECLRTL_API void rtlLinkChildren(void * self, IOutputMetaData & meta);
 
 //---------------------------------------------------------------------------
 
