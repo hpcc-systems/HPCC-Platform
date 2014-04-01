@@ -216,13 +216,18 @@ function onBoolChange(checkbox) {
        hiddenCtrl.value = checkbox.checked ? "1" : "0";
 }
 
-function onFocusTriButton(btn) 
+function onTriButtonKeyPress(obj) 
 {
-    btn.blur();
+    if (event.keyCode == 32) //space
+    {
+	onClickTriButton(obj, 1);
+        return false;
+    }
+    return true;
 }
+
 function onClickTriButton(btn, clicks) 
 {
-    btn.blur();
     while (clicks--)
     {
         if (btn.value=='default')

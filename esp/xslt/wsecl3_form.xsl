@@ -1182,7 +1182,7 @@ function switchInputForm()
             </xsl:variable>
             <!-- use tristate true/false/default -->
 
-            <xsl:text disable-output-escaping="yes"><![CDATA[<input class='tributton' type='text' readonly='1' size='6' onFocus='onFocusTriButton(this)' onClick='onClickTriButton(this, 1)' name=']]></xsl:text>
+            <xsl:text disable-output-escaping="yes"><![CDATA[<input class='tributton' type='text' readonly='1' size='6' onkeypress='onTriButtonKeyPress(this)' onClick='onClickTriButton(this, 1)' name=']]></xsl:text>
             <xsl:value-of select="$fieldId"/>
             <xsl:text disable-output-escaping="yes"><![CDATA[' id=']]></xsl:text>
             <xsl:value-of select="$fieldId"/>
