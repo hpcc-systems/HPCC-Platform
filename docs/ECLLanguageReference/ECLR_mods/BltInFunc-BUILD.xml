@@ -165,6 +165,8 @@
       </indexterm>( [</emphasis><emphasis>days</emphasis><emphasis
     role="bold">] ) ]</emphasis>[, FEW<indexterm>
         <primary>FEW</primary>
+      </indexterm>] [, FILEPOSITION(<emphasis>false</emphasis>)<indexterm>
+        <primary>FILEPOSITION</primary>
       </indexterm>] [, LOCAL<indexterm>
         <primary>LOCAL</primary>
       </indexterm>] [, NOROOT<indexterm>
@@ -281,6 +283,15 @@
               <entry>Optional. Specifies the file is a temporary file that may
               be automatically deleted after the specified number of days
               since the file was read.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis
+              role="bold">FILEPOSITION(false)</emphasis></entry>
+
+              <entry>Optional. Prevents the implicit fileposition field from
+              being created and will not treat a trailing integer field any
+              differently from the rest of the payload.</entry>
             </row>
 
             <row>
