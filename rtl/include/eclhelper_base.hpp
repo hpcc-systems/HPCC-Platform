@@ -1806,25 +1806,6 @@ class CThorKeyedDistributeArg : public CThorArg, implements IHThorKeyedDistribut
 };
 
 
-class CThorCountFileArg : public CThorArg, implements IHThorCountFileArg
-{
-    virtual void Link() const { RtlCInterface::Link(); }
-    virtual bool Release() const { return RtlCInterface::Release(); }
-    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
-
-    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
-    {
-        switch (which)
-        {
-        case TAIarg:
-        case TAIcountfilearg_1:
-            return static_cast<IHThorCountFileArg *>(this);
-        }
-        return NULL;
-    }
-    virtual unsigned getFlags() { return 0; }
-};
-
 class CThorFetchArg : public CThorArg, implements IHThorFetchArg
 {
     virtual void Link() const { RtlCInterface::Link(); }

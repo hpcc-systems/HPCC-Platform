@@ -969,7 +969,6 @@ bool isGlobalActivity(CGraphElementBase &container)
             if (!container.queryLocal())
                 return true;
 // always local
-        case TAKcountdisk:
         case TAKfilter:
         case TAKfilterproject:
         case TAKsplit:

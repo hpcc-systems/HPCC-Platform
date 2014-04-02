@@ -506,7 +506,6 @@ protected:
 
 interface IXmlToRowTransformer;
 interface ICsvToRowTransformer;
-interface IHThorCountFileArg;
 interface IThorDiskCallback;
 interface IThorIndexCallback;
 interface IIndexReadContext;                    // this is misnamed!
@@ -870,7 +869,6 @@ enum ThorActivityKind
     TAKhashdistributemerge,
     TAKhttp_rowdataset,     // a source activity
     TAKinlinetable,
-    TAKcountdisk,
     TAKstreamediterator,
     TAKexternalsource,
     TAKexternalsink,
@@ -1814,13 +1812,6 @@ struct IHThorKeyedDistributeArg : public IHThorArg
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
 };
 
-
-struct IHThorCountFileArg : public IHThorArg
-{
-    virtual const char * getFileName() = 0;
-    virtual IOutputMetaData * queryRecordSize() = 0;
-    virtual unsigned getFlags() = 0;
-};
 
 struct IHThorFetchBaseArg : public IHThorArg
 {

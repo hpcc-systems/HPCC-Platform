@@ -205,7 +205,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKsmartdenormalizegroup] = "smartdenormalizegroup";
 
 //Non standard
-    kindArray[TAKcountdisk] = "countdisk";
     kindArray[TAKsubgraph] = "subgraph";
 
     return true;

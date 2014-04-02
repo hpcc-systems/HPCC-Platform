@@ -685,8 +685,6 @@ public:
             case TAKsoap_datasetaction:
                 ret = createSoapDatasetActionSlave(this);
                 break;
-            case TAKcountdisk:
-                return new CSlaveActivity(this); 
             case TAKkeydiff:
                 ret = createKeyDiffSlave(this);
                 break;

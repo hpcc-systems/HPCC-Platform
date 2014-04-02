@@ -449,8 +449,6 @@ protected:
                 RemoteActivityId remoteId(id, hashValue);
                 return createRoxieServerIndexGroupAggregateActivityFactory(id, subgraphId, *this, helperFactory, kind, remoteId, node);
             }
-        case TAKcountdisk:
-            return createRoxieServerDiskCountActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKhashdedup:
             return createRoxieServerHashDedupActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKhashdenormalize:
