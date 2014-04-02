@@ -400,7 +400,6 @@ define([
                     TotalThorTime: { label: this.i18n.TotalThorTime, width: 117 }
                 }
             }, this.id + "WorkunitsGrid");
-            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
 
             var context = this;
             on(document, "." + context.id + "WuidClick:click", function (evt) {

@@ -473,8 +473,6 @@ define([
                     Modified: { label: this.i18n.ModifiedUTCGMT, width: 155}
                 }
             }, this.id + "WorkunitsGrid");
-            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
-            this.workunitsGrid.loadingMessage = "<span class='dojoxGridNoData'>" + this.i18n.loadingMessage + "</span>";
 
             var context = this;
             on(document, "." + context.id + "LogicalNameClick:click", function (evt) {

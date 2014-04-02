@@ -81,8 +81,6 @@ define([
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: this.store,
-                loadingMessage: "<span class='dojoxGridNoData'>" + this.i18n.loadingMessage + "</span>",
-                noDataMessage: "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>",
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
                     Type: { label: this.i18n.What, width: 108, sortable: true },

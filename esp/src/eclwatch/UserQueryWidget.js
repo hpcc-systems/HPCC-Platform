@@ -236,7 +236,6 @@ define([
                     }
                 }
             }, this.id + "GroupsGrid");
-            this.groupsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
             var context = this;
             on(document, ".WuidClick:click", function (evt) {
                 if (context._onGroupsRowDblClick) {
@@ -334,7 +333,6 @@ define([
                     }
                 }
             }, this.id + "UsersGrid");
-            this.usersGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
             var context = this;
             on(document, ".WuidClick:click", function (evt) {
                 if (context._onUsersRowDblClick) {

@@ -163,9 +163,7 @@ define([
                     EventName: { label: this.i18n.EventName, width: 90, sortable: true },
                     EventText: { label: this.i18n.EventText, sortable: true }
                 }
-            },
-            this.id + "EventGrid");
-            this.eventGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.NoScheduledEvents + "</span>");
+            }, this.id + "EventGrid");
 
             on(document, "." + context.id + "WuidClick:click", function (evt) {
                 if (context._onRowDblClick) {

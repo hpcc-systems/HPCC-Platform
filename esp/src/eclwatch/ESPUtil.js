@@ -15,12 +15,15 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/Stateful",
     "dojo/json",
 
     "dijit/registry"
-], function (declare, arrayUtil, Stateful, json,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Stateful, json,
     registry) {
 
     var SingletonData = declare([Stateful], {
@@ -62,7 +65,14 @@ define([
                 }
             }
             if (changed) {
-                this.set("changedCount", this.get("changedCount") + 1);
+                try {
+                    this.set("changedCount", this.get("changedCount") + 1);
+                } catch (e) {
+                    /*  changedCount can notify a dgrid instance that a row has changed.  
+                    *   There is an issue (TODO check issue number) with dgrid which can cause an exception to be thrown during the notify.
+                    *   By catching these exceptions here normal execution can continue.
+                    */
+                }
             }
         }
     });
@@ -139,6 +149,8 @@ define([
         GridHelper: declare(null, {
             allowTextSelection: true,
             pagedGridObserver: [],
+            noDataMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.noDataMessage + "</span>",
+            loadingMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.loadingMessage + "</span>",
 
             onSelectionChanged: function (callback) {
                 this.on("dgrid-select", function (event) {

@@ -104,7 +104,7 @@ define([
         },
 
         _hasCompletedSetter: function(completed) {
-            var justCompleted = !this.hasCompleted && completed;
+            var justCompleted = lang.exists("hasCompleted", this) && !this.hasCompleted && completed;
             this.hasCompleted = completed;
             if (justCompleted) {
                 topic.publish("hpcc/dfu_wu_completed", this);
