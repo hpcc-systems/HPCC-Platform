@@ -774,6 +774,13 @@ margin-left:-20px;
     display: inline-block;
 }
 
+.iconArchived{
+    background-image: url("../img/workunit_archived.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
 .iconDeleted{
     background-image: url("../img/workunit_deleted.png"); 
     width: 16px;

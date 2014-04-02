@@ -3,13 +3,14 @@ define([
     "dojo/io-query",
     "dojo/dom",
     "dojo/dom-attr",
+    "dojo/dom-style",
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry"
 
-], function (declare, ioQuery, dom, domAttr,
+], function (declare, ioQuery, dom, domAttr, domStyle,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry) {
 
     return declare("_Widget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -70,6 +71,14 @@ define([
             if (target) {
                 target.set("disabled", disabled);
                 target.set("iconClass", disabled ? disabledIcon : icon);
+            }
+        },
+
+        setVisible: function (id, visible) {
+            var target = dom.byId(id);
+            if (target) {
+                domStyle.set(target, "display", visible ? "block" : "none");
+                domStyle.set(target, "opacity", visible ? "255" : "0");
             }
         },
 

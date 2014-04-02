@@ -194,6 +194,11 @@ define([
             }
         },
 
+        _onFilterType: function (evt) {
+            var filter = this.filter.toObject();
+            this.setVisible(this.id + "ArchivedWarning", filter.Type);
+        },
+
         //  Implementation  ---
         getFilter: function () {
             var retVal = this.filter.toObject();
@@ -238,6 +243,7 @@ define([
 
             var context = this;
             this.filter.on("clear", function (evt) {
+                context._onFilterType();
                 context.refreshGrid();
             });
             this.filter.on("apply", function (evt) {
