@@ -91,18 +91,13 @@ define([
                     domClass.add(this.id + "Help", "hidden");
                 }
 
-                this.defaultQuery = "*";
-                if (params.query) {
-                    this.defaultQuery = params.query;
-                }
-
                 var context = this;
                 if (params.Wuid) {
                     this.wu = ESPWorkunit.Get(params.Wuid);
 
                     this.wu.fetchTimers(function (timers) {
                         context.timers = timers;
-                        context.loadTimers(timers, context.defaultQuery);
+                        context.loadTimers(timers, params.query);
                     });
                 }
             },
@@ -152,7 +147,9 @@ define([
                     var selectedItems = [];
                     for (var i = 0; i < selItems.length; ++i) {
                         arrayUtil.forEach(this.store.data, function (item, idx) {
-                            if (item.GraphName == selItems[i].Name) {
+                            if (selItems[i].__hpcc_id && item.__hpcc_id == selItems[i].__hpcc_id) {
+                                selectedItems.push(item);
+                            } else if (item.GraphName == selItems[i].Name) {
                                 selectedItems.push(item);
                             }
                         });
@@ -166,8 +163,32 @@ define([
                 var timerData = [];
                 if (timers) {
                     for (var i = 0; i < timers.length; ++i) {
-                        if (timers[i].GraphName && timers[i].SubGraphId && (query == "*" || query == timers[i].GraphName)) {
-                            timerData.push(timers[i]);
+                        if (query.graphsOnly) {
+                            if (timers[i].SubGraphId && (query.graphName === "*" || query.graphName === timers[i].GraphName) && (query.subGraphId === "*" || query.subGraphId === timers[i].SubGraphId)) {
+                                timerData.push(lang.mixin({
+                                    __hpcc_prefix: timers[i].GraphName
+                                }, timers[i]));
+                                if (this.largestValue < timers[i].Seconds * 1000) {
+                                    this.largestValue = timers[i].Seconds * 1000;
+                                }
+                            }
+                        } else if ( timers[i].Name != "Process" &&
+                                    timers[i].Name != "Total thor time") {
+                            var prefix = "other";
+                            if (timers[i].Name.indexOf("Graph graph") == 0) {
+                                if (!timers[i].SubGraphId) {
+                                    continue;
+                                }
+                                prefix = timers[i].GraphName;
+                            } else {
+                                var nameParts = timers[i].Name.split(":");
+                                if (nameParts.length > 1) {
+                                    prefix = nameParts[0];
+                                }
+                            }
+                            timerData.push(lang.mixin({
+                                __hpcc_prefix: prefix
+                            }, timers[i]));
                             if (this.largestValue < timers[i].Seconds * 1000) {
                                 this.largestValue = timers[i].Seconds * 1000;
                             }
@@ -175,7 +196,7 @@ define([
                     }
                 }
                 this.store = new Memory({
-                    idProperty: "SubGraphId",
+                    idProperty: "__hpcc_id",
                     data: timerData
                 });
 
@@ -190,7 +211,7 @@ define([
                         b: 255 - redness
                     };
                 });
-                this.treeMap.set("groupAttrs", ["GraphName"]);
+                this.treeMap.set("groupAttrs", ["__hpcc_prefix"]);
                 this.treeMap.set("labelAttr", "Name");
                 this.treeMap.set("tooltipFunc", function (item) {
                     return item.Name + " " + item.Seconds;

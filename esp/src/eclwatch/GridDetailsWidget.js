@@ -78,7 +78,7 @@ define([
             var firstTab = null;
             for (var i = 0; i < selections.length; ++i) {
                 var tab = this.ensurePane(selections[i], params);
-                if (i == 0) {
+                if (!firstTab && tab) {
                     firstTab = tab;
                 }
             }

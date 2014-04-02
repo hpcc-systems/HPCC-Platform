@@ -427,7 +427,11 @@ define([
             }, params));
 
             this.timingTreeMap.init(lang.mixin({
-                query: this.graphName,
+                query: {
+                    graphsOnly: true,
+                    graphName: this.graphName,
+                    subGraphId: "*"
+                },
                 hideHelp: true
             }, params));
 
@@ -449,6 +453,7 @@ define([
         loadGraphFromXGMML: function (xgmml) {
             if (this.global.loadXGMML(xgmml, false)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
+                var initialSelection = [];
                 if (this.overview.depth.get("value") === -1) {
                     var newDepth = 0;
                     for (; newDepth < 5; ++newDepth) {
@@ -457,9 +462,12 @@ define([
                         }
                     }
                     this.overview.depth.set("value", newDepth);
+                    if (this.params.SubGraphId) {
+                        initialSelection = [this.params.SubGraphId];
+                    }
                 }
-                this.setOverviewRootItems([0]);
-                this.setMainRootItems([]);
+                this.setOverviewRootItems([0], initialSelection);
+                this.setMainRootItems(initialSelection);
                 this.setLocalRootItems([]);
                 this.loadSubgraphs();
                 this.loadVertices();
@@ -720,8 +728,8 @@ define([
             this.main.clear();
         },
 
-        setOverviewRootItems: function (globalIDs) {
-            var graphView = this.global.getGraphView(globalIDs, this.overview.depth.get("value"), 3, this.params.SubGraphId ? [this.params.SubGraphId] : []);
+        setOverviewRootItems: function (globalIDs, selection) {
+            var graphView = this.global.getGraphView(globalIDs, this.overview.depth.get("value"), 3, selection);
             graphView.navigateTo(this.overview);
         },
 
