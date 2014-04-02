@@ -23,13 +23,15 @@
                                 <div class="dijitDialogPaneContentArea" data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
                                     <input id="${id}Jobname2" title="${i18n.JobName}:" colspan="2" style="width:100%" required="true" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
                                      <input id="${id}RemoteDali" title="${i18n.RemoteDali}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
+                                     <input id="${id}SourceProcess" title="${i18n.SourceProcess}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
+                                     <input id="${id}Comment" title="${i18n.Comment}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
                                      <select id="${id}Priority" title="${i18n.Priority}:" colspan="2" data-dojo-type="dijit.form.Select">
                                         <option value="" selected="selected">${i18n.None}</option>
                                         <option value="SLA">${i18n.SLA}</option>
                                         <option value="Low">${i18n.Low}</option>
                                         <option value="High">${i18n.High}</option>
                                     </select>
-                                     <input id="${id}Comment" title="${i18n.Comment}:" colspan="2" style="width:100%" required="false" data-dojo-props="trim: true" data-dojo-type="dijit.form.ValidationTextBox"/>
+                                    <input id="${id}AllowForeignFiles" title="${i18n.AllowForeignFiles}:" name="AllowForeignFiles" colspan="2" data-dojo-props="trim: true" checked data-dojo-type="dijit.form.CheckBox" />
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
                                     <button type="submit" data-dojo-attach-event="onClick:_onPublish" data-dojo-type="dijit.form.Button">${i18n.Submit}</button>

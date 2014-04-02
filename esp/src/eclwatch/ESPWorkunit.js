@@ -278,10 +278,12 @@ define([
             return this._action("Delete").then(function(response) {
             });
         },
+
         restore: function () {
             return this._action("Restore");
         },
-        publish: function (jobName, remoteDali, priority, comment) {
+
+        publish: function (jobName, remoteDali, sourceProcess, priority, comment, allowForeign) {
             this._assertHasWuid();
             var context = this;
             WsWorkunits.WUPublishWorkunit({
@@ -289,8 +291,10 @@ define([
                     Wuid: this.Wuid,
                     JobName: jobName,
                     RemoteDali: remoteDali,
+                    SourceProcess: sourceProcess,
                     Priority: priority,
                     Comment: comment,
+                    AllowForeignFiles: allowForeign,
                     Activate: 1,
                     UpdateWorkUnitName: 1,
                     Wait: 5000
