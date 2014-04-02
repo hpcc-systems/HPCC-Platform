@@ -448,7 +448,11 @@
           </listitem>
 
           <listitem>
-            <para>4GB RAM</para>
+            <para>1GB RAM per slave </para>
+
+            <para>(Note: If you configure more than 1 slave per node, memory
+            is shared. For example, if you want 2 slaves per node with each
+            having 4 GB of memory, the server would need 8 GB total.)</para>
           </listitem>
 
           <listitem>
