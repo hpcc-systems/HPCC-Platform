@@ -203,6 +203,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKsmartjoin] = "smartjoin";
     kindArray[TAKsmartdenormalize] = "smartdenormalize";
     kindArray[TAKsmartdenormalizegroup] = "smartdenormalizegroup";
+    kindArray[TAKselfdenormalize] = "selfdenormalize";
+    kindArray[TAKselfdenormalizegroup] = "selfdenormalizegroup";
 
 //Non standard
     kindArray[TAKsubgraph] = "subgraph";
