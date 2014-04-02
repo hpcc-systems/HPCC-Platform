@@ -1654,8 +1654,6 @@ class CThorJoinArg : public CThorArg, implements IHThorJoinArg
         case TAIarg:
         case TAIjoinbasearg_1:
             return static_cast<IHThorJoinBaseArg *>(this);
-        case TAIjoinextra_1:
-            return static_cast<IHThorJoinExtra *>(this);
         }
         return NULL;
     }
@@ -1740,8 +1738,6 @@ class CThorHashJoinArg : public CThorArg, implements IHThorHashJoinArg
         case TAIarg:
         case TAIjoinbasearg_1:
             return static_cast<IHThorJoinBaseArg *>(this);
-        case TAIjoinextra_1:
-            return static_cast<IHThorJoinExtra *>(this);
         case TAIhashjoinextra_1:
             return static_cast<IHThorHashJoinExtra *>(this);
         }
