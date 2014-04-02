@@ -23,6 +23,7 @@ define([
     "dojo/request/iframe",
     "dojo/_base/array",
     "dojo/on",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Menu",
@@ -65,7 +66,7 @@ define([
     "dijit/TooltipDialog",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domForm, iframe, arrayUtil, on,
+], function (declare, lang, i18n, nlsHPCC, dom, domForm, iframe, arrayUtil, on, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, FilterDropDownWidget,
@@ -131,6 +132,9 @@ define([
                 context.refreshGrid();
             });
             this.filter.on("apply", function (evt) {
+                context.refreshGrid();
+            });
+            topic.subscribe("hpcc/ecl_wu_published", function (topic) {
                 context.refreshGrid();
             });
         },
