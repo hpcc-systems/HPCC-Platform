@@ -227,14 +227,19 @@ define([
             return target;
         },
 
-        flattenMap: function (target, arrayName) {
+        flattenMap: function (target, arrayName, _singularName, supressAppName, excludeEmptyValues) {
             if (lang.exists(arrayName, target)) {
                 var appData = target[arrayName];
                 delete target[arrayName];
-                var singularName = arrayName.substr(0, arrayName.length - 1);
+                var singularName = _singularName ? _singularName : arrayName.substr(0, arrayName.length - 1);
                 var i = 0;
                 for (var key in appData) {
-                    target[arrayName + "." + singularName + "." + i + '.Application'] = "ESPRequest.js";
+                    if (excludeEmptyValues && (!appData[key] || appData[key] === "")) {
+                        continue;
+                    }
+                    if (!supressAppName) {
+                        target[arrayName + "." + singularName + "." + i + '.Application'] = "ESPRequest.js";
+                    }
                     target[arrayName + "." + singularName + "." + i + '.Name'] = key;
                     target[arrayName + "." + singularName + "." + i + '.Value'] = appData[key];
                     ++i;
