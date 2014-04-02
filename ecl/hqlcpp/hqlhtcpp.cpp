@@ -11267,7 +11267,7 @@ void HqlCppTranslator::buildSlidingMatchFunction(BuildCtx & ctx, const HqlExprAr
     doCompareLeftRight(ctx, funcname, datasetL, datasetR, left, right);
 }
 
-void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, bool canRemoveSort, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal)
+void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx, node_operator side, const DatasetReference & dataset, const HqlExprArray & sorts, IHqlExpression * noSortAttr, bool canReuseLeft, bool isLightweight, bool isLocal)
 {
     StringBuffer s, compareName;
 
@@ -11275,7 +11275,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     compareName.append("compare").append(sideText);
 
     assertex(dataset.querySide() == no_activetable);
-    bool noNeedToSort = canRemoveSort && isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true);
+    bool noNeedToSort = isAlreadySorted(dataset.queryDataset(), sorts, isLocal, true);
     if (userPreventsSort(noSortAttr, side))
         noNeedToSort = true;
 
@@ -11869,8 +11869,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         bool isLocalSort = isLocalJoin || !targetThor();
         //Lookup join doesn't need the left sort (unless it is reused elsewhere), or the right sort unless it is deduping.
         if (canReuseLeftCompare || !isLookupJoin)
-            generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), true, noSortAttr, false, isLightweight, isLocalSort);
-        generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, joinInfo.queryRightSort(), isLocalSort, noSortAttr, canReuseLeftCompare, isLightweight, isLocalSort);
+            generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), noSortAttr, false, isLightweight, isLocalSort);
+        generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, joinInfo.queryRightSort(), noSortAttr, canReuseLeftCompare, isLightweight, isLocalSort);
 
         bool isGlobal = !isLocalJoin && !instance->isChildActivity();
         generateSerializeKey(instance->nestedctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), isGlobal, false, false);
