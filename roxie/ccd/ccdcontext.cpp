@@ -2576,6 +2576,7 @@ protected:
         ctxPrefetchProjectPreload = defaultPrefetchProjectPreload;
 
         traceActivityTimes = false;
+        timeActivities = defaultTimeActivities;
     }
 
     void startWorkUnit()
