@@ -21,9 +21,12 @@ define([
     "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
-    "dojo/request/iframe",
+    "dojo/dom-construct",
+    "dojo/on",
 
     "dijit/registry",
+    "dijit/form/Button",
+    "dijit/ToolbarSeparator",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -32,122 +35,65 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
-    "hpcc/_Widget",
+    "hpcc/GridDetailsWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPWorkunit",
+    "hpcc/DelayLoadWidget"
 
-    "dojo/text!../templates/LogsWidget.html",
-
-    "dijit/layout/BorderContainer",
-    "dijit/layout/TabContainer",
-    "dijit/Toolbar",
-    "dijit/ToolbarSeparator",
-    "dijit/form/Button",
-    "dijit/layout/ContentPane"
-],
-    function (declare, lang, i18n, nlsHPCC, array, Memory, Observable, iframe,
-            registry,
+],  function (declare, lang, i18n, nlsHPCC, array, Memory, Observable, domConstruct, on,
+            registry, Button, ToolbarSeparator,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-            _Widget, ESPUtil, ESPRequest, ESPWorkunit,
-            template) {
-        return declare("LogsWidget", [_Widget], {
-            templateString: template,
+            GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, DelayLoadWidget) {
+        return declare("LogsWidget", [GridDetailsWidget], {
             baseClass: "LogsWidget",
             i18n: nlsHPCC,
 
-            borderContainer: null,
-            logsGrid: null,
-
+            gridTitle: nlsHPCC.Helpers,
+            idProperty: "id",
+	    
             lastSelection: null,
 
             downloadFrameID: 0,
 
-            buildRendering: function (args) {
-                this.inherited(arguments);
-            },
+            _getURL: function (item, option) {
+                var params = "";
+                switch (item.Type) {
+                    case "dll":
+                        var parts = item.Orig.Name.split("/");
+                        if (parts.length) {
+                            var leaf = parts[parts.length - 1];
+                            params = "/WUFile/" + leaf + "?Wuid=" + this.wu.Wuid + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
+                        }
+                        break;
+                    case "res":
+                        params = "/WUFile/res.txt?Wuid=" + this.wu.Wuid + "&Type=" + item.Orig.Type;
+                        break;
+                    case "ThorLog":
+                    case "EclAgentLog":
+                        params = "/WUFile/" + item.Type + "?Wuid=" + this.wu.Wuid + "&Process=" + item.Orig.PID + "&Name=" + item.Orig.Name + "&Type=" + item.Orig.Type;
+                        break;
+                    case "ThorSlaveLog":
+                        params = "/WUFile?Wuid=" + this.wu.Wuid + "&Process=" + item.Orig.ProcessName + "&ClusterGroup=" + item.Orig.ProcessName + "&LogDate=" + item.Orig.LogDate + "&SlaveNumber=" + item.Orig.SlaveNumber + "&Type=" + item.Type;
+                        break;
+                    case "Archive Query":
+                        params = "/WUFile/ArchiveQuery?Wuid=" + this.wu.Wuid + "&Name=ArchiveQuery&Type=ArchiveQuery";
+                        break;
+                    case "Workunit XML":
+                        params = "/WUFile?Wuid=" + this.wu.Wuid + "&Type=XML";
+                        break;
+                }
 
-            postCreate: function (args) {
-                this.inherited(arguments);
-                this.borderContainer = registry.byId(this.id + "BorderContainer");
-            },
-
-            startup: function (args) {
-                this.inherited(arguments);
-                var store = new Memory({
-                    idProperty: "id",
-                    data: []
-                });
-                this.logsStore = Observable(store);
-
-                this.logsGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                    allowSelectAll: true,
-                    columns: {
-                        sel: selector({
-                            width: 27,
-                            selectorType: "checkbox"
-                        }),
-                        Type: {
-                            label: this.i18n.Type,
-                            width: 117
-                        },
-                        Description: {
-                            label: this.i18n.Description
-            }
-                    },
-                    store: this.logsStore
-                }, this.id + "LogsGrid");
-                this.logsGrid.startup();
-            },
-
-            resize: function (args) {
-                this.inherited(arguments);
-                this.borderContainer.resize();
-            },
-
-            layout: function (args) {
-                this.inherited(arguments);
-            },
-
-            _onRefresh: function (evt) {
-                this.fetchLogs();
+                return ESPRequest.getBaseURL() + params + (option ? "&Option=" + option : "&Option=1");
             },
 
             _doDownload: function (option) {
-                var selection = this.logsGrid.getSelected();
+                var selection = this.grid.getSelected();
+                var urls = [];
 
                 for (var i = 0; i < selection.length; ++i) {
-                    var downloadPdfIframeName = "downloadIframe_" + this.downloadFrameID++;
-                    var frame = iframe.create(downloadPdfIframeName);
-                    var params = "";
-
-                    switch (selection[i].Type) {
-                        case "dll":
-                            var parts = selection[i].Orig.Name.split("/");
-                            if (parts.length) {
-                                var leaf = parts[parts.length - 1];
-                                params = "/WUFile/" + leaf + "?Wuid=" + this.wu.Wuid + "&Name=" + selection[i].Orig.Name + "&Type=" + selection[i].Orig.Type;
-                            }
-                            break;
-                        case "res":
-                            params = "/WUFile/res.txt?Wuid=" + this.wu.Wuid + "&Type=" + selection[i].Orig.Type;
-                            break;
-                        case "ThorLog":
-                        case "EclAgentLog":
-                            params = "/WUFile/" + selection[i].Type + "?Wuid=" + this.wu.Wuid + "&Name=" + selection[i].Orig.Name + "&Type=" + selection[i].Orig.Type;
-                            break;
-                        case "ThorSlaveLog":
-                            params = "/WUFile?Wuid=" + this.wu.Wuid + "&Process=" + selection[i].Orig.ProcessName + "&ClusterGroup=" + selection[i].Orig.ProcessName + "&LogDate=" + selection[i].Orig.LogDate + "&SlaveNumber=" + selection[i].Orig.SlaveNumber + "&Type=" + selection[i].Type;
-                            break;
-                        case "Archive Query":
-                            params = "/WUFile/ArchiveQuery?Wuid=" + this.wu.Wuid + "&Name=ArchiveQuery&Type=ArchiveQuery";
-                            break;
-                    }
-
-                    var url = ESPRequest.getBaseURL() + params + (option ? "&Option=" + option : "&Option=1");
-                    iframe.setSrc(frame, url, true);
+                    window.open(this._getURL(selection[i], option));
                 }
-
             },
             _onDownload: function (args) {
                 this._doDownload(1);
@@ -169,17 +115,113 @@ define([
                     var monitorCount = 4;
                     this.wu.monitor(function () {
                         if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
-                            context.fetchLogs();
+                            context.refreshGrid();
                         }
                     });
                 }
             },
 
-            fetchLogs: function () {
+            createGrid: function (domID) {
+                var context = this;
+                this.openButton = registry.byId(this.id + "Open");
+                this.downloadGZip = new Button({
+                    label: this.i18n.GZip,
+                    onClick: function (event) {
+                        context._doDownload(3);
+                    }
+                }).placeAt(this.openButton.domNode, "after");
+                this.downloadZip = new Button({
+                    label: this.i18n.Zip,
+                    onClick: function (event) {
+                        context._doDownload(2);
+                    }
+                }).placeAt(this.openButton.domNode, "after");
+                var label = document.createTextNode("");
+                var downloadLabal = domConstruct.toDom("<b> " + this.i18n.Download + ":  </b>");
+                domConstruct.place(downloadLabal, this.openButton.domNode, "after");
+                tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
+
+                var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                    allowSelectAll: true,
+                    store: this.store,
+                    columns: {
+                        sel: selector({
+                            width: 27,
+                            selectorType: "checkbox"
+                        }),
+                        Type: {
+                            label: this.i18n.Type,
+                            width: 117,
+                            formatter: function (Type, row) {
+                                return "<a href='#' rowIndex=" + row.id + " class='" + context.id + "HelperClick'>" + Type + "</a>";
+                            }
+                        },
+                        Description: {
+                            label: this.i18n.Description
+                        },
+                        FileSize: {
+                            label: this.i18n.FileSize,
+                            width: 90
+                        }
+                    }
+                }, domID);
+                on(document, "." + this.id + "HelperClick:click", function (evt) {
+                    if (context._onRowDblClick) {
+                        var row = context.grid.row(evt).data;
+                        context._onRowDblClick(row);
+                    }
+                });
+
+                return retVal;
+            },
+
+            createDetail: function (id, row, params) {
+                var name = row.Type;
+                if (row.Description) {
+                    var descParts = row.Description.split("/");
+                    name = descParts.length ? descParts[descParts.length - 1] : row.Description;
+                }
+                var Wuid = "";
+                var sourceMode = "text";
+                switch (row.Type) {
+                    case "ECL":
+                        Wuid = this.wu.Wuid;
+                        sourceMode = "ecl";
+                        break;
+                    case "Workunit XML":
+                    case "Archive Query":
+                        sourceMode = "xml";
+                        break;
+                }
+                return new DelayLoadWidget({
+                    id: id,
+                    title: name,
+                    closable: true,
+                    delayWidget: "ECLSourceWidget",
+                    hpcc: {
+                        params: {
+                            Wuid: Wuid,
+                            sourceMode: sourceMode,
+                            sourceURL: this._getURL(row)
+                        }
+                    }
+                });
+            },
+
+            refreshGrid: function (args) {
                 var context = this;
                 this.wu.getInfo({
                     onAfterSend: function (response) {
                         context.logData = [];
+                        context.logData.push({
+                            id: "E:0",
+                            Type: "ECL"
+                        });
+                        context.logData.push({
+                            id: "X:0",
+                            Type: "Workunit XML",
+                            FileSize: response.WUXMLSize
+                        });
                         if (response.HasArchiveQuery) {
                             context.logData.push({
                                 id: "A:0",
@@ -192,8 +234,8 @@ define([
                         if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
                             context.loadThorLogInfo(response.ThorLogList.ThorLogInfo);
                         }
-                        context.logsStore.setData(context.logData);
-                        context.logsGrid.refresh();
+                        context.store.setData(context.logData);
+                        context.grid.refresh();
                     }
                 });
             },
@@ -215,6 +257,7 @@ define([
                         id: "H:" + i,
                         Type: helpers[i].Type,
                         Description: helpers[i].IPAddress ? "//" + helpers[i].IPAddress + helpers[i].Name : helpers[i].Name,
+                        FileSize: helpers[i].FileSize,
                         Orig: helpers[i]
                     });
                 }
