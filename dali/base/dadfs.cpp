@@ -889,12 +889,11 @@ public:
     IDistributedFile *lookup(const char *_logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
     IDistributedFile *lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
     
-    IDistributedFile *createNew(IFileDescriptor * fdesc, const char *lname,bool includeports=false);
+    IDistributedFile *createNew(IFileDescriptor * fdesc, const char *lname, IUserDescriptor *user, bool includeports=false);
     IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false)
     {
-        return createNew(fdesc,NULL,includeports);
+        return createNew(fdesc,NULL,NULL,includeports);
     }
-    IDistributedFile *createNew(IPropertyTree *tree,bool ignoregroup);
     IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
@@ -3177,7 +3176,7 @@ public:
         //shrinkFileTree(root); // enable when safe!
     }
 
-    CDistributedFile(CDistributedFileDirectory *_parent, IFileDescriptor *fdesc, bool includeports)
+    CDistributedFile(CDistributedFileDirectory *_parent, IFileDescriptor *fdesc, IUserDescriptor *user, bool includeports)
     {
 #ifdef EXTRA_LOGGING
         LOGFDESC("CDistributedFile.b fdesc",fdesc);
@@ -3190,6 +3189,7 @@ public:
         setPreferredClusters(_parent->defprefclusters);
         saveClusters();
         setParts(fdesc,true);
+        udesc.set(user);
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile.b root.1",root);
 #endif
@@ -3719,6 +3719,7 @@ public:
         setFileAttrs(fdesc,false);
         setClusters(fdesc);
         setParts(fdesc,false);
+        setUserDescriptor(udesc, user);
 #ifdef EXTRA_LOGGING
         LOGFDESC("CDistributedFile::attach fdesc",fdesc);
         LOGPTREE("CDistributedFile::attach root.2",root);
@@ -7140,7 +7141,7 @@ IDistributedFile *CDistributedFileDirectory::createExternal(const CDfsLogicalFil
         fileDesc->setPart(i,rfn);
     }
     fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_NoCopies;
-    IDistributedFile * ret = createNew(fileDesc,logicalname.get(),true);   // set modified
+    IDistributedFile * ret = createNew(fileDesc,logicalname.get(),NULL,true);   // set modified
     if (ret&&moddtset) {
         ret->setModificationTime(moddt);    
     }
@@ -7312,9 +7313,9 @@ bool CDistributedFileDirectory::existsPhysical(const char *_logicalname, IUserDe
     return file->existsPhysicalPartFiles(0);
 }
 
-IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc,const char *lname, bool includeports)
+IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc, const char *lname, IUserDescriptor *user, bool includeports)
 {
-    CDistributedFile *file = new CDistributedFile(this, fdesc, includeports);
+    CDistributedFile *file = new CDistributedFile(this, fdesc, user, includeports);
     if (file&&lname&&*lname&&file->isAnon())
         file->setLogicalName(lname);
     return file;
@@ -10109,7 +10110,7 @@ IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,IUserDesc
     if (!fdesc)
         return NULL;
     fdesc->setTraceName(lname);
-    IDistributedFile *ret = createNew(fdesc,lname,true);
+    IDistributedFile *ret = createNew(fdesc,lname,user,true);
     const char *date = tree->queryProp("@modified");
     if (ret) {
         CDateTime dt;
