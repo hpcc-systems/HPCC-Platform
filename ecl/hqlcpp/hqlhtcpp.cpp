@@ -11870,8 +11870,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         //Lookup join doesn't need the left sort (unless it is reused elsewhere), or the right sort unless it is deduping.
         if (canReuseLeftCompare || !isLookupJoin)
             generateSortCompare(instance->nestedctx, instance->classctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), true, noSortAttr, false, isLightweight, isLocalSort);
-        if (!(isLookupJoin && isManyLookup && !couldBeKeepOne && !targetThor()))            // many lookup doesn't need to dedup the rhs
-            generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, joinInfo.queryRightSort(), isLocalSort, noSortAttr, canReuseLeftCompare, isLightweight, isLocalSort);
+        generateSortCompare(instance->nestedctx, instance->classctx, no_right, rhsDsRef, joinInfo.queryRightSort(), isLocalSort, noSortAttr, canReuseLeftCompare, isLightweight, isLocalSort);
 
         bool isGlobal = !isLocalJoin && !instance->isChildActivity();
         generateSerializeKey(instance->nestedctx, no_left, lhsDsRef, joinInfo.queryLeftSort(), isGlobal, false, false);

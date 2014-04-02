@@ -485,7 +485,7 @@ protected:
         case TAKsmartjoin:
         case TAKsmartdenormalize:
         case TAKsmartdenormalizegroup:
-            return createRoxieServerLookupJoinActivityFactory(id, subgraphId, *this, helperFactory, kind);
+            return createRoxieServerLookupJoinActivityFactory(id, subgraphId, *this, helperFactory, kind, node);
         case TAKmerge:
             return createRoxieServerMergeActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKnormalize:
