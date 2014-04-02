@@ -1610,7 +1610,7 @@ void CResultSetCursor::writeXmlText(IXmlWriter &writer, int columnIndex, const c
         len = getLength(type, cur);
         if (meta.isEBCDIC(columnIndex))
         {
-            rtlStrToEStrX(resultLen, resultStr, len, (const char *)cur);
+            rtlEStrToStrX(resultLen, resultStr, len, (const char *)cur);
             writer.outputString(resultLen, resultStr, name);
         }
         else

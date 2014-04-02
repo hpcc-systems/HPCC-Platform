@@ -51,7 +51,7 @@ public:
     void outputBeginNested(const char *fieldname, bool nestChildren, bool doIndent);
     void outputEndNested(const char *fieldname, bool doIndent);
 
-    virtual void outputInlineXml(const char *text){out.append(text); flush(false);} //for appending raw xml content
+    virtual void outputInlineXml(const char *text){closeTag(); out.append(text); flush(false);} //for appending raw xml content
     virtual void outputQuoted(const char *text);
     virtual void outputQString(unsigned len, const char *field, const char *fieldname);
     virtual void outputString(unsigned len, const char *field, const char *fieldname);
