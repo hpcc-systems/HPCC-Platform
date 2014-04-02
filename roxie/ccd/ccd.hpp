@@ -999,7 +999,6 @@ class SlaveContextLogger : public StringContextLogger
     bool traceActivityTimes;
     bool debuggerActive;
     bool checkingHeap;
-    bool timeActivities;
     IpAddress ip;
     StringAttr wuid;
 public:
@@ -1010,7 +1009,6 @@ public:
     inline bool queryTraceActivityTimes() const { return traceActivityTimes; }
     inline bool queryDebuggerActive() const { return debuggerActive; }
     inline bool queryCheckingHeap() const { return checkingHeap; }
-    inline bool queryTimeActivities() const { return timeActivities; }
     inline void setDebuggerActive(bool _active) { debuggerActive = _active; }
     inline const StatsCollector &queryStats() const 
     {

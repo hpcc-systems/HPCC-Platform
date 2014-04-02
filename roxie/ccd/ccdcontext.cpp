@@ -2348,7 +2348,7 @@ protected:
 
 IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *packet)
 {
-    return new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryTraceActivityTimes(), _logctx.queryDebuggerActive(), _logctx.queryCheckingHeap(), _logctx.queryTimeActivities());
+    return new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryTraceActivityTimes(), _logctx.queryDebuggerActive(), _logctx.queryCheckingHeap());
 }
 
 class CRoxieServerDebugContext : extends CBaseServerDebugContext
