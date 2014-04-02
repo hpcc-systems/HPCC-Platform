@@ -15,13 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-//nothor
-#option ('optimizeDiskSource',true)
-#option ('optimizeChildSource',true)
-#option ('optimizeIndexSource',true)
-#option ('optimizeThorCounts',false)
-#option ('countIndex',false)
+import $.setup.sq;
 
 pr:= table(sq.HousePersonBookDs.persons, { fullname := trim(surname) + ', ' + trim(forename), aage });
 
