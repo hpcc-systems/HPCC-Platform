@@ -2197,6 +2197,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 return optimizeDatasetIf(transformed);
             break;
         }
+    case no_stepped:
     case no_keyedlimit:
         {
             IHqlExpression * ret = queryMoveKeyedExpr(transformed);
