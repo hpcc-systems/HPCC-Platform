@@ -2356,6 +2356,10 @@ void ActivityInstance::addConstructorMetaParameter()
         OwnedHqlExpr metaExpr = createQuoted(s.str(), makeBoolType());
         constructorArgs.append(*metaExpr.getClear());
     }
+    else if ((kind == TAKwhen_action) || (kind == TAKemptyaction))
+    {
+        constructorArgs.append(*createTranslatedOwned(createValue(no_nullptr, makeBoolType())));
+    }
 }
 
 ParentExtract * ActivityInstance::createNestedExtract()
@@ -11147,7 +11151,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
     if (expr->hasAttribute(repeatAtom))
     {
         //virtual const char * getPipeProgram() { return "grep"; }
-        instance->startctx.addQuoted("virtual char * getPipeProgram() { return NULL; }");
+        instance->startctx.addQuoted("virtual const char * getPipeProgram() { return NULL; }");
 
         BuildCtx pipeCtx(instance->startctx);
         pipeCtx.addQuotedCompound("virtual char * getNameFromRow(const void * _self)");
