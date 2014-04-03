@@ -331,6 +331,9 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ToUpperCase.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Translate.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WildMatch.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
