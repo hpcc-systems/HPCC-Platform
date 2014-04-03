@@ -735,6 +735,18 @@ bool CThorExpandingRowArray::appendRows(CThorSpillableRowArray &inRows, bool tak
     return true;
 }
 
+bool CThorExpandingRowArray::binaryInsert(const void *row, ICompare &compare)
+{
+    dbgassertex(NULL != row);
+    if (numRows >= maxRows)
+    {
+        if (!ensure(numRows+1))
+            return false;
+    }
+    binary_vec_insert_stable(row, rows, numRows++, compare); // takes ownership of row
+    return true;
+}
+
 void CThorExpandingRowArray::clearUnused()
 {
     if (rows)

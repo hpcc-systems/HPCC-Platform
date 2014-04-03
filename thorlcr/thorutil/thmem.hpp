@@ -317,6 +317,7 @@ public:
         rows[numRows++] = row;
         return true;
     }
+    bool binaryInsert(const void *row, ICompare &compare); // NB: takes ownership on success
     inline const void *query(rowidx_t i) const
     {
         if (i>=numRows)
