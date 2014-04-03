@@ -23,13 +23,15 @@
         <row>
           <entry><emphasis>source</emphasis></entry>
 
-          <entry>A string containing the set of characters to search.</entry>
+          <entry>A string containing the characters to search.</entry>
         </row>
 
         <row>
           <entry><emphasis>search </emphasis></entry>
 
-          <entry>A string containing the characters to be included.</entry>
+          <entry>A string containing the characters to be replaced by
+          characters in the same position in the
+          <emphasis>replacement</emphasis> string.</entry>
         </row>
 
         <row>
@@ -51,7 +53,11 @@
   <para>The <emphasis role="bold">Translate </emphasis>functions return the
   <emphasis>source</emphasis> string with the <emphasis>replacement</emphasis>
   character substituted for all characters in the <emphasis>source</emphasis>
-  string. If no <emphasis>search</emphasis> string characters are in the
+  string. The <emphasis>search</emphasis> string characters are replaced by
+  the characters in the equivalent position in the
+  <emphasis>replacement</emphasis> string.</para>
+
+  <para>If no <emphasis>search</emphasis> string characters are in the
   <emphasis>source</emphasis> string, it returns the
   <emphasis>source</emphasis> string unaltered.</para>
 
