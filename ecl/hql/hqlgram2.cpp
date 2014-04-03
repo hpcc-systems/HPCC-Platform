@@ -934,6 +934,21 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
             args.append(*createAttribute(contextAtom));
             if (result->isDatarow())
                 args.append(*createAttribute(allocatorAtom));
+
+            //Slightly ugly... force all parameters to this function to be link counted
+            HqlExprArray & params = defineScopes.tos().activeParameters;
+            ForEachItemIn(i, params)
+            {
+                IHqlExpression * param = &params.item(i);
+                if (param->queryRecord() && !hasLinkCountedModifier(param))
+                {
+                    HqlExprArray args;
+                    unwindChildren(args, param);
+                    Owned<ITypeInfo> newType = setLinkCountedAttr(param->queryType(), true);
+                    OwnedHqlExpr newParam = createParameter(param->queryId(), param->querySequenceExtra(), newType.getClear(), args);
+                    params.replace(*newParam.getClear(), i);
+                }
+            }
         }
 
         return createWrapper(no_outofline, result->queryType(), args);
