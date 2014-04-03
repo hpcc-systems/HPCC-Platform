@@ -24,6 +24,7 @@ define([
     "dijit/registry",
     "dijit/form/Button",
     "dijit/ToolbarSeparator",
+    "dijit/layout/ContentPane",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -34,19 +35,20 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
+    "hpcc/ESPRequest",
     "hpcc/ESPActivity",
     "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-                registry, Button, ToolbarSeparator,
+                registry, Button, ToolbarSeparator, ContentPane,
                 OnDemandGrid, Keyboard, Selection, selector, tree, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPActivity, DelayLoadWidget, ESPUtil) {
+                GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
         i18n: nlsHPCC,
         gridTitle: nlsHPCC.title_Activity,
-        idProperty: "Wuid",
+        idProperty: "__hpcc_id",
 
         _onPause: function (event, params) {
             arrayUtil.forEach(this.grid.getSelected(), function (item, idx) {
@@ -354,6 +356,16 @@ define([
 
         createDetail: function (id, row, params) {
             if (this.activity.isInstanceOfQueue(row)) {
+                return new ContentPane({
+                    id: id,
+                    title: row.DisplayName,
+                    closable: true,
+                    style: "padding: 0px; border:0px; border-color:none; overflow: hidden",
+                    content: dojo.create("iframe", {
+                        src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsWorkunits") + "/WUJobList?form_&Cluster=" + row.ClusterName + "&Range=30"),
+                        style: "border: 0; width: 100%; height: 100%"
+                    })
+                });
             } else if (this.activity.isInstanceOfWorkunit(row)) {
                 if (row.Server === "DFUserver") {
                     return new DelayLoadWidget({
@@ -457,7 +469,7 @@ define([
             this.clusterPauseButton.set("disabled", !clusterNotPausedSelected);
             this.clusterResumeButton.set("disabled", !clusterPausedSelected);
             this.clusterClearButton.set("disabled", !clusterHasItems);
-            this.openButton.set("disabled", !wuSelected);
+            this.openButton.set("disabled", !wuSelected && !clusterSelected);
             this.wuAbortButton.set("disabled", !wuSelected);
             this.wuHighPriorityButton.set("disabled", !wuCanHigh);
             this.wuNormalPriorityButton.set("disabled", !wuCanNormal);

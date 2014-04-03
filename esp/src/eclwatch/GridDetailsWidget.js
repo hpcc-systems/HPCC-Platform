@@ -171,7 +171,7 @@ define([
                         currSel.init(currSel.hpcc.params);
                     }
                     currSel.initalized = true;
-                } else if (currSel.refresh && !currSel.noRefresh) {
+                } else if (currSel.refresh && !currSel.noRefresh && lang.exists("hpcc.refreshParams", currSel)) {
                     currSel.refresh(currSel.hpcc.refreshParams);
                 }
             }
