@@ -20,9 +20,10 @@ define([
     "dojo/_base/Deferred",
     "dojo/request",
     "dojo/request/script",
+    "dojo/request/xhr",
 
     "hpcc/WsTopology"
-], function (declare, lang, arrayUtil, Deferred, request, script,
+], function (declare, lang, arrayUtil, Deferred, request, script, xhr,
     WsTopology) {
 
     return {
@@ -43,6 +44,19 @@ define([
             return results;
         },
         //http://192.168.1.201:8002/WsEcl/submit/query/roxie/countydeeds.1/json?year=2013&jsonp=XYZ
+        Call: function (target, method, query) {
+            var deferred = new Deferred();
+            var context = this;
+            xhr.get("/WsEcl/submit/query/" + target + "/" + method + "/json", {
+                query: query,
+                handleAs: "json"
+            }).then(function (response) {
+                var results = response[method + "Response"] && response[method + "Response"].Results ? response[method + "Response"].Results : {};
+                results = context._flattenResults(results);
+                deferred.resolve(results);
+            });
+            return deferred.promise;
+        },
         Submit: function (target, method, query) {
             var deferred = new Deferred();
             var context = this;

@@ -269,6 +269,11 @@ define([
                 this.graphsWidget.init({
                     Wuid: this.wu.Wuid
                 });
+            } else if (currSel.id == this.widget._Resources.id && !this.resourcesWidgetLoaded) {
+                this.resourcesWidgetLoaded = true;
+                this.widget._Resources.init({
+                    Wuid: this.wu.Wuid
+                });
             } else if (currSel.id == this.logsWidget.id && !this.logsWidgetLoaded) {
                 this.logsWidgetLoaded = true;
                 this.logsWidget.init({
@@ -409,6 +414,9 @@ define([
                 }
                 this.graphsWidget.set("tooltip", tooltip);
                 this.setDisabled(this.graphsWidget.id, false);
+            } else if (name === "ResourceURLCount" && newValue) {
+                this.widget._Resources.set("title", this.i18n.Resources + " (" + newValue + ")");
+                this.setDisabled(this.widget._Resources.id, false);
             } else if (name === "Archived") {
                 this.refreshActionState();
             } else if (name === "StateID") {

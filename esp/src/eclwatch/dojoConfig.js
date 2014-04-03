@@ -1,19 +1,21 @@
 var dojoConfig = (function () {
     var initUrl = function () {
+        var baseHost = (typeof debugConfig !== "undefined" ) ? "http://" + debugConfig.IP + ":" + debugConfig.Port : "";
+        var hashNodes = location.hash.split("#");
+        var searchNodes = location.search.split("?");
         var pathnodes = location.pathname.split("/");
         pathnodes.pop();
 
-        var hashNodes = location.hash.split("#");
-
-        var searchNodes = location.search.split("?");
-
         return {
+            hostname: location.hostname,
+            port: location.port,
             pathname: location.pathname,
             hash: hashNodes.length >= 2 ? hashNodes[1] : "",
             params: searchNodes.length >= 2 ? searchNodes[1] : "",
-            basePath: "/esp/files",
-            resourcePath: "/esp/files/eclwatch",
-            scriptsPath: "/esp/files/eclwatch"
+            basePath: baseHost + "/esp/files",
+            resourcePath: baseHost + "/esp/files/eclwatch",
+            scriptsPath: baseHost + "/esp/files/eclwatch",
+            thisPath: pathnodes.join("/")
         };
     }
 
@@ -23,6 +25,7 @@ var dojoConfig = (function () {
         async: true,
         parseOnLoad: false,
         urlInfo: urlInfo,
+        isDebug: (typeof debugConfig !== "undefined"),
         getURL: function (name) {
             return this.urlInfo.resourcePath + "/" + name;
         },
@@ -47,6 +50,9 @@ var dojoConfig = (function () {
         }, {
             name: "ecl",
             location: urlInfo.resourcePath + "/ecl"
+        }, {
+            name: "this",
+            location: urlInfo.thisPath
         }],
         debounce: function (func, threshold, execAsap) {
             var timeout;

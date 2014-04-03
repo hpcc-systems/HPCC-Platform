@@ -179,21 +179,21 @@ define([
             this.openButton = registry.byId(this.id + "Open");
             this.clusterPauseButton = new Button({
                 id: this.id + "PauseButton",
-                label: "Pause",
+                label: this.i18n.Pause,
                 onClick: function (event) {
                     context._onPause(event);
                 }
             }).placeAt(this.openButton.domNode, "before");
             this.clusterResumeButton = new Button({
                 id: this.id + "ResumeButton",
-                label: "Resume",
+                label: this.i18n.Resume,
                 onClick: function (event) {
                     context._onResume(event);
                 }
             }).placeAt(this.openButton.domNode, "before");
             this.clusterClearButton = new Button({
                 id: this.id + "ClearButton",
-                label: "Clear",
+                label: this.i18n.Clear,
                 onClick: function (event) {
                     context._onClear(event);
                 }
@@ -202,28 +202,28 @@ define([
 
             this.wuMoveBottomButton = new Button({
                 id: this.id + "MoveBottomButton",
-                label: "Bottom",
+                label: this.i18n.Bottom,
                 onClick: function (event) {
                     context._onWUBottom(event);
                 }
             }).placeAt(this.openButton.domNode, "after");
             this.wuMoveDownButton = new Button({
                 id: this.id + "MoveDownButton",
-                label: "Down",
+                label: this.i18n.Down,
                 onClick: function (event) {
                     context._onWUDown(event);
                 }
             }).placeAt(this.openButton.domNode, "after");
             this.wuMoveUpButton = new Button({
                 id: this.id + "MoveUpButton",
-                label: "Up",
+                label: this.i18n.Up,
                 onClick: function (event) {
                     context._onWUUp(event);
                 }
             }).placeAt(this.openButton.domNode, "after");
             this.wuMoveTopButton = new Button({
                 id: this.id + "MoveTopButton",
-                label: "Top",
+                label: this.i18n.Top,
                 onClick: function (event) {
                     context._onWUTop(event);
                 }
@@ -231,21 +231,21 @@ define([
             tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
             this.wuLowPriorityButton = new Button({
                 id: this.id + "LowPriorityButton",
-                label: "Low",
+                label: this.i18n.Low,
                 onClick: function (event) {
                     context._onWUPriority(event, "low");
                 }
             }).placeAt(this.openButton.domNode, "after");
             this.wuNormalPriorityButton = new Button({
                 id: this.id + "NormalPriorityButton",
-                label: "Normal",
+                label: this.i18n.Normal,
                 onClick: function (event) {
                     context._onWUPriority(event, "normal");
                 }
             }).placeAt(this.openButton.domNode, "after");
             this.wuHighPriorityButton = new Button({
                 id: this.id + "HighPriorityButton",
-                label: "High",
+                label: this.i18n.High,
                 onClick: function (event) {
                     context._onWUPriority(event, "high");
                 }
@@ -253,7 +253,7 @@ define([
             tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
             this.wuAbortButton = new Button({
                 id: this.id + "AbortButton",
-                label: "Abort",
+                label: this.i18n.Abort,
                 onClick: function (event) {
                     context._onWUAbort(event);
                 }

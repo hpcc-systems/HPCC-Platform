@@ -683,6 +683,12 @@ margin-left:-20px;
     height: 16px;
 }
 
+.iconNewPageNoFrame {
+    background-image: url("../img/openNewPageNoFrame.png"); 
+    width: 16px;
+    height: 16px;
+}
+
 .iconZoomOrig {
     background-image: url("../img/zoomOrig.png");
     width: 16px;
