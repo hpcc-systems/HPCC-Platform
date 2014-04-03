@@ -290,8 +290,8 @@ private:
     void doCreateCEList(RuleBasedCollator& rbc) {
         UErrorCode status = U_ZERO_ERROR;
         CollationElementIterator*  ceIterator = rbc.createCollationElementIterator( ustring_ );
-        if (!capacity_) {
-            capacity_ = ustring_.length();
+        if (!capacity_ || capacity_ <= ustring_.length()) {
+            capacity_ = 2*ustring_.length(); // cover the case where the number of CEs exceeds the unicode string length
         }
         ces_ = new uint32_t[capacity_]; 
         uint32_t ce = 0; 
