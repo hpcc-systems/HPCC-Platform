@@ -24,14 +24,16 @@
       <primary>FIRST</primary>
     </indexterm>) ]</emphasis><emphasis role="bold"> [,DISTRIBUTED<indexterm>
       <primary>DISTRIBUTED</primary>
-    </indexterm>]);</emphasis><emphasis></emphasis></para>
+    </indexterm>]) <emphasis
+  role="bold">[,FILEPOSITION(<emphasis>false</emphasis>);</emphasis></emphasis><emphasis></emphasis></para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX([</emphasis><emphasis> baserecset, </emphasis><emphasis
   role="bold">]</emphasis><emphasis> keys, payload, indexfile
   </emphasis><emphasis role="bold">[,SORTED] [,PRELOAD]</emphasis><emphasis
   role="bold"> [,OPT] [,COMPRESSED( LZW | ROW | FIRST) ]</emphasis><emphasis
-  role="bold"> [,DISTRIBUTED]);</emphasis><emphasis></emphasis></para>
+  role="bold"> [,DISTRIBUTED]) </emphasis><emphasis
+  role="bold">[,FILEPOSITION(<emphasis>false</emphasis>);</emphasis><emphasis></emphasis></para>
 
   <para><emphasis> attr</emphasis><emphasis role="bold"> :=
   INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
@@ -155,6 +157,14 @@
           there is no root index to indicate which part of the index will
           contain a particular entry. This may be useful in Roxie queries in
           conjunction with ALLNODES use.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">FILEPOSITION(false)</emphasis></entry>
+
+          <entry>Optional. Prevents the implicit fileposition field from being
+          created and will not treat a trailing integer field any differently
+          from the rest of the payload.</entry>
         </row>
 
         <row>
