@@ -30,8 +30,9 @@ import glob
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam,  getVersionNumbers
+from hpcc.common.error import Error
 
-prog_version = "0.0.13"
+prog_version = "0.0.14"
 
 if __name__ == "__main__":
 
@@ -84,12 +85,14 @@ if __name__ == "__main__":
                             type=checkPqParam,  default = 0,   metavar="threadNumber")
 
     parser_query = subparsers.add_parser('query', help='query help')
-    parser_query.add_argument('query', help="Name of a single ECL query. It can contain wildcards. (mandatory).",
-                              nargs='?', metavar="ECL query")
-    parser_query.add_argument('cluster', help="Cluster for single query run. If cluster = 'all' then run single query on all clusters. Default value is thor.",
+    parser_query.add_argument('query', help="One or more ECL file(s). It can contain wildcards. (mandatory).",
+                              nargs='+', metavar="ECL query")
+    parser_query.add_argument('--cluster', '-c', help="Cluster for query to run. If cluster = 'all' then run query on all clusters. Default value is thor.",
                             nargs='?', default='thor', metavar="target_cluster | all")
-    parser_query.add_argument('--publish', help="Publish compiled query instead of run.",
+    parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
                             action='store_true')
+    parser_query.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )",
+                            type=checkPqParam,  default = 0,   metavar="threadNumber")
 
     args = parser.parse_args()
 
@@ -98,11 +101,14 @@ if __name__ == "__main__":
     regressionSuiteMainDir = os.path.dirname(__file__)
     regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
     args.config = str(os.path.join(regressionSuiteFullPath, args.config))
-    regress = None
+
+    regress = Regression(args)
+    logging.debug("Suite version:%s",  versionStr)
+    logging.debug("Suite full path:%s",  regressionSuiteFullPath)
+
     try:
         if 'clusters' in args:
             Clusters = ['setup']
-            regress = Regression(args)
             for cluster in regress.config.Clusters:
                 Clusters.append(str(cluster))
             print "Avaliable Clusters: "
@@ -113,47 +119,67 @@ if __name__ == "__main__":
                 print "\nMissing ECL query file!\n"
                 parser_query.print_help()
                 exit()
-            regress = Regression(args)
             eclfiles=[]   # List for ECL filenames to be executed
-            if  ('*' in args.query) or ('?' in args.query):
-                # If there is any wildcard in ECL file name, resolve it
-                eclwild = os.path.join(regress.dir_ec, args.query)
-                eclfiles = glob.glob(eclwild)
+            for ecl in args.query:
+                if not ('.ecl' in ecl):
+                    logging.error("%s. Not an ECL file:'%s'!" % (1,  ecl))
+                elif  ('*' in ecl) or ('?' in ecl):
+                    # If there is any wildcard in ECL file name, resolve it
+                    eclwild = os.path.join(regress.dir_ec, ecl)
+                    eclfiles.extend( glob.glob(eclwild))
+                else:
+                    # We have simple ECL file in parameter list, put it on the eclfile list
+                    eclPath = os.path.join(regress.dir_ec, ecl)
+                    eclfiles.append(eclPath)
+
+            if len(eclfiles) > 1:
+                # Remove duplicates
+                tempList = list(set(eclfiles))
+                eclfiles = tempList
 
                 # Sort ECL filenames to ensure correct execution order
                 eclfiles.sort()
 
-            else:
-                # We have only one ECL file in parameter list, put it on the eclfile list
-                ecl = os.path.join(regress.dir_ec, args.query)
-                eclfiles.append(ecl)
-
             targetClusters = []
-            if 'all' in args.cluster:
+            if 'all' == args.cluster:
                 for cluster in regress.config.Clusters:
                     targetClusters.append(str(cluster))
             else:
-                targetClusters.append(args.cluster)
+                if args.cluster in regress.config.Clusters:
+                    targetClusters.append(args.cluster)
+                else:
+                    logging.error("%s. Unknown cluster:'%s'!" % (1,  args.cluster))
+                    raise Error("4000")
             # Go through the cluster list
             for cluster in targetClusters:
                 try:
-                    # Execute ECL files one by one on the cluster
-                    for ecl in eclfiles:
-                        eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex, regress.dir_r, cluster)
-                        # Check if this query is not skip on this cluster and not part of setup
-                        if (not eclfile.testSkip(cluster)['skip']) and (not eclfile.testSkip('setup')['skip'] ):
-                            if not eclfile.testExclusion(cluster):
-                                regress.runSuiteQ(cluster, eclfile)
-                            else:
-                                logging.warn("%s. %s excluded on %s cluster." % (1,  eclfile.getBaseEcl(), cluster))
+                    if len(eclfiles) > 1:
+                        #Execute multiple ECL files like RUN to generates summary results and diff report.
+                        regress.bootstrap(cluster, eclfiles)
+                        if  'pq' in args:
+                            regress.runSuiteP(cluster, regress.suites[cluster])
                         else:
-                            logging.warn("%s. %s skipped on %s cluster." % (1, eclfile.getBaseEcl(), cluster))
+                            regress.runSuite(cluster, regress.suites[cluster])
+                    elif len(eclfiles) == 1:
+                        # Execute one ECL file on the cluster
+                        for ecl in eclfiles:
+                            eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex, regress.dir_r, cluster)
+                            # Check if this query is not skip on this cluster and not part of setup
+                            if (not eclfile.testSkip(cluster)['skip']) and (not eclfile.testSkip('setup')['skip'] ):
+                                if not eclfile.testExclusion(cluster):
+                                    regress.runSuiteQ(cluster, eclfile)
+                                else:
+                                    logging.warn("%s. %s excluded on %s cluster." % (1,  eclfile.getBaseEcl(), cluster))
+                            else:
+                                logging.warn("%s. %s skipped on %s cluster." % (1, eclfile.getBaseEcl(), cluster))
+                    else:
+                        logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  args.cluster))
+                        raise Error("4001")
                 except IOError:
                     logging.error("%s. Query %s does not exist!" % (1,  eclfile.getBaseEcl()))
                     exit()
             print("End.")
         elif 'cluster' in args:
-            regress = Regression(args)
             regress.bootstrap(args.cluster)
             if 'setup' in args.cluster:
                 regress.runSuite('setup', regress.Setup())
@@ -163,12 +189,15 @@ if __name__ == "__main__":
                 else:
                     regress.runSuite(args.cluster, regress.suites[args.cluster])
             print("End.")
+    except Error as e:
+        logging.critical(e)
+        exit(e.getErrorCode());
     except Exception as e:
         logging.critical(e)
         logging.critical(traceback.format_exc())
-        print "Abend."
     except KeyboardInterrupt:
         logging.critical("Keyboard Interrupt Caught.")
+    finally:
         regress.StopTimeoutThread()
 
     exit()

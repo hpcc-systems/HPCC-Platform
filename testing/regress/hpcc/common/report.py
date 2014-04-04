@@ -72,12 +72,13 @@ class Report:
                 reportStr += "-------------------------------------------------\n"
         if self.report._fail:
             for result in self.report._fail:
-                try:
-                    reportStr += result.Diff.replace('\\n',  '\n').replace('"',  '')
-                except Exception as ex:
-                    logging.debug("Exception:'%s'",  str(ex))
-                    reportStr += repr(result.Diff).replace('\\n',  '\n').replace('"',  '')
-                reportStr += "\n"
+                if len(result.Diff) > 0:
+                    try:
+                        reportStr += result.Diff.replace('\\n',  '\n').replace('"',  '')
+                    except Exception as ex:
+                        logging.debug("Exception:'%s'",  str(ex))
+                        reportStr += repr(result.Diff).replace('\\n',  '\n').replace('"',  '')
+                    reportStr += "\n"
             reportStr += "-------------------------------------------------\n"
         if log:
             reportStr += "Log: %s\n" % str(log)
@@ -121,7 +122,10 @@ class Report:
         result['File'] = eclfile.ecl
         if eclfile.wuid == 'Not found':
             result['Result'] = 'Fail'
-            result['Diff'] = ''
+            if len(eclfile.diff) > 0:
+                result['Diff'] = eclfile.diff
+            else:
+                result['Diff'] = ''
             self.report._fail.append(_dict(result))
         elif eclfile.diff:
             if eclfile.testNoKey():
