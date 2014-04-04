@@ -410,7 +410,6 @@ define([
                     return this.inherited(arguments, [FileSpray.CreateFileListStore()]);
                 }
             }, this.id + "LandingZonesGrid");
-            this.landingZonesGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
 
             var context = this;
             this.landingZonesGrid.on(".dgrid-row:contextmenu", function (evt) {

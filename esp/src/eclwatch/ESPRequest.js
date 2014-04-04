@@ -341,22 +341,13 @@ define([
                 if (this.preRequest) {
                     this.preRequest(request);
                 }
+                var deferredResults = new Deferred();
+                deferredResults.total = new Deferred();
                 var helper = new RequestHelper();
+                var context = this;
                 var results = helper.send(this.service, this.action, {
                     request: request
-                });
-
-                var deferredResults = new Deferred();
-                var context = this;
-                deferredResults.total = results.then(function (response) {
-                    if (context.responseTotalQualifier) {
-                        return lang.getObject(context.responseTotalQualifier, false, response);
-                    } else if (context._hasResponseContent(response)) {
-                        return context._getResponseContent(response).length;
-                    }
-                    return 0;
-                });
-                Deferred.when(results, function (response) {
+                }).then(function(response) {
                     if (context.preProcessFullResponse) {
                         context.preProcessFullResponse(response, request, query, options);
                     }
@@ -378,10 +369,14 @@ define([
                     if (context.postProcessResults) {
                         context.postProcessResults(items);
                     }
+                    if (context.responseTotalQualifier) {
+                        deferredResults.total.resolve(lang.getObject(context.responseTotalQualifier, false, response));
+                    } else if (context._hasResponseContent(response)) {
+                        deferredResults.total.resolve(items.length);
+                    }
                     deferredResults.resolve(items);
-                    return items;
+                    return response;
                 });
-
                 return QueryResults(deferredResults);
             }
         })

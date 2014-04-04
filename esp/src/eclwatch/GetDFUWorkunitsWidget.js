@@ -361,7 +361,6 @@ define([
                     PercentDone: { label: this.i18n.PctComplete, width: 90, sortable: false }
                 }
             }, this.id + "WorkunitsGrid");
-            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>";
 
             var context = this;
             on(document, "." + context.id + "IDClick:click", function (evt) {

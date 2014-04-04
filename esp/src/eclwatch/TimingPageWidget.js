@@ -77,7 +77,7 @@ define([
 
                 this.timingTreeMap.init(lang.mixin(params, {
                     query: {
-                        graphsOnly: false,
+                        graphsOnly: false
                     }
                 }));
                 this.timingTreeMap.onClick = function (value) {

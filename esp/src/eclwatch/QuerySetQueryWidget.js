@@ -391,9 +391,7 @@ define([
                         }
                     }
                 }
-            },
-            this.id + "QuerySetGrid");
-            this.querySetGrid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.i18n.noDataMessage + "</span>");
+            }, this.id + "QuerySetGrid");
             on(document, "." + context.id + "WuidClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.querySetGrid.row(evt).data;

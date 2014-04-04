@@ -96,10 +96,6 @@ define([
 
         //  Implementation  ---
         initGrid: function() {
-            var context = this;
-            this.noDataMessage = this.i18n.noDataMessage;
-            this.loadingMessage = this.i18n.loadingMessage;
-
             var store = new Memory({
                 idProperty: this.idProperty,
                 data: []
@@ -107,6 +103,7 @@ define([
             this.store = Observable(store);
 
             this.grid = this.createGrid(this.id + "Grid");
+            var context = this;
             this.grid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onRowDblClick) {
                     var row = context.grid.row(evt).data;
@@ -119,12 +116,6 @@ define([
             this.grid.onContentChanged(function (object, removedFrom, insertedInto) {
                 context._refreshActionState();
             });
-            if (!this.grid.get("noDataMessage")) {
-                this.grid.set("noDataMessage", "<span class='dojoxGridNoData'>" + this.noDataMessage + "</span>");
-            }
-            if (!this.grid.get("loadingMessage")) {
-                this.grid.set("loadingMessage", "<span class='dojoxGridNoData'>" + this.loadingMessage + "</span>");
-            }
             this.grid.startup();
         },
 

@@ -257,7 +257,6 @@ define([
                 }
             }).placeAt(this.openButton.domNode, "after");
 
-            this.noDataMessage = this.i18n.loadingMessage;
             this.activity = ESPActivity.Get();
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
