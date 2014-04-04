@@ -30,8 +30,7 @@
           <entry><emphasis>search </emphasis></entry>
 
           <entry>A string containing the characters to be replaced by
-          characters in the same position in the
-          <emphasis>replacement</emphasis> string.</entry>
+          characters in the <emphasis>replacement</emphasis> string.</entry>
         </row>
 
         <row>
