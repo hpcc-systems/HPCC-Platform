@@ -1675,6 +1675,9 @@ struct IHThorJoinBaseArg : public IHThorArg
     virtual ICompare * queryCompareLeftRightLower() = 0;
     virtual ICompare * queryCompareLeftRightUpper() = 0;
     virtual ICompare * queryPrefixCompare() = 0;
+
+    inline bool isLeftAlreadyLocallySorted() { return (getJoinFlags() & JFleftSortedLocally) != 0; }
+    inline bool isRightAlreadyLocallySorted() { return (getJoinFlags() & JFrightSortedLocally) != 0; }
 };
 
 struct IHThorFetchContext : public IInterface
