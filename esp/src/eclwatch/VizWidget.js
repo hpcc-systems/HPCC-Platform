@@ -359,7 +359,7 @@ define([
             if (this.vizType !== value) {
                 this.vizType = value;
                 var context = this;
-                require(["viz/" + this.vizType], function (D3Viz) {
+                require(["hpcc/viz/" + this.vizType], function (D3Viz) {
                     context.d3Viz = new D3Viz();
                     domConstruct.empty(context.id + "VizCP");
                     context.d3Viz.renderTo({
