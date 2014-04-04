@@ -20,123 +20,125 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/on",
-
-    "dijit/form/Button",
+    "dojo/store/util/QueryResults",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
     "dgrid/Selection",
+    "dgrid/tree",
     "dgrid/selector",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPQuery",
-    "hpcc/ESPUtil"
-
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-                Button,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, ESPQuery, ESPUtil) {
+    "hpcc/SFDetailsWidget",
+    "hpcc/ESPUtil",
+    "hpcc/ESPQuery"
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, QueryResults,
+                OnDemandGrid, Keyboard, Selection, tree, selector, ColumnResizer, DijitRegistry,
+                GridDetailsWidget, SFDetailsWidget, ESPUtil, ESPQuery) {
     return declare("QuerySetSuperFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
-
-        gridTitle: nlsHPCC.title_QuerySetLogicalFiles,
-        idProperty: "Name",
-
-        wu: null,
         query: null,
 
+        gridTitle: nlsHPCC.title_QuerySetSuperFiles,
+        idProperty: "__hpcc_id",
 
         init: function (params) {
-           if (this.inherited(arguments))
+            if (this.inherited(arguments))
                 return;
-
-            this._refreshActionState();
+            this.query = ESPQuery.Get(params.QuerySet, params.QueryId);
+            this.refreshGrid();
+            this.store.getChildren = function(parent, options){
+                var children = [];
+                arrayUtil.forEach(parent.SubFiles.File, function(item, idx) {
+                    children.push({
+                        __hpcc_id: item,
+                        __hpcc_display: item
+                    });
+                });
+                return QueryResults(children);
+            }
+            this.store.mayHaveChildren = function (object) {
+              return object.__hpcc_type;
+            };
         },
 
-         createGrid: function (domID) {
+        createGrid: function (domID) {
             var context = this;
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
-                store: ESPQuery.CreateQueryStore(),
+                store: this.store,
                 columns: {
-                    col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    /*Item: {
-                        label: "File", width: 180, sortable: true,
-                        formatter: function (Wuid, row) {
-                            var wu = row.Server === "DFUserver" ? ESPDFUWorkunit.Get(Wuid) : ESPWorkunit.Get(Wuid);
-                            return "<img src='" + wu.getStateImage() + "'>&nbsp;<a href='#' class='" + context.id + "WuidClick'>" + Wuid + "</a>";
-                        }
-
-                    },*/
-                    LogicalFiles: { label: this.i18n.LogicalFiles, width: 108, sortable: false }
-                    /*State: {
-                        label: "State", width: 180, sortable: true, formatter: function (state, row) {
-                            return state + (row.Duration ? " (" + row.Duration + ")" : "");
-                        }
-                    },*/
-                    /*Owner: { label: "Owner", width: 90, sortable: true },
-                    Jobname: { label: "Job Name", sortable: true }*/
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox',
+                    }),
+                    __hpcc_display: tree({
+                        label: this.i18n.SuperFiles,
+                        collapseOnRefresh: true,
+                        sortable: false
+                    })
                 }
             }, domID);
-
-            var context = this;
-            on(document, "." + this.id + "WuidClick:click", function (evt) {
-                if (context._onRowDblClick) {
-                    var row = retVal.row(evt).data;
-                    context._onRowDblClick(row);
-                }
-            });
             return retVal;
         },
 
         createDetail: function (id, row, params) {
-            if (row.Server === "DFUserver") {
-                return new DFUWUDetailsWidget.fixCircularDependency({
+            if (row.Name) {
+                return new SFDetailsWidget.fixCircularDependency({
                     id: id,
-                    title: row.ID,
+                    title: row.Name,
                     closable: true,
                     hpcc: {
                         params: {
-                            Wuid: row.ID
+                            Name: row.Name
                         }
                     }
                 });
-            } 
-            return new WUDetailsWidget({
-                id: id,
-                title: row.Wuid,
-                closable: true,
-                hpcc: {
-                    params: {
-                        Wuid: row.Wuid
+            }
+            if (row.__hpcc_id) {
+                return new SFDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: row.__hpcc_id,
+                    closable: true,
+                    hpcc: {
+                        params: {
+                            Name: row.__hpcc_id
+                        }
                     }
-                }
-            });
+                });
+            }
+            if (params.Name) {
+                return new SFDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: params.Name,
+                    closable: true,
+                    hpcc: {
+                        params: {
+                            Name: params.Name
+                        }
+                    }
+                });
+            }
         },
-
-        
 
         refreshGrid: function (args) {
-            var context = this;
-            this.wu.getInfo({
-                onGetTimers: function (timers) {
-                    //  Required to calculate Graphs Total Time  ---
-                },
-                onGetGraphs: function (graphs) {
-                    context.store.setData(graphs);
-                    context.grid.refresh();
+            if (this.query) {
+                var superfiles = [];
+                if (lang.exists("SuperFiles.SuperFile", this.query)) {
+                    arrayUtil.forEach(this.query.SuperFiles.SuperFile, function (item, idx) {
+                        superfiles.push(lang.mixin({
+                            __hpcc_id: item.Name,
+                            __hpcc_display:  item.Name,
+                            __hpcc_type: item.Name
+                        }, item));
+                    });
                 }
-            });
-        },
-
-        refreshActionState: function (selection) {
-            this.inherited(arguments);
-
-            this.openSafeMode.set("disabled", !selection.length);
+            this.store.setData(superfiles);
+            this.grid.refresh();
+            }
         }
     });
 });
