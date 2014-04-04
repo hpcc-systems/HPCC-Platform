@@ -106,7 +106,6 @@ public:
         CActivityBase *ret = NULL;
         switch (kind)
         {
-            case TAKcountdisk:
             case TAKfiltergroup:
             case TAKlocalresultread:
             case TAKchildif:

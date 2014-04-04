@@ -184,8 +184,6 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createXmlFetchActivity(agent, activityId, subgraphId, (IHThorXmlFetchArg &)arg, kind);
     case TAKmerge: 
         return createMergeActivity(agent, activityId, subgraphId, (IHThorMergeArg &)arg, kind);
-    case TAKcountdisk: 
-        return NULL; // NOTE - activity gets created when needed
     case TAKhttp_rowdataset:
         return createHttpRowCallActivity(agent, activityId, subgraphId, (IHThorHttpCallArg &)arg, kind);
     case TAKsoap_rowdataset:

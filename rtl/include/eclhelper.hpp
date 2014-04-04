@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      151
-#define MIN_ACTIVITY_INTERFACE_VERSION  151             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      152
+#define MIN_ACTIVITY_INTERFACE_VERSION  152             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -506,7 +506,6 @@ protected:
 
 interface IXmlToRowTransformer;
 interface ICsvToRowTransformer;
-interface IHThorCountFileArg;
 interface IThorDiskCallback;
 interface IThorIndexCallback;
 interface IIndexReadContext;                    // this is misnamed!
@@ -736,11 +735,6 @@ enum ThorActivityKind
     TAKfirstn,
     TAKsample,
     TAKdegroup,
-    TAKjoin,
-    TAKhashjoin,
-    TAKlookupjoin,
-    TAKselfjoin,
-    TAKkeyedjoin,
     TAKgroup,
     TAKworkunitwrite,
     TAKfunnel,
@@ -750,7 +744,6 @@ enum ThorActivityKind
     TAKnormalize,
     TAKremoteresult,
     TAKpull,
-    TAKdenormalize,
     TAKnormalizechild,
     TAKchilddataset,
     TAKselectn,
@@ -768,7 +761,6 @@ enum ThorActivityKind
     TAKchoosesetsenth,
     TAKchoosesetslast,
     TAKfetch,
-    TAKhashdenormalize,
     TAKworkunitread,
     TAKthroughaggregate,
     TAKspill,
@@ -783,15 +775,12 @@ enum ThorActivityKind
     TAKxmlfetch,
     TAKxmlparse,
     TAKkeyeddistribute,
-    TAKjoinlight,           // lightweight, local, presorted join.
-    TAKalljoin,
     TAKsoap_rowdataset,     // a source activity
     TAKsoap_rowaction,      // source and sink activity
     TAKsoap_datasetdataset,     // a through activity
     TAKsoap_datasetaction,      // sink activity
     TAKkeydiff,
     TAKkeypatch,
-    TAKkeyeddenormalize,
     TAKsequential,
     TAKparallel,
     TAKchilditerator,
@@ -802,21 +791,24 @@ enum ThorActivityKind
     TAKlocalgraph,
     TAKifaction,
     TAKemptyaction,
-    TAKdiskread,                    // records one at a time. (filter+project)
+    TAKdiskread,                // records one at a time. (filter+project)
     TAKdisknormalize,           // same, but normalize a child dataset (filter+project)
     TAKdiskaggregate,           // non-grouped aggregate of dataset, or normalized dataset (filter/project input)
     TAKdiskcount,               // non-grouped count of dataset (not child), (may filter input)
     TAKdiskgroupaggregate,      // grouped aggregate on dataset (filter) (may work on project of input)
+    TAKdiskexists,              // non-grouped count of dataset (not child), (may filter input)
     TAKindexread,
     TAKindexnormalize,
     TAKindexaggregate,
     TAKindexcount,
     TAKindexgroupaggregate,
+    TAKindexexists,
     TAKchildread,
     TAKchildnormalize,
     TAKchildaggregate,
     TAKchildcount,
     TAKchildgroupaggregate,
+    TAKchildexists,
     TAKskiplimit,
     TAKchildthroughnormalize,
     TAKcsvread,
@@ -827,13 +819,6 @@ enum ThorActivityKind
     TAKregroup,
     TAKrollupgroup,
     TAKcombinegroup,
-    TAKlookupdenormalize,
-    TAKalldenormalize,
-    TAKdenormalizegroup,
-    TAKhashdenormalizegroup,
-    TAKlookupdenormalizegroup,
-    TAKkeyeddenormalizegroup,
-    TAKalldenormalizegroup,
     TAKlocalresultspill,
     TAKsimpleaction,
     TAKloopcount,
@@ -871,9 +856,6 @@ enum ThorActivityKind
     TAKlinkedrawiterator,
     TAKnormalizelinkedchild,
     TAKfilterproject,
-    TAKdiskexists,              // non-grouped count of dataset (not child), (may filter input)
-    TAKindexexists,
-    TAKchildexists,
     TAKcatch,
     TAKskipcatch,
     TAKcreaterowcatch,
@@ -885,22 +867,59 @@ enum ThorActivityKind
     TAKindexgroupexists,
     TAKindexgroupcount,
     TAKhashdistributemerge,
-    TAKselfjoinlight,
     TAKhttp_rowdataset,     // a source activity
     TAKinlinetable,
-    TAKcountdisk,
     TAKstreamediterator,
     TAKexternalsource,
     TAKexternalsink,
     TAKexternalprocess,
     TAKdictionaryworkunitwrite,
     TAKdictionaryresultwrite,
+    //Joins
+    TAKjoin,
+    TAKhashjoin,
+    TAKlookupjoin,
+    TAKselfjoin,
+    TAKkeyedjoin,
+    TAKalljoin,
     TAKsmartjoin,
+    TAKunknownjoin1, // place holders to make it easy to insert new join kinds
+    TAKunknownjoin2,
+    TAKunknownjoin3,
+    TAKjoinlight,           // lightweight, local, presorted join.
+    TAKselfjoinlight,
+    TAKlastjoin,
+    //Denormalize
+    TAKdenormalize,
+    TAKhashdenormalize,
+    TAKlookupdenormalize,
+    TAKselfdenormalize,
+    TAKkeyeddenormalize,
+    TAKalldenormalize,
     TAKsmartdenormalize,
+    TAKunknowndenormalize1,
+    TAKunknowndenormalize2,
+    TAKunknowndenormalize3,
+    TAKlastdenormalize,
+    //DenormalizeGroup
+    TAKdenormalizegroup,
+    TAKhashdenormalizegroup,
+    TAKlookupdenormalizegroup,
+    TAKselfdenormalizegroup,
+    TAKkeyeddenormalizegroup,
+    TAKalldenormalizegroup,
     TAKsmartdenormalizegroup,
+    TAKunknowndenormalizegroup1,
+    TAKunknowndenormalizegroup2,
+    TAKunknowndenormalizegroup3,
+    TAKlastdenormalizegroup,
 
     TAKlast
 };
+
+inline bool isSimpleJoin(ThorActivityKind kind) { return (kind >= TAKjoin) && (kind <= TAKlastjoin); }
+inline bool isDenormalizeJoin(ThorActivityKind kind) { return (kind >= TAKdenormalize) && (kind <= TAKlastdenormalize); }
+inline bool isDenormalizeGroupJoin(ThorActivityKind kind) { return (kind >= TAKdenormalizegroup) && (kind <= TAKlastdenormalizegroup); }
 
 enum ActivityInterfaceEnum
 {
@@ -1793,13 +1812,6 @@ struct IHThorKeyedDistributeArg : public IHThorArg
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
 };
 
-
-struct IHThorCountFileArg : public IHThorArg
-{
-    virtual const char * getFileName() = 0;
-    virtual IOutputMetaData * queryRecordSize() = 0;
-    virtual unsigned getFlags() = 0;
-};
 
 struct IHThorFetchBaseArg : public IHThorArg
 {

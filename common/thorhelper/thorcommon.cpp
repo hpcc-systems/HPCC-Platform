@@ -660,7 +660,6 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKcsvfetch:               return "Csv Fetch";
     case TAKxmlwrite:               return "Xml Write";
     case TAKparse:                  return "Parse";
-    case TAKcountdisk:              return "Count Disk";
     case TAKsideeffect:             return "Simple Action";
     case TAKtopn:                   return "Top N";
     case TAKmerge:                  return "Merge";
@@ -775,6 +774,8 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKsmartjoin:              return "Smart Join";
     case TAKsmartdenormalize:       return "Smart Denormalize";
     case TAKsmartdenormalizegroup:  return "Smart Denormalize Group";
+    case TAKselfdenormalize:       return "Self Denormalize";
+    case TAKselfdenormalizegroup:  return "Self Denormalize Group";
     }
     throwUnexpected();
 }
