@@ -27,6 +27,7 @@ const char * cppSystemText[]  = {
     "shared IOutputRowDeserializer := boolean;",
     "shared IHThorHashLookupInfo := boolean;",
     "shared IOutputMetaData := boolean;",
+    "shared size32_t := unsigned4;",
     
     "export InternalCppService := SERVICE",
     //  searchTableStringN(unsigned4 num, string table, string search) : library='eclrtl';
@@ -807,8 +808,8 @@ const char * cppSystemText[]  = {
 
 //Methods of IRowDeserializerSource
     "   row(dummyRecord) deserializerPeek(unsigned4 _maxSize) : omethod,entrypoint='peek';",
-    "   unsigned4 deserializerBeginNested() : omethod,entrypoint='beginNested';",
-    "   boolean deserializerFinishedNested(unsigned4 pos) : omethod,entrypoint='finishedNested';",
+    "   unsigned8 deserializerBeginNested() : omethod,entrypoint='beginNested';",
+    "   boolean deserializerFinishedNested(unsigned8 pos) : omethod,entrypoint='finishedNested';",
     "   unsigned4 deserializerReadN(data _target) : omethod,entrypoint='read';",
     "   unsigned4 deserializerReadSize() : omethod,entrypoint='readSize';",
     "   unsigned4 deserializerReadPackedInt(data _target) : omethod,entrypoint='readPackedInt';",
@@ -823,7 +824,7 @@ const char * cppSystemText[]  = {
 
 //Methods of IRowSerializerTarget
     "   serializerPut(const data _target) : omethod,entrypoint='put';",
-    "   unsigned4 serializerBeginNested() : omethod,entrypoint='beginNested';",
+    "   unsigned4 serializerBeginNested(size32_t cnt) : omethod,entrypoint='beginNested';",
     "   serializerEndNested(unsigned4 pos) : omethod,entrypoint='endNested';",
 
     // Dictionary support

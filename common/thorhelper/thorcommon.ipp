@@ -624,7 +624,7 @@ public:
         memcpy(buffer+pos, ptr, len);
         pos += len;
     }
-    virtual size32_t beginNested()
+    virtual size32_t beginNested(size32_t count)
     {
         nesting++;
         size32_t ret = pos;
@@ -653,7 +653,7 @@ public:
     CThorDemoRowSerializer(MemoryBuffer & _buffer);
 
     virtual void put(size32_t len, const void * ptr);
-    virtual size32_t beginNested();
+    virtual size32_t beginNested(size32_t count);
     virtual void endNested(size32_t position);
 
 protected:
@@ -753,7 +753,7 @@ public:
 
     virtual const byte * peek(size32_t maxSize);
     virtual offset_t beginNested();
-    virtual bool finishedNested(offset_t len);
+    virtual bool finishedNested(offset_t & len);
 
     virtual size32_t read(size32_t len, void * ptr);
     virtual size32_t readSize();

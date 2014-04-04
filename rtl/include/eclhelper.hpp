@@ -266,7 +266,7 @@ interface IEngineRowAllocator : extends IInterface
 interface IRowSerializerTarget
 {
     virtual void put(size32_t len, const void * ptr) = 0;
-    virtual size32_t beginNested() = 0;
+    virtual size32_t beginNested(size32_t count) = 0;
     virtual void endNested(size32_t position) = 0;
 };
 
@@ -274,7 +274,7 @@ interface IRowDeserializerSource
 {
     virtual const byte * peek(size32_t maxLen) = 0;     // try and ensure up to maxSize bytes are available.
     virtual offset_t beginNested() = 0;
-    virtual bool finishedNested(offset_t pos) = 0;
+    virtual bool finishedNested(offset_t & pos) = 0;
 
     virtual size32_t read(size32_t len, void * ptr) = 0;
     virtual size32_t readSize() = 0;

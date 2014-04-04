@@ -35,9 +35,9 @@ public:
     inline CSizingSerializer() { reset(); }
     inline void reset() { totalsize = 0; }
     inline size32_t size() { return totalsize; }
-    void put(size32_t len, const void * ptr);
-    size32_t beginNested();
-    void endNested(size32_t position);
+    virtual void put(size32_t len, const void * ptr);
+    virtual size32_t beginNested(size32_t count);
+    virtual void endNested(size32_t position);
 };
 
 class THORHELPER_API CMemoryRowSerializer: implements IRowSerializerTarget
@@ -50,9 +50,9 @@ public:
     {
         nesting = 0;
     }
-    void put(size32_t len, const void * ptr);
-    size32_t beginNested();
-    void endNested(size32_t sizePos);
+    virtual void put(size32_t len, const void * ptr);
+    virtual size32_t beginNested(size32_t count);
+    virtual void endNested(size32_t sizePos);
 };
 
 

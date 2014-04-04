@@ -480,7 +480,7 @@ void CThorDemoRowSerializer::put(size32_t len, const void * ptr)
     //ok to flush if nesting == 0;
 }
 
-size32_t CThorDemoRowSerializer::beginNested()
+size32_t CThorDemoRowSerializer::beginNested(size32_t count)
 {
     nesting++;
     unsigned pos = buffer.length();
@@ -542,7 +542,7 @@ void CSizingSerializer::put(size32_t len, const void * ptr)
     totalsize += len;
 }
 
-size32_t CSizingSerializer::beginNested()
+size32_t CSizingSerializer::beginNested(size32_t count)
 {
     totalsize += sizeof(size32_t);
     return totalsize;
@@ -557,7 +557,7 @@ void CMemoryRowSerializer::put(size32_t len, const void * ptr)
     buffer.append(len, ptr);
 }
 
-size32_t CMemoryRowSerializer::beginNested()
+size32_t CMemoryRowSerializer::beginNested(size32_t count)
 {
     nesting++;
     unsigned pos = buffer.length();
@@ -1005,7 +1005,7 @@ offset_t CThorContiguousRowBuffer::beginNested()
     return len+readOffset;
 }
 
-bool CThorContiguousRowBuffer::finishedNested(offset_t endPos)
+bool CThorContiguousRowBuffer::finishedNested(offset_t & endPos)
 {
     return readOffset >= endPos;
 }
@@ -1488,7 +1488,7 @@ public:
         }
     }
 
-    size32_t beginNested()
+    size32_t beginNested(size32_t count)
     {
         if (nested++==0)
             if (bufpos==ROW_WRITER_BUFFERSIZE)

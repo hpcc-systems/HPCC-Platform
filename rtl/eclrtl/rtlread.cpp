@@ -61,7 +61,7 @@ offset_t CThorStreamDeserializerSource::beginNested()
     return len+in->tell();
 }
 
-bool CThorStreamDeserializerSource::finishedNested(offset_t endPos)
+bool CThorStreamDeserializerSource::finishedNested(offset_t & endPos)
 {
     return in->tell() >= endPos;
 }
