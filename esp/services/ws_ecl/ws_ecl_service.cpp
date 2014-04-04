@@ -2760,6 +2760,18 @@ int CWsEclBinding::getRestURL(IEspContext *ctx, CHttpRequest *request, CHttpResp
     return 0;
 }
 
+void setResponseFormatByName(IEspContext *ctx, const char *respFormat)
+{
+    if (!ctx)
+        return;
+    ESPSerializationFormat fmt = ESPSerializationANY;
+    if (strieq(respFormat, "xml"))
+        fmt = ESPSerializationXML;
+    else if (strieq(respFormat, "json"))
+        fmt = ESPSerializationJSON;
+    ctx->setResponseFormat(fmt);
+}
+
 int CWsEclBinding::getWsEclExample(CHttpRequest* request, CHttpResponse* response, const char *thepath)
 {
     IProperties *parms = request->queryParameters();
@@ -2855,6 +2867,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
             StringBuffer format;
             nextPathNode(thepath, format);
+            setResponseFormatByName(context, format);
 
             if (!wsecl->connMap.getValue(target.str()))
                 throw MakeStringException(-1, "Target cluster not mapped to roxie process!");
@@ -2905,6 +2918,7 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
             StringBuffer format;
             nextPathNode(thepath, format);
+            setResponseFormatByName(context, format);
 
             WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
             return onSubmitQueryOutput(*context, request, response, wsinfo, format.str());
