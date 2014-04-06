@@ -609,11 +609,10 @@ private:
 
 /////////////////
 
-class CQualifiers : public CSimpleInterface, implements IInterface
+class CQualifiers : public CInterfaceOf<IInterface>
 {
     StringArray qualifiers;
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     inline void add(const char *qualifier) { qualifiers.append(qualifier); }
     inline unsigned count() const { return qualifiers.ordinality(); }
     inline const char *item(unsigned i) const { return qualifiers.item(i); }
@@ -668,17 +667,18 @@ public:
             }
 
             Owned<CQualifiers> qualifiers = new CQualifiers;
-            do
-            {
-                const char *endQ = queryNextUnquoted(startQ+1, ']');
-                assertex(endQ);
-                strippedXpath.append(startQ-path, path);
-
+			strippedXpath.append(startQ-path, path);
+			loop
+			{
+				const char *endQ = queryNextUnquoted(startQ+1, ']');
+				assertex(endQ);
                 StringAttr qualifier(startQ+1, endQ-startQ-1);
                 qualifiers->add(qualifier);
                 path = endQ+1;
+                if ('[' != *path)
+                	break;
+                startQ = path;
             }
-            while (NULL != (startQ = queryNextUnquoted(path, '[')));
             qualifierStack.append(qualifiers.getClear());
         }
         fullXpath.set(xpath);

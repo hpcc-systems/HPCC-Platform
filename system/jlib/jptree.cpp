@@ -637,49 +637,45 @@ const char *splitXPath(const char *xpath, StringBuffer &headPath)
 
 const char *queryNextUnquoted(const char *str, char c)
 {
-    const char *end = str+strlen(str);
-    bool quote = false;
-    while (end != str)
-    {
-        if ('"' == *str)
-        {
-            if (quote) quote = false;
-            else quote = true;
-        }
-        else if (c == *str && !quote)
-            break;
-        ++str;
-    }
-    return str==end?NULL:str;
+	bool quote = false;
+	loop
+	{
+		char next = *str;
+		if (next == '\0')
+			return NULL;
+		if ('"' == next)
+			quote = !quote;
+		else if (c == next && !quote)
+			return str;
+		++str;
+	}
 }
 
 const char *queryHead(const char *xpath, StringBuffer &head)
 {
     if (!xpath) return NULL;
-    StringBuffer path;
     const char *start = xpath;
-    const char *end = xpath+strlen(xpath);
     bool quote = false;
     bool braced = false;
-    while (end != xpath)
+    loop
     {
+		if (*xpath == '\0')
+			return NULL;
         ++xpath;
-        if (*xpath == '"')
-        {
-            if (quote) quote = false;
-            else quote = true;
-        }
-        else if (*xpath == ']' && !quote)
+		char next = *xpath;
+		if ('"' == next)
+			quote = !quote;
+        else if (next == ']' && !quote)
         {
             assertex(braced);
             braced = false;
         }
-        else if (*xpath == '[' && !quote)
+        else if (next == '[' && !quote)
         {
             assertex(!braced);
             braced = true;
         }
-        else if (*xpath == '/' && !quote && !braced)
+        else if (next == '/' && !quote && !braced)
         {
             if ('/' == *start) // so leading '//'
                 return start;
@@ -691,8 +687,6 @@ const char *queryHead(const char *xpath, StringBuffer &head)
             break;
         }
     }
-    if (xpath == end)
-        return NULL;
     head.append(xpath-start, start);
     return xpath+1;
 }
