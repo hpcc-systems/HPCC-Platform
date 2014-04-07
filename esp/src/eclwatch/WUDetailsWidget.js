@@ -190,13 +190,21 @@ define([
             this.wu.restart();
         },
         _onPublish: function (event) {
+            var allowForeign = registry.byId(this.id + "AllowForeignFiles");
+            if (allowForeign.checked == true) {
+                allowForeign.value = 1;
+            } else {
+                allowForeign.value = 0;
+            }
             if (this.publishForm.validate()) {
                 registry.byId(this.id + "Publish").closeDropDown();
                 this.wu.publish(
                     dom.byId(this.id + "Jobname2").value,
                     dom.byId(this.id + "RemoteDali").value,
+                    dom.byId(this.id + "SourceProcess").value,
                     registry.byId(this.id + "Priority").value,
-                    dom.byId(this.id + "Comment").value
+                    dom.byId(this.id + "Comment").value,
+                    allowForeign.value
                 );
             }
         },
