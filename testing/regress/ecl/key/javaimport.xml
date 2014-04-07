@@ -1,21 +1,12 @@
 <Dataset name='Result 1'>
- <Row><Result_1>Hello world!</Result_1></Row>
+ <Row><bfield>true</bfield><ifield>1</ifield><lfield>2</lfield><dfield>3.0</dfield><ffield>4.0</ffield><cfield1>a</cfield1><cfield2>b</cfield2><sfield>cd</sfield><n><ufield>ef</ufield></n><bset><Item>true</Item><Item>false</Item></bset><dset></dset><sset><Item>Hello from ECL</Item></sset><sub><Row><ufield>1</ufield></Row><Row><ufield>2</ufield></Row><Row><ufield>3</ufield></Row><Row><ufield>4</ufield></Row><Row><ufield>5</ufield></Row></sub></Row>
+ <Row><bfield>true</bfield><ifield>2</ifield><lfield>4</lfield><dfield>3.0</dfield><ffield>4.0</ffield><cfield1>a</cfield1><cfield2>b</cfield2><sfield>cd</sfield><n><ufield>ef</ufield></n><bset><Item>true</Item><Item>false</Item></bset><dset></dset><sset></sset><sub></sub></Row>
+ <Row><bfield>true</bfield><ifield>3</ifield><lfield>6</lfield><dfield>3.0</dfield><ffield>4.0</ffield><cfield1>a</cfield1><cfield2>b</cfield2><sfield>cd</sfield><n><ufield>ef</ufield></n><bset><Item>true</Item><Item>false</Item></bset><dset></dset><sset></sset><sub></sub></Row>
+ <Row><bfield>true</bfield><ifield>8</ifield><lfield>8</lfield><dfield>3.0</dfield><ffield>4.0</ffield><cfield1>a</cfield1><cfield2>b</cfield2><sfield>cd</sfield><n><ufield>ef</ufield></n><bset><Item>true</Item><Item>false</Item></bset><dset><Item>41413535</Item></dset><sset></sset><sub></sub></Row>
 </Dataset>
 <Dataset name='Result 2'>
- <Row><Result_2>3</Result_2></Row>
-</Dataset>
-<Dataset name='Result 3'>
- <Row><Result_3>7</Result_3></Row>
-</Dataset>
-<Dataset name='Result 4'>
- <Row><Result_4>11</Result_4></Row>
-</Dataset>
-<Dataset name='Result 5'>
- <Row><Result_5>3.0</Result_5></Row>
-</Dataset>
-<Dataset name='Result 6'>
- <Row><Result_6>7.0</Result_6></Row>
-</Dataset>
-<Dataset name='Result 7'>
- <Row><Result_7>11.0</Result_7></Row>
+ <Row><bfield>true</bfield><ifield>1</ifield><lfield>100000000</lfield><dfield>3.0</dfield><ffield>3.0</ffield><cfield1>X</cfield1><cfield2>Z</cfield2><sfield>Yoohoo</sfield><n><ufield>nest</ufield></n><bset><Item>false</Item><Item>false</Item><Item>false</Item><Item>true</Item><Item>false</Item></bset><dset><Item>0E</Item></dset><sset><Item>Hello</Item></sset><sub><Row><ufield>subnest</ufield></Row></sub></Row>
+ <Row><bfield>true</bfield><ifield>2</ifield><lfield>200000000</lfield><dfield>3.0</dfield><ffield>3.0</ffield><cfield1>X</cfield1><cfield2>Z</cfield2><sfield>Yoohoo</sfield><n><ufield>nest</ufield></n><bset><Item>false</Item><Item>false</Item><Item>false</Item><Item>true</Item><Item>false</Item></bset><dset><Item>0E</Item></dset><sset><Item>Hello</Item></sset><sub><Row><ufield>subnest</ufield></Row></sub></Row>
+ <Row><bfield>true</bfield><ifield>3</ifield><lfield>300000000</lfield><dfield>3.0</dfield><ffield>3.0</ffield><cfield1>X</cfield1><cfield2>Z</cfield2><sfield>Yoohoo</sfield><n><ufield>nest</ufield></n><bset><Item>false</Item><Item>false</Item><Item>false</Item><Item>true</Item><Item>false</Item></bset><dset><Item>0E</Item></dset><sset><Item>Hello</Item></sset><sub><Row><ufield>subnest</ufield></Row></sub></Row>
+ <Row><bfield>true</bfield><ifield>4</ifield><lfield>400000000</lfield><dfield>3.0</dfield><ffield>3.0</ffield><cfield1>X</cfield1><cfield2>Z</cfield2><sfield>Yoohoo</sfield><n><ufield>nest</ufield></n><bset><Item>false</Item><Item>false</Item><Item>false</Item><Item>true</Item><Item>false</Item></bset><dset><Item>0E</Item></dset><sset><Item>Hello</Item></sset><sub><Row><ufield>subnest</ufield></Row></sub></Row>
 </Dataset>
