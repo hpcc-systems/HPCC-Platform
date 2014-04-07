@@ -2068,6 +2068,8 @@ public:
             else
                 typeError("");
             break;
+        default:
+            throwUnexpected();
         }
         argsig++;
         addArg(v);
