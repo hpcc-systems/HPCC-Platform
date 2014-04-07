@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      152
-#define MIN_ACTIVITY_INTERFACE_VERSION  152             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      153
+#define MIN_ACTIVITY_INTERFACE_VERSION  153             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -967,7 +967,6 @@ enum ActivityInterfaceEnum
     TAItopnextra_1,
     TAIkeyedjoinbasearg_1,
     TAIjoinbasearg_1,
-    TAIjoinextra_1,
     TAIalljoinarg_1,
     TAIhashjoinextra_1,
     TAIkeyeddistributearg_1,
@@ -1060,8 +1059,6 @@ enum ActivityInterfaceEnum
     TAIgroupiteratearg_1 = TAIiteratearg_1,
     TAIkeyeddenormalizearg_1 = TAIkeyedjoinbasearg_1,
     TAIkeyeddenormalizegrouparg_1 = TAIkeyedjoinbasearg_1,
-    TAIdenormalizeextra_1 = TAIjoinextra_1,
-    TAIdenormalizegroupextra_1 = TAIjoinextra_1,
     TAIalldenormalizearg_1 = TAIalljoinarg_1,
     TAIalldenormalizegrouparg_1 = TAIalljoinarg_1,
     TAIlocalresultspillarg_1 = TAIlocalresultwritearg_1,
@@ -1613,24 +1610,28 @@ struct IHThorSubSortArg : public IHThorSortArg, public IHThorSubSortExtra
 
 // JoinFlags
 enum { 
-    JFleftouter=1, JFrightouter=2, JFexclude=4,
+    JFleftouter                  = 0x00000001,
+    JFrightouter                 = 0x00000002,
+    JFexclude                    = 0x00000004,
     JFleftonly  =JFleftouter|JFexclude,
     JFrightonly =JFrightouter|JFexclude,
     JFtypemask  =JFleftouter|JFrightouter|JFexclude,
-    JFfirst=8, JFfirstleft=0x10, JFfirstright=0x20,
-    JFpartitionright             = 0x40,
-    JFtransformMaySkip           = 0x80,
-    JFfetchMayFilter             = 0x100,
-    JFmatchAbortLimitSkips       = 0x200,
-    JFonfail                     = 0x400,
-    JFindexoptional              = 0x800,
-    JFslidingmatch               = 0x1000,
-    JFextractjoinfields          = 0x2000,
-    JFmatchrequired              = 0x4000,
-    JFmanylookup                 = 0x8000,
-    JFparallel                   = 0x10000,
-    JFsequential                 = 0x20000,
-    JFkeepsorted                 = 0x40000,
+    JFfirst                      = 0x00000008,
+    JFfirstleft                  = 0x00000010,
+    JFfirstright                 = 0x00000020,
+    JFpartitionright             = 0x00000040,
+    JFtransformMaySkip           = 0x00000080,
+    JFfetchMayFilter             = 0x00000100,
+    JFmatchAbortLimitSkips       = 0x00000200,
+    JFonfail                     = 0x00000400,
+    JFindexoptional              = 0x00000800,
+    JFslidingmatch               = 0x00001000,
+    JFextractjoinfields          = 0x00002000,
+    JFmatchrequired              = 0x00004000,
+    JFmanylookup                 = 0x00008000,
+    JFparallel                   = 0x00010000,
+    JFsequential                 = 0x00020000,
+    JFkeepsorted                 = 0x00040000,
     JFcountmatchabortlimit       = 0x00080000,
     JFreorderable                = 0x00100000,
     JFtransformmatchesleft       = 0x00200000,
@@ -1652,23 +1653,38 @@ enum {
     FFdynamicfilename            = 0x0004,
 };  
 
-struct IHThorJoinBaseArg : public IHThorArg
+struct IHThorAnyJoinBaseArg : public IHThorArg
+{
+    virtual bool match(const void * _left, const void * _right) = 0;
+    virtual size32_t createDefaultLeft(ARowBuilder & rowBuilder) = 0;
+    virtual size32_t createDefaultRight(ARowBuilder & rowBuilder) = 0;
+    virtual unsigned getJoinFlags() = 0;
+    virtual unsigned getKeepLimit() = 0;
+
+//Join:
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
+//Denormalize
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
+//Denormalize group
+    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
+
+    inline bool isLeftAlreadyLocallySorted() { return (getJoinFlags() & JFleftSortedLocally) != 0; }
+    inline bool isRightAlreadyLocallySorted() { return (getJoinFlags() & JFrightSortedLocally) != 0; }
+};
+
+
+struct IHThorJoinBaseArg : public IHThorAnyJoinBaseArg
 {
     virtual ICompare * queryCompareRight()=0;
     virtual ICompare * queryCompareLeft()=0;
     virtual bool isLeftAlreadySorted() = 0;
     virtual bool isRightAlreadySorted() = 0;
     virtual ICompare * queryCompareLeftRight()=0;
-    virtual size32_t createDefaultLeft(ARowBuilder & rowBuilder) = 0;
-    virtual size32_t createDefaultRight(ARowBuilder & rowBuilder) = 0;
-    virtual bool match(const void * _left, const void * _right) = 0;
     virtual ISortKeySerializer * querySerializeLeft() = 0;
     virtual ISortKeySerializer * querySerializeRight() = 0;
     virtual unsigned __int64 getThreshold() = 0;                                // limit to size of dataset on a node. (0=default)
     virtual double getSkew() = 0;
     virtual unsigned getJoinLimit() = 0;                                        // if a key joins more than this limit no records are output (0 = no limit)
-    virtual unsigned getJoinFlags() = 0;
-    virtual unsigned getKeepLimit() = 0;                                        // limit to number of matches that are kept (0 = no limit)
     virtual double getTargetSkew() = 0;
     virtual unsigned getMatchAbortLimit() = 0;
     virtual void onMatchAbortLimitExceeded() = 0;
@@ -1676,8 +1692,7 @@ struct IHThorJoinBaseArg : public IHThorArg
     virtual ICompare * queryCompareLeftRightUpper() = 0;
     virtual ICompare * queryPrefixCompare() = 0;
 
-    inline bool isLeftAlreadyLocallySorted() { return (getJoinFlags() & JFleftSortedLocally) != 0; }
-    inline bool isRightAlreadyLocallySorted() { return (getJoinFlags() & JFrightSortedLocally) != 0; }
+    virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
 };
 
 struct IHThorFetchContext : public IInterface
@@ -1692,8 +1707,6 @@ struct IHThorFetchContext : public IInterface
 
 struct IHThorKeyedJoinBaseArg : public IHThorArg
 {
-    COMMON_NEWTHOR_FUNCTIONS
-
     // For the data going to the indexRead remote activity:
     virtual size32_t extractIndexReadFields(ARowBuilder & rowBuilder, const void * _input) = 0;
     virtual IOutputMetaData * queryIndexReadInputRecordSize() = 0;
@@ -1742,45 +1755,12 @@ struct IHThorKeyedJoinArg : public IHThorKeyedJoinBaseArg, public IHThorFetchCon
     COMMON_NEWTHOR_FUNCTIONS
 };
 
-typedef IHThorKeyedJoinArg IHThorKeyedDenormalizeArg;
-typedef IHThorKeyedJoinArg IHThorKeyedDenormalizeGroupArg;
-
-struct IHThorJoinExtra : public IInterface
+struct IHThorJoinArg : public IHThorJoinBaseArg
 {
-    virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _left, const void * _right, IException * e) { return 0; }
-//Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
-//Denormalize
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
-//Denormalize group
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
-};
-
-struct IHThorJoinArg : public IHThorJoinBaseArg, public IHThorJoinExtra
-{
-    COMMON_NEWTHOR_FUNCTIONS
 };
 typedef IHThorJoinArg IHThorDenormalizeArg;
-typedef IHThorJoinArg IHThorDenormalizeGroupArg;
 
-struct IHThorAllJoinArg : public IHThorArg
-{
-    virtual bool match(const void * _left, const void * _right) = 0;
-    virtual size32_t createDefaultLeft(ARowBuilder & rowBuilder) = 0;
-    virtual size32_t createDefaultRight(ARowBuilder & rowBuilder) = 0;
-    virtual unsigned getJoinFlags() = 0;
-    virtual unsigned getKeepLimit() = 0;
-
-//Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
-//Denormalize
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
-//Denormalize group
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _numRows, const void * * _rows) { return 0; }
-};
-
-typedef IHThorAllJoinArg IHThorAllDenormalizeArg;
-typedef IHThorAllJoinArg IHThorAllDenormalizeGroupArg;
+typedef IHThorAnyJoinBaseArg IHThorAllJoinArg;
 
 // Used for hash and lookup joins.
 struct IHThorHashJoinExtra : public IInterface
