@@ -80,4 +80,4 @@ r2 t(r2 l) := TRANSFORM
     SELF := l;
 END;
 p := PROJECT(ds, t(LEFT));
-output(p);					// expect {1,1,{1}} {2,3,{3,20,100}} {4,2,{50}}
+output(p);					// expect {1,1,{1}} {2,3,{3,20,100}} {4,2,{12,50}}

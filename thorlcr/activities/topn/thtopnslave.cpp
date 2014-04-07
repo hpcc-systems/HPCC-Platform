@@ -71,39 +71,34 @@ class TopNSlaveActivity : public CSlaveActivity, public CThorDataLink
 {
     bool eos, eog, global, grouped, inputStopped;
     ICompare *compare;
-    const void **sortPtrsPtr;
-    MemoryBuffer sortPtrs;
-    IRowStream *out;
+    CThorExpandingRowArray sortedRows;
+    Owned<IRowStream> out;
     IThorDataLink *input;
     IHThorTopNArg *helper;
-    unsigned topNLimit, sortCount;
+    rowidx_t topNLimit;
     Owned<IRowServer> rowServer;
     MemoryBuffer topology;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    TopNSlaveActivity(CGraphElementBase *_container, bool _global, bool _grouped) : CSlaveActivity(_container), CThorDataLink(this), global(_global), grouped(_grouped)
+    TopNSlaveActivity(CGraphElementBase *_container, bool _global, bool _grouped)
+        : CSlaveActivity(_container), CThorDataLink(this), global(_global), grouped(_grouped), sortedRows(*this, this)
     {
         assertex(!(global && grouped));
-        out = NULL;
-        sortPtrsPtr = NULL;
-        sortCount = 0;
         eog = eos = false;
         inputStopped = true;
     }
     ~TopNSlaveActivity()
     {
-        ::Release(out);
-        freeSortGroup();
+        out.clear();
+        sortedRows.kill();
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
         helper = (IHThorTopNArg *) queryHelper();
-        rowcount_t _topNLimit = (rowcount_t)helper->getLimit();
-        topNLimit = (unsigned)_topNLimit;
-        assertex(_topNLimit == (rowcount_t)_topNLimit);
+        topNLimit = RIUNSET;
         compare = helper->queryCompare();
 
         if (!container.queryLocalOrGrouped())
@@ -113,26 +108,11 @@ public:
             data.read(tSz);
             topology.append(tSz, data.readDirect(tSz));
         }
-        sortPtrsPtr = (const void **)sortPtrs.reserveTruncate((topNLimit+1) * sizeof(void *));
-    }
-    void freeSortGroup()
-    {
-        if (sortPtrsPtr)
-        {
-            while (sortCount--)
-            {
-                const void *row = sortPtrsPtr[sortCount];
-                ReleaseThorRow(row);
-            }
-        }
     }
     IRowStream *getNextSortGroup(IRowStream *input)
     {
         if (inputStopped) return NULL;
-        ::Release(out);
-        out = NULL;
-        freeSortGroup();
-        sortCount = 0;
+        sortedRows.clearRows(); // NB: In a child query, this will mean the rows ptr will remain at high-water mark
         loop
         {
             OwnedConstThorRow row = input->nextRow();
@@ -144,50 +124,25 @@ public:
                 if (!row)
                     break;
             }
-            if (sortCount < topNLimit)
-            {
-                binary_vec_insert_stable(row.getClear(), sortPtrsPtr, sortCount, *compare); // sortPtrsPtr owns
-                sortCount++;
-            }
+            if (sortedRows.ordinality() < topNLimit)
+                sortedRows.binaryInsert(row.getClear(), *compare);
             else
             {
-                byte *lastRow = (byte *)*(sortPtrsPtr+(topNLimit-1));
+                const void *lastRow = sortedRows.query(topNLimit-1);
                 if (compare->docompare(lastRow, row) > 0)
                 {
-                    binary_vec_insert_stable(row.getLink(), sortPtrsPtr, topNLimit, *compare);
-                    lastRow = (byte *)*(sortPtrsPtr+topNLimit); // Nth+1, fall out now free.
-                    ReleaseThorRow(lastRow);
+                    sortedRows.binaryInsert(row.getClear(), *compare);
+                    OwnedConstThorRow rowToDelete = sortedRows.getClear(topNLimit); // Nth+1, fall out now free.
                 }
                 else // had enough and out of range
                     ;
             }
         }
-        if (global || sortCount)
+        rowidx_t sortedCount = sortedRows.ordinality();
+        Owned<IRowStream> retStream;
+        if (global || sortedCount)
         {
-            class CRowArrayStream : public CSimpleInterface, implements IRowStream
-            {
-                const void **sortPtrsPtr;
-                unsigned count, pos;
-            public:
-                IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-                CRowArrayStream(const void **_sortPtrsPtr, unsigned _count) : sortPtrsPtr(_sortPtrsPtr), count(_count), pos(0)
-                {
-                }
-            // IRowStream
-                const void *nextRow()
-                {
-                    if (pos < count)
-                    {
-                        const void *row = sortPtrsPtr[pos++];
-                        LinkThorRow(row);
-                        return row;
-                    }
-                    return NULL;
-                }
-                void stop() { count = pos = 0; }
-            };
-            out = new CRowArrayStream(sortPtrsPtr, sortCount);
+            retStream.setown(sortedRows.createRowStream());
             if (global)
             {
                 unsigned indent = 0;
@@ -197,7 +152,7 @@ public:
                         break;
 
                     IArrayOf<IRowStream> streams;
-                    streams.append(*out);
+                    streams.append(*retStream.getClear());
                     loop
                     {
                         unsigned node;
@@ -210,26 +165,25 @@ public:
                         streams.append(*createRowStreamFromNode(*this, node+1, container.queryJob().queryJobComm(), mpTag, abortSoon));
                     }
                     Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;
-                    out = createRowStreamMerger(streams.ordinality(), streams.getArray(), compare, false, linkcounter);
-                    out = createFirstNReadSeqVar(out, topNLimit);
+                    retStream.setown(createRowStreamMerger(streams.ordinality(), streams.getArray(), compare, false, linkcounter));
+                    retStream.setown(createFirstNReadSeqVar(retStream.getClear(), topNLimit));
                     indent += 2;
                 }
                 if (!firstNode())
                 {
-                    rowServer.setown(createRowServer(this, out, container.queryJob().queryJobComm(), mpTag));
+                    rowServer.setown(createRowServer(this, retStream, container.queryJob().queryJobComm(), mpTag));
                     eos = true;
-                    ::Release(out);
-                    out = NULL;
+                    retStream.clear();
                 }
             }
         }
-        if (global || 0 == topNLimit || 0 == sortCount)
+        if (global || 0 == topNLimit || 0 == sortedCount)
         {
             doStopInput();
             if (!global || 0 == topNLimit)
                 eos = true;
         }
-        return out;
+        return retStream.getClear();
     }
     void doStopInput()
     {
@@ -247,6 +201,9 @@ public:
         startInput(input);
         inputStopped = false;
         // NB: topNLimit shouldn't be stupid size, resourcing will guarantee this
+        __int64 _topNLimit = helper->getLimit();
+        assertex(_topNLimit < RCIDXMAX); // hopefully never this big, but if were must be max-1 for binary insert
+        topNLimit = (rowidx_t)_topNLimit;
         if (0 == topNLimit)
         {
             eos = true;
@@ -254,7 +211,7 @@ public:
         }
         else
         {
-            out = getNextSortGroup(input);
+            out.setown(getNextSortGroup(input));
             eos = false;
         }
         eog = false;
@@ -275,7 +232,7 @@ public:
             return NULL;
         if (NULL == out)
         {
-            out = getNextSortGroup(input);
+            out.setown(getNextSortGroup(input));
             if (NULL == out)
             {
                 eos = true;
@@ -295,7 +252,7 @@ public:
             {
                 if (eog)
                 {
-                    out = getNextSortGroup(input);
+                    out.setown(getNextSortGroup(input));
                     if (NULL == out)
                         eos = true;
                     else
@@ -310,7 +267,7 @@ public:
                 else
                 {
                     eog = true;
-                    out = getNextSortGroup(input);
+                    out.setown(getNextSortGroup(input));
                     if (NULL == out)
                         eos = true;
                 }
@@ -335,7 +292,7 @@ public:
         initMetaInfo(info);
         info.canStall = true;
         info.totalRowsMin=0;
-        info.totalRowsMax=topNLimit;
+        info.totalRowsMax = (RIUNSET==topNLimit) ? -1 : topNLimit; // but should always be set before getMetaInfo called
     }
 };
 
