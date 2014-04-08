@@ -137,10 +137,10 @@ class ActivityTimer
     unsigned __int64 startCycles;
     unsigned __int64 &accumulator;
 protected:
-    const bool &enabled;
+    const bool enabled;
     IActivityTimer *iActivityTimer;
 public:
-    inline ActivityTimer(unsigned __int64 &_accumulator, const bool &_enabled, IActivityTimer *_iActivityTimer) : accumulator(_accumulator), enabled(_enabled), iActivityTimer(_iActivityTimer)
+    inline ActivityTimer(unsigned __int64 &_accumulator, const bool _enabled, IActivityTimer *_iActivityTimer) : accumulator(_accumulator), enabled(_enabled), iActivityTimer(_iActivityTimer)
     {
         if (enabled)
         {
@@ -148,7 +148,10 @@ public:
             if (iActivityTimer)
                 startCycles -= iActivityTimer->getCyclesAdjustment();
         }
+        else
+            startCycles = 0;
     }
+
     inline ~ActivityTimer()
     {
         if (enabled)
@@ -163,7 +166,7 @@ public:
 #else
 struct ActivityTimer
 {
-    inline ActivityTimer(unsigned __int64 &_accumulator, const bool &_enabled, IActivityTimer *_iActivityTimer) { }
+    inline ActivityTimer(unsigned __int64 &_accumulator, const bool _enabled, IActivityTimer *_iActivityTimer) { }
 };
 #endif
 
