@@ -130,10 +130,7 @@ public:
             {
                 const void *lastRow = sortedRows.query(topNLimit-1);
                 if (compare->docompare(lastRow, row) > 0)
-                {
-                    sortedRows.binaryInsert(row.getClear(), *compare);
-                    OwnedConstThorRow rowToDelete = sortedRows.getClear(topNLimit); // Nth+1, fall out now free.
-                }
+                    sortedRows.binaryInsert(row.getClear(), *compare, true);
                 else // had enough and out of range
                     ;
             }
