@@ -735,7 +735,7 @@ bool CThorExpandingRowArray::appendRows(CThorSpillableRowArray &inRows, bool tak
     return true;
 }
 
-bool CThorExpandingRowArray::binaryInsert(const void *row, ICompare &compare)
+bool CThorExpandingRowArray::binaryInsert(const void *row, ICompare &compare, bool dropLast)
 {
     dbgassertex(NULL != row);
     if (numRows >= maxRows)
@@ -743,7 +743,15 @@ bool CThorExpandingRowArray::binaryInsert(const void *row, ICompare &compare)
         if (!ensure(numRows+1))
             return false;
     }
-    binary_vec_insert_stable(row, rows, numRows++, compare); // takes ownership of row
+    binary_vec_insert_stable(row, rows, numRows, compare); // takes ownership of row
+    if (dropLast)
+    {
+    	// last row falls out, i.e. release last row and don't increment numRows
+    	dbgassertex(numRows); // numRows must be >=1 for dropLast
+    	ReleaseThorRow(rows[numRows]);
+    }
+    else
+    	++numRows;
     return true;
 }
 
