@@ -436,7 +436,7 @@
       your system will only run as fast as its slowest node.</para>
 
       <sect2 id="Node-Mandatory-requirements">
-        <title>Node mandatory requirements</title>
+        <title>Node minimum requirements</title>
 
         <itemizedlist mark="square" spacing="compact">
           <listitem>
@@ -448,7 +448,7 @@
           </listitem>
 
           <listitem>
-            <para>1GB RAM per slave </para>
+            <para>1GB RAM (or more ) per slave</para>
 
             <para>(Note: If you configure more than 1 slave per node, memory
             is shared. For example, if you want 2 slaves per node with each
@@ -479,7 +479,7 @@
             </listitem>
 
             <listitem>
-              <para>4 GB RAM (or more)</para>
+              <para>4 GB RAM (or more) per slave</para>
             </listitem>
 
             <listitem>
