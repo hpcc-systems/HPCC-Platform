@@ -89,5 +89,8 @@ class Suite:
     def setEndTime(self,  time):
         self.endTime=time
 
-    def getelapsTime(self):
+    def getElapsTime(self):
         return self.endTime-self.startTime
+
+    def getSuiteName(self):
+        return self.name

@@ -1,4 +1,4 @@
-Overview of Regression Suite usage (v:0.0.14)
+Overview of Regression Suite usage (v:0.0.15)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
@@ -19,13 +19,14 @@ Result:
 |                       [--loglevel [{info,debug}]] [--suiteDir [SUITEDIR]]
 |                       [--timeout [TIMEOUT]] [--keyDir [KEYDIR]]
 |                       [--ignoreResult]
-|                       {list,run,query} ...
+|                       {list,setup,run,query} ...
 | 
 |       HPCC Platform Regression suite
 | 
 |       positional arguments:
-|          {list,run,query}      sub-command help
+|          {list,setup,run,query} sub-command help
 |            list                list help
+|            setup               setup help
 |            run                 run help
 |            query               query help
 |
@@ -37,8 +38,7 @@ Result:
 |                                  set the log level. Use debug for more detailed logfile.
 |            --suiteDir [SUITEDIR], -s [SUITEDIR]
 |                                  suiteDir to use. Default value is the current directory and it can handle relative path.
-|            --timeout [TIMEOUT], -t [TIMEOUT]
-|                                  timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
+|            --timeout [TIMEOUT]   timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file (see: 9.)
 |            --keyDir [KEYDIR], -k [KEYDIR]
 |                                  key file directory to compare test output. Default value defined in regress.json config file.
 |            --ignoreResult, -i    completely ignore the result.
@@ -56,10 +56,29 @@ Result:
 |       usage: ecl-test list [-h]
 |
 |       positional arguments:
-|         clusters    Print clusters from config (ecl-test.json by default).
+|         targets     Print target clusters from config (ecl-test.json by default).
 |
 |       optional arguments:
 |         -h, --help  show this help message and exit
+|
+
+Parameters of Regression Suite setup sub-command:
+-------------------------------------------------
+
+Command:
+
+    ./ecl-test setup <-h|--help>
+
+Result:
+
+|
+|       usage: usage: ecl-test setup [-h] [--target [TARGET]]
+|
+|       optional arguments:
+|         -h, --help            show this help message and exit
+|         --target [TARGET], -t [TARGET]
+|                               Run the setup on target cluster. Default value is
+|                               thor.
 |
 
 Parameters of Regression Suite run sub-command:
@@ -72,13 +91,12 @@ Command:
 Result:
 
 |
-|       usage: ecl-test run [-h] [--pq threadNumber] [cluster]
-|
-|       positional arguments:
-|         cluster            Run the cluster suite. Default value is setup.
+|       usage: ecl-test run [-h] [--target [TARGET]] [--pq threadNumber]
 |
 |       optional arguments:
 |         -h, --help         show this help message and exit
+|         --target [TARGET], -t [TARGET]
+|                            Run the cluster suite. Default value is thor.
 |         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2)
 |
 
@@ -93,19 +111,19 @@ Command:
 Result:
 
 |
-|       usage: ecl-test query [-h] [--cluster [target_cluster | all]] [--publish]
+|       usage: ecl-test query [-h] [--target [target_cluster | all]] [--publish]
 |                  [--pq threadNumber]
-|                  ECL query [ECL query ...]
+|                  ECL_query [ECL_query ...]
 |
 |       positional arguments:
-|         ECL query                   Name of one or more ECL file(s). It can contain wildcards. (mandatory).
+|         ECL_query                   Name of one or more ECL file(s). It can contain wildcards. (mandatory).
 |
 |       optional arguments:
-|         -h, --help                    Show this help message and exit
-|         --cluster [target_cluster | all], -c [target_cluster | all]
-|                                            Cluster for single query run. If cluster = 'all' then run query on all clusters. Default value is thor.
+|         -h, --help                  Show this help message and exit
+|         --target [target_cluster | all], -t [target_cluster | all]
+|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
 |         --publish, -p               Publish compiled query instead of run.
-|         --pq threadNumber    Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )
+|         --pq threadNumber           Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )
 |
 
 Steps to run Regression Suite
@@ -123,7 +141,6 @@ Command:
 The result looks like this:
 
         Available Clusters: 
-            - setup
             - hthor
             - thor
             - roxie
@@ -135,36 +152,43 @@ The result looks like this:
 
 Command:
 
-        ./ecl-test run
+        ./ecl-test setup
+
+to run setup on the default (thor) cluster
 
 or
+        ./ecl-test setup -t <target cluster>
 
-        ./ecl-test run setup
+to run setup on a selected cluster
 
 The result:
 
 |
-|        [Action] Suite: setup
-|        [Action] Queries: 3
-|        [Action] 1. Test: setup_fetch.ecl
-|        [Pass] Pass W20130617-095047
-|        [Pass] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-095047`
-|        [Action] 2. Test: setupxml.ecl
-|        [Pass] Pass W20130617-095049
-|        [Pass] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-095049`
-|        [Action] 3. Test: setup.ecl
-|        [Pass] Pass W20130617-095051
-|        [Pass] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-095051`
+|        [Action] Suite: thor (setup)
+|        [Action] Queries: 4
+|        [Action]   1. Test: setup.ecl
+|        [Pass]   1. Pass W20140410-133419 (8 sec)
+|        [Pass]   1. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140410-133419
+|        [Action]   2. Test: setup_fetch.ecl
+|        [Pass]   2. Pass W20140410-133428 (3 sec)
+|        [Pass]   2. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140410-133428
+|        [Action]   3. Test: setupsq.ecl
+|        [Pass]   3. Pass W20140410-133432 (5 sec)
+|        [Pass]   3. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140410-133432
+|        [Action]   4. Test: setupxml.ecl
+|        [Pass]   4. Pass W20140410-133438 (2 sec)
+|        [Pass]   4. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140410-133438
 |        [Action]
-|
 |            Results
-|            `-------------------------------------------------`
-|            Passing: 3
+|            -------------------------------------------------
+|            Passing: 4
 |            Failure: 0
-|            `-------------------------------------------------`
-|            Log: /var/log/HPCCSystems/regression/setup.13-06-17-09-50.log
-|            `-------------------------------------------------`
-
+|            -------------------------------------------------
+|            Log: /home/ati/HPCCSystems-regression/log/thor.14-04-10-13-34-18.log
+|            -------------------------------------------------
+|            Elapsed time: 24 sec  (00:00:24)
+|            -------------------------------------------------
+|
 
 
 
@@ -172,13 +196,12 @@ The result:
 -------------------------------------------------------------
 Command:
 
-        ./ecl-test run cluster [-h] [--pq threadNumber]
-
-Positional arguments:
-  cluster            Run the cluster suite (default: setup).
+        ./ecl-test run [-t <target cluster>] [-h] [--pq threadNumber]
 
 Optional arguments:
   -h, --help         show help message and exit
+  --target [TARGET], -t [TARGET]
+                     Run the cluster suite. Default value is thor.
   --pq threadNumber  Parallel query execution with threadNumber threads.
                     ('-1' can be use to calculate usable thread count on a single node system)
 
@@ -188,7 +211,7 @@ The first and last couple of lines look like this:
 
 |
 |        [Action] Suite: thor
-|        [Action] Queries: 257
+|        [Action] Queries: 320
 |        [Action]
 |        [Action]   1. Test: agglist.ecl
 |        [Pass]   1. Pass W20131119-173524 (2 sec)
@@ -201,21 +224,21 @@ The first and last couple of lines look like this:
 |        .
 |        .
 |        .
-|        [Action] 256. Test: xmlout2.ecl
+|        [Action] 319. Test: xmlout2.ecl
 |        [Pass] Pass W20131119-182536 (1 sec)
 |        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-182536
-|        [Action] 257. Test: xmlparse.ecl
+|        [Action] 320. Test: xmlparse.ecl
 |        [Pass] Pass W20131119-182537 (1 sec)
 |        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20131119-182537
 |
 |         Results
 |         `-------------------------------------------------`
-|         Passing: 257
+|         Passing: 320
 |         Failure: 0
 |         `-------------------------------------------------`
 |         Log: /home/ati/HPCCSystems-regression/log/thor.13-11-19-17-52-27.log
 |         `-------------------------------------------------`
-|         Elapsed time: 1992 sec  (00:33:12)
+|         Elapsed time: 2367 sec  (00:39:27)
 |         `-------------------------------------------------`
 |
 
@@ -223,7 +246,7 @@ If --pq option used (in this case with 16 threads) then then the content of the 
 
 |
 |        [Action] Suite: thor
-|        [Action] Queries: 257
+|        [Action] Queries: 320
 |        [Action]
 |        [Action]   1. Test: agglist.ecl
 |        [Action]   2. Test: aggregate.ecl
@@ -296,12 +319,12 @@ If --pq option used (in this case with 16 threads) then then the content of the 
 |        [Action]
 |         Results
 |         `-------------------------------------------------`
-|         Passing: 257
+|         Passing: 320
 |         Failure: 0
 |         `-------------------------------------------------`
-|         Log: /home/ati/HPCCSystems-regression/log/thor.13-11-19-15-55-32.log
+|         Log: /home/ati/HPCCSystems-regression/log/thor.14-04-10-16-12-30.log
 |         `-------------------------------------------------`
-|         Elapsed time: 701 sec  (00:11:41)
+|         Elapsed time: 1498 sec  (00:24:58)
 |         `-------------------------------------------------`
 |
 
@@ -313,18 +336,17 @@ The logfile generated into the HPCCSystems-regression/log subfolder of the user 
 
 Command:
 
-        ./ecl-test query test_name [test_name...] [-h] [--cluster cluster|all] [--pq threadNumber|-1]
+        ./ecl-test query test_name [test_name...] [-h] [--target <cluster|all>] [--publish] [--pq <threadNumber|-1>]
 
 Positional arguments:
         test_name               Name of a single ECL query. It can contain wildcards. (mandatory).
-        target cluster | all    Cluster for single query run (default: thor).
-                                If cluster = 'all' then run ECL query on all clusters.
+
 Optional arguments:
         -h, --help            Show help message and exit
-        --cluster [target_cluster | all]
-                                   Cluster for single query run. If cluster = 'all' then run query on all clusters. Default value is thor.
+        --target [target_cluster | all], -t [target_cluster | all]
+                              Target cluster for query to run. If target = 'all' then run query on all clusters. Default value is thor.
         --publish             Publish compiled query instead of run.
-        --pq threadNumber    Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )
+        --pq threadNumber     Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )
 
 
 
