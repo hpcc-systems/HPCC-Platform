@@ -2316,8 +2316,8 @@ private:
             }
             else if (stricmp(queryName, "control:timeActivities")==0)
             {
-                timeActivities = control->getPropBool("@val", true);
-                topology->setPropInt("@timeActivities", timeActivities);
+                defaultTimeActivities = control->getPropBool("@val", true);
+                topology->setPropInt("@timeActivities", defaultTimeActivities);
             }
             else if (stricmp(queryName, "control:timings")==0)
             {

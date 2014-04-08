@@ -359,13 +359,17 @@ public:
     {
         return ctx->queryDebugContext();
     }
-    virtual bool queryTimeActivities() const
+    virtual bool queryTraceActivityTimes() const
     {
-        return ctx->queryTimeActivities();
+        return ctx->queryTraceActivityTimes();
     }
     virtual bool queryCheckingHeap() const
     {
         return ctx->queryCheckingHeap();
+    }
+    virtual bool queryTimeActivities() const
+    {
+        return ctx->queryTimeActivities();
     }
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence)
     {
@@ -901,6 +905,7 @@ protected:
     activityState state;
     bool createPending;
     bool debugging;
+    bool timeActivities;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -922,6 +927,7 @@ public:
         debugging = _probeManager != NULL; // Don't want to collect timing stats from debug sessions
         colocalParent = NULL;
         createPending = true;
+        timeActivities = defaultTimeActivities;
     }
     
     CRoxieServerActivity(IHThorArg & _helper) : factory(NULL), basehelper(_helper)
@@ -937,6 +943,7 @@ public:
         debugging = false;
         colocalParent = NULL;
         createPending = true;
+        timeActivities = defaultTimeActivities;
     }
 
     inline ~CRoxieServerActivity()
@@ -1123,6 +1130,8 @@ public:
         totalCycles = 0;
         if (factory)
             factory->onCreateChildQueries(_ctx, &basehelper, childGraphs);
+        if (ctx)
+            timeActivities = ctx->queryTimeActivities();
     }
 
     virtual void serializeCreateStartContext(MemoryBuffer &out)
@@ -1264,7 +1273,7 @@ public:
                     CTXLOG("STATE: activity %d reset without stop", activityId);
                     stop(false);
                 }
-                if (ctx->queryTimeActivities())
+                if (ctx->queryTraceActivityTimes())
                 {
                     stats.dumpStats(*this);
                     StringBuffer prefix, text;
@@ -1755,6 +1764,7 @@ class CRoxieServerReadAheadInput : public CInterface, implements IRoxieInput, im
     unsigned preload;
     unsigned __int64 totalCycles;
     IRoxieSlaveContext *ctx;
+    bool timeActivities;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1764,12 +1774,15 @@ public:
         disabled = false;
         totalCycles = 0;
         ctx = NULL;
+        timeActivities = defaultTimeActivities;
     }
 
     void onCreate(IRoxieSlaveContext *_ctx)
     {
         ctx = _ctx;
         disabled = (ctx->queryDebugContext() != NULL);
+        if (ctx)
+            timeActivities = ctx->queryTimeActivities();
     }
 
     virtual IRoxieServerActivity *queryActivity()
@@ -3369,6 +3382,7 @@ public:
     mutable CriticalSection buffersCrit;
     unsigned processed;
     unsigned __int64 totalCycles;
+    bool timeActivities;
 
 //private:   //vc6 doesn't like this being private yet accessed by nested class...
     const void *getRow(IMessageUnpackCursor *mu) 
@@ -3414,7 +3428,7 @@ private:
                 unsigned char ctxTraceLevel = activity.queryLogCtx().queryTraceLevel() + 1; // Avoid passing a 0
                 if (activity.queryLogCtx().isIntercepted())
                     loggingFlags |= LOGGING_INTERCEPTED;
-                if (ctx->queryTimeActivities())
+                if (ctx->queryTraceActivityTimes())
                     loggingFlags |= LOGGING_TIMEACTIVITIES; 
                 if (activity.queryLogCtx().isBlind())
                     loggingFlags |= LOGGING_BLIND;
@@ -3493,6 +3507,7 @@ public:
         serverSideCache = activity.queryServerSideCache();
         bufferStream.setown(createMemoryBufferSerialStream(tempRowBuffer));
         rowSource.setStream(bufferStream);
+        timeActivities = defaultTimeActivities;
     }
 
     ~CRemoteResultAdaptor()
@@ -3685,6 +3700,8 @@ public:
         }
         if (ctx->queryDebugContext() && ctx->queryDebugContext()->getExecuteSequentially())
             deferredStart = true;
+        if (ctx)
+            timeActivities = ctx->queryTimeActivities();
     }
 
     virtual unsigned queryId() const
@@ -8355,7 +8372,7 @@ public:
 
         virtual const void * nextInGroup()
         {
-            ActivityTimer t(totalCycles, timeActivities, parent->ctx->queryDebugContext());
+            ActivityTimer t(totalCycles, parent->timeActivities, parent->ctx->queryDebugContext());
             if (eof)
                 return NULL;
             const void *ret = parent->readBuffered(idx, oid);
@@ -26218,7 +26235,7 @@ public:
     virtual unsigned queryId() const { return activityId; };
     virtual const void *nextInGroup() 
     {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, ctx->queryTimeActivities(), ctx->queryDebugContext());
         ASSERT(state == STATEstarted);
         ASSERT(allRead || !eof);
         if (eof)
