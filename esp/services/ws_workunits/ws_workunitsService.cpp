@@ -1427,6 +1427,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
         StringBuffer wuid = req.getWuid();
         WsWuHelpers::checkAndTrimWorkunit("WUInfo", wuid);
 
+        double version = context.getClientVersion();
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             getArchivedWUInfo(context, sashaServerIp.get(), sashaServerPort, wuid.str(), resp);
         else
@@ -1469,12 +1470,20 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                 WsWuInfo winfo(context, wuid.str());
                 winfo.getInfo(resp.updateWorkunit(), flags);
 
-                if (req.getIncludeResultsViewNames()||req.getIncludeResourceURLs())
+                if (req.getIncludeResultsViewNames()||req.getIncludeResourceURLs()||(version >= 1.50))
                 {
                     StringArray views, urls;
                     winfo.getResourceInfo(views, urls, flags);
-                    resp.setResultViews(views);
-                    resp.updateWorkunit().setResourceURLs(urls);
+                    IEspECLWorkunit& eclWU = resp.updateWorkunit();
+                    if (req.getIncludeResultsViewNames())
+                        resp.setResultViews(views);
+                    if (req.getIncludeResourceURLs())
+                        eclWU.setResourceURLs(urls);
+                    if (version >= 1.50)
+                    {
+                        eclWU.setResultViewCount(views.length());
+                        eclWU.setResourceURLCount(urls.length());
+                    }
                 }
             }
             catch (IException *e)
