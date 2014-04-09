@@ -137,19 +137,8 @@ define([
                             Exceptions: response.Exceptions
                         });
                     } else {
-                        topic.publish("hpcc/brToaster", {
-                            Severity: "Error",
-                            Source: "WsWorkunits.WUPublishWorkunit",
-                            Exceptions: [{
-                                Source: "Query ID",
-                                Message: response.WUPublishWorkunitResponse.QueryId
-                            }, {
-                                Source: "Query Name",
-                                Message: response.WUPublishWorkunitResponse.QueryName
-                            }, {
-                                Source: "Query Set",
-                                Message: response.WUPublishWorkunitResponse.QuerySet
-                            }]
+                        topic.publish("hpcc/ecl_wu_published", {
+                            wuid: params.request.Wuid
                         });
                     }
                 }
