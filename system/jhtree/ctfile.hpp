@@ -135,8 +135,6 @@ public:
     void write(IFileIOStream *, CRC32 *crc = NULL);
 
     unsigned int getMaxKeyLength();
-    void setMaxKeyLength(unsigned max) { hdr.length = max; }
-    void checkMaxKeyLength(unsigned max) { if (max>hdr.length) setMaxKeyLength(max); }
     bool isVariable();
     inline unsigned int getNodeKeyLength() 
     {
@@ -199,7 +197,7 @@ protected:
     size32_t expandedSize;
     Owned<IRandRowExpander> rowexp;  // expander for rand rowdiff   
 
-    static char *expandKeys(void *src,size32_t &retsize, bool rowcompression);
+    static char *expandKeys(void *src,unsigned keylength,size32_t &retsize, bool rowcompression);
     static IRandRowExpander *expandQuickKeys(void *src, bool needCopy);
 
     static void releaseMem(void *togo, size32_t size);
@@ -300,7 +298,7 @@ public:
 class jhtree_decl CWriteNode : public CWriteNodeBase
 {
 private:
-    MemoryAttr lastKeyValue;
+    char *lastKeyValue;
     unsigned __int64 lastSequence;
 
 public:
@@ -309,7 +307,7 @@ public:
 
     size32_t compressValue(const char *keyData, size32_t size, char *result);
     bool add(offset_t pos, const void *data, size32_t size, unsigned __int64 sequence);
-    const void *getLastKeyValue() const { return lastKeyValue.get(); }
+    const void *getLastKeyValue() const { return lastKeyValue; }
     unsigned __int64 getLastSequence() const { return lastSequence; }
 };
 

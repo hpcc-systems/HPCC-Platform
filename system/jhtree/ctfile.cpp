@@ -242,12 +242,16 @@ CWriteNode::CWriteNode(offset_t _fpos, CKeyHdr *_keyHdr, bool isLeaf) : CWriteNo
 {
     hdr.leafFlag = isLeaf ? 1 : 0;
     if (!isLeaf)
+    {
         keyLen = keyHdr->getNodeKeyLength();
+    }
+    lastKeyValue = (char *) malloc(keyLen);
     lastSequence = 0;
 }
 
 CWriteNode::~CWriteNode()
 {
+    free(lastKeyValue);
 }
 
 bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned __int64 sequence)
@@ -360,12 +364,9 @@ bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned
         hdr.keyBytes += bytes;
     }
 
-    if (insize>lastKeyValue.length())
-    {
-        lastKeyValue.reallocate(insize);
-        keyHdr->checkMaxKeyLength(insize);
-    }
-    memcpy(lastKeyValue.bufferBase(), indata, insize);
+    if (insize>keyLen)
+        throw MakeStringException(0, "key+payload (%u) exceeds max length (%u)", insize, keyLen);
+    memcpy(lastKeyValue, indata, insize);
     lastSequence = sequence;
     hdr.numKeys++;
     return true;
@@ -374,15 +375,11 @@ bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned
 size32_t CWriteNode::compressValue(const char *keyData, size32_t size, char *result)
 {
     unsigned int pack = 0;
-    unsigned max = lastKeyValue.length();
-    if (max>255)
-        max = 255;
     if (hdr.numKeys)
     {
-        const char *lkv = (const char *)lastKeyValue.get();
-        for (; pack<size && pack<max; pack++)
+        for (; pack<size && pack<255; pack++)
         {
-            if (keyData[pack] != lkv[pack])
+            if (keyData[pack] != lastKeyValue[pack])
                 break;
         }
     }
@@ -535,7 +532,7 @@ unsigned CJHTreeNode::countAllocationsCurrent;
 unsigned CJHTreeNode::countAllocationsEver;
 SpinLock CJHTreeNode::spin;
 
-char *CJHTreeNode::expandKeys(void *src,size32_t &retsize, bool rowcompression)
+char *CJHTreeNode::expandKeys(void *src,unsigned keylength,size32_t &retsize, bool rowcompression)
 {
     Owned<IExpander> exp = rowcompression?createRDiffExpander():createLZWExpander(true);
     int len=exp->init(src);
@@ -614,7 +611,7 @@ void CJHTreeNode::unpack(const void *node, bool needCopy)
             if (!quick||!rowexp.get())
 #endif
             {
-                keyBuf = expandKeys(keys,expandedSize,quick);
+                keyBuf = expandKeys(keys,keyLen,expandedSize,quick);
             }
         }
         assertex(keyBuf||rowexp.get());

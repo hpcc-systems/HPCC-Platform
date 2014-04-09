@@ -75,7 +75,7 @@ public:
 class CKeyBuilderBase : public CInterface
 {
 protected:
-    unsigned rawSize;
+    unsigned keyValueSize;
     count_t records;
     unsigned levels;
     offset_t nextPos;
@@ -88,18 +88,17 @@ protected:
     unsigned __int64 sequence;
     CRC32StartHT crcStartPosTable;
     CRC32EndHT crcEndPosTable;
-    bool doCrc, legacyCompat;
+    bool doCrc;
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyBuilderBase(IFileIOStream *_out, unsigned flags, unsigned _rawSize, offset_t _fileSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence, bool _legacyCompat)
-        : out(_out), legacyCompat(_legacyCompat)
+    CKeyBuilderBase(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t _fileSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence) : out(_out)
     {
         doCrc = false;
         sequence = _startSequence;
         keyHdr.setown(new CKeyHdr());
-        rawSize = _rawSize;
+        keyValueSize = rawSize;
         keyedSize = _keyedSize != (unsigned) -1 ? _keyedSize : rawSize;
 
         fileSize = _fileSize;
@@ -114,7 +113,7 @@ public:
         KeyHdr *hdr = keyHdr->getHdrStruct();
         hdr->nodeSize = nodeSize;
         hdr->extsiz = 4096;
-        hdr->length = 0; // fill in at end
+        hdr->length = keyValueSize; 
         hdr->ktype = flags; 
         hdr->timeid = 0;
         hdr->clstyp = 1;  // IDX_CLOSE
@@ -149,7 +148,7 @@ public:
         KeyHdr *hdr = keyHdr->getHdrStruct();
         records = hdr->nument;
         nextPos = hdr->nodeSize; // leaving room for header
-        rawSize = keyHdr->getMaxKeyLength();
+        keyValueSize = keyHdr->getMaxKeyLength();
         keyedSize = keyHdr->getNodeKeyLength();
     }
 
@@ -201,26 +200,12 @@ protected:
         return 0;
     }
 
-    void writeFileHeader(CRC32 *crc)
+    void writeFileHeader(bool fixHdr, CRC32 *crc)
     {
         if (out)
         {
             out->flush();
             out->seek(0, IFSbegin);
-
-#define LEGACY_DEFAULT_MAXLENGTH 4096
-            /* For legacy compatibility, where no explicit maxlength was provided.
-             * 1) Check if < default and set header to default - maintaining legacy key build/read behaviour.
-             * 2) Issue warning if runtime max exceeded default - key will not be compatible with legacy system, without MAXLENGTHs being added.
-             */
-            if (legacyCompat && rawSize==LEGACY_DEFAULT_MAXLENGTH)
-            {
-                if (keyHdr->getMaxKeyLength() < LEGACY_DEFAULT_MAXLENGTH)
-                    keyHdr->setMaxKeyLength(LEGACY_DEFAULT_MAXLENGTH);
-                else
-                    WARNLOG("Key created with legacy compatibility set, but key+payload size exceeds legacy default of 4096. Max size is: %d", keyHdr->getMaxKeyLength());
-            }
-
             keyHdr->write(out, crc);
         }
     }
@@ -359,8 +344,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t fileSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence, bool legacyCompat)
-        : CKeyBuilderBase(_out, flags, rawSize, fileSize, nodeSize, keyedSize, startSequence, legacyCompat)
+    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t fileSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence) 
+        : CKeyBuilderBase(_out, flags, rawSize, fileSize, nodeSize, keyedSize, startSequence)
     {
         doCrc = true;
         activeNode = NULL;
@@ -395,7 +380,7 @@ public:
             writeMetadata(metaXML.str(), metaXML.length());
         }
         CRC32 headerCrc;
-        writeFileHeader(&headerCrc);
+        writeFileHeader(false, &headerCrc);
 
         if (fileCrc)
         {
@@ -504,9 +489,9 @@ protected:
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t fileSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence, bool legacyCompat)
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t fileSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence)
 {
-    return new CKeyBuilder(_out, flags, rawSize, fileSize, nodeSize, keyFieldSize, startSequence, legacyCompat);
+    return new CKeyBuilder(_out, flags, rawSize, fileSize, nodeSize, keyFieldSize, startSequence);
 }
 
 
@@ -559,7 +544,7 @@ public:
                 leafInfo.append(OLINK(nodes.item(idx2)));
         }
         buildTree(leafInfo);
-        writeFileHeader(NULL);
+        writeFileHeader(true, NULL);
     }
 
 protected:
