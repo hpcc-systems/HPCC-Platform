@@ -84,46 +84,14 @@ CEspHttpServer::~CEspHttpServer()
                 if (paramStr && *paramStr)
                     logStr.appendf("?%s", paramStr);
 
+                DBGLOG("Request[%s]", logStr.str());
                 if (m_request->isSoapMessage())
                 {
                     StringBuffer requestStr;
                     m_request->getContent(requestStr);
-
-                    if (requestStr.length() > 0)
-                    {
-                        bool trimSpace = true;
-                        StringBuffer requestBuf;
-                        const char* s = requestStr.str();
-                        while (s && *s)
-                        {
-                            if ((s[0] != '\r') && (s[0] != '\n'))
-                            {
-                                if (s[0] != ' ')
-                                {
-                                    requestBuf.append(s[0]);
-                                    trimSpace = false;
-                                }
-                                else if (!trimSpace)
-                                {
-                                    requestBuf.append(s[0]);
-                                }
-                            }
-                            else
-                            {
-                                trimSpace = true;
-                            }
-
-                            s++;
-                        }
-
-                        if (requestBuf.length() > 0)
-                        {
-                            logStr.newline();
-                            logStr.append(requestBuf.str());
-                        }
-                    }
+                    if (requestStr.length())
+                        m_request->logSOAPMessage(requestStr.str(), NULL);
                 }
-                DBGLOG("Request[%s]", logStr.str());
             }
         }
 
