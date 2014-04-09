@@ -787,6 +787,7 @@
                 buildSet="roxie"
                 callbackRetries="3"
                 callbackTimeout="500"
+                channelsPerNode="1"
                 checkCompleted="true"
                 checkFileDate="true"
                 clusterWidth="1"
@@ -853,7 +854,6 @@
                 name="myroxie"
                 nodeCacheMem="100"
                 nodeCachePreload="false"
-                numChannels="1"
                 numDataCopies="1"
                 parallelAggregate="0"
                 perChannelFlowLimit="10"
@@ -989,6 +989,7 @@
                pluginsPath="${PLUGINS_PATH}"
                replicateAsync="false"
                replicateOutputs="false"
+               slavesPerNode="1"
                watchdogEnabled="true"
                watchdogProgressEnabled="true">
    <Debug/>
