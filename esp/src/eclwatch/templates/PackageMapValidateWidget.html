@@ -1,31 +1,31 @@
 <div class="${baseClass}">
-    <div id="${id}ValidatePM" data-dojo-id="${id}ValidatePM" data-dojo-type="dijit/form/Form" encType="multipart/form-data" action="" method="">
+    <div id="${id}ValidatePM" data-dojo-id="${id}ValidatePM" data-dojo-type="dijit.form.Form" encType="multipart/form-data" action="" method="">
         <table id="${id}ValidatePMTable">
             <tr>
                 <td width="140px"><b>${i18n.Target}:</b></td>
                 <td>
-                    <div id="${id}TargetSelect" name="TargetSelect" style="width: 8em;" data-dojo-attach-event="onChange:_onChangeTarget" data-dojo-type="dijit/form/Select">
+                    <div id="${id}TargetSelect" name="TargetSelect" style="width: 8em;" data-dojo-attach-event="onChange:_onChangeTarget" data-dojo-type="dijit.form.Select">
                     </div>
                 </td>
             </tr>
             <tr>
                 <td width="140px"><b>${i18n.Process}:</b></td>
                 <td>
-                    <div id="${id}ProcessSelect" name="ProcessSelect" style="width: 8em;" data-dojo-type="dijit/form/Select">
+                    <div id="${id}ProcessSelect" name="ProcessSelect" style="width: 8em;" data-dojo-type="dijit.form.Select">
                     </div>
                 </td>
             </tr>
             <tr>
                 <td><b>${i18n.Validate}:</b></td>
                 <td>
-                    <input name="ValidateType" id="ActivePM"  value="ActivePM" type="radio" data-dojo-type="dijit/form/RadioButton" checked/>${i18n.ActivePackageMap}
-                    <input name="ValidateType" id="PMContent"  value="PMContent"type="radio" data-dojo-type="dijit/form/RadioButton"/>${i18n.PackageContent}
+                    <input name="ValidateType" id="ActivePM"  value="ActivePM" type="radio" data-dojo-type="dijit.form.RadioButton" checked/>${i18n.ActivePackageMap}
+                    <input name="ValidateType" id="PMContent"  value="PMContent"type="radio" data-dojo-type="dijit.form.RadioButton"/>${i18n.PackageContent}
                 </td>
             </tr>
             <tr>
                 <td valign='top'><b>${i18n.PackageContent}:</b></td>
                 <td>
-                    <textarea id="${id}Package" name="${id}Package" data-dojo-type="dijit/form/SimpleTextarea" rows="15" cols="80" style="width:100%;height:80%;"></textarea>
+                    <textarea id="${id}Package" name="${id}Package" data-dojo-type="dijit.form.SimpleTextarea" rows="15" cols="80" style="width:100%;height:80%;"></textarea>
                 </td>
             </tr>
             <tr>
@@ -37,7 +37,7 @@
             <tr>
                 <td/>
                 <td>
-                    <textarea id="${id}ValidateResult" data-dojo-type="dijit/form/SimpleTextarea" rows="15" cols="100"></textarea>
+                    <textarea id="${id}ValidateResult" data-dojo-type="dijit.form.SimpleTextarea" rows="15" cols="100"></textarea>
                 </td>
             </tr>
         </table>

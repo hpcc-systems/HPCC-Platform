@@ -31,19 +31,19 @@
                     }
                 }" data-dojo-type="dojox.grid.EnhancedGrid">
                 </div>
-                <div id="${id}AddProcessMapDialog" data-dojo-type="dijit/Dialog" data-dojo-id="${id}AddProcessMapDialog" title="${i18n.AddProcessMap}">
-                    <div data-dojo-type="dijit/form/Form" id="${id}AddProcessMapForm" data-dojo-id="${id}AddProcessMapForm" method="post" enctype="multipart/form-data" >
+                <div id="${id}AddProcessMapDialog" data-dojo-type="dijit.Dialog" data-dojo-id="${id}AddProcessMapDialog" title="${i18n.AddProcessMap}">
+                    <div data-dojo-type="dijit.form.Form" id="${id}AddProcessMapForm" data-dojo-id="${id}AddProcessMapForm" method="post" enctype="multipart/form-data" >
                        <table id="${id}AddProcessMapTable" class="dijitDialogPaneContentArea">
                             <tr>
                                 <td><input id="${id}AddProcessMapFileUploader" name="${id}AddProcessMapFileUploader" multiple="false" type="file" data-dojo-type="dojox.form.Uploader" data-dojo-attach-event="onChange:_onCheckAddProcessMapInput" label="${i18n.SelectPackageFile}"/></td>
                             </tr>
                             <tr>
-                                <td><div id="${id}AddProcessMapFileToUpload" data-dojo-type="dojox/form/uploader/FileList" data-dojo-props='uploaderId:"${id}AddProcessMapFileUploader"'>
+                                <td><div id="${id}AddProcessMapFileToUpload" data-dojo-type="dojox.form.uploader.FileList" data-dojo-props='uploaderId:"${id}AddProcessMapFileUploader"'>
                                 </div></td>
                             </tr>
                             <tr>
                                 <td><label for="${id}AddProcessMapId" style="width: 15em;">${i18n.ID}:</label></td>
-                                <td><input name="${id}AddProcessMapId" id="${id}AddProcessMapId" data-dojo-attach-event="onKeyUp:_onAddProcessMapIdKeyUp" data-dojo-props="trim: true" data-dojo-type="dijit/form/TextBox"</td>
+                                <td><input name="${id}AddProcessMapId" id="${id}AddProcessMapId" data-dojo-attach-event="onKeyUp:_onAddProcessMapIdKeyUp" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox"</td>
                             </tr>
                             <tr>
                                 <td><label for="${id}AddProcessMapTargetSelect">${i18n.Target}:</label></td>
@@ -59,15 +59,15 @@
                             </tr>
                             <tr>
                                 <td><label for="${id}AddProcessMapDaliIP">${i18n.RemoteDaliIP}:</label></td>
-                                <td><input name="${id}AddProcessMapDaliIP" id="${id}AddProcessMapDaliIP" data-dojo-props="trim: true" data-dojo-type="dijit/form/TextBox"></td>
+                                <td><input name="${id}AddProcessMapDaliIP" id="${id}AddProcessMapDaliIP" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox"></td>
                             </tr>
                             <tr>
                                 <td><label for="${id}AddProcessMapActivate">${i18n.Activate}:</label></td>
-                                <td><input id="${id}AddProcessMapActivate" name="${id}AddProcessMapActivate" data-dojo-type="dijit/form/CheckBox" value="" checked/></td>
+                                <td><input id="${id}AddProcessMapActivate" name="${id}AddProcessMapActivate" data-dojo-type="dijit.form.CheckBox" value="" checked/></td>
                             </tr>
                             <tr>
                                 <td><label for="${id}AddProcessMapOverWrite">${i18n.Overwrite}:</label></td>
-                                <td><input id="${id}AddProcessMapOverWrite" name="${id}AddProcessMapOverWrite" data-dojo-type="dijit/form/CheckBox" value=""/></td>
+                                <td><input id="${id}AddProcessMapOverWrite" name="${id}AddProcessMapOverWrite" data-dojo-type="dijit.form.CheckBox" value=""/></td>
                             </tr>
                             <tr>
                                 <td/>

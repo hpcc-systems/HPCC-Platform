@@ -109,9 +109,6 @@ define([
         onNewTabSelection: function (notification) {
             var currHash = hash();
             var newHash = this.getSelectedPath();
-            if (newHash != this.idToPath(notification.newWidget.id)) {
-                var d = 0;
-            }
             if (this.disableHashing) {
                 this.go(this.getSelectedPath(), false, true);
             } else {
@@ -135,8 +132,7 @@ define([
             var newSel = this.id + "_" + evt.params.sel;
             if (!currSel || currSel.id != newSel) {
                 this.selectChild(newSel, null);
-            }
-            if (this.initTab) {
+            } else if (this.initTab) {
                 this.initTab();
             }
         },

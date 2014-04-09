@@ -91,6 +91,8 @@ define([
                 this.warningsCheck = registry.byId(this.id + "Warnings");
                 this.infoCheck = registry.byId(this.id + "Info");
                 this.errWarnMenuItem = registry.byId("stubErrWarn");
+                this.widget.ErrWarnDialog = registry.byId(this.id + "ErrWarnDialog");
+                this.widget.ErrWarnDialogTextArea = registry.byId(this.id + "ErrWarnDialogTextArea");
             },
 
             startup: function (args) {
@@ -166,6 +168,11 @@ define([
                 }
             },
 
+            destroy: function (args) {
+                this.widget.ErrWarnDialog.destroyRecursive();
+                this.inherited(arguments);
+            },
+
             resize: function (args) {
                 this.inherited(arguments);
                 this.borderContainer.resize();
@@ -232,8 +239,6 @@ define([
             },
             _onCopy: function (evt) {
                 var csvContent = this.toCSV(this.infoData, "\t");
-                this.widget.ErrWarnDialog = registry.byId(this.id + "ErrWarnDialog");
-                this.widget.ErrWarnDialogTextArea = registry.byId(this.id + "ErrWarnDialogTextArea");
                 this.widget.ErrWarnDialogTextArea.set("value", csvContent);
                 this.widget.ErrWarnDialog.show();
                 this.widget.ErrWarnDialogTextArea.focus();
