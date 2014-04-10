@@ -169,7 +169,15 @@ define([
                 });
             },
 
+            _onNotify: function(object, existingId){
+                this.inherited(arguments);
+                if (this.onSelectedChangedCallback) {
+                    this.onSelectedChangedCallback();
+                }
+            },
+
             onSelectionChanged: function (callback) {
+                this.onSelectedChangedCallback = callback;
                 this.on("dgrid-select, dgrid-deselect", function (event) {
                     callback(event);
                 });
