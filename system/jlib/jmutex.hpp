@@ -258,7 +258,7 @@ class CriticalBlock
     CriticalSection &crit;
 public:
     inline CriticalBlock(CriticalSection &c) : crit(c)      { crit.enter(); }
-    inline ~CriticalBlock()                             { crit.leave(); }
+    inline ~CriticalBlock()                                 { crit.leave(); }
 };
 
 /**
@@ -331,8 +331,18 @@ public:
             nesting++;
             return;
         }
-        while (!atomic_cas(&value,1,0)) 
-            ThreadYield(); 
+        while (!atomic_cas(&value,1,0))
+        {
+            int iter = 0;
+            while (atomic_read(&value))
+            {
+                if (iter++ >= 100)
+                {
+                    iter = 0;
+                    ThreadYield();
+                }
+            }
+        }
         owner.tid = self;
     }
     inline void leave()
