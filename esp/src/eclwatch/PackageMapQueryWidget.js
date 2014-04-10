@@ -37,6 +37,7 @@ define([
     "dojox/grid/enhanced/plugins/IndirectSelection",
     "dojo/data/ItemFileWriteStore",
 
+    "hpcc/_TabContainerWidget",
     "hpcc/PackageMapDetailsWidget",
     "hpcc/PackageMapValidateWidget",
     "hpcc/WsPackageMaps",
@@ -56,10 +57,10 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     Uploader, FileUploader, EnhancedGrid, Pagination, IndirectSelection, ItemFileWriteStore,
-    PackageMapDetailsWidget, PackageMapValidateWidget,
+    _TabContainerWidget, PackageMapDetailsWidget, PackageMapValidateWidget,
     WsPackageMaps, ESPPackageProcess, SFDetailsWidget,
     template) {
-    return declare("PackageMapQueryWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("PackageMapQueryWidget", [_TabContainerWidget, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "PackageMapQueryWidget",
         i18n: nlsHPCC,
@@ -69,8 +70,8 @@ define([
         targets: null,
         processesToList: new Array(),
         processesToAdd: new Array(),
-        targetSelected: '',
-        processSelected: '',
+        targetSelected: 'ANY',
+        processSelected: 'ANY',
         processFilters: null,
         addPackageMapDialog: null,
         validateTab: null,
@@ -320,17 +321,13 @@ define([
                     IncludeProcessFilters: true
                 }, {
                 load: function (response) {
-                    context.targetSelect.options.push({label: context.i18n.ANY, value: '' });
-                    context.processSelect.options.push({label: context.i18n.ANY, value: '' });
                     if (lang.exists("Targets.TargetData", response)) {
                         context.targets = response.Targets.TargetData;
                         context.initSelections();
                     }
-                    context.targetSelect.set("value", '');
-                    context.processSelect.set("value", '');
+                    context.targetSelect.set("value", context.targetSelected);
                     if (lang.exists("ProcessFilters.Item", response)) {
                         context.processFilters = response.ProcessFilters.Item;
-                    //    context.setSelections(context.processFilterSelect, context.processFilters, '*');
                     }
                     context.initPackagesGrid();
                 },
@@ -356,27 +353,43 @@ define([
                 var value = options[ii].value;
                 processSelect.removeOption(value);
             }
-            ///processSelect.removeOption(processSelect.getOptions());
-            processSelect.options.push({label: this.i18n.ANY, value: '' });
+            var foundRoxie = false;
+            var defaultProcess = 'ANY';
             processes.length = 0;
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
-                if ((target.Processes != undefined) && ((targetName == '') || (targetName == target.Name)))
+                if ((target.Processes != undefined) && ((targetName == 'ANY') || (targetName == target.Name))) {
                     this.addProcessSelections(processSelect, processes, target.Processes.Item);
+                    if (targetName != 'ANY') {
+                        defaultProcess = target.Processes.Item[0];
+                        break;
+                    } else if ((defaultProcess == 'ANY') || (!foundRoxie && (target.Type == 'roxie'))){
+                        defaultProcess = target.Processes.Item[0];
+                        if (target.Type == 'roxie')
+                            foundRoxie = true;
+                    }
+                }
             }
-            processSelect.set("value", '');
+            processSelect.options.push({label: this.i18n.ANY, value: 'ANY' });
+            processSelect.set("value", defaultProcess);
         },
 
         initSelections: function () {
             if (this.targets.length < 1)
                 return;
-
+            var foundRoxie = false;
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
                 this.targetSelect.options.push({label: target.Name, value: target.Name});
+                if ((this.targetSelected == 'ANY') || (!foundRoxie && (target.Type == 'roxie'))) {
+                    this.targetSelected = target.Name;
+                    if (target.Type == 'roxie')
+                        foundRoxie = true;
+                }
                 if (target.Processes != undefined)
                     this.addProcessSelections(this.processSelect, this.processesToList, target.Processes.Item);
             }
+            this.targetSelect.options.push({label: this.i18n.ANY, value: 'ANY' });
         },
 
         init: function (params) {
@@ -443,9 +456,9 @@ define([
             this.processSelected  = this.processSelect.getValue();
             //var processFilterSelected  = this.processFilterSelect.getValue();
             var processFilterSelected  = "*";
-            if (this.targetSelected == " ")
+            if ((this.targetSelected == " ") || (this.targetSelected == "ANY"))
                 this.targetSelected = "";
-            if (this.processSelected == " ")
+            if ((this.processSelected == " ") || (this.processSelected == "ANY"))
                 this.processSelected = "";
             if (processFilterSelected == "")
                 processFilterSelected = "*";
