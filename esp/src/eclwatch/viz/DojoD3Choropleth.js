@@ -2,26 +2,24 @@ define([
   "dojo/_base/declare",
   "dojo/_base/lang",
   "dojo/_base/array",
-  "dojo/json",
 
   "./DojoD3",
   "./Mapping",
+  "./map/us-counties",
 
   "d3/d3",
   "topojson/topojson",
 
-  "dojo/text!./map/us.json",
-  "dojo/text!./map/us_counties.json",
-  "dojo/text!./templates/DojoD3Choropeth.css"
+  "dojo/text!./templates/DojoD3Choropleth.css"
 
-], function (declare, lang, arrayUtil, JSON,
-    DojoD3, Mapping,
+], function (declare, lang, arrayUtil,
+    DojoD3, Mapping, usCounties,
     d3, topojson,
-    us, us_counties, css) {
+    css) {
     return declare([Mapping, DojoD3], {
         mapping: {
             choropeth: {
-                display: "Choropeth Data",
+                display: "Choropleth Data",
                 fields: {
                     county: "County ID",
                     value: "Value"
@@ -31,8 +29,6 @@ define([
 
         constructor: function (mappings, target) {
             this.mappedData = d3.map();
-            this.us = JSON.parse(us);
-            this.us_counties = JSON.parse(us_counties);
 
             if (mappings)
                 this.setFieldMappings(mappings);
@@ -55,7 +51,7 @@ define([
                 .style("fill", "none")
             ;
             var path = d3.geo.path();
-            var p = this.SvgG.selectAll("path").data(topojson.feature(this.us, this.us.objects.counties).features);
+            var p = this.SvgG.selectAll("path").data(topojson.feature(usCounties.topology, usCounties.topology.objects.counties).features);
             var context = this;
             p.enter().append("path")
                 .attr("class", "counties")
@@ -65,14 +61,14 @@ define([
                     evt[this.getFieldMapping("county")] = d.id;
                     this.emit("click", evt);
                 }))
-                .append("title").text(lang.hitch(this, function (d) { return context.us_counties[d.id]; }))
+                .append("title").text(lang.hitch(this, function (d) { return usCounties.countyNames[d.id]; }))
             ;
             p.exit().remove();
-            this.Svg.append("path").datum(topojson.mesh(this.us, this.us.objects.states, function (a, b) { return a !== b; }))
+            this.Svg.append("path").datum(topojson.mesh(usCounties.topology, usCounties.topology.objects.states, function (a, b) { return a !== b; }))
                 .attr("class", "states")
                 .attr("d", path)
             ;
-            this.Svg.append("path").datum(topojson.feature(this.us, this.us.objects.land))
+            this.Svg.append("path").datum(topojson.feature(usCounties.topology, usCounties.topology.objects.land))
                 .attr("class", "usa")
                 .attr("d", path)
             ;
@@ -94,7 +90,7 @@ define([
                 .style("fill", lang.hitch(this, function (d) { return this.mappedData.get(d.id) == null ? "lightgrey" : quantize(this.mappedData.get(d.id)); }))
                 .select("title")
                 .text(lang.hitch(this, function (d) {
-                    return this.us_counties[d.id] + " (" + this.mappedData.get(d.id) + ")";
+                    return usCounties.countyNames[d.id] + " (" + this.mappedData.get(d.id) + ")";
                 }))
             ;
         },
