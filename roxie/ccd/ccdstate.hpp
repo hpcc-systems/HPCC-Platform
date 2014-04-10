@@ -137,6 +137,7 @@ extern void cleanupPlugins();
 
 extern void mergeStats(IPropertyTree *s1, IPropertyTree *s2, unsigned level);
 extern void mergeStats(IPropertyTree *s1, IPropertyTree *s2);
+extern void mergeQueries(IPropertyTree *s1, IPropertyTree *s2);
 
 extern const char *queryNodeFileName(const IPropertyTree &graphNode);
 extern const char *queryNodeIndexName(const IPropertyTree &graphNode);
