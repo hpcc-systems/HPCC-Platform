@@ -90,11 +90,15 @@ define([
         initSelections: function (targets) {
             this.targets = targets;
             if (this.targets.length > 0) {
-                for (var i = 0; i < this.targets.length; ++i)
+                var defaultTarget = 0;
+                for (var i = 0; i < this.targets.length; ++i) {
+                    if ((defaultTarget == 0) && (this.targets[i].Type == 'roxie'))
+                        defaultTarget = i; //first roxie
                     this.targetSelect.options.push({label: this.targets[i].Name, value: this.targets[i].Name});
-                this.targetSelect.set("value", this.targets[0].Name);
-                if (this.targets[0].Processes != undefined)
-                    this.updateProcessSelections(this.targets[0].Name);
+                }
+                this.targetSelect.set("value", this.targets[defaultTarget].Name);
+                if (this.targets[defaultTarget].Processes != undefined)
+                    this.updateProcessSelections(this.targets[defaultTarget].Name);
             }
         },
 
@@ -110,12 +114,12 @@ define([
 
         updateProcessSelections: function (targetName) {
             this.processSelect.removeOption(this.processSelect.getOptions());
-            this.processSelect.options.push({label: this.i18n.ANY, value: '' });
             for (var i = 0; i < this.targets.length; ++i) {
                 var target = this.targets[i];
                 if ((target.Processes != undefined) && ((targetName == '') || (targetName == target.Name)))
                     this.addProcessSelections(target.Processes.Item);
             }
+            this.processSelect.options.push({label: this.i18n.ANY, value: 'ANY' });
             this.processSelect.set("value", '');
         },
 
