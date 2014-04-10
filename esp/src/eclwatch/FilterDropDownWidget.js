@@ -65,9 +65,6 @@ define([
         //  Hitched actions  ---
         _onFilterClear: function (event) {
             this.clear();
-            this.filterDropDown.closeDropDown();
-            this.emit("clear");
-            this.refreshState();
         },
 
         _onFilterApply: function (event) {
