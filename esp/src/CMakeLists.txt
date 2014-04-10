@@ -16,7 +16,7 @@
 
 project ( eclwatch ) 
 
-set ( ECLWATCH_BUILD_STRATEGY "" CACHE STRING "Override ECL Watch Build Strategy ('SKIP', 'SOURCES', 'IF_MISSING')" )
+set ( ECLWATCH_BUILD_STRATEGY "" CACHE STRING "Override ECL Watch Build Strategy ('SKIP', 'SOURCES', 'IF_MISSING', 'INCLUDE_MAP_FILES')" )
 if ( "${ECLWATCH_BUILD_STRATEGY}" STREQUAL "SKIP" )
     message ( "-- ECL Watch:  Skipping..." )
 elseif ( "${ECLWATCH_BUILD_STRATEGY}" STREQUAL "SOURCES" )
@@ -44,6 +44,11 @@ else ()
             message( \"-- ECL Watch:  Reusing (old) Site\" )
         endif ()
     " COMPONENT Runtime)
-    Install ( DIRECTORY "${ECLWATCH_BUILD_DEST}/" DESTINATION componentfiles/files COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN "build-report.txt" EXCLUDE PATTERN "*.map" EXCLUDE  PATTERN "*.uncompressed.js" EXCLUDE )
+    if ( "${ECLWATCH_BUILD_STRATEGY}" STREQUAL "INCLUDE_MAP_FILES" )
+        message ( "-- ECL Watch:  Including map/uncompressed files" )
+        Install ( DIRECTORY "${ECLWATCH_BUILD_DEST}/" DESTINATION componentfiles/files COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN "build-report.txt" )
+    else ()
+        Install ( DIRECTORY "${ECLWATCH_BUILD_DEST}/" DESTINATION componentfiles/files COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN "build-report.txt" EXCLUDE PATTERN "*.map" EXCLUDE  PATTERN "*.uncompressed.js" EXCLUDE )
+    endif ()
 endif ()
 
