@@ -232,12 +232,23 @@ define([
 
         _onOpenLegacy: function (evt) {
             var win = window.open("/?legacy", "_blank");
-            win.focus();
+            if (win && win.focus) {
+                win.focus();
+            }
+        },
+
+        _onOpenResources: function (evt) {
+            var win = window.open("http://hpccsystems.com/download", "_blank");
+            if (win && win.focus) {
+                win.focus();
+            }
         },
 
         _onOpenReleaseNotes: function (evt) {
             var win = window.open("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.build.version, "_blank");
-            win.focus();
+            if (win && win.focus) {
+                win.focus();
+            }
         },
 
         _onOpenConfiguration: function (evt) {
