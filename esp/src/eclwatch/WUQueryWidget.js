@@ -356,6 +356,7 @@ define([
         },
 
         initWorkunitsGrid: function () {
+            var context = this;
             var store = new ESPWorkunit.CreateWUQueryStore();
             this.workunitsGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
@@ -374,7 +375,7 @@ define([
                     }),
                     Protected: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("locked.png");
+                            node.innerHTML = dojoConfig.getImageHTML("locked.png", context.i18n.Protected);
                         },
                         width: 25,
                         sortable: false,

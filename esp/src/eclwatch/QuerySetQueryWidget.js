@@ -303,10 +303,11 @@ define([
                         selectorType: 'checkbox'
                     }),
                     Suspended: {
+                        label: this.i18n.Suspended,
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("suspended.png");
+                            node.innerHTML = dojoConfig.getImageHTML("suspended.png", context.i18n.Suspended);
                         },
-                        width: 21,
+                        width: 25,
                         sortable: false,
                         formatter: function (suspended) {
                             if (suspended == true) {
@@ -315,24 +316,11 @@ define([
                             return "";
                         }
                     },
-                    Activated: {
-                        renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("active.png");
-                        },
-                        width: 21,
-                        sortable: false,
-                        formatter: function (activated) {
-                            if (activated == true) {
-                                return dojoConfig.getImageHTML("active.png");
-                            }
-                            return "";
-                        }
-                    },
                     ErrorCount: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("errwarn.png");
+                            node.innerHTML = dojoConfig.getImageHTML("errwarn.png", context.i18n.ErrorWarnings);
                         },
-                        width: 21,
+                        width: 25,
                         sortable: false,
                         formatter: function (error) {
                             if (error > 0) {
@@ -341,8 +329,20 @@ define([
                             return "";
                         }
                     },
+                    Activated: {
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = dojoConfig.getImageHTML("active.png", context.i18n.Active);
+                        },
+                        width: 25,
+                        sortable: false,
+                        formatter: function (activated) {
+                            if (activated == true) {
+                                return dojoConfig.getImageHTML("active.png");
+                            }
+                            return dojoConfig.getImageHTML("inactive.png");
+                        }
+                    },
                     Id: {
-                        width: 220,
                         label: this.i18n.ID,
                         formatter: function (Id, idx) {
                             return "<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Id + "</a>";
@@ -361,38 +361,13 @@ define([
                         width: 180,
                         label: this.i18n.WUID
                     },
-                     Dll: {
+                    Dll: {
                         width: 180,
                         label: this.i18n.Dll
-                    },
-                    priority: {
-                        width: 80,
-                        label: this.i18n.Priority,
-                        sortable: false
-                    },
-                    IsLibrary: {
-                        width: 100,
-                        label: this.i18n.IsLibrary,
-                        sortable: false
                     },
                     PublishedBy: {
                         width: 100,
                         label: this.i18n.PublishedBy
-                    },
-                    SuspendedReason:{
-                        width: 100,
-                        label: context.i18n.SuspendedReason,
-                        formatter: function (sbe) {
-                            if(sbe === "User"){
-                                return context.i18n.User;
-                            }
-                            if (sbe === "Cluster"){
-                                return context.i18n.Cluster;
-                            }
-                            else{
-                                return "";
-                            }
-                        }
                     }
                 }
             }, this.id + "QuerySetGrid");
