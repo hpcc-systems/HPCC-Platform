@@ -390,7 +390,7 @@
                         <xsl:value-of select="OS"/>
                         <xsl:text>);</xsl:text>
                     </xsl:attribute>
-                    <img border="0" src="/esp/files_/img/base.gif" alt="View log file..." width="19" height="16"/>
+                    <img border="0" src="/esp/files_/img/base.gif" alt="View log file..." title="View log file..." width="19" height="16"/>
                 </a>            
                 <xsl:value-of select="Name"/>
             </td>

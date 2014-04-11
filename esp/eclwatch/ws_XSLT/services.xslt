@@ -548,7 +548,8 @@
                                                         <xsl:value-of select="OS"/>
                                                         <xsl:text>);</xsl:text>
                                                     </xsl:attribute>
-                                                    <img border="0" src="&filePathEntity;/img/base.gif" alt="View log file" width="19" height="16"/>
+                                                    <img border="0" src="&filePathEntity;/img/base.gif" alt="View log file"
+                                                        title="View log file" width="19" height="16"/>
                                                 </a>
                                             </xsl:if>
                                         </td>
@@ -571,7 +572,8 @@
                               <xsl:text>%26OsType%3d</xsl:text>
                               <xsl:value-of select="OS"/>
                             </xsl:variable>
-                          <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="View deployed configuration file" width="14" height="14"/>
+                          <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="View deployed configuration file"
+                            title="View deployed configuration file" width="14" height="14"/>
                         </xsl:when>
                                                 <xsl:otherwise>
                                                     <img border="0" src="/esp/files_/img/blank.png" width="14" height="14"/>
@@ -720,7 +722,8 @@
                               <xsl:text>%26OsType%3d</xsl:text>
                               <xsl:value-of select="OS"/>
                             </xsl:attribute>
-                            <img border="0" src="/esp/files_/img/config.png" alt="View deployed configuration file" width="14" height="14"/>
+                            <img border="0" src="/esp/files_/img/config.png" alt="View deployed configuration file"
+                              title="View deployed configuration file" width="14" height="14"/>
                           </a>
                         </td>
                       </tr>
