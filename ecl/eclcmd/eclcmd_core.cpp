@@ -729,6 +729,415 @@ public:
     }
 };
 
+class EclCmdAbort : public EclCmdCommon
+{
+public:
+    EclCmdAbort()
+    {
+        optObj.accept = eclObjWuid;
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        bool retVal = false;
+        if (iter.done())
+        {
+            usage();
+            return retVal;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
+            {
+                optObj.type = eclObjWuid;
+                retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            {
+                optObj.type = eclObjQuery;
+                retVal = true;
+                continue;
+            }
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        StringArray wuids;
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryRequest> reqQ = client->createWUQueryRequest();
+
+        if (optObj.type == eclObjQuery)
+        {
+            reqQ->setJobname(optName.get());
+
+            Owned<IClientWUQueryResponse> respQ = client->WUQuery(reqQ);
+            int res = respQ->queryClientStatus();
+
+            if (!respQ->getCount_isNull())
+            {
+                IArrayOf<IConstECLWorkunit>& wus = respQ->getWorkunits();
+
+                ForEachItemIn(idx, wus)
+                {
+                    wuids.append(wus.item(idx).getWuid());
+                }
+            }
+        }
+        else
+        {
+            wuids.append(optName.get());
+        }
+
+        if (wuids.empty())
+            return 0;
+
+        // Abort
+        Owned<IClientWUAbortRequest> req = client->createWUAbortRequest();
+
+        req->setWuids(wuids);
+        Owned<IClientWUAbortResponse> resp = client->WUAbort(req);
+
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
+        // Get status of WU(s)
+        if (optObj.type == eclObjQuery)
+        {
+            reqQ->setJobname(optName.get());
+        }
+        else
+        {
+            reqQ->setWuid(optName.get());
+        }
+        Owned<IClientWUQueryResponse> respQ = client->WUQuery(reqQ);
+
+        if (!respQ->getCount_isNull())
+        {
+            IArrayOf<IConstECLWorkunit>& wus = respQ->getWorkunits();
+
+            if (!wus.empty())
+            {
+                if (wus.ordinality() > 1)
+                {
+                    ForEachItemIn(idx, wus)
+                    {
+                        fprintf(stdout, "%s,%s\n", wus.item(idx).getWuid(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
+                    }
+                }
+                else
+                {
+                    fprintf(stdout, "%s\n", getWorkunitStateStr((WUState) wus.item(0).getStateID()) );
+                }
+            }
+        }
+
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'abort' command aborts one or more workunit on the HPCC system from the given WUID or job name\n"
+            "The workunit(s) abort requests and the current status returns\n"
+            "\n"
+            "ecl abort -wu <WUID>| -n <job name>\n"
+            "   WUID                   workunit ID\n"
+            "   job name               workunit job name\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr         optName;
+    EclObjectParameter optObj;
+};
+
+class EclCmdGetName : public EclCmdCommon
+{
+public:
+    EclCmdGetName()
+    {
+        optObj.accept = eclObjWuid;
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        bool retVal = false;
+        if (iter.done())
+        {
+            usage();
+            return retVal;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
+            {
+                optObj.type = eclObjWuid;
+                retVal = true;
+                continue;
+            }
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+
+        if (optName.isEmpty())
+            return 0;
+
+        req->setWuid(optName.get());
+        Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
+
+        if (!resp->getCount_isNull())
+        {
+            IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
+            ForEachItemIn(idx, wus)
+            {
+                fprintf(stdout, "%s\n", wus.item(idx).getJobname());
+            }
+        }
+
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'getname' command returns with the workunit name from the given workunit id.\n"
+            "\n"
+            "ecl getname --wuid <WUID>\n"
+            "\n"
+            "   WUID                   workunit ID\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr         optName;
+    EclObjectParameter optObj;
+};
+
+class EclCmdGetWuid : public EclCmdCommon
+{
+public:
+    EclCmdGetWuid() : optListLimit(100)
+    {
+
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        bool retVal = false;
+        if (iter.done())
+        {
+            usage();
+            return retVal;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            {
+                retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
+            {
+                continue;
+            }
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+
+        if (optName.isEmpty())
+            return 0;
+
+        req->setJobname(optName.get());
+
+        Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
+
+        if (!resp->getCount_isNull())
+        {
+            IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
+
+            ForEachItemIn(idx, wus)
+            {
+                if (idx == optListLimit)
+                    break;
+
+                fprintf(stdout, "%s\n", wus.item(idx).getWuid());
+            }
+        }
+
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'getwuid' command returns with WUID(s) of the given workunit job name.\n"
+            "\n"
+            "ecl getwuid -n <job name> [--limit=<limit>]\n"
+            "\n"
+            "   job name               workunit job name\n"
+            " Options:\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr         optName;
+    EclObjectParameter optObj;
+    unsigned int       optListLimit;
+};
+
+class EclCmdStatus : public EclCmdCommon
+{
+public:
+    EclCmdStatus() : optListLimit(100)
+    {
+        optObj.accept = eclObjWuid;
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        bool retVal = false;
+        if (iter.done())
+        {
+            usage();
+            return retVal;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (iter.matchOption(optName, ECLOPT_WUID)||iter.matchOption(optName, ECLOPT_WUID_S))
+            {
+                optObj.type = eclObjWuid;
+                retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
+            {
+                optObj.type = eclObjQuery;
+                retVal = true;
+                continue;
+            }
+            if (iter.matchOption(optListLimit, ECLOPT_RESULT_LIMIT))
+            {
+                continue;
+            }
+            if (iter.matchFlag(optVerbose, ECLOPT_VERBOSE)||iter.matchFlag(optVerbose, ECLOPT_VERBOSE_S))
+            {
+                continue;
+            }
+        }
+        return retVal;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUQueryRequest> req = client->createWUQueryRequest();
+
+        if (optName.isEmpty())
+        {
+            fprintf(stdout, "No WUID or job name.\n");
+            return 0;
+        }
+
+
+        if ( optObj.type ==eclObjWuid )
+            req->setWuid(optName.get());
+        else
+            req->setJobname(optName.get());
+
+        Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
+        int res = resp->queryClientStatus();
+
+        //if (!resp->getCount_isNull())
+        {
+            IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
+
+            if (wus.ordinality() == 1)
+            {
+
+                if (optVerbose)
+                {
+                    fprintf(stdout, "ID: %-18s, job name: %s, state:", wus.item(0).getWuid(), wus.item(0).getJobname());
+                }
+
+                fprintf(stdout, "%s\n", getWorkunitStateStr((WUState) wus.item(0).getStateID()) );
+            }
+            else
+            {
+                ForEachItemIn(idx, wus)
+                {
+                    if (idx == optListLimit)
+                        break;
+
+                    if (optVerbose)
+                        fprintf(stdout, "ID: %s, job name: %s, state: %s\n", wus.item(idx).getWuid(), wus.item(idx).getJobname(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
+                    else
+                        fprintf(stdout, "%s,%s,%s\n", wus.item(idx).getWuid(), wus.item(idx).getJobname(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
+                }
+            }
+        }
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'status' command returns the status of the given workunit or job name.\n"
+            "If there are more than one result it generates a CSV list with wuid, name and state.\n"
+            "\n"
+            "ecl status -wu <WUID>|-n <job name> \n"
+            "\n"
+            "   WUID                   workunit ID\n"
+            "   name                   workunit job name\n"
+            " Options:\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
+            "   --verbose              Add field names\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr         optName;
+    EclObjectParameter optObj;
+    unsigned int       optListLimit;
+};
+
 //=========================================================================================
 
 IEclCommand *createCoreEclCommand(const char *cmdname)
@@ -747,5 +1156,13 @@ IEclCommand *createCoreEclCommand(const char *cmdname)
         return new EclCmdActivate();
     if (strieq(cmdname, "deactivate"))
         return new EclCmdDeactivate();
+    if (strieq(cmdname, "abort"))
+        return new EclCmdAbort();
+    if (strieq(cmdname, "getname"))
+        return new EclCmdGetName();
+    if (strieq(cmdname, "getwuid"))
+        return new EclCmdGetWuid();
+    if (strieq(cmdname, "status"))
+        return new EclCmdStatus();
     return NULL;
 }

@@ -199,6 +199,10 @@ void EclCMDShell::usage()
            "   deactivate  deactivate the given query alias name\n"
            "   queries     show or manipulate queries and querysets\n"
            "   roxie       commands specific to roxie clusters\n"
+           "   abort       abort workunit(s) for WUID or job name\n"
+           "   status      show workunit(s) current status for WUID or job name\n"
+           "   getname     provide job name from WUID\n"
+           "   getwuid     provide WUID from job name\n"
            "\nRun 'ecl help <command>' for more information on a specific command\n\n"
     );
 }
