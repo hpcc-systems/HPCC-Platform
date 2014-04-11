@@ -77,6 +77,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/queryfiledetails.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/queryfilelist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/queryfilelistdone.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/QueriesUsingFile.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/result.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/result_lib.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/result_lib1.xslt
