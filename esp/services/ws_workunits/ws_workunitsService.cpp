@@ -1473,7 +1473,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                 if (req.getIncludeResultsViewNames()||req.getIncludeResourceURLs()||(version >= 1.50))
                 {
                     StringArray views, urls;
-                    winfo.getResourceInfo(views, urls, flags);
+                    winfo.getResourceInfo(views, urls, WUINFO_IncludeResourceURLs);
                     IEspECLWorkunit& eclWU = resp.updateWorkunit();
                     if (req.getIncludeResultsViewNames())
                         resp.setResultViews(views);

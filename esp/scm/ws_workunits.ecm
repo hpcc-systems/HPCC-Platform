@@ -1295,6 +1295,7 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
     [min_ver("1.46")] ESParray<string> LibrariesUsed;
     [min_ver("1.46")] int CountGraphs;
     [min_ver("1.46")] ESParray<string> GraphIds;
+    [min_ver("1.50")] int ResourceURLCount;
 };
 
 ESPrequest WUMultiQuerySetDetailsRequest
