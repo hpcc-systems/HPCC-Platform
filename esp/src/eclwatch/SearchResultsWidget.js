@@ -251,43 +251,88 @@ define([
             return 0;
         },
 
-        searchAll: function() {
-            var context = this;
+        searchAll: function () {
             this.standby.show();
-            all([
-                WsWorkunits.WUQuery({ request: { Wuid: "*" + this.searchText + "*" }, suppressExceptionToaster: true }).then(function (response) {
+            if (validate.isNumberFormat(this.searchText, { format: ["W########-######", "W########-######-#???"] })) {
+                var tab = this.ensurePane({
+                    id: this.searchText,
+                    Type: "ECL Workunit",
+                    Summary: this.searchText,
+                    _type: "Wuid",
+                    _wuid: this.searchText
+                }, {});
+                this.selectChild(tab);
+            } else if (validate.isNumberFormat(this.searchText, { format: ["D########-######", "D########-######-#???"] })) {
+                var tab = this.ensurePane({
+                    id: this.searchText,
+                    Type: "DFU Workunit",
+                    Summary: this.searchText,
+                    _type: "DFUWuid",
+                    _wuid: this.searchText
+                }, {});
+                this.selectChild(tab);
+            }
+
+            var searchECL = false;
+            var searchDFU = false;
+            var searchFile = false;
+            var searchText = "";
+            if (this.searchText.indexOf("ecl:") === 0) {
+                searchECL = true;
+                searchText = this.searchText.substring(4);
+            } else if (this.searchText.indexOf("dfu:") === 0) {
+                searchDFU= true;
+                searchText = this.searchText.substring(4);
+            } else if (this.searchText.indexOf("file:") === 0) {
+                searchFile = true;
+                searchText = this.searchText.substring(5);
+            } else {
+                searchECL = true;
+                searchDFU = true;
+                searchFile = true;
+                searchText = this.searchText;
+            }
+
+            var searchArray = [];
+            if (searchECL) {
+                searchArray.push(WsWorkunits.WUQuery({ request: { Wuid: "*" + searchText + "*" }, suppressExceptionToaster: true }).then(function (response) {
                     context.loadWUQueryResponse(context.i18n.WUID, response);
-                }),
-                WsWorkunits.WUQuery({ request: { Jobname: "*" + this.searchText + "*" } }).then(function (response) {
+                }));
+                searchArray.push(WsWorkunits.WUQuery({ request: { Jobname: "*" + searchText + "*" } }).then(function (response) {
                     context.loadWUQueryResponse(context.i18n.JobName, response);
-                }),
-                WsWorkunits.WUQuery({ request: { Owner: this.searchText } }).then(function (response) {
+                }));
+                searchArray.push(WsWorkunits.WUQuery({ request: { Owner: searchText } }).then(function (response) {
                     context.loadWUQueryResponse(context.i18n.Owner, response);
-                }),
-                WsWorkunits.WUQuery({ request: { ECL: this.searchText } }).then(function (response) {
+                }));
+                searchArray.push(WsWorkunits.WUQuery({ request: { ECL: searchText } }).then(function (response) {
                     context.loadWUQueryResponse(context.i18n.ECL, response);
-                }),
-                //  DFU WU  ---
-                FileSpray.GetDFUWorkunit({ request: { wuid: "*" + this.searchText  + "*"}, suppressExceptionToaster: true }).then(function (response) {
+                }));
+            }
+            if (searchDFU) {
+                searchArray.push(FileSpray.GetDFUWorkunit({ request: { wuid: "*" + searchText  + "*"}, suppressExceptionToaster: true }).then(function (response) {
                     context.loadGetDFUWorkunitResponse(context.i18n.WUID, response);
-                }),
-                FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + this.searchText + "*" } }).then(function (response) {
+                }));
+                searchArray.push(FileSpray.GetDFUWorkunits({ request: { Jobname: "*" + searchText + "*" } }).then(function (response) {
                     context.loadGetDFUWorkunitsResponse(context.i18n.JobName, response);
-                }),
-                FileSpray.GetDFUWorkunits({ request: { Owner: this.searchText } }).then(function (response) {
+                }));
+                searchArray.push(FileSpray.GetDFUWorkunits({ request: { Owner: searchText } }).then(function (response) {
                     context.loadGetDFUWorkunitsResponse(context.i18n.Owner, response);
-                }),
-                //  Logical Files  ---
-                WsDfu.DFUQuery({ request: { LogicalName: "*" + this.searchText + "*" } }).then(function (response) {
+                }));
+            }
+            if (searchFile) {
+                searchArray.push(WsDfu.DFUQuery({ request: { LogicalName: "*" + searchText + "*" } }).then(function (response) {
                     context.loadDFUQueryResponse(context.i18n.LogicalName, response);
-                }),
-                WsDfu.DFUQuery({ request: { Description: "*" + this.searchText + "*" } }).then(function (response) {
+                }));
+                searchArray.push(WsDfu.DFUQuery({ request: { Description: "*" + searchText + "*" } }).then(function (response) {
                     context.loadDFUQueryResponse(context.i18n.Description, response);
-                }),
-                WsDfu.DFUQuery({ request: { Owner: this.searchText } }).then(function (response) {
+                }));
+                searchArray.push(WsDfu.DFUQuery({ request: { Owner: searchText } }).then(function (response) {
                     context.loadDFUQueryResponse(context.i18n.Owner, response);
-                })
-            ]).then(function (results) {
+                }));
+            }
+
+            var context = this;
+            all(searchArray).then(function (results) {
                 context.standby.hide();
             }, function (error) {
                 context.standby.hide();
@@ -299,25 +344,6 @@ define([
             this.grid.refresh();
             if (this.searchText) {
                 this.searchAll();
-                if (validate.isNumberFormat(this.searchText, { format: ["W########-######", "W########-######-#???"] })) {
-                    var tab = this.ensurePane({
-                        id: this.searchText,
-                        Type: "ECL Workunit",
-                        Summary: this.searchText,
-                        _type: "Wuid",
-                        _wuid: this.searchText
-                    }, {});
-                    this.selectChild(tab);
-                } else if (validate.isNumberFormat(this.searchText, { format: ["D########-######", "D########-######-#???"] })) {
-                    var tab = this.ensurePane({
-                        id: this.searchText,
-                        Type: "DFU Workunit",
-                        Summary: this.searchText,
-                        _type: "DFUWuid",
-                        _wuid: this.searchText
-                    }, {});
-                    this.selectChild(tab);
-                }
             }
         },
 
