@@ -294,20 +294,9 @@ define([
                             return true;
                         },
                         formatter: function (_name, row) {
-                            var img = "";
-                            var name = "";
-                            if (context.activity.isInstanceOfQueue(row)) {
-                                if (row.isPaused()) {
-                                    img = dojoConfig.getImageURL("server_paused.png");
-                                } else {
-                                    img = dojoConfig.getImageURL("server.png");
-                                }
-                                name = _name;
-                            } else {
-                                img = row.getStateImage();
-                                name = "<a href='#' class='" + context.id + "WuidClick'>" + row.Wuid + "</a>";
-                            }
-                            return "<img src='" + img + "'/>&nbsp;" + name;
+                            var img = row.getStateImage();
+                            var name = context.activity.isInstanceOfQueue(row) ? _name : row.Wuid;
+                            return "<img src='" + img + "'/>&nbsp;<a href='#' class='" + context.id + "RowClick'>" + name + "</a>";
                         }
                     }),
                     DisplaySize: { label: this.i18n.Size, width: 59, sortable: true },
@@ -316,10 +305,7 @@ define([
                         sortable: false,
                         formatter: function (state, row) {
                             if (context.activity.isInstanceOfQueue(row)) {
-                                if (row.isPaused()) {
-                                    return row.StatusDetails;
-                                }
-                                return "";
+                                return row.isNormal() ? "" : row.StatusDetails;
                             }
                             if (row.Duration) {
                                 return state + " (" + row.Duration + ")";
@@ -344,7 +330,7 @@ define([
                 }
             }, domID);
 
-            on(document, "." + this.id + "WuidClick:click", function (evt) {
+            on(document, "." + this.id + "RowClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
                     context._onRowDblClick(row);
