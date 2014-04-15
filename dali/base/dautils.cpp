@@ -2853,9 +2853,8 @@ public:
                 gotlocal = false;
             if (gotlocal)
             {
-                if (!write) // MORE - this means the dali access checks not happening... maybe that's ok?
+                if (!write && !onlylocal) // MORE - this means the dali access checks not happening... maybe that's ok?
                     dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write)); // MORE - if dFile is not null then arguably exists should be true
-                // do I want to touch the dfile if I am writing to local file system only??
                 Owned<IFile> file = getPartFile(0,0);
                 if (file.get())
                 {
