@@ -667,16 +667,17 @@ public:
             }
 
             Owned<CQualifiers> qualifiers = new CQualifiers;
-			strippedXpath.append(startQ-path, path);
-			loop
-			{
-				const char *endQ = queryNextUnquoted(startQ+1, ']');
-				assertex(endQ);
+            strippedXpath.append(startQ-path, path);
+            loop
+            {
+                const char *endQ = queryNextUnquoted(startQ+1, ']');
+                if (!endQ)
+                    throw MakeSDSException(SDSExcpt_SubscriptionParseError, "Missing closing brace: %s", xpath.get());
                 StringAttr qualifier(startQ+1, endQ-startQ-1);
                 qualifiers->add(qualifier);
                 path = endQ+1;
                 if ('[' != *path)
-                	break;
+                    break;
                 startQ = path;
             }
             qualifierStack.append(qualifiers.getClear());

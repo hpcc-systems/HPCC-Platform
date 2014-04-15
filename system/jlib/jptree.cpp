@@ -637,18 +637,18 @@ const char *splitXPath(const char *xpath, StringBuffer &headPath)
 
 const char *queryNextUnquoted(const char *str, char c)
 {
-	bool quote = false;
-	loop
-	{
-		char next = *str;
-		if (next == '\0')
-			return NULL;
-		if ('"' == next)
-			quote = !quote;
-		else if (c == next && !quote)
-			return str;
-		++str;
-	}
+    bool quote = false;
+    loop
+    {
+        char next = *str;
+        if (next == '\0')
+            return NULL;
+        if ('"' == next)
+            quote = !quote;
+        else if (c == next && !quote)
+            return str;
+        ++str;
+    }
 }
 
 const char *queryHead(const char *xpath, StringBuffer &head)
@@ -659,12 +659,12 @@ const char *queryHead(const char *xpath, StringBuffer &head)
     bool braced = false;
     loop
     {
-		if (*xpath == '\0')
-			return NULL;
+        if (*xpath == '\0')
+            return NULL;
         ++xpath;
-		char next = *xpath;
-		if ('"' == next)
-			quote = !quote;
+        char next = *xpath;
+        if ('"' == next)
+            quote = !quote;
         else if (next == ']' && !quote)
         {
             assertex(braced);
