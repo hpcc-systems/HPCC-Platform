@@ -206,6 +206,8 @@ hr.dashedLine {
     padding-left:25px;
 }
 
+.claro .dgrid-cell { text-overflow: ellipsis; white-space: nowrap; }
+
 #stubTitlebar :focus {
     outline: none;
 }
@@ -884,6 +886,7 @@ margin-left:-20px;
 
 .Prompt{
     font-weight:bold;
+    white-space: nowrap;
 }
 
 .resultGridCell {
