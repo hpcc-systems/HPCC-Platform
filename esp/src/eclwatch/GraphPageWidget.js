@@ -243,7 +243,7 @@ define([
 
         _initItemGrid: function (grid) {
             var context = this;
-            grid.on(".dgrid-row:click", function (evt) {
+            grid.on("dgrid-select, dgrid-deselect", function (event) {
                 context.syncSelectionFrom(grid);
             });
             grid.on(".dgrid-row:dblclick", function (evt) {
@@ -651,7 +651,15 @@ define([
             this.edgesGrid.refresh();
         },
 
+        inSyncSelectionFrom: false,
         syncSelectionFrom: function (sourceControl) {
+            if (!this.inSyncSelectionFrom) {
+                this._syncSelectionFrom(sourceControl);
+            }
+        },
+
+        _syncSelectionFrom: dojoConfig.debounce(function (sourceControl) {
+            this.inSyncSelectionFrom = true;
             var selectedGlobalIDs = [];
 
             //  Get Selected Items  ---
@@ -696,8 +704,6 @@ define([
             }
             if (sourceControl != this.main) {
                 switch (sourceControl) {
-                    case this.verticesGrid:
-                    case this.edgesGrid:
                     case this.local:
                         this.main.setSelectedAsGlobalID(selectedGlobalIDs);
                         break;
@@ -706,15 +712,7 @@ define([
                 }
             }
             if (sourceControl != this.local) {
-                switch (sourceControl) {
-                    case this.verticesGrid:
-                    case this.edgesGrid:
-                    case this.main:
-                        this.setLocalRootItems(selectedGlobalIDs);
-                        break;
-                    default:
-                        this.local.setSelectedAsGlobalID(selectedGlobalIDs);
-                }
+                this.setLocalRootItems(selectedGlobalIDs);
             }
 
             var propertiesDom = dom.byId(this.id + "Properties");
@@ -722,7 +720,8 @@ define([
             for (var i = 0; i < selectedGlobalIDs.length; ++i) {
                 this.global.displayProperties(selectedGlobalIDs[i], propertiesDom);
             }
-        },
+            this.inSyncSelectionFrom = false;
+        }, 500, false),
 
         resetPage: function () {
             this.main.clear();
