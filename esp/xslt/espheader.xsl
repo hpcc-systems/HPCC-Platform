@@ -40,7 +40,7 @@
           function copy_url(inner)
           {
             var ploc = top.location;
-            var url = ploc.protocol + "//" + ploc.host + ploc.pathname;
+            var url = ploc.protocol + "//" + ploc.host + ploc.pathname + "?legacy";
             if ((inner.pathname != "" && inner.pathname != '/') || inner.search!="")
             {
               var b = false;
@@ -55,12 +55,12 @@
                   if ((s3.indexOf('inner=') == 0) && (s4.indexOf('esp_iframe_title=') == 0))
                   {
                     b = true;
-                    url += '?inner=' + escape('..' + inner.pathname + '?' + s4 + '&' + s3);
+                    url += '&inner=' + escape('..' + inner.pathname + '?' + s4 + '&' + s3);
                   }
                 }
               }
               if (!b)
-                url += '?inner=' + escape('..' + inner.pathname + inner.search);
+                url += '&inner=' + escape('..' + inner.pathname + inner.search);
             }
 
             var html = '<html><head><title>View URL</title>';
