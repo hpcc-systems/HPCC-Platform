@@ -156,12 +156,11 @@ define([
                         formatter: function (Wuid) {
                             return "<a href='#' class='" + context.id + "WuidClick'>" + Wuid + "</a>";
                         }
-
                     },
-                    Cluster: { label: this.i18n.Cluster, width: 108, sortable: true },
+                    Cluster: { label: this.i18n.Cluster, width: 100, sortable: true },
                     JobName: { label: this.i18n.JobName, sortable: true },
-                    EventName: { label: this.i18n.EventName, width: 90, sortable: true },
-                    EventText: { label: this.i18n.EventText, sortable: true }
+                    EventName: { label: this.i18n.EventName, width: 180, sortable: true },
+                    EventText: { label: this.i18n.EventText, width: 180, sortable: true }
                 }
             }, this.id + "EventGrid");
 
@@ -202,6 +201,23 @@ define([
 
         _onRefresh: function (params) {
             this.refreshGrid();
+        },
+
+        _onEventClear: function(event) {
+            arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
+                item.set('value', null);
+            });
+        },
+
+        _onEventApply: function (event){
+            var filterInfo = domForm.toObject(this.id + "FilterForm");
+            WsWorkunits.WUPushEvent({
+                request:{
+                    EventName: filterInfo.EventName,
+                    EventText: filterInfo.EventText
+                }
+            });
+            registry.byId(this.id + "FilterDropDown").closeDropDown();
         },
 
         _onOpen: function (event) {

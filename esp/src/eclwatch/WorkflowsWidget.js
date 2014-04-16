@@ -65,9 +65,25 @@ define([
                 store: this.store,
                 columns: {
                     EventName: { label: this.i18n.Name, width: 180 },
-                    EventText: { label: this.i18n.Subtype, width: 180 },
-                    Count: { label: this.i18n.Count, width: 180 },
-                    CountRemaining: { label: this.i18n.Remaining, width: 180 }
+                    EventText: { label: this.i18n.Subtype },
+                    Count: {
+                        label: this.i18n.Count, width: 180,
+                        formatter: function (count) {
+                            if (count == -1) {
+                                return 0;
+                            }
+                            return count;
+                        }
+                    },
+                    CountRemaining: {
+                        label: this.i18n.Remaining, width: 180,
+                        formatter: function (countRemaining) {
+                            if (countRemaining == -1) {
+                                return 0;
+                            }
+                            return countRemaining;
+                        }
+                    }
                 }
             }, domID);
             return retVal;

@@ -87,6 +87,10 @@ define([
             return ESPRequest.send("WsWorkunits", "WUShowScheduled", params);
         },
 
+        WUPushEvent: function (params) {
+            return ESPRequest.send("WsWorkunits", "WUPushEvent", params);
+        },
+
         WUQuerysetAliasAction: function (selection, action) {
             var requests = [];
             arrayUtil.forEach(selection, function (item, idx) {
