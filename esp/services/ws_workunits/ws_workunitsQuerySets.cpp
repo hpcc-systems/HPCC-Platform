@@ -1207,8 +1207,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     {
         StringArray views, urls;
         WsWuInfo winfo(context, wuid);
-        winfo.getResourceInfo(views, urls, WUINFO_IncludeResourceURLs);
-        resp.setResourceURLCount(urls.length());
+        resp.setResourceURLCount(winfo.getResourceURLCount());
     }
 
     return true;

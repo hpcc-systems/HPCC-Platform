@@ -43,6 +43,7 @@ interface IWuWebView : extends IInterface
 {
     virtual void getResultViewNames(StringArray &names)=0;
     virtual void getResourceURLs(StringArray &urls, const char *prefix)=0;
+    virtual unsigned getResourceURLCount() = 0;
     virtual void renderResults(const char *viewName, const char *xml, StringBuffer &html)=0;
     virtual void renderResults(const char *viewName, StringBuffer &html)=0;
     virtual void renderSingleResult(const char *viewName, const char *resultname, StringBuffer &html)=0;

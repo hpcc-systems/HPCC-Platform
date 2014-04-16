@@ -1657,6 +1657,24 @@ bool WsWuInfo::getResourceInfo(StringArray &viewnames, StringArray &urls, unsign
     return false;
 }
 
+unsigned WsWuInfo::getResourceURLCount()
+{
+    try
+    {
+        Owned<IWuWebView> wv = createWuWebView(*cw, NULL, NULL, false);
+        if (wv)
+            return wv->getResourceURLCount();
+    }
+    catch(IException* e)
+    {
+        StringBuffer eMsg;
+        ERRLOG("%s", e->errorMessage(eMsg).str());
+        e->Release();
+    }
+
+    return 0;
+}
+
 void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownload)
 {
     StringBuffer line;
