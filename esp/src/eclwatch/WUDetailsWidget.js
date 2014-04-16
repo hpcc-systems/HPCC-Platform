@@ -352,12 +352,16 @@ define([
                 this.updateInput("Jobname2", oldValue, newValue);
             } else if (name === "VariableCount" && newValue) {
                 this.variablesWidget.set("title", this.i18n.Variables + " (" + newValue + ")");
+                this.setDisabled(this.variablesWidget.id, false);
             } else if (name === "variables") {
                 this.variablesWidget.set("title", this.i18n.Variables + " (" + newValue.length + ")");
                 this.variablesStore.setData(newValue);
                 this.variablesGrid.refresh();
+                this.setDisabled(this.variablesWidget.id, false);
             } else if (name === "ResultCount" && newValue) {
                 this.resultsWidget.set("title", this.i18n.Outputs + " (" + newValue + ")");
+                this.setDisabled(this.resultsWidget.id, false);
+                this.setDisabled(this.vizWidget.id, false);
             } else if (name === "results") {
                 this.resultsWidget.set("title", this.i18n.Outputs + " (" + newValue.length + ")");
                 var tooltip = "";
@@ -369,8 +373,11 @@ define([
                         tooltip += " " + newValue[key].Value;
                 }
                 this.resultsWidget.set("tooltip", tooltip);
+                this.setDisabled(this.resultsWidget.id, false);
+                this.setDisabled(this.vizWidget.id, false);
             } else if (name === "SourceFileCount" && newValue) {
                 this.filesWidget.set("title", this.i18n.Inputs + " (" + newValue + ")");
+                this.setDisabled(this.filesWidget.id, false);
             } else if (name === "sourceFiles") {
                 this.filesWidget.set("title", this.i18n.Inputs + " (" + newValue.length + ")");
                 var tooltip = "";
@@ -380,8 +387,10 @@ define([
                     tooltip += newValue[i].Name;
                 }
                 this.filesWidget.set("tooltip", tooltip);
+                this.setDisabled(this.filesWidget.id, false);
             } else if (name === "TimerCount" && newValue) {
                 this.timersWidget.set("title", this.i18n.Timers + " (" + newValue + ")");
+                this.setDisabled(this.timersWidget.id, false);
             } else if (name === "timers") {
                 this.timersWidget.set("title", this.i18n.Timers + " (" + newValue.length + ")");
                 var tooltip = "";
@@ -397,8 +406,10 @@ define([
                         tooltip += " " + newValue[i].Value;
                 }
                 this.timersWidget.set("tooltip", tooltip);
+                this.setDisabled(this.timersWidget.id, false);
             } else if (name === "GraphCount" && newValue) {
                 this.graphsWidget.set("title", this.i18n.Graphs + " (" + newValue + ")");
+                this.setDisabled(this.graphsWidget.id, false);
             } else if (name === "graphs") {
                 this.graphsWidget.set("title", this.i18n.Graphs + " (" + newValue.length + ")");
                 var tooltip = "";
@@ -410,6 +421,7 @@ define([
                         tooltip += " " + newValue[i].Time;
                 }
                 this.graphsWidget.set("tooltip", tooltip);
+                this.setDisabled(this.graphsWidget.id, false);
             } else if (name === "Archived") {
                 this.refreshActionState();
             } else if (name === "StateID") {
@@ -462,6 +474,7 @@ define([
                         }
 
                         context.logsWidget.set("title", context.i18n.Helpers + " (" + helpersCount + ")");
+                        context.setDisabled(context.logsWidget.id, false);
                     }
                 });
             }

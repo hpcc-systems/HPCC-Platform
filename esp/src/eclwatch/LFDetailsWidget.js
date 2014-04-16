@@ -281,6 +281,11 @@ define([
                 this.updateInput("CopySourceName", oldValue, newValue);
                 this.updateInput("CopyTargetName", oldValue, newValue);
             }
+            if (name === "Ecl" && newValue) {
+                this.setDisabled(this.id + "_Source", false);
+                this.setDisabled(this.id + "_DEF", false);
+                this.setDisabled(this.id + "_XML", false);
+            }
         },
 
         ensurePane: function (id, params) {
