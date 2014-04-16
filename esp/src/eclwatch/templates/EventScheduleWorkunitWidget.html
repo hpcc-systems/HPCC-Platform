@@ -13,6 +13,22 @@
             <input id="${id}ClusterTargetSelect" title="${i18n.Cluster}:" name="Cluster" colspan="2" data-dojo-props="trim:true, placeHolder:'${i18n.ClusterPlaceholder}'" data-dojo-type="TargetSelectWidget" />
           </div>
           <span data-dojo-type="dijit.ToolbarSeparator"></span>
+          <img id="${id}IconFilter" src="/esp/files/eclwatch/img/noFilter.png" class="iconNoFilter"/>
+          <div id="${id}FilterDropDown" data-dojo-type="dijit.form.DropDownButton">
+            <span>Push Event</span>
+            <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
+              <div id="${id}FilterForm" style="width:460px" data-dojo-type="dijit.form.Form">
+                <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
+                  <input id="${id}EventPushName" title="Event Name:" name="EventName" colspan="2" data-dojo-props="trim: true, placeHolder:'EventName'" data-dojo-type="dijit.form.TextBox" />
+                  <input id="${id}EventText" title="Event Text:" name="EventText" colspan="2" data-dojo-props="trim: true, placeHolder:'EventText*'" data-dojo-type="dijit.form.TextBox" />
+                </div>
+                <div class="dijitDialogPaneActionBar">
+                  <button id="${id}FilterApply" data-dojo-attach-event="onClick:_onEventApply" data-dojo-type="dijit.form.Button">Apply</button>
+                  <button id="${id}FilterClear" data-dojo-attach-event="onClick:_onEventClear" data-dojo-type="dijit.form.Button">Clear</button>
+                </div>
+              </div>
+            </div>
+          </div>
           <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
         </div>
         <div id="${id}GridCP" style="padding: 0px; border:0px; border-color:none; overflow: hidden" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">

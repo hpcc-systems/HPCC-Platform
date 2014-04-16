@@ -353,7 +353,7 @@ define([
                     IncludeTimers: args.onGetTimers ? true : false,
                     IncludeDebugValues: false,
                     IncludeApplicationValues: args.onGetApplicationValues ? true : false,
-                    IncludeWorkflows: false,
+                    IncludeWorkflows: true,
                     IncludeXmlSchemas: false,
                     SuppressResultSchemas: true
                 }

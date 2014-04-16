@@ -41,6 +41,7 @@ define([
     "hpcc/ESPRequest",
     "hpcc/TargetSelectWidget",
     "hpcc/DelayLoadWidget",
+    "hpcc/WorkflowsWidget",
     "hpcc/InfoGridWidget",
     "hpcc/WsWorkunits",
 
@@ -66,7 +67,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domForm, domAttr, iframe, domClass, query, Memory, Observable,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, DelayLoadWidget, InfoGridWidget, WsWorkunits,
+                _TabContainerWidget, ESPWorkunit, ESPRequest, TargetSelectWidget, DelayLoadWidget, WorkflowsWidget, InfoGridWidget, WsWorkunits,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
@@ -90,6 +91,8 @@ define([
         playgroundWidgetLoaded: false,
         xmlWidget: null,
         xmlWidgetLoaded: false,
+        workflowsWidget: null,
+        workflowsWidgetLoaded: false,
         publishForm: null,
 
         wu: null,
@@ -114,6 +117,7 @@ define([
             this.logsWidget = registry.byId(this.id + "_Logs");
             this.playgroundWidget = registry.byId(this.id + "_Playground");
             this.xmlWidget = registry.byId(this.id + "_XML");
+            this.workflowsWidget = registry.byId(this.id + "_Workflows");
             this.publishForm = registry.byId(this.id + "PublishForm");
             this.zapDescription = registry.byId(this.id + "ZapDescription");
             this.warnHistory = registry.byId(this.id + "WarnHistory");
@@ -301,6 +305,12 @@ define([
                 this.xmlWidget.init({
                     Wuid: this.wu.Wuid
                 });
+            } else if (currSel.id == this.workflowsWidget.id && !this.workflowsWidgetLoaded) {
+                this.workflowsWidgetLoaded = true;
+                this.workflowsWidget.init({
+                    Wuid: this.wu.Wuid,
+                    Workflows: this.wu.Workflows
+                });
             }
         },
 
@@ -410,7 +420,19 @@ define([
                         tooltip += " " + newValue[i].Time;
                 }
                 this.graphsWidget.set("tooltip", tooltip);
-            } else if (name === "Archived") {
+            } else if (name === "Workflows") {
+                this.workflowsWidget.set("title", this.i18n.Workflows + " (" + newValue.ECLWorkflow.length + ")");
+                var tooltip = "";
+                for (var i = 0; i < newValue.length; ++i) {
+                    if (tooltip != "")
+                        tooltip += "\n";
+                    tooltip += newValue[i].Name;
+                    if (newValue[i].Time)
+                        tooltip += " " + newValue[i].Time;
+                }
+                this.workflowsWidget.set("tooltip", tooltip);
+            }
+             else if (name === "Archived") {
                 this.refreshActionState();
             } else if (name === "StateID") {
                 this.refreshActionState();
