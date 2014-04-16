@@ -225,6 +225,153 @@ void copyWULogicalFilesToTarget(IEspContext &context, IConstWUClusterInfo &clust
     }
 }
 
+void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned flags)
+{
+    if (!target || !*target)
+        return;
+
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo || !(clusterInfo->getPlatform() == RoxieCluster))
+        return;
+
+    Owned<IPropertyTree> queryRegistry = getQueryRegistry(target, true);
+    if (!queryRegistry)
+        return;
+
+    SCMStringBuffer process;
+    clusterInfo->getRoxieProcess(process);
+    if (!process.length())
+        return;
+
+    Owned<IHpccPackageSet> ps = createPackageSet(process.str());
+    const IHpccPackageMap *pm = (ps) ? ps->queryActiveMap(target) : NULL;
+    const char *pmid = (pm) ? pm->queryPackageId() : NULL;
+
+    VStringBuffer xpath("%s/@pmid", target);
+    const char *pmidPrev = t->queryProp(xpath);
+    if ((flags & UFO_RELOAD_TARGETS_CHANGED_PMID) && (pmid || pmidPrev))
+    {
+        if (!(pmid && pmidPrev) || !streq(pmid, pmidPrev))
+            t->removeProp(target);
+    }
+    IPropertyTree *targetTree = ensurePTree(t, target);
+    if (pm)
+        targetTree->setProp("@pmid", pmid);
+
+    if (flags & UFO_REMOVE_QUERIES_NOT_IN_QUERYSET)
+    {
+        Owned<IPropertyTreeIterator> cachedQueries = targetTree->getElements("Query");
+        ForEach(*cachedQueries)
+        {
+            IPropertyTree &cachedQuery = cachedQueries->query();
+            VStringBuffer xpath("Query[@id='%s']", cachedQuery.queryProp("@id"));
+            if (!queryRegistry->hasProp(xpath))
+                targetTree->removeTree(&cachedQuery);
+        }
+    }
+
+    Owned<IPropertyTreeIterator> queries = queryRegistry->getElements("Query");
+    ForEach(*queries)
+    {
+        if (aborting)
+            return;
+        IPropertyTree &query = queries->query();
+        const char *queryid = query.queryProp("@id");
+        if (!queryid || !*queryid)
+            continue;
+        const char *wuid = query.queryProp("@wuid");
+        if (!wuid || !*wuid)
+            continue;
+
+        const char *pkgid=NULL;
+        if (pm)
+         {
+             const IHpccPackage *pkg = pm->matchPackage(queryid);
+             if (pkg)
+                 pkgid = pkg->queryId();
+         }
+        VStringBuffer xpath("Query[@id='%s']", queryid);
+        IPropertyTree *queryTree = targetTree->queryPropTree(xpath);
+        if (queryTree)
+        {
+            const char *cachedPkgid = queryTree->queryProp("@pkgid");
+            if (pkgid && *pkgid)
+            {
+                if (!(flags & UFO_RELOAD_MAPPED_QUERIES) && (cachedPkgid && streq(pkgid, cachedPkgid)))
+                    continue;
+            }
+            else if (!cachedPkgid || !*cachedPkgid)
+                continue;
+            targetTree->removeTree(queryTree);
+            queryTree = NULL;
+        }
+
+        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+        Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+        if (!cw)
+            continue;
+
+        queryTree = targetTree->addPropTree("Query", createPTree("Query"));
+        queryTree->setProp("@id", queryid);
+        if (pkgid && *pkgid)
+            queryTree->setProp("@pkgid", pkgid);
+
+        Owned<IReferencedFileList> wufiles = createReferencedFileList(NULL, NULL, true);
+        wufiles->addFilesFromQuery(cw, pm, queryid);
+        if (aborting)
+            return;
+        wufiles->resolveFiles(process.str(), NULL, NULL, NULL, true, true, false);
+
+        Owned<IReferencedFileIterator> files = wufiles->getFiles();
+        ForEach(*files)
+        {
+            if (aborting)
+                return;
+            IReferencedFile &rf = files->query();
+            if (!(rf.getFlags() & RefSubFile))
+                continue;
+            const char *lfn = rf.getLogicalName();
+            if (!lfn || !*lfn)
+                continue;
+
+            if (!queryTree->hasProp(xpath.setf("SubFile[@lfn='%s']", lfn)))
+            {
+                IPropertyTree *fileTree = queryTree->addPropTree("SubFile", createPTree("SubFile"));
+                fileTree->setProp("@lfn", lfn);
+                const char *fpkgid = rf.queryPackageId();
+                if (fpkgid && *fpkgid)
+                    fileTree->setProp("@pkgid", fpkgid);
+            }
+        }
+    }
+}
+
+void QueryFilesInUse::loadTargets(IPropertyTree *t, unsigned flags)
+{
+    Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", NULL);
+    SCMStringBuffer s;
+    ForEach(*targets)
+    {
+        if (aborting)
+            return;
+        loadTarget(t, targets->str(s).str(), flags);
+    }
+}
+
+IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target, const char *lfn)
+{
+    CriticalBlock b(crit);
+
+    if (!target || !*target || !lfn || !*lfn)
+        return NULL;
+    IPropertyTree *targetTree = tree->getPropTree(target);
+    if (!targetTree)
+        return NULL;
+
+    VStringBuffer xpath("Query[SubFile/@lfn='%s']", lfn);
+    return targetTree->getElements(xpath);
+}
+
 bool CWsWorkunitsEx::onWUCopyLogicalFiles(IEspContext &context, IEspWUCopyLogicalFilesRequest &req, IEspWUCopyLogicalFilesResponse &resp)
 {
     StringBuffer wuid = req.getWuid();
@@ -1113,6 +1260,58 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
 
     return true;
 }
+
+bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQueriesUsingFileRequest &req, IEspWUListQueriesUsingFileResponse &resp)
+{
+    const char *target = req.getTarget();
+    const char *process = req.getProcess();
+
+    StringBuffer lfn(req.getFileName());
+    resp.setFileName(lfn.toLowerCase());
+    resp.setProcess(process);
+
+    StringArray targets;
+    if (target && *target)
+        targets.append(target);
+    else // if (process && *process)
+    {
+        SCMStringBuffer targetStr;
+        Owned<IStringIterator> targetClusters = getTargetClusters("RoxieCluster", process);
+        ForEach(*targetClusters)
+            targets.append(targetClusters->str(targetStr).str());
+    }
+
+    IArrayOf<IEspTargetQueriesUsingFile> respTargets;
+    ForEachItemIn(i, targets)
+    {
+        target = targets.item(i);
+        Owned<IEspTargetQueriesUsingFile> respTarget = createTargetQueriesUsingFile();
+        respTarget->setTarget(target);
+        const char *pmid = filesInUse.getPackageMap(target);
+        if (pmid && *pmid)
+            respTarget->setPackageMap(pmid);
+
+        IPropertyTreeIterator *queries = filesInUse.findQueriesUsingFile(target, lfn);
+        IArrayOf<IEspQueryUsingFile> respQueries;
+        ForEach(*queries)
+        {
+            IPropertyTree &query = queries->query();
+            Owned<IEspQueryUsingFile> q = createQueryUsingFile();
+            q->setId(query.queryProp("@id"));
+
+            VStringBuffer xpath("SubFile[@lfn='%s']/@pkgid", lfn.str());
+            if (query.hasProp(xpath))
+                q->setPackage(query.queryProp(xpath));
+            respQueries.append(*q.getClear());
+        }
+        respTarget->setQueries(respQueries);
+        respTargets.append(*respTarget.getClear());
+    }
+    resp.setTargets(respTargets);
+
+    return true;
+}
+
 
 bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRequest & req, IEspWUQueryDetailsResponse & resp)
 {

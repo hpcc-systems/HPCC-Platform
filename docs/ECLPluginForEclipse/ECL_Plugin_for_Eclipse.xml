@@ -237,7 +237,7 @@
           <listitem>
             <para>You can optionally create a shortcut to the executable file
             (<emphasis role="bold">eclipse.exe</emphasis> on Windows, or
-            <emphasis role="bold">eclipse</emphasis> on Linux). </para>
+            <emphasis role="bold">eclipse</emphasis> on Linux).</para>
           </listitem>
         </itemizedlist></para>
     </sect1>
@@ -366,26 +366,6 @@
             eclipse. You should restart eclipse in order for the changes to
             take effect.</para>
           </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>After it restarts, check the ECL Compiler settings
-            (<emphasis role="bold">Window &gt;&gt; Preferences</emphasis>).The
-            location of your installed Client Tools should have been found and
-            auto-completed. If not correct, fill in the location of your
-            Client Tools. </para>
-
-            <figure>
-              <title>Compiler Settings</title>
-
-              <mediaobject>
-                <imageobject>
-                  <imagedata fileref="images/EPI020.jpg" scale="80" />
-                </imageobject>
-              </mediaobject>
-            </figure>
-          </listitem>
         </orderedlist></para>
     </sect1>
 
@@ -403,7 +383,10 @@
           <listitem>
             <para>Expand the <emphasis role="bold">Install/Update</emphasis>
             branch on the left, then select <emphasis role="bold">Automatic
-            Updates</emphasis>. <emphasis role="bold"></emphasis>.</para>
+            Updates</emphasis>. </para>
+
+            <para>Check the <emphasis role="bold">Automatically find new
+            updates and notify me</emphasis> button. </para>
 
             <figure>
               <title>Automatic Update Settings</title>
@@ -530,7 +513,7 @@
             for the file. For example, <emphasis
             role="bluebold">hello.ecl</emphasis>.</para>
 
-            <para><graphic fileref="images/EPI009.1a.jpg" /></para>
+            <para><graphic fileref="images/EPI0091a.jpg" /></para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <?dbfo keep-together="always"?>
@@ -639,7 +622,7 @@
                   <term>IP address</term>
 
                   <listitem>
-                    <para>IP address or DNS name of the ESP server</para>
+                    <para>IP address or DNS name of your ESP server</para>
                   </listitem>
                 </varlistentry>
 
@@ -710,7 +693,7 @@
             check the settings. The location of your installed Client Tools
             should have been found and auto-completed. If they are not
             correct, check the Override Defaults box and fill in the location
-            of your Client Tools. </para>
+            of your Client Tools.</para>
           </listitem>
 
           <listitem>
@@ -728,8 +711,8 @@
 
             <para>In the <emphasis role="bold">Workunits</emphasis> panel on
             the left, click and expand the <emphasis
-            role="bold">Workunit</emphasis> , then click on the <emphasis
-            role="bold">Results</emphasis> folder.</para>
+            role="bold">Workunit</emphasis>, then click and expand the
+            <emphasis role="bold">Outputs</emphasis> folder.</para>
 
             <para>The result(s) display in the center panel. (If your query
             has multiple results, then each result displays in a separate
@@ -741,7 +724,7 @@
           <listitem>
             <para>Later you can use the drop list on the toolbar button to run
             on an established <emphasis role="bold">Run
-            Configuration</emphasis>, as show below. </para>
+            Configuration</emphasis>, as show below.</para>
 
             <graphic fileref="images/EPI018.jpg" />
           </listitem>
@@ -768,7 +751,6 @@
     forum on the HPCC System's portal at:</para>
 
     <para><ulink
-    url="http://hpccsystems.com/bb/viewforum.php?f=33&amp;sid=adddbd537294bf32e2c46c1d7d16134e">http://hpccsystems.com/bb/viewforum.php?f=33&amp;sid=adddbd537294bf32e2c46c1d7d16134e</ulink>
-    </para>
+    url="http://hpccsystems.com/bb/viewforum.php?f=33&amp;sid=adddbd537294bf32e2c46c1d7d16134e">http://hpccsystems.com/bb/viewforum.php?f=33&amp;sid=adddbd537294bf32e2c46c1d7d16134e</ulink></para>
   </chapter>
 </book>

@@ -84,6 +84,10 @@
             function detailsDFUFile() {
               document.location.href='/WsDfu/DFUInfo?Name='+ escape(filename) + '&Cluster=' + cluster;
                       }
+            function queriesUsingDFUFile() {
+              document.location.href='/WsWorkunits/WUListQueriesUsingFile?FileName='+ escape(filename) + '&Process=' + cluster;
+                      }
+
                         function browseDFUData() {
                           document.location.href='/WsDfu/DFUGetDataColumns?OpenLogicalName='+filename;
                         }
@@ -135,6 +139,12 @@
             if (roxiecluster == 0) {
                 oMenu.addItems([
                     { text: "Despray", onclick: { fn: desprayDFUFile } }
+                ]);
+            }
+
+            if (roxiecluster != 0) {
+                oMenu.addItems([
+                    { text: "Used By", onclick: { fn: queriesUsingDFUFile } }
                 ]);
             }
 

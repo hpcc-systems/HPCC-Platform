@@ -42,5 +42,6 @@
   res; // Output: res = 'data9'
 </programlisting>
 
-  <para>See Also: <link linkend="Value_Types">Value Types</link></para>
+  <para>See Also: <link linkend="Value_Types_Chapter">Value
+  Types</link></para>
 </sect1>

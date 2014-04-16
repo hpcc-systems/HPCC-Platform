@@ -419,6 +419,10 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
     recursiveCreateDirectory(ESP_WORKUNIT_DIR);
 
     m_sched.start();
+    filesInUse.subscribe();
+
+    QueryFilesInUseUpdateThread *updateFilesInUse = new QueryFilesInUseUpdateThread(filesInUse);
+    updateFilesInUse->startRelease();
 }
 
 void CWsWorkunitsEx::refreshValidClusters()
