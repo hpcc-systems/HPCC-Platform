@@ -958,6 +958,19 @@ public:
     {
         setupDFS("trans");
 
+        unsigned timeout = 1000; // 1s
+
+        /* Make the meta info of one of the subfiles mismatch the rest, as subfiles are promoted through
+         * the super files, this should _not_ cause an issue, as no single super file will contain
+         * mismatched subfiles.
+        */
+        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+        assertex(sub1);
+        sub1->lockProperties();
+        sub1->queryAttributes().setPropBool("@local", true);
+        sub1->unlockProperties();
+        sub1.clear();
+
         Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user);
 
         // ===============================================================================
@@ -967,7 +980,6 @@ public:
         };
         bool delsub = false;
         bool createonlyone = true;
-        unsigned timeout = 1000; // 1s
         // ===============================================================================
         StringArray outlinked;
 
@@ -1038,14 +1050,14 @@ public:
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
         }
 
-        logctx.CTXLOG("Promote ([1,2], 4, 3) - fifth iteration, two in-files");
-        dir.promoteSuperFiles(3, sfnames, "regress::trans::sub1,regress::trans::sub2", delsub, createonlyone, user, timeout, outlinked);
+        logctx.CTXLOG("Promote ([2,3], 4, 3) - fifth iteration, two in-files");
+        dir.promoteSuperFiles(3, sfnames, "regress::trans::sub2,regress::trans::sub3", delsub, createonlyone, user, timeout, outlinked);
         {
             Owned<IDistributedSuperFile> sfile1 = dir.lookupSuperFile("regress::trans::super1", user, NULL, timeout);
             ASSERT(sfile1.get() && "promote failed, super1 doesn't exist");
             ASSERT(sfile1->numSubFiles() == 2 && "promote failed, super1 should have two subfiles");
-            ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub1") == 0 && "promote failed, wrong name for sub1");
-            ASSERT(strcmp(sfile1->querySubFile(1).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
+            ASSERT(strcmp(sfile1->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub1");
+            ASSERT(strcmp(sfile1->querySubFile(1).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub2");
             Owned<IDistributedSuperFile> sfile2 = dir.lookupSuperFile("regress::trans::super2", user, NULL, timeout);
             ASSERT(sfile2.get() && "promote failed, super2 doesn't exist");
             ASSERT(sfile2->numSubFiles() == 1 && "promote failed, super2 should have one subfile");

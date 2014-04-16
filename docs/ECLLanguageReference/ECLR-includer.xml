@@ -138,7 +138,7 @@
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
-  <chapter id="Value_Types">
+  <chapter id="Value_Types_Chapter">
     <title><emphasis role="bold">Value Types</emphasis></title>
 
     <para>Value types<indexterm>
