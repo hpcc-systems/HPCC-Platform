@@ -187,7 +187,8 @@
           <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fFileType%3dcfg%26CompType%3d</xsl:text>
           <xsl:value-of select="concat($type2, 'Cluster%26CompName%3d', Name, '%26Directory%3d', $absolutePath, '%26OsType%3d', OS)"/>
         </xsl:variable>
-        <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="View configuration file..." width="14" height="14"/>
+        <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="View configuration file..."
+          title="View configuration file..." width="14" height="14"/>
       </td>
       <td>
         <a  href="/WsTopology/TpMachineQuery?Type={$type3}MACHINES&amp;Cluster={Name}&amp;Path={Path}&amp;Directory={Directory}&amp;LogDirectory={$logPath}">
