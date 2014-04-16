@@ -113,6 +113,7 @@ define({root:
     EventNamePH: "eventname",
     EventScheduler: "Event Scheduler",
     EventText: "Event Text",
+    EventTextPH: "eventtext",
     Exception: "Exception",
     FetchingData: "Fetching Data...",
     fetchingresults: "fetching results",
