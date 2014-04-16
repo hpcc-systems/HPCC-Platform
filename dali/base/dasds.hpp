@@ -196,6 +196,7 @@ enum SDSExceptionCodes
     SDSExcpt_ClientCacheDirty,
     SDSExcpt_InvalidSessionId,
     SDSExcpt_LockHeld,
+    SDSExcpt_SubscriptionParseError
 };
 
 interface ISDSException : extends IException { };

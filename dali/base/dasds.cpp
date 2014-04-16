@@ -609,10 +609,18 @@ private:
 
 /////////////////
 
+class CQualifiers : public CInterfaceOf<IInterface>
+{
+    StringArray qualifiers;
+public:
+    inline void add(const char *qualifier) { qualifiers.append(qualifier); }
+    inline unsigned count() const { return qualifiers.ordinality(); }
+    inline const char *item(unsigned i) const { return qualifiers.item(i); }
+};
 class CSubscriberContainer : public CSubscriberContainerBase
 {
     StringAttr xpath, fullXpath;
-    StringArray qualifierStack;
+    PointerIArrayOf<CQualifiers> qualifierStack;
     bool sub, sendValue;
     unsigned depth;
 public:
@@ -655,16 +663,24 @@ public:
                 if (!nextSep || startQ < nextSep)
                     break;
 
-                qualifierStack.append(""); // no qualifier for this segment.
+                qualifierStack.append(NULL); // no qualifier for this segment.
             }
 
-            const char *endQ = queryNextUnquoted(startQ, ']');
-            assertex(endQ);
+            Owned<CQualifiers> qualifiers = new CQualifiers;
             strippedXpath.append(startQ-path, path);
-
-            StringAttr qualifier(startQ+1, endQ-startQ-1);
-            qualifierStack.append(qualifier);
-            path = endQ+1;
+            loop
+            {
+                const char *endQ = queryNextUnquoted(startQ+1, ']');
+                if (!endQ)
+                    throw MakeSDSException(SDSExcpt_SubscriptionParseError, "Missing closing brace: %s", xpath.get());
+                StringAttr qualifier(startQ+1, endQ-startQ-1);
+                qualifiers->add(qualifier);
+                path = endQ+1;
+                if ('[' != *path)
+                    break;
+                startQ = path;
+            }
+            qualifierStack.append(qualifiers.getClear());
         }
         fullXpath.set(xpath);
         if (strippedXpath.length()) // some qualifications
@@ -686,36 +702,40 @@ public:
     {
         ForEachItemIn(q, qualifierStack)
         {
-            const char *qualifier = qualifierStack.item(q);
             if (stack.ordinality() <= q+1)
             {
                 // No more stack available (e.g. because deleted below this point)
                 return true;
             }
             PTree &item = stack.item(q+1); // stack +1, top is root unqualified.
-            if (qualifier && '\0' != *qualifier)
+            CQualifiers *qualifiers = qualifierStack.item(q);
+            if (qualifiers)
             {
-                const char *q = qualifier;
-                bool numeric = true;
-                loop
+                for (unsigned q2=0; q2<qualifiers->count(); q2++)
                 {
-                    if ('\0' == *q) break;
-                    else if (!isdigit(*q)) { numeric = false; break; }
-                    else q++;
-                }
-                if (numeric)
-                {
-                    unsigned qnum = atoi(qualifier);
-                    if (!item.queryParent())
+                    const char *qualifier = qualifiers->item(q2);
+                    const char *q = qualifier;
+                    bool numeric = true;
+                    loop
                     {
-                        if (qnum != 1)
+                        if ('\0' == *q) break;
+                        else if (!isdigit(*q)) { numeric = false; break; }
+                        else q++;
+                    }
+                    if (numeric)
+                    {
+                        unsigned qnum = atoi(qualifier);
+                        if (!item.queryParent())
+                        {
+                            if (qnum != 1)
+                                return false;
+                        }
+                        else if (((PTree *)item.queryParent())->findChild(&item) != qnum-1)
                             return false;
                     }
-                    else if (((PTree *)item.queryParent())->findChild(&item) != qnum-1)
+                    else if (!item.checkPattern(qualifier))
                         return false;
                 }
-                else if (!item.checkPattern(qualifier))
-                    return false;
             }
         }
         return true;

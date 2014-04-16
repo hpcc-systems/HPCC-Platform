@@ -637,49 +637,45 @@ const char *splitXPath(const char *xpath, StringBuffer &headPath)
 
 const char *queryNextUnquoted(const char *str, char c)
 {
-    const char *end = str+strlen(str);
     bool quote = false;
-    while (end != str)
+    loop
     {
+        char next = *str;
+        if (next == '\0')
+            return NULL;
+        if ('"' == next)
+            quote = !quote;
+        else if (c == next && !quote)
+            return str;
         ++str;
-        if ('"' == *str)
-        {
-            if (quote) quote = false;
-            else quote = true;
-        }
-        else if (c == *str && !quote)
-            break;
     }
-    return str==end?NULL:str;
 }
 
 const char *queryHead(const char *xpath, StringBuffer &head)
 {
     if (!xpath) return NULL;
-    StringBuffer path;
     const char *start = xpath;
-    const char *end = xpath+strlen(xpath);
     bool quote = false;
     bool braced = false;
-    while (end != xpath)
+    loop
     {
+        if (*xpath == '\0')
+            return NULL;
         ++xpath;
-        if (*xpath == '"')
-        {
-            if (quote) quote = false;
-            else quote = true;
-        }
-        else if (*xpath == ']' && !quote)
+        char next = *xpath;
+        if ('"' == next)
+            quote = !quote;
+        else if (next == ']' && !quote)
         {
             assertex(braced);
             braced = false;
         }
-        else if (*xpath == '[' && !quote)
+        else if (next == '[' && !quote)
         {
             assertex(!braced);
             braced = true;
         }
-        else if (*xpath == '/' && !quote && !braced)
+        else if (next == '/' && !quote && !braced)
         {
             if ('/' == *start) // so leading '//'
                 return start;
@@ -691,8 +687,6 @@ const char *queryHead(const char *xpath, StringBuffer &head)
             break;
         }
     }
-    if (xpath == end)
-        return NULL;
     head.append(xpath-start, start);
     return xpath+1;
 }
@@ -1878,6 +1872,8 @@ IPropertyTree *PTree::addPropTree(const char *xpath, IPropertyTree *val)
 
 bool PTree::removeTree(IPropertyTree *child)
 {
+    if (child == this)
+        throw MakeIPTException(-1, "Cannot remove self");
     if (children)
     {
         Owned<IPropertyTreeIterator> iter = children->getIterator(false);
