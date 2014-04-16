@@ -189,9 +189,6 @@ define([
             this.eventGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            this.eventGrid.onContentChanged(function (object, removedFrom, insertedInto) {
-                context.refreshActionState();
-            });
             this.eventGrid.startup();
             this.refreshActionState();
         },

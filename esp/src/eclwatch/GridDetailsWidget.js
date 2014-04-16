@@ -135,9 +135,6 @@ define([
             this.grid.onSelectionChanged(function (event) {
                 context._refreshActionState();
             });
-            this.grid.onContentChanged(function (object, removedFrom, insertedInto) {
-                context._refreshActionState();
-            });
             this.grid.startup();
         },
 

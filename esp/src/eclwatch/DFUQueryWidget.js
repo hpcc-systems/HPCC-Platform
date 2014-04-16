@@ -499,9 +499,6 @@ define([
             this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            this.workunitsGrid.onContentChanged(function (object, removedFrom, insertedInto) {
-                context.refreshActionState();
-            });
             this.workunitsGrid.startup();
 
             this.copyGrid.createGrid({

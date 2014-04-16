@@ -424,9 +424,6 @@ define([
             this.landingZonesGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            this.landingZonesGrid.onContentChanged(function (object, removedFrom, insertedInto) {
-                context.refreshActionState();
-            });
             this.landingZonesGrid.startup();
 
             this.sprayFixedGrid.createGrid({
