@@ -327,6 +327,7 @@ extern IPropertyTree* topology;
 extern StringArray allQuerySetNames;
 
 extern bool allFilesDynamic;
+extern bool allowAmbiguousRequests;
 extern bool crcResources;
 extern bool logFullQueries;
 extern bool blindLogging;

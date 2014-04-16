@@ -768,6 +768,7 @@
              program="${EXEC_PATH}/ftslave"/>
   </FTSlaveProcess>
   <RoxieCluster allFilesDynamic="true"
+                allowAmbiguousRequests="false"
                 blindLogging="false"
                 blobCacheMem="0"
                 build="${projname}_${version}-${stagever}"
