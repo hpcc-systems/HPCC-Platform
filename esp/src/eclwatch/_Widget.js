@@ -87,7 +87,17 @@ define([
             }
         },
 
-        updateInput: function (name, oldValue, newValue) {
+        isDefined: function(variable) {
+            if (typeof variable === "undefined") {
+                return false;
+            } else if (variable === null) {
+                return false;
+            }
+            return true;
+        },
+
+        updateInput: function (name, oldValue, _newValue) {
+            var newValue = this.isDefined(_newValue) ? _newValue : "";
             var registryNode = registry.byId(this.id + name);
             if (registryNode) {
                 registryNode.set("value", newValue);
