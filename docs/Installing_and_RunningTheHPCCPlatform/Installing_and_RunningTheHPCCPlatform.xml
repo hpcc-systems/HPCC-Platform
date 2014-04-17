@@ -435,7 +435,7 @@
       identical, this is not required. However, it is important to note that
       your system will only run as fast as its slowest node.</para>
 
-      <sect2 id="Node-Mandatory-requirements">
+      <sect2 id="Node-Min-requirements">
         <title>Node minimum requirements</title>
 
         <itemizedlist mark="square" spacing="compact">
