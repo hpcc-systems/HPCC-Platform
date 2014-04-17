@@ -15,7 +15,12 @@
   role="bold">)] [, EXPIRE<indexterm>
       <primary>EXPIRE</primary>
     </indexterm>(</emphasis><emphasis>days</emphasis><emphasis role="bold">)]
-  ) <indexterm>
+  [, SINGLE<indexterm>
+      <primary>SINGLE</primary>
+    </indexterm>] [, MULTIPLE<indexterm>
+      <primary>MULTIPLE</primary>
+    </indexterm>[(</emphasis><emphasis>count</emphasis><emphasis
+  role="bold">)]] ) <indexterm>
       <primary>PERSIST workflow service</primary>
     </indexterm></emphasis>;</para>
 
@@ -102,6 +107,27 @@
             automatically deleted. If omitted, the default is seven
             (7).</entry>
           </row>
+
+          <row>
+            <entry><emphasis role="bold">SINGLE</emphasis></entry>
+
+            <entry>Optional. Specifies to keep a single PERSIST.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">MULTIPLE </emphasis></entry>
+
+            <entry>Optional. Specifies to keep different versions of the
+            PERSIST. The name is a combination of the name supplied suffixed
+            with a 32-bit value derived from the ECL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>count</emphasis></entry>
+
+            <entry>Optional. The number of versions of a PERSIST to keep. If
+            omitted, the system default is used.</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable></para>
@@ -148,5 +174,7 @@
        //run the code on the OtherThor cluster
        // and write the file to the AnotherThor cluster</programlisting>
 
-  <para>See Also: <link linkend="STORED">STORED</link>, <link linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link linkend="CHECKPOINT">CHECKPOINT</link></para>
+  <para>See Also: <link linkend="STORED">STORED</link>, <link
+  linkend="WHEN">WHEN</link>, <link linkend="GLOBAL">GLOBAL</link>, <link
+  linkend="CHECKPOINT">CHECKPOINT</link></para>
 </sect1>

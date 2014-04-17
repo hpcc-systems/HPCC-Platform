@@ -156,6 +156,45 @@
             </row>
 
             <row>
+              <entry><emphasis>expirePersists</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, PERSISTs expire after the specified period. This
+              is set in the Sasha configuration setting (PersistExpiryDefault)
+              or using #option ('defaultPersistExpiry', n) where n is the
+              number of days.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultPersistExpiry</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>If set, PERSISTs expire after the number of days
+              specified (overriding the Sasha PersistExpiryDefault
+              setting).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>multiplePersistInstances</emphasis></entry>
+
+              <entry>Default: true</entry>
+
+              <entry>If true, multiple PERSISTs are the default.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultNumPersistInstances</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>Specifies the default number of PERSISTs. A value of -1
+              specifies that all copies should be kept until they expire or
+              manually deleted.</entry>
+            </row>
+
+            <row>
               <entry><emphasis>check </emphasis></entry>
 
               <entry>Default: true</entry>
