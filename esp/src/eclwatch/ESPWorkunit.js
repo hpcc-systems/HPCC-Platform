@@ -310,12 +310,6 @@ define([
                     onGetText: function () {
                     },
                     onGetWUExceptions: function () {
-                    },
-                    onGetVariables: function () {
-                    },
-                    onGetTimers: function () {
-                    },
-                    onGetApplicationValues: function () {
                     }
                 });
             } else {
@@ -351,9 +345,9 @@ define([
                     IncludeResultsViewNames: (args.onGetResults || args.onGetSequenceResults) ? true : false,
                     IncludeVariables: args.onGetVariables ? true : false,
                     IncludeTimers: args.onGetTimers ? true : false,
-                    IncludeDebugValues: false,
+                    IncludeDebugValues: args.onGetDebugValues ? true : false,
                     IncludeApplicationValues: args.onGetApplicationValues ? true : false,
-                    IncludeWorkflows: false,
+                    IncludeWorkflows: args.onGetWorkflows ? true : false,
                     IncludeXmlSchemas: false,
                     SuppressResultSchemas: true
                 }
@@ -376,11 +370,14 @@ define([
                     if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context)) {
                         args.onGetWUExceptions(context.Exceptions.ECLException);
                     }
+                    if (args.onGetVariables && lang.exists("variables", context)) {
+                        args.onGetVariables(context.variables);
+                    }
                     if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context)) {
                         args.onGetApplicationValues(context.ApplicationValues.ApplicationValue)
                     }
-                    if (args.onGetVariables && lang.exists("variables", context)) {
-                        args.onGetVariables(context.variables);
+                    if (args.onGetDebugValues && lang.exists("DebugValues.DebugValue", context)) {
+                        args.onGetDebugValues(context.DebugValues.DebugValue)
                     }
                     if (args.onGetResults && lang.exists("results", context)) {
                         args.onGetResults(context.results);
@@ -415,6 +412,9 @@ define([
                             }
                         }
                         args.onGetGraphs(context.graphs)
+                    }
+                    if (args.onGetWorkflows && lang.exists("Workflows.ECLWorkflow", context)) {
+                        args.onGetWorkflows(context.Workflows.ECLWorkflow);
                     }
                     if (args.onAfterSend) {
                         args.onAfterSend(context);

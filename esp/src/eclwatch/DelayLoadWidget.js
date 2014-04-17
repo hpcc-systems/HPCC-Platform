@@ -25,6 +25,7 @@ define([
 ], function (declare, Deferred, lang, dom, domStyle,
     ContentPane) {
     return declare("DelayLoadWidget", [ContentPane], {
+        __hpcc_initalized: false,
         refresh: null,
 
         style: {
