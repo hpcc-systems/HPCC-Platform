@@ -458,6 +458,15 @@ define([
             }
             return -1;
         },
+        getGraphTimers: function (name) {
+            var retVal = [];
+            arrayUtil.forEach(this.timers, function (timer, idx) {
+                if (timer.HasSubGraphId && timer.GraphName === name) {
+                    retVal.push(timer);
+                }
+            }, this);
+            return retVal;
+        },
         getApplicationValueIndex: function (application, name) {
             if (lang.exists("ApplicationValues.ApplicationValue", this)) {
                 for (var i = 0; i < this.ApplicationValues.ApplicationValue.length; ++i) {

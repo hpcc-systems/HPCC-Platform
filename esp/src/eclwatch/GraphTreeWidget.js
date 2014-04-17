@@ -27,6 +27,10 @@ define([
 
     "dijit/registry",
     "dijit/Dialog",
+    "dijit/Menu",
+    "dijit/MenuItem",
+    "dijit/MenuSeparator",
+    "dijit/CheckedMenuItem",
 
     "dojox/html/entities",
 
@@ -34,6 +38,7 @@ define([
     "dgrid/Keyboard",
     "dgrid/Selection",
     "dgrid/selector",
+    "dgrid/tree",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/ColumnHider",
     "dgrid/extensions/DijitRegistry",
@@ -45,47 +50,39 @@ define([
     "hpcc/TimingTreeMapWidget",
     "hpcc/WsWorkunits",
 
-    "dojo/text!../templates/GraphPageWidget.html",
+    "dojo/text!../templates/GraphTreeWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
+    "dijit/layout/StackContainer",
+    "dijit/layout/StackController",
     "dijit/layout/ContentPane",
-    "dijit/PopupMenuItem",
-    "dijit/Menu",
-    "dijit/MenuItem",
-    "dijit/MenuSeparator",
     "dijit/Dialog",
     "dijit/form/TextBox",
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
-            registry, Dialog,
+            registry, Dialog, Menu, MenuItem, MenuSeparator, CheckedMenuItem,
             entities,
-            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, ColumnHider, DijitRegistry,
+            OnDemandGrid, Keyboard, Selection, selector, tree, ColumnResizer, ColumnHider, DijitRegistry,
             _Widget, GraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
             template) {
-    return declare("GraphPageWidget", [_Widget], {
+
+    return declare("GraphTreeWidget", [_Widget], {
         templateString: template,
-        baseClass: "GraphPageWidget",
+        baseClass: "GraphTreeWidget",
         i18n: nlsHPCC,
 
-        borderContainer: null,
-        rightBorderContainer: null,
         graphName: "",
         wu: null,
-        editorControl: null,
         global: null,
         main: null,
-        overview: null,
-        local: null,
-        timingTreeMap: null,
         subgraphsGrid: null,
         verticesGrid: null,
         edgesGrid: null,
         xgmmlDialog: null,
         infoDialog: null,
-        findField: null,
         findText: "",
         found: [],
         foundIndex: 0,
@@ -96,12 +93,6 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this.borderContainer = registry.byId(this.id + "BorderContainer");
-            this.rightBorderContainer = registry.byId(this.id + "RightBorderContainer");
-            this.overviewTabContainer = registry.byId(this.id + "OverviewTabContainer");
-            this.localTabContainer = registry.byId(this.id + "LocalTabContainer");
-            this.properties = registry.byId(this.id + "Properties");
-            this.findField = registry.byId(this.id + "FindField");
             this._initGraphControls();
             this._initTimings();
             this._initDialogs();
@@ -110,32 +101,25 @@ define([
         startup: function (args) {
             this.inherited(arguments);
 
+            this._initTree();
             this._initSubgraphs();
             this._initVertices();
             this._initEdges();
 
-            var splitter = this.borderContainer.getSplitter("right");
+            var splitter = this.widget.BorderContainer.getSplitter("left");
             this.main.watchSplitter(splitter);
-            this.overview.watchSplitter(splitter);
-            this.local.watchSplitter(splitter);
 
-            splitter = this.rightBorderContainer.getSplitter("bottom");
+            splitter = this.widget.SideBorderContainer.getSplitter("bottom");
             this.main.watchSplitter(splitter);
-            this.overview.watchSplitter(splitter);
-            this.local.watchSplitter(splitter);
 
             this.main.watchSelect(registry.byId(this.id + "AdvancedMenu"));
-
-            this.overview.showNextPrevious(false);
-            this.overview.showDistance(false);
-            this.overview.showSyncSelection(false);
 
             this.refreshActionState();
         },
 
         resize: function (args) {
             this.inherited(arguments);
-            this.borderContainer.resize();
+            this.widget.BorderContainer.resize();
         },
 
         layout: function (args) {
@@ -153,15 +137,6 @@ define([
             var context = this;
             this.global = registry.byId(this.id + "GlobalGraphWidget");
 
-            this.overview = registry.byId(this.id + "MiniGraphWidget");
-            this.overview.onSelectionChanged = function (items) {
-                context.syncSelectionFrom(context.overview);
-            };
-            this.overview.onDoubleClick = function (globalID, keyState) {
-                var mainItem = context.main.getItem(globalID);
-                context.main.centerOnItem(mainItem, true);
-            };
-
             this.main = registry.byId(this.id + "MainGraphWidget");
             this.main.onSelectionChanged = function (items) {
                 context.syncSelectionFrom(context.main);
@@ -174,28 +149,14 @@ define([
                 }
                 context.syncSelectionFrom(context.main);
             };
-
-            this.local = registry.byId(this.id + "LocalGraphWidget");
-            this.local.onSelectionChanged = function (items) {
-                context.syncSelectionFrom(context.local);
-            };
-            this.local.onDoubleClick = function (globalID, keyState) {
-                if (keyState && context.main.KeyState_Shift) {
-                    context.local._onSyncSelection();
-                } else {
-                    context.local.centerOn(globalID);
-                }
-                context.syncSelectionFrom(context.local);
-            };
         },
 
         _initTimings: function () {
             var context = this;
-            this.timingTreeMap = registry.byId(this.id + "TimingsTreeMap");
-            this.timingTreeMap.onClick = function (value) {
-                context.syncSelectionFrom(context.timingTreeMap);
+            this.widget.TimingsTreeMap.onClick = function (value) {
+                context.syncSelectionFrom(context.widget.TimingsTreeMap);
             }
-            this.timingTreeMap.onDblClick = function (value) {
+            this.widget.TimingsTreeMap.onDblClick = function (value) {
                 var mainItem = context.main.getItem(value.SubGraphId);
                 context.main.centerOnItem(mainItem, true);
             }
@@ -223,8 +184,6 @@ define([
                     var dotAttrs = context.xgmmlTextArea.get("value");
                     context.global.setDotMetaAttributes(dotAttrs);
                     context.main.setDotMetaAttributes(dotAttrs);
-                    context.overview.setDotMetaAttributes(dotAttrs);
-                    context.local.setDotMetaAttributes(dotAttrs);
                     context._onMainSync();
                 }
             });
@@ -245,6 +204,54 @@ define([
                     context.main.centerOnItem(mainItem, true);
                 }
             });
+        },
+
+        _initTree: function () {
+            this.treeStore = this.global.createTreeStore();
+            this.treeGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, ESPUtil.GridHelper])({
+                treeDepth: this.main.depth.get("value"),
+                store: this.treeStore
+            }, this.id + "TreeGrid");
+            this._initItemGrid(this.treeGrid);
+            this.initContextMenu();
+        },
+
+        initContextMenu: function () {
+            var context = this;
+            var pMenu = new Menu({
+                targetNodeIds: [this.id + "TreeGrid"]
+            });
+            pMenu.addChild(new MenuItem({
+                label: this.i18n.ExpandAll,
+                onClick: function (evt) {
+                    context.treeGrid.set("treeDepth", 9999);
+                    context.treeGrid.refresh();
+                }
+            }));
+            pMenu.addChild(new MenuItem({
+                label: this.i18n.CollapseAll,
+                onClick: function (evt) {
+                    context.treeGrid.set("treeDepth", 1);
+                    context.treeGrid.refresh();
+                }
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new CheckedMenuItem({
+                label: this.i18n.Activities,
+                checked: true,
+                onClick: function (evt) {
+                    if (this.checked) {
+                        context.treeGrid.set("query", {
+                            id: "0"
+                        });
+                    } else {
+                        context.treeGrid.set("query", {
+                            id: "0",
+                            __hpcc_notActivity: true
+                        });
+                    }
+                }
+            }));
         },
 
         _initSubgraphs: function () {
@@ -278,9 +285,14 @@ define([
             this.refreshData();
         },
 
+        _onTreeRefresh: function () {
+            this.treeGrid.set("treeDepth", this.main.depth.get("value"));
+            this.treeGrid.refresh();
+        },
+
         _doFind: function (prev) {
-            if (this.findText != this.findField.value) {
-                this.findText = this.findField.value;
+            if (this.findText != this.widget.FindField.value) {
+                this.findText = this.widget.FindField.value;
                 this.found = this.global.findAsGlobalID(this.findText);
                 this.global.setSelectedAsGlobalID(this.found);
                 this.syncSelectionFrom(this.global);
@@ -294,7 +306,6 @@ define([
             }
             if (this.found.length) {
                 this.main.centerOnGlobalID(this.found[this.foundIndex], true);
-                this.setLocalRootItems([this.found[this.foundIndex]]);
             }
             this.refreshActionState();
         },
@@ -359,17 +370,11 @@ define([
                 return;
 
             if (params.SafeMode && params.SafeMode != "false") {
-                this.overviewTabContainer.selectChild(this.widget.SubgraphsGridCP);
-                this.localTabContainer.selectChild(this.properties);
-                this.overview.depth.set("value", 0);
                 this.main.depth.set("value", 1);
-                this.local.depth.set("value", 0);
-                this.local.distance.set("value", 0);
                 var dotAttrs = this.global.getDotMetaAttributes();
                 dotAttrs = dotAttrs.replace("\n//graph[splines=\"line\"];", "\ngraph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
             } else {
-                this.overview.depth.set("value", -1);
                 var dotAttrs = this.global.getDotMetaAttributes();
                 dotAttrs = dotAttrs.replace("\ngraph[splines=\"line\"];", "\n//graph[splines=\"line\"];");
                 this.global.setDotMetaAttributes(dotAttrs);
@@ -404,7 +409,7 @@ define([
                 this.loadGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
             }
 
-            this.timingTreeMap.init(lang.mixin({
+            this.widget.TimingsTreeMap.init(lang.mixin({
                 query: {
                     graphsOnly: true,
                     graphName: this.graphName,
@@ -432,21 +437,8 @@ define([
             if (this.global.loadXGMML(xgmml, false, this.wu.getGraphTimers(this.params.GraphName))) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
                 var initialSelection = [];
-                if (this.overview.depth.get("value") === -1) {
-                    var newDepth = 0;
-                    for (; newDepth < 5; ++newDepth) {
-                        if (this.global.getLocalisedXGMML([0], newDepth, this.overview.distance.get("value")) !== "") {
-                            break;
-                        }
-                    }
-                    this.overview.depth.set("value", newDepth);
-                    if (this.params.SubGraphId) {
-                        initialSelection = [this.params.SubGraphId];
-                    }
-                }
-                this.setOverviewRootItems([0], initialSelection);
                 this.setMainRootItems(initialSelection);
-                this.setLocalRootItems([]);
+                this.loadTree();
                 this.loadSubgraphs();
                 this.loadVertices();
                 this.loadEdges();
@@ -456,9 +448,7 @@ define([
         mergeGraphFromXGMML: function (xgmml) {
             if (this.global.loadXGMML(xgmml, true, this.wu.getGraphTimers(this.params.GraphName))) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
-                this.refreshOverviewXGMML();
                 this.refreshMainXGMML();
-                this.refreshLocalXGMML();
                 this.loadSubgraphs();
                 this.loadVertices();
                 this.loadEdges();
@@ -468,9 +458,7 @@ define([
         loadGraphFromDOT: function (dot) {
             this.global.loadDOT(dot);
             this.global.setMessage("...");  //  Just in case it decides to render  ---
-            this.setOverviewRootItems([0]);
             this.setMainRootItems([]);
-            this.setLocalRootItems([]);
             this.loadSubgraphs();
             this.loadVertices();
             this.loadEdges();
@@ -478,14 +466,10 @@ define([
 
         loadGraphFromWu: function (wu, graphName) {
             var deferred = new Deferred();
-            this.overview.setMessage(this.i18n.FetchingData);
             this.main.setMessage(this.i18n.FetchingData);
-            this.local.setMessage(this.i18n.FetchingData);
             var context = this;
             wu.fetchGraphXgmmlByName(graphName, function (xgmml, svg) {
-                context.overview.setMessage("");
                 context.main.setMessage("");
-                context.local.setMessage("");
                 context.loadGraphFromXGMML(xgmml, svg);
                 deferred.resolve();
             });
@@ -500,9 +484,7 @@ define([
         },
 
         loadGraphFromQuery: function (targetQuery, queryId, graphName) {
-            this.overview.setMessage(this.i18n.FetchingData);
             this.main.setMessage(this.i18n.FetchingData);
-            this.local.setMessage(this.i18n.FetchingData);
             var context = this;
             WsWorkunits.WUQueryGetGraph({
                 request: {
@@ -511,9 +493,7 @@ define([
                     GraphName: graphName
                 }
             }).then(function(response){
-                context.overview.setMessage("");
                 context.main.setMessage("");
-                context.local.setMessage("");
                 if(lang.exists("WUQueryGetGraphResponse.Graphs.ECLGraphEx", response)){
                     if(response.WUQueryGetGraphResponse.Graphs.ECLGraphEx.length > 0){
                         context.loadGraphFromXGMML(response.WUQueryGetGraphResponse.Graphs.ECLGraphEx[0].Graph, "");
@@ -537,6 +517,49 @@ define([
                     }
                 }
             });
+        },
+
+        loadTree: function () {
+            var treeData = this.global.getTreeWithProperties();
+            this.treeStore.setTree(treeData);
+            var context = this;
+            var columns = [
+                tree({
+                    field: "id",
+                    label: this.i18n.ID, width: 150,
+                    collapseOnRefresh: true,
+                    shouldExpand: function (row, level, previouslyExpanded) {
+                        if (previouslyExpanded !== undefined) {
+                            return previouslyExpanded;
+                        } else if (level < context.treeGrid.get("treeDepth")) {
+                            return true;
+                        }
+                        return false;
+                    },
+                    formatter: function (_id, row) {
+                        var img = dojoConfig.getImageURL("file.png");
+                        var label = _id + " - ";
+                        switch (row._globalType) {
+                            case "Graph":
+                                img = dojoConfig.getImageURL("server.png");
+                                label = context.params.GraphName + " (" + row._children.length + ")";
+                                break;
+                            case "Cluster":
+                                img = dojoConfig.getImageURL("folder.png");
+                                label += context.i18n.Subgraph + " (" + row._children.length + ")";
+                                break;
+                            case "Vertex":
+                                label += row.label;
+                                break;
+                        }
+                        return "<img src='" + img + "'/>&nbsp;" + label;
+                    }
+                })
+            ];
+            this.treeStore.appendColumns(columns, ["name"], ["DescendantCount", "ecl", "definition", "SubgraphCount", "ActivityCount", "ChildCount", "Depth"], ["label"]);
+            this.treeGrid.set("query", {id:"0"});
+            this.treeGrid.set("columns", columns);
+            this.treeGrid.refresh();
         },
 
         loadSubgraphs: function () {
@@ -597,14 +620,14 @@ define([
             var selectedGlobalIDs = [];
 
             //  Get Selected Items  ---
-            if (sourceControl == this.timingTreeMap) {
+            if (sourceControl == this.widget.TimingsTreeMap) {
                 var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (items[i].SubGraphId) {
                         selectedGlobalIDs.push(items[i].SubGraphId);
                     }
                 }
-            } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid) {
+            } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid || sourceControl == this.treeGrid) {
                 var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (lang.exists("_globalID", items[i])) {
@@ -616,8 +639,11 @@ define([
             }
 
             //  Set Selected Items  ---
-            if (sourceControl != this.timingTreeMap) {
-                this.timingTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
+            if (sourceControl != this.treeGrid) {
+                this.treeGrid.setSelection(selectedGlobalIDs);
+            }
+            if (sourceControl != this.widget.TimingsTreeMap) {
+                this.widget.TimingsTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
             }
             if (sourceControl != this.subgraphsGrid && this.subgraphsGrid.store) {
                 this.subgraphsGrid.setSelection(selectedGlobalIDs);
@@ -630,20 +656,8 @@ define([
             }
 
             //  Refresh Graph Controls  ---
-            if (sourceControl != this.overview) {
-                this.overview.setSelectedAsGlobalID(selectedGlobalIDs);
-            }
             if (sourceControl != this.main) {
-                switch (sourceControl) {
-                    case this.local:
-                        this.main.setSelectedAsGlobalID(selectedGlobalIDs);
-                        break;
-                    default:
-                        this.setMainRootItems(selectedGlobalIDs);
-                }
-            }
-            if (sourceControl != this.local) {
-                this.setLocalRootItems(selectedGlobalIDs);
+                this.setMainRootItems(selectedGlobalIDs);
             }
 
             var propertiesDom = dom.byId(this.id + "Properties");
@@ -658,16 +672,6 @@ define([
             this.main.clear();
         },
 
-        setOverviewRootItems: function (globalIDs, selection) {
-            var graphView = this.global.getGraphView(globalIDs, this.overview.depth.get("value"), 3, selection);
-            graphView.navigateTo(this.overview);
-        },
-
-        refreshOverviewXGMML: function () {
-            var graphView = this.overview.getCurrentGraphView();
-            graphView.refreshXGMML(this.overview);
-        },
-
         setMainRootItems: function (globalIDs) {
             var graphView = this.global.getGraphView(globalIDs, this.main.depth.get("value"), this.main.distance.get("value"));
             graphView.navigateTo(this.main);
@@ -676,16 +680,6 @@ define([
         refreshMainXGMML: function () {
             var graphView = this.main.getCurrentGraphView();
             graphView.refreshXGMML(this.main);
-        },
-
-        setLocalRootItems: function (globalIDs) {
-            var graphView = this.global.getGraphView(globalIDs, this.local.depth.get("value"), this.local.distance.get("value"));
-            graphView.navigateTo(this.local);
-        },
-
-        refreshLocalXGMML: function () {
-            var graphView = this.local.getCurrentGraphView();
-            graphView.refreshXGMML(this.local);
         },
 
         displayGraphs: function (graphs) {
