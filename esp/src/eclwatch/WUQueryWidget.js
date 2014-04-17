@@ -239,7 +239,6 @@ define([
             });
 
             this.initWorkunitsGrid();
-            this.selectChild(this.workunitsTab, true);
 
             var context = this;
             this.filter.on("clear", function (evt) {

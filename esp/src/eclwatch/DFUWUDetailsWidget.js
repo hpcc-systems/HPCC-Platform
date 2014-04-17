@@ -133,7 +133,6 @@ define([
                 });
                 this.wu.refresh();
             }
-            this.selectChild(this.summaryWidget, true);
         },
 
         initTab: function () {

@@ -5,11 +5,12 @@ define([
     "dojo/dom",
     "dojo/hash",
     "dojo/router",
+    "dojo/aspect",
 
     "hpcc/_Widget",
 
     "dijit/registry"
-], function (declare, lang, arrayUtil, dom, hash, router,
+], function (declare, lang, arrayUtil, dom, hash, router, aspect,
     _Widget,
     registry) {
 
@@ -28,11 +29,6 @@ define([
         //  String helpers  ---
         idToPath: function (id) {
             var parts = id.split("_");
-            arrayUtil.forEach(parts, function (item, idx) {
-                if (this.endsWith(item, "-DL")) {
-                    parts[idx] = item.substring(0, item.length - 3);
-                }
-            }, this);
             return "/" + parts.join("/");
         },
 
@@ -40,6 +36,14 @@ define([
             var obj = path.split("/");
             obj.splice(0, 1);
             return obj.join("_");
+        },
+
+        getFirstChildID: function (id) {
+            if (id.indexOf(this.id) === 0) {
+                var childParts = id.substring(this.id.length).split("_");
+                return this.id + "_" + childParts[1];
+            }
+            return "";
         },
 
         startsWith: function (tst, str) {
@@ -73,19 +77,19 @@ define([
         },
 
         startup: function () {
-            if (this._started) {
-                return;
-            }
             this.inherited(arguments);
-
             var context = this;
-            var obj = router.register(this.getPath() + "/:sel", function (evt) {
-                context.routerCallback(evt, true);
+            var d = location;
+            aspect.after(this, "init", function (args) {
+                this.onNewTabSelection();
+                router.register(this.getPath() + "/:sel", function (evt) {
+                    context.routerCallback(evt, true);
+                });
+                router.registerBefore(this.getPath() + "/:sel/*other", function (evt) {
+                    context.routerCallback(evt, false);
+                });
+                router.startup();
             });
-            router.registerBefore(this.getPath() + "/:sel/*other", function (evt) {
-                context.routerCallback(evt, false);
-            });
-            router.startup();
         },
 
         resize: function (args) {
@@ -130,6 +134,9 @@ define([
         routerCallback: function (evt) {
             var currSel = this.getSelectedChild();
             var newSel = this.id + "_" + evt.params.sel;
+            if (this.endsWith(newSel, "-DL")) {
+                newSel = newSel.substring(0, newSel.length - 3);
+            }
             if (!currSel || currSel.id != newSel) {
                 this.selectChild(newSel, null);
             } else if (this.initTab) {
@@ -199,6 +206,27 @@ define([
             }
             if (!doHash) {
                 this.disableHashing--;
+            }
+            return child;
+        },
+        restoreFromHash: function (hash) {
+            if (hash) {
+                var hashID = this.pathToId(hash);
+                var firstChildID = this.getFirstChildID(hashID);
+                if (firstChildID) {
+                    if (this.endsWith(firstChildID, "-DL")) {
+                        firstChildID = firstChildID.substring(0, firstChildID.length - 3);
+                    }
+                    var child = this.selectChild(firstChildID, false);
+                    if (child) {
+                        if (this.initTab) {
+                            this.initTab();
+                        }
+                        if (child.restoreFromHash) {
+                            child.restoreFromHash(hash);
+                        }
+                    }
+                }
             }
         }
     });

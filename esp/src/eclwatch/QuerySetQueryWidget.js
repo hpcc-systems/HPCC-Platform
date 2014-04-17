@@ -125,7 +125,6 @@ define([
                 Target: params.Cluster
             });
             this.initQuerySetGrid();
-            this.selectChild(this.queriesTab, true);
 
             var context = this;
             this.filter.on("clear", function (evt) {

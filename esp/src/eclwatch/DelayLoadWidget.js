@@ -50,9 +50,8 @@ define([
 
         ensureWidget: function () {
             var deferred = new Deferred();
-            var childWidgetID = this.id + "-DL";
             if (this.__hpcc_resolved) {
-                deferred.resolve(this.widget[childWidgetID]);
+                deferred.resolve(this.widget[this.childWidgetID]);
             } else {
                 this.__hpcc_resolved = true;
                 this.startLoading();
@@ -62,7 +61,7 @@ define([
                         widget = widget.fixCircularDependency;
                     }
                     var widgetInstance = new widget(lang.mixin({
-                        id: context.id + "-DL",
+                        id: context.childWidgetID,
                         style: {
                             margin: "0px",
                             padding: "0px",
@@ -92,11 +91,30 @@ define([
         init: function (params) {
             if (this.__hpcc_initalized)
                 return;
+
+            this.childWidgetID = this.id + "-DL";
             this.__hpcc_initalized = true;
 
+            var context = this;
             this.ensureWidget().then(function (widget) {
                 widget.init(params);
+                if (context.__hpcc_hash) {
+                    context.doRestoreFromHash(context.__hpcc_hash);
+                    context.__hpcc_hash = null;
+                }
             });
+        },
+        restoreFromHash: function (hash) {
+            if (this.widget && this.widget[this.childWidgetID]) {
+                this.doRestoreFromHash(hash);
+            } else {
+                this.__hpcc_hash = hash;
+            }
+        },    
+        doRestoreFromHash: function (hash) {
+            if (this.widget[this.childWidgetID].restoreFromHash) {
+                this.widget[this.childWidgetID].restoreFromHash(hash);
+            }
         }
     });
 });

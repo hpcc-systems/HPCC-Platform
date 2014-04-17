@@ -80,6 +80,9 @@ define([
                     widget.placeAt(dojo.body(), "last");
                     widget.startup();
                     widget.init(params);
+                    if (widget.restoreFromHash) {
+                        widget.restoreFromHash(dojoConfig.urlInfo.hash);
+                    }
                 }
 
                 document.title = widget.getTitle ? widget.getTitle() : params.Widget;
