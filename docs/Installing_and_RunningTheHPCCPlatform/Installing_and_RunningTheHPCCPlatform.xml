@@ -448,7 +448,7 @@
           </listitem>
 
           <listitem>
-            <para>1GB RAM (or more ) per slave</para>
+            <para>1GB RAM per slave</para>
 
             <para>(Note: If you configure more than 1 slave per node, memory
             is shared. For example, if you want 2 slaves per node with each
@@ -456,8 +456,9 @@
           </listitem>
 
           <listitem>
-            <para>Two Hard Drives (with sufficient free space to handle the
-            size of the data you plan to process)</para>
+            <para>One Hard Drives (with sufficient free space to handle the
+            size of the data you plan to process) or Network Attached
+            Storage.</para>
           </listitem>
 
           <listitem>
