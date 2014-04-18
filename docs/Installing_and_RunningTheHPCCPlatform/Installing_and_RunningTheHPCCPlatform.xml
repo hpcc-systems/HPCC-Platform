@@ -124,7 +124,7 @@
           url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>
           and install.</para>
 
-          <para>On CentOS/Red Hat/SuSe:</para>
+          <para>On CentOS/Red Hat:</para>
 
           <para><programlisting> sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>On
           Ubuntu/Debian:</para>
@@ -135,7 +135,7 @@
         <listitem>
           <para>Start your HPCC System.</para>
 
-          <para>On CentOS/Red Hat/SuSe:</para>
+          <para>On CentOS/Red Hat:</para>
 
           <para><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
 
@@ -544,10 +544,6 @@
             </listitem>
 
             <listitem>
-              <para>64-bit openSUSE 11.3 or 11.4</para>
-            </listitem>
-
-            <listitem>
               <para>64-bit Debian 6.x (Squeeze)</para>
             </listitem>
           </itemizedlist></para>
@@ -753,7 +749,7 @@
         instructions:</para>
 
         <sect3 id="Installing_CentOS-RedHat-Suse">
-          <title>CentOS/Red Hat/SuSe</title>
+          <title>CentOS/Red Hat</title>
 
           <para>Install RPM with the -Uvh switch.</para>
 
@@ -762,18 +758,6 @@
           fresh if no other version has been installed.</para>
 
           <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
-
-          <blockquote>
-            <para><emphasis role="bold">Note:</emphasis> For ANY version of
-            SuSe you must set a password for the hpcc user on all nodes. One
-            way to do do this is to issue the following command:</para>
-
-            <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
-            set the password on ALL nodes.</para>
-
-            <para><emphasis role="bold">Note:</emphasis> For CentOS
-            installations, the Fedora EPEL repository is required.</para>
-          </blockquote>
 
           <sect4 id="Optional_Plug-ins">
             <title>Optional Plug-ins</title>
@@ -845,7 +829,7 @@
             <para>Start the system using the default configuration.</para>
 
             <para><emphasis role="bold">Centos/Red
-            Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
 
             <para><emphasis role="bold">Ubuntu</emphasis></para>
 
@@ -1278,7 +1262,7 @@
             command:</para>
 
             <para><emphasis role="bold">Centos/Red
-            Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
 
             <para><emphasis role="bold">Ubuntu</emphasis></para>
 
@@ -1303,7 +1287,7 @@
 
                       <entry>You can use this command to confirm HPCC
                       processes are stopped (on Centos/Red
-                      Hat/SuSe):<para><programlisting>sudo /sbin/service hpcc-init status</programlisting><phrase>For
+                      Hat):<para><programlisting>sudo /sbin/service hpcc-init status</programlisting><phrase>For
                       Ubuntu</phrase><programlisting>sudo service hpcc-init status
 </programlisting><phrase>For Debian 6 (Squeeze)</phrase><programlisting>sudo /etc/init.d/hpcc-init status</programlisting></para></entry>
                     </row>
@@ -1618,7 +1602,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             the HPCC system on an individual node:</para>
 
             <para><emphasis role="bold">Centos/Red
-            Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
 
             <para><emphasis role="bold">Ubuntu</emphasis></para>
 
@@ -1676,7 +1660,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <title>To start the system:</title>
 
           <para><emphasis role="bold">Centos/Red
-          Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
 
           <para><emphasis role="bold">Ubuntu</emphasis></para>
 
@@ -1691,7 +1675,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <title>To stop the system:</title>
 
           <para><emphasis role="bold">Centos/Red
-          Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
 
           <para><emphasis role="bold">Ubuntu</emphasis></para>
 
@@ -1731,7 +1715,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           in the init system as follows.</para>
 
           <para><emphasis role="bold">Centos/Red
-          Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
+          Hat</emphasis><programlisting>sudo /sbin/service hpcc-init -c &lt;component name&gt; &lt;command&gt;</programlisting></para>
 
           <para><emphasis role="bold">Ubuntu</emphasis></para>
 
@@ -1777,7 +1761,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             command on <emphasis role="bold">every</emphasis> node:</para>
 
             <para><emphasis role="bold">Centos/Red
-            Hat/SuSe</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
+            Hat</emphasis><programlisting>sudo /sbin/service hpcc-init stop</programlisting></para>
 
             <para><emphasis role="bold">Ubuntu</emphasis></para>
 
@@ -2866,7 +2850,7 @@ OUTPUT(ValidWords)
       your system. If necessary, do so on each node that it is installed
       on.</para>
 
-      <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+      <para><emphasis role="bold">Centos/Red Hat</emphasis></para>
 
       <programlisting>sudo rpm -e hpccsystems-platform </programlisting>
 
@@ -3106,7 +3090,7 @@ sudo /sbin/service hpcc-init -c esp start
       <para><emphasis role="bold">RPM-based systems:</emphasis></para>
 
       <para>If you are interested in using external languages for RPM-based
-      systems (CentOS/Red Hat/SuSe), you need to download and install the
+      systems (CentOS/Red Hat), you need to download and install the
       appropriate platform installation distribution <emphasis
       role="bold">with plug-ins</emphasis> option from the downloads
       site.</para>
@@ -3279,8 +3263,8 @@ add1(10);
             <para>JavaScript support is available for CentOS 6.x or later (not
             available for CentOS 5.x).</para>
 
-            <para>On an RPM-based system (CentOS/Red Hat/SuSe) install
-            <emphasis role="bold">v8embed.</emphasis></para>
+            <para>On an RPM-based system (CentOS/Red Hat) install <emphasis
+            role="bold">v8embed.</emphasis></para>
 
             <para><emphasis role="bold">Debian-based
             systems:</emphasis></para>
@@ -3397,7 +3381,7 @@ split_words('Once upon a time');
 
             <para><emphasis role="bold">RPM-based systems:</emphasis></para>
 
-            <para>On an RPM-based system (CentOS/Red Hat/SuSe) use <emphasis
+            <para>On an RPM-based system (CentOS/Red Hat) use <emphasis
             role="bold">R-core</emphasis> and <emphasis
             role="bold">R-core-devel</emphasis></para>
 
