@@ -217,12 +217,13 @@ typedef IArrayOf<Url> UrlArray;
 
 //=================================================================================================
 
+//MORE: This whole class should really be replaced with a single function, avoiding at least one string clone.
 class UrlListParser
 {
 public:
     UrlListParser(const char * text)
     {
-        fullText = strdup(text);
+        fullText = text ? strdup(text) : NULL;
     }
 
     ~UrlListParser()
@@ -232,17 +233,20 @@ public:
 
     unsigned getUrls(UrlArray &array)
     {
-        char *copyFullText = strdup(fullText);
-
-        char *saveptr;
-        char *url = strtok_r(copyFullText, "|", &saveptr);
-        while (url != NULL)
+        if (fullText)
         {
-            array.append(*new Url(url));
-            url = strtok_r(NULL, "|", &saveptr);
-        }
+            char *copyFullText = strdup(fullText);
 
-        free(copyFullText);
+            char *saveptr;
+            char *url = strtok_r(copyFullText, "|", &saveptr);
+            while (url != NULL)
+            {
+                array.append(*new Url(url));
+                url = strtok_r(NULL, "|", &saveptr);
+            }
+
+            free(copyFullText);
+        }
         return array.ordinality();
     }
 
