@@ -14,7 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
-
 IMPORT STD;
 sf1 := '~data::test::sf';
 path1 := '~data::name1';
@@ -50,6 +49,7 @@ SEQUENTIAL(
 
     OUTPUT(ds3),
     OUTPUT(ds4),
+
 //    OUTPUT(FETCH(ds4, ds2, 0)); Gives internal error in compiler.
 
     // clean-up
