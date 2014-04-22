@@ -116,11 +116,11 @@ define([
             },
 
             watchWU: function () {
-                if (this.watching) {
-                    this.watching.unwatch();
+                if (this.watchHandle) {
+                    this.watchHandle.unwatch();
                 }
                 var context = this;
-                this.watching = this.wu.watch(function (name, oldValue, newValue) {
+                this.watchHandle = this.wu.watch(function (name, oldValue, newValue) {
                     switch (name) {
                         case "hasCompleted": 
                             if (newValue === true) {
@@ -133,6 +133,7 @@ define([
                                             start: 0,
                                             count: context.bufferLength
                                         }).then(function (response) {
+                                            context.watchHandle.unwatch();
                                             context.cachedResponse = response;
                                             context.displayHex();
                                             context.wu.doDelete();
