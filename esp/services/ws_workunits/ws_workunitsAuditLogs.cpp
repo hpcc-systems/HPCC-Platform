@@ -1475,6 +1475,17 @@ int CWsWorkunitsSoapBindingEx::onGet(CHttpRequest* request, CHttpResponse* respo
             streamJobQueueListResponse(*ctx, cluster, startDate, endDate, response, xls.str());
             return 0;
         }
+        else if(!strnicmp(path.str(), "/WsWorkunits/filesInUse", 28))
+        {
+            StringBuffer xml;
+            wswService->filesInUse.toStr(xml);
+
+            response->setContent(xml);
+            response->setContentType("text/xml");
+            response->setStatus(HTTP_STATUS_OK);
+            response->send();
+            return 0;
+        }
     }
     catch(IException* e)
     {
