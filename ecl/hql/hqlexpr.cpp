@@ -589,30 +589,16 @@ extern HQL_API void gatherMetaAttributes(HqlExprArray & matches, IAtom * search,
     }
 }
 
-extern HQL_API void gatherMetaAttributes(HqlExprCopyArray & matches, IAtom * search, IHqlExpression * expr)
+extern HQL_API void gatherAttributes(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
 {
-    loop
+    unsigned kids = expr->numChildren();
+    for (unsigned i = 0; i < kids; i++)
     {
-        annotate_kind kind = expr->getAnnotationKind();
-        if (kind == annotate_none)
-            return;
-        if (kind == annotate_meta)
-        {
-            unsigned i=0;
-            IHqlExpression * cur;
-            while ((cur = expr->queryAnnotationParameter(i++)) != NULL)
-            {
-                //It's possible we may want to implement this whole function as a member function and allow
-                //information to be stored in a non expression format, and only create expressions when requested.
-                //may end up less efficient in the end.
-                if (cur->queryName() == search && cur->isAttribute())
-                    matches.append(*cur);
-            }
-        }
-        expr = expr->queryBody(true);
+        IHqlExpression *kid = expr->queryChild(i);
+        if (kid->isAttribute() && kid->queryName()==search)
+            matches.append(*LINK(kid));
     }
 }
-
 
 extern HQL_API IHqlExpression * queryLocation(IHqlExpression * expr)
 {

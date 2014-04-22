@@ -1803,7 +1803,7 @@ protected:
     void addSchemaResource(int seq, const char * name, IHqlExpression * record);
     void addSchemaResource(int seq, const char * name, unsigned len, const char * schemaXml);
     void doAddSchemaFields(IHqlExpression * record, MemoryBuffer &schema, IHqlExpression *selector);
-    IWUResult * createDatasetResultSchema(IHqlExpression * sequenceExpr, IHqlExpression * name, IHqlExpression * record, bool createTransformer, bool isFile);
+    IWUResult * createDatasetResultSchema(IHqlExpression * sequenceExpr, IHqlExpression * name, IHqlExpression * record, HqlExprArray &xmlnsAttrs, bool createTransformer, bool isFile);
 
     void buildReturnCsvValue(BuildCtx & ctx, IHqlExpression * _expr);
     void buildCsvListFunc(BuildCtx & classctx, const char * func, IHqlExpression * value, const char * defaultValue);

@@ -421,6 +421,7 @@ IAtom * workunitAtom;
 IAtom * wuidAtom;
 IAtom * xmlAtom;
 IAtom * xmlDefaultAtom;
+IAtom * xmlnsAtom;
 IAtom * _xmlParse_Atom;
 IAtom * xpathAtom;
 
@@ -835,6 +836,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(wuid);
     MAKEATOM(xml);
     MAKEATOM(xmlDefault);
+    MAKEATOM(xmlns);
     MAKESYSATOM(xmlParse);
     MAKEATOM(xpath);
 

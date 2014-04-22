@@ -3168,19 +3168,19 @@ int findResultSetColumn(const INewResultSet * results, const char * columnName)
 }
 
 
-extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName)
+extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName, IProperties *xmlns)
 {
     Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
-    unsigned rc = writeResultCursorXml(*writer, cursor, name, start, count, schemaName);
+    unsigned rc = writeResultCursorXml(*writer, cursor, name, start, count, schemaName, xmlns);
     ret.set(writer->str());
     return rc;
 
 }
 
-extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName)
+extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName, IProperties *xmlns)
 {
     Owned<IResultSetCursor> cursor = result->createCursor();
-    return getResultCursorXml(ret, cursor, name, start, count, schemaName);
+    return getResultCursorXml(ret, cursor, name, start, count, schemaName, xmlns);
 }
 
 extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName)
@@ -3194,7 +3194,7 @@ extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * res
     return rc;
 }
 
-extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName)
+extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName, IProperties *xmlns)
 {
     if (schemaName)
     {
@@ -3210,7 +3210,15 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSe
     writer.outputBeginDataset(name, true);
     if (schemaName)
         writer.outputCString(schemaName, "@xmlSchema");
-
+    if (xmlns)
+    {
+        Owned<IPropertyIterator> it = xmlns->getIterator();
+        ForEach(*it)
+        {
+            const char *name = it->getPropKey();
+            writer.outputXmlns(name,xmlns->queryProp(name));
+        }
+    }
     cursor->beginWriteXmlRows(writer);
     unsigned c=0;
     for(bool ok=cursor->absolute(start);ok;ok=cursor->next())
@@ -3226,10 +3234,10 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSe
     return c;
 }
 
-extern FILEVIEW_API unsigned writeResultXml(IXmlWriter & writer, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName)
+extern FILEVIEW_API unsigned writeResultXml(IXmlWriter & writer, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName, IProperties *xmlns)
 {
     Owned<IResultSetCursor> cursor = result->createCursor();
-    return writeResultCursorXml(writer, cursor, name, start, count, schemaName);
+    return writeResultCursorXml(writer, cursor, name, start, count, schemaName, xmlns);
 }
 
 extern FILEVIEW_API unsigned getResultCursorBin(MemoryBuffer & ret, IResultSetCursor * cursor, unsigned start, unsigned count)
@@ -3313,7 +3321,8 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
                     SCMStringBuffer name;
                     ds.getResultName(name);
                     Owned<INewResultSet> nr = factory->createNewResultSet(&ds, wuid.str());
-                    writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL);
+                    IProperties *xmlns = ds.queryXmlns();
+                    writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
                 }
             }
         }

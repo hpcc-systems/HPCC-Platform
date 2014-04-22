@@ -1,0 +1,3 @@
+<Dataset name='Result 1' xmlns:star="urn:hpccsystems:ecl:unknown:star" xmlns:bk="urn:booklist:book" xmlns:bks="urn:booklist:books">
+ <Row><bks:books><bk:book><bk:title>The Emperors New Mind</bk:title><bk:author>Sir Roger Penrose</bk:author><star:rating>*****</star:rating></bk:book><bk:book><bk:title>The Elegant Universe</bk:title><bk:author>Brian Greene</bk:author><star:rating>*****</star:rating></bk:book><bk:book><bk:title>A Brief History of Time</bk:title><bk:author>Stephen Hawking</bk:author><star:rating>*****</star:rating></bk:book></bks:books></Row>
+</Dataset>
