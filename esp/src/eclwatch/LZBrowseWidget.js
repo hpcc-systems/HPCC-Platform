@@ -531,7 +531,7 @@ define([
                 arrayUtil.forEach(selection, function (item, idx) {
                     lang.mixin(item, lang.mixin({
                         targetName: item.displayName,
-                        targetRecordLength: 1,
+                        targetRecordLength: "",
                         targetRowTag: context.i18n.tag
                     }, item));
                     data.push(item);
