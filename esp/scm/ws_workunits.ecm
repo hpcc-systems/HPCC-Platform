@@ -237,6 +237,8 @@ ESPStruct [nil_remove] ECLWorkunit
     [min_ver("1.47")] ESParray<string, URL> ResourceURLs;
     [min_ver("1.50")] int ResultViewCount;
     [min_ver("1.50")] int ResourceURLCount;
+    [min_ver("1.50")] int DebugValueCount;
+    [min_ver("1.50")] int WorkflowCount;
 };
 
 ESPStruct [nil_remove] WUECLAttribute

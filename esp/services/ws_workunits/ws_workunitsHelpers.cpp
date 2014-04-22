@@ -641,7 +641,17 @@ void WsWuInfo::getApplicationValues(IEspECLWorkunit &info, unsigned flags)
 void WsWuInfo::getDebugValues(IEspECLWorkunit &info, unsigned flags)
 {
     if (!(flags & WUINFO_IncludeDebugValues))
+    {
+        if (version >= 1.50)
+        {
+            unsigned debugValueCount = 0;
+            Owned<IStringIterator> debugs(&cw->getDebugValues());
+            ForEach(*debugs)
+                debugValueCount++;
+            info.setDebugValueCount(debugValueCount);
+        }
         return;
+    }
     try
     {
         IArrayOf<IEspDebugValue> dv;
@@ -657,6 +667,8 @@ void WsWuInfo::getDebugValues(IEspECLWorkunit &info, unsigned flags)
             t->setValue(val.str());
             dv.append(*t.getLink());
         }
+        if (version >= 1.50)
+            info.setDebugValueCount(dv.length());
         info.setDebugValues(dv);
     }
     catch(IException* e)
@@ -1170,6 +1182,7 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
     try
     {
         info.setEventSchedule(0);
+        unsigned workflowsCount = 0;
         IArrayOf<IConstECLWorkflow> workflows;
         Owned<IConstWorkflowItemIterator> it = cw->getWorkflowItems();
         if (it)
@@ -1205,6 +1218,7 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
                         {
                             eventCountUnlimited = true;
                         }
+                        workflowsCount++;
                         if (flags & WUINFO_IncludeWorkflows)
                             workflows.append(*g.getLink());
                     }
@@ -1214,6 +1228,8 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
                 info.setWorkflows(workflows);
             workflows.kill();
         }
+        if (version >= 1.50)
+            info.setWorkflowCount(workflowsCount);
     }
     catch(IException* e)
     {
