@@ -171,6 +171,10 @@ define([
             return this.ClusterName;
         },
 
+        isNormal: function () {
+            return this.ClusterStatus === 0;
+        },
+
         isPaused: function () {
             switch (this.ClusterStatus) {
                 case 1:
@@ -198,12 +202,32 @@ define([
                 });
                 return response;
             });
+        },
+
+        getStateImageName: function () {
+            switch (this.ClusterStatus) {
+                case 1:
+                case 2:
+                    return "server_paused.png";
+                case 3:
+                case 4:
+                    return "server_notfound.png";
+            }
+            return "server.png";
+        },
+
+        getStateImage: function () {
+            return dojoConfig.getImageURL(this.getStateImageName());
         }
     });
 
     var ServerJobQueue = declare([Queue], {
         getDisplayName: function () {
             return this.QueueName;
+        },
+
+        isNormal: function () {
+            return this.QueueStatus === "running";
         },
 
         isPaused: function () {
@@ -231,6 +255,22 @@ define([
                 });
                 return response;
             });
+        },
+
+        getStateImageName: function () {
+            switch (this.QueueStatus) {
+                case "running":
+                    return "server.png";
+                case "paused":
+                    return "server_paused.png";
+                default:
+                    console.log("ESPQueue:  New State - " + this.QueueStatus);
+            }
+            return "server.png";
+        },
+
+        getStateImage: function () {
+            return dojoConfig.getImageURL(this.getStateImageName());
         }
 
     });
