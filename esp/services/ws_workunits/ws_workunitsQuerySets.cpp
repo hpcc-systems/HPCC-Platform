@@ -753,42 +753,31 @@ bool CWsWorkunitsEx::onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest 
 
 void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, const char *id, IArrayOf<IEspClusterQueryState>& clusterStates, double version)
 {
+    queriesOnCluster = queriesOnCluster->queryPropTree("Endpoint[1]/Queries[1]");
+    if (!queriesOnCluster)
+        return;
+
+    int reporting = queriesOnCluster->getPropInt("@reporting");
+
     Owned<IEspClusterQueryState> clusterState = createClusterQueryState();
     clusterState->setCluster(target);
 
-    VStringBuffer xpath("Endpoint/Queries/Query[@id='%s']", id);
-    Owned<IPropertyTreeIterator> iter = queriesOnCluster->getElements(xpath.str());
-    bool found = false;
-    bool suspended = false;
-    bool available = false;
-    StringBuffer errors;
-    ForEach (*iter)
-    {
-        found = true;
-        if (iter->query().getPropBool("@suspended", false))
-            suspended = true;
-        else
-            available = true;
-        const char* error = iter->query().queryProp("@error");
-        if (error && *error && (version >=1.46))
-        {
-            if (errors.length())
-                errors.append(";");
-            errors.append(error);
-        }
-    }
-    if (!found)
+    VStringBuffer xpath("Query[@id='%s']", id);
+    IPropertyTree *query = queriesOnCluster->getPropTree(xpath.str());
+    int suspended = query->getPropInt("@suspended");
+    const char* error = query->queryProp("@error");
+    if (!query)
         clusterState->setState("Not Found");
     else if (suspended)
     {
         clusterState->setState("Suspended");
-        if (available)
+        if (suspended<reporting)
             clusterState->setMixedNodeStates(true);
     }
     else
         clusterState->setState("Available");
-    if ((version >=1.46) && errors.length())
-        clusterState->setErrors(errors.str());
+    if ((version >=1.46) && error && *error)
+        clusterState->setErrors(error);
 
     clusterStates.append(*clusterState.getClear());
 }

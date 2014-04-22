@@ -522,21 +522,29 @@ public:
             return locksGot > getNumNodes()/2;
     }
 
+    enum CascadeMergeType { CascadeMergeNone, CascadeMergeStats, CascadeMergeQueries };
+
     void doControlQuery(SocketEndpoint &ep, const char *queryText, StringBuffer &reply)
     {
         if (logctx.queryTraceLevel() > 5)
             logctx.CTXLOG("doControlQuery (%d): %.80s", isMaster, queryText);
         // By this point we should have cascade-connected thanks to a prior <control:lock>
         // So do the query ourselves and in all child threads;
-        Owned<IPropertyTree> mergedStats;
+        CascadeMergeType mergeType=CascadeMergeNone;
         if (strstr(queryText, "querystats"))
-            mergedStats.setown(createPTree("Endpoint"));
+            mergeType=CascadeMergeStats;
+        else if (strstr(queryText, ":queries"))
+            mergeType=CascadeMergeQueries;
+        Owned<IPropertyTree> mergedReply;
+        if (mergeType!=CascadeMergeNone)
+            mergedReply.setown(createPTree("Endpoint"));
 
         class casyncfor: public CAsyncFor
         {
             const char *queryText;
             CascadeManager *parent;
-            IPropertyTree *mergedStats;
+            IPropertyTree *mergedReply;
+            CascadeMergeType mergeType;
             StringBuffer &reply;
             CriticalSection crit;
             SocketEndpoint &ep;
@@ -544,9 +552,9 @@ public:
             const IRoxieContextLogger &logctx;
 
         public:
-            casyncfor(const char *_queryText, CascadeManager *_parent, IPropertyTree *_mergedStats,
+            casyncfor(const char *_queryText, CascadeManager *_parent, IPropertyTree *_mergedReply, CascadeMergeType _mergeType,
                       StringBuffer &_reply, SocketEndpoint &_ep, unsigned _numChildren, const IRoxieContextLogger &_logctx)
-                : queryText(_queryText), parent(_parent), mergedStats(_mergedStats), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx)
+                : queryText(_queryText), parent(_parent), mergedReply(_mergedReply), mergeType(_mergeType), reply(_reply), ep(_ep), numChildren(_numChildren), logctx(_logctx)
             {
             }
             void Do(unsigned i)
@@ -571,9 +579,12 @@ public:
                     ForEach(*meat)
                     {
                         CriticalBlock cb(crit);
-                        if (mergedStats)
+                        if (mergedReply)
                         {
-                            mergeStats(mergedStats, &meat->query());
+                            if (mergeType == CascadeMergeStats)
+                                mergeStats(mergedReply, &meat->query());
+                            else if (mergeType == CascadeMergeQueries)
+                                mergeQueries(mergedReply, &meat->query());
                         }
                         else
                             toXML(&meat->query(), reply);
@@ -601,19 +612,22 @@ public:
                 }
                 myReply.append("</Endpoint>\n");
                 CriticalBlock cb(crit);
-                if (mergedStats)
+                if (mergedReply)
                 {
                     Owned<IPropertyTree> xml = createPTreeFromXMLString(myReply);
-                    mergeStats(mergedStats, xml);
+                    if (mergeType == CascadeMergeStats)
+                        mergeStats(mergedReply, xml);
+                    else if (mergeType == CascadeMergeQueries)
+                        mergeQueries(mergedReply, xml);
                 }
                 else
                     reply.append(myReply);
             }
-        } afor(queryText, this, mergedStats, reply, ep, activeChildren.ordinality(), logctx);
+        } afor(queryText, this, mergedReply, mergeType, reply, ep, activeChildren.ordinality(), logctx);
         afor.For(activeChildren.ordinality()+(isMaster ? 0 : 1), 10);
         activeChildren.kill();
-        if (mergedStats)
-            toXML(mergedStats, reply);
+        if (mergedReply)
+            toXML(mergedReply, reply);
         if (logctx.queryTraceLevel() > 5)
             logctx.CTXLOG("doControlQuery (%d) finished: %.80s", isMaster, queryText);
     }
