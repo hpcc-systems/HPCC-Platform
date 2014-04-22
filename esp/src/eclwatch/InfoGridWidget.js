@@ -98,7 +98,7 @@ define([
             startup: function (args) {
                 this.inherited(arguments);
                 if (this.showToolbar) {
-                    if (has("ie") <= 9) {
+                    if (has("ie") <= 9 || has("ff")) {
                         this.widget.Download.set("disabled", true);
                     }
                 }
