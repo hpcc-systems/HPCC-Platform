@@ -954,6 +954,7 @@ ESPresponse [exceptions_inline] WUCompileECLResponse
 ESPrequest WUJobListRequest
 {
     string Cluster;
+    [min_ver("1.50")] string Process;
     string StartDate;
     string EndDate;
     bool ShowAll;
