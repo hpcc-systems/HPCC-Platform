@@ -80,8 +80,8 @@ define([
             this.distance = distance;
         },
 
-        changeRootItems: function (globalIDs) {
-            return this.sourceGraphWidget.getGraphView(globalIDs, this.depth, this.distance);
+        changeRootItems: function (globalIDs, depth, distance) {
+            return this.sourceGraphWidget.getGraphView(globalIDs, depth, distance);
         },
 
         changeScope: function (depth, distance) {
@@ -140,6 +140,7 @@ define([
                                 deferred.resolve("No Selection.");
                             }
                         } else {
+                            targetGraphWidget.setSelectedAsGlobalID(context.selectedGlobalIDs);
                             targetGraphWidget.setMessage("");
                             deferred.resolve("XGMML Did Not Change.");
                         }
@@ -311,9 +312,13 @@ define([
 
             _onSyncSelection: function () {
                 var graphView = this.getCurrentGraphView();
-                var rootItems = this.getSelectionAsGlobalID();
-                graphView = graphView.changeRootItems(rootItems);
-                graphView.navigateTo(this);
+                if (graphView) {
+                    var rootItems = this.getSelectionAsGlobalID();
+                    var depth = this.depth.get("value");
+                    var distance = this.distance.get("value");
+                    graphView = graphView.changeRootItems(rootItems, depth, distance);
+                    graphView.navigateTo(this);
+                }
             },
 
             onSelectionChanged: function (items) {
@@ -665,6 +670,7 @@ define([
                 var retVal = new GraphView(this, rootGlobalIDs, depth, distance, selectedGlobalIDs);
                 if (this.graphViewHistory.has(retVal.id)) {
                     retVal = this.graphViewHistory.get(retVal.id);
+                    retVal.selectedGlobalIDs = selectedGlobalIDs ? selectedGlobalIDs : rootGlobalIDs;
                 } else {
                     this.graphViewHistory.set(retVal.id, retVal);
                 }
