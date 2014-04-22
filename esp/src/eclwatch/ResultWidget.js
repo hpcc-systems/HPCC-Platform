@@ -19,7 +19,6 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
-    "dojo/request/iframe",
 
     "dijit/registry",
 
@@ -43,7 +42,7 @@ define([
     "dijit/Toolbar",
     "dijit/form/Button",
     "dijit/ToolbarSeparator"
-], function (declare, lang, i18n, nlsHPCC, dom, iframe,
+], function (declare, lang, i18n, nlsHPCC, dom,
                 registry,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _Widget, ESPBase, ESPWorkunit, ESPLogicalFile,
@@ -86,20 +85,11 @@ define([
         },
 
         _doDownload: function (type) {
-            //TODO Fix
             var base = new ESPBase();
-            if (lang.exists("result.Sequence", this)) {
-                var sequence = this.result.Sequence;
-                var downloadPdfIframeName = "downloadIframe_" + sequence;
-                var frame = iframe.create(downloadPdfIframeName);
-                var url = base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + this.result.Wuid + "&Sequence=" + sequence;
-                iframe.setSrc(frame, url, true);
-            } else if (lang.exists("result.Name", this)) {
-                var logicalName = this.result.Name;
-                var downloadPdfIframeName = "downloadIframe_" + logicalName;
-                var frame = iframe.create(downloadPdfIframeName);
-                var url = base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + this.result.Wuid + "&LogicalName=" + logicalName;
-                iframe.setSrc(frame, url, true);
+            if (lang.exists("params.Sequence", this)) {
+                window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + this.params.Wuid + "&Sequence=" + this.params.Sequence, "_blank");
+            } else if (lang.exists("params.LogicalName", this)) {
+                window.open(base.getBaseURL() + "/WUResultBin?Format=" + type + "&LogicalName=" + this.params.LogicalName, "_blank");
             }
         },
 
