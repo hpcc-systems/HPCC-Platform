@@ -177,6 +177,7 @@ define([
                 context.refreshBanner(newValue);
             });
 
+            this.createStackControllerTooltip(this.id + "_Main", this.i18n.Activity);
             this.createStackControllerTooltip(this.id + "_ECL", this.i18n.ECL);
             this.createStackControllerTooltip(this.id + "_Files", this.i18n.Files);
             this.createStackControllerTooltip(this.id + "_RoxieQueries", this.i18n.PublishedQueries);
