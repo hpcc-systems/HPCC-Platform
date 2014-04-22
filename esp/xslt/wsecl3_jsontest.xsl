@@ -47,13 +47,70 @@
         <script type="text/javascript">
 <xsl:text disable-output-escaping="yes">
 <![CDATA[
+          function jsonPrettyIndent(indent)
+          {
+              var s = '\n';
+              if (indent>0)
+              {
+                 var spaces = indent * 2;
+                 s += Array(spaces).join(' ');
+              }
+              return s;
+          }
+          function jsonPretty(jsonstring)
+          {
+              var pretty = '';
+              var indent = 0;
+              var instring = false;
+              for (var i=0; i<jsonstring.length; i++)
+              {
+                  var ch = jsonstring.charAt(i);
+                  switch (ch)
+                  {
+                      case '{':
+                      case '[':
+                          pretty += ch + jsonPrettyIndent(++indent);
+                          break;
+
+                      case ',':
+                          pretty += ch + jsonPrettyIndent(indent);
+                          break;
+
+                      case ']':
+                      case '}':
+                          pretty += jsonPrettyIndent(--indent) + ch;
+                          break;
+                      case '\"':
+                          instring = true;
+                          pretty += ch;
+                          while (instring && i<jsonstring.length)
+                          {
+                            var strCh = jsonstring.charAt(++i);
+                            pretty += strCh;
+                            switch(strCh)
+                            {
+                                case '\\':
+                                    pretty += jsonstring.charAt(++i);
+                                    break;
+                                case '\"':
+                                    instring = false;
+                                    break;
+                            }
+                          }
+                          break;
+                       default:
+                          pretty += ch;
+                  }
+              }
+              return pretty;
+          }
           require(["dojo/ready", "dojo/request/handlers", "dojo/request/xhr", "dojo/json", "dojo/dom", "dojo/on", "dojo/domReady!"],
           function(ready, handlers, xhr, JSON, dom, on){
             ready(function(){
               var jsonreq = ']]></xsl:text><xsl:value-of select="/srcxml/jsonreq"/><xsl:text disable-output-escaping="yes"><![CDATA[';
               try {
-                var obj = JSON.parse(jsonreq);
-                var output = JSON.stringify(obj, undefined, 3);
+                var obj = JSON.parse(jsonreq); //validate
+                var output = jsonPretty(jsonreq); //obj.stringify can't handle 64bit integers
                 dom.byId("req_body").value = output;
               } catch (err){
                 dom.byId("req_body").value = err.toString() + ": \n\n" + jsonreq;
@@ -61,7 +118,8 @@
             });
             handlers.register("json_show_headers", function(response){
               dom.byId("resp_header").value = "Content-Type: " + response.getHeader("Content-Type");
-              return JSON.parse(response.text);
+              JSON.parse(response.text); //validate
+              return response.text; //JSON.parse can't handle 64 bit integers, so just format the original response string
             });
             on(dom.byId("sendButton"), "click", function(){
               dom.byId("resp_body").value = "";
@@ -81,7 +139,7 @@
                 data: jsonreq,
                 headers: { 'Content-Type': 'application/json' }
               }).then(function(data){
-                dom.byId("resp_body").value = JSON.stringify(data, undefined, 3);
+                dom.byId("resp_body").value = jsonPretty(data);
               }, function(err){
                 dom.byId("resp_body").value = err.toString() + ": \n\n" + err.response.text;
               });

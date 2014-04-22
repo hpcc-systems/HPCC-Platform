@@ -2141,9 +2141,10 @@ int CWsEclBinding::getJsonTestForm(IEspContext &context, CHttpRequest* request, 
     Owned<IXslTransform> xform = xslp->createXslTransform();
     xform->loadXslFromFile(StringBuffer(getCFD()).append("./xslt/wsecl3_jsontest.xsl").str());
 
+    StringBuffer encodedMsg;
     StringBuffer srcxml;
     srcxml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><srcxml><jsonreq><![CDATA[");
-    srcxml.append(jsonmsg.str());
+    srcxml.append(encodeJSON(encodedMsg, jsonmsg.str())); //encode the whole thing for javascript embedding
     srcxml.append("]]></jsonreq></srcxml>");
     xform->setXmlSource(srcxml.str(), srcxml.length());
 
