@@ -266,7 +266,7 @@ define({root:
     PercentDone: "Percent Done",
     PerformingLayout: "Performing Layout...",
     Permissions: "Permissions",
-    PlaceholderFindText: "Wuid, User, More...",
+    PlaceholderFindText: "Wuid, User, (ecl:*, file:*, dfu:*)...",
     PlaceholderFirstName: "John",
     PlaceholderLastName: "Smith",
     Playground: "Playground",
