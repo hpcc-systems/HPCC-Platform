@@ -187,7 +187,7 @@ define([
 
             _onClear: function (evt) {
                 this.infoData = [];
-                this.refreshFilter();
+                this.refreshTopics();
             },
 
             toCSVCell: function (str) {
