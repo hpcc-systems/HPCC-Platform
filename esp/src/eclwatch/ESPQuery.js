@@ -108,7 +108,8 @@ define([
             return WsWorkunits.WUQueryDetails({
                 request:{
                     QueryId: this.Id,
-                    QuerySet: this.QuerySetId
+                    QuerySet: this.QuerySetId,
+                    IncludeSuperFiles: 1
                 }
             }).then(function (response) {
                 if (lang.exists("WUQueryDetailsResponse", response)) {

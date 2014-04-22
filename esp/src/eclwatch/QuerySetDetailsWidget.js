@@ -76,8 +76,8 @@ define([
         graphsTabLoaded: false,
         logicalFilesTab: null,
         logicalFilesTabLoaded: false,
-        superFilesTab: false,
-        superFilesTabLoaded: null,
+        superFilesTab: null,
+        superFilesTabLoaded: false,
         workunitsTab: null,
         workunitsTabLoaded: false,
         testPagesTab: null,
@@ -160,6 +160,13 @@ define([
                     QuerySet: this.query.QuerySet,
                     Query: this.query
                 });
+            } else if (currSel.id == this.superFilesTab.id && !this.superFilesTabLoaded) {
+                this.superFilesTabLoaded = true;
+                this.superFilesTab.init({
+                    QueryId: this.query.Id,
+                    QuerySet: this.query.QuerySet,
+                    Query: this.query
+                });
             } else if (currSel.id == this.testPagesTab.id && !this.testPagesTabLoaded) {
                 this.testPagesTabLoaded = true;
                 this.testPagesTab.init({
@@ -217,8 +224,7 @@ define([
                         tooltip += " " + newValue[i].Time;
                 }
                 this.graphsTab.set("tooltip", tooltip);
-            }
-            else if (name === "LogicalFiles") {
+            } else if (name === "LogicalFiles") {
                 if (lang.exists("Item.length", newValue)) {
                     this.logicalFilesTab.set("title", this.i18n.LogicalFiles + " (" + newValue.Item.length + ")");
                     var tooltip = "";
@@ -229,8 +235,18 @@ define([
                     }
                     this.logicalFilesTab.set("tooltip", tooltip);
                 }
-            }
-            else if (name === "Clusters") {
+            } else if (name === "SuperFiles") {
+                if (lang.exists("SuperFile.length", newValue)) {
+                    this.superFilesTab.set("title", this.i18n.SuperFiles + " (" + newValue.SuperFile.length + ")");
+                    var tooltip = "";
+                    for (var i = 0; i < newValue.SuperFile.length; ++i) {
+                        if (tooltip != "")
+                            tooltip += "\n";
+                        tooltip += newValue.SuperFile[i];
+                    }
+                    this.superFilesTab.set("tooltip", tooltip);
+                }
+            } else if (name === "Clusters") {
                 if (lang.exists("ClusterQueryState.length", newValue)) {
                     this.errorsTab.set("title", this.i18n.ErrorsStatus + " (" + newValue.ClusterQueryState.length + ")");
                     var tooltip = "";

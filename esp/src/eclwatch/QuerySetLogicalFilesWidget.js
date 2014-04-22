@@ -62,43 +62,36 @@ define([
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
-                    Name: {label: this.i18n.LogicalFiles}
+                    Name: {label: this.i18n.LogicalFiles
+                    }
                 }
             }, domID);
-
-            on(document, "." + this.id + "WuidClick:click", function (evt) {
-                if (context._onRowDblClick) {
-                    var row = retVal.row(evt).data;
-                    context._onRowDblClick(row);
-                }
-            });
             return retVal;
         },
 
         createDetail: function (id, row, params) {
-            return new LFDetailsWidget.fixCircularDependency({
-                id: id,
-                title: params.Name,
-                closable: true,
-                hpcc: {
-                    params: {
-                        Name: params.Name
+            if(row.Name) {
+                return new LFDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: row.Name,
+                    closable: true,
+                    hpcc: {
+                        params: {
+                            Name: row.Name
+                        }
                     }
-                }
-            });
-        },
-
-        _onOpen: function(){
-            var selections = this.grid.getSelected();
-            var firstTab = null;
-            for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensurePane(selections[i].Id, selections[i]);
-                if (i == 0) {
-                    firstTab = tab;
-                }
-            }
-            if (firstTab) {
-                this.selectChild(firstTab);
+                });
+            } else {
+                return new LFDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: params.Name,
+                    closable: true,
+                    hpcc: {
+                        params: {
+                            Name: params.Name
+                        }
+                    }
+                });
             }
         },
 

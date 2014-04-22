@@ -359,6 +359,7 @@ define({root:
     Summary: "Summary",
     SummaryMessage: "Summary Message",
     SuperFile: "Super File",
+    SuperFiles: "Super Files",
     SuperfilesOnly: "Superfiles Only",
     Suspend: "Suspend",
     Suspended: "Suspended",
