@@ -15,6 +15,7 @@ define({root:
     ActualSize: "Actual Size",
     Add: "Add",
     AddGroup: "Add Group",
+    AdditionalResources: "Additional Resources",
     AddProcessMap: "Add Package Map",
     AddToSuperfile: "Add To Superfile",
     AddUser: "Add User",
