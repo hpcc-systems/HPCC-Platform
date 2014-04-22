@@ -370,29 +370,29 @@ define([
                     }
                     context.updateData(response.WUInfoResponse.Workunit);
 
-                    if (args.onGetText && lang.exists("Query.Text", context)) {
-                        args.onGetText(context.Query.Text);
+                    if (args.onGetText) {
+                        args.onGetText(lang.exists("Query.Text", context) ? context.Query.Text : "");
                     }
-                    if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context)) {
-                        args.onGetWUExceptions(context.Exceptions.ECLException);
+                    if (args.onGetWUExceptions) {
+                        args.onGetWUExceptions(lang.exists("Exceptions.ECLException", context) ? context.Exceptions.ECLException : []);
                     }
-                    if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context)) {
-                        args.onGetApplicationValues(context.ApplicationValues.ApplicationValue)
+                    if (args.onGetApplicationValues) {
+                        args.onGetApplicationValues(lang.exists("ApplicationValues.ApplicationValue", context) ? context.ApplicationValues.ApplicationValue : [])
                     }
-                    if (args.onGetVariables && lang.exists("variables", context)) {
-                        args.onGetVariables(context.variables);
+                    if (args.onGetVariables) {
+                        args.onGetVariables(lang.exists("variables", context) ? context.variables: []);
                     }
-                    if (args.onGetResults && lang.exists("results", context)) {
-                        args.onGetResults(context.results);
+                    if (args.onGetResults) {
+                        args.onGetResults(lang.exists("results", context) ? context.results : []);
                     }
-                    if (args.onGetSequenceResults && lang.exists("sequenceResults", context)) {
-                        args.onGetSequenceResults(context.sequenceResults);
+                    if (args.onGetSequenceResults) {
+                        args.onGetSequenceResults(lang.exists("sequenceResults", context) ? context.sequenceResults : []);
                     }
-                    if (args.onGetSourceFiles && lang.exists("sourceFiles", context)) {
-                        args.onGetSourceFiles(context.sourceFiles);
+                    if (args.onGetSourceFiles) {
+                        args.onGetSourceFiles(lang.exists("sourceFiles", context) ? context.sourceFiles : []);
                     }
-                    if (args.onGetTimers && lang.exists("timers", context)) {
-                        args.onGetTimers(context.timers);
+                    if (args.onGetTimers) {
+                        args.onGetTimers(lang.exists("timers", context) ? context.timers : []);
                     }
                     if (args.onGetGraphs && lang.exists("graphs", context)) {
                         if (context.timers || lang.exists("ApplicationValues.ApplicationValue", context)) {
@@ -414,7 +414,9 @@ define([
                                 }
                             }
                         }
-                        args.onGetGraphs(context.graphs)
+                        args.onGetGraphs(context.graphs);
+                    } else if (args.onGetGraphs) {
+                        args.onGetGraphs([]);
                     }
                     if (args.onAfterSend) {
                         args.onAfterSend(context);
