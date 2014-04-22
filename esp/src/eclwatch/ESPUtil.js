@@ -22,9 +22,10 @@ define([
     "dojo/Stateful",
     "dojo/json",
 
-    "dijit/registry"
+    "dijit/registry",
+    "dijit/Tooltip"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Stateful, json,
-    registry) {
+    registry, Tooltip) {
 
     var SingletonData = declare([Stateful], {
         //  Attributes  ---
@@ -148,15 +149,28 @@ define([
 
         GridHelper: declare(null, {
             allowTextSelection: true,
-            pagedGridObserver: [],
+            __hpcc_pagedGridObserver: [],
             noDataMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.noDataMessage + "</span>",
             loadingMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.loadingMessage + "</span>",
 
-            onSelectionChanged: function (callback) {
-                this.on("dgrid-select", function (event) {
-                    callback(event);
+            postCreate: function (args) {
+                this.inherited(arguments);
+
+                this.__hpcc_tooltip = new Tooltip({
+                    connectId: [this.id],
+                    selector: "td",
+                    showDelay: 800,
+                    getContent: function (node) {
+                        if (node.offsetWidth < node.scrollWidth) {
+                            return node.innerHTML;
+                        }
+                        return "";
+                    }
                 });
-                this.on("dgrid-deselect", function (event) {
+            },
+
+            onSelectionChanged: function (callback) {
+                this.on("dgrid-select, dgrid-deselect", function (event) {
                     callback(event);
                 });
             },
@@ -165,10 +179,10 @@ define([
                 var context = this;
                 this.on("dgrid-page-complete", function (event) {
                     callback();
-                    if (context.pagedGridObserver[event.page]) {
-                        context.pagedGridObserver[event.page].cancel();
+                    if (context.__hpcc_pagedGridObserver[event.page]) {
+                        context.__hpcc_pagedGridObserver[event.page].cancel();
                     }
-                    context.pagedGridObserver[event.page] = event.results.observe(function (object, removedFrom, insertedInto) {
+                    context.__hpcc_pagedGridObserver[event.page] = event.results.observe(function (object, removedFrom, insertedInto) {
                         callback(object, removedFrom, insertedInto);
                     }, true);
                 });
