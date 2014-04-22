@@ -2161,6 +2161,8 @@ protected:
     unsigned __int64 localOffset;
     unsigned __int64 offsetOfPart;
     StringBuffer mangledHelperFileName;
+    StringAttr logicalFileName;
+    Owned<IDistributedFileIterator> dfIter;
 
     void close();
     virtual void open();
@@ -2196,7 +2198,7 @@ public:
 //interface IFilePositionProvider
     virtual unsigned __int64 getFilePosition(const void * row);
     virtual unsigned __int64 getLocalFilePosition(const void * row);
-    virtual const char * queryLogicalFilename(const void * row) { return "MORE!"; }
+    virtual const char * queryLogicalFilename(const void * row) { return logicalFileName.get(); }
 };
 
 class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements IIndexReadContext
