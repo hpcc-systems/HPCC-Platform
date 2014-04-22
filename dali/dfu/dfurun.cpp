@@ -387,7 +387,9 @@ class CDFUengine: public CInterface, implements IDFUengine
         Owned<IPropertyTreeIterator> clusters;
         clusters.setown(root->getElements("ThorCluster"));
         ForEach(*clusters) {
-            if (strcmp(clusters->query().queryProp("@name"),groupname)==0)
+            StringBuffer thorClusterGroupName;
+            getClusterGroupName(clusters->query(), thorClusterGroupName);
+            if (strcmp(thorClusterGroupName.str(),groupname)==0)
                 return true;
         }
         clusters.setown(root->getElements("RoxieCluster"));
