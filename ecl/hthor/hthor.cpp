@@ -7782,11 +7782,13 @@ void CHThorDiskReadBaseActivity::resolve()
 {
     OwnedRoxieString fileName(helper.getFileName());
     mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
+    logicalFileName.set(mangledHelperFileName.str());
     if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;
         mangleLocalTempFilename(mangledFilename, mangledHelperFileName.str());
         tempFileName.set(agent.queryTemporaryFile(mangledFilename.str()));
+        logicalFileName.set(tempFileName);
         gatherInfo(NULL);
     }
     else
@@ -7806,6 +7808,10 @@ void CHThorDiskReadBaseActivity::resolve()
                     agent.logFileAccess(dFile, "HThor", "READ");
                 if(!agent.queryWorkUnit()->getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
                     verifyRecordFormatCrc();
+
+                IDistributedSuperFile * sf = dFile->querySuperFile();
+                if (sf)
+                     dfIter.setown(sf->getSubFileIterator());
             }
         }
         if (!ldFile)
@@ -7932,7 +7938,6 @@ bool CHThorDiskReadBaseActivity::openNext()
               (!dfsParts&&(partNum<ldFile->numParts())))
         {
             IDistributedFilePart * curPart = dfsParts?&dfsParts->query():NULL;
-
             unsigned numCopies = curPart?curPart->numCopies():ldFile->numPartCopies(partNum);
             //MORE: Order of copies should be optimized at this point....
             StringBuffer file, filelist;
@@ -7941,9 +7946,21 @@ bool CHThorDiskReadBaseActivity::openNext()
             {
                 RemoteFilename rfilename;
                 if (curPart)
+                {
                     curPart->getFilename(rfilename,copy);
+                    IDistributedFile * distFile = dfIter ? &dfIter->query() : NULL;
+                    if (distFile)
+                    {
+                        logicalFileName.set(distFile->queryLogicalName());
+                        if (dfIter)
+                            dfIter->next();
+                    }
+                }
                 else
+                {
                     ldFile->getPartFilename(rfilename,partNum,copy);
+                }
+
                 rfilename.getPath(file.clear());
                 filelist.append('\n').append(file);
                 try
