@@ -522,6 +522,27 @@ public:
                 ptreePath.append(*LINK(&root));
             else
                 ptreePath.fill(root, head.str(), tail);
+#define DEBUG_HPCC_11202
+#ifdef DEBUG_HPCC_11202
+            PTree &parent = ptreePath.tos();
+            aindex_t pos = parent.queryChildIndex(&tail);
+            if (pos == NotFound)
+            {
+                StringBuffer msg;
+                msg.append("ConnectionId=").appendf("%"I64F"x", connectionId).append(", xpath=").append(xpath).append(", sessionId=").appendf("%"I64F"x", sessionId).append(", mode=").append(mode).append(", timeout=");
+                if (INFINITE == timeout)
+                    msg.append("INFINITE");
+                else
+                    msg.append(timeout);
+                ERRLOG("Invalid connection: %s", msg.str());
+                ForEachItemIn(i, ptreePath)
+                {
+                    PTree &tree = ptreePath.item(i);
+                    DBGLOG("PTree path item %d = %s", i, tree.queryName());
+                }
+                assertex(false); // stack report may be useful
+            }
+#endif
         }
         ptreePath.append(*LINK(&tail));
     }
@@ -2074,8 +2095,9 @@ bool CPTStack::_fill(IPropertyTree &current, const char *xpath, IPropertyTree &t
         Owned<IPropertyTreeIterator> iter = current.getElements(head.str());
         ForEach (*iter)
         {
-            if (&tail==&iter->query())
+            if (&tail==&iter->query()) // Afaics, this should not be possible (so this test/block should really be removed)
             {
+                ERRLOG("_fill() - tail (%s) found at intermediate level: %s", tail.queryName(), head.str());
                 append(*LINK((PTree *)&iter->query()));
                 append(*LINK((PTree *)&current));
                 return true;
@@ -2092,12 +2114,6 @@ bool CPTStack::_fill(IPropertyTree &current, const char *xpath, IPropertyTree &t
 
 bool CPTStack::fill(IPropertyTree &root, const char *xpath, IPropertyTree &tail)
 {
-    assertex(&root != &tail);
-    if (!xpath || !*xpath)
-    {
-        append(*LINK((PTree *)&root));
-        return true;
-    }
     kill();
     bool res = _fill(root, xpath, tail);
     unsigned elems = ordinality();
@@ -2123,7 +2139,19 @@ StringBuffer &CPTStack::getAbsolutePath(StringBuffer &str)
             IPropertyTree *child = &item(i);
             str.append(child->queryName());
             str.append('[');
-            unsigned pos = parent->queryChildIndex(child);
+            aindex_t pos = parent->queryChildIndex(child);
+#ifdef DEBUG_HPCC_11202
+            if (NotFound == pos)
+            {
+                ERRLOG("Invalid CPTStack detected");
+                ForEachItemIn(i, *this)
+                {
+                    PTree &tree = item(i);
+                    DBGLOG("PTree path item %d = %s", i, tree.queryName());
+                }
+                PrintStackReport();
+            }
+#endif
             str.append(pos+1);
             str.append(']');
             if (++i >= ordinality())
@@ -7207,7 +7235,6 @@ bool CCovenSDSManager::unlock(__int64 connectionId, bool close, StringBuffer &co
 {
     Owned<CServerConnection> connection = getConnection(connectionId);
     if (!connection) return false;
-    StringBuffer str;
     MemoryBuffer connInfo;
     connection->getInfo(connInfo);
     formatConnectionInfo(connInfo, connectionInfo);
