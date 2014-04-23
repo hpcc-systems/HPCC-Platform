@@ -149,7 +149,6 @@ define([
 
         GridHelper: declare(null, {
             allowTextSelection: true,
-            __hpcc_pagedGridObserver: [],
             noDataMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.noDataMessage + "</span>",
             loadingMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.loadingMessage + "</span>",
 
@@ -178,24 +177,8 @@ define([
 
             onSelectionChanged: function (callback) {
                 this.onSelectedChangedCallback = callback;
-                this.on("dgrid-select, dgrid-deselect", function (event) {
+                this.on("dgrid-select, dgrid-deselect, dgrid-refresh-complete", function (event) {
                     callback(event);
-                });
-            },
-
-            onContentChanged: function (callback) {
-                var context = this;
-                this.on("dgrid-page-complete", function (event) {
-                    callback();
-                    if (context.__hpcc_pagedGridObserver[event.page]) {
-                        context.__hpcc_pagedGridObserver[event.page].cancel();
-                    }
-                    context.__hpcc_pagedGridObserver[event.page] = event.results.observe(function (object, removedFrom, insertedInto) {
-                        callback(object, removedFrom, insertedInto);
-                    }, true);
-                });
-                this.on("dgrid-children-complete", function (event) {
-                    callback();
                 });
             },
 

@@ -252,9 +252,6 @@ define([
             this.groupsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            this.groupsGrid.onContentChanged(function (event) {
-                context.refreshActionState();
-            });
             this.groupsGrid.startup();
         },
 
@@ -347,9 +344,6 @@ define([
                 }
             });
             this.usersGrid.onSelectionChanged(function (event) {
-                context.refreshActionState();
-            });
-            this.usersGrid.onContentChanged(function (event) {
                 context.refreshActionState();
             });
             this.usersGrid.startup();

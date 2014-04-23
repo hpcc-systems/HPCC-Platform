@@ -420,9 +420,6 @@ define([
             this.querySetGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            this.querySetGrid.onContentChanged(function (event) {
-                context.refreshActionState();
-            });
             this.querySetGrid.startup();
             this.refreshActionState();
         },
