@@ -53,7 +53,6 @@ class NullContextCallback : public CInterface, implements ICodegenContextCallbac
     IMPLEMENT_IINTERFACE
 
     virtual void noteCluster(const char *clusterName) {}
-    virtual void registerFile(const char * filename, const char * description) {}
     virtual bool allowAccess(const char * category) { return true; }
 };
 
@@ -135,7 +134,6 @@ void HqlDllGenerator::addCppName(const char * filename)
     {
         Owned<IWUQuery> query = wu->updateQuery();
         associateLocalFile(query, FileTypeCpp, filename, pathTail(filename), 0);
-        ctxCallback->registerFile(filename, "Workunit CPP");
     }
 }
 

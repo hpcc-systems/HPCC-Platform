@@ -5902,8 +5902,6 @@ void HqlCppTranslator::writeFieldUsage(const char * targetDir, IPropertyTree * s
 
         Owned<IWUQuery> query = wu()->updateQuery();
         associateLocalFile(query, FileTypeXml, fullname, "FieldUsage", 0);
-
-        ctxCallback->registerFile(fullname.str(), "FieldUsage");
     }
 }
 
