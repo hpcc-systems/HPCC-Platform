@@ -1267,8 +1267,6 @@ void HqlCppInstance::addHint(const char * hintXml, ICodegenContextCallback * ctx
 
         Owned<IWUQuery> query = workunit->updateQuery();
         associateLocalFile(query, FileTypeCpp, hintFilename.str(), "Hints", 0);
-
-        ctxCallback->registerFile(hintFilename.str(), "Hints");
     }
     appendHintText(hintXml);
 }
@@ -1334,7 +1332,6 @@ void HqlCppInstance::flushResources(const char *filename, ICodegenContextCallbac
         {
             Owned<IWUQuery> query = workunit->updateQuery();
             associateLocalFile(query, FileTypeHintXml, resTextName, "Workunit resource text", 0);
-            ctxCallback->registerFile(resTextName, "Workunit Res.txt");
         }
         useLibrary(filename);
     }

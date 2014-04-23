@@ -87,7 +87,6 @@ The following debug options are currently supported by the code generator:
 interface ICodegenContextCallback : public IInterface
 {
     virtual void noteCluster(const char *clusterName) = 0;
-    virtual void registerFile(const char * filename, const char * description) = 0;
     virtual bool allowAccess(const char * category) = 0;
 };
 
