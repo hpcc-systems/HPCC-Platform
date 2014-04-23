@@ -395,9 +395,9 @@ public:
     {
         return ctx->queryServerContext();
     }
-    virtual IWorkUnitRowReader *getWorkunitRowReader(const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
+    virtual IWorkUnitRowReader *getWorkunitRowReader(const char *wuid, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
     {
-        return ctx->getWorkunitRowReader(name, sequence, xmlTransformer, rowAllocator, isGrouped);
+        return ctx->getWorkunitRowReader(wuid, name, sequence, xmlTransformer, rowAllocator, isGrouped);
     }
 protected:
     IRoxieSlaveContext * ctx;
@@ -5327,9 +5327,7 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         IXmlToRowTransformer * xmlTransformer = helper.queryXmlTransformer();
         OwnedRoxieString fromWuid(helper.getWUID());
-        if (fromWuid)
-            UNIMPLEMENTED;
-        wuReader.setown(ctx->getWorkunitRowReader(helper.queryName(), helper.querySequence(), xmlTransformer, rowAllocator, meta.isGrouped()));
+        wuReader.setown(ctx->getWorkunitRowReader(fromWuid, helper.queryName(), helper.querySequence(), xmlTransformer, rowAllocator, meta.isGrouped()));
         // MORE _ should that be in onCreate?
     }
 
