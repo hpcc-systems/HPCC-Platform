@@ -1,0 +1,14 @@
+<Dataset name='Result 1'>
+ <Row><surname>Flintstone          </surname><cnt>2</cnt></Row>
+ <Row><surname>Grabdale            </surname><cnt>1</cnt></Row>
+ <Row><surname>Halliday            </surname><cnt>3</cnt></Row>
+ <Row><surname>Jones               </surname><cnt>2</cnt></Row>
+ <Row><surname>Windsor             </surname><cnt>2</cnt></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><surname>Flintstone          </surname><cnt>2</cnt></Row>
+ <Row><surname>Grabdale            </surname><cnt>1</cnt></Row>
+ <Row><surname>Halliday            </surname><cnt>3</cnt></Row>
+ <Row><surname>Jones               </surname><cnt>2</cnt></Row>
+ <Row><surname>Windsor             </surname><cnt>2</cnt></Row>
+</Dataset>
