@@ -435,8 +435,8 @@
       identical, this is not required. However, it is important to note that
       your system will only run as fast as its slowest node.</para>
 
-      <sect2 id="Node-Mandatory-requirements">
-        <title>Node mandatory requirements</title>
+      <sect2 id="Node-Min-requirements">
+        <title>Node minimum requirements</title>
 
         <itemizedlist mark="square" spacing="compact">
           <listitem>
@@ -444,16 +444,21 @@
           </listitem>
 
           <listitem>
-            <para>64-bit</para>
+            <para>32-bit</para>
           </listitem>
 
           <listitem>
-            <para>4GB RAM</para>
+            <para>1GB RAM per slave</para>
+
+            <para>(Note: If you configure more than 1 slave per node, memory
+            is shared. For example, if you want 2 slaves per node with each
+            having 4 GB of memory, the server would need 8 GB total.)</para>
           </listitem>
 
           <listitem>
-            <para>Two Hard Drives (with sufficient free space to handle the
-            size of the data you plan to process)</para>
+            <para>One Hard Drive (with sufficient free space to handle the
+            size of the data you plan to process) or Network Attached
+            Storage.</para>
           </listitem>
 
           <listitem>
@@ -475,7 +480,7 @@
             </listitem>
 
             <listitem>
-              <para>4 GB RAM (or more)</para>
+              <para>4 GB RAM (or more) per slave</para>
             </listitem>
 
             <listitem>
