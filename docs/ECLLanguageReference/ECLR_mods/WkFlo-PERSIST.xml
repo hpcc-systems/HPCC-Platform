@@ -111,15 +111,17 @@
           <row>
             <entry><emphasis role="bold">SINGLE</emphasis></entry>
 
-            <entry>Optional. Specifies to keep a single PERSIST.</entry>
+            <entry>Optional. Specifies to keep a single PERSIST. The name of
+            the persist file is the same as the name of the persist.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">MULTIPLE </emphasis></entry>
 
             <entry>Optional. Specifies to keep different versions of the
-            PERSIST. The name is a combination of the name supplied suffixed
-            with a 32-bit value derived from the ECL.</entry>
+            PERSIST. The name of the persist file generated is a combination
+            of the name supplied suffixed with a 32-bit value derived from the
+            ECL.</entry>
           </row>
 
           <row>
