@@ -7974,9 +7974,9 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
                     IHqlExpression * matchValue = match->queryChild(0);
                     IHqlExpression * curValue = cur->queryChild(0);
                     if (matchValue)
-                        matchValue = matchValue->queryNormalizedSelector();
+                        matchValue = queryStripCasts(matchValue->queryNormalizedSelector());
                     if (curValue)
-                        curValue = curValue->queryNormalizedSelector();
+                        curValue = queryStripCasts(curValue->queryNormalizedSelector());
                     if (matchValue != curValue)
                         reportError(ERR_REC_DUPFIELD, errpos, "Field %s is already defined in the key portion", cur->queryName()->str());
                 }
@@ -9963,6 +9963,8 @@ IIdAtom * HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
         case no_select:
             return createFieldNameFromExpr(expr->queryChild(1));
         case no_indirect:
+        case no_cast:
+        case no_implicitcast:
             return createFieldNameFromExpr(expr->queryChild(0));
         case no_countgroup:
             name = createUnnamedFieldId("_unnamed_cnt_");

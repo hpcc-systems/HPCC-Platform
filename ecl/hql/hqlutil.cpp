@@ -439,6 +439,16 @@ IHqlExpression * createRawIndex(IHqlExpression * index)
 
 //---------------------------------------------------------------------------------------------
 
+IHqlExpression * queryStripCasts(IHqlExpression * expr)
+{
+    while (isCast(expr))
+        expr = expr->queryChild(0);
+    return expr;
+}
+
+
+//---------------------------------------------------------------------------------------------
+
 IHqlExpression * createRecord(IHqlExpression * field)
 {
     HqlExprArray fields;
