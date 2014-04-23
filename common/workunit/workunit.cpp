@@ -4380,9 +4380,9 @@ public:
         else if (roxie)
         {
             roxieProcess.set(roxie->queryProp("@name"));
-            clusterWidth = roxie->getPropInt("@numChannels", 1);
             platform = RoxieCluster;
             getRoxieProcessServers(roxie, roxieServers);
+            clusterWidth = roxieServers.length();
         }
         else 
         {
