@@ -41,11 +41,18 @@ class Shell:
             return self.__run(*all_args)
         return __command
 
+    def __hidePassw(self,  item):
+        if '--password' in item:
+            return '--password=********'
+        else:
+            return item
+
     def __run(self, *args, **kwargs):
-        args = [i for i in args if i is not None]
-        logging.debug("CMD: " + " ". join(args))
+        _args = [i for i in args if i is not None]
+        argsLog = [self.__hidePassw(i) for i in args if i is not None ]
+        logging.debug("CMD: " + " ". join(argsLog))
         process = Popen(
-            args, stdout=kwargs.pop('stdout', PIPE),
+            _args, stdout=kwargs.pop('stdout', PIPE),
             stderr=kwargs.pop('stderr', PIPE),
             close_fds=kwargs.pop('close_fds', True), **kwargs)
         stdout, stderr = process.communicate()

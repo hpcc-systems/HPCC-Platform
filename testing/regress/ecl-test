@@ -32,172 +32,203 @@ from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam,  getVersionNumbers
 from hpcc.common.error import Error
 
-prog_version = "0.0.14"
+prog_version = "0.0.15"
+
+class RegressMain:
+
+    def listClusters(self):
+        Clusters = []
+        for cluster in self.regress.config.Clusters:
+            Clusters.append(str(cluster))
+        print "Avaliable Clusters: "
+        for i in Clusters:
+            print i
+
+    def query(self):
+        if not self.args.query:
+            print "\nMissing ECL query file!\n"
+            parser_query.print_help()
+            exit()
+        eclfiles=[]   # List for ECL filenames to be executed
+        for ecl in self.args.query:
+            if not ('.ecl' in ecl):
+                logging.error("%s. Not an ECL file:'%s'!" % (1,  ecl))
+            elif  ('*' in ecl) or ('?' in ecl):
+                # If there is any wildcard in ECL file name, resolve it
+                eclwild = os.path.join(self.regress.dir_ec, ecl)
+                eclfiles.extend( glob.glob(eclwild))
+            else:
+                # We have simple ECL file in parameter list, put it on the eclfile list
+                eclPath = os.path.join(self.regress.dir_ec, ecl)
+                eclfiles.append(eclPath)
+
+        if len(eclfiles) > 1:
+            # Remove duplicates
+            tempList = list(set(eclfiles))
+            eclfiles = tempList
+
+            # Sort ECL filenames to ensure correct execution order
+            eclfiles.sort()
+
+        targetClusters = []
+        if 'all' == self.args.target:
+            for cluster in self.regress.config.Clusters:
+                targetClusters.append(str(cluster))
+        else:
+            if self.args.target in self.regress.config.Clusters:
+                targetClusters.append(self.args.target)
+            else:
+                logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
+                raise Error("4000")
+        # Go through the cluster list
+        for cluster in targetClusters:
+            try:
+                if len(eclfiles) > 1:
+                    #Execute multiple ECL files like RUN to generates summary results and diff report.
+                    self.regress.bootstrap(cluster, eclfiles)
+                    if  'pq' in self.args:
+                        self.regress.runSuiteP(cluster, self.regress.suites[cluster])
+                    else:
+                        self.regress.runSuite(cluster, self.regress.suites[cluster])
+                elif len(eclfiles) == 1:
+                    # Execute one ECL file on the cluster
+                    for ecl in eclfiles:
+                        eclfile = ECLFile(ecl, self.regress.dir_a, self.regress.dir_ex, self.regress.dir_r, cluster)
+                        # Check if this query is not skip on this cluster and not part of setup
+                        if (not eclfile.testSkip(cluster)['skip']) and (not eclfile.testSkip('setup')['skip'] ):
+                            if not eclfile.testExclusion(cluster):
+                                self.regress.runSuiteQ(cluster, eclfile)
+                            else:
+                                logging.warn("%s. %s excluded on %s cluster." % (1,  eclfile.getBaseEcl(), cluster))
+                        else:
+                            logging.warn("%s. %s skipped on %s cluster." % (1, eclfile.getBaseEcl(), cluster))
+                else:
+                    logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  self.args.target))
+                    raise Error("4001")
+            except IOError:
+                logging.error("%s. Query %s does not exist!" % (1,  eclfile.getBaseEcl()))
+                exit()
+
+    def setup(self):
+        if self.args.target in self.regress.config.Clusters:
+            self.regress.bootstrap(self.args.target)
+            self.regress.runSuite(self.args.target, self.regress.Setup())
+        else:
+            logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
+            raise Error("4000")
+
+    def run(self):
+        if self.args.target in self.regress.config.Clusters:
+            self.regress.bootstrap(self.args.target)
+            if  self.args.pq :
+                self.regress.runSuiteP(self.args.target, self.regress.suites[self.args.target])
+            else:
+                self.regress.runSuite(self.args.target, self.regress.suites[self.args.target])
+        else:
+            logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
+            raise Error("4000")
+
+    def main(self):
+        prog = "ecl-test"
+        versionStr = prog+' v:'+prog_version
+        description = 'HPCC Platform Regression suite'
+        pythonVer = getVersionNumbers()
+
+        if (pythonVer['main'] <= 2) and (pythonVer['minor'] <=6) and (pythonVer['patch'] <6):
+            print "\nError!"
+            print "Your system has Python version "+platform.python_version()
+            print "To run "+description+", you need version: 2.6.6 or higher, but less than 3.x!\n"
+            exit()
+
+        if pythonVer['main'] >= 3:
+            print "\nError!"
+            print "Your system has Python version "+platform.python_version()
+            print "Actually "+description+", supports version >= 2.6.6 and <= 2.7.x\n"
+            exit()
+
+        if (pythonVer['main'] >= 2) and (pythonVer['minor'] >= 7):
+            atexit.register(logging.shutdown)
+
+        parser = argparse.ArgumentParser(prog=prog, description=description)
+        parser.add_argument('--version', '-v', action='version',
+                            version=versionStr)
+        parser.add_argument('--config', help="config file to use. Default: ecl-test.json",
+                            nargs='?', default="ecl-test.json")
+        parser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
+                            nargs='?', default="info",
+                            choices=['info', 'debug'])
+        parser.add_argument('--suiteDir', '-s', help="suiteDir to use. Default value is the current directory and it can handle relative path.",
+                            nargs='?', default=".")
+        parser.add_argument('--timeout', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file.",
+                            nargs='?', default="0")
+        parser.add_argument('--keyDir', '-k', help="key file directory to compare test output. Default value defined in ecl-test.json config file.",
+                            nargs='?', default="ecl/key")
+        parser.add_argument('--ignoreResult', '-i', help="completely ignore the result.",
+                            action='store_true')
+
+        subparsers = parser.add_subparsers(help='sub-command help')
+
+        parser_list = subparsers.add_parser('list', help='list help')
+        parser_list.set_defaults(func='list')
+        parser_list.add_argument('targets', help="Print target clusters from config (ecl-test.json by default).",
+                                 action='store_true')
+
+        parser_setup = subparsers.add_parser('setup', help='setup help')
+        parser_setup.set_defaults(func='setup')
+        parser_setup.add_argument('--target', '-t', help="Run the setup on target cluster. Default value is thor.",
+                                nargs='?', type=str,  default='thor')
+
+        parser_run = subparsers.add_parser('run', help='run help')
+        parser_run.set_defaults(func='run')
+        parser_run.add_argument('--target', '-t', help="Run the cluster suite. Default value is thor.",
+                                nargs='?', type=str,  default='thor')
+        parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )",
+                                type=checkPqParam,  default = 0,   metavar="threadNumber")
+
+        parser_query = subparsers.add_parser('query', help='query help')
+        parser_query.set_defaults(func='query')
+        parser_query.add_argument('query', help="One or more ECL file(s). It can contain wildcards. (mandatory).",
+                                  nargs='+', metavar="ECL_query")
+        parser_query.add_argument('--target', '-t', help="Target cluster for query to run. If target = 'all' then run query on all clusters. Default value is thor.",
+                                nargs='?', default='thor', metavar="target_cluster | all")
+        parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
+                                action='store_true')
+        parser_query.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )",
+                                type=checkPqParam,  default = 0,   metavar="threadNumber")
+
+        self.args = parser.parse_args()
+
+        # Resolve Regression Suite starting path for ecl-test.json config file
+        # It is necessary when Regression Suite doesn't started from its home directory
+        regressionSuiteMainDir = os.path.dirname(__file__)
+        regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
+        self.args.config = str(os.path.join(regressionSuiteFullPath, self.args.config))
+
+        self.regress = Regression(self.args)
+        logging.debug("Suite version:%s",  versionStr)
+        logging.debug("Suite full path:%s",  regressionSuiteFullPath)
+
+        try:
+            if self.args.func == 'list':
+                self.listClusters()
+            elif self.args.func == 'query':
+                self.query()
+            elif self.args.func == 'setup':
+                self.setup()
+            elif self.args.func == 'run':
+                self.run()
+        except Error as e:
+            logging.critical(e)
+            exit(e.getErrorCode());
+        except Exception as e:
+            logging.critical(e)
+            logging.critical(traceback.format_exc())
+        except KeyboardInterrupt:
+            logging.critical("Keyboard Interrupt Caught.")
+        finally:
+            self.regress.StopTimeoutThread()
+        exit()
 
 if __name__ == "__main__":
-
-    prog = "ecl-test"
-    versionStr = prog+" v:"+prog_version
-    description = 'HPCC Platform Regression suite'
-    pythonVer = getVersionNumbers()
-
-    if (pythonVer['main'] <= 2) and (pythonVer['minor'] <=6) and (pythonVer['patch'] <6):
-        print "\nError!"
-        print "Your system has Python version "+platform.python_version()
-        print "To run "+description+", you need version: 2.6.6 or higher, but less than 3.x!\n"
-        exit()
-
-    if pythonVer['main'] >= 3:
-        print "\nError!"
-        print "Your system has Python version "+platform.python_version()
-        print "Actually "+description+", supports version >= 2.6.6 and <= 2.7.x\n"
-        exit()
-
-    if (pythonVer['main'] >= 2) and (pythonVer['minor'] >= 7):
-        atexit.register(logging.shutdown)
-
-    parser = argparse.ArgumentParser(prog=prog, description=description)
-    parser.add_argument('--version', '-v', action='version',
-                        version=versionStr)
-    parser.add_argument('--config', help="config file to use. Default: ecl-test.json",
-                        nargs='?', default="ecl-test.json")
-    parser.add_argument('--loglevel', help="set the log level. Use debug for more detailed logfile.",
-                        nargs='?', default="info",
-                        choices=['info', 'debug'])
-    parser.add_argument('--suiteDir', '-s', help="suiteDir to use. Default value is the current directory and it can handle relative path.",
-                        nargs='?', default=".")
-    parser.add_argument('--timeout', '-t', help="timeout for query execution in sec. Use -1 to disable timeout. Default value defined in ecl-test.json config file.",
-                        nargs='?', default="0")
-    parser.add_argument('--keyDir', '-k', help="key file directory to compare test output. Default value defined in ecl-test.json config file.",
-                        nargs='?', default="ecl/key")
-    parser.add_argument('--ignoreResult', '-i', help="completely ignore the result.",
-                        action='store_true')
-
-    subparsers = parser.add_subparsers(help='sub-command help')
-    parser_list = subparsers.add_parser('list', help='list help')
-    parser_list.add_argument('clusters', help="Print clusters from config (ecl-test.json by default).",
-                             action='store_true')
-
-    parser_run = subparsers.add_parser('run', help='run help')
-    parser_run.add_argument('cluster', help="Run the cluster suite. Default value is setup.",
-                            nargs='?', type=str,  default='setup')
-    parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )",
-                            type=checkPqParam,  default = 0,   metavar="threadNumber")
-
-    parser_query = subparsers.add_parser('query', help='query help')
-    parser_query.add_argument('query', help="One or more ECL file(s). It can contain wildcards. (mandatory).",
-                              nargs='+', metavar="ECL query")
-    parser_query.add_argument('--cluster', '-c', help="Cluster for query to run. If cluster = 'all' then run query on all clusters. Default value is thor.",
-                            nargs='?', default='thor', metavar="target_cluster | all")
-    parser_query.add_argument('--publish', '-p', help="Publish compiled query instead of run.",
-                            action='store_true')
-    parser_query.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )",
-                            type=checkPqParam,  default = 0,   metavar="threadNumber")
-
-    args = parser.parse_args()
-
-    # Resolve Regression Suite starting path for ecl-test.json config file
-    # It is necessary when Regression Suite doesn't started from its home directory
-    regressionSuiteMainDir = os.path.dirname(__file__)
-    regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
-    args.config = str(os.path.join(regressionSuiteFullPath, args.config))
-
-    regress = Regression(args)
-    logging.debug("Suite version:%s",  versionStr)
-    logging.debug("Suite full path:%s",  regressionSuiteFullPath)
-
-    try:
-        if 'clusters' in args:
-            Clusters = ['setup']
-            for cluster in regress.config.Clusters:
-                Clusters.append(str(cluster))
-            print "Avaliable Clusters: "
-            for i in Clusters:
-                print i
-        if 'query' in args:
-            if not args.query:
-                print "\nMissing ECL query file!\n"
-                parser_query.print_help()
-                exit()
-            eclfiles=[]   # List for ECL filenames to be executed
-            for ecl in args.query:
-                if not ('.ecl' in ecl):
-                    logging.error("%s. Not an ECL file:'%s'!" % (1,  ecl))
-                elif  ('*' in ecl) or ('?' in ecl):
-                    # If there is any wildcard in ECL file name, resolve it
-                    eclwild = os.path.join(regress.dir_ec, ecl)
-                    eclfiles.extend( glob.glob(eclwild))
-                else:
-                    # We have simple ECL file in parameter list, put it on the eclfile list
-                    eclPath = os.path.join(regress.dir_ec, ecl)
-                    eclfiles.append(eclPath)
-
-            if len(eclfiles) > 1:
-                # Remove duplicates
-                tempList = list(set(eclfiles))
-                eclfiles = tempList
-
-                # Sort ECL filenames to ensure correct execution order
-                eclfiles.sort()
-
-            targetClusters = []
-            if 'all' == args.cluster:
-                for cluster in regress.config.Clusters:
-                    targetClusters.append(str(cluster))
-            else:
-                if args.cluster in regress.config.Clusters:
-                    targetClusters.append(args.cluster)
-                else:
-                    logging.error("%s. Unknown cluster:'%s'!" % (1,  args.cluster))
-                    raise Error("4000")
-            # Go through the cluster list
-            for cluster in targetClusters:
-                try:
-                    if len(eclfiles) > 1:
-                        #Execute multiple ECL files like RUN to generates summary results and diff report.
-                        regress.bootstrap(cluster, eclfiles)
-                        if  'pq' in args:
-                            regress.runSuiteP(cluster, regress.suites[cluster])
-                        else:
-                            regress.runSuite(cluster, regress.suites[cluster])
-                    elif len(eclfiles) == 1:
-                        # Execute one ECL file on the cluster
-                        for ecl in eclfiles:
-                            eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex, regress.dir_r, cluster)
-                            # Check if this query is not skip on this cluster and not part of setup
-                            if (not eclfile.testSkip(cluster)['skip']) and (not eclfile.testSkip('setup')['skip'] ):
-                                if not eclfile.testExclusion(cluster):
-                                    regress.runSuiteQ(cluster, eclfile)
-                                else:
-                                    logging.warn("%s. %s excluded on %s cluster." % (1,  eclfile.getBaseEcl(), cluster))
-                            else:
-                                logging.warn("%s. %s skipped on %s cluster." % (1, eclfile.getBaseEcl(), cluster))
-                    else:
-                        logging.error("%s. No ECL file match for cluster:'%s'!" % (1,  args.cluster))
-                        raise Error("4001")
-                except IOError:
-                    logging.error("%s. Query %s does not exist!" % (1,  eclfile.getBaseEcl()))
-                    exit()
-            print("End.")
-        elif 'cluster' in args:
-            regress.bootstrap(args.cluster)
-            if 'setup' in args.cluster:
-                regress.runSuite('setup', regress.Setup())
-            else:
-                if  args.pq :
-                    regress.runSuiteP(args.cluster, regress.suites[args.cluster])
-                else:
-                    regress.runSuite(args.cluster, regress.suites[args.cluster])
-            print("End.")
-    except Error as e:
-        logging.critical(e)
-        exit(e.getErrorCode());
-    except Exception as e:
-        logging.critical(e)
-        logging.critical(traceback.format_exc())
-    except KeyboardInterrupt:
-        logging.critical("Keyboard Interrupt Caught.")
-    finally:
-        regress.StopTimeoutThread()
-
-    exit()
+    regressMain = RegressMain()
+    regressMain.main()

@@ -166,6 +166,9 @@ class Regression:
         else:
             cluster = name
 
+        if 'setup' in suite.getSuiteName():
+            name = name + ' (setup)'
+
         self.taskParam = []
         self.taskParam = [{'taskId':0,  'jobName':'',  'timeoutValue':0,  'retryCount': 0} for i in range(self.maxthreads)]
         self.goodStates = ('compiling', 'blocked')
@@ -272,7 +275,7 @@ class Regression:
             self.StopTimeoutThread()
             logging.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
             suite.setEndTime(time.time())
-            Regression.displayReport(report, suite.getelapsTime())
+            Regression.displayReport(report, suite.getElapsTime())
 
         except Exception as e:
             self.StopTimeoutThread()
@@ -317,6 +320,9 @@ class Regression:
         else:
             cluster = name
 
+        if 'setup' in suite.getSuiteName():
+            name = name + ' (setup)'
+
         logging.warn("Suite: %s" % name)
         logging.warn("Queries: %s" % repr(len(suite.getSuite())))
         suite.setStarTime(time.time())
@@ -343,7 +349,7 @@ class Regression:
             self.StopTimeoutThread()
 
             suite.setEndTime(time.time())
-            Regression.displayReport(report, suite.getelapsTime())
+            Regression.displayReport(report, suite.getElapsTime())
 
         except Exception as e:
             self.StopTimeoutThread()
