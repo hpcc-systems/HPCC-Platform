@@ -650,14 +650,16 @@
 
                 var exceptionHtml = "Workunit successfully published.";
                 var headerText = "Workunit Published";
-                var i = o.responseText.indexOf('<h3>Exception');
+                var hasException = 0;
+                var i = o.responseText.indexOf('<Exception>');
                 if (i > -1) {
+                    hasException = 1;
                     headerText = "Error Publishing Workunit";
-                    var j = o.responseText.indexOf('<table');
+                    var j = o.responseText.indexOf('<Message>');
                     if (j > -1) {
-                        var k = o.responseText.indexOf('</table>');
+                        var k = o.responseText.indexOf('</Message>');
                         if (k > -1) {
-                            exceptionHtml = o.responseText.substring(j, k+8);
+                            exceptionHtml = o.responseText.substring(j+9, k);
                         }
                     }
                 } else {
@@ -690,7 +692,7 @@
                 }
                 var publishDialog =
                      new YAHOO.widget.SimpleDialog("publishDialog",
-                      { width: "300px",
+                      { width: hasException ? null : "300px",
                         fixedcenter: true,
                         visible: false,
                         draggable: false,
