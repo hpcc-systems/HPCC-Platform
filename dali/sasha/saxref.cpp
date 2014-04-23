@@ -2308,7 +2308,7 @@ public:
                 {
                     if (0 == expireDays)
                     {
-                        bool isPersist = attr.queryProp("@persist");
+                        bool isPersist = attr.getPropBool("@persistent");
                         expireDays = isPersist ? defaultPersistExpireDays : defaultExpireDays;
                     }
                     CDateTime now;

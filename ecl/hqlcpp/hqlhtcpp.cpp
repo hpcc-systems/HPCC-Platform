@@ -5902,8 +5902,6 @@ void HqlCppTranslator::writeFieldUsage(const char * targetDir, IPropertyTree * s
 
         Owned<IWUQuery> query = wu()->updateQuery();
         associateLocalFile(query, FileTypeXml, fullname, "FieldUsage", 0);
-
-        ctxCallback->registerFile(fullname.str(), "FieldUsage");
     }
 }
 
@@ -16819,19 +16817,19 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     }
 
     //virtual unsigned numParallelThreads()
-    doBuildUnsignedFunction(instance->classctx, "numParallelThreads", queryAttributeChild(expr, parallelAtom, 0));
+    doBuildUnsignedFunction(instance->startctx, "numParallelThreads", queryAttributeChild(expr, parallelAtom, 0));
 
     //virtual unsigned numRecordsPerBatch()
-    doBuildUnsignedFunction(instance->classctx, "numRecordsPerBatch", queryAttributeChild(expr, mergeAtom, 0));
+    doBuildUnsignedFunction(instance->startctx, "numRecordsPerBatch", queryAttributeChild(expr, mergeAtom, 0));
 
     //virtual int numRetries()
-    doBuildSignedFunction(instance->classctx, "numRetries", queryAttributeChild(expr, retryAtom, 0));
+    doBuildSignedFunction(instance->startctx, "numRetries", queryAttributeChild(expr, retryAtom, 0));
 
     //virtual double getTimeout()
-    doBuildDoubleFunction(instance->classctx, "getTimeout", queryAttributeChild(expr, timeoutAtom, 0));
+    doBuildDoubleFunction(instance->startctx, "getTimeout", queryAttributeChild(expr, timeoutAtom, 0));
 
     //virtual double getTimeLimit()
-    doBuildDoubleFunction(instance->classctx, "getTimeLimit", queryAttributeChild(expr, timeLimitAtom, 0));
+    doBuildDoubleFunction(instance->startctx, "getTimeLimit", queryAttributeChild(expr, timeLimitAtom, 0));
 
     if (namespaceAttr)
     {

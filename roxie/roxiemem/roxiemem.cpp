@@ -2854,18 +2854,11 @@ public:
 
     virtual const char *cloneVString(size32_t len, const char *str)
     {
-        if (str)
-        {
-            char *ret = (char *) allocate(len+1, 0);
-            memcpy(ret, str, len);
-            ret[len] = 0;
-            return (const char *) ret;
-        }
-        else
-        {
-            assertex(len==0);
-            return NULL;
-        }
+        //Converting a empty string to a vstring should return a real string - not NULL
+        char *ret = (char *) allocate(len+1, 0);
+        memcpy(ret, str, len);
+        ret[len] = 0;
+        return (const char *) ret;
     }
 
     virtual const char *cloneVString(const char *str)

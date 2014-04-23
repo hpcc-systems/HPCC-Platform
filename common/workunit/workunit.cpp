@@ -4554,7 +4554,7 @@ extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, 
     {
         StringBuffer xpath;
         xpath.appendf("%s", processType ? processType : "*");
-        if (processName)
+        if (processName && *processName)
             xpath.appendf("[@process=\"%s\"]", processName);
         Owned<IPropertyTreeIterator> targets = conn->queryRoot()->getElements("Software/Topology/Cluster");
         ForEach(*targets)
