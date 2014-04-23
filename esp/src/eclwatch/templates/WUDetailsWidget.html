@@ -92,23 +92,23 @@
                 <div id="${id}InfoContainer" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120" data-dojo-type="InfoGridWidget">
                 </div>
             </div>
-            <div id="${id}_Variables" title="${i18n.Variables}" data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}_Variables" title="${i18n.Variables}" data-dojo-props="disabled: true" data-dojo-type="dijit.layout.BorderContainer">
                 <div style="border: 0px; padding: 0px; border-color: none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}VariablesGrid">
                     </div>
                 </div>
             </div>
-            <div id="${id}_Results" title="${i18n.Outputs}" data-dojo-props="delayWidget: 'ResultsWidget'" data-dojo-type="DelayLoadWidget">
+            <div id="${id}_Results" title="${i18n.Outputs}" data-dojo-props="delayWidget: 'ResultsWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Files" title="${i18n.Inputs}" data-dojo-props="delayWidget: 'SourceFilesWidget'" data-dojo-type="DelayLoadWidget">
+            <div id="${id}_Files" title="${i18n.Inputs}" data-dojo-props="delayWidget: 'SourceFilesWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Timers" title="${i18n.Timers}" data-dojo-props="delayWidget: 'TimingPageWidget'" data-dojo-type="DelayLoadWidget">
+            <div id="${id}_Timers" title="${i18n.Timers}" data-dojo-props="delayWidget: 'TimingPageWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Graphs" title="${i18n.Graphs}" data-dojo-props="delayWidget: 'GraphsWidget'" data-dojo-type="DelayLoadWidget">
+            <div id="${id}_Graphs" title="${i18n.Graphs}" data-dojo-props="delayWidget: 'GraphsWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Visualize" title="${i18n.Visualize}" data-dojo-props="delayWidget: 'VizWidget'" data-dojo-type="DelayLoadWidget">
+            <div id="${id}_Visualize" title="${i18n.Visualize}" data-dojo-props="delayWidget: 'VizWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
-            <div id="${id}_Logs" title="${i18n.Helpers}" data-dojo-props="delayWidget: 'LogsWidget'" data-dojo-type="DelayLoadWidget">
+            <div id="${id}_Logs" title="${i18n.Helpers}" data-dojo-props="delayWidget: 'LogsWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
             <div id="${id}_Playground" title="${i18n.Playground}" data-dojo-props="delayWidget: 'ECLPlaygroundWidget'" data-dojo-type="DelayLoadWidget">
             </div>
