@@ -968,7 +968,7 @@
                       xrefAt="* 2 * * *"
                       xrefCutoff="1"
                       xrefEclWatchProvider="true"
-                      xrefInterval="0"
+                      xrefInterval="672"
                       xrefList="*"
                       xrefMaxMemory="4096">
    <Instance computer="localhost"
