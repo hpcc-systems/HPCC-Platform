@@ -5533,7 +5533,7 @@ bool parseGraphTimerLabel(const char *label, StringAttr &graphName, unsigned & g
         }
     }
 
-    if (graphName && memicmp(graphName, "graph", 5))
+    if (graphName && !memicmp(graphName, "graph", 5))
         graphNum = atoi(graphName + 5);
 
     return true;
