@@ -142,7 +142,7 @@
                 ]);
             }
 
-            if (roxiecluster != 0) {
+            if (roxiecluster != 0 || cluster=="") {
                 oMenu.addItems([
                     { text: "Used By", onclick: { fn: queriesUsingDFUFile } }
                 ]);

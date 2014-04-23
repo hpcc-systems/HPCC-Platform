@@ -328,16 +328,18 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
             if (aborting)
                 return;
             IReferencedFile &rf = files->query();
-            if (!(rf.getFlags() & RefSubFile))
-                continue;
+            //if (!(rf.getFlags() & RefSubFile))
+            //    continue;
             const char *lfn = rf.getLogicalName();
             if (!lfn || !*lfn)
                 continue;
 
-            if (!queryTree->hasProp(xpath.setf("SubFile[@lfn='%s']", lfn)))
+            if (!queryTree->hasProp(xpath.setf("File[@lfn='%s']", lfn)))
             {
-                IPropertyTree *fileTree = queryTree->addPropTree("SubFile", createPTree("SubFile"));
+                IPropertyTree *fileTree = queryTree->addPropTree("File", createPTree("File"));
                 fileTree->setProp("@lfn", lfn);
+                if (rf.getFlags() & RefFileSuper)
+                    fileTree->setPropBool("@super", true);
                 const char *fpkgid = rf.queryPackageId();
                 if (fpkgid && *fpkgid)
                     fileTree->setProp("@pkgid", fpkgid);
@@ -368,7 +370,7 @@ IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target,
     if (!targetTree)
         return NULL;
 
-    VStringBuffer xpath("Query[SubFile/@lfn='%s']", lfn);
+    VStringBuffer xpath("Query[File/@lfn='%s']", lfn);
     return targetTree->getElements(xpath);
 }
 
@@ -1288,7 +1290,7 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
             Owned<IEspQueryUsingFile> q = createQueryUsingFile();
             q->setId(query.queryProp("@id"));
 
-            VStringBuffer xpath("SubFile[@lfn='%s']/@pkgid", lfn.str());
+            VStringBuffer xpath("File[@lfn='%s']/@pkgid", lfn.str());
             if (query.hasProp(xpath))
                 q->setPackage(query.queryProp(xpath));
             respQueries.append(*q.getClear());

@@ -114,6 +114,12 @@ public:
         CriticalBlock b(crit);
     }
     IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn);
+    StringBuffer &toStr(StringBuffer &s)
+    {
+        CriticalBlock b(crit);
+        return toXML(tree, s);
+    }
+
 };
 
 class QueryFilesInUseUpdateThread : public Thread
@@ -246,6 +252,7 @@ private:
     WUSchedule m_sched;
     unsigned short port;
     Owned<IPropertyTree> directories;
+public:
     QueryFilesInUse filesInUse;
 };
 
@@ -254,6 +261,7 @@ class CWsWorkunitsSoapBindingEx : public CWsWorkunitsSoapBinding
 public:
     CWsWorkunitsSoapBindingEx(IPropertyTree *cfg, const char *name, const char *process, http_soap_log_level llevel) : CWsWorkunitsSoapBinding(cfg, name, process, llevel)
     {
+        wswService = NULL;
         VStringBuffer xpath("Software/EspProcess[@name=\"%s\"]/EspBinding[@name=\"%s\"]/BatchWatch", process, name);
         batchWatchFeaturesOnly = cfg->getPropBool(xpath.str(), false);
     }
@@ -281,15 +289,15 @@ public:
 
     virtual void addService(const char * name, const char * host, unsigned short port, IEspService & service)
     {
-        CWsWorkunitsEx* srv = dynamic_cast<CWsWorkunitsEx*>(&service);
-        if (srv)
-            srv->setPort(port);
+        wswService = dynamic_cast<CWsWorkunitsEx*>(&service);
+        if (wswService)
+            wswService->setPort(port);
         CWsWorkunitsSoapBinding::addService(name, host, port, service);
     }
 
-
 private:
     bool batchWatchFeaturesOnly;
+    CWsWorkunitsEx *wswService;
 };
 
 #endif

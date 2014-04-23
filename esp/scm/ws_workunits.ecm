@@ -1115,7 +1115,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     string Comment;
     bool DontCopyFiles(false);
     string SourceProcess;
-    bool AllowForeignFiles(true);
+    bool AllowForeignFiles(false);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse

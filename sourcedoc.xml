@@ -190,7 +190,7 @@
                 
                 This will first do a make to ensure everything is up to date, then will 
                 create the appropriate package for your operating system, Currently supported
-                package formats are rpm (for RedHat/Centos and SuSE) and  .deb (for Debian and
+                package formats are rpm (for RedHat/Centos) and  .deb (for Debian and
                 Ubuntu). If the operating system is not one of the above, or is not recognized,
                 make package will create a tarball.
             </para>

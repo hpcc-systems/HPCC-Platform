@@ -275,7 +275,6 @@ public:
     void processBatchedFile(IFile & file, bool multiThreaded);
 
     virtual void noteCluster(const char *clusterName);
-    virtual void registerFile(const char * filename, const char * description);
     virtual bool allowAccess(const char * category);
 
 protected:
@@ -1703,9 +1702,6 @@ bool EclCompileInstance::reportErrorSummary()
 //=========================================================================================
 
 void EclCC::noteCluster(const char *clusterName)
-{
-}
-void EclCC::registerFile(const char * filename, const char * description)
 {
 }
 bool EclCC::allowAccess(const char * category)
