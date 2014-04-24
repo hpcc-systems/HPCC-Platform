@@ -101,6 +101,7 @@ extern HQL_API unsigned countTotalFields(IHqlExpression * record, bool includeVi
 extern HQL_API bool transformContainsSkip(IHqlExpression * transform);
 extern HQL_API bool transformListContainsSkip(IHqlExpression * transforms);
 extern HQL_API bool recordContainsNestedRecord(IHqlExpression * record);
+extern HQL_API IHqlExpression * queryStripCasts(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * queryInvalidCsvRecordField(IHqlExpression * expr);
 extern HQL_API bool isValidCsvRecord(IHqlExpression * expr);

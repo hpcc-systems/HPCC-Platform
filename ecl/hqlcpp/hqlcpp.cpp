@@ -515,14 +515,6 @@ bool isProjectedInRecord(IHqlExpression * record, IHqlExpression * expr)
     return false;
 }
 
-IHqlExpression * queryStripCasts(IHqlExpression * expr)
-{
-    while ((expr->getOperator() == no_cast) || (expr->getOperator() == no_implicitcast))
-        expr = expr->queryChild(0);
-    return expr;
-}
-
-
 // Format the list is stored in doesn't matter, so allow constant strings to be stored by reference
 IHqlExpression * getOptimialListFormat(IHqlExpression * table)
 {
