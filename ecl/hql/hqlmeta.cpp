@@ -2347,8 +2347,6 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
             break;
         }
     case no_distribute:
-    case no_distributed:
-    case no_assertdistributed:
         {
             if (expr->queryAttribute(skewAtom))
             {
@@ -2365,6 +2363,22 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
                 }
                 else
                     meta.applyDistribute(mappedDistributeInfo, NULL);
+            }
+            break;
+        }
+    case no_distributed:
+    case no_assertdistributed:
+        {
+            //NOTE: These differ from no_distribute - they don't affect any existing sort order or grouping
+            extractMeta(meta, dataset);
+            if (expr->queryAttribute(skewAtom))
+            {
+                meta.setUnknownDistribution();
+            }
+            else
+            {
+                OwnedHqlExpr mappedDistributeInfo = replaceSelector(expr->queryChild(1), dataset, queryActiveTableSelector());
+                meta.distribution.set(mappedDistributeInfo);
             }
             break;
         }
@@ -3268,9 +3282,12 @@ ITypeInfo * calculateDatasetType(node_operator op, const HqlExprArray & parms)
         type.setown(dataset->getType());
         break;
     case no_distribute:
+        newRecordType.set(recordType);
+        break;
     case no_distributed:
     case no_assertdistributed:
         newRecordType.set(recordType);
+        nowGrouped = isGrouped(dataset);
         break;
     case no_cosort:
     case no_sort:
