@@ -558,7 +558,7 @@ class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements
     mutable bool activitiesCached;
     mutable bool webServicesInfoCached;
     mutable bool roxieQueryInfoCached;
-    mutable bool timerCached;
+    mutable bool timersCached;
     mutable IArrayOf<IWUActivity> activities;
     mutable IArrayOf<IWUPlugin> plugins;
     mutable IArrayOf<IWULibrary> libraries;
@@ -3006,7 +3006,7 @@ void CLocalWorkUnit::init()
     activitiesCached = false;
     webServicesInfoCached = false;
     roxieQueryInfoCached = false;
-    timerCached = false;
+    timersCached = false;
     dirty = false;
     abortDirty = true;
     abortState = false;
@@ -5520,7 +5520,7 @@ public:
 void CLocalWorkUnit::loadTimers() const
 {
     CriticalBlock block(crit);
-    if (timerCached)
+    if (timersCached)
         return;
 
     assertex(timers.length() == 0);
@@ -5530,7 +5530,7 @@ void CLocalWorkUnit::loadTimers() const
         IPropertyTree *rp = &r->query();
         timers.append(*new CLocalWUTimer(rp->queryProp("@name"), rp->getPropInt("@count"), rp->getPropInt("@duration")));
     }
-    timerCached = true;
+    timersCached = true;
 }
 
 StringBuffer &formatGraphTimerLabel(StringBuffer &str, const char *graphName, unsigned subGraphNum, unsigned __int64 subId)

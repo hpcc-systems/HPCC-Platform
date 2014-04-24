@@ -1197,29 +1197,29 @@ IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char*
     context.getUserID(username);
     Owned<IUserDescriptor> userdesc(createUserDescriptor());
     userdesc->set(username.str(), context.queryPassword());
-    IDistributedFile* df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
     if (!df)
         return NULL;
 
     bool blocked;
     if (df->isCompressed(&blocked) && !blocked)
-        return df;
+        return df.getClear();
 
     IPropertyTree& properties = df->queryAttributes();
     const char * format = properties.queryProp("@format");
     if (format && (stricmp(format,"csv")==0 || memicmp(format, "utf", 3) == 0))
     {
         showFileContent = true;
-        return df;
+        return df.getClear();
     }
     const char * recordEcl = properties.queryProp("ECL");
     if (!recordEcl)
-        return df;
+        return df.getClear();
 
     MultiErrorReceiver errs;
     Owned<IHqlExpression> ret = ::parseQuery(recordEcl, &errs);
     showFileContent = errs.errCount() == 0;
-    return df;
+    return df.getClear();
 }
 
 void WsWuInfo::getEclSchemaChildFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional)
