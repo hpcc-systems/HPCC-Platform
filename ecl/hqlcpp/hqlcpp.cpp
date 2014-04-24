@@ -1590,7 +1590,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.convertJoinToLookup,"convertJoinToLookup", true),
         DebugOption(options.convertJoinToLookupIfSorted,"convertJoinToLookupIfSorted", false),
         DebugOption(options.spotCSE,"spotCSE", true),
-        DebugOption(options.spotCseInIfDatasetConditions,"spotCseInIfDatasetConditions", false),
+        DebugOption(options.spotCseInIfDatasetConditions,"spotCseInIfDatasetConditions", true),
         DebugOption(options.optimizeNonEmpty,"optimizeNonEmpty", !targetThor()),                // not sure that it will be conditional resourced correctly for thor
         DebugOption(options.allowVariableRoxieFilenames,"allowVariableRoxieFilenames", false),
         DebugOption(options.foldConstantDatasets,"foldConstantDatasets", true),
