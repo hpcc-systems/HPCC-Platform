@@ -27,23 +27,8 @@
       <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
       <link type="text/css" rel="StyleSheet" href="/esp/files_/css/sortabletable.css"/>
       <script type="text/javascript" src="/esp/files/scripts/espdefault.js">&#160;</script>
-      <script type="text/javascript" src="/esp/files_/scripts/sortabletable.js">
-        <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-      </script>
-      <script language="JavaScript1.2">
-        <xsl:text disable-output-escaping="yes"><![CDATA[
-          function onLoad()
-          {
-            //initSelection('resultsTable');
-            var table = document.getElementById('resultsTable');
-            if (table)
-              sortableTable = new SortableTable(table, table, ["String", "String", "String",]);
-          }       
-          var sortableTable = null;
-        ]]></xsl:text>
-      </script>
       </head>
-      <body class="yui-skin-sam" onload="nof5();onLoad()">
+      <body class="yui-skin-sam" onload="nof5()">
         <h1>Results:</h1>
         <xsl:apply-templates/>
       </body>

@@ -90,9 +90,6 @@
             </script>
             <xsl:call-template name="GenerateScriptForPreflightControls"/>
           </xsl:if>
-          <script type="text/javascript" src="files_/scripts/sortabletable.js">
-             <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-          </script>
           <script type="text/javascript">               
                <xsl:choose>
                   <xsl:when test="$SwapNode">
@@ -139,45 +136,6 @@
                   var table = document.getElementById('resultsTable');
                   if (table)
                   {
-                     //dynamically create a sort list since our table is defined at run time based on info returned
-                 var cells = table.tHead.rows[0].cells;
-                 var nCols = cells.length;
-                     var sortCriteria = new Array(nCols);
-                     sortCriteria[0] = "None";//multiselect checkbox
-                     
-                 for (var i = 1; i < nCols; i++)
-                 {
-                    var c = cells[i];
-                    var sort;
-                    switch (c.innerText)
-                    {
-                       case 'Location': 
-                          sort = 'IP_Address'; 
-                          break;
-                       case 'Type':      
-                       case 'Processes': 
-                       case 'Processes Down':
-                       case 'Condition':
-                       case 'Component':
-                       case 'State':
-                          sort = 'String'; 
-                          break;
-                       case 'Up Time':
-                       case 'Computer Up Time': 
-                          sort = 'TimePeriod'; 
-                          break;
-                       case 'Slave Number':
-                          sort = 'Number';
-                          break;
-                       default:
-                          sort = "Percentage";
-                          break;
-                    }//switch
-                    sortCriteria[i] = sort;
-                 }//for
-                     
-                     sortableTable = new SortableTable(table, table, sortCriteria);
-
                     var toolarray = [];
                     
                     for(i=0;i<table.rows.length;i++) {
@@ -203,7 +161,6 @@
                     document.forms[0].submitBtn.disabled = checkedCount == 0;
                 }
             var allowReloadPage = true;
-               var sortableTable = null;
             ]]></script>
           </xsl:if>
          </head>

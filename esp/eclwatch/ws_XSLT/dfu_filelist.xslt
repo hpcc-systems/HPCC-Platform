@@ -46,26 +46,16 @@
                 <style type="text/css">
                     .selectedRow { background-color: #0af;}
                 </style>
-                <script type="text/javascript" src="/esp/files_/scripts/sortabletable.js">0</script>
                 <script language="JavaScript1.2">
                     var originalPath = '<xsl:value-of select="FileListResponse/Path"/>';
                     var os = <xsl:value-of select="/FileListResponse/OS"/>;
                     var dironly = <xsl:value-of select="/FileListResponse/DirectoryOnly"/>;
                     <xsl:text disable-output-escaping="yes"><![CDATA[
-                    var sortableTable = null;
                     var nSelected = -1;
                     var nPrevClass = null;
                     
                     function onLoad()
                     {
-                        var table = document.getElementById('resultsTable');
-                        if (table)
-                        {
-                            if (dironly)
-                                sortableTable = new SortableTable(table, table, ["None", "String", "Number", "DateTime"]);
-                            else
-                                sortableTable = new SortableTable(table, table, ["String", "Number", "DateTime"]);
-                        }
                     } 
                     
                     function onOK(name)

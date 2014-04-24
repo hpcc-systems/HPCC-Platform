@@ -1359,9 +1359,6 @@
         <link rel="stylesheet" type="text/css" href="/esp/files/css/espdefault.css" />
         <link rel="stylesheet" type="text/css" href="/esp/files/css/eclwatch.css" />
         <link type="text/css" rel="StyleSheet" href="files_/css/sortabletable.css"/>
-        <script type="text/javascript" src="files_/scripts/sortabletable.js">
-          <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-        </script>
         <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
         </script>
@@ -1393,11 +1390,7 @@
                      function onLoad()
                      {
                         initSelection('resultsTable');
-                        var table = document.getElementById('resultsTable');
-                        if (table)
-                           sortableTable = new SortableTable(table, table, ["None", "String","String",]);
                      }       
-                     var sortableTable = null;
                ]]></xsl:text>
         </script>
       </head>
@@ -1489,9 +1482,6 @@
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
         </script>
         <link type="text/css" rel="StyleSheet" href="/esp/files_/css/sortabletable.css"/>
-        <script type="text/javascript" src="files_/scripts/sortabletable.js">
-          <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-        </script>
         <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
         </script>
@@ -1502,11 +1492,7 @@
                      function onLoad()
                      {
                         initSelection('resultsTable');
-                        var table = document.getElementById('resultsTable');
-                        if (table)
-                           sortableTable = new SortableTable(table, table, ["String", "Number", "None", "Number", "Number"]);
                      }               
-                     var sortableTable = null;
                        
                      function ChangeHeader(o1, headerid)
                      {

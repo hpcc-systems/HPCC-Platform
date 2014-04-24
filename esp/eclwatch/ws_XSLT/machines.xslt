@@ -93,14 +93,10 @@
         <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
         ]]></xsl:text>
 
-      <script type="text/javascript" src="files_/scripts/sortabletable.js">
-                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-            </script>
             <script language="javascript" src="files_/scripts/multiselect.js">
                 <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
             </script>
             <script language="javascript">
-                var sortableTable = null;
                 var ClusterName = '<xsl:value-of select="$clusterName"/>';
                 var allowReloadPage = false;
         var fromTargetClusterPage = false;
@@ -112,40 +108,6 @@
                 }
 
             <![CDATA[
-                function setSortableTable(tableId)
-                {
-                    var table = document.getElementById(tableId);
-                    if (table == null)
-                        return;
-
-                    //dynamically create a sort list since our table is defined at run time based on info returned
-                    var cells = table.tHead.rows[0].cells;
-                    var nCols = cells.length;
-                    var sortCriteria = new Array(nCols);
-                    sortCriteria[0] = "None";//multiselect checkbox
-
-                    for (var i = 1; i < nCols; i++)
-                    {
-                        var c = cells[i];
-                        var sort;
-                        switch (c.innerText)
-                        {
-                           case 'Network Address':
-                              sort = 'IP_Address';
-                              break;
-                           case 'Slave Number':
-                              sort = 'Number';
-                              break;
-                           default:
-                              sort = "String";
-                              break;
-                        }//switch
-                        sortCriteria[i] = sort;
-                    }//for
-
-                    sortableTable = new SortableTable(table, table, sortCriteria);
-                }
-
                 var browseUrl = null;
                 var browsePath = null;
                 var browseCaption = null;
@@ -188,7 +150,6 @@
                     initSelection('resultsTable');
                     document.getElementsByName('Addresses.itemcount')[0].value = totalItems;
                     onRowCheck(false);
-                    setSortableTable('resultsTable');
 
                     <xsl:if test="$ShowPreflightInfo and not($SwapNode)">initPreflightControls();</xsl:if>
                 }
