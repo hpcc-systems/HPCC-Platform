@@ -398,7 +398,8 @@ define([
             pMenu.startup();
         },
 
-        initWorkunitsGrid: function() {
+        initWorkunitsGrid: function () {
+            var context = this;
             this.listStore = new ESPLogicalFile.CreateLFQueryStore();
             this.treeStore = new ESPLogicalFile.CreateLFQueryTreeStore();
             this.workunitsGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
@@ -418,29 +419,38 @@ define([
                         },
                         selectorType: 'checkbox'
                     }),
-                    isZipfile: {
-                        label: "C", width: 16, sortable: false,
+                    IsCompressed: {
+                        width: 25, sortable: false,
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = dojoConfig.getImageHTML("compressed.png", context.i18n.Compressed);
+                        },
                         formatter: function (compressed) {
                             if (compressed == true) {
-                                return "C";
+                                return dojoConfig.getImageHTML("compressed.png");
                             }
                             return "";
                         }
                     },
                     IsKeyFile: {
-                        label: "K", width: 16, sortable: false,
+                        width: 25, sortable: false,
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = dojoConfig.getImageHTML("index.png", context.i18n.Index);
+                        },
                         formatter: function (keyfile, row) {
                             if (row.ContentType === "key") {
-                                return "K";
+                                return dojoConfig.getImageHTML("index.png");
                             }
                             return "";
                         }
                     },
                     isSuperfile: {
-                        label: "S", width: 16, sortable: false,
+                        width: 25, sortable: false,
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = dojoConfig.getImageHTML("superfile.png", context.i18n.Superfile);
+                        },
                         formatter: function (superfile) {
                             if (superfile == true) {
-                                return "S";
+                                return dojoConfig.getImageHTML("superfile.png");
                             }
                             return "";
                         }

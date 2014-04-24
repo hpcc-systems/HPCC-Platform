@@ -272,7 +272,7 @@ define([
                     }),
                     Priority: {
                         renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("priority.png");
+                            node.innerHTML = dojoConfig.getImageHTML("priority.png", context.i18n.Priority);
                         },
                         width: 25,
                         sortable: false,
