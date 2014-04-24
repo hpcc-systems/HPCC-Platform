@@ -796,7 +796,7 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
         
         size_t fldCount = 0;
         size_t typelessCount = 0;
-        for (els->first(); els->isValid(); els->next())
+        ForEach(*els)
         {
             fldCount++;
             if (!els->query().hasProp("@type") && !els->query().hasChildren())
@@ -806,7 +806,7 @@ IXmlType* CXmlSchema::parseComplexType(IPTree* complexDef)
         // TODO: verify with struct with one field
         if ((fldCount-typelessCount)==1) // hack: assume 1 to be array
         {
-            for (els->first(); els->isValid(); els->next())
+            ForEach(*els)
                 if (els->query().hasProp("@type") || els->query().hasChildren())
                     break;
 

@@ -2151,7 +2151,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
 int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, TextMarkupFormat fmt, const char *viewname, const char *xsltname)
 {
-    Owned<IPropertyTree> reqTree = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
+    Owned<IPropertyTree> reqTree = createPTreeFromXMLString(xml, ipt_ordered, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
     return submitWsEclWorkunit(context, wsinfo, reqTree, out, flags, fmt, viewname, xsltname);
 }
 

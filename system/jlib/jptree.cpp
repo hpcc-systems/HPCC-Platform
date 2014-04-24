@@ -5565,37 +5565,38 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
     MemoryBuffer thislevelbin;
     StringBuffer _thislevel;
     const char *thislevel = NULL; // to avoid uninitialized warning
-    bool empty;
+    bool isNull;
     if (isBinary)
     {
-        empty = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
+        isNull = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
     }
     else
     {
         if (tree->isCompressed(NULL))
         {
-            empty = false; // can't be empty if compressed;
+            isNull = false; // can't be empty if compressed;
             verifyex(tree->getProp(NULL, _thislevel));
             thislevel = _thislevel.toCharArray();
         }
         else
-            empty = (NULL == (thislevel = tree->queryProp(NULL)));
+            isNull = (NULL == (thislevel = tree->queryProp(NULL)));
     }
 
-    if (empty && !complex)
+    if (isNull && !complex)
     {
         writeJSONValueToStream(out, NULL, delimit);
         return;
     }
 
     Owned<IPropertyTreeIterator> sub = tree->getElements("*", 0 != (flags & JSON_SortTags) ? iptiter_sort : iptiter_null);
-    StringAttr lastArrayItem;
+    //note that detection of repeating elements relies on the fact that ptree elements
+    //of the same name will be grouped together
     bool repeatingElement = false;
     sub->first();
     while(sub->isValid())
     {
-        IPropertyTree &element = sub->query();
-        const char *name = element.queryName();
+        Linked<IPropertyTree> element = &sub->query();
+        const char *name = element->queryName();
         if (sub->next() && !repeatingElement && streq(name, sub->query().queryName()))
         {
             if (flags & JSON_Format)
@@ -5606,7 +5607,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
             delimit = false;
         }
 
-        _toJSON(&element, out, indent+1, flags, delimit, false, repeatingElement);
+        _toJSON(element, out, indent+1, flags, delimit, false, repeatingElement);
 
         if (repeatingElement && (!sub->isValid() || !streq(name, sub->query().queryName())))
         {
@@ -5623,7 +5624,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
     }
 
 
-    if (!empty)
+    if (!isNull)
     {
         if (complex)
             writeJSONNameToStream(out, "#value", (flags & JSON_Format) ? indent+1 : 0, delimit);
