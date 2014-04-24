@@ -227,7 +227,7 @@ interface IConstDFUfileSpec: extends IInterface
     virtual StringBuffer &getPartUrl(unsigned clustnum,unsigned partidx, StringBuffer &url,bool iskey=false) const = 0; // idx 0 based
     virtual RemoteFilename &getPartFilename(unsigned clustnum,unsigned partidx, RemoteFilename &rfn, bool iskey=false) const = 0; // idx 0 based
     virtual IPropertyTree *queryPartProperties(unsigned partidx) const = 0;
-    virtual void getCsvOptions(StringBuffer &separate,StringBuffer &terminate,StringBuffer &quote,StringBuffer &escape) const = 0;
+    virtual void getCsvOptions(StringBuffer &separate,StringBuffer &terminate,StringBuffer &quote,StringBuffer &escape,bool &quotedTerminator) const = 0;
     virtual StringBuffer &getRowTag(StringBuffer &str)const =0;
     virtual void setForeignDali(const SocketEndpoint &ep)=0; // only used for source of copy (for inter-dali copy)
     virtual bool getForeignDali(SocketEndpoint &ep) const =0;
@@ -265,7 +265,7 @@ interface IDFUfileSpec: extends IConstDFUfileSpec
     virtual void setRecordSize(size32_t size) = 0; // may need to be supplied for non 1-1 splits
     virtual void setMaxRecordSize(size32_t size) = 0; 
     virtual void setFormat(DFUfileformat format) = 0; 
-    virtual void setCsvOptions(const char *separate=NULL,const char *terminate=NULL,const char *quote=NULL,const char *escape=NULL) = 0;  // NULL for default
+    virtual void setCsvOptions(const char *separate=NULL,const char *terminate=NULL,const char *quote=NULL,const char *escape=NULL,bool quotedTerminator=true) = 0;  // NULL for default
     virtual void setRowTag(const char *str) = 0;
     virtual void setFromXML(const char *xml) = 0;
     virtual void setCompressed(bool set) = 0;

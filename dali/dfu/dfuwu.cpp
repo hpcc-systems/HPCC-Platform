@@ -1323,7 +1323,7 @@ public:
         return CDFUfileformat::decode(queryProperties()->queryProp("@format"));
     }
 
-    virtual void getCsvOptions(StringBuffer &separate,StringBuffer &terminate,StringBuffer &quote,StringBuffer &escape) const
+    virtual void getCsvOptions(StringBuffer &separate,StringBuffer &terminate,StringBuffer &quote,StringBuffer &escape,bool &quotedTerminator) const
     {
         IPropertyTree *t = queryProperties();
         const char *sep=t->queryProp("@csvSeparate");
@@ -1335,9 +1335,10 @@ public:
         const char *esc=t->queryProp("@csvEscape");
         if (esc && *esc)
             escape.set(esc);
+        quotedTerminator = t->getPropBool("@quotedTerminator", true);
     }
 
-    void setCsvOptions(const char *separate,const char *terminate,const char *quote,const char *escape)
+    void setCsvOptions(const char *separate,const char *terminate,const char *quote,const char *escape,bool quotedTerminator)
     {
         IPropertyTree *t = queryUpdateProperties();
         if (separate && *separate)
@@ -1348,6 +1349,7 @@ public:
             t->setProp("@csvQuote",quote);
         if (escape && *escape)
             t->setProp("@csvEscape",escape);
+        t->setPropBool("@quotedTerminator", quotedTerminator);
     }
 
     StringBuffer &getRowTag(StringBuffer &str)const 
