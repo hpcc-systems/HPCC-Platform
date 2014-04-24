@@ -139,6 +139,26 @@ define([
             }
             this.set("timers", timers);
         },
+        _ResourceURLsSetter: function (resourceURLs) {
+            var data = [];
+            arrayUtil.forEach(resourceURLs.URL, function (url, idx) {
+                var cleanedURL = url.split("\\").join("/");
+                var urlParts = cleanedURL.split("/");
+                var matchStr = "res/" + this.wu.Wuid + "/";
+                if (cleanedURL.indexOf(matchStr) === 0) {
+                    var displayPath = cleanedURL.substr(matchStr.length);
+                    var displayName = urlParts[urlParts.length - 1];
+                    var row = {
+                        __hpcc_id: idx,
+                        DisplayName: displayName,
+                        DisplayPath: displayPath,
+                        URL: cleanedURL
+                    };
+                    data.push(row);
+                }
+            }, this);
+            this.set("resourceURLs", data);
+        },
         _GraphsSetter: function (Graphs) {
             this.set("graphs", Graphs.ECLGraph);
         },
@@ -306,20 +326,20 @@ define([
         },
         refresh: function (full) {
             if (full || this.Archived || this.changedCount === 0) {
-                this.getInfo({
+                return this.getInfo({
                     onGetText: function () {
                     },
                     onGetWUExceptions: function () {
                     }
                 });
             } else {
-                this.getQuery();
+                return this.getQuery();
             }
         },
         getQuery: function () {
             this._assertHasWuid();
             var context = this;
-            WsWorkunits.WUQuery({
+            return WsWorkunits.WUQuery({
                 request: {
                     Wuid: this.Wuid
                 }
@@ -329,12 +349,13 @@ define([
                         context.updateData(item);
                     });
                 }
+                return response;
             });
         },
         getInfo: function (args) {
             this._assertHasWuid();
             var context = this;
-            WsWorkunits.WUInfo({
+            return WsWorkunits.WUInfo({
                 request: {
                     Wuid: this.Wuid,
                     TruncateEclTo64k: args.onGetText ? false : true,
@@ -345,6 +366,7 @@ define([
                     IncludeResultsViewNames: (args.onGetResults || args.onGetSequenceResults) ? true : false,
                     IncludeVariables: args.onGetVariables ? true : false,
                     IncludeTimers: args.onGetTimers ? true : false,
+                    IncludeResourceURLs: args.onGetResourceURLs ? true : false,
                     IncludeDebugValues: args.onGetDebugValues ? true : false,
                     IncludeApplicationValues: args.onGetApplicationValues ? true : false,
                     IncludeWorkflows: args.onGetWorkflows ? true : false,
@@ -391,6 +413,9 @@ define([
                     if (args.onGetTimers) {
                         args.onGetTimers(lang.exists("timers", context) ? context.timers : []);
                     }
+                    if (args.onGetResourceURLs && lang.exists("resourceURLs", context)) {
+                        args.onGetResourceURLs(context.resourceURLs);
+                    }
                     if (args.onGetGraphs && lang.exists("graphs", context)) {
                         if (context.timers || lang.exists("ApplicationValues.ApplicationValue", context)) {
                             for (var i = 0; i < context.graphs.length; ++i) {
@@ -422,6 +447,7 @@ define([
                         args.onAfterSend(context);
                     }
                 }
+                return response;
             });
         },
         getGraphIndex: function (name) {
@@ -577,13 +603,13 @@ define([
                 onGetResults: onFetchResults
             });
         },
-        fetchNamedResults: function (resultNames) {
-            var deferred = new Deferred()
+        fetchNamedResults: function (resultNames, row, count) {
+            var deferred = new Deferred();
             var context = this;
             this.fetchResults(function (results) {
                 var resultContents = [];
                 arrayUtil.forEach(resultNames, function (item, idx) {
-                    resultContents.push(context.namedResults[item].fetchContent());
+                    resultContents.push(context.namedResults[item].fetchContent(row, count));
                 });
                 all(resultContents).then(function (resultContents) {
                     var results = [];
@@ -591,6 +617,20 @@ define([
                         results[resultNames[idx]] = item;
                     });
                     deferred.resolve(results);
+                });
+            });
+            return deferred.promise;
+        },
+        fetchAllNamedResults: function (row, count) {
+            var deferred = new Deferred();
+            var context = this;
+            this.fetchResults(function (results) {
+                var resultNames = [];
+                arrayUtil.forEach(results, function (item, idx) {
+                    resultNames.push(item.Name);
+                });
+                context.fetchNamedResults(resultNames, row, count).then(function(response) {
+                    deferred.resolve(response);
                 });
             });
             return deferred.promise;

@@ -167,6 +167,13 @@ define([
                     QuerySet: this.query.QuerySet,
                     Query: this.query
                 });
+            } else if (currSel.id == this.widget._Resources.id && !this.resourcesWidgetLoaded) {
+                this.resourcesWidgetLoaded = true;
+                this.widget._Resources.init({
+                    Wuid: this.query.Wuid,
+                    QueryId: this.query.Id,
+                    QuerySet: this.query.QuerySet
+                });
             } else if (currSel.id == this.testPagesTab.id && !this.testPagesTabLoaded) {
                 this.testPagesTabLoaded = true;
                 this.testPagesTab.init({
@@ -201,17 +208,13 @@ define([
             }
             if (name === "Wuid") {
                 this.workunitsTab.set("title", newValue);
-            }
-            else if (name === "Suspended") {
+            } else if (name === "Suspended") {
                 dom.byId(this.id + "SuspendImg").src = newValue ? dojoConfig.getImageURL("suspended.png") : "";
-            }
-            else if (name === "Activated") {
+            } else if (name === "Activated") {
                 dom.byId(this.id + "ActiveImg").src = newValue ? dojoConfig.getImageURL("active.png") : "";
-            }
-            else if (name === "SuspendedReason" && newValue === "cluster"){
+            } else if (name === "SuspendedReason" && newValue === "cluster"){
                 dom.byId(this.id + "SuspendCluster").src = dojoConfig.getImageURL("error-icon.png");
-            }
-            else if (name === "CountGraphs" && newValue) {
+            } else if (name === "CountGraphs" && newValue) {
                 this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue + ")");
             } else if (name === "graphs") {
                 this.graphsTab.set("title", this.i18n.Graphs + " (" + newValue.length + ")");
@@ -224,6 +227,8 @@ define([
                         tooltip += " " + newValue[i].Time;
                 }
                 this.graphsTab.set("tooltip", tooltip);
+            } else if (name === "ResourceURLCount" && newValue) {
+                this.widget._Resources.set("title", this.i18n.Resources + " (" + newValue + ")");
             } else if (name === "LogicalFiles") {
                 if (lang.exists("Item.length", newValue)) {
                     this.logicalFilesTab.set("title", this.i18n.LogicalFiles + " (" + newValue.Item.length + ")");

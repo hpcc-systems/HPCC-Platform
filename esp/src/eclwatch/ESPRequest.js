@@ -34,7 +34,7 @@ define([
             if (args) {
                 declare.safeMixin(this, args);
             }
-            this.serverIP = this.getParamFromURL("ServerIP");
+            this.serverIP = (typeof debugConfig !== "undefined") ? debugConfig.IP : this.getParamFromURL("ServerIP");
         },
 
         getParamFromURL: function (key) {
