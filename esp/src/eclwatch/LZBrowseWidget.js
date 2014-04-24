@@ -20,12 +20,10 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
-    "dojo/dom-attr",
-    "dojo/dom-class",
     "dojo/dom-form",
     "dojo/request/iframe",
-    "dojo/date",
     "dojo/on",
+    "dojo/topic",
 
     "dijit/registry",
     "dijit/Dialog",
@@ -75,7 +73,7 @@ define([
     "dojox/form/uploader/FileList",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, iframe, date, on,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, iframe, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 OnDemandGrid, tree, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, SelectionGridWidget,
@@ -109,18 +107,17 @@ define([
             this.fileListDialog = registry.byId(this.id + "FileListDialog");
 
             var context = this;
-            this.connect(this.uploader, "onComplete", function () {
+            this.connect(this.uploader, "onComplete", function (response) {
+                if (lang.exists("Exceptions.Source", response)) {
+                    topic.publish("hpcc/brToaster", {
+                        Severity: "Error",
+                        Source: "FileSpray.UploadFile",
+                        Exceptions: response.Exceptions.Exception
+                    });
+                }
                 context.fileListDialog.hide();
                 context.refreshGrid();
             });
-            //  Workaround for HPCC-9414  --->
-            this.connect(this.uploader, "onError", function (msg, e) {
-                if (msg === context.i18n.Errorparsingserverresult + ":") {   
-                    context.fileListDialog.hide();
-                    context.refreshGrid();
-                }
-            });
-            //  <---  Workaround for HPCC-9414
         },
 
         startup: function (args) {
