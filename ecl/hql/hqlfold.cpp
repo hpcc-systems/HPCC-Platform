@@ -3417,7 +3417,9 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_distribute:
     case no_distributed:
         {
-            if (isNull(child) || isFail(child))
+            if (isNull(child))
+                return replaceWithNull(expr);
+            if (isFail(child))
                 return removeParentNode(expr);
             if (expr->hasAttribute(skewAtom))
             	break;
