@@ -187,6 +187,10 @@ define([
             }
         },
 
+        createDetail: function (id, row, params) {
+            return null;
+        },
+
         getDetailID: function (row, params) {
             return "Detail" + row[this.idProperty];
         },

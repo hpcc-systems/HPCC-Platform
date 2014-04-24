@@ -77,10 +77,21 @@ define([
                     }
                 });
             }
+            this.vizWidget.hpcc.params = params;
             this._refreshActionState();
         },
 
         createGrid: function (domID) {
+            this.vizWidget = new DelayLoadWidget({
+                id: this.id + "_Visualize",
+                title: this.i18n.Visualize,
+                closable: false,
+                delayWidget: "VizWidget",
+                hpcc: {
+                    type: "VizWidget"
+                }
+            });
+            this.addChild(this.vizWidget);
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
