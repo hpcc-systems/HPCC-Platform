@@ -6432,8 +6432,19 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_normalizegroup:
                 result = doBuildActivityNormalizeGroup(ctx, expr);
                 break;
-            case no_sorted:
             case no_distributed:
+            {
+                IHqlExpression * in = expr->queryChild(0);
+                if (isGrouped(in))
+                {
+                    Owned<ABoundActivity> boundInput = buildCachedActivity(ctx, in);
+                    result = doBuildActivityUngroup(ctx, expr, boundInput);
+                }
+                else
+                    result = buildCachedActivity(ctx, in);
+                break;
+            }
+            case no_sorted:
             case no_preservemeta:
             case no_grouped:
             case no_nofold:
@@ -13852,12 +13863,19 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
 
 ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHqlExpression * expr)
 {
+    IHqlExpression * dataset = expr->queryChild(0);
     if (!targetThor() || insideChildQuery(ctx))
-        return buildCachedActivity(ctx, expr->queryChild(0));
+    {
+        if (isGrouped(dataset))
+        {
+            Owned<ABoundActivity> boundInput = buildCachedActivity(ctx, dataset);
+            return doBuildActivityUngroup(ctx, expr, boundInput);
+        }
+        return buildCachedActivity(ctx, dataset);
+    }
 
     StringBuffer s;
 
-    IHqlExpression * dataset = expr->queryChild(0);
     if (isUngroup(dataset))
         dataset = dataset->queryChild(0);
 
@@ -15689,6 +15707,21 @@ void HqlCppTranslator::doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * d
     }
 }
 
+ABoundActivity * HqlCppTranslator::doBuildActivityUngroup(BuildCtx & ctx, IHqlExpression * expr, ABoundActivity * boundDataset)
+{
+    bool useImplementationClass = options.minimizeActivityClasses;
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKdegroup, expr,"Degroup");
+    if (useImplementationClass)
+        instance->setImplementationClass(newDegroupArgId);
+    buildActivityFramework(instance);
+
+    buildInstancePrefix(instance);
+    buildInstanceSuffix(instance);
+
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+    return instance->getBoundActivity();
+}
+
 ABoundActivity * HqlCppTranslator::doBuildActivityGroup(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * dataset = expr->queryChild(0);
@@ -15703,17 +15736,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGroup(BuildCtx & ctx, IHqlExpr
     IHqlExpression * sortlist = queryRealChild(expr, 1);
     if (!sortlist || ((sortlist->numChildren() == 0) && (sortlist->getOperator() != no_activetable)))
     {
-        bool useImplementationClass = options.minimizeActivityClasses;
-        Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKdegroup, expr,"Degroup");
-        if (useImplementationClass)
-            instance->setImplementationClass(newDegroupArgId);
-        buildActivityFramework(instance);
-
-        buildInstancePrefix(instance);
-        buildInstanceSuffix(instance);
-
-        buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
-        return instance->getBoundActivity();
+        return doBuildActivityUngroup(ctx, expr, boundDataset);
     }
     else
     {
