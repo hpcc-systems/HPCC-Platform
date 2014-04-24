@@ -1488,6 +1488,7 @@ public:
     ABoundActivity * doBuildActivityTable(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityFirstN(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityTempTable(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityUngroup(BuildCtx & ctx, IHqlExpression * expr, ABoundActivity * boundDataset);
     ABoundActivity * doBuildActivityWorkunitRead(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityXmlParse(BuildCtx & ctx, IHqlExpression * expr);
 
