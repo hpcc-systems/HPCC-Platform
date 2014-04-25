@@ -286,6 +286,7 @@ public:
 
     virtual void getResultViewNames(StringArray &names);
     virtual void getResourceURLs(StringArray &urls, const char *prefix);
+    virtual unsigned getResourceURLCount();
     virtual void renderResults(const char *viewName, const char *xml, StringBuffer &html);
     virtual void renderResults(const char *viewName, StringBuffer &html);
     virtual void renderSingleResult(const char *viewName, const char *resultname, StringBuffer &html);
@@ -458,6 +459,19 @@ bool WuWebView::getResourceByPath(const char *path, MemoryBuffer &mb)
     if (!res)
         return false;
     return getResource(res, mb);
+}
+
+unsigned WuWebView::getResourceURLCount()
+{
+    unsigned urlCount = 1;
+    Owned<IPropertyTreeIterator> iter = ensureManifest()->getElements("Resource");
+    ForEach(*iter)
+    {
+        IPropertyTree &res = iter->query();
+        if (res.hasProp("@ResourcePath") || res.hasProp("@filename"))
+            urlCount++;
+    }
+    return urlCount;
 }
 
 void WuWebView::getResourceURLs(StringArray &urls, const char *prefix)

@@ -1393,6 +1393,12 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
             resp.setClusters(clusterStates);
         }
     }
+    if (version >= 1.50)
+    {
+        WsWuInfo winfo(context, wuid);
+        resp.setResourceURLCount(winfo.getResourceURLCount());
+    }
+
     return true;
 }
 

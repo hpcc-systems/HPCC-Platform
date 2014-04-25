@@ -143,6 +143,7 @@ public:
     }
 
     bool getResourceInfo(StringArray &viewnames, StringArray &urls, unsigned flags);
+    unsigned getResourceURLCount();
 
     void getCommon(IEspECLWorkunit &info, unsigned flags);
     void getInfo(IEspECLWorkunit &info, unsigned flags);
