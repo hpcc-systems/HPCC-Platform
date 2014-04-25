@@ -350,6 +350,7 @@ ESPrequest [nil_remove] WUQueryRequest
     string After;
     string Before;
     int Count;
+    [min_ver("1.50")] bool CountArchivedWUsMatching(false);
     [min_ver("1.03")] int64 PageSize(0);
     [min_ver("1.03")] int64 PageStartFrom(0);
     [min_ver("1.03")] int64 PageEndAt;

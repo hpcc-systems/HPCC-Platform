@@ -85,6 +85,7 @@ static void mkDateCompare(bool dfu,const char *dt,StringBuffer &out,char fill)
 
 void WUiterate(ISashaCommand *cmd, const char *mask)
 {
+    bool getNumberOfIdsMatching = ((cmd->getAction()==SCA_LIST_WITH_MATCHING_COUNT) && (cmd->getNumberOfIdsMatching() > 0));
     bool dfu = cmd->getDFU();
     const char *beforedt = cmd->queryBefore();
     const char *afterdt = cmd->queryAfter();
@@ -107,7 +108,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
     mkDateCompare(dfu,afterdt,after,'0');
     mkDateCompare(dfu,beforedt,before,'9');     
     bool haswusoutput = cmd->getAction()==SCA_WORKUNIT_SERVICES_GET;
-    bool hasdtoutput = cmd->getAction()==SCA_LISTDT;
+    bool hasdtoutput = (cmd->getAction()==SCA_LISTDT || cmd->getAction()==SCA_LIST_WITH_MATCHING_COUNT);
     MemoryBuffer WUSbuf;
     if (haswusoutput)
         cmd->setWUSresult(WUSbuf);  // swap in/out (in case ever do multiple)
@@ -147,7 +148,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
         StringBuffer xb;
         bool overflowed = false;
         ForEach(*di) {
-            if (overflowed||(index>start+num))
+            if (overflowed||(!getNumberOfIdsMatching && (index>start+num)))
                 break;
             if (di->isDir()) {
                 StringBuffer tmask("*");
@@ -269,11 +270,13 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                             }
                         }
                     }
-                    if (index>start+num)
+                    if (!getNumberOfIdsMatching && (index>start+num))
                         break;
                 }
             }
         }
+        if (getNumberOfIdsMatching)
+            cmd->setNumberOfIdsMatching(index);
     }
     if (cmd->getOnline()) {
         if (haswusoutput)
@@ -1295,6 +1298,7 @@ bool processArchiverCommand(ISashaCommand *cmd)
         case SCA_GET: 
         case SCA_WORKUNIT_SERVICES_GET: 
         case SCA_LISTDT: 
+        case SCA_LIST_WITH_MATCHING_COUNT:
             {
                 if (n) {
                     for (i=0;i<n;i++)

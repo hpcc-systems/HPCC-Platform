@@ -2222,12 +2222,12 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
     return NULL;
 }
 
-void ArchivedWuCache::add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, IArrayOf<IEspECLWorkunit>& wus)
+void ArchivedWuCache::add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, int numWUsMatching, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus)
 {
     CriticalBlock block(crit);
 
     //Save new data
-    Owned<ArchivedWuCacheElement> e=new ArchivedWuCacheElement(filter, sashaUpdatedWhen, hasNextPage, /*data.str(),*/ wus);
+    Owned<ArchivedWuCacheElement> e=new ArchivedWuCacheElement(filter, sashaUpdatedWhen, hasNextPage, numWUsMatching, numWUsReturned, /*data.str(),*/ wus);
     if (cacheSize > 0)
     {
         if (cache.size() >= cacheSize)
