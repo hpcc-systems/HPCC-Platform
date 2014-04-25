@@ -1,0 +1,12 @@
+<Dataset name='Result 1'>
+ <Row><surname>Jones               </surname><forename>Brian     </forename><aage>50</aage></Row>
+ <Row><surname>Flintstone          </surname><forename>Fred      </forename><aage>99</aage></Row>
+ <Row><surname>Jones               </surname><forename>Julia     </forename><aage>49</aage></Row>
+ <Row><surname>Flintstone          </surname><forename>Wilma     </forename><aage>99</aage></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><surname>Jones               </surname><forename>Brian     </forename><aage>50</aage></Row>
+ <Row><surname>Flintstone          </surname><forename>Fred      </forename><aage>99</aage></Row>
+ <Row><surname>Jones               </surname><forename>Julia     </forename><aage>49</aage></Row>
+ <Row><surname>Flintstone          </surname><forename>Wilma     </forename><aage>99</aage></Row>
+</Dataset>
