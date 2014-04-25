@@ -98,7 +98,8 @@ void usage(const char *exe)
   printf("  dfscompratio <logicalname>      -- returns compression ratio of file\n");
   printf("  dfsscopes <mask>                -- lists logical scopes (mask = * for all)\n");
   printf("  cleanscopes                     -- remove empty scopes\n");
-  printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> -- set redundancy for files matching mask, on specified clusters only");
+  printf("  dfsreplication <clustermask> <logicalnamemask> <redundancy-count> -- set redundancy for files matching mask, on specified clusters only\n");
+  printf("  holdlock <logicalfile> <read|write> -- hold a lock to the logical-file until a key is pressed");
   printf("\n");
   printf("Workunit commands:\n");
   printf("  listworkunits [<prop>=<val> [<lower> [<upper>]]] -- list workunits that match prop=val in workunit name range lower to upper\n");
@@ -1689,6 +1690,30 @@ static void dfsreplication(const char *clusterMask, const char *lfnMask, unsigne
     }
 }
 
+static void holdlock(const char *logicalFile, const char *mode, IUserDescriptor *userDesc)
+{
+    bool write;
+    if (strieq(mode, "read"))
+        write = false;
+    else if (strieq(mode, "write"))
+        write = true;
+    else
+        throw MakeStringException(0,"Invalid mode: %s", mode);
+
+    PROGLOG("Looking up file: %s, mode=%s", logicalFile, mode);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalFile, userDesc, write, false, NULL, 5000);
+    if (!file)
+    {
+        ERRLOG("File not found: %s", logicalFile);
+        return;
+    }
+    OwnedPtr<DistributedFilePropertyLock> writeLock;
+    if (write)
+        writeLock.setown(new DistributedFilePropertyLock(file));
+    PROGLOG("File: %s, locked, mode=%s - press a key to release", logicalFile, mode);
+    getchar();
+}
+
 static const char *getNum(const char *s,unsigned &num)
 {
     while (*s&&!isdigit(*s))
@@ -2900,6 +2925,10 @@ int main(int argc, char* argv[])
                         CHECKPARAMS(3,4);
                         bool dryRun = np>3 && strieq("dryrun", params.item(4));
                         dfsreplication(params.item(1), params.item(2), atoi(params.item(3)), dryRun);
+                    }
+                    else if (stricmp(cmd,"holdlock")==0) {
+                        CHECKPARAMS(2,2);
+                        holdlock(params.item(1), params.item(2), userDesc);
                     }
                     else
                         ERRLOG("Unknown command %s",cmd);
