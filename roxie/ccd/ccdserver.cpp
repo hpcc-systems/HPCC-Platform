@@ -11038,11 +11038,13 @@ public:
 class CRoxieServerDiskWriteActivityFactory : public CRoxieServerMultiOutputFactory
 {
     bool isRoot;
+    bool isTemp;
 public:
     CRoxieServerDiskWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _isRoot)
         : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
     {
         Owned<IHThorDiskWriteArg> helper = (IHThorDiskWriteArg *) helperFactory();
+        isTemp = (helper.getFlags() & TDXtemporary) != 0;
         setNumOutputs(helper->getTempUsageCount());
         if (_kind!=TAKdiskwrite)
             assertex(numOutputs == 0);
@@ -11069,7 +11071,7 @@ public:
 
     virtual bool isSink() const
     {
-        return numOutputs == 0; // MORE - check with Gavin if this is right if not a temp but reread in  same job...
+        return numOutputs == 0 && !isTemp; // MORE - check with Gavin if this is right if not a temp but reread in  same job...
     }
 
 };
