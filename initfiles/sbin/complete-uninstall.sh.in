@@ -25,7 +25,7 @@ usage() {
 
     $(basename $0) [OPTIONS]
        -f, --force: force to remove hpccsystems-platform.
-
+       -e, --env: leave environment configuration files behind.
 EOF
    exit 0
 }
@@ -41,13 +41,16 @@ MESSAGE_MARKER
 
 
 force=0
+leaveenv=0
 
-TEMP=$(/usr/bin/getopt -o fh --long help,force -- "$@")
-if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
+TEMP=$(/usr/bin/getopt -o efh --long env,help,force -- "$@")
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
 eval set -- "$TEMP"
 while true ; do
     case "$1" in
         -f|--force) force=1
+            shift ;;
+        -e|--env) leaveenv=1
             shift ;;
         -h|--help) usage
                    shift ;;
@@ -87,8 +90,10 @@ fi
 echo "Removing Directory - ${path}"
 rm -rf ${path}
 
-echo "Removing Directory - ${configs}"
-rm -rf ${configs}
+if [ $leaveenv -eq 0 ]; then
+    echo "Removing Directory - ${configs}"
+    rm -rf ${configs}
+fi
 
 echo "Removing Directory - ${lock}"
 rm -rf ${lock}
