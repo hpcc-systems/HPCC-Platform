@@ -3218,29 +3218,37 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 setState(WUStateArchived);  // to allow delete
             cleanupAndDelete(false,deleteOwned);    // no query, may as well delete 
         }
-        return false;   
+        return false;
     }
 
     StringArray deleteExclusions; // associated files not to delete, added if failure to copy
     Owned<IConstWUAssociatedFileIterator> iter = &q->getAssociatedFiles();
-    SCMStringBuffer name;
-    Owned<IException> exception;
-    Owned<IDllLocation> loc;
-    StringBuffer dst, locpath;
     Owned<IPropertyTree> generatedDlls = createPTree("GeneratedDlls");
     ForEach(*iter)
     {
         IConstWUAssociatedFile & cur = iter->query();
+        SCMStringBuffer name;
         cur.getNameTail(name);
         if (name.length())
         {
             Owned<IDllEntry> entry = queryDllServer().getEntry(name.str());
+            SCMStringBuffer curPath, curIp;
+            cur.getName(curPath);
+            cur.getIp(curIp);
+            SocketEndpoint curEp(curIp.str());
+            RemoteFilename curRfn;
+            curRfn.setPath(curEp, curPath.str());
+            StringBuffer dst(base);
+            addPathSepChar(dst);
+            curRfn.getTail(dst);
+            Owned<IFile> dstFile = createIFile(dst.str());
             if (entry.get())
             {
+                Owned<IException> exception;
+                Owned<IDllLocation> loc;
                 Owned<IPropertyTree> generatedDllBranch = createPTree();
                 generatedDllBranch->setProp("@name", entry->queryName());
                 generatedDllBranch->setProp("@kind", entry->queryKind());
-                exception.clear();
                 try
                 {
                     loc.setown(entry->getBestLocation()); //throws exception if no readable locations
@@ -3255,20 +3263,16 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                 if (!exception)
                 {
                     Owned<IFile> srcfile = createIFile(filename);
-                    addPathSepChar(dst.clear().append(base));
-                    filename.getTail(dst);
-                    Owned<IFile> dstfile = createIFile(dst.str());
                     try
                     {
-                        if (dstfile->exists())
+                        if (dstFile->exists())
                         {
-                            if (streq(srcfile->queryFilename(), dstfile->queryFilename()))
-                                deleteExclusions.append(name.str()); // restored workunit, referencing archive location for query dll
+                            if (streq(srcfile->queryFilename(), dstFile->queryFilename()))
+                                deleteExclusions.append(name.str()); // restored workunit, referencing archive location for query dll (no longer true post HPCC-11191 fix)
                             // still want to delete if already archived but there are source file copies
                         }
                         else
-                            copyFile(dstfile,srcfile);
-                        makeAbsolutePath(dstfile->queryFilename(), locpath.clear());
+                            copyFile(dstFile, srcfile);
                     }
                     catch(IException * e)
                     {
@@ -3280,30 +3284,21 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
                     if (ignoredllerrors)
                     {
                         EXCLOG(exception.get(), "archiveWorkUnit (copying associated file)");
-                        //copy failed, so store original (best) location and don't delete the files
-                        filename.getRemotePath(locpath.clear());
+                        //copy failed, so don't delete the registred dll files
                         deleteExclusions.append(name.str());
                     }
                     else
-                    {
-                        throw exception.getLink();
-                    }
+                        throw exception.getClear();
                 }
-                generatedDllBranch->setProp("@location", locpath.str());
+                // Record Associated path to restore back to
+                StringBuffer restorePath;
+                curRfn.getRemotePath(restorePath);
+                generatedDllBranch->setProp("@location", restorePath.str());
                 generatedDlls->addPropTree("GeneratedDll", generatedDllBranch.getClear());
             }
             else // no generated dll entry
             {
-                SCMStringBuffer localPath, ip;
-                cur.getName(localPath);
-                cur.getIp(ip);
-                SocketEndpoint ep(ip.str());
-                RemoteFilename rfn;
-                rfn.setPath(ep, localPath.str());
-                Owned<IFile> srcFile = createIFile(rfn);
-                addPathSepChar(dst.clear().append(base));
-                rfn.getTail(dst);
-                Owned<IFile> dstFile = createIFile(dst.str());
+                Owned<IFile> srcFile = createIFile(curRfn);
                 try
                 {
                     copyFile(dstFile, srcFile);
@@ -3440,7 +3435,17 @@ bool restoreWorkUnit(const char *base,const char *wuid)
             char const * location = dll.queryProp("@location");
             Owned<IDllEntry> got = queryDllServer().getEntry(name);
             if (!got)
+            {
+                RemoteFilename dstRfn;
+                dstRfn.setRemotePath(location);
+                StringBuffer srcPath(base);
+                addPathSepChar(srcPath);
+                dstRfn.getTail(srcPath);
+                OwnedIFile srcFile = createIFile(srcPath);
+                OwnedIFile dstFile = createIFile(dstRfn);
+                copyFile(dstFile, srcFile);
                 queryDllServer().registerDll(name, kind, location);
+            }
         }
     }
     if (associatedFiles)
