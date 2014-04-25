@@ -115,6 +115,7 @@ public:
 
     StringBuffer &makeScopeQuery(StringBuffer &query, bool absolute=true) const; // returns xpath for containing scope
     StringBuffer &makeFullnameQuery(StringBuffer &query, DfsXmlBranchKind kind, bool absolute=true) const; // return xpath for branch
+    StringBuffer &makeXPathLName(StringBuffer &lfnNodeName) const; // return a mangled logical name compatible with a xpath node name
 
     bool getEp(SocketEndpoint &ep) const;       // foreign and external
     StringBuffer &getGroupName(StringBuffer &grp) const;    // external only

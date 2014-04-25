@@ -1684,7 +1684,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 {
     DBGLOG("CWsDfuEx::doGetFileDetails\n");
 
-    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc);
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(name, udesc, false, false, true); // lock super-owners
     if(!df)
         throw MakeStringException(ECLWATCH_FILE_NOT_EXIST,"Cannot find file %s.",name);
 

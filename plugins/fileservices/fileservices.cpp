@@ -1709,7 +1709,7 @@ FILESERVICES_API void FILESERVICES_CALL fsLogicalFileSuperOwners(ICodeContext *c
     }
     else {
         Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc);
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn.str(),udesc,false,false,true); // lock super-owners
         if (df) {
             Owned<IDistributedSuperFileIterator> iter = df->getOwningSuperFiles();
             ForEach(*iter) {

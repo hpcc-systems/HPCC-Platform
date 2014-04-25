@@ -426,7 +426,7 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
         options.isExplicitFile = false;
     }
 
-    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc);
+    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc,false,false,true); // lock super-owners
     if (!resolved)
         return NULL;
 
@@ -467,6 +467,9 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
             options.primaryDepth++;
         }
 
+        /* JCS->GH - See HPCC-10770, I'd like to remove isSubFile (this is the only place that calls it)
+         * is it necessary here, could it _just_ call getOwningsuperFiles() ?
+         */
         if ((options.superDepth > 0) && resolved->isSubFile())
         {
             options.superDepth--;

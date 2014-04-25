@@ -531,6 +531,7 @@ interface IDistributedFileDirectory: extends IInterface
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
                                         bool hold = false,
+                                        bool lockSuperOwner = false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
@@ -539,6 +540,7 @@ interface IDistributedFileDirectory: extends IInterface
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
                                         bool hold = false,
+                                        bool lockSuperOwner = false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found

@@ -698,7 +698,7 @@ static int dfsexists(const char *lname,IUserDescriptor *user)
 
 static void dfsparents(const char *lname, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
     if (file) {
         Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
         ForEach(*iter) 
@@ -711,7 +711,7 @@ static void dfsparents(const char *lname, IUserDescriptor *user)
 static void dfsunlink(const char *lname, IUserDescriptor *user)
 {
     loop {
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
         if (file) {
             Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
             if (!iter->first())
@@ -1701,7 +1701,7 @@ static void holdlock(const char *logicalFile, const char *mode, IUserDescriptor 
         throw MakeStringException(0,"Invalid mode: %s", mode);
 
     PROGLOG("Looking up file: %s, mode=%s", logicalFile, mode);
-    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalFile, userDesc, write, false, NULL, 5000);
+    Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(logicalFile, userDesc, write, false, false, NULL, 5000);
     if (!file)
     {
         ERRLOG("File not found: %s", logicalFile);
