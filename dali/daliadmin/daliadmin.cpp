@@ -1711,7 +1711,7 @@ static void holdlock(const char *logicalFile, const char *mode, IUserDescriptor 
     if (write)
         writeLock.setown(new DistributedFilePropertyLock(file));
     PROGLOG("File: %s, locked, mode=%s - press a key to release", logicalFile, mode);
-	getchar();
+    getchar();
 }
 
 static const char *getNum(const char *s,unsigned &num)
