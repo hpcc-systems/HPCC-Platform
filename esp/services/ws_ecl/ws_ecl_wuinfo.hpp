@@ -23,13 +23,14 @@
 
 class WsEclWuInfo : public CInterface
 {
-public:
+private:
     Owned<IConstWorkUnit> wu;
     Owned<IPropertyTree> paraminfo;
     Owned<IPropertyTree> xsds;
     StringBuffer schemacache;
 
     StringAttr wuid;
+public:
     StringAttr username;
     StringAttr password;
     StringAttr qsetname;
@@ -43,6 +44,9 @@ public:
     IPropertyTreeIterator *getInputSchemas();
     IPropertyTreeIterator *getResultSchemas();
 
+    const char *ensureWuid();
+    const char *queryWuid(){return wuid.get();}
+    IConstWorkUnit *ensureWorkUnit();
     void getSchemas(StringBuffer &schemas);
     void getOutputSchema(StringBuffer &schema, const char *name);
     void getInputSchema(StringBuffer &schema, const char *name);

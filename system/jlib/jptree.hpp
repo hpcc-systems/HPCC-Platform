@@ -221,6 +221,14 @@ jlib_decl void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent 
 jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
 jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
 
+#define JSON_SortTags 0x01
+#define JSON_Format   0x02
+#define JSON_Sanitize 0x08
+#define JSON_SanitizeAttributeValues 0x10
+
+jlib_decl StringBuffer &toJSON(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, byte flags=JSON_Format);
+jlib_decl void toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, byte flags=JSON_Format);
+
 jlib_decl const char *splitXPath(const char *xpath, StringBuffer &head); // returns tail, fills 'head' with leading xpath
 jlib_decl bool validateXPathSyntax(const char *xpath, StringBuffer *error=NULL);
 jlib_decl bool validateXMLParseXPath(const char *xpath, StringBuffer *error=NULL);
