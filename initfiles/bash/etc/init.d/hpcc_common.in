@@ -538,7 +538,7 @@ stop_component() {
           removePid ${PIDPATH}
           unlock ${LOCKPATH}
        fi
-       return ${RCSTOP}
+       return 0
     fi
     
     stopcmd="${START_STOP_DAEMON} -K -p ${PIDPATH} >> tmp.txt 2>&1"
@@ -579,7 +579,7 @@ stop_component() {
         removePid ${PIDPATH}
         unlock ${LOCKPATH}
         log_success_msg  
-        RCSTOP=3
+        RCSTOP=0
     fi
     return ${RCSTOP}
 }
