@@ -1205,7 +1205,6 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     }
     if (version >= 1.50)
     {
-        StringArray views, urls;
         WsWuInfo winfo(context, wuid);
         resp.setResourceURLCount(winfo.getResourceURLCount());
     }
