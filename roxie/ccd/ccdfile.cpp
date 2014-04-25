@@ -1626,7 +1626,7 @@ public:
 
 CRoxieFileCache * fileCache;
 
-class CResolvedFile : public CInterface, implements IResolvedFileCreator
+class CResolvedFile : public CInterface, implements IResolvedFileCreator, implements ISDSSubscription
 {
 protected:
     IResolvedFileCache *cached;
@@ -1647,6 +1647,7 @@ protected:
     IArrayOf<IResolvedFile> subRFiles;  // To make sure subfiles get locked too
 
     Owned <IPropertyTree> properties;
+    Owned<IDaliPackageWatcher> notifier;
 
     void addFile(const char *subName, IFileDescriptor *fdesc, IFileDescriptor *remoteFDesc)
     {
@@ -1676,6 +1677,19 @@ protected:
         fileSize += base;
     }
 
+    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    {
+        if (traceLevel > 2)
+            DBGLOG("Superfile %s change detected", lfn.get());
+        CriticalBlock b(lock);
+        if (cached)
+        {
+            cached->removeCache(this);
+            cached = NULL;
+        }
+        globalPackageSetManager->requestReload();
+    }
+
     // We cache all the file maps/arrays etc here. 
     mutable CriticalSection lock;
     mutable Owned<IFilePartMap> fileMap;
@@ -1695,6 +1709,9 @@ public:
         {
             if (traceLevel > 5)
                 DBGLOG("Roxie server adding information for file %s", lfn.get());
+            bool tsSet = dFile->getModificationTime(fileTimeStamp);
+            bool csSet = dFile->getFileCheckSum(fileCheckSum);
+            assertex(tsSet); // per Nigel, is always set
             IDistributedSuperFile *superFile = dFile->querySuperFile();
             if (superFile)
             {
@@ -1710,20 +1727,21 @@ public:
                     subDFiles.append(OLINK(sub));
                     addFile(sub.queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
                 }
+                notifier.setown(daliHelper->getSuperFileSubscription(lfn, this));
+                // We have to clone the properties since we don't want to keep the superfile locked
+                properties.setown(createPTreeFromIPT(&dFile->queryAttributes()));
+                dFile.clear();  // We don't lock superfiles
             }
             else // normal file, not superkey
             {
                 isSuper = false;
+                properties.set(&dFile->queryAttributes());
                 Owned<IFileDescriptor> fDesc = dFile->getFileDescriptor();
                 Owned<IFileDescriptor> remoteFDesc;
                 if (daliHelper)
                     remoteFDesc.setown(daliHelper->checkClonedFromRemote(_lfn, fDesc, cacheIt));
                 addFile(dFile->queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
             }
-            bool tsSet = dFile->getModificationTime(fileTimeStamp);
-            bool csSet = dFile->getFileCheckSum(fileCheckSum);
-            assertex(tsSet); // per Nigel, is always set
-            properties.set(&dFile->queryAttributes());
         }
     }
     virtual void beforeDispose()
@@ -2066,6 +2084,14 @@ public:
         return fileSize;
     }
 
+    virtual hash64_t addHash64(hash64_t hashValue) const
+    {
+        hashValue = rtlHash64Data(sizeof(fileTimeStamp), &fileTimeStamp, hashValue);
+        if (fileCheckSum)
+            hashValue = rtlHash64Data(sizeof(fileCheckSum), &fileCheckSum, hashValue);
+        return hashValue;
+    }
+
     virtual void addSubFile(const IResolvedFile *_sub)
     {
         const CResolvedFile *sub = static_cast<const CResolvedFile *>(_sub);
@@ -2130,8 +2156,19 @@ public:
     virtual void remove()
     {
         subFiles.kill();
+        subDFiles.kill();
+        subRFiles.kill();
+        subNames.kill();
+        remoteSubFiles.kill();
+        diskMeta.kill();
         properties.clear();
-        if (dFile)
+        notifier.clear();
+        if (isSuper)
+        {
+            // Because we don't lock superfiles, we need to behave differently
+            UNIMPLEMENTED;
+        }
+        else if (dFile)
         {
             dFile->detach();
         }
@@ -2153,8 +2190,8 @@ public:
     {
         // MORE - this is a little bizarre. We sometimes create a resolvedFile for a file that we are intending to create.
         // This will make more sense if/when we start to lock earlier.
-        if (dFile)
-            return true; // MORE - may need some thought
+        if (dFile || isSuper)
+            return true; // MORE - may need some thought - especially the isSuper case
         else
             return checkFileExists(lfn.get());
     }

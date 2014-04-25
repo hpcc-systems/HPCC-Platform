@@ -99,6 +99,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
 
     virtual const CDateTime &queryTimeStamp() const = 0;
     virtual unsigned queryCheckSum() const = 0;
+    virtual hash64_t addHash64(hash64_t hashValue) const = 0;
 
     virtual const char *queryPhysicalName() const = 0; // Returns NULL unless in local file mode.
     virtual const char *queryFileName() const = 0;

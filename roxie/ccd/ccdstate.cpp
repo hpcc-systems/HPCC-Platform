@@ -74,16 +74,23 @@ SafePluginMap *plugins;
 
 const char *queryNodeFileName(const IPropertyTree &graphNode)
 {
-    const char *id = graphNode.queryProp("att[@name='_fileName']/@value");
-    return id;
+    if (graphNode.hasProp("att[@name='_fileName_dynamic']"))
+        return NULL;
+    else
+        return graphNode.queryProp("att[@name='_fileName']/@value");
 }
 
 const char *queryNodeIndexName(const IPropertyTree &graphNode)
 {
-    const char * id = graphNode.queryProp("att[@name='_indexFileName']/@value");
-    if (!id && !graphNode.hasProp("att[@name='_indexFileName_dynamic']"))   // can remove soon
-        id = graphNode.queryProp("att[@name='_fileName']/@value");
-    return id;
+    if (graphNode.hasProp("att[@name='_indexFileName_dynamic']"))
+        return NULL;
+    else
+    {
+        const char * id = graphNode.queryProp("att[@name='_indexFileName']/@value");
+        if (!id)
+            id = graphNode.queryProp("att[@name='_fileName']/@value");
+        return id;
+    }
 }
 
 class CSimpleSuperFileArray : public CInterface, implements ISimpleSuperFileEnquiry
@@ -707,7 +714,7 @@ protected:
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Invalid parameters to addAlias");
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool forceRetry) = 0;
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool forceRetry) = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -754,8 +761,8 @@ public:
                     if(!package) package = packages.matchPackage(id);
                     if (!package) package = &queryRootRoxiePackage();
                 }
-                assertex(package);
-                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query, forceRetry), hash);
+                assertex(package && QUERYINTERFACE(package, const IRoxiePackage));
+                addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *QUERYINTERFACE(package, const IRoxiePackage), &query, forceRetry), hash);
             }
             catch (IException *E)
             {
@@ -883,7 +890,7 @@ public:
     {
     }
 
-    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool forceRetry)
+    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool forceRetry)
     {
         return createServerQueryFactory(id, dll, package, stateInfo, false, forceRetry);
     }
@@ -907,7 +914,7 @@ public:
         channelNo = _channelNo;
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool forceRetry)
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool forceRetry)
     {
         return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo, false, forceRetry);
     }
@@ -1495,13 +1502,23 @@ class CRoxiePackageSetManager : public CInterface, implements IRoxieQueryPackage
 public:
     IMPLEMENT_IINTERFACE;
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
-        standAloneDll(_standAloneDll)
+        autoReloadThread(*this), standAloneDll(_standAloneDll)
     {
         daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
+        atomic_set(&autoPending, 0);
+        autoReloadThread.start();
     }
 
     ~CRoxiePackageSetManager()
     {
+        autoReloadThread.stop();
+        autoReloadThread.join();
+    }
+
+    virtual void requestReload()
+    {
+        atomic_inc(&autoPending);
+        autoReloadTrigger.signal();
     }
 
     virtual void load()
@@ -1563,8 +1580,7 @@ public:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        reload(false);
-        daliHelper->commitCache();
+        requestReload();
     }
 
 private:
@@ -1574,6 +1590,58 @@ private:
     mutable ReadWriteLock packageCrit;
     InterruptableSemaphore controlSem;
     Owned<CRoxiePackageSetWatcher> allQueryPackages;
+
+    Semaphore autoReloadTrigger;
+    atomic_t autoPending;
+
+    class AutoReloadThread : public Thread
+    {
+        bool closing;
+        CRoxiePackageSetManager &owner;
+    public:
+        AutoReloadThread(CRoxiePackageSetManager &_owner)
+        : owner(_owner), Thread("AutoReloadThread")
+        {
+            closing = false;
+        }
+
+        virtual int run()
+        {
+            if (traceLevel)
+                DBGLOG("AutoReloadThread %p starting", this);
+            while (!closing)
+            {
+                owner.autoReloadTrigger.wait();
+                if (atomic_read(&owner.autoPending))
+                {
+                    atomic_set(&owner.autoPending, 0);
+                    try
+                    {
+                        owner.reload(false); // Arguably true should be better...
+                    }
+                    catch (IException *E)
+                    {
+                        if (!closing)
+                            EXCLOG(MCoperatorError, E, "AutoReloadThread: ");
+                        E->Release();
+                    }
+                    catch (...)
+                    {
+                        DBGLOG("Unknown exception in AutoReloadThread");
+                    }
+                }
+            }
+            if (traceLevel)
+                DBGLOG("AutoReloadThread %p exiting", this);
+            return 0;
+        }
+
+        void stop()
+        {
+            closing = true;
+            owner.autoReloadTrigger.signal();
+        }
+    } autoReloadThread;
 
     void reload(bool forceRetry)
     {
@@ -1594,6 +1662,7 @@ private:
             oldPackages.setown(allQueryPackages.getLink());  // To ensure that the setown just below does not delete it
             allQueryPackages.setown(newPackages.getClear());
         }
+        daliHelper->commitCache();
     }
 
     // Common code used by control:queries and control:getQueryXrefInfo
