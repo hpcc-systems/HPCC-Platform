@@ -11044,7 +11044,7 @@ public:
         : CRoxieServerMultiOutputFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind), isRoot(_isRoot)
     {
         Owned<IHThorDiskWriteArg> helper = (IHThorDiskWriteArg *) helperFactory();
-        isTemp = (helper.getFlags() & TDXtemporary) != 0;
+        isTemp = (helper->getFlags() & TDXtemporary) != 0;
         setNumOutputs(helper->getTempUsageCount());
         if (_kind!=TAKdiskwrite)
             assertex(numOutputs == 0);
