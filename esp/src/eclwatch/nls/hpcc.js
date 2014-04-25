@@ -134,6 +134,7 @@ define({root:
     FilesWithUnknownSize: "Files With Unknown Size",
     FileType: "File Type",
     FileUploader: "File Uploader",
+    FileUploadStillInProgress: "File upload still in progress",
     Filter: "Filter",
     Find: "Find",
     FindNext: "Find Next",
