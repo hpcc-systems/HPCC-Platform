@@ -901,8 +901,6 @@ public:
     virtual ~CWsDeployExCE();
     virtual void init(IPropertyTree *cfg, const char *process, const char *service);
 
-    virtual bool onInit(IEspContext &context, IEspEmptyRequest& req, IEspInitResponse& resp);
-    virtual bool onDeploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
     virtual bool onNavMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
                                                     IEspNavMenuEventResponse &resp);
@@ -977,7 +975,6 @@ public:
     IMPLEMENT_IINTERFACE;
 
     virtual ~CWsDeployEx(){}
-    virtual bool onDeploy(IEspContext &context, IEspDeployRequest &req, IEspDeployResponse &resp);
     virtual bool onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp);
     virtual bool onNavMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
                                                     IEspNavMenuEventResponse &resp);

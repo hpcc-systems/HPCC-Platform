@@ -5624,13 +5624,6 @@ bool CWsDeployFileInfo::deploy(IEspContext &context, IEspDeployRequest& req, IEs
   return true;
 }
 
-bool CWsDeployExCE::onInit(IEspContext &context, IEspEmptyRequest& req, IEspInitResponse& resp)
-{
-  resp.setComponent("WsDeploy");
-  resp.setCommand("Init");
-  return true;
-}
-
 //the following method must be called with ownership of m_mutex
 //
 void CWsDeployFileInfo::generateGraph(IEspContext &context, IConstWsDeployReqInfo *reqInfo)
@@ -6904,12 +6897,6 @@ bool CWsDeployExCE::onAddReqdComps(IEspContext &context, IEspAddReqdCompsRequest
   return fi->addReqdComps(context, req, resp);
 }
 
-bool CWsDeployEx::onDeploy(IEspContext &context, IEspDeployRequest& req, IEspDeployResponse& resp)
-{
-  CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
-  return fi->deploy(context, req, resp);
-}
-
 CWsDeployFileInfo* CWsDeployExCE::getFileInfo(const char* fileName, bool addIfNotFound, bool createFile)
 {
   synchronized block(m_mutexSrv);
@@ -7128,11 +7115,6 @@ bool CWsDeployExCE::onHandleAccessRules(IEspContext &context, IEspHandleAccessRu
 }
 
 bool CWsDeployExCE::onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp)
-{
-  return supportedInEEOnly();
-}
-
-bool CWsDeployExCE::onDeploy(IEspContext &context, IEspDeployRequest& req, IEspDeployResponse& resp)
 {
   return supportedInEEOnly();
 }
