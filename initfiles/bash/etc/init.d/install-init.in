@@ -178,7 +178,7 @@ binPath="$path/bin"
 add_user $user $group $homePath || exit 1
 
 # If user already exists get the home directory
-homePath=$(cat /etc/passwd | grep -e "^$user" | cut -d':' -f6)
+homePath=$(cat /etc/passwd | grep -e "^${user}:" | cut -d':' -f6)
 homeBase=$(dirname $homePath)
 echo ""
 
