@@ -2056,7 +2056,7 @@ void HqlLex::loadXML(const YYSTYPE & errpos, const char *name, const char * chil
         return;
     }
 
-    if (false && inmacro)
+    if (inmacro)
     {
         inmacro->loadXML(errpos, name);
         return;
