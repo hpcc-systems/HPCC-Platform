@@ -220,59 +220,10 @@
 
          function onClickSubmit()
          {
-                if (formSubmitted)
-                    return false;
-            if (method == 'RemoteExec')
-            {
-               os = -1;//unknown
-               var rc = processSelectedItems(ensureSameOS);
-               if (!rc)
-                  alert('Please select machines of the same platform type for remote execution!');
-               return rc;
-            }
-            else if (method == 'GetMachineInfo' || method == 'GetMetrics' || method == 'GetTargetClusterInfo')
-            {
-               var index = method == 'GetMachineInfo' ? 1 : 2; //in fact, nothing is needed here
-               //var src = document.getElementById("SecurityString"+index);
-               //var dest= document.getElementById("SecurityString0");
-               //dest.value = src.value;
-            }
-            else //start or stop
-            {
-                      var op = method.toLowerCase();
-                 excludedServers.length = 0;
-                 excludedCheckboxes.length = 0;
-              //processSelectedItems(ensureStartable);
-              totalItems = 0;
-              checkedCount = 0;
-              checkSelected(document.forms['listitems']);;
-              var rc;
-              if (excludedServers.length > 0)
-              {
-                var bAllChecked = checkedCount == totalItems;
-                              var s = excludedServers.join(', ') + ' cannot be ' + op + 'ed!';
-                              alert(s);
-                              var n = excludedCheckboxes.length;
-                              for (var i=0; i<n; i++)
-                                  excludedCheckboxes[i].checked = false;
-                                
-                              ///countItems();//updates checkedCount and totalItems                     
-                              ///rowsChecked = checkedCount > 0;
-                              ///if (bAllChecked)
-                                ///  checkSelectAllCheckBoxes(false);
-                              document.forms[0].submitBtn.disabled = checkedCount == 0;
-                              rc = false;
-              }
-              else
-              {
-                 rc = confirm('Are you sure you would like to ' + op + ' the selected server(s)?');
-                 if (rc)
-                      document.forms[0].action = '/ws_machine/StartStopBegin?Stop=' + (op=='start' ? '0':'1');
-              }
-            }
-            if (rc)
-                    formSubmitted = true;
-            return rc;
+            if (formSubmitted)
+                return false;
+            formSubmitted = true;
+            return formSubmitted;
          }
          
          function adjustThresholdValue(namePrefix, thresholdType)
@@ -329,41 +280,21 @@
    <div>
          <table border="0">
                 <tr>
-                    <th width="80" align="left">Action:</th>
+                    <th width="80" align="left"><xsl:value-of select="$hpccStrings/st[@id='Action']"/>:</th>
                     <td align="left">
                         <select id="methodObj" onchange="showPreflightControl(options[selectedIndex].value)">
                             <option value="GetMachineInfo">
                                 <xsl:if test="$method='GetMachineInfo'">
                                     <xsl:attribute name="selected">true</xsl:attribute>
                                 </xsl:if>
-                                <xsl:text>Machine Information</xsl:text>
+                                <xsl:value-of select="$hpccStrings/st[@id='MachineInfo']"/>
                             </option>
                             <xsl:if test="($clusterType = 'ROXIEMACHINES') and ($targetCluster = 0)">
                                 <option value="GetMetrics">
                                     <xsl:if test="$method='GetMetrics'">
                                         <xsl:attribute name="selected">true</xsl:attribute>
                                     </xsl:if>
-                                    <xsl:text>Get Roxie Metrics</xsl:text>
-                                </option>
-                            </xsl:if>
-              <!--option value="RemoteExec">
-                                <xsl:if test="$method='RemoteExec'">
-                                    <xsl:attribute name="selected">true</xsl:attribute>
-                                </xsl:if>
-                                <xsl:text>Remote Execution</xsl:text>
-                            </option-->
-                            <xsl:if test="$enableSNMP != 0 and $clusterType='' and ($targetCluster = 0)">
-                                <option value="Start">
-                                    <xsl:if test="$method='Start'">
-                                        <xsl:attribute name="selected">true</xsl:attribute>
-                                    </xsl:if>
-                                    <xsl:text>Start Server(s)</xsl:text>
-                                </option>
-                                <option value="Stop">
-                                    <xsl:if test="$method='Stop'">
-                                        <xsl:attribute name="selected">true</xsl:attribute>
-                                    </xsl:if>
-                                    <xsl:text>Stop Server(s)</xsl:text>
+                                    <xsl:value-of select="$hpccStrings/st[@id='GetRoxieMetrics']"/>
                                 </option>
                             </xsl:if>
                         </select>
@@ -382,9 +313,9 @@
                             <xsl:if test="boolean($getProcessorInfo)">
                                 <xsl:attribute name="checked"/>
                             </xsl:if>
-                        </input>Get processor information</td>
+                        </input><xsl:value-of select="$hpccStrings/st[@id='GetProcessorInformation']"/></td>
                     <td width="8"/>
-                    <td>Warn if CPU usage is over </td>
+                    <td><xsl:value-of select="$hpccStrings/st[@id='WarnIfCPUUsageIsOver']"/> </td>
                     <td align="left">
                         <input type="text" name="CpuThreshold" size="2" value="{$cpuThreshold}" maxlength="3"/> %</td>
                 </tr>
@@ -394,10 +325,10 @@
                             <xsl:if test="$getStorageInfo">
                                 <xsl:attribute name="checked"/>
                             </xsl:if>
-                        </input>Get storage information
+                        </input><xsl:value-of select="$hpccStrings/st[@id='GetStorageInformation']"/>
                      </td>
                     <td width="8"/>
-                    <td>Warn if available memory is under </td>
+                    <td><xsl:value-of select="$hpccStrings/st[@id='WarnIfAvailableMemoryIsUnder']"/> </td>
                     <td align="left">
                         <input type="text" name="MemThreshold" size="2" value="{$memThreshold}" maxlength="6" onchange="adjustThresholdType('Mem', value)"/>
                         <select name="MemThresholdType" onchange="adjustThresholdValue('Mem', options[selectedIndex].value)">
@@ -422,7 +353,7 @@
                             <xsl:if test="$localFileSystemsOnly">
                                 <xsl:attribute name="checked"/>
                             </xsl:if>
-                        </input><xsl:text>Local File Systems Only</xsl:text>
+                        </input><xsl:value-of select="$hpccStrings/st[@id='LocalFileSystemsOnly']"/>
                     </td>
                 </tr>
                 <tr>
@@ -431,9 +362,9 @@
                             <xsl:if test="$getSoftwareInfo">
                                 <xsl:attribute name="checked"/>
                             </xsl:if>
-                        </input>Get software information</td>
+                        </input><xsl:value-of select="$hpccStrings/st[@id='GetSoftwareInformation']"/></td>
                     <td width="8"/>
-                    <td>Warn if available disk space is under </td>
+                    <td><xsl:value-of select="$hpccStrings/st[@id='WarnIfAvailableDiskSpaceIsUnder']"/> </td>
                     <td align="left">
                         <input type="text" name="DiskThreshold" size="2" value="{$diskThreshold}" maxlength="6" onchange="adjustThresholdType('Disk', value)"/>
                         <select name="DiskThresholdType" onchange="adjustThresholdValue('Disk', options[selectedIndex].value)">
@@ -458,27 +389,19 @@
                             <xsl:if test="$applyProcessFilter">
                                 <xsl:attribute name="checked"/>
                             </xsl:if>
-                        </input>Show processes using filter</td>
+                        </input><xsl:value-of select="$hpccStrings/st[@id='ShowProcessesUsingFilter']"/></td>
                     <td/>
           <xsl:choose>
             <xsl:when test="$enableSNMP != 0">
               <td>
-                Security String:<input type="password" id="SecurityString" name="SecurityString" size="17" value="{$securityString}"/>
+                <xsl:value-of select="$hpccStrings/st[@id='SecurityString']"/>:<input type="password" id="SecurityString" name="SecurityString" size="17" value="{$securityString}"/>
               </td>
               <td/>
             </xsl:when>
-            <!--xsl:otherwise>
-              <td>
-                User Name:<input type="text" name="UserName" size="17" value="{$username}"/>
-              </td>
-              <td>
-                Password:<input type="password" name="Password" size="17" value="{$password}"/>
-              </td>
-            </xsl:otherwise-->
           </xsl:choose>
             </tr>
                 <tr>
-                    <td colspan="2">Additional processes to filter: </td>
+                    <td colspan="2"><xsl:value-of select="$hpccStrings/st[@id='AdditionalProcessesToFilter']"/>: </td>
                     <td><input type="text" name="AddProcessesToFilter" id="AddProcessesToFilter" value="{$addProcessesToFilter}" size="35"/>
                     </td>
                 </tr>
@@ -488,11 +411,11 @@
                             <xsl:if test="$autoRefresh &gt; 0">
                                 <xsl:attribute name="checked">true</xsl:attribute>
                             </xsl:if>
-                        </input>Auto Refresh every <input type="text" id="edAutoRefresh" name="AutoRefresh" size="2" value="{$autoRefresh}" onblur="setReloadTimeout(this.value)">
+                        </input><xsl:value-of select="$hpccStrings/st[@id='AutoRefreshEvery']"/> <input type="text" id="edAutoRefresh" name="AutoRefresh" size="2" value="{$autoRefresh}" onblur="setReloadTimeout(this.value)">
                         <xsl:if test="$autoRefresh = 0">
                             <xsl:attribute name="disabled">true</xsl:attribute>
                         </xsl:if>
-                        </input> mins.
+                        </input> <xsl:value-of select="$hpccStrings/st[@id='Mins']"/>
                     </td>
                 </tr>
             </table>
@@ -502,78 +425,9 @@
                 <xsl:if test="$method != 'GetMetrics'">
                     <xsl:attribute name="style">display:none</xsl:attribute>
                 </xsl:if>
-                <!--table border="0">
-          <xsl:if test="$enableSNMP != 0">
-            <tr>
-              <td>Security String:</td>
-              <td>
-                <input type="password" id="SecurityString2" name="SecurityString2" size="15" value="{$securityString}"/>
-              </td>
-            </tr>
-          </xsl:if>
-                    <tr>
-                        <td/>
-                    </tr>
-                </table-->
             </div>
         </xsl:if>
-        <div id="RemoteExec">
-            <xsl:if test="$method != 'RemoteExec'">
-                <xsl:attribute name="style">display:none</xsl:attribute>
-            </xsl:if>
-            <table border="0">          
-                <tr>
-                    <td colspan="2">
-                        <table border="0" cellpadding="0">
-                            <tr>
-                                <td width="80">Command: </td>
-                                <td><input type="text" name="Command" size="30" value="{$command}"/></td>
-                            </tr>
-                            <tr>
-                                <td>User Name: </td>
-                                <td><input type="text" id="Key3" name="Key3" size="20" value=""/></td>
-                            </tr>
-                            <tr>
-                                <td>Password: </td>
-                                <td><input type="password" id="Key3" name="Key4" size="20" value=""/></td>
-                            </tr>
-                            <tr>
-                                <td colspan="2">
-                                    <input type="checkbox" name="Wait" align="left">
-                                        <xsl:if test="$waitUntilDone">
-                                            <xsl:attribute name="checked"/>
-                                        </xsl:if> Wait until done</input>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        <div id="StartStop">
-            <xsl:if test="$method != 'Start' and $method != 'Stop'">
-                <xsl:attribute name="style">display:none</xsl:attribute>
-            </xsl:if>
-      <xsl:if test="$enableSNMP != 0">
-        <table border="0">          
-                  <tr>
-                      <td colspan="2">
-                          <table border="0" cellpadding="0">
-                              <tr>
-                                  <td>User Name: </td>
-                                  <td><input type="text" id="Key1" name="Key1" size="20" value=""/></td>
-                              </tr>
-                              <tr>
-                                  <td>Password: </td>
-                                  <td><input type="password" id="Key2" name="Key2" size="20" value=""/></td>
-                              </tr>
-                          </table>
-                      </td>
-                  </tr>
-              </table>
-      </xsl:if>
-    </div>
-    <input type="submit" value="Submit" id="submitBtn" onclick="return onClickSubmit()"/>
+    <input type="submit" value="{$hpccStrings/st[@id='Submit']}" id="submitBtn" onclick="return onClickSubmit()"/>
 </xsl:template>
 
 </xsl:stylesheet>

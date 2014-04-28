@@ -86,6 +86,21 @@ void CWsTopologyEx::init(IPropertyTree *cfg, const char *process, const char *se
     m_enableSNMP = false;
 }
 
+StringBuffer& CWsTopologyEx::getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage)
+{
+    context.getAcceptLanguage(acceptLanguage);
+    if (!acceptLanguage.length())
+    {
+        acceptLanguage.set("en");
+        return acceptLanguage;
+    }
+    acceptLanguage.setLength(2);
+    VStringBuffer languageFile("%ssmc_xslt/nls/%s/hpcc.xml", getCFD(), acceptLanguage.str());
+    if (!checkFileExists(languageFile.str()))
+        acceptLanguage.set("en");
+    return acceptLanguage;
+}
+
 void CWsTopologyEx::loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue, 
                                                     bool& bThresholdIsPercentage)
 {
@@ -174,6 +189,12 @@ bool CWsTopologyEx::onTpLogFile(IEspContext &context,IEspTpLogFileRequest  &req,
         if (!type || !*type)
             throw MakeStringException(ECLWATCH_INVALID_FILE_NAME,"File type not specified.");
 
+        double version = context.getClientVersion();
+        if (version >= 1.20)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+        }
         if (streq(type,"thormaster_log") || streq(type,"tpcomp_log"))
         {
             readTpLogFile(context, name, type, req, resp);
@@ -951,6 +972,11 @@ bool CWsTopologyEx::onTpClusterQuery(IEspContext &context, IEspTpClusterQueryReq
         {       
             resp.setEnableSNMP(m_enableSNMP);
         }
+        if (version >= 1.20)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+        }
 
         resp.setTpClusters(clusters);
     }
@@ -1095,6 +1121,11 @@ bool CWsTopologyEx::onTpTargetClusterQuery(IEspContext &context, IEspTpTargetClu
         if ((version > 1.12) && (m_preflightProcessFilter.length() > 0))
         {       
             resp.setPreflightProcessFilter(m_preflightProcessFilter);
+        }
+        if (version >= 1.20)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
         }
     }
     catch(IException* e)
@@ -1267,6 +1298,11 @@ bool CWsTopologyEx::onTpServiceQuery(IEspContext &context, IEspTpServiceQueryReq
         {       
             resp.setPreflightProcessFilter(m_preflightProcessFilter);
         }
+        if (version >= 1.20)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+        }
     }
     catch(IException* e)
     {   
@@ -1332,6 +1368,11 @@ bool CWsTopologyEx::onTpMachineQuery(IEspContext &context, IEspTpMachineQueryReq
         if (version > 1.14 && hasThorSpareProcess)
         {
             resp.setHasThorSpareProcess( hasThorSpareProcess );
+        }
+        if (version >= 1.20)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
         }
     }
     catch(IException* e)

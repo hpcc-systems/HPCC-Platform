@@ -509,6 +509,7 @@ ESPresponse [exceptions_inline] FileListResponse
     string Mask;
     int    OS;
     bool DirectoryOnly(false);
+    [min_ver("1.10")] string AcceptLanguage;
     ESParray<ESPStruct PhysicalFileStruct> files;   
 };
 
@@ -606,7 +607,7 @@ ESPresponse [exceptions_inline] UploadFilesResponse
 };
 
 ESPservice [
-    version("1.09"), default_client_version("1.09"),
+    version("1.10"), default_client_version("1.10"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;
