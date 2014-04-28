@@ -77,13 +77,13 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.query = ESPQuery.Get(params.QuerySet, params.QueryId);
+            this.query = ESPQuery.Get(params.QuerySetId, params.Id);
         },
 
         setContent: function (target, type, postfix) {
             var context = this;
             WsTopology.GetWsEclIFrameURL(type).then(function (response) {
-                var src = response + encodeURIComponent(context.params.QuerySet + "/" + context.params.QueryId + (postfix ? postfix : ""));
+                var src = response + encodeURIComponent(context.params.QuerySetId + "/" + context.params.Id + (postfix ? postfix : ""));
                 target.set("content", dojo.create("iframe", {
                     src: src,
                     style: "border: 0; width: 100%; height: 100%"
@@ -102,10 +102,10 @@ define([
                     this.setContent(currSel, "forms/json");
                 } else if (currSel.id === this.id + "_WSDL") {
                     //  .../WsEcl/definitions/query/roxie/countydeeds.1/main/countydeeds.1.wsdl?display
-                    this.setContent(currSel, "definitions", "/main/" + this.params.QueryId + ".wsdl?display");
+                    this.setContent(currSel, "definitions", "/main/" + this.params.Id + ".wsdl?display");
                 } else if (currSel.id === this.id + "_RequestSchema") {
                     //  .../WsEcl/definitions/query/roxie/countydeeds.1/main/countydeeds.1.xsd?display
-                    this.setContent(currSel, "definitions", "/main/" + this.params.QueryId + ".xsd?display");
+                    this.setContent(currSel, "definitions", "/main/" + this.params.Id + ".xsd?display");
                 } else if (currSel.id === this.id + "_ResponseSchemaBorder") {
                     var wu = this.query.getWorkunit();
                     var context = this;
@@ -129,7 +129,7 @@ define([
                     this.setContent(currSel, "example/response", "?display");
                 } else if (currSel.id === this.id + "_ParamXML") {
                     //  .../WsEcl/definitions/query/roxie/countydeeds.1/resource/soap/countydeeds.1.xml?display
-                    this.setContent(currSel, "definitions", "/resource/soap/" + this.params.QueryId + ".xml?display");
+                    this.setContent(currSel, "definitions", "/resource/soap/" + this.params.Id + ".xml?display");
                 } else if (currSel.id === this.id + "_Form") {
                     //  .../WsEcl/forms/ecl/query/roxie/countydeeds.1
                     this.setContent(currSel, "forms/ecl");

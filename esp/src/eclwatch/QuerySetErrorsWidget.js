@@ -29,11 +29,11 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/WsWorkunits",
+    "hpcc/ESPQuery",
     "hpcc/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, WsWorkunits, ESPUtil) {
+                GridDetailsWidget, ESPQuery, ESPUtil) {
     return declare("QuerySetErrorsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -46,6 +46,9 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
+
+            this.query = ESPQuery.Get(params.QuerySetId, params.Id);
+
             this.refreshGrid();
         },
 
@@ -73,20 +76,22 @@ define([
         },
 
         refreshGrid: function (args) {
-            var errors = [];
-            if (lang.exists("params.Query.Clusters.ClusterQueryState", this)) {
-                var context = this;
-                arrayUtil.forEach(this.params.Query.Clusters.ClusterQueryState, function (item, idx) {
-                    var error = {
-                        Cluster: item.Cluster,
-                        Errors: item.Errors,
-                        State: item.State
-                    }
-                    errors.push(error);
-                });
-            }
-            this.store.setData(errors);
-            this.grid.refresh();
+            var context = this;
+            this.query.refresh().then(function (response) {
+                var errors = [];
+                if (lang.exists("query.Clusters.ClusterQueryState", context)) {
+                    arrayUtil.forEach(context.query.Clusters.ClusterQueryState, function (item, idx) {
+                        var error = {
+                            Cluster: item.Cluster,
+                            Errors: item.Errors,
+                            State: item.State
+                        }
+                        errors.push(error);
+                    });
+                }
+                context.store.setData(errors);
+                context.grid.refresh();
+            });
         }
     });
 });

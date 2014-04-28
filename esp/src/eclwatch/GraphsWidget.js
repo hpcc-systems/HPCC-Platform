@@ -32,6 +32,7 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
+    "hpcc/ESPQuery",
     "hpcc/DelayLoadWidget",
     "hpcc/TimingTreeMapWidget",
     "hpcc/ESPUtil"
@@ -39,7 +40,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 Button,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, ESPQuery, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
     return declare("GraphsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -75,8 +76,8 @@ define([
                     }
                 });
             }
-            else if (params.Query){
-                this.query = params.Query;
+            else if (params.QuerySetId && params.Id) {
+                this.query = ESPQuery.Get(params.QuerySetId, params.Id);
                 this.refreshGrid();
             }
 
@@ -197,21 +198,24 @@ define([
                     }
                 });
             } else if (this.query) {
-                var graphs = [];
-                if (lang.exists("GraphIds.Item", this.query)) {
-                    arrayUtil.forEach(this.query.GraphIds.Item, function (item, idx) {
-                        var graph = {
-                            Name: item,
-                            Label: "",
-                            Completed: "",
-                            Time: 0,
-                            Type: ""
-                        };
-                        graphs.push(graph);
-                    });
-                }
-                this.store.setData(graphs);
-                this.grid.refresh();
+                var context = this;
+                this.query.refresh().then(function (response) {
+                    var graphs = [];
+                    if (lang.exists("GraphIds.Item", context.query)) {
+                        arrayUtil.forEach(context.query.GraphIds.Item, function (item, idx) {
+                            var graph = {
+                                Name: item,
+                                Label: "",
+                                Completed: "",
+                                Time: 0,
+                                Type: ""
+                            };
+                            graphs.push(graph);
+                        });
+                    }
+                    context.store.setData(graphs);
+                    context.grid.refresh();
+                });
             }
         },
 

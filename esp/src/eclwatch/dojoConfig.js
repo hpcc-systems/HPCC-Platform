@@ -26,6 +26,7 @@ var dojoConfig = (function () {
         parseOnLoad: false,
         urlInfo: urlInfo,
         isDebug: (typeof debugConfig !== "undefined"),
+        selectorEngine: "lite",
         getURL: function (name) {
             return this.urlInfo.resourcePath + "/" + name;
         },

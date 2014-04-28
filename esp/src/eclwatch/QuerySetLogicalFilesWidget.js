@@ -48,9 +48,8 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            if (params.Query) {
-                this.query = params.Query
-            }
+            this.query = ESPQuery.Get(params.QuerySetId, params.Id);
+
             this.refreshGrid();
         },
 
@@ -96,20 +95,20 @@ define([
         },
 
         refreshGrid: function (args) {
-            if (this.query) {
+            var context = this;
+            this.query.refresh().then(function (response) {
                 var logicalFiles = [];
-                if (lang.exists("LogicalFiles.Item", this.query)) {
-                    var context = this;
-                    arrayUtil.forEach(this.query.LogicalFiles.Item, function (item, idx) {
+                if (lang.exists("LogicalFiles.Item", context.query)) {
+                    arrayUtil.forEach(context.query.LogicalFiles.Item, function (item, idx) {
                         var file = {
                             Name: item
                         }
                         logicalFiles.push(file);
                     });
                 }
-                this.store.setData(logicalFiles);
-                this.grid.refresh();
-            }
+                context.store.setData(logicalFiles);
+                context.grid.refresh();
+            });
         }
     });
 });

@@ -544,7 +544,10 @@ define([
                         delayWidget: "QuerySetDetailsWidget",
                         hpcc: {
                             type: "QuerySetDetailsWidget",
-                            params: params
+                            params: {
+                                QuerySetId: params.QuerySetId,
+                                Id: params.Id
+                            }
                         }
                     });
                 }

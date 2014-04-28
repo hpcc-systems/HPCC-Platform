@@ -47,11 +47,15 @@ define([
         init: function (params) {
             if (this.inherited(arguments))
                 return;
-            this.query = ESPQuery.Get(params.QuerySet, params.QueryId);
+            this.query = ESPQuery.Get(params.QuerySetId, params.Id);
             this.refreshGrid();
-            this.store.getChildren = function(parent, options){
+        },
+
+        createGrid: function (domID) {
+            var context = this;
+            this.store.getChildren = function (parent, options) {
                 var children = [];
-                arrayUtil.forEach(parent.SubFiles.File, function(item, idx) {
+                arrayUtil.forEach(parent.SubFiles.File, function (item, idx) {
                     children.push({
                         __hpcc_id: item,
                         __hpcc_display: item
@@ -60,12 +64,8 @@ define([
                 return QueryResults(children);
             }
             this.store.mayHaveChildren = function (object) {
-              return object.__hpcc_type;
+                return object.__hpcc_type;
             };
-        },
-
-        createGrid: function (domID) {
-            var context = this;
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
@@ -125,20 +125,21 @@ define([
         },
 
         refreshGrid: function (args) {
-            if (this.query) {
+            var context = this;
+            this.query.refresh().then(function (response) {
                 var superfiles = [];
-                if (lang.exists("SuperFiles.SuperFile", this.query)) {
-                    arrayUtil.forEach(this.query.SuperFiles.SuperFile, function (item, idx) {
+                if (lang.exists("SuperFiles.SuperFile", context.query)) {
+                    arrayUtil.forEach(context.query.SuperFiles.SuperFile, function (item, idx) {
                         superfiles.push(lang.mixin({
                             __hpcc_id: item.Name,
-                            __hpcc_display:  item.Name,
+                            __hpcc_display: item.Name,
                             __hpcc_type: item.Name
                         }, item));
                     });
                 }
-            this.store.setData(superfiles);
-            this.grid.refresh();
-            }
+                context.store.setData(superfiles);
+                context.grid.refresh();
+            });
         }
     });
 });
