@@ -20,11 +20,12 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/Stateful",
+    "dojo/query",
     "dojo/json",
 
     "dijit/registry",
     "dijit/Tooltip"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Stateful, json,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Stateful, query, json,
     registry, Tooltip) {
 
     var SingletonData = declare([Stateful], {
@@ -179,6 +180,14 @@ define([
                 this.onSelectedChangedCallback = callback;
                 this.on("dgrid-select, dgrid-deselect, dgrid-refresh-complete", function (event) {
                     callback(event);
+                });
+            },
+
+            clearSelection: function () {
+                this.inherited(arguments);
+                query("input[type=checkbox]", this.domNode).forEach(function (node) {
+                    node.checked = false;
+                    node.indeterminate = false;
                 });
             },
 
