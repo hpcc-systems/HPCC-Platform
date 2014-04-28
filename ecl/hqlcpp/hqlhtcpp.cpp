@@ -2218,7 +2218,7 @@ void ActivityInstance::buildPrefix()
         }
 
         oncreatectx.associateExpr(insideOnCreateMarker, NULL);
-        oncreatectx.addQuoted("ctx = _ctx;");
+        oncreatectx.addQuotedLiteral("ctx = _ctx;");
 
         evalContext->onCreate.createFunctionStructure(translator, oncreatectx, true, executedRemotely ? "serializeCreateContext" : NULL);
         if (onCreateStmt)
@@ -2788,7 +2788,7 @@ void GlobalClassBuilder::buildClass(unsigned priority)
         classctx.setNextPriority(priority);
     classStmt = classctx.addQuotedCompound(s, ";");
     if (!baseName)
-        classctx.addQuoted("ICodeContext * ctx;");
+        classctx.addQuotedLiteral("ICodeContext * ctx;");
     classctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
 
     //Generate functions in the order i) always callable ii) after create iii) after start
@@ -2806,7 +2806,7 @@ void GlobalClassBuilder::buildClass(unsigned priority)
     BuildCtx oncreatectx(createctx);
     onCreateStmt = oncreatectx.addQuotedCompound("void onCreate(ICodeContext * _ctx)");
     oncreatectx.associateExpr(insideOnCreateMarker, NULL);
-    oncreatectx.addQuoted("ctx = _ctx;");
+    oncreatectx.addQuotedLiteral("ctx = _ctx;");
 
     evalContext->onCreate.createFunctionStructure(translator, oncreatectx, true, NULL);
     onCreateStmt->finishedFramework();
@@ -2827,8 +2827,8 @@ void GlobalClassBuilder::completeClass(unsigned priority)
             accessctx.setNextPriority(priority);
         accessctx.addQuotedCompound(prototype);
         accessctx.addQuoted(s.clear().append(className).append("* p = new ").append(className).append("(activityId); "));
-        accessctx.addQuoted("p->onCreate(ctx);");
-        accessctx.addQuoted("return p;");
+        accessctx.addQuotedLiteral("p->onCreate(ctx);");
+        accessctx.addQuotedLiteral("return p;");
 
         if (translator.queryOptions().spanMultipleCpp)
         {
@@ -4112,7 +4112,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
                 getctx.addQuotedCompound(s);
                 s.clear().append("if (!data) return ").append(maxLength).append(";");
                 getctx.addQuoted(s.str());
-                getctx.addQuoted("const unsigned char * left = (const unsigned char *)data;");
+                getctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *)data;");
 
                 OwnedHqlExpr selfDs = createDataset(no_null, LINK(instance.queryRecord()));
                 BoundRow * selfRow = bindTableCursorOrRow(getctx, selfDs, "left");
@@ -5234,8 +5234,8 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
 
     BuildCtx funcctx(classctx);
     funcctx.addQuotedCompound("virtual int docompare(const void * _left, const void * _right) const");
-    funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-    funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+    funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
     bindTableCursor(funcctx, datasetLeft, "left", no_left, selSeq);
@@ -5281,8 +5281,8 @@ void HqlCppTranslator::buildCompareEqClass(BuildCtx & ctx, const char * name, IH
 
     BuildCtx funcctx(classctx);
     funcctx.addQuotedCompound("virtual bool match(const void * _left, const void * _right) const");
-    funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-    funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+    funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
     bindTableCursor(funcctx, datasetLeft, "left", no_left, selSeq);
@@ -5314,8 +5314,8 @@ void HqlCppTranslator::buildNaryCompareClass(BuildCtx & ctx, const char * name, 
 
     BuildCtx funcctx(classctx);
     funcctx.addQuotedCompound("virtual bool match(unsigned numRows, const void * * _rows) const");
-    funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _rows[0];");
-    funcctx.addQuoted("unsigned char * * rows = (unsigned char * *) _rows;");
+    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
+    funcctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
     bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
@@ -5397,8 +5397,8 @@ void HqlCppTranslator::buildCompareClass(BuildCtx & ctx, const char * name, IHql
 
     BuildCtx funcctx(comparectx);
     funcctx.addQuotedCompound("virtual int docompare(const void * _left, const void * _right) const");
-    funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-    funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+    funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
     buildReturnOrder(funcctx, sortList, dataset);
@@ -6753,13 +6753,13 @@ void HqlCppTranslator::buildRecordSerializeExtract(BuildCtx & ctx, IHqlExpressio
             ctx.addQuoted(s.append("size32_t size = ").append(meta.queryInstanceObject()).append(".getRecordSize(_left);"));
         }
 
-        ctx.addQuoted("byte * self = crSelf.ensureCapacity(size, NULL);");
-        ctx.addQuoted("memcpy(crSelf.row(), _left, size);");
-        ctx.addQuoted("return size;");
+        ctx.addQuotedLiteral("byte * self = crSelf.ensureCapacity(size, NULL);");
+        ctx.addQuotedLiteral("memcpy(crSelf.row(), _left, size);");
+        ctx.addQuotedLiteral("return size;");
     }
     else
     {
-        ctx.addQuoted("const byte * left = (const byte *)_left;");
+        ctx.addQuotedLiteral("const byte * left = (const byte *)_left;");
         BoundRow * self = bindSelf(ctx, serializedDataset, "crSelf");
         BoundRow * left = bindTableCursor(ctx, memoryDataset, "left");
         OwnedHqlExpr rhs = ensureActiveRow(left->querySelector());
@@ -8123,7 +8123,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityMerge(BuildCtx & ctx, IHqlExpr
     if (sorts.ordinality() != 0)
     {
         OwnedHqlExpr sortOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-        instance->startctx.addQuoted("virtual ICompare * queryCompare() { return &compare; }");
+        instance->startctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
 
         DatasetReference dsRef(dataset, no_activetable, NULL);
         buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
@@ -8368,7 +8368,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     {
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual bool sendToLoop(unsigned counter, const void * _self)");
-        funcctx.addQuoted("unsigned char * self = (unsigned char *) _self;");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
 
         associateCounter(funcctx, counter, "counter");
         bindTableCursor(funcctx, dataset, "self", no_left, selSeq);
@@ -8382,7 +8382,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
     {
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual bool loopAgain(unsigned counter, unsigned numRows, const void * * _rows)");
-        funcctx.addQuoted("unsigned char * * rows = (unsigned char * *) _rows;");
+        funcctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
 
         associateCounter(funcctx, counter, "counter");
 
@@ -8425,7 +8425,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLoop(BuildCtx & ctx, IHqlExpre
             Owned<ITypeInfo> setType = makeSetType(LINK(unsignedType));
             BuildCtx funcctx(instance->startctx);
             funcctx.addQuotedCompound("virtual void numParallelIterations(size32_t & __lenResult, void * & __result)");
-            funcctx.addQuoted("bool __isAllResult;");
+            funcctx.addQuotedLiteral("bool __isAllResult;");
             doBuildFunctionReturn(funcctx, setType, parallelList);
         }
     }
@@ -9368,13 +9368,13 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
         {
             if (header->queryType()->isInteger())
             {
-                classctx.addQuoted("virtual const char * getHeader() { return NULL; }");
+                classctx.addQuotedLiteral("virtual const char * getHeader() { return NULL; }");
                 doBuildUnsignedFunction(classctx, "queryHeaderLen", header);
             }
             else
             {
                 doBuildVarStringFunction(classctx, "getHeader", header);
-                classctx.addQuoted("virtual unsigned queryHeaderLen() { return 1; }");
+                classctx.addQuotedLiteral("virtual unsigned queryHeaderLen() { return 1; }");
             }
         }
         else
@@ -9389,7 +9389,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
             }
             OwnedHqlExpr namesExpr = createConstant(names.str());
             doBuildVarStringFunction(classctx, "getHeader", namesExpr);
-            classctx.addQuoted("virtual unsigned queryHeaderLen() { return 1; }");
+            classctx.addQuotedLiteral("virtual unsigned queryHeaderLen() { return 1; }");
         }
 
         if (isReading)
@@ -9409,8 +9409,8 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
     }
     else
     {
-        classctx.addQuoted("virtual const char * getHeader() { return NULL; }");
-        classctx.addQuoted("virtual unsigned queryHeaderLen() { return 0; }");
+        classctx.addQuotedLiteral("virtual const char * getHeader() { return NULL; }");
+        classctx.addQuotedLiteral("virtual unsigned queryHeaderLen() { return 0; }");
     }
 
 
@@ -9435,7 +9435,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
 
     endNestedClass();
 
-    subctx.addQuoted("virtual ICsvParameters * queryCsvParameters() { return &csv; }");
+    subctx.addQuotedLiteral("virtual ICsvParameters * queryCsvParameters() { return &csv; }");
 }
 
 void HqlCppTranslator::buildCsvWriteScalar(BuildCtx & ctx, IHqlExpression * expr, IAtom * encoding)
@@ -9859,7 +9859,7 @@ void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpressio
     BuildCtx subctx(ctx);
     subctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IBlobCreator * blobs, unsigned __int64 & filepos)");
     ensureRowAllocated(subctx, "crSelf");
-    subctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+    subctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     associateBlobHelper(subctx, srcDataset, "blobs");
 
     BoundRow * selfCursor = bindSelf(subctx, tgtDataset, "crSelf");
@@ -10133,7 +10133,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
             HqlExprArray sorts;
             gatherIndexBuildSortOrder(sorts, expr, options.sortIndexPayload);
             OwnedHqlExpr sortOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-            instance->startctx.addQuoted("virtual ICompare * queryCompare() { return &compare; }");
+            instance->startctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
 
             DatasetReference dsRef(dataset);
             buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
@@ -10294,11 +10294,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (expr->hasAttribute(repeatAtom))
             {
                 //virtual const char * getPipeProgram() { return "grep"; }
-                instance->startctx.addQuoted("virtual const char * getPipeProgram() { return NULL; }");
+                instance->startctx.addQuotedLiteral("virtual const char * getPipeProgram() { return NULL; }");
 
                 BuildCtx pipeCtx(instance->startctx);
                 pipeCtx.addQuotedCompound("virtual char * getNameFromRow(const void * _self)");
-                pipeCtx.addQuoted("const unsigned char * self = (const unsigned char *) _self;");
+                pipeCtx.addQuotedLiteral("const unsigned char * self = (const unsigned char *) _self;");
                 bindTableCursor(pipeCtx, dataset, "self");
                 buildReturn(pipeCtx, pipe, unknownVarStringType);
             }
@@ -10311,9 +10311,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             }
 
             if (csvAttr)
-                instance->classctx.addQuoted("virtual IHThorCsvWriteExtra * queryCsvOutput() { return this; }");
+                instance->classctx.addQuotedLiteral("virtual IHThorCsvWriteExtra * queryCsvOutput() { return this; }");
             if (xmlAttr)
-                instance->classctx.addQuoted("virtual IHThorXmlWriteExtra * queryXmlOutput() { return this; }");
+                instance->classctx.addQuotedLiteral("virtual IHThorXmlWriteExtra * queryXmlOutput() { return this; }");
 
             StringBuffer flags;
             if (expr->hasAttribute(repeatAtom))
@@ -11160,11 +11160,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
     if (expr->hasAttribute(repeatAtom))
     {
         //virtual const char * getPipeProgram() { return "grep"; }
-        instance->startctx.addQuoted("virtual const char * getPipeProgram() { return NULL; }");
+        instance->startctx.addQuotedLiteral("virtual const char * getPipeProgram() { return NULL; }");
 
         BuildCtx pipeCtx(instance->startctx);
         pipeCtx.addQuotedCompound("virtual char * getNameFromRow(const void * _self)");
-        pipeCtx.addQuoted("const unsigned char * self = (const unsigned char *) _self;");
+        pipeCtx.addQuotedLiteral("const unsigned char * self = (const unsigned char *) _self;");
         bindTableCursor(pipeCtx, dataset, "self");
         buildReturn(pipeCtx, pipe, unknownVarStringType);
     }
@@ -11179,13 +11179,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
     if (csvToPipe)
     {
         buildCsvWriteMembers(instance, dataset, csvToPipe);
-        instance->classctx.addQuoted("virtual IHThorCsvWriteExtra * queryCsvOutput() { return this; }");
+        instance->classctx.addQuotedLiteral("virtual IHThorCsvWriteExtra * queryCsvOutput() { return this; }");
     }
 
     if (xmlToPipe)
     {
         buildXmlWriteMembers(instance, dataset, xmlToPipe);
-        instance->classctx.addQuoted("virtual IHThorXmlWriteExtra * queryXmlOutput() { return this; }");
+        instance->classctx.addQuotedLiteral("virtual IHThorXmlWriteExtra * queryXmlOutput() { return this; }");
     }
 
     bool usesContents = false;
@@ -11297,7 +11297,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
         if (!noNeedToSort)
         {
             DBGLOG("Lightweight true, but code generator didn't think sort was required");
-            ctx.addQuoted("//Forced by lightweight");
+            ctx.addQuotedLiteral("//Forced by lightweight");
         }
         s.clear().append("virtual bool is").append(sideText).append("AlreadySorted() { return true; }");
         ctx.addQuoted(s);
@@ -11318,8 +11318,8 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
 
         BuildCtx funcctx(classctx);
         funcctx.addQuotedCompound("virtual int docompare(const void * _left, const void * _right) const");
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-        funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+        funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
         OwnedHqlExpr groupOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
@@ -11390,7 +11390,7 @@ void HqlCppTranslator::generateSerializeFunction(BuildCtx & ctx, const char * fu
     s.append("virtual unsigned ").append(funcName).append("(ARowBuilder & crSelf, const void * _src, unsigned & thisRecordSize)");
     r2kctx.addQuotedCompound(s);
     ensureRowAllocated(r2kctx, "crSelf");
-    r2kctx.addQuoted("const unsigned char * src = (const unsigned char *) _src;");
+    r2kctx.addQuotedLiteral("const unsigned char * src = (const unsigned char *) _src;");
 
     OwnedHqlExpr selSeq = createDummySelectorSequence();
     BoundRow * tgtCursor = bindSelf(ctx, tgtDataset.queryDataset(), "crSelf");
@@ -11969,7 +11969,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         {
             transformctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned numRows, const void * * _rows)");
             ensureRowAllocated(transformctx, "crSelf");
-            transformctx.addQuoted("unsigned char * * rows = (unsigned char * *) _rows;");
+            transformctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
 
 
             BoundRow * selfCursor = buildTransformCursors(transformctx, transform, dataset1, dataset2, instance->dataset, selSeq);
@@ -12002,7 +12002,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     {
         //if left and right match, then leftright compare function is also the same
         if (canReuseLeftCompare && !joinInfo.hasOptionalEqualities())
-            instance->nestedctx.addQuoted("virtual ICompare * queryCompareLeftRight() { return &compareLeft; }");
+            instance->nestedctx.addQuotedLiteral("virtual ICompare * queryCompareLeftRight() { return &compareLeft; }");
         else
             doCompareLeftRight(instance->nestedctx, "CompareLeftRight", lhsDsRef, rhsDsRef, joinInfo.queryLeftReq(), joinInfo.queryRightReq());
     }
@@ -12035,7 +12035,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             buildHashOfExprsClass(instance->nestedctx, "HashRight", rightList, rhsDsRef, false);
         }
         else
-            instance->nestedctx.addQuoted("virtual IHash * queryHashRight() { return &HashLeft; }");
+            instance->nestedctx.addQuotedLiteral("virtual IHash * queryHashRight() { return &HashLeft; }");
     }
 
     if (joinInfo.hasOptionalEqualities())
@@ -12208,9 +12208,9 @@ BoundRow * HqlCppTranslator::buildTransformCursors(BuildCtx & ctx, IHqlExpressio
     assertRecordTypesMatch(self->queryRecord(), transform->queryRecord());
 
     if (left)
-        ctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+        ctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     if (right)
-        ctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        ctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
 
     // Bind left to "left" and right to RIGHT
     BoundRow * leftRow = NULL;
@@ -12336,8 +12336,8 @@ void HqlCppTranslator::buildProcessTransformFunction(BuildCtx & ctx, IHqlExpress
 
     ensureRowAllocated(funcctx, "crSelf");
     ensureRowAllocated(funcctx, "crSelfRight");
-    funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-    funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+    funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
     bindTableCursor(funcctx, right, "right", no_right, selSeq);
 
@@ -12561,7 +12561,7 @@ void HqlCppTranslator::doBuildAggregateFirstFunc(BuildCtx & ctx, IHqlExpression 
     BuildCtx funcctx(ctx);
     funcctx.addQuotedCompound("virtual size32_t processFirst(ARowBuilder & crSelf, const void * _src)");
     ensureRowAllocated(funcctx, "crSelf");
-    funcctx.addQuoted("unsigned char * src = (unsigned char *) _src;");
+    funcctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
 
     //NOTE: no_throughaggregate recordof(expr) != tgtRecord => we need to create a temporary dataset
     OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(tgtRecord));
@@ -12580,7 +12580,7 @@ void HqlCppTranslator::doBuildAggregateNextFunc(BuildCtx & ctx, IHqlExpression *
     BuildCtx funcctx(ctx);
     funcctx.addQuotedCompound("virtual size32_t processNext(ARowBuilder & crSelf, const void * _src)");
     //no need ensureRowAllocated(funcctx, "crSelf");
-    funcctx.addQuoted("unsigned char * src = (unsigned char *) _src;");
+    funcctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
 
     OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(tgtRecord));
     BoundRow * selfRow = bindSelf(funcctx, resultDataset, "crSelf");
@@ -12724,7 +12724,7 @@ void HqlCppTranslator::doBuildAggregateMergeFunc(BuildCtx & ctx, IHqlExpression 
     BuildCtx funcctx(ctx);
     funcctx.addQuotedCompound("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * _right)");
     //ensureRowAllocated(funcctx, "crSelf"); must be non null
-    funcctx.addQuoted("unsigned char * right = (unsigned char *) _right;");
+    funcctx.addQuotedLiteral("unsigned char * right = (unsigned char *) _right;");
 
     OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(tgtRecord));
     BoundRow * selfRow = bindSelf(funcctx, resultDataset, "crSelf");
@@ -13174,7 +13174,7 @@ void HqlCppTranslator::doBuildUserMergeAggregateFunc(BuildCtx & ctx, IHqlExpress
     IHqlExpression * rowsid = expr->queryAttribute(_rowsid_Atom);
     BuildCtx funcctx(ctx);
     funcctx.addQuotedCompound("virtual size32_t mergeAggregate(ARowBuilder & upRight1, const void * _right2)");
-    funcctx.addQuoted("unsigned char * right2 = (unsigned char *) _right2;");
+    funcctx.addQuotedLiteral("unsigned char * right2 = (unsigned char *) _right2;");
     BoundRow * rightCursor = bindTableCursor(funcctx, expr, "upRight1.row()", no_right, selSeq);
     BoundRow * leftCursor = bindTableCursor(funcctx, expr, "right2", no_left, selSeq);
     BoundRow * selfCursor = bindSelf(funcctx, expr, "upRight1");
@@ -13220,7 +13220,7 @@ void HqlCppTranslator::doBuildUserAggregateFuncs(BuildCtx & ctx, IHqlExpression 
         BuildCtx funcctx(ctx);
         funcctx.addQuotedCompound("virtual size32_t processFirst(ARowBuilder & crSelf, const void * _src)");
         ensureRowAllocated(funcctx, "crSelf");
-        funcctx.addQuoted("unsigned char * src = (unsigned char *) _src;");
+        funcctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
 
         BoundRow * selfRow = bindSelf(funcctx, expr, "crSelf");
         bindTableCursor(funcctx, dataset, "src", options.mainRowsAreLinkCounted, no_left, selSeq);
@@ -13233,7 +13233,7 @@ void HqlCppTranslator::doBuildUserAggregateFuncs(BuildCtx & ctx, IHqlExpression 
         BuildCtx funcctx(ctx);
         funcctx.addQuotedCompound("virtual size32_t processNext(ARowBuilder & crSelf, const void * _src)");
         ensureRowAllocated(funcctx, "crSelf");
-        funcctx.addQuoted("unsigned char * src = (unsigned char *) _src;");
+        funcctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
 
         BoundRow * selfCursor = bindSelf(funcctx, expr, "crSelf");
         bindTableCursor(funcctx, dataset, "src", options.mainRowsAreLinkCounted, no_left, selSeq);
@@ -13409,7 +13409,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
     {
         BuildCtx sendctx(instance->startctx);
         sendctx.addQuotedCompound("virtual void sendResult(const void * _self)");
-        sendctx.addQuoted("const unsigned char * self = (const unsigned char *)_self;");
+        sendctx.addQuotedLiteral("const unsigned char * self = (const unsigned char *)_self;");
 
         OwnedHqlExpr resultDataset = createDataset(no_anon, LINK(expr->queryChild(1)), NULL);
         bindTableCursor(sendctx, resultDataset, "self");
@@ -13625,8 +13625,8 @@ void HqlCppTranslator::buildDedupFilterFunction(BuildCtx & ctx, HqlExprArray & e
     BuildCtx funcctx(ctx);
 
     IHqlStmt * functionStmt = funcctx.addQuotedCompound("virtual bool matches(const void * _left, const void * _right)");
-    funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-    funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+    funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
 
     BuildCtx filterctx(funcctx);
 
@@ -13697,7 +13697,7 @@ void HqlCppTranslator::buildDedupSerializeFunction(BuildCtx & ctx, const char * 
     s.append("virtual unsigned ").append(funcName).append("(ARowBuilder & crSelf, const void * _src)");
     r2kctx.addQuotedCompound(s);
     ensureRowAllocated(r2kctx, "crSelf");
-    r2kctx.addQuoted("const unsigned char * src = (const unsigned char *) _src;");
+    r2kctx.addQuotedLiteral("const unsigned char * src = (const unsigned char *) _src;");
 
     BoundRow * tgtCursor = bindSelf(ctx, tgtDataset, "crSelf");
     BoundRow * srcCursor = bindTableCursor(ctx, srcDataset, "src", no_left, selSeq);
@@ -13833,7 +13833,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
         if (!reuseCompare)
             buildCompareMember(instance->nestedctx, "KeyCompare", keyOrder, DatasetReference(keyDataset, no_activetable, NULL));
         else
-            instance->nestedctx.addQuoted("virtual ICompare * queryKeyCompare() { return &Compare; }");
+            instance->nestedctx.addQuotedLiteral("virtual ICompare * queryKeyCompare() { return &Compare; }");
 
         //virtual unsigned getFlags() = 0;
         {
@@ -13845,7 +13845,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
 
         //virtual IHash    * queryKeyHash()=0;
         if (reuseCompare)
-            instance->nestedctx.addQuoted("virtual IHash * queryKeyHash() { return &Hash; }");
+            instance->nestedctx.addQuotedLiteral("virtual IHash * queryKeyHash() { return &Hash; }");
         else
             buildHashOfExprsClass(instance->nestedctx, "KeyHash", keyOrder, DatasetReference(keyDataset, no_activetable, NULL), true);
 
@@ -13855,7 +13855,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
             doCompareLeftRight(instance->nestedctx, "RowKeyCompare", DatasetReference(dataset), DatasetReference(keyDataset, no_activetable, NULL), info.equalities, selects);
         }
         else
-            instance->nestedctx.addQuoted("virtual ICompare * queryRowKeyCompare() { return &Compare; }");
+            instance->nestedctx.addQuotedLiteral("virtual ICompare * queryRowKeyCompare() { return &Compare; }");
 
     }
 
@@ -13901,7 +13901,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHq
         unwindChildren(sorts, cond);
 
         OwnedHqlExpr sortOrder = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
-        instance->startctx.addQuoted("virtual ICompare * queryCompare() { return &compare; }");
+        instance->startctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
 
         DatasetReference dsRef(dataset);
         buildCompareClass(instance->nestedctx, "compare", sortOrder, dsRef);
@@ -14096,7 +14096,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChooseSetsEx(BuildCtx & ctx, I
     //virtual unsigned getRecordCategory(const void * _self) = 0;
     BuildCtx categoryctx(instance->startctx);
     categoryctx.addQuotedCompound("virtual unsigned getCategory(const void * _self)");
-    categoryctx.addQuoted("const unsigned char * self = (const unsigned char *)_self;");
+    categoryctx.addQuotedLiteral("const unsigned char * self = (const unsigned char *)_self;");
     bindTableCursor(categoryctx, dataset, "self");
     HqlExprArray args;
     for (unsigned idx3 = 1; idx3 <= numConditions; idx3++)
@@ -14180,16 +14180,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChooseSets(BuildCtx & ctx, IHq
 
     StringBuffer s;
     BuildCtx limitctx(instance->classctx);
-    instance->startctx.addQuoted("unsigned * counts;");
-    instance->startctx.addQuoted("unsigned numFull;");
+    instance->startctx.addQuotedLiteral("unsigned * counts;");
+    instance->startctx.addQuotedLiteral("unsigned numFull;");
     limitctx.addQuotedCompound("virtual bool setCounts(unsigned * data)");
-    limitctx.addQuoted("counts = data;");
-    limitctx.addQuoted("numFull = 0;");
+    limitctx.addQuotedLiteral("counts = data;");
+    limitctx.addQuotedLiteral("numFull = 0;");
 
     OwnedHqlExpr tally = createVariable("counts", makeIntType(4, false));
     BuildCtx validctx(instance->startctx);
     validctx.addQuotedCompound("virtual unsigned getRecordAction(const void * _self)");
-    validctx.addQuoted("const unsigned char * self = (const unsigned char *)_self;");
+    validctx.addQuotedLiteral("const unsigned char * self = (const unsigned char *)_self;");
     bindTableCursor(validctx, dataset, "self");
 
     OwnedHqlExpr one = createConstant((int)1);
@@ -14238,7 +14238,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChooseSets(BuildCtx & ctx, IHq
 
         BuildCtx limitCondCtx(limitctx);
         buildFilter(limitCondCtx, condDone);
-        limitCondCtx.addQuoted("numFull++;");
+        limitCondCtx.addQuotedLiteral("numFull++;");
     }
     buildReturn(validctx, queryZero());
     limitctx.addQuoted(s.clear().append("return numFull == ").append(numCategories).append(";"));
@@ -14291,7 +14291,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalize(BuildCtx & ctx, IHql
 
     BuildCtx funcctx(instance->startctx);
     funcctx.addQuotedCompound("virtual unsigned numExpandedRows(const void * _left)");
-    funcctx.addQuoted("unsigned char * left = (unsigned char *) _left;");
+    funcctx.addQuotedLiteral("unsigned char * left = (unsigned char *) _left;");
 
     bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
     bindTableCursor(funcctx, dataset, "left");
@@ -14381,7 +14381,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
         BuildCtx activityinitctx(instance->startctx);
         BuildCtx funcctx(iterclassctx);
         funcctx.addQuotedCompound("virtual void init(const void * _left)");
-        funcctx.addQuoted("const byte * left = (const byte *)_left;");
+        funcctx.addQuotedLiteral("const byte * left = (const byte *)_left;");
 
 
         CHqlBoundExpr bound;
@@ -14390,7 +14390,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
             //Ugly......
             //If this is a complex expression, then ensure the temporary variable is a member of the activity class, and 
             //evaluate it in the function defined inside the activity (so the member variables don't need mangling)
-            funcctx.addQuoted("activity->init(left);");
+            funcctx.addQuotedLiteral("activity->init(left);");
 
             BuildCtx * declarectx = NULL;
             instance->evalContext->getInvariantMemberContext(NULL, &declarectx, NULL, false, true);
@@ -14513,7 +14513,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeLinkedChild(BuildCtx 
     {
         BuildCtx firstctx(instance->startctx);
         firstctx.addQuotedCompound("virtual byte * first(const void * parentRecord)");
-        firstctx.addQuoted("const byte * left = (const byte *)parentRecord;");
+        firstctx.addQuotedLiteral("const byte * left = (const byte *)parentRecord;");
         bindTableCursor(firstctx, dataset, "left", selectorOp, selSeq);
 
         ExpressionFormat format = !hasLinkCountedModifier(value) ? FormatLinkedDataset : FormatNatural;
@@ -14566,7 +14566,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySelectNew(BuildCtx & ctx, IHql
 
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
         ensureRowAllocated(funcctx, "crSelf");
         BoundRow * selfCursor = bindSelf(funcctx, expr, "crSelf");
         bindTableCursor(funcctx, anon->queryNormalizedSelector(), "left");
@@ -14620,7 +14620,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPrefetchProject(BuildCtx & ctx
     BuildCtx postctx(instance->startctx);
     postctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IEclGraphResults * results, unsigned __int64 _counter)");
     ensureRowAllocated(postctx, "crSelf");
-    postctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+    postctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     if (expr->getOperator() == no_hqlproject)
         bindTableCursor(postctx, dataset, "left", no_left, selSeq);
     else
@@ -14647,7 +14647,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPrefetchProject(BuildCtx & ctx
             BuildCtx prectx(instance->startctx);
             prectx.addQuotedCompound("virtual bool preTransform(rtlRowBuilder & builder, const void * _left, unsigned __int64 _counter)");
             associateSkipReturnMarker(prectx, queryBoolExpr(false), NULL);
-            prectx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+            prectx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
             if (expr->getOperator() == no_hqlproject)
                 bindTableCursor(prectx, dataset, "left", no_left, selSeq);
             else
@@ -14792,7 +14792,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityProject(BuildCtx & ctx, IHqlEx
 
     if (op == no_newusertable)
     {
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
 
         BoundRow * selfCursor = bindSelf(funcctx, expr, "crSelf");
         associateSkipReturnMarker(funcctx, queryZero(), selfCursor);
@@ -14991,7 +14991,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFilter(BuildCtx & ctx, IHqlExp
     {
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual bool isValid(const void * _self)");
-        funcctx.addQuoted("unsigned char * self = (unsigned char *) _self;");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
 
         bindTableCursor(funcctx, dataset, "self");
         buildReturn(funcctx, cond);
@@ -15030,8 +15030,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityFilterGroup(BuildCtx & ctx, IH
     {
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual bool isValid(unsigned numRows, const void * * _rows)");
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _rows[0];");
-        funcctx.addQuoted("unsigned char * * rows = (unsigned char * *) _rows;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
+        funcctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
 
         bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
         bindRows(funcctx, no_left, selSeq, rowsid, dataset, "numRows", "rows", options.mainRowsAreLinkCounted);
@@ -15075,8 +15075,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCombine(BuildCtx & ctx, IHqlEx
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, unsigned _num, const void * * _rows)");
     if (transform->getOperator() != no_skip)
     {
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _rows[0];");
-        funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _rows[1];");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
+        funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _rows[1];");
         ensureRowAllocated(funcctx, "crSelf");
 
         bindTableCursor(funcctx, left, "left", no_left, selSeq);
@@ -15146,9 +15146,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCombineGroup(BuildCtx & ctx, I
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, unsigned numRows, const void * * _rows)");
     if (transform->getOperator() != no_skip)
     {
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *)_left;");
-        funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _rows[0];");
-        funcctx.addQuoted("unsigned char * * rows = (unsigned char * *) _rows;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *)_left;");
+        funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _rows[0];");
+        funcctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
         ensureRowAllocated(funcctx, "crSelf");
 
         bindTableCursor(funcctx, left, "left", no_left, selSeq);
@@ -15195,8 +15195,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRollupGroup(BuildCtx & ctx, IH
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, unsigned numRows, const void * * _rows)");
     if (transform->getOperator() != no_skip)
     {
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _rows[0];");
-        funcctx.addQuoted("unsigned char * * rows = (unsigned char * *) _rows;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _rows[0];");
+        funcctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
         ensureRowAllocated(funcctx, "crSelf");
 
         bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
@@ -15240,7 +15240,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAssert(BuildCtx & ctx, IHqlExp
 
     BuildCtx funcctx(instance->startctx);
     funcctx.addQuotedCompound("virtual bool isValid(const void * _self)");
-    funcctx.addQuoted("unsigned char * self = (unsigned char *) _self;");
+    funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
     bindTableCursor(funcctx, dataset, "self");
 
     for (unsigned i=1; i < num; i++)
@@ -15524,7 +15524,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityEnth(BuildCtx & ctx, IHqlExpre
     if (sample && !sample->isAttribute())
         buildReturn(funcctx3, sample);
     else
-        funcctx3.addQuoted("return 1;");
+        funcctx3.addQuotedLiteral("return 1;");
 
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
@@ -15631,8 +15631,8 @@ void HqlCppTranslator::doBuildFuncIsSameGroup(BuildCtx & ctx, IHqlExpression * d
         buildReturn(funcctx, queryBoolExpr(false));
     else
     {
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-        funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+        funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
 
         OwnedHqlExpr selSeq = createSelectorSequence();
         OwnedHqlExpr leftSelect = createSelector(no_left, dataset, selSeq);
@@ -16102,7 +16102,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     StringBuffer s;
     buildInstancePrefix(instance);
 
-    instance->classctx.addQuoted("virtual ICompare * queryCompare() { return &compare; }");
+    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompare() { return &compare; }");
 
 //  sortlist.setown(spotScalarCSE(sortlist));
     buildCompareClass(instance->nestedctx, "compare", sortlist, DatasetReference(dataset));
@@ -16114,7 +16114,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     {
         if (record != serializedRecord)
         {
-            instance->classctx.addQuoted("virtual ICompare * queryCompareSerializedRow() { return &compareSR; }");
+            instance->classctx.addQuotedLiteral("virtual ICompare * queryCompareSerializedRow() { return &compareSR; }");
 
             OwnedHqlExpr selSeq = createSelectorSequence();
             OwnedHqlExpr leftSelector = createSelector(no_left, dataset, selSeq);
@@ -16173,7 +16173,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual int compareBest(const void * _self)");
-        funcctx.addQuoted("unsigned char * self = (unsigned char *) _self;");
+        funcctx.addQuotedLiteral("unsigned char * self = (unsigned char *) _self;");
         bindTableCursor(funcctx, dataset, "self");
         buildReturn(funcctx, order);
     }
@@ -16201,8 +16201,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
         }
         else
         {
-            instance->startctx.addQuoted("virtual const char * getSortedFilename() { return NULL; }");
-            instance->classctx.addQuoted("virtual IOutputMetaData * querySortedRecordSize() { return NULL; }");
+            instance->startctx.addQuotedLiteral("virtual const char * getSortedFilename() { return NULL; }");
+            instance->classctx.addQuotedLiteral("virtual IOutputMetaData * querySortedRecordSize() { return NULL; }");
 
             ABoundActivity * masterSort = queryAssociatedActivity(ctx, cosortDataset);
             if (!masterSort)
@@ -16220,7 +16220,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     }
 
     if (expr->hasAttribute(manyAtom))
-        instance->classctx.addQuoted("virtual bool hasManyRecords() { return true; }");
+        instance->classctx.addQuotedLiteral("virtual bool hasManyRecords() { return true; }");
 
     IHqlExpression * stable = expr->queryAttribute(stableAtom);
     IHqlExpression * unstable = expr->queryAttribute(unstableAtom);
@@ -16386,7 +16386,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlParse(BuildCtx & ctx, IHqlE
     BuildCtx funcctx(instance->startctx);
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IColumnProvider * parsed)");
     ensureRowAllocated(funcctx, "crSelf");
-    funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+    funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
 
     // Both left and the dataset are bound to left because it might be a new transform or a transform
     IHqlExpression * transform = expr->queryChild(3);
@@ -16405,7 +16405,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlParse(BuildCtx & ctx, IHqlE
     buildReturnRecordSize(funcctx, selfCursor);
 
     if (xmlUsesContents)
-        instance->classctx.addQuoted("virtual bool requiresContents() { return true; }");
+        instance->classctx.addQuotedLiteral("virtual bool requiresContents() { return true; }");
 
     buildInstanceSuffix(instance);
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
@@ -17005,7 +17005,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         funcctx.addQuotedCompound("virtual void getLogText(size32_t & __lenResult, char * & __result, const void * _left)");
         if (dataset)
         {
-            funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+            funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
             bindTableCursor(funcctx, dataset, "left");
             bindTableCursor(funcctx, dataset, "left", no_left, selSeq);
         }
@@ -17448,12 +17448,12 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
     BuildCtx classctx(*code, goAtom);
     classctx.addQuotedCompound("struct MyEclProcess : public EclProcess", ";");
 
-    classctx.addQuoted("virtual unsigned getActivityVersion() const { return ACTIVITY_INTERFACE_VERSION; }");
+    classctx.addQuotedLiteral("virtual unsigned getActivityVersion() const { return ACTIVITY_INTERFACE_VERSION; }");
 
     BuildCtx performctx(classctx);
     performctx.addQuotedCompound("virtual int perform(IGlobalCodeContext * gctx, unsigned wfid)");
-    performctx.addQuoted("ICodeContext * ctx;");
-    performctx.addQuoted("ctx = gctx->queryCodeContext();");
+    performctx.addQuotedLiteral("ICodeContext * ctx;");
+    performctx.addQuotedLiteral("ctx = gctx->queryCodeContext();");
 
     performctx.associateExpr(globalContextMarkerExpr, globalContextMarkerExpr);
     performctx.associateExpr(codeContextMarkerExpr, codeContextMarkerExpr);
@@ -17600,7 +17600,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetResult(BuildCtx & ctx, IHql
 
         BuildCtx sendctx(instance->startctx);
         sendctx.addQuotedCompound("virtual void sendResult(const void * _self)");
-        sendctx.addQuoted("const unsigned char * self = (const unsigned char *)_self;");
+        sendctx.addQuotedLiteral("const unsigned char * self = (const unsigned char *)_self;");
 
         if (dataset->isDatarow())
         {
@@ -17705,7 +17705,7 @@ void HqlCppTranslator::doBuildDistributionNextFunc(BuildCtx & ctx, IHqlExpressio
     StringBuffer s;
     BuildCtx funcctx(ctx);
     funcctx.addQuotedCompound("virtual void process(IDistributionTable * * tables, const void * _src)");
-    funcctx.addQuoted("unsigned char * src = (unsigned char *) _src;");
+    funcctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
 
     bindTableCursor(funcctx, dataset, "src");
 

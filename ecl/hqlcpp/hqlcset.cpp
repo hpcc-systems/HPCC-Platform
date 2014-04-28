@@ -1139,7 +1139,7 @@ void ListSetCursor::buildIterateClass(BuildCtx & ctx, CHqlBoundExpr & tgt)
     translator.buildSimpleExpr(ctx, expr, boundList);
 
     UNIMPLEMENTED;
-    ctx.addQuoted("create fixed iterate (bound.length, bound.getAddress()");
+    ctx.addQuotedLiteral("create fixed iterate (bound.length, bound.getAddress()");
 }
 
 void ListSetCursor::gatherSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHqlBoundExpr & value, HqlExprAttr & cond)

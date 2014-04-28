@@ -20,7 +20,7 @@
 #include "hqlattr.hpp"
 
 class ColumnToOffsetMap;
-class HQLCPP_API BoundRow : public HqlExprAssociation, public IInterface
+class HQLCPP_API BoundRow : public HqlExprAssociation
 {
 public:
     BoundRow(const BoundRow & other, IHqlExpression * _newBound);                                                       // other row

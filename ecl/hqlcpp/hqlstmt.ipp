@@ -51,16 +51,16 @@ protected:
     bool hasChildren() const;
 
 protected:
-    unsigned                            priority;       //64bit: pack with link count in CInterface
-    HqlStmts *                          container;
-    HqlExprArray                        exprs;
+    unsigned short                      priority;       //64bit: pack with link count in CInterface
 #ifdef _DEBUG
     StmtKind                            kind;
 #else
     unsigned char                       kind;
 #endif
-    bool                                incomplete;
-    bool                                included;
+    bool                                incomplete:1;
+    bool                                included:1;
+    HqlStmts *                          container;
+    HqlExprArray                        exprs;
 };
 
 #ifdef _WIN32
@@ -173,6 +173,18 @@ public:
 
 protected:
   StringAttr text;
+};
+
+
+class HqlQuoteLiteralStmt : public HqlCompoundStmt
+{
+public:
+    HqlQuoteLiteralStmt(StmtKind _kind, HqlStmts * _container, const char * _text) : HqlCompoundStmt(_kind, _container), text(_text) {}
+
+    virtual StringBuffer &          getTextExtra(StringBuffer & out) const;
+
+protected:
+    const char * text;
 };
 
 

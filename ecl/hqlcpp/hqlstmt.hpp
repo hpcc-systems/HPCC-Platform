@@ -116,6 +116,7 @@ public:
     IHqlStmt *                  addLine(const char * filename = NULL, unsigned lineNum = 0);
     IHqlStmt *                  addLoop(IHqlExpression * cond, IHqlExpression * next, bool atEnd);
     IHqlStmt *                  addQuoted(const char * text);
+    IHqlStmt *                  addQuotedLiteral(const char * text); // must only be used for constant C++ strings - avoids a memory clone
     IHqlStmt *                  addQuotedF(const char * text, ...) __attribute__((format(printf, 2, 3)));
     IHqlStmt *                  addQuotedCompound(const char * text, const char * extra = NULL);
     IHqlStmt *                  addQuotedCompoundOpt(const char * text, const char * extra = NULL);
@@ -275,5 +276,6 @@ unsigned calcTotalChildren(const IHqlStmt * stmt);
 IHqlExpression * stripTranslatedCasts(IHqlExpression * e);
 IHqlExpression * peepholeAddExpr(IHqlExpression * left, IHqlExpression * right);
 bool rightFollowsLeft(IHqlExpression * left, IHqlExpression * leftLen, IHqlExpression * right);
+extern HQLCPP_API void outputSizeStmts();
 
 #endif
