@@ -25,7 +25,7 @@
 
 void usage()
 {
-  const char* version = "1.1";
+  const char* version = "1.2";
   printf("HPCC Systems configuration generator. version %s. Usage:\n", version);
   puts("   configgen -env <environment file> -ip <ip addr> [options]");
   puts("");
@@ -67,6 +67,12 @@ void usage()
   puts("          not generate any output files. Output is written to stdout ");
   puts("          in the csv format as follows");
   puts("          ProcessType,componentName,instanceip,instanceport,runtimedir,logdir");
+  puts("          Missing fields will be empty.");
+  puts("   -listall2: Same as -listall but includes ThorSlaveProcesses and ThorSpareProcess.");
+  puts("   -listespservices: List all esp and their bound services and ports. Does ");
+  puts("          not require an ip. Does not generate any output files. Output is written to stdout ");
+  puts("          in the csv format as follows");
+  puts("          componentType,componentName,serviceType,serviceBindingName,instanceIP,instanceport,protocol");
   puts("          Missing fields will be empty.");
   puts("   -listdirs: Lists out any directories that need to be created during ");
   puts("          init time. Currently, directories for any drop zones ");
@@ -243,7 +249,7 @@ void replaceDotWithHostIp(IPropertyTree* pTree, bool verbose)
 int processRequest(const char* in_cfgname, const char* out_dirname, const char* in_dirname, 
                    const char* compName, const char* compType, const char* in_filename, 
                    const char* out_filename, bool generateOutput, const char* ipAddr, 
-                   bool listComps, bool verbose, bool listallComps, bool listdirs, 
+                   bool listComps, bool verbose, bool listallComps, bool listallCompsAllThors, bool listESPServices, bool listdirs,
                    bool listdropzones, bool listcommondirs, bool listMachines, bool validateOnly,
                    bool listldaps, bool ldapconfig)
 {
@@ -377,7 +383,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
     }
   }
   else if (!listComps && !listallComps && !listdirs && !listdropzones && !listcommondirs && !listMachines
-           && !listldaps)
+           && !listldaps && !listESPServices)
   {
     Owned<IEnvDeploymentEngine> m_configGenMgr;
     m_configGenMgr.setown(createConfigGenMgr(*m_pConstEnvironment, callback, NULL, in_dirname?in_dirname:"", out_dirname?out_dirname:"", compName, compType, ipAddr));
@@ -459,6 +465,54 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
     }
 
     fprintf(stdout, "%s", out.str());
+  }
+  else if (listESPServices == true)
+  {
+      StringBuffer out;
+      Owned<IPropertyTreeIterator> espProcesses = pEnv->getElements(XML_TAG_SOFTWARE"/"XML_TAG_ESPPROCESS);
+
+      ForEach(*espProcesses)
+      {
+          StringBuffer strNetAddr;
+          StringBuffer strPort;
+
+          IPropertyTree *pComponent = &espProcesses->query();
+
+          StringBuffer processName(pComponent->queryName()); // component type
+
+          if(strcmp(processName.str(), XML_TAG_ESPPROCESS) != 0)
+          {
+              continue;
+          }
+
+          StringBuffer strEspName(pComponent->queryProp(XML_ATTR_NAME)); //esp name
+
+          Owned<IPropertyTreeIterator> itInstances = pComponent->getElements(XML_TAG_INSTANCE);
+
+          ForEach(*itInstances)
+          {
+              StringBuffer strInstanceName;
+              IPropertyTree* pInst = &itInstances->query();
+
+              strNetAddr.clear().append(pInst->queryProp(XML_ATTR_NETADDRESS));
+              strInstanceName.clear().append(pInst->queryProp(XML_ATTR_NAME));
+
+              Owned<IPropertyTreeIterator> itBinding = pComponent->getElements(XML_TAG_ESPBINDING);
+
+              ForEach(*itBinding)
+              {
+                  IPropertyTree* pBinding = &itBinding->query();
+                  StringBuffer strServiceName(pBinding->queryProp(XML_ATTR_SERVICE));
+                  StringBuffer strBindingName(pBinding->queryProp(XML_ATTR_NAME));
+                  StringBuffer strProtocol(pBinding->queryProp(XML_ATTR_PROTOCOL));
+
+                  strPort.clear().append(pBinding->queryProp(XML_ATTR_PORT));
+
+                  out.appendf("%s,%s,%s,%s,%s,%s,%s\n", processName.str(), strEspName.str(), strServiceName.str(),strBindingName.str(), strNetAddr.str(), strPort.str(),strProtocol.str());
+              }
+          }
+      }
+      fprintf(stdout, "%s", out.str());
   }
   else if (listMachines)
   {
@@ -555,7 +609,7 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
           {
             IPropertyTree* pInst = &itComp->query();
 
-            if (!strcmp(pInst->queryName(), "ThorSlaveProcess") || !strcmp(pInst->queryName(), "ThorSpareProcess"))
+            if (listallCompsAllThors == false && (!strcmp(pInst->queryName(), "ThorSlaveProcess") || !strcmp(pInst->queryName(), "ThorSpareProcess")))
               continue;
 
             netAddr.clear().append(pInst->queryProp("@netAddress"));
@@ -603,6 +657,7 @@ int main(int argc, char** argv)
   bool listComps = false;
   bool verbose = false;
   bool listallComps = false;
+  bool listallCompsAllThors = false;
   bool listdirs = false;
   bool listdropzones = false;
   bool listcommondirs = false;
@@ -610,6 +665,7 @@ int main(int argc, char** argv)
   bool validateOnly = false;
   bool ldapconfig = false;
   bool listldaps = false;
+  bool listespservices = false;
 
   int i = 1;
   bool writeToFiles = false;
@@ -677,6 +733,17 @@ int main(int argc, char** argv)
       i++;
       listallComps = true;
     }
+    else if (stricmp(argv[i], "-listall2") == 0)
+    {
+      i++;
+      listallComps = true;
+      listallCompsAllThors = true;
+    }
+    else if (stricmp(argv[i], "-listespservices") == 0)
+    {
+        i++;
+        listespservices = true;
+    }
     else if (stricmp(argv[i], "-listdirs") == 0)
     {
       i++;
@@ -736,7 +803,7 @@ int main(int argc, char** argv)
   {
     processRequest(in_cfgname, out_dirname, in_dirname, compName, 
       compType,in_filename, out_filename, generateOutput, ipAddr.length() ? ipAddr.str(): NULL,
-      listComps, verbose, listallComps, listdirs, listdropzones, listcommondirs, listMachines,
+      listComps, verbose, listallComps, listallCompsAllThors, listespservices, listdirs, listdropzones, listcommondirs, listMachines,
       validateOnly, listldaps, ldapconfig);
   }
   catch(IException *excpt)
