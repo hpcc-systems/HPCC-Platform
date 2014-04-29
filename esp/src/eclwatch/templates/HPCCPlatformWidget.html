@@ -11,7 +11,7 @@
                 <div class="seperator grey"></div>
                 <div id="userAccount">
                     <span class="navBarLoggedin">${i18n.LoggedInAs}:  </span>
-                    <a id="${id}UserID" href="#"></a>
+                    <a id="${id}UserID" href="#" data-dojo-attach-event="onClick:_onUserID"></a>
                 </div>
                 <div class="seperator grey"></div>
                 <div id="${id}More" class="left glow" data-dojo-props="iconClass:'iconAdvanced', showLabel:false" data-dojo-type="dijit.form.DropDownButton">
@@ -78,6 +78,10 @@
         <div class="dijitDialogPaneActionBar">
             <button type="submit" data-dojo-attach-event="onClick:_onSetBannerOk" data-dojo-type="dijit.form.Button">${i18n.OK}</button>
             <button data-dojo-attach-event="onClick:_onSetBannerCancel" data-dojo-type="dijit.form.Button">${i18n.Cancel}</button>
+        </div>
+    </div>
+    <div id="${id}UserDialog" title="${i18n.UserDetails}" data-dojo-type="dijit.Dialog">
+        <div id="${id}UserInfo" style="padding:0px; width:640px; height:480px" data-dojo-props="delayWidget: 'UserDetailsWidget'" data-dojo-type="DelayLoadWidget">
         </div>
     </div>
 </div>

@@ -21,6 +21,7 @@ define([
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-style",
+    "dojo/cookie",
 
     "dijit/registry",
     "dijit/Tooltip",
@@ -55,7 +56,7 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle, cookie,
                 registry, Tooltip,
                 UpgradeBar,
                 _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget, DelayLoadWidget,
@@ -155,6 +156,14 @@ define([
                     context.userName = response.MyAccountResponse.username;
                     context.checkIfAdmin(context.username);
                     context.refreshUserName();
+                    if (!cookie("PasswordExpiredCheck")) {
+                        cookie("PasswordExpiredCheck", "true", { expires: 1 });
+                        if (lang.exists("MyAccountResponse.passwordDaysRemaining", response) && response.MyAccountResponse.passwordDaysRemaining !== null && response.MyAccountResponse.passwordDaysRemaining <= 10) {
+                            if (confirm(context.i18n.PasswordExpirePrefix + response.MyAccountResponse.passwordDaysRemaining + context.i18n.PasswordExpirePostfix)) {
+                                context._onUserID();
+                            }
+                        }
+                    }
                 }
             });
 
@@ -221,6 +230,15 @@ define([
         },
 
         //  Hitched actions  ---
+        _onUserID: function (evt) {
+            var userDialog = registry.byId(this.id + "UserDialog");
+            var userInfo = registry.byId(this.id + "UserInfo");
+            userInfo.init({
+                Username: this.userName
+            });
+            userDialog.show();
+        },
+
         _onFind: function (evt) {
             var context = this;
             this.stackContainer.selectChild(this.mainPage);
