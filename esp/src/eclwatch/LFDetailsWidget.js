@@ -169,7 +169,7 @@ define([
 
             var context = this;
             if (params.Name) {
-                this.logicalFile = ESPLogicalFile.Get(params.Name);
+                this.logicalFile = ESPLogicalFile.Get(params.ClusterName, params.Name);
                 var data = this.logicalFile.getData();
                 for (var key in data) {
                     this.updateInput(key, null, data[key]);
@@ -198,6 +198,7 @@ define([
                 if (currSel.id == this.summaryWidget.id) {
                 } else if (currSel.id == this.contentWidget.id) {
                     this.contentWidget.init({
+                        ClusterName: this.logicalFile.ClusterName,
                         LogicalName: this.logicalFile.Name
                     });
                 } else if (currSel.id == this.sourceWidget.id) {

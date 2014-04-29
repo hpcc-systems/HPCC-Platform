@@ -15,6 +15,9 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/store/Memory",
     "dojo/store/Observable",
@@ -32,7 +35,7 @@ define([
 
     "dojo/text!../templates/FilePartsWidget.html"
 ],
-    function (declare, array, Memory, Observable,
+    function (declare, lang, i18n, nlsHPCC, array, Memory, Observable,
             registry,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
             _Widget,
@@ -40,6 +43,7 @@ define([
         return declare("FilePartsWidget", [_Widget], {
             templateString: template,
             baseClass: "FilePartsWidget",
+            i18n: nlsHPCC,
             filePartsGrid: null,
 
             dataStore: null,
@@ -57,7 +61,7 @@ define([
             startup: function (args) {
                 this.inherited(arguments);
                 var store = new Memory({
-                    idProperty: "Id",
+                    idProperty: "__hpcc_id",
                     data: []
                 });
                 this.filePartsStore = Observable(store);
@@ -65,10 +69,12 @@ define([
                 this.filePartsGrid = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry])({
                     allowSelectAll: true,
                     columns: {
-                        Id: { label: "Part", width: 40 },
-                        Ip: { label: "IP" },
-                        Partsize: { label: "Size", width: 120 },
-                        ActualSize: { label: "Actual Size", width: 120 }
+                        Id: { label: this.i18n.Part, width: 40 },
+                        Copy: { label: this.i18n.Copy, width: 40 },
+                        Ip: { label: this.i18n.IP },
+                        Cluster: { label: this.i18n.Cluster, width: 108 },
+                        Partsize: { label: this.i18n.Size, width: 120 },
+                        ActualSize: { label: this.i18n.ActualSize, width: 120 }
                     },
                     store: this.filePartsStore
                 }, this.id + "FilePartsGrid");
@@ -90,9 +96,7 @@ define([
                     return;
 
                 this.filePartsStore.setData(params.fileParts);
-                this.filePartsGrid.set("query", {
-                    Copy: "1"
-                });
+                this.filePartsGrid.set("query", {});
             }
         });
     });

@@ -185,7 +185,7 @@ define([
             if (this.copyForm.validate()) {
                 var context = this;
                 arrayUtil.forEach(this.copyGrid.store.data, function (item, idx) {
-                    var logicalFile = ESPLogicalFile.Get(item.Name);
+                    var logicalFile = ESPLogicalFile.Get(item.ClusterName, item.Name);
                     var request = domForm.toObject(context.id + "CopyForm");
                     request.RenameSourceName = item.Name;
                     request.destLogicalName = item.targetCopyName;
@@ -204,7 +204,7 @@ define([
             if (this.renameForm.validate()) {
                 var context = this;
                 arrayUtil.forEach(this.renameGrid.store.data, function (item, idx) {
-                    var logicalFile = ESPLogicalFile.Get(item.Name);
+                    var logicalFile = ESPLogicalFile.Get(item.ClusterName, item.Name);
                     var request = domForm.toObject(context.id + "RenameForm");
                     request.RenameSourceName = item.Name;
                     request.dstname = item.targetRenameName;
@@ -660,6 +660,7 @@ define([
                         closable: true,
                         delayWidget: "LFDetailsWidget",
                         _hpccParams: {
+                            ClusterName: params.ClusterName,
                             Name: params.Name
                         }
                     });
