@@ -182,6 +182,8 @@ public:
     void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload);
     void getEventScheduleFlag(IEspECLWorkunit &info);
     unsigned getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IEspECLWorkunit &info);
+    IDistributedFile* getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent);
+    void addTimerToList(SCMStringBuffer& name, unsigned count, unsigned duration, unsigned& totalThorTimerCount, StringBuffer& totalThorTimeValue, IArrayOf<IEspECLTimer>& timers);
 
 public:
     IEspContext &context;

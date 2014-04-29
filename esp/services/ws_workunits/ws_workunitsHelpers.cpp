@@ -336,6 +336,41 @@ void WsWuInfo::getVariables(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
+void WsWuInfo::addTimerToList(SCMStringBuffer& name, unsigned count, unsigned duration, unsigned& totalThorTimerCount,
+    StringBuffer& totalThorTimeValue, IArrayOf<IEspECLTimer>& timers)
+{
+    StringBuffer fd;
+    formatDuration(fd, duration);
+
+    if (strieq(name.str(), TOTALTHORTIME))
+    {
+        totalThorTimeValue = fd;
+        totalThorTimerCount = count;
+        return;
+    }
+
+    Owned<IEspECLTimer> t= createECLTimer("","");
+    name.s.replace('_', ' ');
+    t->setName(name.str());
+    t->setValue(fd.str());
+    t->setCount(count);
+
+    if (version > 1.19)
+    {
+        StringAttr graphName;
+        unsigned graphNum, subGraphNum, subId;
+        if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
+        {
+            if (graphName.length() > 0)
+                t->setGraphName(graphName);
+            if (subId > 0)
+                t->setSubGraphId((int)subId);
+        }
+    }
+
+    timers.append(*t.getLink());
+}
+
 void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
 {
     if (!(flags & WUINFO_IncludeTimers))
@@ -345,106 +380,33 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
         StringBuffer totalThorTimeValue;
         unsigned totalThorTimerCount = 0; //Do we need this?
 
-        //This should be switched to using getStatistics() once backward compatibility is no longer required. (5.0?)
-        //The code inside the #if 0 is equivalent.
         IArrayOf<IEspECLTimer> timers;
-#if 0
         Owned<IConstWUStatisticIterator> it = &cw->getStatistics();
-        ForEach(*it)
+        if (it->first())
         {
-            IConstWUStatistic & cur = it->query();
-            //Only interested in timings...
-            if (cur.getKind() != SMEASURE_TIME_NS)
-                continue;
-
-            SCMStringBuffer name;
-            cur.getDescription(name);
-            name.s.replace('_', ' ');
-
-            unsigned __int64 count = cur.getCount();
-            unsigned __int64 duration = nanoToMilli(cur.getValue());
-            StringBuffer fd;
-            formatDuration(fd, duration);
-
-            if (strieq(name.str(), TOTALTHORTIME))
+            ForEach(*it)
             {
-                totalThorTimeValue = fd;
-                totalThorTimerCount = count;
-                continue;
+                IConstWUStatistic & cur = it->query();
+                //Only interested in timings...
+                if (cur.getKind() != SMEASURE_TIME_NS)
+                    continue;
+
+                SCMStringBuffer name;
+                cur.getDescription(name);
+                addTimerToList(name, cur.getCount(), nanoToMilli(cur.getValue()), totalThorTimerCount, totalThorTimeValue, timers);
             }
-
-            Owned<IEspECLTimer> t= createECLTimer("","");
-            t->setName(name.str());
-            t->setValue(fd.str());
-            t->setCount(count);
-
-            if (version > 1.19)
-            {
-                StringAttr graphName;
-                unsigned graphNum;
-                unsigned subGraphNum;
-                unsigned subId;
-                if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
-                {
-                    if (graphName.length() > 0)
-                    {
-                        t->setGraphName(graphName);
-                    }
-                    if (subId > 0)
-                    {
-                        t->setSubGraphId((int)subId);
-                    }
-                }
-            }
-
-            timers.append(*t.getLink());
         }
-#else
-        Owned<IStringIterator> it = &cw->getTimers();
-        ForEach(*it)
-        {
-            SCMStringBuffer name;
-            it->str(name);
-            unsigned count = cw->getTimerCount(name.str());
-            unsigned duration = cw->getTimerDuration(name.str());
-            StringBuffer fd;
-            formatDuration(fd, duration);
-            name.s.replace('_', ' ');
-
-            if (strieq(name.str(), TOTALTHORTIME))
+        else
+        {//backward compatibility for WU without Statistics
+            Owned<IConstWUTimerIterator> it = &cw->getTimerIterator();
+            ForEach(*it)
             {
-                totalThorTimeValue = fd;
-                totalThorTimerCount = count;
-                continue;
+                IConstWUTimer& timer = it->query();
+                SCMStringBuffer name;
+                timer.getName(name);
+                addTimerToList(name, timer.getCount(), timer.getDuration(), totalThorTimerCount, totalThorTimeValue, timers);
             }
-
-            Owned<IEspECLTimer> t= createECLTimer("","");
-            t->setName(name.str());
-            t->setValue(fd.str());
-            t->setCount(count);
-
-            if (version > 1.19)
-            {
-                StringAttr graphName;
-                unsigned graphNum;
-                unsigned subGraphNum;
-                unsigned subId;
-                if (parseGraphTimerLabel(name.str(), graphName, graphNum, subGraphNum, subId))
-                {
-                    if (graphName.length() > 0)
-                    {
-                        t->setGraphName(graphName);
-                    }
-                    if (subId > 0)
-                    {
-                        t->setSubGraphId((int)subId);
-                    }
-                }
-            }
-
-            timers.append(*t.getLink());
         }
-#endif
 
         if (totalThorTimeValue.length() > 0)
         {
@@ -1245,35 +1207,35 @@ void WsWuInfo::getWorkflow(IEspECLWorkunit &info, unsigned flags)
         info.setEventSchedule(1); //Can reschedule
 }
 
-bool shouldFileContentBeShown(IEspContext &context, const char * logicalName)
+IDistributedFile* WsWuInfo::getLogicalFileData(IEspContext& context, const char* logicalName, bool& showFileContent)
 {
     StringBuffer username;
     context.getUserID(username);
-
     Owned<IUserDescriptor> userdesc(createUserDescriptor());
     userdesc->set(username.str(), context.queryPassword());
-
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName, userdesc);
     if (!df)
-        return false;
+        return NULL;
 
     bool blocked;
     if (df->isCompressed(&blocked) && !blocked)
-        return false;
+        return df.getClear();
 
-    IPropertyTree & properties = df->queryAttributes();
+    IPropertyTree& properties = df->queryAttributes();
     const char * format = properties.queryProp("@format");
     if (format && (stricmp(format,"csv")==0 || memicmp(format, "utf", 3) == 0))
     {
-        return true;
+        showFileContent = true;
+        return df.getClear();
     }
     const char * recordEcl = properties.queryProp("ECL");
     if (!recordEcl)
-        return false;
+        return df.getClear();
 
     MultiErrorReceiver errs;
     Owned<IHqlExpression> ret = ::parseQuery(recordEcl, &errs);
-    return errs.errCount() == 0;
+    showFileContent = errs.errCount() == 0;
+    return df.getClear();
 }
 
 void WsWuInfo::getEclSchemaChildFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpression * expr, bool isConditional)
@@ -1370,6 +1332,11 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     SCMStringBuffer filename;
     r.getResultLogicalName(filename);
 
+    bool showFileContent = false;
+    Owned<IDistributedFile> df = NULL;
+    if (filename.length())
+        df.setown(getLogicalFileData(context, filename.str(), showFileContent));
+
     StringBuffer value, link;
     if (r.getResultStatus() == ResultStatusUndefined)
         value.set("[undefined]");
@@ -1428,23 +1395,8 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     else
     {
         value.append('[').append(r.getResultTotalRowCount()).append(" rows]");
-        if(r.getResultSequence()>=0)
-        {
-            if(filename.length())
-            {
-                StringBuffer username;
-                context.getUserID(username);
-
-                Owned<IUserDescriptor> userdesc(createUserDescriptor());
-                userdesc->set(username.str(), context.queryPassword());
-
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(filename.str(), userdesc);
-                if(df && df->queryAttributes().hasProp("ECL"))
-                    link.append(r.getResultSequence());
-            }
-            else
-                link.append(r.getResultSequence());
-        }
+        if((r.getResultSequence()>=0) && (!filename.length() || (df && df->queryAttributes().hasProp("ECL"))))
+            link.append(r.getResultSequence());
     }
 
     Owned<IEspECLResult> result= createECLResult("","");
@@ -1467,7 +1419,7 @@ void WsWuInfo::getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, un
     }
 
     if (filename.length())
-        result->setShowFileContent(shouldFileContentBeShown(context, filename.str()));
+        result->setShowFileContent(showFileContent);
 
     result->setName(name.str());
     result->setLink(link.str());

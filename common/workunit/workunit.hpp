@@ -228,6 +228,24 @@ interface IConstWUGraphIterator : extends IScmIterator
     virtual IConstWUGraph & query() = 0;
 };
 
+interface IConstWUTimer : extends IInterface
+{
+    virtual IStringVal & getName(IStringVal & ret) const = 0;
+    virtual unsigned getCount() const = 0;
+    virtual unsigned getDuration() const = 0;
+};
+
+interface IWUTimer : extends IConstWUTimer
+{
+    virtual void setName(const char * str) = 0;
+    virtual void setCount(unsigned c) = 0;
+    virtual void setDuration(unsigned d) = 0;
+};
+
+interface IConstWUTimerIterator : extends IScmIterator
+{
+    virtual IConstWUTimer & query() = 0;
+};
 
 //! IWUResult
 enum
@@ -899,6 +917,7 @@ interface IConstWorkUnit : extends IInterface
     virtual IConstWUWebServicesInfo * getWebServicesInfo() const = 0;
     virtual IConstWURoxieQueryInfo * getRoxieQueryInfo() const = 0;
     virtual IStringIterator & getTimers() const = 0;
+    virtual IConstWUTimerIterator & getTimerIterator() const = 0;
     virtual IConstWUTimeStampIterator & getTimeStamps() const = 0;
     virtual IConstWUStatisticIterator & getStatistics() const = 0;
     virtual IConstWUStatistic * getStatistic(const char * name) const = 0;
