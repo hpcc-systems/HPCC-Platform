@@ -251,6 +251,7 @@ group=`grep -w ${groupNum} /etc/group | cut -d ':' -f 1`
 
 #Assigning correct permission for /User/hpcc
 chmod 700 ${homePath}/.ssh
+[ -e ${homePath}/.ssh/id_rsa.pub ] && chmod 600 ${homePath}/.ssh/id_rsa.pub
 chown -R $user:$group ${homePath}
 
 $path/sbin/add_conf_settings.sh
