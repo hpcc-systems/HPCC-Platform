@@ -345,7 +345,7 @@ define([
                     Id: {
                         label: this.i18n.ID,
                         formatter: function (Id, idx) {
-                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Id + "</a>";
+                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "IdClick'>" + Id + "</a>";
                         }
                     },
                     Name: {
@@ -359,7 +359,10 @@ define([
                     },
                     Wuid: {
                         width: 180,
-                        label: this.i18n.WUID
+                        label: this.i18n.WUID,
+                        formatter: function (Wuid, idx) {
+                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                        }
                     },
                     Dll: {
                         width: 180,
@@ -371,13 +374,19 @@ define([
                     }
                 }
             }, this.id + "QuerySetGrid");
-            on(document, "." + context.id + "WuidClick:click", function (evt) {
+            on(document, "." + context.id + "IdClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.querySetGrid.row(evt).data;
                     context._onRowDblClick(item);
                 }
             });
-             this.querySetGrid.on(".dgrid-row:dblclick", function (evt) {
+            on(document, "." + context.id + "WuidClick:click", function (evt) {
+                if (context._onRowDblClick) {
+                    var item = context.querySetGrid.row(evt).data;
+                    context._onRowDblClick(item, true);
+                }
+            });
+            this.querySetGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.querySetGrid.row(evt).data;
                     context._onRowDblClick(item);
@@ -496,30 +505,50 @@ define([
             }
         },
 
-        _onRowDblClick: function (item) {
-            var wuTab = this.ensurePane(item.Id, item);
-            this.selectChild(wuTab);
+        _onRowDblClick: function (item, workunitTab) {
+            var tab = null;
+            if (workunitTab) {
+                tab = this.ensurePane(item.Wuid, item, true);
+            } else {
+                tab = this.ensurePane(item.Id, item, false);
+            }
+            this.selectChild(tab);
         },
 
         getFilter: function(){
             return this.filter.toObject();
         },
 
-        ensurePane: function (id, params) {
+        ensurePane: function (id, params, workunitTab) {
             id = this.createChildTabID(id);
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
-                retVal = new DelayLoadWidget({
-                    id: id,
-                    title: params.Id,
-                    closable: true,
-                    delayWidget: "QuerySetDetailsWidget",
-                    hpcc: {
-                        type: "QuerySetDetailsWidget",
-                        params: params
-                    }
-                });
+                if (workunitTab) {
+                    retVal = new DelayLoadWidget({
+                        id: id,
+                        title: params.Wuid,
+                        closable: true,
+                        delayWidget: "WUDetailsWidget",
+                        hpcc: {
+                            type: "WUDetailsWidget",
+                            params: {
+                                Wuid: params.Wuid
+                            }
+                        }
+                    });
+                } else {
+                    retVal = new DelayLoadWidget({
+                        id: id,
+                        title: params.Id,
+                        closable: true,
+                        delayWidget: "QuerySetDetailsWidget",
+                        hpcc: {
+                            type: "QuerySetDetailsWidget",
+                            params: params
+                        }
+                    });
+                }
                 this.addChild(retVal, 1);
             }
             return retVal;
