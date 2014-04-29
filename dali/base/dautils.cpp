@@ -2891,12 +2891,22 @@ public:
         }
         if (!onlylocal)
         {
-            dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
-            if (dfile.get())
+            if (lfn.isExternal())
             {
+                Owned<IFileDescriptor> fDesc = createExternalFileDescriptor(lfn.get());
+                dfile.setown(queryDistributedFileDirectory().createNew(fDesc, true));
+                Owned<IFile> file = getPartFile(0,0);
+                if (file.get())
+                    fileExists = file->exists();
                 if (write && lfn.isExternal()&&(dfile->numParts()==1))   // if it is writing to an external file then don't return distributed
                     dfile.clear();
                 return true;
+            }
+            else
+            {
+                dfile.setown(queryDistributedFileDirectory().lookup(lfn,user,write));
+                if (dfile.get())
+                    return true;
             }
             // MORE - should we create the IDistributedFile here ready for publishing (and/or to make sure it's locked while we write)?
             StringBuffer physicalPath;

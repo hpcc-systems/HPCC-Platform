@@ -427,7 +427,7 @@ void CHThorDiskWriteActivity::resolve()
                 else
                     throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
             }
-            else if (f->exists() || agent.queryResolveFilesLocally())
+            else
             {
                 // special/local/external file
                 if (f->numParts()!=1)
@@ -675,7 +675,8 @@ void CHThorDiskWriteActivity::publish()
         logicalName.allowOsPath(true);
     if (!logicalName.setValidate(lfn.str()))
         throw MakeStringException(99, "Cannot publish %s, invalid logical name", lfn.str());
-    if (!logicalName.isExternal()) { // no need to publish externals
+    if (!logicalName.isExternal()) // no need to publish externals
+    {
         Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(desc);
         if(file->getModificationTime(modifiedTime))
             file->setAccessedTime(modifiedTime);
