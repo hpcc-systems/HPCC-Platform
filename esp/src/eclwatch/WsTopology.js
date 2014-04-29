@@ -115,6 +115,12 @@ define([
                 }
                 return response;
             });
+        },
+        TpClusterInfo: function (params) {
+            return ESPRequest.send("WsTopology", "TpClusterInfo", params);
+        },
+        TpThorStatus: function (params) {
+            return ESPRequest.send("WsTopology", "TpThorStatus", params);
         }
     };
 });

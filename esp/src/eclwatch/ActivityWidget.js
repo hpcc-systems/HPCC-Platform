@@ -341,15 +341,16 @@ define([
 
         createDetail: function (id, row, params) {
             if (this.activity.isInstanceOfQueue(row)) {
-                return new ContentPane({
+                return new DelayLoadWidget({
                     id: id,
-                    title: row.DisplayName,
+                    title: row.ClusterName,
                     closable: true,
-                    style: "padding: 0px; border:0px; border-color:none; overflow: hidden",
-                    content: dojo.create("iframe", {
-                        src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("WsWorkunits") + "/WUJobList?form_&Cluster=" + row.ClusterName + "&Range=30"),
-                        style: "border: 0; width: 100%; height: 100%"
-                    })
+                    delayWidget: "TpClusterInfoWidget",
+                    hpcc: {
+                        params: {
+                            ClusterName: row.ClusterName
+                        }
+                    }
                 });
             } else if (this.activity.isInstanceOfWorkunit(row)) {
                 if (row.Server === "DFUserver") {
