@@ -151,6 +151,37 @@ define([
             this.fileListDialog.show();
         },
 
+        _onUploadBegin: function (dataArray) {
+            this.fileListDialog.hide();
+            this.uploadString = this.i18n.FileUploadStillInProgress + ":";
+            arrayUtil.forEach(dataArray, function (item, idx) {
+                this.uploadString += "\n" + item.name;
+            }, this);
+        },
+
+        _onUploadProgress: function (progress) {
+            if (progress.decimal < 1) {
+                this.widget.Upload.set("label", this.i18n.Upload + " " + progress.percent);
+                var context = this;
+                window.onbeforeunload = function (e) {
+                    return context.uploadString;
+                };
+            } else {
+                this.widget.Upload.set("label", this.i18n.Upload);
+                window.onbeforeunload = null;
+            }
+        },
+
+        _onUploadSubmit: function (event) {
+            var item = this.dropZoneSelect.get("row");
+            this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + item.machine.Netaddress + "&OS=" + item.machine.OS + "&Path=" + item.machine.Directory);
+            this.uploader.upload();
+        },
+
+        _onUploadCancel: function (event) {
+            this.fileListDialog.hide();
+        },
+
         _onDownload: function (event) {
             var context = this;
             arrayUtil.forEach(this.landingZonesGrid.getSelected(), function (item, idx) {
@@ -195,16 +226,6 @@ define([
             if (firstTab) {
                 this.selectChild(firstTab);
             }
-        },
-
-        _onUploadSubmit: function (event) {
-            var item = this.dropZoneSelect.get("row");
-            this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + item.machine.Netaddress + "&OS=" + item.machine.OS + "&Path=" + item.machine.Directory);
-            this.uploader.upload();
-        },
-
-        _onUploadCancel: function (event) {
-            registry.byId(this.id + "FileListDialog").hide();
         },
 
         _spraySelectedOneAtATime: function (dropDownID, formID, doSpray) {

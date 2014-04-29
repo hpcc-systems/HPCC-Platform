@@ -8,7 +8,7 @@
                     <b>${i18n.Preview}:</b>
                     <div id="${id}HexPreview" data-dojo-attach-event="onClick:_onHexPreview" data-dojo-type="dijit.form.Button">${i18n.Hex}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <input id="${id}Upload" label="${i18n.Upload}" type="file" data-dojo-attach-event="onChange:_onUpload" data-dojo-props='multiple: true' data-dojo-type="dojox.form.Uploader"/>
+                    <input id="${id}Upload" label="${i18n.Upload}" type="file" data-dojo-attach-event="onChange:_onUpload, onBegin: _onUploadBegin, onProgress: _onUploadProgress" data-dojo-props='multiple: true' data-dojo-type="dojox.form.Uploader" />
                     <div id="${id}Download" data-dojo-attach-event="onClick:_onDownload" data-dojo-type="dijit.form.Button">${i18n.Download}</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
