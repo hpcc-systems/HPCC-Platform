@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <bookinfo>
+    <title>HPCC Monitoring and Reporting (Technical Preview)</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
+      registered trademark of LexisNexis Risk Data Management Inc.</para>
+
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies. All names and
+      example data used in this manual are fictitious. Any similarity to
+      actual persons, living or dead, is purely coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="GangliaIntroduction">
+    <title>Introduction</title>
+
+    <para>The HPCC Systems platform supports a graphical monitoring and
+    reporting component. With the the graphical monitoring component you can:
+    <itemizedlist>
+        <listitem>
+          <para>See system information at a glance</para>
+        </listitem>
+
+        <listitem>
+          <para>View a grid of Roxie clusters</para>
+        </listitem>
+
+        <listitem>
+          <para>Examine Roxie metrics</para>
+        </listitem>
+
+        <listitem>
+          <para>Keep a historical record of metrics</para>
+        </listitem>
+
+        <listitem>
+          <para>Drill down to individual server metrics</para>
+        </listitem>
+
+        <listitem>
+          <para>Quickly detect troubled nodes</para>
+        </listitem>
+
+        <listitem>
+          <para>More applications, such as better informed resource planning
+          and allocation</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>The HPCC monitoring component leverages Ganglia, an open-source,
+    scalable, distributed monitoring system to display system information in a
+    graphical manner.</para>
+
+    <!--***NOTE: At some point this next bit will need to get moved into the next chapter/section-->
+
+    <sect1 id="HPCC_Viewer">
+      <title>The HPCC Ganglia Viewer</title>
+
+      <para>A Ganglia viewer comes preinstalled and configured in the 4.2.x
+      (or later) HPCC Virtual Machine. The monitoring provided with the
+      Virtual Machine is set up to monitor Roxie instances on the network.
+      This document introduces the monitoring and describes how to get it
+      working on your system. <figure>
+          <title>HPCC Monitoring</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/GAN001.jpg" vendor="Ganglia" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>The above image is an overview summary of all the monitored Roxie
+      nodes in the cluster named VM Demo.</para>
+    </sect1>
+  </chapter>
+
+  <chapter id="Ganglya_Overview">
+    <title>Ganglia</title>
+
+    <para>The HPCC Monitoring component leverages Ganglia, an open-source,
+    scalable, distributed monitoring system, to produce a graphical view of a
+    Roxie cluster's servers. Ganglia leverages widely accepted technologies
+    for data representation. It provides near real-time monitoring and
+    visualizations for performance metrics. If your enterprise already has a
+    Ganglia monitoring server, you can easily add Roxie clusters to its
+    monitoring.</para>
+
+    <sect1 id="Ganglia_Overview">
+      <title>Ganglia Overview</title>
+
+      <para>Ganglia Monitoring has two primary components: the viewer and the
+      Ganglia Monitoring Daemon (gmond). Installation and configuration will
+      vary depending on your system.</para>
+
+      <para>On an <emphasis role="bold">RPM-based system</emphasis>, install
+      the <emphasis>ganglia-gmond-modules-python</emphasis> RPM running a
+      command such as:</para>
+
+      <programlisting>sudo rpm -i ganglia-gmond-modules-python-3.4.0-1.x86_64.rpm</programlisting>
+
+      <para>On a <emphasis role="bold">Debian-based system</emphasis>, install
+      the <emphasis>ganglia-monitor</emphasis> running a command such
+      as:</para>
+
+      <programlisting>sudo apt-get install ganglia-monitor</programlisting>
+
+      <para>The specific steps required to install and configure Ganglia are
+      covered in the Ganglia wiki:</para>
+
+      <para><ulink
+      url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink></para>
+
+      <sect2 id="Ganglia_Viewer">
+        <title>The Viewer</title>
+
+        <para>If you already have a Ganglia monitoring server running in your
+        network, the viewer component may already be in place. If you do not
+        have Ganglia then you will need to install and configure the
+        viewer.</para>
+
+        <para>Refer to the <ulink
+        url="https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise">https://github.com/hpcc-systems/ganglia-monitoring/tree/master/vm_precise</ulink>
+        directory. There you will see the resources used to configure the
+        Ganglia for the virtual machine and can use them as the examples to
+        configure it for your enterprise.</para>
+
+        <para>The script, <emphasis>install_graphs_helper.sh</emphasis>
+        available from the github link above and also provided with the
+        virtual machine, is what is used to embed the viewer component. Using
+        this script as a basis, you can then similarly configure and deploy
+        the viewer component for your system.</para>
+      </sect2>
+
+      <sect2 id="Ganglia_Monitoring_Daemon">
+        <title>Ganglia Monitoring Daemon</title>
+
+        <para>The monitoring daemon is required on the Roxie nodes you wish to
+        monitor. Install the <emphasis>gmond</emphasis> daemon on the nodes
+        you wish to monitor. Installation and configuration are described
+        in;</para>
+
+        <para><ulink
+        url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink></para>
+
+        <para>If you have a Ganglia monitoring server running in your
+        environment, you already have the required components and
+        prerequisites. Verify that you have
+        <emphasis>/etc/ganglia/conf.d</emphasis> and
+        <emphasis>/etc/ganglia/.pyconf</emphasis> files in place and then add
+        the Roxie nodes you wish to monitor. You can do that by installing the
+        Ganglia components and HPCC Monitoring components on to each Roxie
+        node.</para>
+
+        <para>If you do not have Ganglia, or want to install it, read the
+        Ganglia documentation provided at the above link, and install it and
+        any system dependencies. You will then need to download and install
+        the HPCC Monitoring component.</para>
+
+        <sect3 id="Installing-HPCCGanglia" role="brk">
+          <title>Installing the HPCC Monitoring component</title>
+
+          <para>The HPCC Monitoring component is available for download. The
+          HPCC Monitoring components leverage the Ganglia monitoring tools,
+          and would only be needed if you do not already have Ganglia
+          monitoring components on your system.</para>
+
+          <para>To get the HPCC Monitoring components, find the appropriate
+          package for your system.</para>
+
+          <para>Packages are available for download from the HPCC Systems
+          site:</para>
+
+          <para><ulink
+          url="http://hpccsystems.com/download">hpccsystems.com/download</ulink></para>
+
+          <para>or</para>
+
+          <para><ulink
+          url="http://hpccsystems.com/download/free-community-edition/all">http://hpccsystems.com/download/free-community-edition/all</ulink></para>
+
+          <para>Find and install the appropriate package for your
+          system.</para>
+
+          <para>For example, if you have a CentOS 6.x system, get the RPM
+          package.</para>
+
+          <programlisting>hpccsystems-ganglia-monitoring-4.2.0-rc1.el6.x86_64.rpm</programlisting>
+
+          <para>Install the monitoring package on the system that you want to
+          monitor. Optionally, you can look at that installation package
+          provided and use that as a guide to implement your own customized
+          monitoring components.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="VirtuaLMetrics">
+      <title>Metrics in the Virtual Machine</title>
+
+      <para>An easy way to understand how the metrics work and how to
+      implement them on a larger system, is to examine the metrics in
+      action.</para>
+
+      <para>Ganglia integration is built into the current HPCC Virtual Machine
+      images. Download and start up a virtual image and look at how the
+      monitoring component works.</para>
+
+      <para>This allows you:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A preview of the metrics</para>
+        </listitem>
+
+        <listitem>
+          <para>A quickstart</para>
+        </listitem>
+
+        <listitem>
+          <para>A guide for set up</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Evaluate the value of the content and decide what aspects of
+      measurement are relevant to your needs.</para>
+
+      <sect2>
+        <title id="get_hpcc">Get the latest HPCC Virtual Image File</title>
+
+        <para>The complete details for installing and running HPCC in a
+        virtual machine are available in the document: <emphasis
+        role="bold">Running HPCC in a Virtual Machine</emphasis>, available
+        from <ulink
+        url="hpccsystems.com/download/docs">hpccsystems.com/download/docs</ulink>
+        .</para>
+
+        <para>The following steps are a quick summary, assuming you have some
+        familiarity with running virtual machines.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Download the latest HPCC Virtual Machine image file
+              from:</para>
+
+              <para><ulink
+              url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
+            </listitem>
+
+            <listitem>
+              <para>Save the file to a folder on your machine.</para>
+            </listitem>
+
+            <listitem>
+              <para>Open your virtualization software, import the virtual
+              machine and start it.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Once the VM initialization completes, you will see a
+              window similar to the following:</para>
+
+              <figure id="welcometovm">
+                <title xreflabel="welc">VM Welcome Screen</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/GA-vm01.jpg"
+                               vendor="VM_welcome" />
+                  </imageobject>
+                </mediaobject>
+              </figure>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png" /></entry>
+
+                        <entry>Your virtual IP address could be different from
+                        the ones provided in the example images. Please use
+                        the IP address provided by <emphasis
+                        role="bold">your</emphasis> installation.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+
+              <para>Note the IP Address of your VM Instance.</para>
+            </listitem>
+
+            <listitem>
+              <para>In your browser, enter the URL displayed (circled in red
+              above) in the previous image (without the :8010) instead enter
+              the <emphasis>IP Address</emphasis>/ganglia.</para>
+
+              <para>For example,
+              <emphasis>http://nnn.nnn.nnn.nnn/ganglia</emphasis>, where
+              nnn.nnn.nnn.nnn is your Virtual Machine's IP address displayed
+              at the VM welcome screen.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para>We encourage experienced users to use SSH and log into the VM
+        and further examine the configuration of a 1-node monitoring
+        solution.</para>
+
+        <sect3 id="ViewTheMetrics">
+          <title>Viewing the Metrics</title>
+
+          <para>To view the metrics page, go to the following page in your
+          browser.<programlisting> <emphasis>http://nnn.nnn.nnn.nnn/ganglia</emphasis></programlisting></para>
+
+          <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your ESP
+          server running ECL Watch.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1 id="GangliaIntegration">
+      <title>Ganglia Integration with HPCC</title>
+
+      <para>The Roxie nodes are able to report metrics to Ganglia when the
+      nodes have Ganglia monitoring and the associated dependencies
+      installed.</para>
+
+      <para>Review the Ganglia wiki: <ulink
+      url="http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules">http://sourceforge.net/apps/trac/ganglia/wiki/ganglia_gmond_python_modules</ulink>
+      to understand the requirements.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Install the Ganglia components on every node.</para>
+        </listitem>
+
+        <listitem>
+          <para>Configure the Ganglia as appropriate for your system</para>
+
+          <para>The Ganglia configuration files can be typically found in the
+          <emphasis>/etc/ganglia/</emphasis> directory.</para>
+        </listitem>
+
+        <listitem>
+          <para>Install the HPCC Systems monitoring component on every node.
+          </para>
+        </listitem>
+
+        <listitem>
+          <para>Deploy the monitoring daemon (gmond) and the HPCC Monitoring
+          package to each of the nodes you wish to monitor.</para>
+        </listitem>
+      </orderedlist>
+
+      <para>The VM graphs can be used to monitor Roxie clusters. You can add
+      more Roxie nodes installed anywhere on the same network utilizing
+      multi-cast.</para>
+
+      <para>To add a new Roxie node, install the HPCC Monitoring package on to
+      each Roxie node to monitor. In most basic configurations you may need to
+      add the node(s) IP address(es) to the
+      <emphasis>/etc/ganglia/gmetad.conf</emphasis> file. As long as the new
+      Roxie node can communicate with (for example ping) the Monitoring
+      component host, the graphs for that will automatically be added to the
+      graph display.</para>
+
+      <para><variablelist>
+          <varlistentry>
+            <term>NOTE:</term>
+
+            <listitem>
+              <para>Some of the graphs take some time to populate with data.
+              These graphs may appear blank or empty at first, but will render
+              properly as more data accumulates to populate the graph.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist></para>
+    </sect1>
+  </chapter>
+</book>
