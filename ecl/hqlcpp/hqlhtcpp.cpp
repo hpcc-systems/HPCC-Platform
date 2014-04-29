@@ -2278,6 +2278,7 @@ void ActivityInstance::buildSuffix()
     const HqlCppOptions & options = translator.queryOptions();
     if (classStmt && (options.spotComplexClasses || options.showActivitySizeInGraph))
     {
+        //NOTE: The peephole optimizer means this is often vastly larger than the actual number of lines generated
         unsigned approxSize = calcTotalChildren(classStmt);
         if (options.spotComplexClasses && (approxSize >= options.complexClassesThreshold))
         {
