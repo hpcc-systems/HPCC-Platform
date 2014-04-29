@@ -103,6 +103,10 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
             moduleName = createIdAtom(item);
         }
 
+        //Check for empty module name
+        if (!moduleName)
+            return NULL;
+
         OwnedHqlExpr resolved;
         if (parentScope)
         {
