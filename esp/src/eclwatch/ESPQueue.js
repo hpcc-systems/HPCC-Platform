@@ -39,11 +39,11 @@ define([
             this.__hpcc_id = id;
 
             this._watched = [];
-            this.children = Observable(new Memory({
+            this.children = new Memory({
                 idProperty: "__hpcc_id",
                 parent: this,
                 data: []
-            }));
+            });
         },
 
         pause: function () {
@@ -133,16 +133,20 @@ define([
             this.set("DisplaySize", "");
         },
 
+        tmp: 0,
         addChild: function (wu) {
             wu.set("ESPQueue", this);
-            this.children.put(wu, {
-                overwrite: true
-            });
+            if (!this.children.get(wu.__hpcc_id)) {
+                this.children.add(wu);
+            }
             if (!this._watched[wu.__hpcc_id]) {
                 var context = this;
                 this._watched[wu.__hpcc_id] = wu.watch("changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue) {
-                        context.children.notify(wu, wu.__hpcc_id);
+                        //  If child changes force the parent to refresh...
+                        context.updateData({
+                            childChangedCount: ++context.tmp
+                        });
                     }
                 });
             }

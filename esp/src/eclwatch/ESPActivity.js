@@ -58,8 +58,8 @@ define([
 
         //  ---  ---  ---
         constructor: function (args) {
-            this.store = new Store();
             this._watched = [];
+            this.store = new Store();
             this.observableStore = new Observable(this.store)
         },
 
@@ -154,7 +154,9 @@ define([
                     if (!context._watched[queue.__hpcc_id]) {
                         context._watched[queue.__hpcc_id] = queue.watch("changedCount", function (name, oldValue, newValue) {
                             if (oldValue !== newValue) {
-                                context.observableStore.notify(queue, queue.__hpcc_id);
+                                if (context.observableStore.get(queue.__hpcc_id)) {
+                                    context.observableStore.notify(queue, queue.__hpcc_id);
+                                }
                             }
                         });
                     }
