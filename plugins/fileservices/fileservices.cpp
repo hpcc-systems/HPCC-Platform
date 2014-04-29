@@ -1210,7 +1210,7 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     {
         CImplicitSuperTransaction implicitTransaction(transaction);
         file->addSubFile(lfn.str(),atpos>0,(atpos>1)?other.str():NULL,addcontents,transaction);
-        file.clear();
+        file.clear(); // Must clear file before implicit transaction executed in destructor
     }
     StringBuffer s("AddSuperFile ('");
     s.append(lsfn).append("', '");
@@ -1246,7 +1246,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
     {
         CImplicitSuperTransaction implicitTransaction(transaction);
         file->removeSubFile(_lfn?lfn.str():NULL,del,remcontents,transaction);
-        file.clear();
+        file.clear(); // Must clear file before implicit transaction executed in destructor
     }
     StringBuffer s;
     if (_lfn)
@@ -1294,7 +1294,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveOwnedSubFiles(ICodeContext *ctx
     {
         CImplicitSuperTransaction implicitTransaction(transaction);
         file->removeOwnedSubFiles(del,transaction);
-        file.clear();
+        file.clear(); // Must clear file before implicit transaction executed in destructor
     }
     VStringBuffer s("RemoveOwnedSubFiles ('%s'", lsfn.str());
     if (del)
@@ -1332,6 +1332,7 @@ FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, cons
     {
         CImplicitSuperTransaction implicitTransaction(transaction);
         file1->swapSuperFile(file2,transaction);
+        // Must clear files before implicit transaction executed in destructor
         file1.clear();
         file2.clear();
     }
