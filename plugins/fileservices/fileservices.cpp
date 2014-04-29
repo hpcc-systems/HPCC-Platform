@@ -1159,6 +1159,25 @@ FILESERVICES_API void FILESERVICES_CALL fsAddSuperFile(IGlobalCodeContext *gctx,
 }
 
 
+class CImplicitSuperTransaction
+{
+    IDistributedFileTransaction *transaction;
+public:
+    CImplicitSuperTransaction(IDistributedFileTransaction *_transaction)
+    {
+        if (!_transaction->active()) // then created implicitly
+        {
+            transaction = _transaction;
+            transaction->start();
+        }
+    }
+    ~CImplicitSuperTransaction()
+    {
+        if (transaction)
+            transaction->commit();
+    }
+};
+
 FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const char *lsuperfn,const char *_lfn,unsigned atpos,bool addcontents, bool strict)
 {
     Owned<IDistributedSuperFile> file;
@@ -1188,7 +1207,11 @@ FILESERVICES_API void FILESERVICES_CALL fslAddSuperFile(ICodeContext *ctx, const
     StringBuffer other;
     if (atpos>1)
         other.append("#").append(atpos);
-    file->addSubFile(lfn.str(),atpos>0,(atpos>1)?other.str():NULL,addcontents,transaction);
+    {
+        CImplicitSuperTransaction implicitTransaction(transaction);
+        file->addSubFile(lfn.str(),atpos>0,(atpos>1)?other.str():NULL,addcontents,transaction);
+        file.clear(); // Must clear file before implicit transaction executed in destructor
+    }
     StringBuffer s("AddSuperFile ('");
     s.append(lsfn).append("', '");
     s.append(lfn).append('\'');
@@ -1220,7 +1243,11 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
     lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, true);
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
-    file->removeSubFile(_lfn?lfn.str():NULL,del,remcontents,transaction);
+    {
+        CImplicitSuperTransaction implicitTransaction(transaction);
+        file->removeSubFile(_lfn?lfn.str():NULL,del,remcontents,transaction);
+        file.clear(); // Must clear file before implicit transaction executed in destructor
+    }
     StringBuffer s;
     if (_lfn)
         s.append("RemoveSuperFile ('");
@@ -1264,7 +1291,11 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveOwnedSubFiles(ICodeContext *ctx
     lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, true);
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
-    file->removeOwnedSubFiles(del,transaction);
+    {
+        CImplicitSuperTransaction implicitTransaction(transaction);
+        file->removeOwnedSubFiles(del,transaction);
+        file.clear(); // Must clear file before implicit transaction executed in destructor
+    }
     VStringBuffer s("RemoveOwnedSubFiles ('%s'", lsfn.str());
     if (del)
         s.append(", del");
@@ -1298,7 +1329,13 @@ FILESERVICES_API void FILESERVICES_CALL fslSwapSuperFile(ICodeContext *ctx, cons
 
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
-    file1->swapSuperFile(file2,transaction);
+    {
+        CImplicitSuperTransaction implicitTransaction(transaction);
+        file1->swapSuperFile(file2,transaction);
+        // Must clear files before implicit transaction executed in destructor
+        file1.clear();
+        file2.clear();
+    }
     StringBuffer s("SwapSuperFile ('");
     s.append(lsfn1).append("', '");
     s.append(lsfn2).append("') '");
