@@ -6648,6 +6648,8 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_thor:
                 UNIMPLEMENTED;
                 break;
+            case no_stepped:
+                throwError(HQLERR_SteppedNotImplemented);
             default:
                 if (expr->isAction())
                     return doBuildActivityAction(ctx, expr, isRoot);
