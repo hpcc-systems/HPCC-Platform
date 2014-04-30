@@ -79,6 +79,14 @@ form li label{
     padding-top: 4px;
 }
 
+.dijitDialogPaneContent form li label {
+    float: left;
+    width: 25%;
+    margin: 0 15px 0 0;
+    text-align: left;
+    padding-top: 4px;
+}
+
 form li textarea{
     font-size: 13px;
     font-family: Arial;

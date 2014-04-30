@@ -38,6 +38,7 @@ define([
 
     "dojo/text!../templates/UserDetailsWidget.html",
 
+    "dijit/form/Form",
     "dijit/form/Textarea",
     "dijit/form/TextBox",
     "dijit/form/Button",

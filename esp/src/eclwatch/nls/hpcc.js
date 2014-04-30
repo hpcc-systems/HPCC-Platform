@@ -275,6 +275,8 @@ define({root:
     Password: "Password",
     PasswordExpiration: "Password Expiration",
     PasswordsDoNotMatch: "Passwords do not match.",
+    PasswordExpirePrefix: "Your password will expire in ",
+    PasswordExpirePostfix: " day(s). Do you want to change it now?",
     Path: "Path",
     PathMask: "Path Mask",
     Pause: "Pause",
