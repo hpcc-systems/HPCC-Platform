@@ -210,8 +210,8 @@
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Add the packagemap redefining the contents of the superkey.
-        </para>
+        <para>Add the packagemap redefining the contents of the
+        superkey.</para>
 
         <para>Use the command:</para>
 
@@ -281,6 +281,25 @@
 
     <para>The example shows query references first and file references
     following; however, this order is not required.</para>
+
+    <para>You can specify daliIP(s) and/or sourcecluster(s) to use to resolve
+    files to be specified in the packagemap. This can be specified at
+    different levels to affect files within a given scope.</para>
+
+    <para>For example:</para>
+
+    <para><programlisting>&lt;PackageMap daliip="10.239.8.10"&gt;
+  &lt;Package id="MyPackage" daliip="10.239.7.1" sourceCluster="thor1" &gt;
+    &lt;SuperFile id="thor::Mykey1_idx"&gt;
+      &lt;SubFile value="thor::mySub1"/&gt;
+    &lt;/SuperFile&gt;
+    &lt;SuperFile id="thor::Mykey2_idx"  daliip="10.239.8.1" sourceCluster="thor2"&gt;
+      &lt;SubFile value="thor::mySubKeyA"/&gt;
+      &lt;SubFile value="thor::mySubKeyB"/&gt;
+    &lt;/SuperFile&gt;
+  &lt;/Package&gt;
+&lt;/PackageMap&gt;
+</programlisting></para>
   </sect1>
 
   <sect1>
@@ -354,7 +373,5 @@
         </listitem>
       </itemizedlist>
     </sect2>
-    
   </sect1>
-                
 </chapter>
