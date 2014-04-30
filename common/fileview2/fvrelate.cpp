@@ -426,7 +426,7 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
         options.isExplicitFile = false;
     }
 
-    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc);
+    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc,false,false,true); // lock super-owners
     if (!resolved)
         return NULL;
 
@@ -467,7 +467,7 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
             options.primaryDepth++;
         }
 
-        if ((options.superDepth > 0) && resolved->isSubFile())
+        if ((options.superDepth > 0))
         {
             options.superDepth--;
             Owned<IDistributedSuperFileIterator> iter = resolved->getOwningSuperFiles();

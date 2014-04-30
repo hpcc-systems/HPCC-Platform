@@ -342,7 +342,6 @@ interface IDistributedFile: extends IInterface
     virtual unsigned getPositionPart(offset_t pos,offset_t &base)=0;            // get the part for a given position and the base offset of that part
 
     virtual IDistributedSuperFile *querySuperFile()=0;                          // returns non NULL if superfile
-    virtual bool isSubFile()=0;                                         // returns true if sub file of any SuperFile
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction=NULL)=0;           // returns iterator for all parents
     virtual bool isCompressed(bool *blocked=NULL)=0;
 
@@ -531,6 +530,7 @@ interface IDistributedFileDirectory: extends IInterface
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
                                         bool hold = false,
+                                        bool lockSuperOwner = false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
@@ -539,6 +539,7 @@ interface IDistributedFileDirectory: extends IInterface
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
                                         bool hold = false,
+                                        bool lockSuperOwner = false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found

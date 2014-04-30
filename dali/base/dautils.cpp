@@ -903,6 +903,32 @@ StringBuffer &CDfsLogicalFileName::makeFullnameQuery(StringBuffer &query, DfsXml
     return query.append("[@name=\"").append(queryTail()).append("\"]");
 }
 
+StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) const
+{
+    const char *s=get(true);    // skip foreign
+    bool first=true;
+    loop
+    {
+        const char *e=strstr(s,"::");
+        if (!e)
+        {
+            if (!streq(".", s))
+                lfnNodeName.append(s);
+            break;
+        }
+        if (0 != strncmp(".", s, e-s))
+        {
+            if (!first)
+                lfnNodeName.append('_');
+            else
+                first = false;
+            lfnNodeName.append(e-s,s);
+        }
+        s = e+2;
+    }
+    return lfnNodeName;
+}
+
 bool CDfsLogicalFileName::getEp(SocketEndpoint &ep) const
 {
     SocketEndpoint nullep;

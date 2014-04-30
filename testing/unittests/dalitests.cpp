@@ -243,7 +243,6 @@ void checkFile(IChecker *checker,IDistributedFile *file)
         checker->add("getFileCheckSum",csum);
     else
         checker->add("getFileCheckSum","nochecksum");
-    checker->add("isSubFile",file->isSubFile()?1:0);
     StringBuffer clustname;
     checker->add("queryClusterName(0)",file->getClusterName(0,clustname).str());
     for (unsigned i=0;i<np;i++) {
@@ -964,7 +963,7 @@ public:
          * the super files, this should _not_ cause an issue, as no single super file will contain
          * mismatched subfiles.
         */
-        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+        Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
         assertex(sub1);
         sub1->lockProperties();
         sub1->queryAttributes().setPropBool("@local", true);
@@ -1046,7 +1045,7 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub1") == 0 && "promote failed, outlinked expected to be sub1");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
         }
 
@@ -1068,9 +1067,9 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub3");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub2") == 0 && "promote failed, outlinked expected to be sub2");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, false, NULL, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
-            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, false, NULL, timeout);
+            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, false, false, NULL, timeout);
             ASSERT(sub2.get() && "promote failed, sub2 was physically deleted");
         }
     }
@@ -1621,6 +1620,10 @@ public:
             CThreaded threaded;
         public:
             CShortLock(const char *_fileName, unsigned _secDelay) : fileName(_fileName), secDelay(_secDelay), threaded("CShortLock", this) { }
+            ~CShortLock()
+            {
+                threaded.join();
+            }
             virtual void main()
             {
                 Owned<IDistributedFile> file=queryDistributedFileDirectory().lookup(fileName, NULL);
