@@ -91,9 +91,6 @@
         <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
           <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
         </script>
-        <script type="text/javascript" src="files_/scripts/sortabletable.js">
-          <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-        </script>
         <script language="JavaScript1.2">
           var countTCs=<xsl:value-of select="$countTargetClusters"/>;
           <xsl:text disable-output-escaping="yes"><![CDATA[

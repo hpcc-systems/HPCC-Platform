@@ -84,15 +84,11 @@
               <script language="JavaScript1.2" src="files_/scripts/multiselect.js">
                 <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
               </script>
-              <script type="text/javascript" src="files_/scripts/sortabletable.js">
-                <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-              </script>
 
               <script language="JavaScript1.2">
                 var countTCs=<xsl:value-of select="$countTargetClusters"/>;
                 <xsl:text disable-output-escaping="yes"><![CDATA[
                   var allowReloadPage = true;
-                  var sortableTable = null;
                   var fromTargetClusterPage = true;
                   var clusterChecked=0;
 
@@ -133,41 +129,6 @@
                     var table = document.getElementById('resultsTable');
                     if (table)
                     {
-                      //dynamically create a sort list since our table is defined at run time based on info returned
-                      var cells = table.tHead.rows[0].cells;
-                      var nCols = cells.length;
-                      var sortCriteria = new Array(nCols);
-                      sortCriteria[0] = "None";//multiselect checkbox
-
-                      for (var i = 1; i < nCols; i++)
-                      {
-                        var c = cells[i];
-                        var sort;
-                        switch (c.innerText)
-                        {
-                          case 'Location': 
-                            sort = 'IP_Address'; 
-                            break;
-                          case 'Type':      
-                          case 'Processes': 
-                          case 'Processes Down':
-                          case 'Condition':
-                          case 'State':
-                            sort = 'String'; 
-                            break;
-                          case 'Up Time':
-                          case 'Computer Up Time': 
-                            sort = 'TimePeriod'; 
-                            break;
-                          default:
-                            sort = "Percentage";
-                            break;
-                        }//switch
-                        sortCriteria[i] = sort;
-                      }//for
-
-                      sortableTable = new SortableTable(table, table, sortCriteria);
-
                       var toolarray = [];
                       for(i=0;i<table.rows.length;i++) 
                       {

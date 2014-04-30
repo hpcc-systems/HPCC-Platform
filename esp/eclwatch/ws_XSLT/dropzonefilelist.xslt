@@ -37,21 +37,11 @@
           <script type="text/javascript" src="/esp/files/yui/build/container/container_core-min.js"></script>
           <script type="text/javascript" src="/esp/files/yui/build/menu/menu-min.js"></script>
           <script language="JavaScript1.2" src="/esp/files/scripts/multiselect.js"></script>
-                <script type="text/javascript" src="/esp/files_/scripts/sortabletable.js">0</script>
         ]]></xsl:text>
         
                 <script language="JavaScript1.2">
           function onLoad()
           {
-          //initSelection('resultsTable');
-          
-          var table = document.getElementById('resultsTable');
-          if (table)
-          {
-            sortableTable = new SortableTable(table, table, ["String", "Number", "DateTime"]);
-          }
-          
-
           var sectionDiv = document.getElementById("DropzoneFileData");
           if (sectionDiv)
           {

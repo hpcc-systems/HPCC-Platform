@@ -406,9 +406,6 @@
                             function onLoad()
                             {
                                 initSelection('resultsTable');
-                                //var table = document.getElementById('resultsTable');
-                                //if (table)
-                                //  sortableTable = new SortableTable(table, table, ["None", "None", "String", "Number", "NumberWithCommas", "NumberWithCommas", "String", "String"]);
                             }        
                           
                             function getNewPage()
