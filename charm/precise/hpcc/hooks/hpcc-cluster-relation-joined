@@ -1,0 +1,22 @@
+#!/bin/bash -e
+# This must be renamed to the name of the relation. The goal here is to
+# affect any change needed by relationships being formed
+# This script should be idempotent.
+juju-log $JUJU_REMOTE_UNIT joined
+
+. ${CHARM_DIR}/hooks/hpcc-common
+
+save_local_ip
+
+relation-set name="${HOSTNAME}" netAddress="${IP_ADDRESS}"
+
+PUB_KEY=$(config-get ssh-key-public)
+PRI_KEY=$(config-get ssh-key-private)
+fix_private_key
+if [ -z "$PUB_KEY" ] || [ -z "$PUB_KEY" ]
+then
+   relation-set reset-ssh-keys=1
+   create_and_set_ssh_keys
+else
+   relation-set reset-ssh-keys=0
+fi

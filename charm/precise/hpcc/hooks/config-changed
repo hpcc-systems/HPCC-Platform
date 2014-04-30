@@ -1,0 +1,31 @@
+#!/bin/bash -e
+# config-changed occurs everytime a new configuration value is updated (juju set)
+
+. ${CHARM_DIR}/hooks/hpcc-common
+
+##
+## Check if need to generate environment.xml
+##
+
+envgen_signature=$(config-get envgen-signature)
+juju-log "envgen_signature: $envgen_signature"
+[ -z "${envgen_signature}" ] && exit 0
+
+SIGNATURE_FILE=${JUJU_HPCC_DIR}/env_signature.txt
+if [ -e ${SIGNATURE_FILE} ]
+then
+    saved_signature=$(head -n 1 $SIGNATURE_FILE)
+    juju-log "saved_signature: $saved_signature"
+    [ "$saved_signature" == "$envgen_signature" ] && exit 0
+fi
+
+[ ! -e $IP_FILE ] && exit 0
+
+get_envgen_configuration
+
+composed_signature="${support_nodes}-${roxie_nodes}-${thor_nodes}-${slaves_per_node}"
+juju-log "composed_signature: $composed_signature"
+[ "$composed_signature" != "$envgen_signature" ] && exit 0
+
+
+configure_cluster

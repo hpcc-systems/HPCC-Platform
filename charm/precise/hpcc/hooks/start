@@ -1,0 +1,18 @@
+#!/bin/bash -e
+# Here put anything that is needed to start the service.
+# Note that currently this is run directly after install
+# i.e. 'service apache2 start'
+
+#export PS4='+${BASH_SOURCE[1]} ${LINENO}'
+#set -x
+
+. ${CHARM_DIR}/hooks/hpcc-common
+
+parse_env_config
+if [ ! -e ${PATH_HOME}/.ssh/id_rsa ]
+then
+   create_and_set_ssh_keys
+fi
+
+start_and_check
+exit $?
