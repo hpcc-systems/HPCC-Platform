@@ -344,7 +344,6 @@ define([
                 return;
 
             this.initLandingZonesGrid();
-            this.selectChild(this.landingZonesTab, true);
             this.sprayFixedDestinationSelect.init({
                 Groups: true
             });

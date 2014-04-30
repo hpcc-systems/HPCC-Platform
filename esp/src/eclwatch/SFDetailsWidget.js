@@ -146,7 +146,6 @@ define([
                 });
                 this.logicalFile.refresh();
             }
-            this.selectChild(this.summaryWidget, true);
             this.subfilesGrid.startup();
         },
 

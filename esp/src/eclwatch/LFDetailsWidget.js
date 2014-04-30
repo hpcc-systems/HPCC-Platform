@@ -179,7 +179,6 @@ define([
                 });
                 this.logicalFile.refresh();
             }
-            this.selectChild(this.summaryWidget, true);
             this.copyTargetSelect.init({
                 Groups: true
             });

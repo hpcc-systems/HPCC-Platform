@@ -94,7 +94,6 @@ define([
                 Target: params.Cluster
             });
             this.initEventGrid();
-            this.selectChild(this.eventTab, true);
 
             this.filter.on("clear", function (evt) {
                 context.refreshGrid();

@@ -78,8 +78,6 @@ define([
                 return;
 
             this.query = ESPQuery.Get(params.QuerySet, params.QueryId);
-
-            this.selectChild(this.soapTab, true);
         },
 
         setContent: function (target, type, postfix) {

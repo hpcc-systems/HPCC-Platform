@@ -130,8 +130,6 @@ define([
                 context.updateInput(name, oldValue, newValue);
             });
             this.query.refresh();
-
-            this.selectChild(this.summaryTab, true);
         },
 
         initTab: function () {

@@ -232,7 +232,6 @@ define([
                 this.wu.refresh();
             }
             this.infoGridWidget.init(params);
-            this.selectChild(this.summaryWidget, true);
         },
 
         initTab: function () {
