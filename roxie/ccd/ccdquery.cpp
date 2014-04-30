@@ -898,18 +898,19 @@ public:
             return NULL;
     }
 
-    static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IArrayOf<IResolvedFile> &files)
+    static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IArrayOf<IResolvedFile> &files, bool isDynamic)
     {
         hash64_t hashValue = package.queryHash();
         if (dll)
         {
             hashValue = rtlHash64VStr(dll->queryDll()->queryName(), hashValue);
-            if (!allFilesDynamic)
+            if (!allFilesDynamic && !isDynamic)
             {
                 IConstWorkUnit *wu = dll->queryWorkUnit();
                 if (wu) // wu may be null in some unit test cases
                 {
                     SCMStringBuffer bStr;
+                    // Don't want to include files referenced in thor graphs... in practice isDynamic also likely to be set in such cases
                     if (getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster) == RoxieCluster)
                     {
                         Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
@@ -1458,7 +1459,7 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
     IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
-    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles);
+    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles, isDynamic);
     IQueryFactory *cached = getQueryFactory(hashValue, 0);
     if (cached && !(cached->loadFailed() && (reloadRetriesFailed || forceRetry)))
     {
@@ -1725,7 +1726,7 @@ IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, con
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
     IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
-    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles);
+    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles, isDynamic);
     IQueryFactory *cached = getQueryFactory(hashValue, channel);
     if (cached)
     {

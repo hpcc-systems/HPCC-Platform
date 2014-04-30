@@ -1681,11 +1681,14 @@ protected:
     {
         if (traceLevel > 2)
             DBGLOG("Superfile %s change detected", lfn.get());
-        CriticalBlock b(lock);
-        if (cached)
+
         {
-            cached->removeCache(this);
-            cached = NULL;
+            CriticalBlock b(lock);
+            if (cached)
+            {
+                cached->removeCache(this);
+                cached = NULL;
+            }
         }
         globalPackageSetManager->requestReload();
     }
@@ -1746,6 +1749,7 @@ public:
     }
     virtual void beforeDispose()
     {
+        notifier.clear();
         if (cached)
         {
             cached->removeCache(this);

@@ -74,7 +74,7 @@ SafePluginMap *plugins;
 
 const char *queryNodeFileName(const IPropertyTree &graphNode)
 {
-    if (graphNode.hasProp("att[@name='_fileName_dynamic']"))
+    if (graphNode.hasProp("att[@name='_file_dynamic']"))
         return NULL;
     else
         return graphNode.queryProp("att[@name='_fileName']/@value");
@@ -82,13 +82,13 @@ const char *queryNodeFileName(const IPropertyTree &graphNode)
 
 const char *queryNodeIndexName(const IPropertyTree &graphNode)
 {
-    if (graphNode.hasProp("att[@name='_indexFileName_dynamic']"))
+    if (graphNode.hasProp("att[@name='_indexFile_dynamic']"))
         return NULL;
     else
     {
         const char * id = graphNode.queryProp("att[@name='_indexFileName']/@value");
         if (!id)
-            id = graphNode.queryProp("att[@name='_fileName']/@value");
+            id = queryNodeFileName(graphNode);
         return id;
     }
 }
