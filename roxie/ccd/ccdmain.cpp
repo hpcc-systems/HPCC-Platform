@@ -923,6 +923,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
+        createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
@@ -1047,6 +1048,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     stopPerformanceMonitor();
     ::Release(globalPackageSetManager);
     globalPackageSetManager = NULL;
+    stopDelayedReleaser();
     cleanupPlugins();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();

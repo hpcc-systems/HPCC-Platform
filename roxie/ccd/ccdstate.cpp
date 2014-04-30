@@ -172,7 +172,22 @@ public:
         }
         queue.append(*new DelayedReleaseQueueItem(_goer, delaySeconds));
     }
-} delayedReleaser;
+};
+
+Owned<DelayedReleaserThread> delayedReleaser;
+
+void createDelayedReleaser()
+{
+    delayedReleaser.setown(new DelayedReleaserThread);
+}
+
+void stopDelayedReleaser()
+{
+    if (delayedReleaser)
+        delayedReleaser->stop();
+    delayedReleaser.clear();
+}
+
 
 //-------------------------------------------------------------------------
 
@@ -1237,7 +1252,7 @@ protected:
             queryHash = newHash;
         }
         if (slaveQueryReleaseDelaySeconds)
-            delayedReleaser.delayedRelease(oldSlaveManagers.getClear(), slaveQueryReleaseDelaySeconds);
+            delayedReleaser->delayedRelease(oldSlaveManagers.getClear(), slaveQueryReleaseDelaySeconds);
     }
 
     mutable CriticalSection updateCrit;  // protects updates of slaveManagers and serverManager

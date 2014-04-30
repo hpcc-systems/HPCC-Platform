@@ -143,4 +143,7 @@ extern void mergeQueries(IPropertyTree *s1, IPropertyTree *s2);
 extern const char *queryNodeFileName(const IPropertyTree &graphNode);
 extern const char *queryNodeIndexName(const IPropertyTree &graphNode);
 
+extern void createDelayedReleaser();
+extern void stopDelayedReleaser();
+
 #endif
