@@ -118,12 +118,19 @@ class DelayedReleaserThread : public Thread
 {
 private:
     bool closing;
+    bool started;
     CriticalSection lock;
     IArrayOf<DelayedReleaseQueueItem> queue;
 public:
     DelayedReleaserThread() : Thread("DelayedReleaserThread")
     {
         closing = false;
+        started = false;
+    }
+
+    ~DelayedReleaserThread()
+    {
+        stop();
     }
 
     virtual int run()
@@ -148,12 +155,21 @@ public:
 
     void stop()
     {
-        closing = true;
+        if (started)
+        {
+            closing = true;
+            join();
+        }
     }
 
     void delayedRelease(IInterface *_goer, unsigned delaySeconds)
     {
         CriticalBlock b(lock);
+        if (!started)
+        {
+            start();
+            started = true;
+        }
         queue.append(*new DelayedReleaseQueueItem(_goer, delaySeconds));
     }
 } delayedReleaser;
@@ -395,7 +411,7 @@ protected:
                 {
                     Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheResult, writeAccess);
                     if (dFile)
-                        result = createResolvedFile(fileName, NULL, dFile.getClear(), daliHelper, cacheResult, writeAccess);
+                        result = createResolvedFile(fileName, NULL, dFile.getClear(), daliHelper, !useCache, cacheResult, writeAccess);
                 }
                 else if (!writeAccess)  // If we need write access and expect a dali, but don't have one, we should probably fail
                 {
@@ -1220,8 +1236,8 @@ protected:
             serverManager.setown(newServerManager);
             queryHash = newHash;
         }
-        if (delayedSlaveQueryRelease)
-            delayedReleaser.delayedRelease(oldSlaveManagers, delayedSlaveQueryRelease);
+        if (slaveQueryReleaseDelaySeconds)
+            delayedReleaser.delayedRelease(oldSlaveManagers.getClear(), slaveQueryReleaseDelaySeconds);
     }
 
     mutable CriticalSection updateCrit;  // protects updates of slaveManagers and serverManager
