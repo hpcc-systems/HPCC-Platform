@@ -84,7 +84,7 @@ CConfigHelper* CConfigHelper::getInstance(const IPropertyTree *cfg, const char* 
                 StringBuffer msg;
                 e->errorMessage(msg);
 
-                delete e;
+                ::Release(e);
 
                 if (p_sConfigHelper->m_cbDeployment.get() != NULL)
                 {
@@ -115,7 +115,7 @@ CConfigHelper* CConfigHelper::getInstance(const IPropertyTree *cfg, const char* 
                 }
                 // TODO: log message to configmgr log but continue execution
 
-                delete e;
+                ::Release(e);
             }
 
             return p_sConfigHelper;
@@ -222,7 +222,7 @@ void CConfigHelper::appendBuildSetFromPlugins()
                                                         "Error adding buildset with xpath %s[%d] from location %s", strXPath.str(), nIdx, strPluginBuildSetPath.str());
                         }
 
-                        delete e;
+                        ::Release(e);
                     }
                 }
             }
@@ -348,7 +348,7 @@ void CConfigHelper::addPluginsToConfigGenCompList(IPropertyTree *pCGenComplist, 
                         m_cbDeployment->printStatus(STATUS_WARN, NULL, NULL, NULL,
                                                 "Unable to load cgencomplist.xml from  %s", strPluginCGenCompListPath.str());
                     }
-                    delete e;
+                    ::Release(e);
                 }
 
                 Owned<IPropertyTreeIterator> pCGenCompListIterator = pPluginCGenCompList->getElements(strXPath);
