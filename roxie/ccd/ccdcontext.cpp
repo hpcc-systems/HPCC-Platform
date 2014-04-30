@@ -1027,6 +1027,7 @@ protected:
 
     Owned<IConstWorkUnit> workUnit;
     Owned<IRoxieDaliHelper> daliHelperLink;
+    Owned<IDistributedFileTransaction> superfileTransaction;
 
     CriticalSection statsCrit;
     const ContextLogger &logctx;
@@ -3628,7 +3629,7 @@ public:
         }
         else
         {
-            throw MakeStringException(ROXIE_INVALID_ACTION, "No workunit associated with this context");
+            return strdup("");
         }
     }
 
@@ -3721,7 +3722,13 @@ public:
     virtual char *getFilePart(const char *logicalPart, bool create=false) { UNIMPLEMENTED; }
     virtual unsigned __int64 getFileOffset(const char *logicalPart) { throwUnexpected(); }
 
-    virtual IDistributedFileTransaction *querySuperFileTransaction() { UNIMPLEMENTED; }
+    virtual IDistributedFileTransaction *querySuperFileTransaction()
+    {
+        CriticalBlock b(contextCrit);
+        if (!superfileTransaction.get())
+            superfileTransaction.setown(createDistributedFileTransaction(queryUserDescriptor()));
+        return superfileTransaction.get();
+    }
     virtual void flush(unsigned seqNo) { throwUnexpected(); }
     virtual unsigned getPriority() const { return priority; }
     virtual IConstWorkUnit *queryWorkUnit() const { return workUnit; }
