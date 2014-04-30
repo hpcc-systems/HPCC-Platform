@@ -106,11 +106,14 @@ public:
         time(&goTime);
         goTime += delaySeconds;
     }
-    bool expired()
+    unsigned remaining()
     {
         time_t now;
         time(&now);
-        return now > goTime;
+        if (now > goTime)
+            return 0;
+        else
+            return goTime - now;
     }
 };
 
@@ -121,6 +124,7 @@ private:
     bool started;
     CriticalSection lock;
     IArrayOf<DelayedReleaseQueueItem> queue;
+    Semaphore sem;
 public:
     DelayedReleaserThread() : Thread("DelayedReleaserThread")
     {
@@ -137,16 +141,23 @@ public:
     {
         if (traceLevel)
             DBGLOG("DelayedReleaserThread %p starting", this);
+        unsigned nextTimeout = INFINITE;
         while (!closing)
         {
-            Sleep(60);
+            sem.wait(nextTimeout);
             CriticalBlock b(lock);
+            nextTimeout = INFINITE;
             ForEachItemInRev(idx, queue)
             {
                 DelayedReleaseQueueItem &goer = queue.item(idx);
-                if (goer.expired())
+                unsigned timeRemaining = goer.remaining();
+                if (!timeRemaining)
                     queue.remove(idx);
+                else if (timeRemaining < nextTimeout)
+                    nextTimeout = timeRemaining;
             }
+            if (nextTimeout != INFINITE)
+                nextTimeout = nextTimeout * 1000;
         }
         if (traceLevel)
             DBGLOG("DelayedReleaserThread %p exiting", this);
@@ -158,19 +169,24 @@ public:
         if (started)
         {
             closing = true;
+            sem.signal();
             join();
         }
     }
 
-    void delayedRelease(IInterface *_goer, unsigned delaySeconds)
+    void delayedRelease(IInterface *goer, unsigned delaySeconds)
     {
-        CriticalBlock b(lock);
-        if (!started)
+        if (goer)
         {
-            start();
-            started = true;
+            CriticalBlock b(lock);
+            if (!started)
+            {
+                start();
+                started = true;
+            }
+            queue.append(*new DelayedReleaseQueueItem(goer, delaySeconds));
+            sem.signal();
         }
-        queue.append(*new DelayedReleaseQueueItem(_goer, delaySeconds));
     }
 };
 
