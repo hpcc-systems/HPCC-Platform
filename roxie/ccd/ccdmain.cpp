@@ -129,6 +129,8 @@ unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
 
+unsigned delayedSlaveQueryRelease = 60;
+
 unsigned logQueueLen;
 unsigned logQueueDrop;
 bool useLogQueue;
@@ -719,6 +721,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultKeyedJoinPreload = topology->getPropInt("@defaultKeyedJoinPreload", 0);
         defaultPrefetchProjectPreload = topology->getPropInt("@defaultPrefetchProjectPreload", 10);
         defaultCheckingHeap = topology->getPropInt("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
+        delayedSlaveQueryRelease = topology->getPropInt("@delayedSlaveQueryRelease", false);
+
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
 

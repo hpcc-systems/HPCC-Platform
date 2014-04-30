@@ -429,6 +429,8 @@ extern unsigned defaultKeyedJoinPreload;
 extern unsigned defaultPrefetchProjectPreload;
 extern bool defaultCheckingHeap;
 
+extern unsigned delayedSlaveQueryRelease;
+
 extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;
 extern StringBuffer pluginsList;

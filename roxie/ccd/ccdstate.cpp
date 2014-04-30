@@ -93,6 +93,73 @@ const char *queryNodeIndexName(const IPropertyTree &graphNode)
     }
 }
 
+// DelayedReleaser mechanism hangs on to a link to an object for a while...
+
+class DelayedReleaseQueueItem : public CInterfaceOf<IInterface>
+{
+    Owned<IInterface> goer;
+    time_t goTime;
+public:
+    DelayedReleaseQueueItem(IInterface *_goer, unsigned delaySeconds)
+    : goer(_goer)
+    {
+        time(&goTime);
+        goTime += delaySeconds;
+    }
+    bool expired()
+    {
+        time_t now;
+        time(&now);
+        return now > goTime;
+    }
+};
+
+class DelayedReleaserThread : public Thread
+{
+private:
+    bool closing;
+    CriticalSection lock;
+    IArrayOf<DelayedReleaseQueueItem> queue;
+public:
+    DelayedReleaserThread() : Thread("DelayedReleaserThread")
+    {
+        closing = false;
+    }
+
+    virtual int run()
+    {
+        if (traceLevel)
+            DBGLOG("DelayedReleaserThread %p starting", this);
+        while (!closing)
+        {
+            Sleep(60);
+            CriticalBlock b(lock);
+            ForEachItemInRev(idx, queue)
+            {
+                DelayedReleaseQueueItem &goer = queue.item(idx);
+                if (goer.expired())
+                    queue.remove(idx);
+            }
+        }
+        if (traceLevel)
+            DBGLOG("DelayedReleaserThread %p exiting", this);
+        return 0;
+    }
+
+    void stop()
+    {
+        closing = true;
+    }
+
+    void delayedRelease(IInterface *_goer, unsigned delaySeconds)
+    {
+        CriticalBlock b(lock);
+        queue.append(*new DelayedReleaseQueueItem(_goer, delaySeconds));
+    }
+} delayedReleaser;
+
+//-------------------------------------------------------------------------
+
 class CSimpleSuperFileArray : public CInterface, implements ISimpleSuperFileEnquiry
 {
     IArrayOf<IPropertyTree> subFiles;
@@ -1153,6 +1220,8 @@ protected:
             serverManager.setown(newServerManager);
             queryHash = newHash;
         }
+        if (delayedSlaveQueryRelease)
+            delayedReleaser.delayedRelease(oldSlaveManagers, delayedSlaveQueryRelease);
     }
 
     mutable CriticalSection updateCrit;  // protects updates of slaveManagers and serverManager
