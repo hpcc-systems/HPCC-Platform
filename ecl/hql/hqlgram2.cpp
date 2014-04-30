@@ -8053,7 +8053,7 @@ void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & p
         payloadCount = fields.ordinality() - oldFields;
     }
     //This needs to be here until filepositions are no longer special cased.
-    if (!lastFieldType || !lastFieldType->isInteger() && getBoolAttributeInList(extra, filepositionAtom, true))
+    if ((!lastFieldType || !lastFieldType->isInteger()) && getBoolAttributeInList(extra, filepositionAtom, true))
     {
         if (ADD_IMPLICIT_FILEPOS_FIELD_TO_INDEX)
         {
