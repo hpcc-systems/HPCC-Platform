@@ -888,12 +888,11 @@ public:
 
     IDistributedFile *lookup(const char *_logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
     IDistributedFile *lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
-    
-    IDistributedFile *createNew(IFileDescriptor * fdesc, const char *lname, IUserDescriptor *user, bool includeports=false);
-    IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false)
-    {
-        return createNew(fdesc,NULL,NULL,includeports);
-    }
+
+    /* createNew always creates an unnamed unattached distributed file
+     * The caller must associated it with a name and credentials when it is attached (attach())
+     */
+    IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false);
     IDistributedSuperFile *createSuperFile(const char *logicalname,IUserDescriptor *user,bool interleaved,bool ifdoesnotexist,IDistributedFileTransaction *transaction=NULL);
     void removeSuperFile(const char *_logicalname, bool delSubs, IUserDescriptor *user, IDistributedFileTransaction *transaction);
 
@@ -7141,10 +7140,10 @@ IDistributedFile *CDistributedFileDirectory::createExternal(const CDfsLogicalFil
         fileDesc->setPart(i,rfn);
     }
     fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_NoCopies;
-    IDistributedFile * ret = createNew(fileDesc,logicalname.get(),NULL,true);   // set modified
-    if (ret&&moddtset) {
+    CDistributedFile *ret = new CDistributedFile(this, fileDesc, NULL, true);   // sets modified
+    ret->setLogicalName(logicalname.get());
+    if (moddtset)
         ret->setModificationTime(moddt);    
-    }
     return ret;
 }
 
@@ -7313,12 +7312,9 @@ bool CDistributedFileDirectory::existsPhysical(const char *_logicalname, IUserDe
     return file->existsPhysicalPartFiles(0);
 }
 
-IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc, const char *lname, IUserDescriptor *user, bool includeports)
+IDistributedFile *CDistributedFileDirectory::createNew(IFileDescriptor *fdesc, bool includeports)
 {
-    CDistributedFile *file = new CDistributedFile(this, fdesc, user, includeports);
-    if (file&&lname&&*lname&&file->isAnon())
-        file->setLogicalName(lname);
-    return file;
+    return new CDistributedFile(this, fdesc, NULL, includeports);
 }
 
 ////////////////////////////////////
@@ -10110,7 +10106,8 @@ IDistributedFile *CDistributedFileDirectory::getFile(const char *lname,IUserDesc
     if (!fdesc)
         return NULL;
     fdesc->setTraceName(lname);
-    IDistributedFile *ret = createNew(fdesc,lname,user,true);
+    CDistributedFile *ret = new CDistributedFile(this, fdesc, user, true);
+    ret->setLogicalName(lname);
     const char *date = tree->queryProp("@modified");
     if (ret) {
         CDateTime dt;
