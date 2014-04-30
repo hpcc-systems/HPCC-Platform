@@ -710,20 +710,24 @@ static void dfsparents(const char *lname, IUserDescriptor *user)
 
 static void dfsunlink(const char *lname, IUserDescriptor *user)
 {
-    loop {
+    loop
+    {
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lname,user,false,false,true);
-        if (file) {
-            Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
-            if (!iter->first())
-                break;
-            file.clear();
-            Owned<IDistributedSuperFile> sf = &iter->get();
-            iter.clear();
-            if (sf->removeSubFile(lname,false))
-                OUTLOG("removed %s from %s",lname,sf->queryLogicalName());
-            else
-                ERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
+        if (!file)
+        {
+            ERRLOG("File '%s' not found", lname);
+            break;
         }
+        Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
+        if (!iter->first())
+            break;
+        file.clear();
+        Owned<IDistributedSuperFile> sf = &iter->get();
+        iter.clear();
+        if (sf->removeSubFile(lname,false))
+            OUTLOG("removed %s from %s",lname,sf->queryLogicalName());
+        else
+            ERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
     }
 }
 

@@ -414,7 +414,7 @@ class CFileLockBase
 protected:
     Owned<IRemoteConnection> lock;
 
-    bool init(StringBuffer &lockPath, unsigned mode, IRemoteConnection *_conn, unsigned timeout, const char *msg)
+    bool init(const char *lockPath, unsigned mode, IRemoteConnection *_conn, unsigned timeout, const char *msg)
     {
         conn = NULL;
         lock.clear();
@@ -423,7 +423,7 @@ protected:
         {
             try
             {
-                lock.setown(querySDS().connect(lockPath.str(), myProcessSession(), mode, timeout>60000 ? 60000 : timeout));
+                lock.setown(querySDS().connect(lockPath, myProcessSession(), mode, timeout>60000 ? 60000 : timeout));
                 if (lock.get())
                 {
                     conn = _conn;
@@ -433,8 +433,7 @@ protected:
             }
             catch (ISDSException *e)
             {
-                unsigned remaining;
-                if (SDSExcpt_LockTimeout != e->errorCode() || tm.timedout(&remaining))
+                if (SDSExcpt_LockTimeout != e->errorCode() || tm.timedout())
                     throw;
                 WARNLOG("CFileAttrLockBase(%s) blocked for %ds", msg, tm.elapsed()/1000);
                 e->Release();
@@ -449,7 +448,7 @@ public:
     ~CFileLockBase()
     {
         // if conn provided, 'lock' was just a surrogate for the owner connection, commit now to conn if write lock
-        if (conn && lock && write)
+        if (conn && lock)
             conn->commit();
     }
     IRemoteConnection *detach()
@@ -2841,16 +2840,6 @@ public:
 #endif
     }
 
-
-    virtual bool isSubFile()
-    {
-        CriticalBlock block(sect);
-        // JCSMORE - this method should probably be removed, only file view uses it.
-        if (conn) // SuperOwner, could have changed whilst locked, ensure refreshed
-            conn->reload("SuperOwner");
-        return root&&root->hasProp("SuperOwner[1]");
-    }
-
     void setProtect(const char *owner, bool protect, unsigned timems)
     {
         if (logicalName.isForeign()) {
@@ -2871,7 +2860,6 @@ public:
                 ERRLOG("setProtect - cannot protect %s (no connection in file)",owner?owner:"");
         }
     }
-
 
     virtual IDistributedSuperFileIterator *getOwningSuperFiles(IDistributedFileTransaction *_transaction)
     {
