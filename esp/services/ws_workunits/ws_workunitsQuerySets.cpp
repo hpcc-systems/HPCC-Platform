@@ -816,6 +816,8 @@ void gatherQuerySetQueryDetails(IEspContext &context, IPropertyTree *query, IEsp
         queryInfo->setPriority(getQueryPriorityName(query->getPropInt("@priority")));
     if (query->hasProp("@comment"))
         queryInfo->setComment(query->queryProp("@comment"));
+    if (query->hasProp("@snapshot"))
+        queryInfo->setSnapshot(query->queryProp("@snapshot"));
     double version = context.getClientVersion();
     if (version >= 1.46)
     {
