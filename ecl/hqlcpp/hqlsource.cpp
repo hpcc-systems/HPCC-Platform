@@ -637,7 +637,7 @@ public:
                 BuildCtx transformctx(ctx);
                 transformctx.addQuotedCompound("virtual void mapOutputToInput(ARowBuilder & crSelf, const void * _projected, unsigned numFields)");
                 translator.ensureRowAllocated(transformctx, "crSelf");
-                transformctx.addQuoted("const byte * pr = (const byte *)_projected;");
+                transformctx.addQuotedLiteral("const byte * pr = (const byte *)_projected;");
 
                 translator.bindTableCursor(transformctx, rawStepping.ds, "crSelf.row()");
                 translator.bindTableCursor(transformctx, outputStepping.ds, "pr");
@@ -1653,14 +1653,14 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
         bool isProjected = (root->queryNormalizedSelector() != tableExpr->queryNormalizedSelector());
         if (!isProjected)
         {
-            iterctx.addQuoted("byte * src;");
+            iterctx.addQuotedLiteral("byte * src;");
             associateFilePositions(iterctx, "activity->fpp", "activity->src");      // in case no projection in first()
             translator.associateBlobHelper(iterctx, tableExpr, "fpp");
-            firstctx.addQuoted("src = (byte *)_src;");
+            firstctx.addQuotedLiteral("src = (byte *)_src;");
         }
         else
         {
-            firstctx.addQuoted("byte * src = (byte *)_src;");
+            firstctx.addQuotedLiteral("byte * src = (byte *)_src;");
         }
 
         translator.associateBlobHelper(firstctx, tableExpr, "fpp");
@@ -1695,11 +1695,11 @@ void SourceBuilder::doBuildNormalizeIterators(BuildCtx & ctx, IHqlExpression * e
     {
         iterBuilder.buildCompoundIterator(instance->onlyEvalOnceContext(), iterators, cursors);
 
-        firstctx.addQuoted("return iter.first();");
+        firstctx.addQuotedLiteral("return iter.first();");
 
         BuildCtx nextctx(instance->startctx);
         nextctx.addQuotedCompound("virtual bool next()");
-        nextctx.addQuoted("return iter.next();");
+        nextctx.addQuotedLiteral("return iter.next();");
     }
 
     ForEachItemIn(i, cursors)
@@ -2087,7 +2087,7 @@ void SourceBuilder::assignLocalExtract(BuildCtx & ctx, ParentExtract * extractBu
 
 void SourceBuilder::buildGroupAggregateHashHelper(ParentExtract * extractBuilder, IHqlExpression * dataset, IHqlExpression * fields)
 {
-    instance->classctx.addQuoted("virtual IHash * queryHash() { return &hash; }");
+    instance->classctx.addQuotedLiteral("virtual IHash * queryHash() { return &hash; }");
 
     BuildCtx classctx(instance->nestedctx);
     translator.beginNestedClass(classctx, "hash", "IHash", NULL, extractBuilder);
@@ -2150,7 +2150,7 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
     OwnedHqlExpr order = createValue(no_order, makeIntType(sizeof(signed), true), LINK(leftList), LINK(rightResolved));
 
     //Now generate the nested class
-    instance->classctx.addQuoted("virtual ICompare * queryCompareRowElement() { return &compareRowElement; }");
+    instance->classctx.addQuotedLiteral("virtual ICompare * queryCompareRowElement() { return &compareRowElement; }");
 
     BuildCtx classctx(instance->nestedctx);
     translator.beginNestedClass(classctx, "compareRowElement", "ICompare", NULL, extractBuilder);
@@ -2158,7 +2158,7 @@ void SourceBuilder::buildGroupAggregateCompareHelper(ParentExtract * extractBuil
     BuildCtx funcctx(classctx);
     funcctx.addQuotedCompound("virtual int docompare(const void * _left, const void * _right) const");
     assignLocalExtract(funcctx, extractBuilder, aggregate->queryChild(0), "_left");
-    funcctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+    funcctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     funcctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
 
     translator.bindTableCursor(funcctx, aggregate, "right", no_right, selSeq);
@@ -2285,12 +2285,12 @@ void SourceBuilder::buildGlobalGroupAggregateHelpers(IHqlExpression * expr)
     //virtual void processRow(void * self, const void * src) = 0;
     BuildCtx rowctx(instance->startctx);
     rowctx.addQuotedCompound("virtual void processRow(const void * src, IHThorGroupAggregateCallback * callback)");
-    rowctx.addQuoted("doProcessRow((byte *)src, callback);");
+    rowctx.addQuotedLiteral("doProcessRow((byte *)src, callback);");
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
     BuildCtx rowsctx(instance->startctx);
     rowsctx.addQuotedCompound("virtual void processRows(size32_t srcLen, const void * _left, IHThorGroupAggregateCallback * callback)");
-    rowsctx.addQuoted("unsigned char * left = (unsigned char *)_left;");
+    rowsctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
     OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
     OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
     OwnedHqlExpr fullDs = createTranslated(ds, len);
@@ -2383,12 +2383,12 @@ void SourceBuilder::buildCountHelpers(IHqlExpression * expr, bool allowMultiple)
             //virtual size32_t numValid(const void * src) = 0;
             BuildCtx rowctx(instance->startctx);
             rowctx.addQuotedCompound("virtual size32_t numValid(const void * src)");
-            rowctx.addQuoted("return valid((byte *)src);");
+            rowctx.addQuotedLiteral("return valid((byte *)src);");
 
             //virtual size32_t numValid(size32_t srcLen, const void * src);
             BuildCtx rowsctx(instance->startctx);
             rowsctx.addQuotedCompound("virtual size32_t numValid(size32_t srcLen, const void * _src)");
-            rowsctx.addQuoted("unsigned char * src = (unsigned char *)_src;");
+            rowsctx.addQuotedLiteral("unsigned char * src = (unsigned char *)_src;");
             OwnedHqlExpr ds = createVariable("src", makeReferenceModifier(tableExpr->getType()));
             OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
             OwnedHqlExpr fullDs = createTranslated(ds, len);
@@ -2402,18 +2402,18 @@ void SourceBuilder::buildCountHelpers(IHqlExpression * expr, bool allowMultiple)
                 s.append("))");
                 iterctx.addQuotedCompound(s);
                 iterctx.addReturn(one);
-                rowsctx.addQuoted("return 0;");
+                rowsctx.addQuotedLiteral("return 0;");
             }
             else
             {
-                rowsctx.addQuoted("size32_t cnt = 0;");
+                rowsctx.addQuotedLiteral("size32_t cnt = 0;");
                 BuildCtx iterctx(rowsctx);
                 BoundRow * curRow = translator.buildDatasetIterate(iterctx, fullDs, false);
                 s.clear().append("cnt += valid(");
                 translator.generateExprCpp(s, curRow->queryBound());
                 s.append(");");
                 iterctx.addQuoted(s);
-                rowsctx.addQuoted("return cnt;");
+                rowsctx.addQuotedLiteral("return cnt;");
             }
         }
         else
@@ -2425,7 +2425,7 @@ void SourceBuilder::buildCountHelpers(IHqlExpression * expr, bool allowMultiple)
                 rowsctx.addReturn(one);
             else
             {
-                rowsctx.addQuoted("unsigned char * src = (unsigned char *)_src;");
+                rowsctx.addQuotedLiteral("unsigned char * src = (unsigned char *)_src;");
                 CHqlBoundExpr bound;
                 bound.length.setown(createVariable("srcLen", LINK(sizetType)));
                 bound.expr.setown(createVariable("src", makeReferenceModifier(tableExpr->getType())));
@@ -2862,7 +2862,7 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
     else
         transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IFilePositionProvider * fpp)");
     translator.ensureRowAllocated(transformCtx, "crSelf");
-    transformCtx.addQuoted("unsigned char * left = (unsigned char *)_left;");
+    transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
     buildTransformBody(transformCtx, expr, true, false);
 }
 
@@ -3023,12 +3023,12 @@ void DiskAggregateBuilder::buildMembers(IHqlExpression * expr)
     //virtual void processRow(void * self, const void * src) = 0;
     BuildCtx rowctx(instance->startctx);
     rowctx.addQuotedCompound("virtual void processRow(ARowBuilder & crSelf, const void * src)");
-    rowctx.addQuoted("doProcessRow(crSelf, (byte *)src);");
+    rowctx.addQuotedLiteral("doProcessRow(crSelf, (byte *)src);");
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
     BuildCtx rowsctx(instance->startctx);
     rowsctx.addQuotedCompound("virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left)");
-    rowsctx.addQuoted("unsigned char * left = (unsigned char *)_left;");
+    rowsctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
     OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
     OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
     OwnedHqlExpr fullDs = createTranslated(ds, len);
@@ -3101,7 +3101,7 @@ void DiskCountBuilder::buildTransform(IHqlExpression * expr)
     {
         BuildCtx transformCtx(instance->startctx);
         transformCtx.addQuotedCompound("size32_t valid(byte * _left)");
-        transformCtx.addQuoted("unsigned char * left = (unsigned char *)_left;");
+        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         OwnedHqlExpr cnt;
         if (isNormalize)
         {
@@ -3388,7 +3388,7 @@ void ChildGroupAggregateBuilder::buildMembers(IHqlExpression * expr)
     translator.doBuildAggregateClearFunc(instance->startctx, aggregate);
 
     //virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) - never actually called.
-    instance->startctx.addQuoted("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) { return 0; }");
+    instance->startctx.addQuotedLiteral("virtual size32_t mergeAggregate(ARowBuilder & crSelf, const void * src) { return 0; }");
 }
 
 void ChildGroupAggregateBuilder::buildTransform(IHqlExpression * expr)
@@ -4442,12 +4442,12 @@ void MonitorExtractor::generateOffsetWrapping(StringBuffer & createMonitorText, 
     s.clear().append("struct ").append(className).append(" : public RtlCInterface, public IKeySegmentOffsetTranslator");
     suffix.append(instanceName).append(";");
     classctx.addQuotedCompound(s, suffix);
-    classctx.addQuoted("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuoted("virtual bool Release() const { return RtlCInterface::Release(); }");
+    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
+    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
     classctx.addQuoted(s.clear().append("virtual const char * queryFactoryName() const { return \"").append(factoryName).append("\"; }"));
 
     classctx.addQuotedCompound("virtual const void * getSegmentBase(const void * _row) const");
-    classctx.addQuoted("const byte * row = (const byte *)_row;");
+    classctx.addQuotedLiteral("const byte * row = (const byte *)_row;");
     classctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
     translator.bindTableCursor(classctx, tableExpr, "row");
     CHqlBoundExpr bound;
@@ -4487,14 +4487,14 @@ void MonitorExtractor::generateFormatWrapping(StringBuffer & createMonitorText, 
     s.clear().append("struct ").append(className).append(" : public RtlCInterface, public IKeySegmentFormatTranslator");
     suffix.append(instanceName).append(";");
     classctx.addQuotedCompound(s, suffix);
-    classctx.addQuoted("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuoted("virtual bool Release() const { return RtlCInterface::Release(); }");
+    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
+    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
     classctx.addQuoted(s.clear().append("virtual const char * queryFactoryName() const { return \"").append(factoryName).append("\"; }"));
     classctx.addQuoted(s.clear().append("virtual unsigned queryHashCode() const { return ").append(getExpressionCRC(selector)).append("; }"));
     classctx.addQuotedCompound("virtual void extractField(void * _target, const void * _row) const");
     classctx.associateExpr(constantMemberMarkerExpr, constantMemberMarkerExpr);
-    classctx.addQuoted("const byte * row = (const byte *)_row;");
-    classctx.addQuoted("byte * target = (byte *)_target;");
+    classctx.addQuotedLiteral("const byte * row = (const byte *)_row;");
+    classctx.addQuotedLiteral("byte * target = (byte *)_target;");
 
     OwnedHqlExpr castValue = ensureExprType(selector, expandedSelector->queryType());
     LinkedHqlExpr targetField = expandedSelector->queryChild(1);
@@ -6375,7 +6375,7 @@ void NewIndexReadBuilder::buildTransform(IHqlExpression * expr)
         BuildCtx transformCtx(instance->startctx);
         transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
         translator.ensureRowAllocated(transformCtx, "crSelf");
-        transformCtx.addQuoted("unsigned char * left = (unsigned char *)_left;");
+        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
         buildTransformBody(transformCtx, expr, true, false);
     }
@@ -6385,7 +6385,7 @@ void NewIndexReadBuilder::buildTransform(IHqlExpression * expr)
         BuildCtx transformCtx(instance->startctx);
         transformCtx.addQuotedCompound("virtual size32_t unfilteredTransform(ARowBuilder & crSelf, const void * _left)");
         translator.ensureRowAllocated(transformCtx, "crSelf");
-        transformCtx.addQuoted("unsigned char * left = (unsigned char *)_left;");
+        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
         buildTransformBody(transformCtx, expr, true, true);
     }
@@ -6524,12 +6524,12 @@ void IndexAggregateBuilder::buildMembers(IHqlExpression * expr)
     //virtual void processRow(void * self, const void * src) = 0;
     BuildCtx rowctx(instance->startctx);
     rowctx.addQuotedCompound("virtual void processRow(ARowBuilder & crSelf, const void * src)");
-    rowctx.addQuoted("doProcessRow(crSelf, (byte *)src);");
+    rowctx.addQuotedLiteral("doProcessRow(crSelf, (byte *)src);");
 
     //virtual void processRows(void * self, size32_t srcLen, const void * src) = 0;
     BuildCtx rowsctx(instance->startctx);
     rowsctx.addQuotedCompound("virtual void processRows(ARowBuilder & crSelf, size32_t srcLen, const void * _left)");
-    rowsctx.addQuoted("unsigned char * left = (unsigned char *)_left;");
+    rowsctx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
     OwnedHqlExpr ds = createVariable("left", makeReferenceModifier(tableExpr->getType()));
     OwnedHqlExpr len = createVariable("srcLen", LINK(sizetType));
     OwnedHqlExpr fullDs = createTranslated(ds, len);
@@ -6618,7 +6618,7 @@ void IndexCountBuilder::buildTransform(IHqlExpression * expr)
     {
         BuildCtx transformCtx(instance->startctx);
         transformCtx.addQuotedCompound("virtual size32_t numValid(const void * _left)");
-        transformCtx.addQuoted("unsigned char * left = (unsigned char *)_left;");
+        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
         translator.associateBlobHelper(transformCtx, tableExpr, "fpp");
         OwnedHqlExpr cnt;
         if (isNormalize)
@@ -6736,7 +6736,7 @@ void IndexGroupAggregateBuilder::doBuildProcessCountMembers(BuildCtx & ctx, IHql
         BuildCtx funcctx(ctx);
         funcctx.addQuotedCompound("virtual size32_t initialiseCountGrouping(ARowBuilder & crSelf, const void * _src)");
         translator.ensureRowAllocated(funcctx, "crSelf");
-        funcctx.addQuoted("unsigned char * src = (unsigned char *) _src;");
+        funcctx.addQuotedLiteral("unsigned char * src = (unsigned char *) _src;");
         translator.associateBlobHelper(funcctx, tableExpr, "fpp");
         BoundRow * selfCursor = translator.bindSelf(funcctx, resultDataset, "crSelf");
         translator.bindTableCursor(funcctx, dataset, "src");
@@ -6956,8 +6956,8 @@ void HqlCppTranslator::buildCsvReadTransformer(IHqlExpression * dataset, StringB
     transformClass->setIncomplete(true);
     transformClass->setIncluded(false);         // if can't generate csv for this record, then don't generate an invalid class.
 
-    classctx.addQuoted("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuoted("virtual bool Release() const { return RtlCInterface::Release(); }");
+    classctx.addQuotedLiteral("virtual void Link() const { RtlCInterface::Link(); }");
+    classctx.addQuotedLiteral("virtual bool Release() const { return RtlCInterface::Release(); }");
 
     unsigned maxColumns = buildCsvReadTransform(classctx, dataset, false, optCsvAttr);
     doBuildUnsignedFunction(classctx, "getMaxColumns", maxColumns);
@@ -7091,7 +7091,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     IHqlExpression * fetch = queryFetch(expr);
     BuildCtx getposctx(instance->startctx);
     getposctx.addQuotedCompound("virtual unsigned __int64 extractPosition(const void * _right)");
-    getposctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+    getposctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
     translator.bindTableCursor(getposctx, fetch->queryChild(1), "right", no_right, selSeq);
     translator.buildReturn(getposctx, fetch->queryChild(2));
     
@@ -7139,7 +7139,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     if (!containsOnlyLeft(fetch->queryChild(3), true))
     {
         //MORE: Need to change following if we optimize it to only extract the relevant fields.
-        instance->classctx.addQuoted("virtual bool extractAllJoinFields() { return true; }");
+        instance->classctx.addQuotedLiteral("virtual bool extractAllJoinFields() { return true; }");
 
         BuildCtx funcctx(instance->startctx);
         funcctx.addQuotedCompound("virtual size32_t extractJoinFields(ARowBuilder & crSelf, const void * _left)");
@@ -7163,16 +7163,16 @@ void FetchBuilder::buildTransform(IHqlExpression * expr)
     {
     case no_csv:
         transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, unsigned * lenLeft, const char * * dataLeft, const void * _right, unsigned __int64 _fpos)");
-        transformCtx.addQuoted("unsigned char * right = (unsigned char *)_right;");
+        transformCtx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     case no_xml:
         transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * xmlLeft, const void * _right, unsigned __int64 _fpos)");
-        transformCtx.addQuoted("unsigned char * right = (unsigned char *)_right;");
+        transformCtx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     default:
         transformCtx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _fpos)");
-        transformCtx.addQuoted("unsigned char * left = (unsigned char *)_left;");
-        transformCtx.addQuoted("unsigned char * right = (unsigned char *)_right;");
+        transformCtx.addQuotedLiteral("unsigned char * left = (unsigned char *)_left;");
+        transformCtx.addQuotedLiteral("unsigned char * right = (unsigned char *)_right;");
         break;
     }
 
@@ -7180,7 +7180,7 @@ void FetchBuilder::buildTransform(IHqlExpression * expr)
     buildTransformBody(transformCtx, expr, true, false);
 
     if (translator.xmlUsesContents)
-        instance->classctx.addQuoted("virtual bool requiresContents() { return true; }");
+        instance->classctx.addQuotedLiteral("virtual bool requiresContents() { return true; }");
 }
 
 

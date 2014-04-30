@@ -237,12 +237,10 @@ bool isKeyableType(ITypeInfo * type);
 IHqlExpression * getFilepos(IHqlExpression * dataset, bool isLocal);
 
 
-class ReferenceSelector : public CInterface, implements IReferenceSelector
+class ReferenceSelector : public CInterfaceOf<IReferenceSelector>
 {
 public:
     ReferenceSelector(HqlCppTranslator & _translator);
-    IMPLEMENT_IINTERFACE
-
 
 protected:
     HqlCppTranslator &      translator;

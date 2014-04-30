@@ -7935,7 +7935,7 @@ void HqlCppTranslator::doBuildAssignCompareTable(BuildCtx & ctx, EvaluateCompare
         //     if (cmp != 0) break;
         BuildCtx donectx(loopctx);
         donectx.addFilter(info.target.expr);
-        donectx.addQuoted("break;");
+        donectx.addQuotedLiteral("break;");
     }
 
     //     i1.next();
@@ -11692,7 +11692,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         args.append(*createActualFromFormal(param));
         buildFunctionCall(funcctx, bindFunc, args);
     }
-    funcctx.addQuoted("__ctx->callFunction();");
+    funcctx.addQuotedLiteral("__ctx->callFunction();");
     IIdAtom * returnFunc;
     HqlExprArray retargs;
     Owned<ITypeInfo> newReturnType;

@@ -198,8 +198,8 @@ void HqlCppTranslator::buildJoinMatchFunction(BuildCtx & ctx, const char * name,
         BuildCtx matchctx(ctx);
         matchctx.addQuotedCompound(s.append("virtual bool ").append(name).append("(const void * _left, const void * _right)"));
 
-        matchctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-        matchctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        matchctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+        matchctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
 
         bindTableCursor(matchctx, left, "left", no_left, selSeq);
         bindTableCursor(matchctx, right, "right", no_right, selSeq);
@@ -526,8 +526,8 @@ void KeyedJoinInfo::buildIndexReadMatch(BuildCtx & ctx)
         BuildCtx matchctx(ctx);
         matchctx.addQuotedCompound("virtual bool indexReadMatch(const void * _left, const void * _right, unsigned __int64 _filepos, IBlobProvider * blobs)");
 
-        matchctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
-        matchctx.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        matchctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
+        matchctx.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
 
         OwnedHqlExpr fileposExpr = getFilepos(rawKey, false);
         OwnedHqlExpr fileposVar = createVariable("_filepos", fileposExpr->getType());
@@ -552,7 +552,7 @@ void KeyedJoinInfo::buildLeftOnly(BuildCtx & ctx)
     {
         BuildCtx funcctx(ctx);
         funcctx.addQuotedCompound("virtual bool leftCanMatch(const void * _left)");
-        funcctx.addQuoted("const unsigned char * left = (const unsigned char *)_left;");
+        funcctx.addQuotedLiteral("const unsigned char * left = (const unsigned char *)_left;");
         translator.bindTableCursor(funcctx, expr->queryChild(0), "left", no_left, joinSeq);
         translator.buildReturn(funcctx, leftOnlyMatch);
     }
@@ -566,7 +566,7 @@ void KeyedJoinInfo::buildMonitors(BuildCtx & ctx)
     //---- virtual void createSegmentMonitors(struct IIndexReadContext *) { ... } ----
     BuildCtx createSegmentCtx(ctx);
     createSegmentCtx.addQuotedCompound("virtual void createSegmentMonitors(IIndexReadContext *irc, const void * _left)");
-    createSegmentCtx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+    createSegmentCtx.addQuotedLiteral("const unsigned char * left = (const unsigned char *) _left;");
     translator.bindTableCursor(createSegmentCtx, keyAccessDataset, "left", no_left, joinSeq);
     monitors->buildSegments(createSegmentCtx, "irc", false);
 }
@@ -592,7 +592,7 @@ void KeyedJoinInfo::buildTransform(BuildCtx & ctx)
     case no_denormalizegroup:
         {
             funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned numRows, const void * * _rows)");
-            funcctx.addQuoted("unsigned char * * rows = (unsigned char * *) _rows;");
+            funcctx.addQuotedLiteral("unsigned char * * rows = (unsigned char * *) _rows;");
             break;
         }
     }   
@@ -1255,7 +1255,7 @@ void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpr
         IHqlExpression * indexRecord = index->queryRecord();
         BuildCtx ctx4(instance.startctx);
         ctx4.addQuotedCompound("virtual unsigned __int64 extractPosition(const void * _right)");
-        ctx4.addQuoted("const unsigned char * right = (const unsigned char *) _right;");
+        ctx4.addQuotedLiteral("const unsigned char * right = (const unsigned char *) _right;");
         bindTableCursor(ctx4, index, "right");
         OwnedHqlExpr fileposExpr = createSelectExpr(LINK(index), LINK(indexRecord->queryChild(indexRecord->numChildren()-1)));
         buildReturn(ctx4, fileposExpr);

@@ -550,7 +550,7 @@ void CChildLimitedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & transla
     assertex(!column->isDictionary());
     if (sizeField || !countField)
     {
-        ctx.addQuoted("rtlFailUnexpected();");
+        ctx.addQuotedLiteral("rtlFailUnexpected();");
         return;
     }
 

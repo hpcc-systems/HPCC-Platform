@@ -222,7 +222,7 @@ void CompoundIteratorBuilder::buildCompoundIterator(BuildCtx & initctx, HqlExprA
 {
     StringBuffer s;
 
-    declarectx.addQuoted("RtlCompoundIterator iter;");
+    declarectx.addQuotedLiteral("RtlCompoundIterator iter;");
     initctx.addQuoted(s.clear().append("iter.init(").append(iterators.ordinality()).append(");"));
 
     ForEachItemIn(i, iterators)
@@ -267,13 +267,13 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
 
     if (isArrayRowset(expr->queryType()))
     {
-        classctx.addQuoted("byte * * end;");
-        classctx.addQuoted("byte * * cur;");
+        classctx.addQuotedLiteral("byte * * end;");
+        classctx.addQuotedLiteral("byte * * cur;");
     }
     else
     {
-        classctx.addQuoted("byte * end;");
-        classctx.addQuoted("byte * cur;");
+        classctx.addQuotedLiteral("byte * end;");
+        classctx.addQuotedLiteral("byte * cur;");
     }
 
     IHqlExpression * root = queryRoot(expr);
@@ -314,16 +314,16 @@ void CompoundIteratorBuilder::createSingleIterator(StringBuffer & iterName, IHql
 
         BuildCtx firstctx(classctx);
         firstctx.addQuotedCompound("virtual const byte * first()");
-        firstctx.addQuoted("if (!rawFirst()) return NULL;");
+        firstctx.addQuotedLiteral("if (!rawFirst()) return NULL;");
         firstctx.addQuotedCompound("for (;;)");
-        firstctx.addQuoted("const byte * valid = checkValid(); if (valid) return valid;");
-        firstctx.addQuoted("if (!rawNext()) return NULL;");
+        firstctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");
+        firstctx.addQuotedLiteral("if (!rawNext()) return NULL;");
 
         BuildCtx nextctx(classctx);
         nextctx.addQuotedCompound("virtual const byte * next()");
         nextctx.addQuotedCompound("for (;;)");
-        nextctx.addQuoted("if (!rawNext()) return NULL;");
-        nextctx.addQuoted("const byte * valid = checkValid(); if (valid) return valid;");
+        nextctx.addQuotedLiteral("if (!rawNext()) return NULL;");
+        nextctx.addQuotedLiteral("const byte * valid = checkValid(); if (valid) return valid;");
     }
 
     translator.endNestedClass();
@@ -348,7 +348,7 @@ void CompoundIteratorBuilder::createRawFirstFunc(BuildCtx & ctx, IHqlExpression 
         s.clear().append("end = cur+");
         translator.generateExprCpp(s, count).append(";");
         ctx.addQuoted(s);
-        ctx.addQuoted("return (cur < end) ? *cur : NULL;");
+        ctx.addQuotedLiteral("return (cur < end) ? *cur : NULL;");
     }
     else
     {
@@ -362,7 +362,7 @@ void CompoundIteratorBuilder::createRawFirstFunc(BuildCtx & ctx, IHqlExpression 
         s.clear().append("end = cur+");
         translator.generateExprCpp(s, length).append(";");
         ctx.addQuoted(s);
-        ctx.addQuoted("return (cur < end) ? cur : NULL;");
+        ctx.addQuotedLiteral("return (cur < end) ? cur : NULL;");
     }
 }
 
@@ -370,8 +370,8 @@ void CompoundIteratorBuilder::createRawNextFunc(BuildCtx & ctx, IHqlExpression *
 {
     if (isArrayRowset(expr->queryType()))
     {
-        ctx.addQuoted("cur++;");
-        ctx.addQuoted("return (cur < end) ? *cur : NULL;");
+        ctx.addQuotedLiteral("cur++;");
+        ctx.addQuotedLiteral("return (cur < end) ? *cur : NULL;");
     }
     else
     {
@@ -385,7 +385,7 @@ void CompoundIteratorBuilder::createRawNextFunc(BuildCtx & ctx, IHqlExpression *
         s.clear().append("cur+=");
         translator.generateExprCpp(s, bound.expr).append(";");
         ctx.addQuoted(s);
-        ctx.addQuoted("return (cur < end) ? cur : NULL;");
+        ctx.addQuotedLiteral("return (cur < end) ? cur : NULL;");
     }
 }
 

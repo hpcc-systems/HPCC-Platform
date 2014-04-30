@@ -44,6 +44,7 @@
 #include "hqlgram.hpp"
 #include "hqltrans.ipp"
 #include "hqlutil.hpp"
+#include "hqlstmt.hpp"
 
 #include "build-config.h"
 #include "rmtfile.hpp"
@@ -1788,6 +1789,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         }
         else if (strcmp(arg, "-internal")==0)
         {
+            outputSizeStmts();
             testHqlInternals();
         }
         else if (iter.matchFlag(tempBool, "-save-cpps"))

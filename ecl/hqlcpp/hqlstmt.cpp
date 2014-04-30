@@ -400,6 +400,15 @@ IHqlStmt * BuildCtx::addQuoted(const char * text)
 }
 
 
+IHqlStmt * BuildCtx::addQuotedLiteral(const char * text)
+{
+    if (ignoreInput)
+        return NULL;
+    HqlStmt * next = new HqlQuoteLiteralStmt(quote_stmt, curStmts, text);
+    return appendSimple(next);
+}
+
+
 IHqlStmt * BuildCtx::addQuotedF(const char * format, ...)
 {
     if (ignoreInput)
@@ -1189,6 +1198,12 @@ StringBuffer & HqlQuoteStmt::getTextExtra(StringBuffer & out) const
 }
 
 
+StringBuffer & HqlQuoteLiteralStmt::getTextExtra(StringBuffer & out) const
+{
+    return out.append(text);
+}
+
+
 //---------------------------------------------------------------------------
 int queryMemsetChar(IHqlExpression * expr)
 {
@@ -1961,4 +1976,19 @@ unsigned calcTotalChildren(const IHqlStmt * stmt)
     if (!stmt->isIncluded())
         return 0;
     return doCalcTotalChildren(stmt);
+}
+
+
+#include "hqltcppc.hpp"
+
+void outputSizeStmts()
+{
+    printf("Sizes: stmt(%u) stmts(%u) compound(%u) cache(%u) defined(%u) boundrow(%u)\n",
+            (unsigned)sizeof(HqlStmt),
+            (unsigned)sizeof(HqlStmts),
+            (unsigned)sizeof(HqlCompoundStmt),
+            (unsigned)sizeof(AssociationCache),
+            (unsigned)sizeof(HqlSimpleDefinedValue),
+            (unsigned)sizeof(BoundRow)
+            );
 }
