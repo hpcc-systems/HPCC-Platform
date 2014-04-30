@@ -1386,7 +1386,7 @@ protected:
         else
         {
             /* NB: It is likely that there will be unflushed rows in the rhsNodeRows arrays after we are done here.
-            /* These will need flushing when all is done and clearNonLocalRows will need recalling to process rest
+             * These will need flushing when all is done and clearNonLocalRows will need recalling to process rest
              */
             ForEachItemIn(a, rhsNodeRows)
             {
