@@ -1289,20 +1289,23 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
         if (pmid && *pmid)
             respTarget->setPackageMap(pmid);
 
-        IPropertyTreeIterator *queries = filesInUse.findQueriesUsingFile(target, lfn);
-        IArrayOf<IEspQueryUsingFile> respQueries;
-        ForEach(*queries)
+        Owned<IPropertyTreeIterator> queries = filesInUse.findQueriesUsingFile(target, lfn);
+        if (queries)
         {
-            IPropertyTree &query = queries->query();
-            Owned<IEspQueryUsingFile> q = createQueryUsingFile();
-            q->setId(query.queryProp("@id"));
+            IArrayOf<IEspQueryUsingFile> respQueries;
+            ForEach(*queries)
+            {
+                IPropertyTree &query = queries->query();
+                Owned<IEspQueryUsingFile> q = createQueryUsingFile();
+                q->setId(query.queryProp("@id"));
 
-            VStringBuffer xpath("File[@lfn='%s']/@pkgid", lfn.str());
-            if (query.hasProp(xpath))
-                q->setPackage(query.queryProp(xpath));
-            respQueries.append(*q.getClear());
+                VStringBuffer xpath("File[@lfn='%s']/@pkgid", lfn.str());
+                if (query.hasProp(xpath))
+                    q->setPackage(query.queryProp(xpath));
+                respQueries.append(*q.getClear());
+            }
+            respTarget->setQueries(respQueries);
         }
-        respTarget->setQueries(respQueries);
         respTargets.append(*respTarget.getClear());
     }
     resp.setTargets(respTargets);
