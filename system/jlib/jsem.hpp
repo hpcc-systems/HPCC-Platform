@@ -121,7 +121,10 @@ protected:
 
 #include <semaphore.h>
 
-//#define USE_OLD_SEMAPHORE_CODE
+#ifdef __APPLE__
+ // sem_timedwait is not available in OSX, so continue to use old code
+ #define USE_OLD_SEMAPHORE_CODE
+#endif
 
 class jlib_decl Semaphore
 {
