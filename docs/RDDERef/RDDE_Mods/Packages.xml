@@ -282,9 +282,9 @@
     <para>The example shows query references first and file references
     following; however, this order is not required.</para>
 
-    <para>You can specify a daliIP and/or sourcecluster to use to resolve
+    <para>You can specify daliIP(s) and/or sourcecluster(s) to use to resolve
     files to be specified in the packagemap. This can be specified at
-    different levels to affect files within a given scope. </para>
+    different levels to affect files within a given scope.</para>
 
     <para>For example:</para>
 
