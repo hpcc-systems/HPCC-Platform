@@ -38,6 +38,10 @@ fi
 
 mkdir -p "$DISTDIR"
 cp -r "$SRCDIR/CodeMirror2" "$DISTDIR/CodeMirror2"
+mkdir "$DISTDIR/dc"
+cp "$SRCDIR/dc/dc.min.js" "$DISTDIR/dc/dc.js"
+mkdir "$DISTDIR/crossfilter"
+cp "$SRCDIR/crossfilter/crossfilter.min.js" "$DISTDIR/crossfilter/crossfilter.js"
 
 cd "$TOOLSDIR"
 
