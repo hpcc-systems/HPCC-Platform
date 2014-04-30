@@ -319,7 +319,7 @@ define([
     });
 
     var self = {
-        checkError: function (response, sourceMethod) {
+        checkError: function (response, sourceMethod, showOkMsg) {
             var retCode = lang.getObject(sourceMethod + "Response.retcode", false, response);
             var retMsg = lang.getObject(sourceMethod + "Response.retmsg", false, response);
             if (retCode) {
@@ -328,13 +328,20 @@ define([
                     Source: "WsAccess." + sourceMethod,
                     Exceptions: [{ Message: retMsg }]
                 });
+            } else if (showOkMsg && retMsg) {
+                topic.publish("hpcc/brToaster", {
+                    Severity: "Message",
+                    Source: "WsAccess." + sourceMethod,
+                    Exceptions: [{ Message: retMsg }]
+                });
+
             }
         },
 
         _doCall: function (action, params) {
             var context = this;
             return ESPRequest.send("ws_access", action, params).then(function (response) {
-                context.checkError(response, action);
+                context.checkError(response, action, params ? params.showOkMsg : false);
                 return response;
             });
         },
