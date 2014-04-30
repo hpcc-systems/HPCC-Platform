@@ -1246,6 +1246,7 @@ ESPrequest [nil_remove] WUListQueriesRequest
     nonNegativeInteger PriorityHigh;
     [min_ver("1.48")] bool Activated;
     [min_ver("1.48")] bool SuspendedByUser;
+    [min_ver("1.50")] string WUID;
 
     nonNegativeInteger PageSize(0);
     nonNegativeInteger PageStartFrom(0);
