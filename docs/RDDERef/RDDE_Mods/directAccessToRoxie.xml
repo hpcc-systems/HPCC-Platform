@@ -279,10 +279,10 @@
       <title>Direct Access Via JSONP</title>
 
       <para>To get a JSONP response, add the <emphasis
-      role="bold">&amp;jsonp=&lt;myfunctionname&gt;</emphasis> decoration to
-      the URL. This returns a javascript wrapped json response:</para>
+      role="bold">&amp;jsonp=&lt;myfunction&gt;</emphasis> decoration to the
+      URL. This returns a javascript wrapped json response:</para>
 
-      <para><programlisting>myfunc("{"data_1": "hello world", "data_2": ["the","sun","is","up"]}");</programlisting></para>
+      <para><programlisting>myfunction("{"data_1": "hello world", "data_2": ["the","sun","is","up"]}");</programlisting></para>
 
       <para></para>
 
