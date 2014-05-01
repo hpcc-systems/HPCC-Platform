@@ -1170,6 +1170,8 @@ public:
             transaction = _transaction;
             transaction->start();
         }
+        else
+            transaction = NULL;
     }
     ~CImplicitSuperTransaction()
     {
