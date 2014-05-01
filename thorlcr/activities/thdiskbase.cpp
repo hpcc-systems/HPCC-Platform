@@ -309,13 +309,13 @@ void CWriteMasterBase::done()
 
 void CWriteMasterBase::slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
 {
-    if (dlfn.isExternal())
-        return;
     if (mb.length()) // if 0 implies aborted out from this slave.
     {
         rowcount_t slaveProcessed;
         mb.read(slaveProcessed);
         recordsProcessed += slaveProcessed;
+        if (dlfn.isExternal())
+            return;
 
         offset_t size, physicalSize;
         mb.read(size);

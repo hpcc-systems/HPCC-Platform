@@ -399,8 +399,8 @@ public:
             }
         }
         Owned<IFileDescriptor> desc;
-        if (efile.get() && !temporary && dlfn.isExternal())
-            desc.setown(efile->getFileDescriptor());
+        if (!temporary && dlfn.isExternal())
+            desc.setown(createExternalFileDescriptor(dlfn.get()));
         else
         {
             desc.setown(createFileDescriptor());

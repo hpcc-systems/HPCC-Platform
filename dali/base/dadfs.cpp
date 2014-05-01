@@ -961,7 +961,6 @@ class CDistributedFileDirectory: public CInterface, implements IDistributedFileD
     Owned<IUserDescriptor> defaultudesc;
     Owned<IDFSredirection> redirection;
     
-    IDistributedFile *createExternal(const CDfsLogicalFileName &logicalname);
     void resolveForeignFiles(IPropertyTree *tree,const INode *foreigndali);
 
 protected: friend class CDistributedFile;
@@ -2645,9 +2644,14 @@ protected:
         CFileChangeWriteLock(IRemoteConnection *_conn, unsigned _timeoutMs)
             : conn(_conn), timeoutMs(_timeoutMs)
         {
-            prevMode = conn->queryMode();
-            unsigned newMode = (prevMode & ~RTM_LOCKBASIC_MASK) | RTM_LOCK_WRITE;
-            conn->changeMode(RTM_LOCK_WRITE, timeoutMs);
+            if (conn)
+            {
+                prevMode = conn->queryMode();
+                unsigned newMode = (prevMode & ~RTM_LOCKBASIC_MASK) | RTM_LOCK_WRITE;
+                conn->changeMode(RTM_LOCK_WRITE, timeoutMs);
+            }
+            else
+                prevMode = RTM_NONE;
         }
         ~CFileChangeWriteLock()
         {
@@ -2660,8 +2664,11 @@ protected:
     {
         Owned<IPropertyTree> detachedRoot = createPTreeFromIPT(root);
         root.clear();
-        conn->close(removeFile);
-        conn.clear();
+        if (conn)
+        {
+            conn->close(removeFile);
+            conn.clear();
+        }
         return detachedRoot.getClear();
     }
     IPropertyTree *resetFileAttr(IPropertyTree *prop=NULL)
@@ -3016,10 +3023,6 @@ public:
             reason.appendf("%s is query",logicalname);
             return false;
         }
-        if (logicalName.isExternal()) {
-            reason.appendf("%s is external",logicalname);
-            return false;
-        }
         if (logicalName.isForeign()) {
             reason.appendf("%s is foreign",logicalname);
             return false;
@@ -3129,7 +3132,7 @@ protected:
         if (removePhysicals)
         {
             // Avoid removing physically when there is no physical representation
-            if (logicalName.isMulti() || logicalName.isExternal())
+            if (logicalName.isMulti())
                 removePhysicals = false;
         }
 
@@ -3180,7 +3183,7 @@ protected:
             writeLock.clear();
             root.setown(closeConnection(removeFile));
             // NB: The file is now unlocked
-            if (removeFile)
+            if (removeFile && !logicalName.isExternal())
                 updateFS(logicalName, timeoutMs);
 
             logicalName.clear();
@@ -3201,7 +3204,6 @@ protected:
         {
             if (logicalName.isQuery())
                 return false;
-            throw MakeStringException(-1,"cannot remove an external file (%s)",logicalName.get());
         }
         if (logicalName.isForeign())
             throw MakeStringException(-1,"cannot remove a foreign file (%s)",logicalName.get());
@@ -7169,111 +7171,6 @@ INamedGroupStore  &queryNamedGroupStore()
 
 // --------------------------------------------------------
 
-
-IDistributedFile *CDistributedFileDirectory::createExternal(const CDfsLogicalFileName &logicalname)
-{
-    //authentication already done
-    SocketEndpoint ep;
-    Owned<IGroup> group;
-    if (!logicalname.getEp(ep)) {
-        StringBuffer grp;
-        if (logicalname.getGroupName(grp).length()==0) 
-            throw MakeStringException(-1,"missing node in external file name (%s)",logicalname.get());
-        group.setown(queryNamedGroupStore().lookup(grp.str()));
-        if (!group)
-            throw MakeStringException(-1,"cannot resolve node %s in external file name (%s)",grp.str(),logicalname.get());
-        ep = group->queryNode(0).endpoint();
-    }
-
-    bool iswin=false;
-    bool usedafs;
-    switch (getDaliServixOs(ep))
-    {
-    case DAFS_OSwindows:
-        iswin = true;
-        // fall through
-    case DAFS_OSlinux:
-    case DAFS_OSsolaris:
-        usedafs = ep.port||!ep.isLocal();
-        break;
-    default:
-#ifdef _WIN32
-        iswin = true;
-#else
-        iswin = false;
-#endif
-        usedafs = false;
-        break;
-    }
-
-    //rest is local path
-    Owned<IFileDescriptor> fileDesc = createFileDescriptor();
-    StringBuffer dir;
-    StringBuffer tail;
-    IException *e=NULL;
-    if (!logicalname.getExternalPath(dir,tail,iswin,&e)) {
-        if (e)
-            throw e;
-        return NULL;
-    }
-    fileDesc->setDefaultDir(dir.str());
-    unsigned n = group.get()?group->ordinality():1;
-    StringBuffer partname;
-    CDateTime moddt;
-    bool moddtset = false;
-    for (unsigned i=0;i<n;i++) {
-        if (group.get())
-            ep = group->queryNode(i).endpoint();
-        partname.clear();
-        partname.append(dir);
-        const char *s = tail.str();
-        bool isspecial = (*s=='>');
-        if (isspecial)
-            partname.append(s);
-        else {
-            while (*s) {
-                if (memicmp(s,"$P$",3)==0) {
-                    partname.append(i+1);
-                    s += 3;
-                }
-                else if (memicmp(s,"$N$",3)==0) {
-                    partname.append(n);
-                    s += 3;
-                }
-                else
-                    partname.append(*(s++));
-            }
-        }
-        if (!ep.port&&usedafs)
-            ep.port = getDaliServixPort();
-        RemoteFilename rfn;
-        rfn.setPath(ep,partname.str());
-        if (!isspecial&&(memcmp(partname.str(),"/$/",3)!=0)&&(memcmp(partname.str(),"\\$\\",3)!=0)) { // don't get date on external data
-            try {
-                Owned<IFile> file = createIFile(rfn);
-                CDateTime dt;
-                if (file&&file->getTime(NULL,&dt,NULL)) {
-                    if (!moddtset||(dt.compareDate(moddt)>0)) {
-                        moddt.set(dt);
-                        moddtset = true;
-                    }
-                }
-            }
-            catch (IException *e) {
-                EXCLOG(e,"CDistributedFileDirectory::createExternal");
-                e->Release();
-            }
-        }
-        fileDesc->setPart(i,rfn);
-    }
-    fileDesc->queryPartDiskMapping(0).defaultCopies = DFD_NoCopies;
-    CDistributedFile *ret = new CDistributedFile(this, fileDesc, NULL, true);   // sets modified
-    ret->setLogicalName(logicalname.get());
-    if (moddtset)
-        ret->setModificationTime(moddt);    
-    return ret;
-}
-
 IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname, IUserDescriptor *user, bool writeattr, bool hold, bool lockSuperOwner, IDistributedFileTransaction *transaction, unsigned timeout)
 {
     CDfsLogicalFileName logicalname;    
@@ -7291,10 +7188,17 @@ IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logi
     loop
     {
         checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
-        if (logicalname->isExternal()) 
-            return createExternal(*logicalname);    // external always works?
-        if (logicalname->isForeign())
-        {
+        if (logicalname->isExternal()) {
+            CDateTime modTime;
+            Owned<IFileDescriptor> fDesc = getExternalFileDescriptor(logicalname->get(), &modTime);
+            if (!fDesc)
+                return NULL;
+            CDistributedFile *ret = new CDistributedFile(this, fDesc, NULL, true);
+            ret->setLogicalName(logicalname->get());
+            ret->setModificationTime(modTime);
+            return ret;
+        }
+        if (logicalname->isForeign()) {
             IDistributedFile * ret = getFile(logicalname->get(),user,NULL);
             if (ret)
                 return ret;
@@ -7711,10 +7615,10 @@ public:
         fromName.set(_flname);
         // Basic consistency checking
         toName.set(_newname);
-        if (toName.isExternal())
-            throw MakeStringException(-1,"rename: cannot rename to external file");
-        if (toName.isForeign())
-            throw MakeStringException(-1,"rename: cannot rename to foreign file");
+        if (fromName.isExternal() || toName.isExternal())
+            throw MakeStringException(-1,"rename: cannot rename external files"); // JCSMORE perhaps you should be able to?
+        if (fromName.isForeign() || toName.isForeign())
+            throw MakeStringException(-1,"rename: cannot rename foreign files");
         // Make sure files are not the same
         if (0 == strcmp(fromName.get(), toName.get()))
             ThrowStringException(-1, "rename: cannot rename file %s to itself", toName.get());
