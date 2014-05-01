@@ -856,7 +856,7 @@ public:
         memoryLimit = defaultMemoryLimit;
         timeLimit = defaultTimeLimit[priority];
         warnTimeLimit = 0;
-        enableFieldTranslation = fieldTranslationEnabled;
+        enableFieldTranslation = package.getEnableFieldTranslation();
 
     }
 
@@ -928,7 +928,7 @@ public:
             timeLimit = (unsigned) wu->getDebugValueInt("timeLimit", defaultTimeLimit[priority]);
             warnTimeLimit = (unsigned) wu->getDebugValueInt("warnTimeLimit", 0);
             SCMStringBuffer bStr;
-            enableFieldTranslation = strToBool(wu->getDebugValue("layoutTranslationEnabled", bStr).str());
+            enableFieldTranslation = wu->getDebugValueBool("layoutTranslationEnabled", enableFieldTranslation);
 
             // MORE - does package override stateInfo, or vice versa?
 
