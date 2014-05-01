@@ -43,7 +43,8 @@ enum { FTactionpull, FTactionpush, FTactionpartition, FTactiondirectory, FTactio
 class DALIFT_API FileFormat
 {
 public:
-    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0) { set(_type, _recordSize); maxRecordSize = 0;}
+    FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0)
+            { set(_type, _recordSize); maxRecordSize = 0; quotedTerminator = true;}
 
     void deserialize(MemoryBuffer & in);
     void deserializeExtra(MemoryBuffer & in, unsigned version);
@@ -57,6 +58,7 @@ public:
     void set(FileFormatType _type, unsigned _recordSize = 0) { type = _type, recordSize = _recordSize; }
     void set(const FileFormat & src);
     bool hasQuote() const                           { return (quote == NULL) || (*quote != '\0'); }
+    bool hasQuotedTerminator() const                { return quotedTerminator; }
 
 public:
     FileFormatType      type;
@@ -67,6 +69,9 @@ public:
     StringAttr          terminate;
     StringAttr          escape;
     StringAttr          rowTag;
+
+    //This value isn't serialized/deserialized.
+    bool                quotedTerminator;
 };
 UtfReader::UtfFormat getUtfFormatType(FileFormatType type);
 bool sameEncoding(const FileFormat & src, const FileFormat & tgt);

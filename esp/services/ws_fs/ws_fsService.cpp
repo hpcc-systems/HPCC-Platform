@@ -355,7 +355,8 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         if (version >= 1.04 && (file->getFormat() == DFUff_csv))
         {
             StringBuffer separate, terminate, quote, escape;
-            file->getCsvOptions(separate,terminate,quote, escape);
+            bool quotedTerminator;
+            file->getCsvOptions(separate,terminate,quote, escape, quotedTerminator);
             if(separate.length() > 0)
                 dest.setSourceCsvSeparate(separate.str());
             if(terminate.length() > 0)
@@ -364,6 +365,8 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
                 dest.setSourceCsvQuote(quote.str());
             if((version >= 1.05) && (escape.length() > 0))
                 dest.setSourceCsvEscape(escape.str());
+            if(version >=1.10)
+                dest.setQuotedTerminator(quotedTerminator);
         }
     }
 
@@ -2071,7 +2074,9 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             const char* cq = req.getSourceCsvQuote();
             if(cq== NULL)
                 cq = "'";
-            source->setCsvOptions(cs, ct, cq, req.getSourceCsvEscape());
+            source->setCsvOptions(cs, ct, cq, req.getSourceCsvEscape(), req.getQuotedTerminator());
+
+            options->setQuotedTerminator(req.getQuotedTerminator());
         }
 
         destination->setLogicalName(destname);

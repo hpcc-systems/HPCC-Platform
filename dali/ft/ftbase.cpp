@@ -431,6 +431,7 @@ void FileFormat::set(const FileFormat & src)
     terminate.set(src.terminate);
     escape.set(src.escape);
     rowTag.set(src.rowTag);
+    quotedTerminator = src.quotedTerminator;
 }
 
 

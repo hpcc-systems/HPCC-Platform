@@ -268,8 +268,8 @@ class DALIFT_API CCsvQuickPartitioner : public CCsvPartitioner
 {
 public:
     CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation) 
-        : CCsvPartitioner(_format) 
-    { 
+        : CCsvPartitioner(_format)
+    {
         noTranslation = _noTranslation;
     }
 
@@ -289,7 +289,7 @@ public:
     CUtfPartitioner(const FileFormat & _format);
 
     virtual void setTarget(IOutputProcessor * _target);
-    
+
     virtual void getRecordStructure(StringBuffer & _recordStructure) { _recordStructure = recordStructure; }
     virtual void setRecordStructurePresent( bool _isRecordStructurePresent) {isRecordStructurePresent = _isRecordStructurePresent;}
 
@@ -300,7 +300,7 @@ protected:
     {
         return getSplitRecordSize(record,maxToRead,processFullBuffer,true);
     }
-    
+
 private:
     void storeFieldName(const char * start, unsigned len);
 
@@ -311,7 +311,7 @@ protected:
     StringMatcher   matcher;
     unsigned        unitSize;
     UtfReader::UtfFormat utfFormat;
-    
+
     bool            isRecordStructurePresent;
     StringBuffer    recordStructure;
     unsigned        fieldCount;
