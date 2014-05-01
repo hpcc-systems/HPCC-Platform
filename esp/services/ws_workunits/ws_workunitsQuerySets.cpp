@@ -1864,7 +1864,6 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     StringBuffer targetQueryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
     addQueryToQuerySet(wu, target, targetQueryName.get(), NULL, activate, targetQueryId, context.queryUserId());
-    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull() || req.getPriority())
     Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
     if (queryTree)
     {
