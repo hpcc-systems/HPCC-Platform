@@ -1088,6 +1088,7 @@ public:
             if (file == &todo.item(idx))
             {
                 todo.remove(idx);
+                atomic_dec(&numFilesToProcess);    // must decrement counter for SNMP accuracy
             }
         }
     }
