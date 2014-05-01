@@ -388,8 +388,6 @@ define([
                 for (var i = 0; i < newValue.length; ++i) {
                     if (newValue[i].GraphName)
                         continue;
-                    if (newValue[i].Name == "Process")
-                        dom.byId(this.id + "Time").innerHTML = newValue[i].Value;
                     if (tooltip != "")
                         tooltip += "\n";
                     tooltip += newValue[i].Name;
