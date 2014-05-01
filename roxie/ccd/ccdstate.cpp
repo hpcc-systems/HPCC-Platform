@@ -523,7 +523,7 @@ protected:
                 {
                     if (subFileName.charAt(0)=='~')
                     {
-                        // implies that a package file had ~ in subfile names - shouldn't really, but we allow it (and just strip the ~
+                        // implies that a package file had ~ in subfile names - shouldn't really, but we allow it (and just strip the ~)
                         subFileName.remove(0,1);
                     }
                     if (traceLevel > 9)

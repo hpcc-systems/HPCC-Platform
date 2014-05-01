@@ -1196,6 +1196,7 @@ ESPStruct [nil_remove] QuerySetQuery
     [min_ver("1.46")] bool IsLibrary;
     [min_ver("1.46")] bool Activated;
     [min_ver("1.46")] string PublishedBy;
+    [min_ver("1.48")] string snapshot;
 };
 
 ESPStruct QuerySetAlias

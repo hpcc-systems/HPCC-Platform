@@ -9816,7 +9816,7 @@ static void clearAliases(IPropertyTree * queryRegistry, const char * id)
     }
 }
 
-IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library, const char *userid)
+IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library, const char *userid, const char *snapshot)
 {
     StringBuffer lcName(name);
     lcName.toLowerCase();
@@ -9848,6 +9848,8 @@ IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, 
         newEntry->setPropBool("@isLibrary", true);
     if (userid && *userid)
         newEntry->setProp("@publishedBy", userid);
+    if (snapshot && *snapshot)
+        newEntry->setProp("@snapshot", snapshot);
     return queryRegistry->addPropTree("Query", newEntry);
 }
 
@@ -10119,6 +10121,9 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
     SCMStringBuffer targetClusterType;
     workunit->getDebugValue("targetclustertype", targetClusterType);
 
+    SCMStringBuffer snapshot;
+    workunit->getSnapshot(snapshot);
+
     if (currentTargetClusterType.length() < 1) 
     {
         queryRegistry->setProp("@targetclustertype", targetClusterType.str());
@@ -10131,7 +10136,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
         }
     }
 
-    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit), userid);
+    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
     newQueryId.append(newEntry->queryProp("@id"));
     workunit->setIsQueryService(true); //will check querysets before delete
     workunit->commit();
