@@ -22,15 +22,18 @@ define([
     "dojo/dom",
     "dojo/dom-form",
     "dojo/on",
+    "dojo/promise/all",
 
     "dijit/registry",
     "dijit/Menu",
     "dijit/MenuItem",
     "dijit/MenuSeparator",
+    "dijit/form/Select",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
     "dgrid/Selection",
+    "dgrid/tree",
     "dgrid/selector",
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
@@ -59,9 +62,9 @@ define([
 
     "hpcc/TableContainer"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on,
-                registry, Menu, MenuItem, MenuSeparator,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
+                registry, Menu, MenuItem, MenuSeparator, Select,
+                OnDemandGrid, Keyboard, Selection, tree, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, WsAccess, ESPUtil, UserDetailsWidget, GroupDetailsWidget,
                 template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
@@ -78,9 +81,31 @@ define([
             this.groupsTab = registry.byId(this.id + "_Groups");
             this.addUserForm = registry.byId(this.id + "AddUserForm");
             this.usersTab = registry.byId(this.id + "_Users");
+            this.addPermissionForm = registry.byId(this.id + "AddPermissionForm");
+            this.addPermissionType = registry.byId(this.id + "AddPermissionType");
+            this.permissionsTab = registry.byId(this.id + "_Permissions");
         },
 
         //  Hitched actions  ---
+
+        _onClearPermissionsCache: function () {
+            if (confirm(this.i18n.ClearPermissionsCacheConfirm)) {
+                WsAccess.ClearPermissionsCache();
+            }
+        },
+
+        _onEnableScopeScans: function () {
+            if (confirm(this.i18n.EnableScopeScansConfirm)) {
+                WsAccess.EnableScopeScans();
+            }
+        },
+
+        _onDisableScopeScans: function () {
+            if (confirm(this.i18n.DisableScopeScanConfirm)) {
+                WsAccess.DisableScopeScans();
+            }
+        },
+
         //  Groups  ---
         _onRefreshGroups: function () {
             this.refreshGroupsGrid();
@@ -208,6 +233,59 @@ define([
             }
         },
 
+        //  Groups  ---
+        _onRefreshPermissions: function () {
+            this.refreshPermissionsGrid();
+        },
+
+        _onAddPermissionSubmit: function (event) {
+            var selRow = this.addPermissionType.__hpcc_data[this.addPermissionType.get("value")];
+            if (selRow) {
+                var request = lang.mixin(selRow, domForm.toObject(this.id + "AddPermissionForm"));
+                var context = this;
+                WsAccess.ResourceAdd({
+                    request: request
+                }).then(function (response) {
+                    context.refreshPermissionsGrid();
+                });
+                registry.byId(this.id + "AddPermissionsDropDown").closeDropDown();
+            }
+        },
+
+        _onDeletePermission: function (params) {
+            if (confirm(this.i18n.DeleteSelectedPermissions)) {
+                var selections = this.permissionsGrid.getSelected();
+                var deleteRequests = {};
+                arrayUtil.forEach(selections, function (item, idx) {
+                    if (!deleteRequests[item.__hpcc_id]) {
+                        deleteRequests[item.__hpcc_id] = {
+                            action: "Delete",
+                            basedn: item.__hpcc_parent.basedn,
+                            rtype: item.__hpcc_parent.rtype,
+                            rtitle: item.__hpcc_parent.rtitle
+                        }
+                    }
+                    deleteRequests[item.__hpcc_id]["names_i" + idx] = item.name;
+                }, this);
+                var context = this;
+                var requests = [];
+                for (var key in deleteRequests) {
+                    requests.push(WsAccess.ResourceDelete({
+                        request: deleteRequests[key]
+                    }));
+                }
+                all(requests).then(function () {
+                    context.refreshPermissionsGrid(true);
+                });
+            }
+        },
+
+        _onPermissionsRowDblClick: function (username, fullname, passwordexpiration) {
+        },
+
+        _onSubmitAddPermissionDialog: function (event) {
+        },
+
         //  Implementation  ---
         init: function (params) {
             if (this.inherited(arguments))
@@ -215,6 +293,7 @@ define([
 
             this.initGroupsGrid();
             this.initUsersGrid();
+            this.initPermissionsGrid();
             this.refreshActionState();
         },
 
@@ -304,6 +383,7 @@ define([
             }
             return retVal;
         },
+
         //  Users  ---
         initUsersGrid: function () {
             this.initUsersContextMenu();
@@ -399,12 +479,126 @@ define([
             }
         },
 
+        //  Permissions  ---
+        initPermissionsGrid: function () {
+            WsAccess.Permissions().then(lang.hitch(this, function (response) {
+                var options = [];
+                var optionMap = {};
+                if (lang.exists("BasednsResponse.Basedns.Basedn", response)) {
+                    arrayUtil.forEach(response.BasednsResponse.Basedns.Basedn, function (item, idx) {
+                        options.push({
+                            label: item.name,
+                            value: item.basedn
+                        });
+                        optionMap[item.basedn] = item;
+                    }, this);
+                }
+                this.addPermissionType.set("options", options);
+                if (options.length) {
+                    this.addPermissionType.set("value", options[0].value);
+                }
+                this.addPermissionType.set("__hpcc_data", optionMap);
+                return response;
+            }));
+
+            this.initPermissionsContextMenu();
+            var store = WsAccess.CreatePermissionsStore();
+            this.permissionsGrid = declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                allowSelectAll: true,
+                deselectOnRefresh: false,
+                store: store,
+                columns: {
+                    check: selector({
+                        width: 27,
+                        disabled: function (row) {
+                            return row.children ? true : false;
+                        }
+                    }, "checkbox"),
+                    DisplayName: tree({
+                        width: 360,
+                        label: this.i18n.Name
+                    }),
+                    basedn: {
+                        label: "basedn"
+                    }
+                }
+            }, this.id + "PermissionsGrid");
+            var context = this;
+            on(document, ".WuidClick:click", function (evt) {
+                if (context._onPermissionsRowDblClick) {
+                    var item = context.permissionsGrid.row(evt).data;
+                    context._onPermissionsRowDblClick(item.username, item.fullname, item.passwordexpiration);
+                }
+            });
+            this.permissionsGrid.on(".dgrid-row:dblclick", function (evt) {
+                if (context._onPermissionsRowDblClick) {
+                    var item = context.permissionsGrid.row(evt).data;
+                    context._onPermissionsRowDblClick(item.username, item.fullname, item.passwordexpiration);
+                }
+            });
+            this.permissionsGrid.onSelectionChanged(function (event) {
+                context.refreshActionState();
+            });
+            this.permissionsGrid.startup();
+        },
+
+        initPermissionsContextMenu: function () {
+            var context = this;
+            var pMenu = new Menu({
+                targetNodeIds: [this.id + "PermissionsGrid"]
+            });
+            pMenu.addChild(new MenuItem({
+                label: this.i18n.Add,
+                onClick: function (args) {
+                    registry.byId(context.id + "AddPermissionsDropDown").openDropDown();
+                }
+            }));
+            pMenu.addChild(new MenuItem({
+                label: this.i18n.Edit,
+                onClick: function (args) { context._onEditUser(); }
+            }));
+            pMenu.addChild(new MenuItem({
+                label: this.i18n.Delete,
+                onClick: function (args) { context._onDeleteUser(); }
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new MenuItem({
+                label: this.i18n.Refresh,
+                onClick: function (args) { context._onRefreshPermissions(); }
+            }));
+        },
+
+        ensurePermissionPane: function (id, params) {
+            id = this.createChildTabID(id);
+            var retVal = registry.byId(id);
+            if (!retVal) {
+                retVal = new UserDetailsWidget({
+                    id: id,
+                    title: params.Username,
+                    closable: true,
+                    params: params
+                });
+                this.addChild(retVal, 2);
+            }
+            return retVal;
+        },
+
+        refreshPermissionsGrid: function (clearSelection) {
+            this.permissionsGrid.set("query", {
+                id: "*"
+            });
+            if (clearSelection) {
+                this.permissionsGrid.clearSelection();
+            }
+        },
+
         //  ---  ---
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.id === this.groupsTab.id) {
                 } else if (currSel.id === this.usersTab.id) {
+                } else if (currSel.id === this.permissionsTab.id) {
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);
@@ -423,6 +617,10 @@ define([
             var hasGroupSelection = groupSelection.length;
             registry.byId(this.id + "EditGroups").set("disabled", !hasGroupSelection);
             registry.byId(this.id + "DeleteGroups").set("disabled", !hasGroupSelection);
+
+            var permissionSelection = this.permissionsGrid.getSelected();
+            var hasPermissionSelection = permissionSelection.length;
+            registry.byId(this.id + "DeletePermissions").set("disabled", !hasPermissionSelection);
         }
     });
 });
