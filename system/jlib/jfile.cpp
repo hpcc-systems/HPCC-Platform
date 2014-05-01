@@ -1911,8 +1911,16 @@ void CFileIO::close()
         if (extraFlags & IFEnocache)
         {
             if (openmode != IFOread)
+            {
+#ifdef F_FULLFSYNC
+                fcntl(file, F_FULLFSYNC);
+#else
                 fdatasync(file);
+#endif
+            }
+#ifdef POSIX_FADV_DONTNEED
             posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+#endif
         }
         if (::close(file) < 0)
             throw MakeErrnoException(errno,"CFileIO::close");
@@ -1929,8 +1937,10 @@ void CFileIO::flush()
     if (fdatasync(file) != 0)
 #endif
         throw MakeOsException(DISK_FULL_EXCEPTION_CODE,"CFileIO::flush");
+#ifdef POSIX_FADV_DONTNEED
     if (extraFlags & IFEnocache)
         posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+#endif
 }
 
 
@@ -1952,7 +1962,9 @@ size32_t CFileIO::read(offset_t pos, size32_t len, void * data)
         if (atomic_add_and_read(&bytesRead, ret) >= PGCFLUSH_BLKSIZE)
         {
             atomic_set(&bytesRead, 0);
+#ifdef POSIX_FADV_DONTNEED
             posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+#endif
         }
     }
     return ret;
@@ -1964,10 +1976,13 @@ void CFileIO::setPos(offset_t newPos)
         _llseek(file,newPos,SEEK_SET);
 }
 
-static void sync_file_region(int fd, offset_t offset, offset_t nbytes, unsigned flags)
+static void sync_file_region(int fd, offset_t offset, offset_t nbytes)
 {
-#if defined(__NR_sync_file_range) && (defined(_ARCH_X86_) || defined(_ARCH_X86_64_))
-    (void)syscall(__NR_sync_file_range, fd, offset, nbytes, flags);
+#if defined(__linux__) && defined(__NR_sync_file_range)
+    (void)syscall(__NR_sync_file_range, fd, offset,
+                    nbytes, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE);
+#elif defined(F_FULLFSYNC)
+    fcntl(fd, F_FULLFSYNC);
 #else
     fdatasync(fd);
 #endif
@@ -1987,9 +2002,11 @@ size32_t CFileIO::write(offset_t pos, size32_t len, const void * data)
         {
             atomic_set(&bytesWritten, 0);
             // [possibly] non-blocking request to write-out dirty pages
-            sync_file_region(file, 0, 0, SYNC_FILE_RANGE_WAIT_BEFORE | SYNC_FILE_RANGE_WRITE);
+            sync_file_region(file, 0, 0);
+#ifdef POSIX_FADV_DONTNEED
             // flush written-out pages
             posix_fadvise(file, 0, 0, POSIX_FADV_DONTNEED);
+#endif
         }
     }
     return ret;

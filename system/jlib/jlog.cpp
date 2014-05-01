@@ -2470,9 +2470,15 @@ int CSysLogEventLogger::writeDataLog(size32_t datasize, byte const * data)
         data += written;
         datasize -= written;
     }
-#ifdef __linux__
+#ifndef _WIN32
+#ifdef F_FULLFSYNC
+    fcntl(dataLogFile, F_FULLFSYNC);
+#else
     fdatasync(dataLogFile);
+#endif
+#ifdef POSIX_FADV_DONTNEED
     posix_fadvise(dataLogFile, 0, 0, POSIX_FADV_DONTNEED);
+#endif
 #endif
     return fpos;
 }
