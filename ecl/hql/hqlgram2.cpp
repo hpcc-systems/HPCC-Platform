@@ -1036,12 +1036,12 @@ IHqlExpression * HqlGram::processIndexBuild(attribute & indexAttr, attribute * r
         checkIndexRecordType(dataset->queryRecord(), 1, false, indexAttr);
     }
 
-
     HqlExprArray args;
     args.append(*LINK(inputDataset));
     args.append(*filenameAttr.getExpr());
     if (flags)
         flags->unwindList(args, no_comma);
+
     checkDistributer(flagsAttr, args);
     return createValue(no_buildindex, makeVoidType(), args);
 }
@@ -6716,6 +6716,11 @@ IHqlExpression * HqlGram::createBuildIndexFromIndex(attribute & indexAttr, attri
                 if (cur->queryChild(0))
                     distribution.setown(replaceSelector(cur, queryActiveTableSelector(), select));
                 args.append(*createLocalAttribute());
+            }
+            else if (name == maxLengthAtom)
+            {
+                if (!queryAttribute(name, args))
+                    args.append(*LINK(cur));
             }
         }
     }

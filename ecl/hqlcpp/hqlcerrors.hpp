@@ -210,6 +210,7 @@
 #define HQLERR_VariableRowMustBeLinked          4190
 #define HQLERR_UserCodeNotAllowed               4191
 #define HQLERR_StreamInputUsedDirectly          4192
+#define HQLERR_MaxlengthExceedsLimit            4193
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -546,6 +547,7 @@
 #define HQLERR_OnceCannotAccessStored_Text      "ONCE workflow items cannot be dependent on other workflow items (including ONCE)"
 #define HQLERR_ThorCombineOnlyLocal_Text        "Thor currently only supports the local version of COMBINE"
 #define HQLERR_SteppedNotImplemented_Text       "STEPPED could not be merged into an index read activity"
+#define HQLERR_MaxlengthExceedsLimit_Text       "MAXLENGTH(%u) for BUILD(index) exceeds the maximum of (%u)"
 
 #define HQLERR_NoClearOnLocalDataset_Text       "INTERNAL: Clear not supported on LOCAL datasets"
 #define HQLERR_NoCreateLocalDataset_Text        "INTERNAL: Local datasets cannot be created"
