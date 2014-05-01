@@ -760,6 +760,8 @@ public:
                 retVal = true;
                 continue;
             }
+            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
         }
         return retVal;
     }
@@ -885,6 +887,8 @@ public:
                 retVal = true;
                 continue;
             }
+            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
         }
         return retVal;
     }
@@ -961,6 +965,8 @@ public:
             {
                 continue;
             }
+            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
         }
         return retVal;
     }
@@ -1052,10 +1058,8 @@ public:
             {
                 continue;
             }
-            if (iter.matchFlag(optVerbose, ECLOPT_VERBOSE)||iter.matchFlag(optVerbose, ECLOPT_VERBOSE_S))
-            {
-                continue;
-            }
+            if (EclCmdCommon::matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
         }
         return retVal;
     }
@@ -1085,34 +1089,32 @@ public:
         Owned<IClientWUQueryResponse> resp = client->WUQuery(req);
         int res = resp->queryClientStatus();
 
-        //if (!resp->getCount_isNull())
-        {
-            IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
+        IArrayOf<IConstECLWorkunit>& wus = resp->getWorkunits();
 
-            if (wus.ordinality() == 1)
+        if (wus.ordinality() == 1)
+        {
+
+            if (optVerbose)
             {
+                fprintf(stdout, "ID: %-18s, job name: %s, state:", wus.item(0).getWuid(), wus.item(0).getJobname());
+            }
+
+            fprintf(stdout, "%s\n", getWorkunitStateStr((WUState) wus.item(0).getStateID()) );
+        }
+        else
+        {
+            ForEachItemIn(idx, wus)
+            {
+                if (idx == optListLimit)
+                    break;
 
                 if (optVerbose)
-                {
-                    fprintf(stdout, "ID: %-18s, job name: %s, state:", wus.item(0).getWuid(), wus.item(0).getJobname());
-                }
-
-                fprintf(stdout, "%s\n", getWorkunitStateStr((WUState) wus.item(0).getStateID()) );
-            }
-            else
-            {
-                ForEachItemIn(idx, wus)
-                {
-                    if (idx == optListLimit)
-                        break;
-
-                    if (optVerbose)
-                        fprintf(stdout, "ID: %s, job name: %s, state: %s\n", wus.item(idx).getWuid(), wus.item(idx).getJobname(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
-                    else
-                        fprintf(stdout, "%s,%s,%s\n", wus.item(idx).getWuid(), wus.item(idx).getJobname(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
-                }
+                    fprintf(stdout, "ID: %s, job name: %s, state: %s\n", wus.item(idx).getWuid(), wus.item(idx).getJobname(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
+                else
+                    fprintf(stdout, "%s,%s,%s\n", wus.item(idx).getWuid(), wus.item(idx).getJobname(), getWorkunitStateStr((WUState) wus.item(idx).getStateID()) );
             }
         }
+
         return 0;
     }
     virtual void usage()
