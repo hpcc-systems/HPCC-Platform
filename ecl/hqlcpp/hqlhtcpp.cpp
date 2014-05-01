@@ -64,6 +64,8 @@
 #include "rtlds_imp.hpp"
 #include "eclhelper_base.hpp"
 
+#include "ctfile.hpp"   // for KEYBUILD_MAXLENGTH
+
 #define MAX_ROWS_OUTPUT_TO_SDS              1000
 #define MAX_SAFE_RECORD_SIZE                10000000
 #define MAX_GRAPH_ECL_LENGTH                1000
@@ -9843,7 +9845,7 @@ static void createOutputIndexTransform(HqlExprArray & assigns, IHqlExpression * 
 }
 
 
-void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, SharedHqlExpr & rawRecord, bool hasFileposition)
+void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpression * record, SharedHqlExpr & rawRecord, bool hasFileposition, IHqlExpression * maxlength)
 {
     OwnedHqlExpr srcDataset = createDataset(no_anon, LINK(record));
 
@@ -9882,6 +9884,23 @@ void HqlCppTranslator::doBuildIndexOutputTransform(BuildCtx & ctx, IHqlExpressio
     buildReturnRecordSize(subctx, selfCursor);
 
     buildMetaMember(ctx, tgtDataset, false, "queryDiskRecordSize");
+
+    size32_t maxRecordSize = 32767;
+    if (isVariableSizeRecord(newRecord))
+    {
+        if (maxlength)
+        {
+            maxRecordSize = getIntValue(maxlength->queryChild(0), 0);
+            if (maxRecordSize == 0)
+                maxRecordSize = getMaxRecordSize(newRecord);
+        }
+    }
+    else
+        maxRecordSize = getMinRecordSize(newRecord);
+
+    doBuildUnsignedFunction(ctx, "getMaxKeySize", maxRecordSize);
+    if (maxRecordSize > KEYBUILD_MAXLENGTH)
+        throwError2(HQLERR_MaxlengthExceedsLimit, maxRecordSize, KEYBUILD_MAXLENGTH);
 }
 
 
@@ -10050,6 +10069,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     if (updateAttr && !updateAttr->queryAttribute(alwaysAtom)) flags.append("|TIWupdate");
     if (!hasTLK && !singlePart)           flags.append("|TIWlocal");
     if (expr->hasAttribute(expireAtom))   flags.append("|TIWexpires");
+    if (expr->hasAttribute(maxLengthAtom))   flags.append("|TIWmaxlength");
 
     if (compressAttr)
     {
@@ -10116,7 +10136,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     }
 
     OwnedHqlExpr rawRecord;
-    doBuildIndexOutputTransform(instance->startctx, record, rawRecord, hasFileposition);
+    doBuildIndexOutputTransform(instance->startctx, record, rawRecord, hasFileposition, expr->queryAttribute(maxLengthAtom));
     buildFormatCrcFunction(instance->classctx, "getFormatCrc", rawRecord, expr, 0);
 
     if (compressAttr && compressAttr->hasAttribute(rowAtom))

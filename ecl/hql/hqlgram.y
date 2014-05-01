@@ -2897,6 +2897,15 @@ buildFlag
                         {
                             $$.setExpr(createExprAttribute(filepositionAtom, $2.getExpr()), $1);
                         }
+    | MAXLENGTH
+                        {
+                            $$.setExpr(createExprAttribute(maxLengthAtom), $1);
+                        }
+    | MAXLENGTH '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_numeric, false);
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
+                        }
     ;
 
 localAttribute
@@ -3098,6 +3107,15 @@ indexFlag
     | FILEPOSITION optConstBoolArg
                         {
                             $$.setExpr(createExprAttribute(filepositionAtom, $2.getExpr()), $1);
+                        }
+    | MAXLENGTH
+                        {
+                            $$.setExpr(createExprAttribute(maxLengthAtom), $1);
+                        }
+    | MAXLENGTH '(' constExpression ')'
+                        {
+                            parser->normalizeExpression($3, type_numeric, false);
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()), $1);
                         }
     | commonAttribute
     ;

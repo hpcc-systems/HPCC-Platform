@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      153
-#define MIN_ACTIVITY_INTERFACE_VERSION  153             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      154
+#define MIN_ACTIVITY_INTERFACE_VERSION  154             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -1177,6 +1177,7 @@ enum
     TIWupdatecrc        = 0x0400,
     TIWhaswidth         = 0x0800,
     TIWexpires          = 0x1000,
+    TIWmaxlength        = 0x2000,       // explicit maxlength
 };
 
 //flags for thor dataset/temp tables
@@ -1205,6 +1206,7 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) = 0;
     virtual unsigned getWidth() = 0;                // only guaranteed present if TIWhaswidth defined
     virtual ICompare * queryCompare() = 0;          // only guaranteed present if TIWhaswidth defined
+    virtual unsigned getMaxKeySize() = 0;
 };
 
 struct IHThorFirstNArg : public IHThorArg
