@@ -5387,9 +5387,6 @@ public:
 
     void attach(const char *_logicalname,IUserDescriptor *user)
     {
-        // will need more thought but this gives limited support for anon
-        if (isAnon())
-            return;
         assertex(!conn.get()); // already attached
         CriticalBlock block (sect);
         StringBuffer tail;
@@ -5407,9 +5404,6 @@ public:
 
     void detach(unsigned timeoutMs=INFINITE)
     {   
-        // will need more thought but this gives limited support for anon
-        if (isAnon())
-            return;
         assertex(conn.get()); // must be attached
         CriticalBlock block(sect);
         checkModify("CDistributedSuperFile::detach");
@@ -7496,6 +7490,15 @@ class CCreateSuperFileAction: public CDFAction
     IUserDescriptor *user;
     bool interleaved, created;
 
+    void clearSuper()
+    {
+        if (created)
+        {
+            created = false;
+            super->detach();
+        }
+        super.clear();
+    }
 public:
     CCreateSuperFileAction(CDistributedFileDirectory *_parent,
                            IUserDescriptor *_user,
@@ -7525,7 +7528,6 @@ public:
                 created = true;
                 transaction->addFile(super);
             }
-            addFileLock(super);
         }
         return super.getLink();
     }
@@ -7535,6 +7537,7 @@ public:
         // Attach the file to DFS, if wasn't there already
         if (created)
             super->attach(logicalname.get(), user);
+        addFileLock(super);
         if (lock())
             return true;
         unlock();
@@ -7547,15 +7550,13 @@ public:
     void retry()
     {
         // on retry, we need to remove the file so next lock doesn't fail
-        if (created)
-            super->detach();
+        clearSuper();
         CDFAction::retry();
     }
     void rollback()
     {
         state = TAS_FAILURE;
-        if (created)
-            super->detach();
+        clearSuper();
         CDFAction::rollback();
     }
 };
