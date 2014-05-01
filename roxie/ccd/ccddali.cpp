@@ -516,7 +516,7 @@ public:
 
     virtual IFileDescriptor *resolveCachedLFN(const char *logicalName)
     {
-        StringBuffer xpath("Files/");
+        StringBuffer xpath("Files/F.");
         normalizeName(logicalName, xpath);
         Owned<IPropertyTree> pt = readCache(xpath.str());
         if (pt)
@@ -744,7 +744,7 @@ protected:
         Owned<IPropertyTree> pt;
         if (fd)
             pt.setown(fd->getFileTree());
-        StringBuffer xpath("Files/");
+        StringBuffer xpath("Files/F.");
         normalizeName(logicalName, xpath);
         writeCache(xpath.str(), xpath.str(), pt);
     }
