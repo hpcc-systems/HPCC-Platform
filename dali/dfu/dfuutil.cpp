@@ -765,6 +765,7 @@ public:
             else
                 superfile->addSubFile(subfiles[i],false,NULL,false,transaction);
         }
+        superfile.clear();
         transaction->commit();
     }
 
@@ -812,15 +813,15 @@ public:
         // Do we have something to delete?
         if (toremove.ordinality()) {
             transaction->start();
+            if (removesuperfile && toremove.ordinality()!=superfile->numSubFiles())
+                removesuperfile = false;
             ForEachItemIn(i2,toremove)
                 superfile->removeSubFile(toremove.item(i2).text.get(),delsub,false,transaction);
-            transaction->commit();
-        }
-        // Delete superfile if empty
-        if (removesuperfile && (superfile->numSubFiles() == 0)) {
+            // Delete superfile if empty
+            if (removesuperfile)
+                queryDistributedFileDirectory().removeEntry(superfname, user, transaction);
             superfile.clear();
-            // MORE - add file deletion to transaction
-            queryDistributedFileDirectory().removeEntry(superfname,user);
+            transaction->commit();
         }
     }
 
