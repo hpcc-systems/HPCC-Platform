@@ -56,7 +56,28 @@ void checkUseEspOrDaliIP(SocketEndpoint &ep, const char *ip, const char *esp)
         ep.ipset(esp);
 }
 
-void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer)
+IClientWUQuerySetDetailsResponse *fetchQueryDetails(IEspContext &context, IClientWsWorkunits *_ws, const char *target, const char *queryid)
+{
+    Linked<IClientWsWorkunits> ws = _ws;
+    if (!ws)
+    {
+        StringBuffer host;
+        short port=0;
+        context.getServAddress(host, port);
+        VStringBuffer url("http://%s:%d/WsWorkunits", host.str(), port);
+        ws.setown(createWsWorkunitsClient());
+        ws->addServiceUrl(url.str());
+    }
+    //using existing WUQuerysetDetails rather than extending WUQueryDetails, to support copying query meta data from prior releases
+    Owned<IClientWUQuerySetDetailsRequest> reqQueryInfo = ws->createWUQuerysetDetailsRequest();
+    reqQueryInfo->setClusterName(target);
+    reqQueryInfo->setQuerySetName(target);
+    reqQueryInfo->setFilter(queryid);
+    reqQueryInfo->setFilterType("Id");
+    return ws->WUQuerysetDetails(reqQueryInfo);
+}
+
+void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const char *queryset, const char *query, const char *wuid, StringBuffer &name, StringBuffer &xml, StringBuffer &dllname, MemoryBuffer &dll, StringBuffer &daliServer, Owned<IClientWUQuerySetDetailsResponse> &respQueryInfo)
 {
     Owned<IClientWsWorkunits> ws;
     ws.setown(createWsWorkunitsClient());
@@ -90,6 +111,8 @@ void fetchRemoteWorkunit(IEspContext &context, const char *netAddress, const cha
     checkUseEspOrDaliIP(ep, resp->getDaliServer(), netAddress);
     if (!ep.isNull())
         ep.getUrlStr(daliServer);
+
+    respQueryInfo.setown(fetchQueryDetails(context, ws, queryset, query));
 }
 
 void doWuFileCopy(IClientFileSpray &fs, IEspWULogicalFileCopyInfo &info, const char *logicalname, const char *cluster, bool isRoxie, bool supercopy)
@@ -460,6 +483,26 @@ static inline void updateQuerySetting(bool ignore, IPropertyTree *queryTree, con
         queryTree->removeProp(xpath);
 }
 
+static inline void updateTimeLimitSetting(IPropertyTree *queryTree, bool valueNotSet, int value, IConstQuerySetQuery *srcInfo=NULL)
+{
+    if (valueNotSet && srcInfo && !srcInfo->getTimeLimit_isNull())
+    {
+        value = srcInfo->getTimeLimit();
+        valueNotSet=false;
+    }
+    updateQuerySetting(valueNotSet, queryTree, "@timeLimit", value);
+}
+
+static inline void updateWarnTimeLimitSetting(IPropertyTree *queryTree, bool valueNotSet, int value, IConstQuerySetQuery *srcInfo=NULL)
+{
+    if (valueNotSet && srcInfo && !srcInfo->getWarnTimeLimit_isNull())
+    {
+        value = srcInfo->getWarnTimeLimit();
+        valueNotSet=false;
+    }
+    updateQuerySetting(valueNotSet, queryTree, "@warnTimeLimit", value);
+}
+
 static inline unsigned __int64 memoryLimitUInt64FromString(const char *value)
 {
     if (!value || !*value || !isdigit(*value))
@@ -522,9 +565,13 @@ static inline StringBuffer &memoryLimitStringFromUInt64(StringBuffer &s, unsigne
     return s.append(value).append(memUnitAbbrev[unit]);
 }
 
-static inline void updateMemoryLimitSetting(IPropertyTree *queryTree, const char *value)
+static inline void updateMemoryLimitSetting(IPropertyTree *queryTree, const char *value, IConstQuerySetQuery *srcInfo=NULL)
 {
-    if (!value || !queryTree)
+    if (!queryTree)
+        return;
+    if (!value && srcInfo)
+        value = srcInfo->getMemoryLimit();
+    if (!value)
         return;
     unsigned __int64 limit = memoryLimitUInt64FromString(value);
     if (0==limit)
@@ -556,9 +603,13 @@ static inline const char *getQueryPriorityName(int value)
     }
     return "INVALID";
 }
-static inline void updateQueryPriority(IPropertyTree *queryTree, const char *value)
+static inline void updateQueryPriority(IPropertyTree *queryTree, const char *value, IConstQuerySetQuery *srcInfo=NULL)
 {
-    if (!value || !*value || !queryTree)
+    if (!queryTree)
+        return;
+    if ((!value || !*value) && srcInfo)
+        value = srcInfo->getPriority();
+    if (!value || !*value)
         return;
     int priority = QueryPriorityInvalid;
     if (strieq("LOW", value))
@@ -816,6 +867,8 @@ void gatherQuerySetQueryDetails(IEspContext &context, IPropertyTree *query, IEsp
         queryInfo->setPriority(getQueryPriorityName(query->getPropInt("@priority")));
     if (query->hasProp("@comment"))
         queryInfo->setComment(query->queryProp("@comment"));
+    if (query->hasProp("@snapshot"))
+        queryInfo->setSnapshot(query->queryProp("@snapshot"));
     double version = context.getClientVersion();
     if (version >= 1.46)
     {
@@ -1289,20 +1342,23 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
         if (pmid && *pmid)
             respTarget->setPackageMap(pmid);
 
-        IPropertyTreeIterator *queries = filesInUse.findQueriesUsingFile(target, lfn);
-        IArrayOf<IEspQueryUsingFile> respQueries;
-        ForEach(*queries)
+        Owned<IPropertyTreeIterator> queries = filesInUse.findQueriesUsingFile(target, lfn);
+        if (queries)
         {
-            IPropertyTree &query = queries->query();
-            Owned<IEspQueryUsingFile> q = createQueryUsingFile();
-            q->setId(query.queryProp("@id"));
+            IArrayOf<IEspQueryUsingFile> respQueries;
+            ForEach(*queries)
+            {
+                IPropertyTree &query = queries->query();
+                Owned<IEspQueryUsingFile> q = createQueryUsingFile();
+                q->setId(query.queryProp("@id"));
 
-            VStringBuffer xpath("File[@lfn='%s']/@pkgid", lfn.str());
-            if (query.hasProp(xpath))
-                q->setPackage(query.queryProp(xpath));
-            respQueries.append(*q.getClear());
+                VStringBuffer xpath("File[@lfn='%s']/@pkgid", lfn.str());
+                if (query.hasProp(xpath))
+                    q->setPackage(query.queryProp(xpath));
+                respQueries.append(*q.getClear());
+            }
+            respTarget->setQueries(respQueries);
         }
-        respTarget->setQueries(respQueries);
         respTargets.append(*respTarget.getClear());
     }
     resp.setTargets(respTargets);
@@ -1755,6 +1811,8 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     if (!splitQueryPath(source, srcAddress, srcQuerySet, srcQuery))
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid source query path");
 
+    Owned<IClientWUQuerySetDetailsResponse> sourceQueryInfoResp;
+
     StringBuffer remoteIP;
     StringBuffer queryName;
     StringBuffer wuid;
@@ -1763,16 +1821,20 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         StringBuffer xml;
         MemoryBuffer dll;
         StringBuffer dllname;
-        fetchRemoteWorkunit(context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, queryName, xml, dllname, dll, remoteIP);
+        fetchRemoteWorkunit(context, srcAddress.str(), srcQuerySet.str(), srcQuery.str(), NULL, queryName, xml, dllname, dll, remoteIP, sourceQueryInfoResp);
         deploySharedObject(context, wuid, dllname.str(), target, queryName.str(), dll, queryDirectory.str(), xml.str());
     }
     else
     {
+        //Could get the atributes without soap call, but this creates a common data structure shared with fetching remote query info
+        //Get query attributes before resolveQueryAlias, to avoid deadlock
+        sourceQueryInfoResp.setown(fetchQueryDetails(context, NULL, srcQuerySet, srcQuery));
+
         Owned<IPropertyTree> queryset = getQueryRegistry(srcQuerySet.str(), true);
         if (!queryset)
             throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Source Queryset %s not found", srcQuery.str());
 
-        IPropertyTree *query = resolveQueryAlias(queryset, srcQuery.str());
+        Owned<IPropertyTree> query = resolveQueryAlias(queryset, srcQuery.str());
         if (!query)
             throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "Source query %s not found", source);
         wuid.set(query->queryProp("@wuid"));
@@ -1798,15 +1860,21 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     StringBuffer targetQueryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
     addQueryToQuerySet(wu, target, queryName.str(), NULL, activate, targetQueryId, context.queryUserId());
-    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull() || req.getPriority())
+
+    Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
+    if (queryTree)
     {
-        Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
-        updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
-        updateQueryPriority(queryTree, req.getPriority());
-        updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
-        updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
+        IConstQuerySetQuery *srcInfo=NULL;
+        if (sourceQueryInfoResp && sourceQueryInfoResp->getQuerysetQueries().ordinality())
+            srcInfo = &sourceQueryInfoResp->getQuerysetQueries().item(0);
+        updateMemoryLimitSetting(queryTree, req.getMemoryLimit(), srcInfo);
+        updateQueryPriority(queryTree, req.getPriority(), srcInfo);
+        updateTimeLimitSetting(queryTree, req.getTimeLimit_isNull(), req.getTimeLimit(), srcInfo);
+        updateWarnTimeLimitSetting(queryTree, req.getWarnTimeLimit_isNull(), req.getWarnTimeLimit(), srcInfo);
         if (req.getComment())
             queryTree->setProp("@comment", req.getComment());
+        else if (srcInfo && srcInfo->getComment())
+            queryTree->setProp("@comment", srcInfo->getComment());
     }
     wu.clear();
 
