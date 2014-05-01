@@ -72,6 +72,7 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            this.wrapInHRef(this.id + "NewPageNoFrame", this.getURL());
             this._onRefresh();
         }
     });

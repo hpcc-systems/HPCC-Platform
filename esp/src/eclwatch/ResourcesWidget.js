@@ -112,7 +112,7 @@ define([
         setContent: function (target, type, postfix) {
             var context = this;
             WsTopology.GetWsEclIFrameURL(type).then(function (response) {
-                var targetSrc = context.params.QuerySet + "/" + context.params.QueryId + (postfix ? postfix : "");
+                var targetSrc = context.params.QuerySetId + "/" + context.params.Id + (postfix ? postfix : "");
                 var src = response + encodeURIComponent(targetSrc);
                 target.set("content", dojo.create("iframe", {
                     src: src,
@@ -142,7 +142,7 @@ define([
                 closable: true,
                 style: "padding: 0px; border:0px; border-color:none; overflow: hidden"
             });
-            if (this.params.QuerySet && this.params.QueryId) {
+            if (this.params.QuerySetId && this.params.Id) {
                 this.setContent(retVal, "res", "/" + row.DisplayPath);
             } else {
                 retVal.set("content", dojo.create("iframe", {

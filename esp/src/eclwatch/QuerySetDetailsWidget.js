@@ -144,40 +144,39 @@ define([
             } else if (currSel.id == this.errorsTab.id && !this.errorsTabLoaded) {
                 this.errorsTabLoaded = true;
                 this.errorsTab.init({
-                    Query: this.query
+                    QuerySetId:this.params.QuerySetId,
+                    Id: this.params.Id
                 });
             } else if (currSel.id == this.graphsTab.id && !this.graphsTabLoaded) {
                 this.graphsTabLoaded = true;
                 this.graphsTab.init({
-                    Query: this.query
+                    QuerySetId: this.params.QuerySetId,
+                    Id: this.params.Id
                 });
             } else if (currSel.id == this.logicalFilesTab.id && !this.logicalFilesTabLoaded) {
                 this.logicalFilesTabLoaded = true;
                 this.logicalFilesTab.init({
-                    QueryId: this.query.Id,
-                    QuerySet: this.query.QuerySet,
-                    Query: this.query
+                    QuerySetId: this.params.QuerySetId,
+                    Id: this.params.Id
                 });
             } else if (currSel.id == this.superFilesTab.id && !this.superFilesTabLoaded) {
                 this.superFilesTabLoaded = true;
                 this.superFilesTab.init({
-                    QueryId: this.query.Id,
-                    QuerySet: this.query.QuerySet,
-                    Query: this.query
+                    QuerySetId:this.params.QuerySetId,
+                    Id: this.params.Id
                 });
             } else if (currSel.id == this.widget._Resources.id && !this.resourcesWidgetLoaded) {
                 this.resourcesWidgetLoaded = true;
                 this.widget._Resources.init({
                     Wuid: this.query.Wuid,
-                    QueryId: this.query.Id,
-                    QuerySet: this.query.QuerySet
+                    QuerySetId: this.params.QuerySetId,
+                    Id: this.params.Id
                 });
             } else if (currSel.id == this.testPagesTab.id && !this.testPagesTabLoaded) {
                 this.testPagesTabLoaded = true;
                 this.testPagesTab.init({
-                    QueryId: this.query.Id,
-                    QuerySet: this.query.QuerySet,
-                    Query: this.query
+                    QuerySetId: this.params.QuerySetId,
+                    Id: this.params.Id
                 });
             }
         },
