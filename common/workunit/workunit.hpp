@@ -1354,4 +1354,6 @@ extern WORKUNIT_API void descheduleWorkunit(char const * wuid);
 void WORKUNIT_API testWorkflow();
 #endif
 
+const char * getWorkunitStateStr(WUState state);
+
 #endif

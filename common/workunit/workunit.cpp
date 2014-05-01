@@ -3930,6 +3930,11 @@ mapEnums states[] = {
    { WUStateSize, NULL }
 };
 
+const char * getWorkunitStateStr(WUState state)
+{
+    return states[state].str;
+}
+
 IConstWorkUnitIterator * CWorkUnitFactory::getWorkUnitsByState(WUState state)
 {
     StringBuffer path("*");
