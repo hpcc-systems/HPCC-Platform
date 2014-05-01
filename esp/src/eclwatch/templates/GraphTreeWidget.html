@@ -27,28 +27,34 @@
         </div>
         <div id="${id}MainGraphWidget" data-dojo-props="region: 'center'" data-dojo-type="GraphWidget">
         </div>
-        <div id="${id}RightBorderContainer" style="width: 33%; padding: 0px; overflow: hidden" data-dojo-props="region: 'right', splitter:true, minSize: 120" data-dojo-type="dijit.layout.BorderContainer">
-            <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
-                <div id="${id}MiniGraphWidget" title="${i18n.Overview}" data-dojo-type="GraphWidget">
+        <div id="${id}SideBorderContainer" style="width: 33%" data-dojo-props="region: 'left', splitter:true, minSize: 120" data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}TreeToolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                <div data-dojo-attach-event="onClick:_onTreeRefresh" data-dojo-props="iconClass:'iconRefresh', showLabel: false" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                <div id="${id}StackController" style="width: 100%" data-dojo-props="containerId:'${id}OverviewTabContainer'" data-dojo-type="dijit.layout.StackController"></div>
+                <span data-dojo-type="dijit.ToolbarSeparator"></span>
+            </div>
+            <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.StackContainer">
+                <div id="${id}TreeGridCP" title="${i18n.Tree}" style="padding: 0px; overflow: hidden" data-dojo-props="iconClass:'iconFolderTree', showTitle: false" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}TreeGrid">
+                    </div>
                 </div>
-                <div id="${id}SubgraphsGridCP" title="${i18n.Subgraphs}" style="padding: 0px; overflow: hidden" data-dojo-type="dijit.layout.ContentPane">
+                <div id="${id}SubgraphsGridCP" title="${i18n.Subgraphs}" style="padding: 0px; overflow: hidden" data-dojo-props="iconClass:'iconFolderList', showTitle: false" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}SubgraphsGrid">
                     </div>
                 </div>
-                <div id="${id}VerticesGridCP" title="${i18n.Activities}" style="padding: 0px; overflow: hidden" data-dojo-type="dijit.layout.ContentPane">
+                <div id="${id}VerticesGridCP" title="${i18n.Activities}" style="padding: 0px; overflow: hidden" data-dojo-props="iconClass:'iconFileList', showTitle: false" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}VerticesGrid">
                     </div>
                 </div>
-                <div id="${id}EdgesGridCP" title="${i18n.Edges}" style="padding: 0px; overflow: hidden" data-dojo-type="dijit.layout.ContentPane">
+                <div id="${id}EdgesGridCP" title="${i18n.Edges}" style="padding: 0px; overflow: hidden" data-dojo-props="iconClass:'iconEdgeList', showTitle: false" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}EdgesGrid">
                     </div>
                 </div>
-                <div id="${id}TimingsTreeMap" title="${i18n.TimingsMap}" data-dojo-type="TimingTreeMapWidget">
+                <div id="${id}TimingsTreeMap" title="${i18n.TimingsMap}" data-dojo-props="iconClass:'iconTreeMap', showTitle: false" data-dojo-type="TimingTreeMapWidget">
                 </div>
             </div>
-            <div id="${id}LocalTabContainer" style="height: 66%" data-dojo-props="region: 'bottom', splitter:true, minSize: 120, tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
-                <div id="${id}LocalGraphWidget" title="${i18n.Local}" data-dojo-type="GraphWidget">
-                </div>
+            <div id="${id}LocalTabContainer" style="height: 33%" data-dojo-props="region: 'bottom', splitter:true, minSize: 120, tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
                 <div id="${id}Properties" title="${i18n.Properties}" data-dojo-type="dijit.layout.ContentPane">
                 </div>
             </div>

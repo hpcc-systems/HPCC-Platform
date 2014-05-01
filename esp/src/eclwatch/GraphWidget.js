@@ -26,6 +26,9 @@ define([
     "dojo/dom-construct",
     "dojo/dom-class",
     "dojo/dom-style",
+    "dojo/store/Memory",
+    "dojo/store/Observable",
+    "dojo/store/util/QueryResults",
 
     "dijit/registry",
     "dijit/layout/BorderContainer",
@@ -40,10 +43,141 @@ define([
     "dijit/form/Button",
     "dijit/form/NumberSpinner"
     
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, aspect, has, dom, domConstruct, domClass, domStyle, Memory, Observable, QueryResults,
             registry, BorderContainer, ContentPane,
             _Widget,
             template) {
+
+    var GraphStore = declare("GraphStore", [Memory], {
+        idProperty: "id",
+
+        setData: function (data) {
+            this.inherited(arguments);
+            this.cacheColumns = {};
+            this.calcColumns();
+        },
+
+        //  Helpers  ---
+        isNumber: function (n) {
+            return !isNaN(parseFloat(n)) && isFinite(n);
+        },
+        calcColumns: function () {
+            arrayUtil.forEach(this.data, function (item, idx) {
+                for (var key in item) {
+                    if (key != "id" && key.substring(0, 1) != "_") {
+                        if (!this.cacheColumns[key]) {
+                            this.cacheColumns[key] = item[key].length;
+                        } else if (item[key].length > this.cacheColumns[key]) {
+                            this.cacheColumns[key] = item[key].length;
+                        }
+                    }
+                    if (this.isNumber(item[key])) {
+                        item[key] = parseFloat(item[key]);
+                    }
+                }
+            }, this);
+        },
+        getColumnWidth: function(key) {
+            var width = this.cacheColumns[key] * 9;
+            if (width < 27) {
+                width = 27;
+            } else if (width > 300) {
+                width = 300;
+            }
+            return width;
+        },
+        appendColumns: function (target, highPriority, lowPriority, skip) {
+            if (!highPriority) {
+                highPriority = [];
+            }
+            if (!lowPriority) {
+                lowPriority = [];
+            }
+            var skip = skip || [];
+            arrayUtil.forEach(target, function (item, idx) {
+                skip.push(item.field);
+            });
+            arrayUtil.forEach(highPriority, function (key, idx) {
+                if (skip.indexOf(key) === -1 && this.cacheColumns[key]) {
+                    target.push({
+                        field: key, label: key, width: this.getColumnWidth(key)
+                    });
+                }
+            }, this);
+            for (var key in this.cacheColumns) {
+                if (skip.indexOf(key) === -1 && highPriority.indexOf(key) === -1 && lowPriority.indexOf(key) === -1 && key.substring(0, 1) != "_") {
+                    target.push({
+                        field: key, label: key, width: this.getColumnWidth(key)
+                    });
+                }
+            }
+            arrayUtil.forEach(lowPriority, function (key, idx) {
+                if (skip.indexOf(key) === -1 && this.cacheColumns[key]) {
+                    target.push({
+                        field: key, label: key, width: this.getColumnWidth(key)
+                    });
+                }
+            }, this);
+        }
+    });
+
+    var GraphTreeStore = declare("GraphTreeStore", [GraphStore], {
+        idProperty: "id",
+
+        //  Store API  ---
+        constructor: function (options) {
+        },
+        query: function (query, options) {
+            return this.inherited(arguments);
+        },
+        setTree: function (data) {
+            this.setData([]);
+            this.inherited(arguments);
+            this.cacheColumns = {};
+            this.walkData(data);
+        },
+        walkData: function (data) {
+            arrayUtil.forEach(data, function (item, idx) {
+                if (item._children) {
+                    item._children.sort(function (l, r) {
+                        return l.id - r.id;
+                    });
+                    this.walkData(item._children);
+                    lang.mixin(item, {
+                        __hpcc_notActivity: true
+                    });
+                }
+                this.add(item);
+
+                for (var key in item) {
+                    if (key != "id" && key.substring(0, 1) != "_") {
+                        if (!this.cacheColumns[key]) {
+                            this.cacheColumns[key] = item[key].length;
+                        } else if (item[key].length > this.cacheColumns[key]) {
+                            this.cacheColumns[key] = item[key].length;
+                        }
+                    }
+                    if (this.isNumber(item[key])) {
+                        item[key] = parseFloat(item[key]);
+                    }
+                }
+            }, this);
+        },
+
+        //  Tree API  ---
+        mayHaveChildren: function (object) {
+            return object._children;
+        },
+        getChildren: function (parent, options) {
+            var filter = {};
+            if (options.originalQuery.__hpcc_notActivity) {
+                filter = {
+                    __hpcc_notActivity: true
+                };
+            }
+            return QueryResults(this.queryEngine(filter, options)(parent._children));
+        }
+    });
 
     var GraphView = declare("GraphView", null, {
         sourceGraphWidget: null,
@@ -153,7 +287,7 @@ define([
         }
     });
 
-    var GraphViewHistory = declare("GraphView", null, {
+    var GraphViewHistory = declare("GraphViewHistory", null, {
         sourceGraphWidget: null,
         history: null,
         index: null,
@@ -242,6 +376,11 @@ define([
             baseClass: "GraphWidget",
             i18n: nlsHPCC,
 
+            KeyState_None: 0,
+            KeyState_Shift: 1,
+            KeyState_Control: 2,
+            KeyState_Menu: 4,
+
             borderContainer: null,
             graphContentPane: null,
             _isPluginInstalled: false,
@@ -324,7 +463,7 @@ define([
             onSelectionChanged: function (items) {
             },
 
-            onDoubleClick: function (globalID) {
+            onDoubleClick: function (globalID, keyState) {
             },
 
             onLayoutFinished: null,
@@ -361,6 +500,16 @@ define([
             },
 
             //  Plugin wrapper  ---
+            createTreeStore: function () {
+                var store = new GraphTreeStore();
+                return Observable(store);
+            },
+
+            createStore: function () {
+                var store = new GraphStore();
+                return Observable(store);
+            },
+
             showToolbar: function (show) {
                 if (show) {
                     domClass.remove(this.id + "Toolbar", "hidden");
@@ -414,13 +563,25 @@ define([
                 }
             },
 
-            loadXGMML: function (xgmml, merge) {
+            loadXGMML: function (xgmml, merge, timers) {
                 if (this.hasPlugin() && this.xgmml !== xgmml) {
                     this.xgmml = xgmml;
                     if (merge) {
                         this._plugin.mergeXGMML(xgmml);
                     } else {
                         this._plugin.loadXGMML(xgmml);
+                    }
+                    if (timers) {
+                        var totalTime = 0;
+                        arrayUtil.forEach(timers, function (timer, idx) {
+                            var item = this.getItem(timer.SubGraphId);
+                            if (item) {
+                                this.setProperty(item, this.i18n.TimeSeconds, timer.Seconds);
+                                this.setProperty(item, "Label", timer.SubGraphId + " (" + timer.Seconds + "s)");
+                                totalTime += timer.Seconds;
+                            }
+                        }, this);
+                        this.setProperty(0, this.i18n.TimeSeconds, totalTime);
                     }
                     this.refreshActionState();
                     return true;
@@ -925,6 +1086,13 @@ define([
                 return [];
             },
 
+            getTreeWithProperties: function () {
+                if (this.hasPlugin()) {
+                    return this._plugin.getTreeWithProperties();
+                }
+                return [];
+            },
+
             getSubgraphsWithProperties: function () {
                 if (this.hasPlugin()) {
                     return this._plugin.getSubgraphsWithProperties();
@@ -950,8 +1118,8 @@ define([
                 if (!this.eventsRegistered) {
                     this.eventsRegistered = true;
                     var context = this;
-                    this.registerEvent("MouseDoubleClick", function (item) {
-                        context.onDoubleClick(context._plugin.getGlobalID(item));
+                    this.registerEvent("MouseDoubleClick", function (item, keyState) {
+                        context.onDoubleClick(context._plugin.getGlobalID(item), keyState);
                     });
                     this.registerEvent("LayoutFinished", function () {
                         context._onLayoutFinished();

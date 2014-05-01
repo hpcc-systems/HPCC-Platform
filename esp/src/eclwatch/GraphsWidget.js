@@ -108,7 +108,15 @@ define([
                         safeMode: true
                     });
                 }
-            }, this.id + "ContainerNode");
+            }).placeAt(this.widget.Open.domNode, "after");
+            this.openTreeMode = new Button({
+                label: this.i18n.OpenTreeMode,
+                onClick: function (event) {
+                    context._onOpen(event, {
+                        treeMode: true
+                    });
+                }
+            }).placeAt(this.widget.Open.domNode, "after");
 
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
@@ -154,6 +162,16 @@ define([
             return retVal;
         },
 
+        getDetailID: function (row, params) {
+            var retVal = "Detail" + row[this.idProperty];
+            if (params && params.treeMode) {
+                retVal += "Tree";
+            } else if (params && params.safeMode) {
+                retVal += "Safe";
+            }
+            return retVal;
+        },
+
         createDetail: function (id, row, params) {
             var localParams = {}
             if (this.wu) {
@@ -173,11 +191,17 @@ define([
                     SafeMode: (params && params.safeMode) ? true : false
                 }
             }
+            var title = row.Name;
+            if (params && params.treeMode) {
+                title += " (T)";
+            } else if (params && params.safeMode) {
+                title += " (S)";
+            }
             return new DelayLoadWidget({
                 id: id,
-                title: row.Name,
+                title: title,
                 closable: true,
-                delayWidget: "GraphPageWidget",
+                delayWidget: (params && params.treeMode) ? "GraphTreeWidget" : "GraphPageWidget",
                 hpcc: {
                     type: "graph",
                     params: localParams
@@ -222,6 +246,7 @@ define([
         refreshActionState: function (selection) {
             this.inherited(arguments);
 
+            this.openTreeMode.set("disabled", !selection.length);
             this.openSafeMode.set("disabled", !selection.length);
         },
 

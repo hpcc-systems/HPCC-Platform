@@ -402,6 +402,30 @@ hr.dashedLine {
     width: 16px;
     height: 16px;
 }
+
+.iconFolderList{
+    background-image: url("../img/folderList.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconFileList{
+    background-image: url("../img/fileList.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconEdgeList{
+    background-image: url("../img/edgeList.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconTreeMap{
+    background-image: url("../img/treeMap.png"); 
+    width: 16px;
+    height: 16px;
+}
 /*###############################*/
 #appLayout {
     height: 100%;
