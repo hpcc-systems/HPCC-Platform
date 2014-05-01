@@ -118,6 +118,7 @@ interface IRoxieQuerySetManagerSet : extends IInterface
 
 interface IRoxieQueryPackageManagerSet : extends IInterface
 {
+    virtual void requestReload() = 0;
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
     virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, const IRoxieContextLogger &logctx) const = 0;
@@ -142,7 +143,7 @@ extern void mergeQueries(IPropertyTree *s1, IPropertyTree *s2);
 extern const char *queryNodeFileName(const IPropertyTree &graphNode);
 extern const char *queryNodeIndexName(const IPropertyTree &graphNode);
 
-extern IPropertyTreeIterator *getNodeSubFileNames(const IPropertyTree &graphNode);
-extern IPropertyTreeIterator *getNodeSubIndexNames(const IPropertyTree &graphNode);
+extern void createDelayedReleaser();
+extern void stopDelayedReleaser();
 
 #endif

@@ -898,11 +898,58 @@ public:
             return NULL;
     }
 
-    static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
+    static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IArrayOf<IResolvedFile> &files, bool isDynamic)
     {
         hash64_t hashValue = package.queryHash();
         if (dll)
+        {
             hashValue = rtlHash64VStr(dll->queryDll()->queryName(), hashValue);
+            if (!allFilesDynamic && !isDynamic)
+            {
+                IConstWorkUnit *wu = dll->queryWorkUnit();
+                if (wu) // wu may be null in some unit test cases
+                {
+                    SCMStringBuffer bStr;
+                    // Don't want to include files referenced in thor graphs... in practice isDynamic also likely to be set in such cases
+                    if (getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster) == RoxieCluster)
+                    {
+                        Owned<IConstWUGraphIterator> graphs = &wu->getGraphs(GraphTypeActivities);
+                        ForEach(*graphs)
+                        {
+                            Owned<IPropertyTree> graphXgmml = graphs->query().getXGMMLTree(false);
+                            Owned<IPropertyTreeIterator> nodes = graphXgmml->getElements(".//node");
+                            ForEach(*nodes)
+                            {
+                                IPropertyTree &node = nodes->query();
+                                const char *fileName = queryNodeFileName(node);
+                                const char *indexName = queryNodeIndexName(node);
+                                // MORE - what about write? What about packages that resolve everything without dali?
+                                if (indexName && (!fileName || !streq(indexName, fileName)))
+                                {
+                                    bool isOpt = node.getPropBool("att[@name='_isIndexOpt']/@value") || pretendAllOpt;
+                                    const IResolvedFile *indexFile = package.lookupFileName(indexName, isOpt, true, true, wu);
+                                    if (indexFile)
+                                    {
+                                        hashValue = indexFile->addHash64(hashValue);
+                                        files.append(*const_cast<IResolvedFile *>(indexFile));
+                                    }
+                                }
+                                if (fileName)
+                                {
+                                    bool isOpt = node.getPropBool("att[@name='_isOpt']/@value") || pretendAllOpt;
+                                    const IResolvedFile *dataFile = package.lookupFileName(fileName, isOpt, true, true, wu);
+                                    if (dataFile)
+                                    {
+                                        hashValue = dataFile->addHash64(hashValue);
+                                        files.append(*const_cast<IResolvedFile *>(dataFile));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         if (id)
             hashValue = rtlHash64VStr(id, hashValue);
         if (stateInfo)
@@ -1408,10 +1455,11 @@ static void checkWorkunitVersionConsistency(const IQueryDll *dll)
         throw MakeStringException(ROXIE_MISMATCH, "Workunit did not export createProcess function");
 }
 
-extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
+extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
-    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo);
+    IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
+    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles, isDynamic);
     IQueryFactory *cached = getQueryFactory(hashValue, 0);
     if (cached && !(cached->loadFailed() && (reloadRetriesFailed || forceRetry)))
     {
@@ -1674,10 +1722,11 @@ public:
     }
 };
 
-IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, unsigned channel, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
+IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, const IRoxiePackage &package, unsigned channel, const IPropertyTree *stateInfo, bool isDynamic, bool forceRetry)
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
-    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo);
+    IArrayOf<IResolvedFile> queryFiles; // Note - these should stay in scope long enough to ensure still cached when (if) query is loaded for real
+    hash64_t hashValue = CQueryFactory::getQueryHash(id, dll, package, stateInfo, queryFiles, isDynamic);
     IQueryFactory *cached = getQueryFactory(hashValue, channel);
     if (cached)
     {

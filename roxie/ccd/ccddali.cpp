@@ -403,6 +403,19 @@ public:
         return buf.str();
     }
 
+    static const char *getSuperFilePath(StringBuffer &buf, const char *lfn)
+    {
+        CDfsLogicalFileName lfnParser;
+        lfnParser.set(lfn);
+        if (!lfnParser.isForeign())
+        {
+            lfnParser.makeFullnameQuery(buf, DXB_SuperFile, true);
+            return buf.str();
+        }
+        else
+            return NULL;
+    }
+
     virtual IPropertyTree *getPackageMap(const char *id)
     {
         Owned<IPropertyTree> ret = loadDaliTree("PackageMaps/PackageMap", id);
@@ -631,6 +644,16 @@ public:
     {
         StringBuffer xpath;
         return getSubscription(id, getPackageMapPath(xpath, id), notifier);
+    }
+
+    virtual IDaliPackageWatcher *getSuperFileSubscription(const char *lfn, ISDSSubscription *notifier)
+    {
+        StringBuffer xpathBuf;
+        const char *xpath = getSuperFilePath(xpathBuf, lfn);
+        if (xpath)
+            return getSubscription(lfn, xpath, notifier);
+        else
+            return NULL;
     }
 
     virtual bool connected() const
