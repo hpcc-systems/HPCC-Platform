@@ -4502,7 +4502,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             : parentlname(_parentlname), subfile(_subfile), before(_before), other(_other)
         {
         }
-        bool prepare()
+        virtual bool prepare()
         {
             parent.setown(transaction->lookupSuperFile(parentlname));
             if (!parent)
@@ -4539,7 +4539,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             sub.clear();
             return false;
         }
-        void run()
+        virtual void run()
         {
             if (!sub)
                 throw MakeStringException(-1,"addSubFile(2): File %s cannot be found to add",subfile.get());
@@ -4547,12 +4547,18 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             if (sf)
                 sf->doAddSubFile(LINK(sub),before,other,transaction);
         }
-        void commit()
+        virtual void commit()
         {
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);                 
             if (sf)
                 sf->updateParentFileAttrs(transaction);
             CDFAction::commit();
+        }
+        virtual void retry()
+        {
+            parent.clear();
+            sub.clear();
+            CDFAction::retry();
         }
     };
 
@@ -4571,7 +4577,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             : parentlname(_parentlname), subfile(_subfile), remsub(_remsub)
         {
         }
-        bool prepare()
+        virtual bool prepare()
         {
             parent.setown(transaction->lookupSuperFile(parentlname));
             if (!parent)
@@ -4609,7 +4615,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             sub.clear();
             return false;
         }
-        void run()
+        virtual void run()
         {
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
             if (sf) {
@@ -4636,6 +4642,12 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     sf->doRemoveSubFiles(transaction);
             }
         }
+        virtual void retry()
+        {
+            parent.clear();
+            sub.clear();
+            CDFAction::retry();
+        }
     };
 
     /**
@@ -4651,7 +4663,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             : parentlname(_parentlname), remsub(_remsub)
         {
         }
-        bool prepare()
+        virtual bool prepare()
         {
             parent.setown(transaction->lookupSuperFile(parentlname));
             if (!parent)
@@ -4664,7 +4676,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             parent.clear();
             return false;
         }
-        void run()
+        virtual void run()
         {
             CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
             if (sf)
@@ -4703,6 +4715,11 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 }
             }
         }
+        virtual void retry()
+        {
+            parent.clear();
+            CDFAction::retry();
+        }
     };
 
     /**
@@ -4717,7 +4734,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             : super1Name(_super1Name), super2Name(_super2Name)
         {
         }
-        bool prepare()
+        virtual bool prepare()
         {
             super1.setown(transaction->lookupSuperFile(super1Name));
             if (!super1)
@@ -4745,11 +4762,17 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             super2.clear();
             return false;
         }
-        void run()
+        virtual void run()
         {
             CDistributedSuperFile *sf = QUERYINTERFACE(super1.get(),CDistributedSuperFile);
             if (sf)
                 sf->doSwapSuperFile(super2,transaction);
+        }
+        virtual void retry()
+        {
+            super1.clear();
+            super2.clear();
+            CDFAction::retry();
         }
     };
 
@@ -7640,7 +7663,7 @@ public:
     {
         logicalname.set(_flname);
     }
-    bool prepare()
+    virtual bool prepare()
     {
         // We *have* to make sure the file exists here
         super.setown(transaction->lookupSuperFile(logicalname.get(), SDS_SUB_LOCK_TIMEOUT));
@@ -7669,19 +7692,20 @@ public:
         super.clear();
         return false;
     }
-    void retry()
+    virtual void retry()
     {
+        super.clear();
         if (nestedTransaction)
             nestedTransaction->retryActions();
         CDFAction::retry();
     }
-    void run()
+    virtual void run()
     {
         if (nestedTransaction)
             nestedTransaction->runActions();
         super->detach();
     }
-    void commit()
+    virtual void commit()
     {
         if (nestedTransaction)
             nestedTransaction->commitAndClearup();
@@ -7722,7 +7746,7 @@ public:
         ra = ra_regular;
         renamed = false;
     }
-    bool prepare()
+    virtual bool prepare()
     {
         // We *have* to make sure the source file exists and can be renamed
         file.setown(transaction->lookupFile(fromName.get(), SDS_SUB_LOCK_TIMEOUT));
@@ -7780,12 +7804,17 @@ public:
         file.clear();
         return false;
     }
-    void run()
+    virtual void run()
     {
         doRename(fromName, toName, ra);
         renamed = true;
     }
-    void rollback()
+    virtual void retry()
+    {
+        file.clear();
+        CDFAction::retry();
+    }
+    virtual void rollback()
     {
         // Only roll back if already renamed
         if (renamed)
