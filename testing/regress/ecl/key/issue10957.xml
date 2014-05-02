@@ -95,7 +95,7 @@
  <Row><Result_32>true</Result_32></Row>
 </Dataset>
 <Dataset name='Result 33'>
- <Row><Result_33>Compare: &quot;Gavin­Halliday&quot; with &quot;GavinHalliday&quot;</Result_33></Row>
+ <Row><Result_33>Compare: &quot;Gavin​Halliday&quot; with &quot;GavinHalliday&quot;</Result_33></Row>
 </Dataset>
 <Dataset name='Result 34'>
  <Row><Result_34>Unicode:</Result_34></Row>
@@ -143,7 +143,7 @@
  <Row><Result_48>true</Result_48></Row>
 </Dataset>
 <Dataset name='Result 49'>
- <Row><Result_49>Compare: &quot;Gavin​Halliday&quot; with &quot;GavinHalliday&quot;</Result_49></Row>
+ <Row><Result_49>Compare: &quot;Gavin​Halliday&quot; with &quot;Gavin​​​Halliday&quot;</Result_49></Row>
 </Dataset>
 <Dataset name='Result 50'>
  <Row><Result_50>Unicode:</Result_50></Row>
@@ -191,10 +191,10 @@
  <Row><Result_64>true</Result_64></Row>
 </Dataset>
 <Dataset name='Result 65'>
- <Row><Result_65>Compare: &quot;Gavin­​​​Halliday&quot; with &quot;GavinHalliday&quot;</Result_65></Row>
+ <Row><Result_65>Hashes: &quot;Gavin&quot;</Result_65></Row>
 </Dataset>
 <Dataset name='Result 66'>
- <Row><Result_66>Unicode:</Result_66></Row>
+ <Row><Result_66>true</Result_66></Row>
 </Dataset>
 <Dataset name='Result 67'>
  <Row><Result_67>true</Result_67></Row>
@@ -209,25 +209,25 @@
  <Row><Result_70>true</Result_70></Row>
 </Dataset>
 <Dataset name='Result 71'>
- <Row><Result_71>VarUnicode:</Result_71></Row>
+ <Row><Result_71>true</Result_71></Row>
 </Dataset>
 <Dataset name='Result 72'>
- <Row><Result_72>true</Result_72></Row>
+ <Row><Result_72>3800901229</Result_72></Row>
 </Dataset>
 <Dataset name='Result 73'>
- <Row><Result_73>true</Result_73></Row>
+ <Row><Result_73>769280520</Result_73></Row>
 </Dataset>
 <Dataset name='Result 74'>
- <Row><Result_74>true</Result_74></Row>
+ <Row><Result_74>13959046736378758344</Result_74></Row>
 </Dataset>
 <Dataset name='Result 75'>
- <Row><Result_75>true</Result_75></Row>
+ <Row><Result_75>830592</Result_75></Row>
 </Dataset>
 <Dataset name='Result 76'>
- <Row><Result_76>Utf8:</Result_76></Row>
+ <Row><Result_76>AE477B3374986D70424A6425E59AF0E4</Result_76></Row>
 </Dataset>
 <Dataset name='Result 77'>
- <Row><Result_77>true</Result_77></Row>
+ <Row><Result_77>Hashes: &quot;Gavin   &quot;</Result_77></Row>
 </Dataset>
 <Dataset name='Result 78'>
  <Row><Result_78>true</Result_78></Row>
@@ -239,31 +239,31 @@
  <Row><Result_80>true</Result_80></Row>
 </Dataset>
 <Dataset name='Result 81'>
- <Row><Result_81>Compare: &quot;Gavin​Halliday&quot; with &quot;Gavin​​​Halliday&quot;</Result_81></Row>
+ <Row><Result_81>true</Result_81></Row>
 </Dataset>
 <Dataset name='Result 82'>
- <Row><Result_82>Unicode:</Result_82></Row>
+ <Row><Result_82>true</Result_82></Row>
 </Dataset>
 <Dataset name='Result 83'>
  <Row><Result_83>true</Result_83></Row>
 </Dataset>
 <Dataset name='Result 84'>
- <Row><Result_84>true</Result_84></Row>
+ <Row><Result_84>3800901229</Result_84></Row>
 </Dataset>
 <Dataset name='Result 85'>
- <Row><Result_85>true</Result_85></Row>
+ <Row><Result_85>769280520</Result_85></Row>
 </Dataset>
 <Dataset name='Result 86'>
- <Row><Result_86>true</Result_86></Row>
+ <Row><Result_86>13959046736378758344</Result_86></Row>
 </Dataset>
 <Dataset name='Result 87'>
- <Row><Result_87>VarUnicode:</Result_87></Row>
+ <Row><Result_87>830592</Result_87></Row>
 </Dataset>
 <Dataset name='Result 88'>
- <Row><Result_88>true</Result_88></Row>
+ <Row><Result_88>4E169928A78263FB2E6E490EAC500AA0</Result_88></Row>
 </Dataset>
 <Dataset name='Result 89'>
- <Row><Result_89>true</Result_89></Row>
+ <Row><Result_89>Hashes: &quot;G­av​​in   &quot;</Result_89></Row>
 </Dataset>
 <Dataset name='Result 90'>
  <Row><Result_90>true</Result_90></Row>
@@ -272,7 +272,7 @@
  <Row><Result_91>true</Result_91></Row>
 </Dataset>
 <Dataset name='Result 92'>
- <Row><Result_92>Utf8:</Result_92></Row>
+ <Row><Result_92>true</Result_92></Row>
 </Dataset>
 <Dataset name='Result 93'>
  <Row><Result_93>true</Result_93></Row>
@@ -284,22 +284,22 @@
  <Row><Result_95>true</Result_95></Row>
 </Dataset>
 <Dataset name='Result 96'>
- <Row><Result_96>true</Result_96></Row>
+ <Row><Result_96>3800901229</Result_96></Row>
 </Dataset>
 <Dataset name='Result 97'>
- <Row><Result_97>Hashes: &quot;Gavin&quot;</Result_97></Row>
+ <Row><Result_97>769280520</Result_97></Row>
 </Dataset>
 <Dataset name='Result 98'>
- <Row><Result_98>true</Result_98></Row>
+ <Row><Result_98>13959046736378758344</Result_98></Row>
 </Dataset>
 <Dataset name='Result 99'>
- <Row><Result_99>true</Result_99></Row>
+ <Row><Result_99>3863689467</Result_99></Row>
 </Dataset>
 <Dataset name='Result 100'>
- <Row><Result_100>true</Result_100></Row>
+ <Row><Result_100>8105639F5B65790DCE903698C56265B3</Result_100></Row>
 </Dataset>
 <Dataset name='Result 101'>
- <Row><Result_101>true</Result_101></Row>
+ <Row><Result_101>Hashes: &quot;G𝄞avin   &quot;</Result_101></Row>
 </Dataset>
 <Dataset name='Result 102'>
  <Row><Result_102>true</Result_102></Row>
@@ -308,125 +308,29 @@
  <Row><Result_103>true</Result_103></Row>
 </Dataset>
 <Dataset name='Result 104'>
- <Row><Result_104>3800901229</Result_104></Row>
+ <Row><Result_104>true</Result_104></Row>
 </Dataset>
 <Dataset name='Result 105'>
- <Row><Result_105>769280520</Result_105></Row>
+ <Row><Result_105>true</Result_105></Row>
 </Dataset>
 <Dataset name='Result 106'>
- <Row><Result_106>13959046736378758344</Result_106></Row>
+ <Row><Result_106>true</Result_106></Row>
 </Dataset>
 <Dataset name='Result 107'>
- <Row><Result_107>830592</Result_107></Row>
+ <Row><Result_107>true</Result_107></Row>
 </Dataset>
 <Dataset name='Result 108'>
- <Row><Result_108>AE477B3374986D70424A6425E59AF0E4</Result_108></Row>
+ <Row><Result_108>2837458134</Result_108></Row>
 </Dataset>
 <Dataset name='Result 109'>
- <Row><Result_109>Hashes: &quot;Gavin   &quot;</Result_109></Row>
+ <Row><Result_109>108645843</Result_109></Row>
 </Dataset>
 <Dataset name='Result 110'>
- <Row><Result_110>true</Result_110></Row>
+ <Row><Result_110>18162734623378106963</Result_110></Row>
 </Dataset>
 <Dataset name='Result 111'>
- <Row><Result_111>true</Result_111></Row>
+ <Row><Result_111>646119128</Result_111></Row>
 </Dataset>
 <Dataset name='Result 112'>
- <Row><Result_112>true</Result_112></Row>
-</Dataset>
-<Dataset name='Result 113'>
- <Row><Result_113>true</Result_113></Row>
-</Dataset>
-<Dataset name='Result 114'>
- <Row><Result_114>true</Result_114></Row>
-</Dataset>
-<Dataset name='Result 115'>
- <Row><Result_115>true</Result_115></Row>
-</Dataset>
-<Dataset name='Result 116'>
- <Row><Result_116>3800901229</Result_116></Row>
-</Dataset>
-<Dataset name='Result 117'>
- <Row><Result_117>769280520</Result_117></Row>
-</Dataset>
-<Dataset name='Result 118'>
- <Row><Result_118>13959046736378758344</Result_118></Row>
-</Dataset>
-<Dataset name='Result 119'>
- <Row><Result_119>830592</Result_119></Row>
-</Dataset>
-<Dataset name='Result 120'>
- <Row><Result_120>4E169928A78263FB2E6E490EAC500AA0</Result_120></Row>
-</Dataset>
-<Dataset name='Result 121'>
- <Row><Result_121>Hashes: &quot;G­av​​in   &quot;</Result_121></Row>
-</Dataset>
-<Dataset name='Result 122'>
- <Row><Result_122>true</Result_122></Row>
-</Dataset>
-<Dataset name='Result 123'>
- <Row><Result_123>true</Result_123></Row>
-</Dataset>
-<Dataset name='Result 124'>
- <Row><Result_124>true</Result_124></Row>
-</Dataset>
-<Dataset name='Result 125'>
- <Row><Result_125>true</Result_125></Row>
-</Dataset>
-<Dataset name='Result 126'>
- <Row><Result_126>true</Result_126></Row>
-</Dataset>
-<Dataset name='Result 127'>
- <Row><Result_127>true</Result_127></Row>
-</Dataset>
-<Dataset name='Result 128'>
- <Row><Result_128>3800901229</Result_128></Row>
-</Dataset>
-<Dataset name='Result 129'>
- <Row><Result_129>769280520</Result_129></Row>
-</Dataset>
-<Dataset name='Result 130'>
- <Row><Result_130>13959046736378758344</Result_130></Row>
-</Dataset>
-<Dataset name='Result 131'>
- <Row><Result_131>3863689467</Result_131></Row>
-</Dataset>
-<Dataset name='Result 132'>
- <Row><Result_132>8105639F5B65790DCE903698C56265B3</Result_132></Row>
-</Dataset>
-<Dataset name='Result 133'>
- <Row><Result_133>Hashes: &quot;G𝄞avin   &quot;</Result_133></Row>
-</Dataset>
-<Dataset name='Result 134'>
- <Row><Result_134>true</Result_134></Row>
-</Dataset>
-<Dataset name='Result 135'>
- <Row><Result_135>true</Result_135></Row>
-</Dataset>
-<Dataset name='Result 136'>
- <Row><Result_136>true</Result_136></Row>
-</Dataset>
-<Dataset name='Result 137'>
- <Row><Result_137>true</Result_137></Row>
-</Dataset>
-<Dataset name='Result 138'>
- <Row><Result_138>true</Result_138></Row>
-</Dataset>
-<Dataset name='Result 139'>
- <Row><Result_139>true</Result_139></Row>
-</Dataset>
-<Dataset name='Result 140'>
- <Row><Result_140>2837458134</Result_140></Row>
-</Dataset>
-<Dataset name='Result 141'>
- <Row><Result_141>108645843</Result_141></Row>
-</Dataset>
-<Dataset name='Result 142'>
- <Row><Result_142>18162734623378106963</Result_142></Row>
-</Dataset>
-<Dataset name='Result 143'>
- <Row><Result_143>646119128</Result_143></Row>
-</Dataset>
-<Dataset name='Result 144'>
- <Row><Result_144>126FFAEFE2DE0B88FA2B6AD1C3BFBEB6</Result_144></Row>
+ <Row><Result_112>126FFAEFE2DE0B88FA2B6AD1C3BFBEB6</Result_112></Row>
 </Dataset>
