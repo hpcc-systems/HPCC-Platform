@@ -427,7 +427,7 @@ void CHThorDiskWriteActivity::resolve()
                 else
                     throw MakeStringException(99, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", lfn.str());
             }
-            else
+            else if (f->exists() || f->isExternal() || agent.queryResolveFilesLocally())
             {
                 // special/local/external file
                 if (f->numParts()!=1)
