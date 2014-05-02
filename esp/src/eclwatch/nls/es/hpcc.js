@@ -79,7 +79,7 @@ define(
     DeleteSuperfile: "¿Borrar super-archivo?",
     DeleteThisPackage: "Eliminar este paquete?",
     Delimited: "Delimitado",
-    DenyAccess: "<center>Negar<br>Access>",
+    DenyAccess: "<center>Negar<br>Access</center>",
     DenyFull: "<center>Negar<br>Completo</center>",
     DenyRead: "<center>Negar<br>Leer</center>",
     DenyWrite: "<center>Negar<br>Escribir</center>",
