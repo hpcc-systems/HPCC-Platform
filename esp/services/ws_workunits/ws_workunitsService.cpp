@@ -2221,7 +2221,38 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
     }
 }
 
-void getWsWuResult(IEspContext &context, const char* wuid, const char *name, const char *logical, unsigned index, __int64 start, unsigned& count, __int64& total, IStringVal& resname, bool bin, MemoryBuffer& mb, bool xsd=true)
+INewResultSet* createFilteredResultSet(INewResultSet* result, IArrayOf<IConstNamedValue>* filterBy)
+{
+    if (!result || !filterBy || !filterBy->length())
+        return NULL;
+
+    Owned<IFilteredResultSet> filter = result->createFiltered();
+    const IResultSetMetaData &meta = result->getMetaData();
+    unsigned columnCount = meta.getColumnCount();
+    ForEachItemIn(i, *filterBy)
+    {
+        IConstNamedValue &item = filterBy->item(i);
+        const char *name = item.getName();
+        const char *value = item.getValue();
+        if (!name || !*name || !value || !*value)
+            continue;
+
+        for(unsigned col = 0; col < columnCount; col++)
+        {
+            SCMStringBuffer scmbuf;
+            meta.getColumnLabel(scmbuf, col);
+            if (strieq(scmbuf.str(), name))
+            {
+                filter->addFilter(col, value);
+                break;
+            }
+        }
+    }
+    return filter->create();
+}
+
+void getWsWuResult(IEspContext &context, const char* wuid, const char *name, const char *logical, unsigned index, __int64 start,
+    unsigned& count, __int64& total, IStringVal& resname, bool bin, IArrayOf<IConstNamedValue>* filterBy, MemoryBuffer& mb, bool xsd=true)
 {
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
@@ -2264,7 +2295,13 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     }
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
-    appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat());
+    if (!filterBy || !filterBy->length())
+        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat());
+    else
+    {
+        Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
+        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat());
+    }
 }
 
 void openSaveFile(IEspContext &context, int opt, const char* filename, const char* origMimeType, MemoryBuffer& buf, IEspWULogFileResponse &resp)
@@ -2487,13 +2524,14 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
         __int64 total=0;
         __int64 start = req.getStart() > 0 ? req.getStart() : 0;
         unsigned count = req.getCount(), requested=count;
+        IArrayOf<IConstNamedValue>* filterBy = &req.getFilterBy();
         SCMStringBuffer name;
 
         bool bin = (req.getFormat() && strieq(req.getFormat(),"raw"));
         if (notEmpty(wuidIn) && notEmpty(req.getResultName()))
-            getWsWuResult(context, wuidIn, req.getResultName(), NULL, 0, start, count, total, name, bin, mb);
+            getWsWuResult(context, wuidIn, req.getResultName(), NULL, 0, start, count, total, name, bin, filterBy, mb);
         else if (notEmpty(wuidIn) && (req.getSequence() >= 0))
-            getWsWuResult(context, wuidIn, NULL, NULL, req.getSequence(), start, count, total, name, bin,mb);
+            getWsWuResult(context, wuidIn, NULL, NULL, req.getSequence(), start, count, total, name, bin,filterBy, mb);
         else if (notEmpty(req.getLogicalName()))
         {
             const char* logicalName = req.getLogicalName();
@@ -2501,7 +2539,7 @@ bool CWsWorkunitsEx::onWUResultBin(IEspContext &context,IEspWUResultBinRequest &
             getWuidFromLogicalFileName(context, logicalName, wuid);
             if (!wuid.length())
                 throw MakeStringException(ECLWATCH_CANNOT_GET_WORKUNIT,"Cannot find the workunit for file %s.",logicalName);
-            getWsWuResult(context, wuid.str(), NULL, logicalName, 0, start, count, total, name, bin, mb);
+            getWsWuResult(context, wuid.str(), NULL, logicalName, 0, start, count, total, name, bin, filterBy, mb);
         }
         else
             throw MakeStringException(ECLWATCH_CANNOT_GET_WU_RESULT,"Cannot open the workunit result.");
@@ -2629,11 +2667,18 @@ bool CWsWorkunitsEx::onWUResultSummary(IEspContext &context, IEspWUResultSummary
     return true;
 }
 
-void getFileResults(IEspContext &context, const char* logicalName, const char* cluster,__int64 start, unsigned& count,__int64& total,IStringVal& resname,bool bin, MemoryBuffer& buf, bool xsd)
+void getFileResults(IEspContext &context, const char* logicalName, const char* cluster,__int64 start, unsigned& count,__int64& total,
+        IStringVal& resname,bool bin, IArrayOf<IConstNamedValue>* filterBy, MemoryBuffer& buf, bool xsd)
 {
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(logicalName, cluster));
-    appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat());
+    if (!filterBy || !filterBy->length())
+        appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat());
+    else
+    {
+        Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
+        appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat());
+    }
 }
 
 void getWorkunitCluster(IEspContext &context, const char* wuid, SCMStringBuffer& cluster, bool checkArchiveWUs)
@@ -2688,6 +2733,15 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
             filter.append("xsd;");
         if (context.getResponseFormat()==ESPSerializationJSON)
             filter.append("json;");
+        IArrayOf<IConstNamedValue>* filterBy = &req.getFilterBy();
+        ForEachItemIn(i, *filterBy)
+        {
+            IConstNamedValue &item = filterBy->item(i);
+            const char *name = item.getName();
+            const char *value = item.getValue();
+            if (name && *name && value && *value)
+                addToQueryString(filter, name, value, ';');
+        }
 
         const char* logicalName = req.getLogicalName();
         const char* clusterName = req.getCluster();
@@ -2727,12 +2781,12 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
                     getWorkunitCluster(context, lwuid.str(), cluster, true);
                 if (cluster.length())
                 {
-                    getFileResults(context, logicalName, cluster.str(), start, count, total, name, false, mb, inclXsd);
+                    getFileResults(context, logicalName, cluster.str(), start, count, total, name, false, filterBy, mb, inclXsd);
                     resp.setLogicalName(logicalName);
                 }
                 else if (notEmpty(clusterName))
                 {
-                    getFileResults(context, logicalName, clusterName, start, count, total, name, false, mb, inclXsd);
+                    getFileResults(context, logicalName, clusterName, start, count, total, name, false, filterBy, mb, inclXsd);
                     resp.setLogicalName(logicalName);
                 }
                 else
@@ -2741,13 +2795,13 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
             else if (notEmpty(wuid) && notEmpty(resultName))
             {
                 name.set(resultName);
-                getWsWuResult(context, wuid, resultName, NULL, 0, start, count, total, name, false, mb, inclXsd);
+                getWsWuResult(context, wuid, resultName, NULL, 0, start, count, total, name, false, filterBy, mb, inclXsd);
                 resp.setWuid(wuid);
                 resp.setSequence(seq);
             }
             else
             {
-                getWsWuResult(context, wuid, NULL, NULL, seq, start, count, total, name, false, mb, inclXsd);
+                getWsWuResult(context, wuid, NULL, NULL, seq, start, count, total, name, false, filterBy, mb, inclXsd);
                 resp.setWuid(wuid);
                 resp.setSequence(seq);
             }
