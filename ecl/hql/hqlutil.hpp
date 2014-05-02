@@ -554,6 +554,7 @@ public:
     virtual IECLError * mapError(IECLError * error);
 
     bool addCommandLineMapping(const char * mapping);
+    bool addMapping(const char * category, const char * value);
     void addOnWarning(unsigned code, IAtom * action);
     void addOnWarning(IHqlExpression * setMetaExpr);
     unsigned processMetaAnnotation(IHqlExpression * expr);
@@ -573,6 +574,7 @@ protected:
     IHqlExpression * activeSymbol;
     HqlExprArray severityMappings;
     unsigned firstActiveMapping;
+    ErrorSeverity categoryAction[CategoryMax];
 };
 
 extern HQL_API bool isGlobalOnWarning(IHqlExpression * expr);
