@@ -1,0 +1,10 @@
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;file::localhost::var::lib::^h^p^c^c^systems::mydropzone::external1&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;file::localhost::var::lib::^h^p^c^c^systems::mydropzone::external2&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;file::localhost::var::lib::^h^p^c^c^systems::mydropzone::external1&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;file::localhost::var::lib::^h^p^c^c^systems::mydropzone::external2&apos;) done</Message></Info>
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
