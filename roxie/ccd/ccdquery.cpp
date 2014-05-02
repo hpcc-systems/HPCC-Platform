@@ -921,27 +921,34 @@ public:
                             ForEach(*nodes)
                             {
                                 IPropertyTree &node = nodes->query();
-                                const char *fileName = queryNodeFileName(node);
-                                const char *indexName = queryNodeIndexName(node);
-                                // MORE - what about write? What about packages that resolve everything without dali?
-                                if (indexName && (!fileName || !streq(indexName, fileName)))
+                                ThorActivityKind kind = getActivityKind(node);
+                                if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
                                 {
-                                    bool isOpt = node.getPropBool("att[@name='_isIndexOpt']/@value") || pretendAllOpt;
-                                    const IResolvedFile *indexFile = package.lookupFileName(indexName, isOpt, true, true, wu);
-                                    if (indexFile)
+                                    const char *fileName = queryNodeFileName(node, kind);
+                                    const char *indexName = queryNodeIndexName(node, kind);
+                                    // What about packages that resolve everything without dali?
+                                    if (indexName)
                                     {
-                                        hashValue = indexFile->addHash64(hashValue);
-                                        files.append(*const_cast<IResolvedFile *>(indexFile));
+                                        bool isOpt = pretendAllOpt || node.getPropBool("att[@name='_isIndexOpt']/@value");
+                                        const IResolvedFile *indexFile = package.lookupFileName(indexName, isOpt, true, true, wu);
+                                        if (indexFile)
+                                        {
+                                            hashValue = indexFile->addHash64(hashValue);
+                                            files.append(*const_cast<IResolvedFile *>(indexFile));
+                                        }
                                     }
-                                }
-                                if (fileName)
-                                {
-                                    bool isOpt = node.getPropBool("att[@name='_isOpt']/@value") || pretendAllOpt;
-                                    const IResolvedFile *dataFile = package.lookupFileName(fileName, isOpt, true, true, wu);
-                                    if (dataFile)
+                                    if (fileName)
                                     {
-                                        hashValue = dataFile->addHash64(hashValue);
-                                        files.append(*const_cast<IResolvedFile *>(dataFile));
+                                        if (!node.getPropBool("att[@name='_isSpill']/@value") && !node.getPropBool("att[@name='_isSpillGlobal']/@value"))
+                                        {
+                                            bool isOpt = pretendAllOpt || node.getPropBool("att[@name='_isOpt']/@value");
+                                            const IResolvedFile *dataFile = package.lookupFileName(fileName, isOpt, true, true, wu);
+                                            if (dataFile)
+                                            {
+                                                hashValue = dataFile->addHash64(hashValue);
+                                                files.append(*const_cast<IResolvedFile *>(dataFile));
+                                            }
+                                        }
                                     }
                                 }
                             }
