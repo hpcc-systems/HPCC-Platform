@@ -234,9 +234,8 @@ class CSubscriberContainerList;
 class CRemoteTreeBase : public PTree
 {
 public:
-    CRemoteTreeBase(MemoryBuffer &mb, CPState _state=CPS_Unchanged);
-    CRemoteTreeBase(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL, CPState _state=CPS_Unchanged);
-    void reset(unsigned state, bool sub=false);
+    CRemoteTreeBase(MemoryBuffer &mb);
+    CRemoteTreeBase(const char *name=NULL, IPTArrayValue *value=NULL, ChildMap *children=NULL);
 
     void deserializeRT(MemoryBuffer &src);
     virtual void deserializeSelfRT(MemoryBuffer &src);
@@ -245,15 +244,8 @@ public:
 
     void clearChildren();
     CRemoteTreeBase *createChild(int pos, const char *childName);
-    IPropertyTree *collateData();
-    void clearCommitChanges(MemoryBuffer *mb=NULL);
     
     inline __int64 queryServerId() { return serverId; }
-    inline unsigned queryState() { return state; }
-    void mergeState(unsigned _state) { setState(state | _state); }
-    void clearState(unsigned _state) { setState(state & ~_state); }
-    void setState(unsigned _state) { if (queryStateChanges()) state = _state; }
-    virtual bool queryStateChanges() const;
     virtual void setServerId(__int64 _serverId);
     virtual CSubscriberContainerList *getSubscribers(const char *xpath, CPTStack &stack) { UNIMPLEMENTED; return NULL; } // JCSMORE
 
@@ -272,7 +264,6 @@ public:
     virtual void registerPropAppend(size32_t l) { }
 
 protected: // data
-    unsigned state;
     __int64 serverId;
 };
 
