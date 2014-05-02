@@ -32,10 +32,15 @@ compare(unicode a, unicode b) :=
 compare(U'Gavin', U'Gavin');
 compare(U'Gavin   ', U'Gavin');
 
-compare(U'Gavin\u00ADHalliday', U'GavinHalliday');
 compare(U'Gavin\u200BHalliday', U'GavinHalliday');
 
-compare(U'Gavin\u00AD\u200B\u200B\u200BHalliday', U'GavinHalliday');
+//The following tests are commented out because the behaviour for soft-hyphen (\u00AD) changed in ICU 4.0
+//Prior to 4.0 the strings do not compare equal, post 4.0 they do.  In both it is marked as an ignorable
+//code point, so at least the hashes are consistent (checked in tests further down).
+
+//compare(U'Gavin\u00ADHalliday', U'GavinHalliday');
+//compare(U'Gavin\u00AD\u200B\u200B\u200BHalliday', U'GavinHalliday');
+
 compare(U'Gavin\u200BHalliday', U'Gavin\u200B\u200B\u200BHalliday');
 
 hashes(unicode a) :=
