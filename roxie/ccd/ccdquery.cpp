@@ -859,7 +859,7 @@ public:
         memoryLimit = defaultMemoryLimit;
         timeLimit = defaultTimeLimit[priority];
         warnTimeLimit = 0;
-        enableFieldTranslation = fieldTranslationEnabled;
+        enableFieldTranslation = package.getEnableFieldTranslation();
     }
 
     ~CQueryFactory()
@@ -983,9 +983,8 @@ public:
             memoryLimit = (memsize_t) wu->getDebugValueInt64("memoryLimit", defaultMemoryLimit);
             timeLimit = (unsigned) wu->getDebugValueInt("timeLimit", defaultTimeLimit[priority]);
             warnTimeLimit = (unsigned) wu->getDebugValueInt("warnTimeLimit", 0);
+            enableFieldTranslation = wu->getDebugValueBool("layoutTranslationEnabled", enableFieldTranslation);
             SCMStringBuffer bStr;
-            enableFieldTranslation = strToBool(wu->getDebugValue("layoutTranslationEnabled", bStr).str());
-            bStr.clear();
             targetClusterType = getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster);
 
             // MORE - does package override stateInfo, or vice versa?
