@@ -1295,7 +1295,7 @@ public:
     void doDelete() // Throw on error!
     {
         const char *logicalname = lfn.get();
-        if (!checkLogicalName(lfn,user,true,true,true,"remove"))
+        if (!lfn.isExternal() && checkLogicalName(lfn,user,true,true,true,"remove"))
             ThrowStringException(-1, "Logical Name fails for removal on %s", lfn.get());
 
         // Transaction files have already been unlocked at this point, delete all remaining files
@@ -7850,7 +7850,8 @@ bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *u
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(name);
-    checkLogicalName(logicalname,user,true,true,false,"delete");
+    if (!logicalname.isExternal())
+        checkLogicalName(logicalname,user,true,true,false,"delete");
 
     // Create a local transaction that will be destroyed (MORE: make transaction compulsory)
     Linked<IDistributedFileTransactionExt> localtrans;
