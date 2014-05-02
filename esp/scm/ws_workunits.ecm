@@ -662,6 +662,7 @@ ESPrequest WUResultBinRequest
     string ResultName;
     int    Sequence;
     string Format("raw");
+    [min_ver("1.50")] ESParray<ESPstruct NamedValue> FilterBy;
 
     int64 Start(0);
     int Count;
@@ -691,6 +692,7 @@ ESPrequest WUResultRequest
     string LogicalName;
     string Cluster;
     bool SuppressXmlSchema(0);
+    [min_ver("1.50")] ESParray<ESPstruct NamedValue> FilterBy;
 
     int64 Start(0);
     int Count;
