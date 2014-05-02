@@ -1014,9 +1014,18 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         Owned<IPropertyTreeIterator> iter = instance.srcArchive->getElements("OnWarning");
         ForEach(*iter)
         {
+            const char * name = iter->query().queryProp("@name");
             const char * option = iter->query().queryProp("@value");
-            if (!severityMapper->addCommandLineMapping(option))
-                return;
+            if (name)
+            {
+                if (!severityMapper->addMapping(name, option))
+                    return;
+            }
+            else
+            {
+                if (!severityMapper->addCommandLineMapping(option))
+                    return;
+            }
         }
     }
 

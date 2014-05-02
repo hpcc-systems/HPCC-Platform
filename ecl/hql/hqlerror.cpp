@@ -28,7 +28,7 @@ public:
     virtual StringBuffer &  errorMessage(StringBuffer & ret) const { return ret.append(msg); }
     virtual MessageAudience errorAudience() const { return MSGAUD_user; }
     virtual const char* getFilename() const { return filename; }
-    virtual WarnErrorCategory getCategory() const { return WECunknown; }
+    virtual WarnErrorCategory getCategory() const { return CategoryUnknown; }
     virtual int getLine() const { return lineno; }
     virtual int getColumn() const { return column; }
     virtual int getPosition() const { return position; }
