@@ -105,6 +105,7 @@ protected:
     virtual bool getEnableFieldTranslation() const
     {
         const char *val = queryEnv("control:enableFieldTranslation");
+        if (!val) val = queryEnv("enableFieldTranslation"); // Backward compatibility
         if (val)
             return strToBool(val);
         else

@@ -72,7 +72,7 @@ SafePluginMap *plugins;
 
 // These two helper functions will return the original filenames placed in the XGMML by the codegen, regardless of how/if roxieconfig resolved them
 
-const char *queryNodeFileName(const IPropertyTree &graphNode)
+static const char *_queryNodeFileName(const IPropertyTree &graphNode)
 {
     if (graphNode.hasProp("att[@name='_file_dynamic']"))
         return NULL;
@@ -80,17 +80,46 @@ const char *queryNodeFileName(const IPropertyTree &graphNode)
         return graphNode.queryProp("att[@name='_fileName']/@value");
 }
 
-const char *queryNodeIndexName(const IPropertyTree &graphNode)
+static const char *_queryNodeIndexName(const IPropertyTree &graphNode)
 {
     if (graphNode.hasProp("att[@name='_indexFile_dynamic']"))
         return NULL;
     else
+        return graphNode.queryProp("att[@name='_indexFileName']/@value");
+}
+
+static bool isSimpleIndexActivity(ThorActivityKind kind)
+{
+    switch (kind)
     {
-        const char * id = graphNode.queryProp("att[@name='_indexFileName']/@value");
-        if (!id)
-            id = queryNodeFileName(graphNode);
-        return id;
+    case TAKindexaggregate:
+    case TAKindexcount:
+    case TAKindexexists:
+    case TAKindexgroupaggregate:
+    case TAKindexgroupcount:
+    case TAKindexgroupexists:
+    case TAKindexnormalize:
+    case TAKindexread:
+        return true;
+    default:
+        return false;
     }
+}
+
+const char *queryNodeFileName(const IPropertyTree &graphNode, ThorActivityKind kind)
+{
+    if (isSimpleIndexActivity(kind))
+        return false;
+    else
+        return _queryNodeFileName(graphNode);
+}
+
+const char *queryNodeIndexName(const IPropertyTree &graphNode, ThorActivityKind kind)
+{
+    if (isSimpleIndexActivity(kind))
+        return _queryNodeFileName(graphNode);
+    else
+        return _queryNodeIndexName(graphNode);
 }
 
 // DelayedReleaser mechanism hangs on to a link to an object for a while...
@@ -583,7 +612,7 @@ public:
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const 
     {
         StringBuffer xpath;
-        xpath.append("SuperFile[@id='").append(queryNodeFileName(graphNode)).append("']");
+        xpath.append("SuperFile[@id='").append(queryNodeFileName(graphNode, getActivityKind(graphNode))).append("']");
         return lookupElements(xpath.str(), "MemIndex");
     }
 

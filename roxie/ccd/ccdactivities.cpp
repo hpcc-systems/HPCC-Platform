@@ -5348,20 +5348,25 @@ public:
 
         try  // operations does not want any missing file errors to be fatal, or throw traps - just log it
         {
-            bool isOpt = _graphNode.getPropBool("att[@name='_isOpt']/@value") || pretendAllOpt;
-            const char *fileName = queryNodeFileName(_graphNode);
-            const char *indexName = queryNodeIndexName(_graphNode);
-            if (indexName && (!fileName || !streq(indexName, fileName)))
+            ThorActivityKind kind = getActivityKind(_graphNode);
+            if (kind != TAKdiskwrite && kind != TAKindexwrite && kind != TAKpiperead && kind != TAKpipewrite)
             {
-                indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit()));
-                if (indexfile)
-                    keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
-            }
-            if (fileName)
-            {
-                datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
-                if (datafile)
-                    fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
+                const char *fileName = queryNodeFileName(_graphNode, kind);
+                const char *indexName = queryNodeIndexName(_graphNode, kind);
+                if (indexName)
+                {
+                    bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isIndexOpt']/@value");
+                    indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+                    if (indexfile)
+                        keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
+                }
+                if (fileName)
+                {
+                    bool isOpt = pretendAllOpt || _graphNode.getPropBool("att[@name='_isOpt']/@value");
+                    datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
+                    if (datafile)
+                        fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
+                }
             }
         }
         catch(IException *E)

@@ -277,7 +277,7 @@ inline unsigned getGraphId(IPropertyTree & node)
     return node.getPropInt("att[@name=\"_graphId\"]/@value", 0);
 }
 
-inline ThorActivityKind getActivityKind(IPropertyTree & node)
+inline ThorActivityKind getActivityKind(const IPropertyTree & node)
 {
     return (ThorActivityKind) node.getPropInt("att[@name=\"_kind\"]/@value", TAKnone);
 }
