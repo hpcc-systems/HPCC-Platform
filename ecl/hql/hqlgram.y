@@ -3470,9 +3470,9 @@ outputWuFlag
                         }
     | XMLNS '(' expression ',' expression ')'
                         {
-                            parser->normalizeExpression($3, type_string, true);
-                            parser->normalizeExpression($5, type_string, true);
-                            $$.setExpr(createAttribute(xmlnsAtom, $3.getExpr(), $5.getExpr()));
+                            parser->normalizeExpression($3, type_stringorunicode, true);
+                            parser->normalizeExpression($5, type_stringorunicode, true);
+                            $$.setExpr(createExprAttribute(xmlnsAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
     | FIRST '(' constExpression ')'
@@ -3480,7 +3480,7 @@ outputWuFlag
                             parser->normalizeExpression($3, type_int, true);
                             $$.setExpr(createAttribute(firstAtom, $3.getExpr()));
                             $$.setPosition($1);
-                2        }
+                        }
     | THOR              {
                             $$.setExpr(createAttribute(diskAtom));
                             $$.setPosition($1);

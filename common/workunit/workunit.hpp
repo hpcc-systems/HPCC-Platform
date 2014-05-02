@@ -301,7 +301,7 @@ interface IConstWUResult : extends IInterface
     virtual unsigned getResultHash() const = 0;
     virtual void getResultDecimal(void * val, unsigned length, unsigned precision, bool isSigned) const = 0;
     virtual bool getResultIsAll() const = 0;
-    virtual IProperties *queryXmlns() = 0;
+    virtual const IProperties *queryXmlns() = 0;
 };
 
 

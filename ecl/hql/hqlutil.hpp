@@ -113,6 +113,7 @@ extern HQL_API bool matchesConstantString(IHqlExpression * expr, const char * te
 extern HQL_API bool getBoolValue(IHqlExpression * expr, bool dft);
 extern HQL_API __int64 getIntValue(IHqlExpression * expr, __int64 dft = 0);
 extern HQL_API StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft = NULL);
+extern HQL_API StringBuffer & getUTF8Value(StringBuffer & out, IHqlExpression * expr, const char * dft = NULL);
 extern HQL_API bool isEmptyList(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryNextMultiLevelDataset(IHqlExpression * expr, bool followActiveSelectors);
 extern HQL_API bool isMultiLevelDatasetSelector(IHqlExpression * expr, bool followActiveSelectors);

@@ -996,7 +996,7 @@ void *FlushingStringBuffer::getPayload(size32_t &length)
     return length ? s.detach() : NULL;
 }
 
-void FlushingStringBuffer::startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend, IProperties *xmlns)
+void FlushingStringBuffer::startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend, const IProperties *xmlns)
 {
     CriticalBlock b(crit);
     extend = _extend;
@@ -1019,11 +1019,16 @@ void FlushingStringBuffer::startDataset(const char *elementName, const char *res
                         s.append("result_").append(sequence+1).append('\'');
                     if (xmlns)
                     {
-                        Owned<IPropertyIterator> it = xmlns->getIterator();
+                        Owned<IPropertyIterator> it = const_cast<IProperties*>(xmlns)->getIterator(); //should fix IProperties to be const friendly
                         ForEach(*it)
                         {
                             const char *name = it->getPropKey();
-                            s.append(" xmlns:").append(name).append("='").append(xmlns->queryProp(name)).append("'");
+                            s.append(' ');
+                            if (!streq(name, "xmlns"))
+                                s.append("xmlns:");
+                            s.append(name).append("='");
+                            encodeUtf8XML(const_cast<IProperties*>(xmlns)->queryProp(name), s);
+                            s.append("'");
                         }
                     }
                 }
