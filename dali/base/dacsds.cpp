@@ -41,6 +41,7 @@ static unsigned clientThrottleDelay;
 #define MIN_GETXPATHS_CONNECT_SVER "3.2"
 #define MIN_APPEND_OPT_SVER "3.3"
 #define MIN_GETIDS_SVER "3.5"
+#define MIN_NODESUBSCRIBE_SVER "3.12"
 
 
 static ISDSManager *SDSManager=NULL;
@@ -1664,9 +1665,33 @@ SubscriptionId CClientSDSManager::subscribe(const char *xpath, ISDSSubscription 
     return subscriber->getId();
 }
 
+
+SubscriptionId CClientSDSManager::subscribeExact(const char *xpath, ISDSNodeSubscription &notify, bool sendValue)
+{
+    if (queryDaliServerVersion().compare(MIN_NODESUBSCRIBE_SVER) < 0)
+        throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " MIN_NODESUBSCRIBE_SVER " for subscribeExact");
+    assertex(xpath);
+    StringBuffer s;
+    if ('/' != *xpath)
+    {
+        s.append('/').append(xpath);
+        xpath = s.str();
+    }
+    CSDSNodeSubscriberProxy *subscriber = new CSDSNodeSubscriberProxy(xpath, sendValue, notify);
+    querySubscriptionManager(SDSNODE_PUBLISHER)->add(subscriber, subscriber->getId());
+    return subscriber->getId();
+}
+
 void CClientSDSManager::unsubscribe(SubscriptionId id)
 {
     querySubscriptionManager(SDS_PUBLISHER)->remove(id);
+}
+
+void CClientSDSManager::unsubscribeExact(SubscriptionId id)
+{
+    if (queryDaliServerVersion().compare(MIN_NODESUBSCRIBE_SVER) < 0)
+        throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " MIN_NODESUBSCRIBE_SVER " for unsubscribeExact");
+    querySubscriptionManager(SDSNODE_PUBLISHER)->remove(id);
 }
 
 StringBuffer &CClientSDSManager::getInfo(SdsDiagCommand cmd, StringBuffer &out)
