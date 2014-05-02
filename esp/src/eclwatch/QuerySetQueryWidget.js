@@ -124,6 +124,9 @@ define([
                 includeBlank: true,
                 Target: params.Cluster
             });
+            if (params.Wuid) {
+                this.filter.setValue(this.id + "Wuid", params.Wuid);
+            }
             this.initQuerySetGrid();
 
             var context = this;

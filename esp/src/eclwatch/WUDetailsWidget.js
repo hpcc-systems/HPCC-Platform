@@ -268,6 +268,10 @@ define([
                 this.graphsWidget.init({
                     Wuid: this.wu.Wuid
                 });
+            } else if (currSel.id == this.widget._Queries.id && !this.widget._Queries.__hpcc_initalized) {
+                this.widget._Queries.init({
+                    Wuid: this.wu.Wuid
+                });
             } else if (currSel.id == this.widget._Resources.id && !this.resourcesWidgetLoaded) {
                 this.resourcesWidgetLoaded = true;
                 this.widget._Resources.init({
