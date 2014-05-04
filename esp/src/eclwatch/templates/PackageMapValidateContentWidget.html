@@ -1,0 +1,21 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}SubmitPane" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
+            <div style="display: inline-block; vertical-align: middle">
+                <label for="${id}TargetSelect">${i18n.Target}</label>
+                <div id="${id}TargetSelect" name="TargetSelect" style="width: 8em;" data-dojo-attach-event="onChange:_onChangeTarget" data-dojo-type="dijit.form.Select">
+                </div>
+                <label for="${id}ProcessSelect">${i18n.Process}</label>
+                <div id="${id}ProcessSelect" name="ProcessSelect" style="width: 8em;" data-dojo-type="dijit.form.Select">
+                </div>
+                <button id="${id}LoadBtn" data-dojo-attach-event="onClick:_onLoadBtnClicked" data-dojo-type="dijit.form.Button">${i18n.LoadPackageFromFile}</button>
+                <button id="${id}ValidateBtn" data-dojo-attach-event="onClick:_onValidate" data-dojo-type="dijit.form.Button">${i18n.Validate}</button>
+                <div style='height: 0px;width:0px; overflow:hidden;'><input id="${id}SelectFile" type="file"/></div>
+            </div>
+        </div>
+        <div id="${id}Source" class="centerPanel" data-dojo-props="region: 'center'" data-dojo-type="ECLSourceWidget">
+        </div>
+        <div id="${id}Result" title="${i18n.Results}" style="width: 480px;" data-dojo-props="minSize:120, region: 'right', splitter:true" data-dojo-type="ECLSourceWidget">
+        </div>
+    </div>
+</div>
