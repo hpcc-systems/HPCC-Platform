@@ -101,6 +101,11 @@ protected:
         return (node) ? node->queryProp("@id") : NULL;
     }
 
+    virtual bool isCompulsory() const
+    {
+        return (node) ? node->getPropBool("@compulsory", false) : false;
+    }
+
     virtual bool getSysFieldTranslationEnabled() const {return false;}
     virtual bool getEnableFieldTranslation() const
     {
