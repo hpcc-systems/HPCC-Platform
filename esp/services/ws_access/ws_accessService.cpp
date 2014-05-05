@@ -28,20 +28,30 @@
 #define MSG_SEC_MANAGER_IS_NULL "Security manager is not found. Please check if the system authentication is set up correctly"
 #define MSG_SEC_MANAGER_ISNT_LDAP "LDAP Security manager is required for this feature. Please enable LDAP in the system configuration"
 
+#define FILE_SCOPE_URL "FileScopeAccess"
+#define FILE_SCOPE_RTYPE "file"
+#define FILE_SCOPE_RTITLE "FileScope"
+
 #define MAX_USERS_DISPLAY 400
 #define MAX_RESOURCES_DISPLAY 3000
 static const long MAXXLSTRANSFER = 5000000;
 
-void checkUser(IEspContext& context)
+void checkUser(IEspContext& context, const char* rtype = NULL, const char* rtitle = NULL, unsigned int SecAccessFlags = SecAccess_Full)
 {
     CLdapSecManager* secmgr = dynamic_cast<CLdapSecManager*>(context.querySecManager());
     if(secmgr == NULL)
         throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
+    if (rtype && rtitle && strieq(rtype, FILE_SCOPE_RTYPE) && strieq(rtitle, FILE_SCOPE_RTITLE))
+    {
+        if (!context.validateFeatureAccess(FILE_SCOPE_URL, SecAccessFlags, false))
+            throw MakeStringException(ECLWATCH_DFU_WU_ACCESS_DENIED, "Access to File Scope is denied.");
+        return;
+    }
+
     if(!secmgr->isSuperUser(context.queryUser()))
         throw MakeStringException(ECLWATCH_ADMIN_ACCESS_DENIED, "Access denied, administrators only.");
 }
-
 
 void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
@@ -108,9 +118,9 @@ void Cws_accessEx::init(IPropertyTree *cfg, const char *process, const char *ser
         Owned<IEspDnStruct> onedn = createDnStruct();
         onedn->setBasedn(files_basedn);
         onedn->setName("File Scopes");
-        onedn->setRtype("file");
+        onedn->setRtype(FILE_SCOPE_RTYPE);
         m_rawbasedns.append(*onedn.getLink());
-        onedn->setRtitle("FileScope");
+        onedn->setRtitle(FILE_SCOPE_RTITLE);
     }
 
     StringBuffer workunits_basedn;
@@ -1310,11 +1320,27 @@ bool Cws_accessEx::onPermissions(IEspContext &context, IEspBasednsRequest &req, 
     return true;
 }
 
+const char* Cws_accessEx::getBaseDN(IEspContext &context, const char* rtype, StringBuffer& baseDN)
+{
+    if(!m_basedns.length())
+        setBasedns(context);
+    ForEachItemIn(y, m_basedns)
+    {
+        IEspDnStruct* curbasedn = &(m_basedns.item(y));
+        if(strieq(curbasedn->getRtype(), rtype))
+        {
+            baseDN.set(curbasedn->getBasedn());
+            return baseDN.str();
+        }
+    }
+    return NULL;
+}
+
 bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, IEspResourcesResponse &resp)
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Read);
 
         CLdapSecManager* secmgr = queryLDAPSecurityManager(context);
         if(secmgr == NULL)
@@ -1324,6 +1350,15 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
         const char* filterInput = req.getSearchinput();
         const char* basedn = req.getBasedn();
         const char* rtypestr = req.getRtype();
+        if (!rtypestr || !*rtypestr)
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Rtype not specified");
+        StringBuffer baseDN;
+        if (!basedn || !*basedn)
+        {
+            basedn = getBaseDN(context, rtypestr, baseDN);
+            if (!basedn || !*basedn)
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "BaseDN not found");
+        }
 
         const char* moduletemplate = NULL;
         ForEachItemIn(x, m_basedns)
@@ -1473,7 +1508,7 @@ bool Cws_accessEx::onResourceAddInput(IEspContext &context, IEspResourceAddInput
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         resp.setBasedn(req.getBasedn());
         resp.setRtype(req.getRtype());
@@ -1508,7 +1543,7 @@ bool Cws_accessEx::onResourceAdd(IEspContext &context, IEspResourceAddRequest &r
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         ISecManager* secmgr = context.querySecManager();
 
@@ -1615,7 +1650,7 @@ bool Cws_accessEx::onResourceDelete(IEspContext &context, IEspResourceDeleteRequ
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         CLdapSecManager* secmgr = (CLdapSecManager*)(context.querySecManager());
 
@@ -1709,7 +1744,7 @@ bool Cws_accessEx::onResourcePermissions(IEspContext &context, IEspResourcePermi
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Read);
 
         ISecManager* secmgr = context.querySecManager();
 
@@ -1795,7 +1830,7 @@ bool Cws_accessEx::onPermissionAddInput(IEspContext &context, IEspPermissionAddR
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         resp.setBasedn(req.getBasedn());
         resp.setRname(req.getRname());
@@ -1833,7 +1868,7 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         resp.setBasedn(req.getBasedn());
         //resp.setRname(req.getRname());
@@ -1919,6 +1954,8 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
 
 bool Cws_accessEx::onClearPermissionsCache(IEspContext &context, IEspClearPermissionsCacheRequest &req, IEspClearPermissionsCacheResponse &resp)
 {
+    checkUser(context);
+
     ISecManager* secmgr = context.querySecManager();
     if(secmgr == NULL)
         throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
@@ -1965,6 +2002,8 @@ bool Cws_accessEx::onQueryScopeScansEnabled(IEspContext &context, IEspQueryScope
 
 bool Cws_accessEx::onEnableScopeScans(IEspContext &context, IEspEnableScopeScansRequest &req, IEspEnableScopeScansResponse &resp)
 {
+    checkUser(context, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Full);
+
     StringBuffer retMsg;
     int rc = enableDisableScopeScans(context, true, retMsg);
     resp.updateScopeScansStatus().setIsEnabled(rc == 0);
@@ -1975,6 +2014,8 @@ bool Cws_accessEx::onEnableScopeScans(IEspContext &context, IEspEnableScopeScans
 
 bool Cws_accessEx::onDisableScopeScans(IEspContext &context, IEspDisableScopeScansRequest &req, IEspDisableScopeScansResponse &resp)
 {
+    checkUser(context, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Full);
+
     StringBuffer retMsg;
     int rc = enableDisableScopeScans(context, false, retMsg);
     resp.updateScopeScansStatus().setIsEnabled(rc != 0);
@@ -2050,7 +2091,7 @@ bool Cws_accessEx::onPermissionsReset(IEspContext &context, IEspPermissionsReset
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         resp.setBasedn(req.getBasedn());
         resp.setRname(req.getRname());
@@ -2418,7 +2459,7 @@ bool Cws_accessEx::onPermissionAction(IEspContext &context, IEspPermissionAction
 {
     try
     {
-        checkUser(context);
+        checkUser(context, req.getRtype(), req.getRtitle(), SecAccess_Full);
 
         resp.setBasedn(req.getBasedn());
         resp.setRname(req.getRname());
@@ -3337,7 +3378,7 @@ bool Cws_accessEx::onFilePermission(IEspContext &context, IEspFilePermissionRequ
                 throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
         }
 
-        checkUser(context);
+        checkUser(context, FILE_SCOPE_RTYPE, FILE_SCOPE_RTITLE, SecAccess_Read);
 
         //Get all users for input form
         int numusers = secmgr->countUsers("", MAX_USERS_DISPLAY);

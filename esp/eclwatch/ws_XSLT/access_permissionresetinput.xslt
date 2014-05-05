@@ -303,8 +303,8 @@
         <input type="hidden" name="rtitle" value="{rtitle}"/>
         <input type="hidden" name="prefix" value="{prefix}"/>
         <input type="hidden" name="BasednName" value="{BasednName}"/>
-        <input type="hidden" name="userarray" value=""/>
-        <input type="hidden" name="grouparray" value=""/>
+        <input type="hidden" id="userarray" name="userarray" value=""/>
+        <input type="hidden" id="grouparray" name="grouparray" value=""/>
 
         <h3>Permission Reset</h3>
         <div>
