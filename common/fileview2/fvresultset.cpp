@@ -3168,7 +3168,7 @@ int findResultSetColumn(const INewResultSet * results, const char * columnName)
 }
 
 
-extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName, IProperties *xmlns)
+extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName, const IProperties *xmlns)
 {
     Owned<CommonXmlWriter> writer = CreateCommonXmlWriter(XWFexpandempty);
     unsigned rc = writeResultCursorXml(*writer, cursor, name, start, count, schemaName, xmlns);
@@ -3177,7 +3177,7 @@ extern FILEVIEW_API unsigned getResultCursorXml(IStringVal & ret, IResultSetCurs
 
 }
 
-extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName, IProperties *xmlns)
+extern FILEVIEW_API unsigned getResultXml(IStringVal & ret, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName, const IProperties *xmlns)
 {
     Owned<IResultSetCursor> cursor = result->createCursor();
     return getResultCursorXml(ret, cursor, name, start, count, schemaName, xmlns);
@@ -3194,7 +3194,7 @@ extern FILEVIEW_API unsigned getResultJSON(IStringVal & ret, INewResultSet * res
     return rc;
 }
 
-extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName, IProperties *xmlns)
+extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSetCursor * cursor, const char * name, unsigned start, unsigned count, const char * schemaName, const IProperties *xmlns)
 {
     if (schemaName)
     {
@@ -3212,11 +3212,11 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSe
         writer.outputCString(schemaName, "@xmlSchema");
     if (xmlns)
     {
-        Owned<IPropertyIterator> it = xmlns->getIterator();
+        Owned<IPropertyIterator> it = const_cast<IProperties*>(xmlns)->getIterator();
         ForEach(*it)
         {
             const char *name = it->getPropKey();
-            writer.outputXmlns(name,xmlns->queryProp(name));
+            writer.outputXmlns(name,const_cast<IProperties*>(xmlns)->queryProp(name));
         }
     }
     cursor->beginWriteXmlRows(writer);
@@ -3234,7 +3234,7 @@ extern FILEVIEW_API unsigned writeResultCursorXml(IXmlWriter & writer, IResultSe
     return c;
 }
 
-extern FILEVIEW_API unsigned writeResultXml(IXmlWriter & writer, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName, IProperties *xmlns)
+extern FILEVIEW_API unsigned writeResultXml(IXmlWriter & writer, INewResultSet * result, const char* name,unsigned start, unsigned count, const char * schemaName, const IProperties *xmlns)
 {
     Owned<IResultSetCursor> cursor = result->createCursor();
     return writeResultCursorXml(writer, cursor, name, start, count, schemaName, xmlns);
@@ -3321,7 +3321,7 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
                     SCMStringBuffer name;
                     ds.getResultName(name);
                     Owned<INewResultSet> nr = factory->createNewResultSet(&ds, wuid.str());
-                    IProperties *xmlns = ds.queryXmlns();
+                    const IProperties *xmlns = ds.queryXmlns();
                     writeResultXml(writer, nr.get(), name.str(), 0, 0, (flags & WorkUnitXML_InclSchema) ? name.str() : NULL, xmlns);
                 }
             }

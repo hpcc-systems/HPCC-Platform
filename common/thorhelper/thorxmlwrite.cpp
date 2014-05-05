@@ -243,8 +243,10 @@ void CommonXmlWriter::outputUtf8(unsigned len, const char *field, const char *fi
 
 void CommonXmlWriter::outputXmlns(const char *name, const char *uri)
 {
-    StringBuffer fieldname("xmlns:");
-    outputXmlAttrString(strlen(uri), uri, fieldname.append(name), out);
+    StringBuffer fieldname;
+    if (!streq(name, "xmlns"))
+        fieldname.append("xmlns:");
+    outputXmlAttrUtf8(strlen(uri), uri, fieldname.append(name), out);
 }
 
 void CommonXmlWriter::outputBeginDataset(const char *dsname, bool nestChildren)

@@ -29,5 +29,5 @@ xmlinfo := u8'<Row><bks:books><bk:book><bk:author>Sir Roger Penrose</bk:author><
 
 books := FROMXML(collectionRec, xmlinfo, TRIM);
 
-output(books, XMLNS('bks','urn:booklist:books'), XMLNS('bk','urn:booklist:book'));
+output(books, XMLNS(u8'bks',u8'urn:booklist:books'), XMLNS(U'bk',U'urn:booklist:book'), XMLNS('', 'urn:noprefix:namespace'));
 

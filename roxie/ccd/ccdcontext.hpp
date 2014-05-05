@@ -97,7 +97,7 @@ interface IRoxieServerContext : extends IInterface
     virtual bool outputResultsToSocket() const = 0;
 
     virtual IRoxieDaliHelper *checkDaliConnection() = 0;
-    virtual IProperties *queryXmlns(unsigned seqNo) = 0;
+    virtual const IProperties *queryXmlns(unsigned seqNo) = 0;
 };
 
 interface IDeserializedResultStore : public IInterface

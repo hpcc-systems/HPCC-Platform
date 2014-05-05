@@ -5028,27 +5028,19 @@ IWUResult * HqlCppTranslator::createWorkunitResult(int sequence, IHqlExpression 
     return result.getClear();
 }
 
-void getXpathAttrPrefixes(StringArray &prefixes, IHqlExpression *xpathAttr)
+void checkAppendXpathNamePrefix(StringArray &prefixes, const char *xpathName)
 {
-    if (!xpathAttr)
+    if (!xpathName || !*xpathName || *xpathName==':')
         return;
-    StringBuffer xpathtext;
-    if (xpathAttr->queryChild(0)->queryValue())
-        xpathAttr->queryChild(0)->queryValue()->getStringValue(xpathtext);
-    if (!xpathtext.length())
+    if (*xpathName=='@')
+        xpathName++;
+    const char *colon = strchr(xpathName, ':');
+    if (!colon)
         return;
-    const char *xpath=xpathtext.str();
-    const char *colon = strchr(xpath, ':');
-    while (colon)
-    {
-        const char *finger=colon-1;
-        while (finger>xpath && !strchr("/[ ", *(finger-1)))
-            finger--;
-        StringAttr prefix(finger, colon - finger);
-        if (prefix.length() && prefixes.find(prefix.get())==NotFound)
-            prefixes.append(prefix);
-        colon = strchr(colon+1, ':');
-    }
+    StringAttr prefix;
+    prefix.set(xpathName, colon-xpathName);
+    if (prefixes.find(prefix.get())==NotFound)
+        prefixes.append(prefix);
 }
 
 void gatherXpathPrefixes(StringArray &prefixes, IHqlExpression * record)
@@ -5060,7 +5052,11 @@ void gatherXpathPrefixes(StringArray &prefixes, IHqlExpression * record)
         {
         case no_field:
         {
-            getXpathAttrPrefixes(prefixes, cur->queryAttribute(xpathAtom));
+            //don't need to be too picky about xpath field types, worst case if an xpath is too long, we end up with an extra prefix
+            StringBuffer xpathName, xpathItem;
+            extractXmlName(xpathName, &xpathItem, NULL, cur, NULL, false);
+            checkAppendXpathNamePrefix(prefixes, xpathName);
+            checkAppendXpathNamePrefix(prefixes, xpathItem);
 
             ITypeInfo * type = cur->queryType();
             switch (type->getTypeCode())
@@ -5075,8 +5071,10 @@ void gatherXpathPrefixes(StringArray &prefixes, IHqlExpression * record)
             break;
         }
         case no_ifblock:
-        case no_record:
             gatherXpathPrefixes(prefixes, cur->queryChild(1));
+            break;
+        case no_record:
+            gatherXpathPrefixes(prefixes, cur);
             break;
         }
     }
@@ -5090,10 +5088,8 @@ void addDatasetResultXmlNamespaces(IWUResult &result, HqlExprArray &xmlnsAttrs, 
         IHqlExpression & xmlns = xmlnsAttrs.item(idx);
         StringBuffer xmlnsPrefix;
         StringBuffer xmlnsURI;
-        if (xmlns.queryChild(0)->queryValue())
-            xmlns.queryChild(0)->queryValue()->getStringValue(xmlnsPrefix);
-        if (xmlns.queryChild(1)->queryValue())
-            xmlns.queryChild(1)->queryValue()->getStringValue(xmlnsURI);
+        getUTF8Value(xmlnsPrefix, xmlns.queryChild(0));
+        getUTF8Value(xmlnsURI, xmlns.queryChild(1));
         if (xmlnsURI.length())
         {
             result.setXmlns(xmlnsPrefix, xmlnsURI);
@@ -11133,10 +11129,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
         Owned<IWUResult> result = createDatasetResultSchema(seq, name, outputRecord, xmlnsAttrs, true, false);
         if (result)
         {
-            SCMStringBuffer debugName;
-            result->getResultName((IStringVal &)debugName);
             result->setResultRowLimit(-1);
-
             if (sequence >= 0)
             {
                 OwnedHqlExpr outputDs = createDataset(no_null, LINK(outputRecord));

@@ -1569,6 +1569,7 @@ class CLocalWUResult : public CInterface, implements IWUResult
 {
     friend class CLocalWorkUnit;
 
+    mutable CriticalSection crit;
     Owned<IPropertyTree> p;
     Owned<IProperties> xmlns;
     void getSchema(TypeInfoArray &types, StringAttrArray &names, IStringVal * ecl=NULL) const;
@@ -3504,7 +3505,6 @@ void CLocalWorkUnit::loadXML(const char *xml)
 {
     CriticalBlock block(crit);
     init();
-    DBGLOG("%s",xml);
     assertex(xml);
     p.setown(createPTreeFromXMLString(xml));
 }
@@ -6038,8 +6038,6 @@ void CLocalWorkUnit::loadResults() const
         for (r->first(); r->isValid(); r->next())
         {
             IPropertyTree *rp = &r->query();
-            const char *xmlns = rp->queryProp("@xmlns:yyy");
-
             rp->Link();
             results.append(*new CLocalWUResult(rp));
         }
@@ -7809,17 +7807,21 @@ IStringVal& CLocalWUResult::getResultXml(IStringVal &str) const
 
 IProperties *CLocalWUResult::queryXmlns()
 {
+    CriticalBlock block(crit);
     if (xmlns)
         return xmlns;
     xmlns.setown(createProperties());
     Owned<IAttributeIterator> it = p->getAttributes();
-    unsigned prefixLen = strlen("@xmlns:");
+    unsigned prefixLen = strlen("@xmlns");
     ForEach(*it)
     {
         const char *name = it->queryName();
-        if (!strncmp("@xmlns:", name, prefixLen))
+        if (!strncmp("@xmlns", name, prefixLen))
         {
-            xmlns->setProp(name+prefixLen, it->queryValue());
+            if (name[prefixLen]==':') //normal case
+                xmlns->setProp(name+prefixLen+1, it->queryValue());
+            else if (!name[prefixLen]) //special case, unprefixed namespace
+                xmlns->setProp("xmlns", it->queryValue());
         }
     }
     return xmlns;

@@ -591,8 +591,7 @@ extern HQL_API void gatherMetaAttributes(HqlExprArray & matches, IAtom * search,
 
 extern HQL_API void gatherAttributes(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
 {
-    unsigned kids = expr->numChildren();
-    for (unsigned i = 0; i < kids; i++)
+    ForEachChild(i, expr)
     {
         IHqlExpression *kid = expr->queryChild(i);
         if (kid->isAttribute() && kid->queryName()==search)

@@ -152,7 +152,7 @@ void outputXmlUtf8(unsigned len, const char *field, const char *fieldname, Strin
 {
     if (fieldname && *fieldname)
         out.append('<').append(fieldname).append('>');
-    encodeXML(field, out, 0, rtlUtf8Size(len, field), true); // output as UTF-8
+    encodeXML(field, out, 0, len, true); // output as UTF-8, encodeXml uses strlen and compensates for utf8 character size
     if (fieldname && *fieldname)
         out.append("</").append(fieldname).append('>');
 }
