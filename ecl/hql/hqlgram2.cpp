@@ -10609,6 +10609,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case XMLDECODE: msg.append("XMLDECODE"); break;
     case XMLDEFAULT: msg.append("XMLDEFAULT"); break;
     case XMLENCODE: msg.append("XMLENCODE"); break;
+    case XMLNS: msg.append("XMLNS"); break;
     case XMLPROJECT: msg.append("XMLPROJECT"); break;
     case XMLTEXT: msg.append("XMLTEXT"); break;
     case XMLUNICODE: msg.append("XMLUNICODE"); break;

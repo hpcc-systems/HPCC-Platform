@@ -461,6 +461,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   XMLDECODE
   XMLDEFAULT
   XMLENCODE
+  XMLNS
   XMLPROJECT
   XMLTEXT
   XMLUNICODE
@@ -3465,6 +3466,13 @@ outputWuFlags
 outputWuFlag
     : ALL               {
                             $$.setExpr(createAttribute(allAtom));
+                            $$.setPosition($1);
+                        }
+    | XMLNS '(' expression ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_stringorunicode, true);
+                            parser->normalizeExpression($5, type_stringorunicode, true);
+                            $$.setExpr(createExprAttribute(xmlnsAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
     | FIRST '(' constExpression ')'

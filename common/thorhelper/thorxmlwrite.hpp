@@ -71,6 +71,7 @@ public:
     virtual void outputBeginArray(const char *fieldname){}; //repeated elements are inline for xml
     virtual void outputEndArray(const char *fieldname){};
     virtual void outputSetAll();
+    virtual void outputXmlns(const char *name, const char *uri);
 
 protected:
     bool checkForAttribute(const char * fieldname);
@@ -127,6 +128,7 @@ public:
     virtual void outputBeginArray(const char *fieldname);
     virtual void outputEndArray(const char *fieldname);
     virtual void outputSetAll();
+    virtual void outputXmlns(const char *name, const char *uri){}
 
     void outputBeginRoot(){out.append('{');}
     void outputEndRoot(){out.append('}');}
@@ -224,6 +226,8 @@ public:
     virtual void outputEndArray(const char *fieldname){}
     virtual void outputSetAll();
     virtual void outputInlineXml(const char *text){} //for appending raw xml content
+    virtual void outputXmlns(const char *name, const char *uri){}
+
 
 
     void newline();

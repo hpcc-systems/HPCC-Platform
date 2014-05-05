@@ -2825,6 +2825,17 @@ public:
         return trim ? XWFtrim|XWFopt : XWFexpandempty;
     }
 
+    virtual const IProperties *queryXmlns(unsigned seqNo)
+    {
+        IConstWorkUnit *cw = serverQueryFactory->queryWorkUnit();
+        if (cw)
+        {
+            Owned<IConstWUResult> result = cw->getResultBySequence(seqNo);
+            if (result)
+                return result->queryXmlns();
+        }
+        return NULL;
+    }
     virtual unsigned getMemoryUsage()
     {
         return rowManager->getMemoryUsage();
