@@ -327,7 +327,7 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     if (flags & RefFileInPackage)
         return;
     reset();
-    if (checkLocalFirst)
+    if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
         Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user);
         if(df)
@@ -338,9 +338,17 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     }
     Owned<IPropertyTree> tree = getSpecifiedOrRemoteFileTree(user, remote, remotePrefix);
     if (tree)
+    {
         processRemoteFileTree(tree, srcCluster, subfiles);
-    else
-        flags |= RefFileNotFound;
+        return;
+    }
+    else if (!checkLocalFirst && (!srcCluster || !*srcCluster)) //haven't already checked and not told to use a specific copy
+    {
+        resolveLocal(dstCluster, srcCluster, user, subfiles);
+        return;
+    }
+
+    flags |= RefFileNotFound;
 }
 
 void ReferencedFile::resolve(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool resolveForeign)

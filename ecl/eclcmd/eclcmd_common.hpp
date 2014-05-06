@@ -84,6 +84,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DELETE_PREVIOUS_INI "deletePrevDefault"
 #define ECLOPT_DELETE_PREVIOUS_ENV "ACTIVATE_DELETE_PREVIOUS"
 #define ECLOPT_CHECK_DFS "--check-dfs"
+#define ECLOPT_UPDATE_DFS "--update-dfs"
 #define ECLOPT_GLOBAL_SCOPE "--global-scope"
 
 #define ECLOPT_MAIN "--main"

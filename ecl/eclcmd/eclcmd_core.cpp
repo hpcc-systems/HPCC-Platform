@@ -195,7 +195,7 @@ class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
     EclCmdPublish() : optNoActivate(false), optSuspendPrevious(false), optDeletePrevious(false),
-        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000), optAllowForeign(false)
+        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000), optAllowForeign(false), optUpdateDfs(false)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
         optTimeLimit = (unsigned) -1;
@@ -252,6 +252,8 @@ public:
             if (iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS)||iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS_S))
                 continue;
             if (iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS)||iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS_S))
+                continue;
+            if (iter.matchFlag(optUpdateDfs, ECLOPT_UPDATE_DFS))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -328,6 +330,7 @@ public:
         req->setNoReload(optNoReload);
         req->setDontCopyFiles(optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
+        req->setUpdateDfs(optUpdateDfs);
 
         if (optTimeLimit != (unsigned) -1)
             req->setTimeLimit(optTimeLimit);
@@ -386,6 +389,7 @@ public:
             "   --no-files             Do not copy files referenced by query\n"
             "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
+            "   --update-dfs           Update local DFS info if remote DALI has changed\n"
             "   --source-process       Process cluster to copy files from\n"
             "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
             "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
@@ -415,6 +419,7 @@ private:
     bool optSuspendPrevious;
     bool optDeletePrevious;
     bool optAllowForeign;
+    bool optUpdateDfs;
 };
 
 class EclCmdRun : public EclCmdWithEclTarget
