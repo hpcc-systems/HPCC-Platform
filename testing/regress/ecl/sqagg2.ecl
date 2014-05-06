@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 // Similar to sqagg.hql.  This time using a compound aggregate operator and selecting the results out.
 persons := sq.HousePersonBookDs.persons;

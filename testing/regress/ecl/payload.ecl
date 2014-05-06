@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 //Sample query for pulling across some sample related payload indexes
 
 i1 := index({ string40 forename, string40 surname }, { unsigned4 id }, sq.PersonIndexName);

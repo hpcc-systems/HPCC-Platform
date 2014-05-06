@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 pr:= table(sq.HousePersonBookDs.persons, { fullname := trim(surname) + ', ' + trim(forename), aage });
 

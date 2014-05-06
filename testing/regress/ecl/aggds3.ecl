@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 //A not-so-simple out of line subquery
 secondBookName := (string20)sort(sq.SimplePersonBookDs.books, name)[2].name;

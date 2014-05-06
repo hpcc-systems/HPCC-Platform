@@ -15,7 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+#onwarning (4515, ignore);
+
+import $.setup;
+sq := setup.sq('hthor');
 
 //Check correctly checks canMatchAny()
 inlineDs := dataset([1,2],{integer value});

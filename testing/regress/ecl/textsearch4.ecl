@@ -15,16 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-//UseTextSearch
-//tidyoutput
 //nothor
-//nothorlcr
-//DoesntReallyUseIndexes
-//xxvarskip type==roxie && setuptype==thor && !local
 
-#option ('checkAsserts',false)
-
+#option ('checkAsserts',false);
+import $.Setup.TS;
+import $.Setup.TextSearch;
+import $.Setup;
 
 q1 := dataset([
             '"increase"',
@@ -51,7 +47,10 @@ q1 := dataset([
 //MORE: What other boundary conditions can we think of.
 
                 ''
-            ], queryInputRecord);
+            ], TextSearch.queryInputRecord);
 
-p := project(q1, doBatchExecute(TS_searchIndex, LEFT, 0x00000200));
+boolean useLocal := false;
+Files := Setup.Files('hthor');
+searchIndex := index(TS.textSearchIndex, Setup.Files('hthor').NameSearchIndex);
+p := project(q1, TextSearch.doBatchExecute(searchIndex, LEFT, useLocal, 0x00000200));
 output(p);

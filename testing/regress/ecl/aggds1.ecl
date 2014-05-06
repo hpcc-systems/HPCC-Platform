@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 //Check fixed size disk count correctly checks canMatchAny()
 inlineDs := dataset([1,2],{integer value});
@@ -34,7 +35,7 @@ output(count(sq.SimplePersonBookDs)): independent;
 //Special case count.
 output(table(sq.SimplePersonBookDs, { count(group, (forename = 'Gavin')) })): independent;
 
-//existance checks
+//existence checks
 output(exists(sq.SimplePersonBookDs)): independent;
 output(exists(sq.SimplePersonBookDs(forename = 'Gavin'))): independent;
 output(exists(sq.SimplePersonBookDs(forename = 'Joshua'))): independent;

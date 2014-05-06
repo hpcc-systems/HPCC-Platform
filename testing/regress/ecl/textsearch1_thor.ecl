@@ -15,18 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-//UseTextSearch
-//tidyoutput
 //nothor
-//nothorlcr
-//nohthor
-//DoesntReallyUseIndexes    Thje test is primarily here to check everything works when the join index optimizer is always on
-//xxvarskip type==roxie && setuptype==thor && !local
 
-#option ('checkAsserts',false)
+#option ('checkAsserts',false);
+import $.Setup.TS;
+import $.Setup.TextSearch;
+import $.Setup;
 
-//SingleQuery := 'AND(NOTAT(AND("twinkle", "little"), 9999), NOTAT(AND("how", "wonder"),8888))';
+//SingleQuery := 'AND("the":1, "software":2, "source":3)';
+//SingleQuery := 'AND("the", "software", "source")';
 
 q1 := dataset([
 
@@ -369,6 +366,10 @@ q1 := dataset([
             'BUTNOT("black", PHRASE("black", OR("spotted", "sheep")))',
             'BUTNOTJOIN("black", PHRASE("black", OR("spotted", "sheep")))',
 
+            'AND("the", "software", "source")',
+            'AND("the":1, "software":2, "source":3)',
+            'AND("the":3, "software":2, "source":1)',
+
 //MORE:
 // STEPPED flag on merge to give an error if input doesn't support stepping.
 // What about the duplicates that can come out of the proximity operators?
@@ -381,7 +382,10 @@ q1 := dataset([
 
 #end
 
-            ], queryInputRecord);
+            ], TextSearch.queryInputRecord);
 
-p := project(nofold(q1), doBatchExecute(TS_wordIndex, LEFT, 0x40000000));
+boolean useLocal := false;
+Files := Setup.Files('thorlcr');
+wordIndex := index(TS.textSearchIndex, Files.NameWordIndex(useLocal));
+p := project(nofold(q1), TextSearch.doBatchExecute(wordIndex, LEFT, useLocal, 0x00000200));           // 0x200 forces paranoid order checking on
 output(p);

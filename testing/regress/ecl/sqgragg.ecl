@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 //--------------- Test group aggregation on child datasets --------------------
 // Should clone this for datasets as well.

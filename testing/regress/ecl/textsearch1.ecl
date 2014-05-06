@@ -15,15 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-//UseTextSearch
-//tidyoutput
 //nothor
-//nothorlcr
-//UseIndexes
-//xxvarskip type==roxie && setuptype==thor && !local
 
-#option ('checkAsserts',false)
+#option ('checkAsserts',false);
+import $.Setup.TS;
+import $.Setup.TextSearch;
+import $.Setup;
 
 //SingleQuery := 'AND("the":1, "software":2, "source":3)';
 //SingleQuery := 'AND("the", "software", "source")';
@@ -385,7 +382,10 @@ q1 := dataset([
 
 #end
 
-            ], queryInputRecord);
+            ], TextSearch.queryInputRecord);
 
-p := project(nofold(q1), doBatchExecute(TS_wordIndex, LEFT, 0x00000200));           // 0x200 forces paranoid order checking on
+boolean useLocal := false;
+Files := Setup.Files('hthor');
+wordIndex := index(TS.textSearchIndex, Files.NameWordIndex(useLocal));
+p := project(nofold(q1), TextSearch.doBatchExecute(wordIndex, LEFT, useLocal, 0x00000200));           // 0x200 forces paranoid order checking on
 output(p);

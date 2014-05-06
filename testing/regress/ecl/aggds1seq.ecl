@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 //Check fixed size disk count correctly checks canMatchAny()
 inlineDs := dataset([1,2],{integer value});

@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 pr:= table(sq.SimplePersonBookIndex, { fullname := trim(surname) + ', ' + trim(forename), aage });
 

@@ -16,7 +16,8 @@
 ############################################################################## */
 
 import Std.File AS FileServices;
-import $.sq;
+import $;
+sq := $.sq(__PLATFORM__);
 
 //******************************** Child query setup code ***********************
 
@@ -184,8 +185,6 @@ sq.BookRelatedIdRec extractBook(sq.BookIdRec l, unsigned4 personid) :=
                 SELF.personid := personid;
                 SELF := l;
             END;
-
-
 
 //------------------- Add Sequence numbers by normalized/project/denormalize
 

@@ -1,9 +1,10 @@
+//This is a module which is imported and used from other queries - don't execute it.
 //skip type==setup TBD
 
-EXPORT sq := MODULE
+EXPORT sq(string platform) := MODULE
 
 //MORE: This is currently hard-wired to hthor since it is a tiny dataset
-EXPORT NamePrefix := '~REGRESS::hthor::';
+EXPORT NamePrefix := '~REGRESS::' + platform + '::';
 
 EXPORT HouseRec :=
             record
@@ -121,20 +122,6 @@ dataset(BookIdRec)        books{blob};
             END;
 
 
-EXPORT HousePersonBookName := NamePrefix + 'HousePersonBook';
-EXPORT PersonBookName := NamePrefix + 'PersonBook';
-EXPORT HouseName := NamePrefix + 'House';
-EXPORT PersonName := NamePrefix + 'Person';
-EXPORT BookName := NamePrefix + 'Book';
-EXPORT SimplePersonBookName := NamePrefix + 'SimplePersonBook';
-
-EXPORT HousePersonBookIndexName := NamePrefix + 'HousePersonBookIndex';
-EXPORT PersonBookIndexName := NamePrefix + 'PersonBookIndex';
-EXPORT HouseIndexName := NamePrefix + 'HouseIndex';
-EXPORT PersonIndexName := NamePrefix + 'PersonIndex';
-EXPORT BookIndexName := NamePrefix + 'BookIndex';
-EXPORT SimplePersonBookIndexName := NamePrefix + 'SimplePersonBookIndex';
-
 EXPORT HousePersonBookIdExRec := record
 HousePersonBookIdRec;
 unsigned8           filepos{virtual(fileposition)};
@@ -167,6 +154,20 @@ unsigned8           filepos{virtual(fileposition)};
 
 // Dataset definitions:
 
+
+EXPORT HousePersonBookName := NamePrefix + 'HousePersonBook';
+EXPORT PersonBookName := NamePrefix + 'PersonBook';
+EXPORT HouseName := NamePrefix + 'House';
+EXPORT PersonName := NamePrefix + 'Person';
+EXPORT BookName := NamePrefix + 'Book';
+EXPORT SimplePersonBookName := NamePrefix + 'SimplePersonBook';
+
+EXPORT HousePersonBookIndexName := NamePrefix + 'HousePersonBookIndex';
+EXPORT PersonBookIndexName := NamePrefix + 'PersonBookIndex';
+EXPORT HouseIndexName := NamePrefix + 'HouseIndex';
+EXPORT PersonIndexName := NamePrefix + 'PersonIndex';
+EXPORT BookIndexName := NamePrefix + 'BookIndex';
+EXPORT SimplePersonBookIndexName := NamePrefix + 'SimplePersonBookIndex';
 
 EXPORT HousePersonBookDs := dataset(HousePersonBookName, HousePersonBookIdExRec, thor);
 EXPORT PersonBookDs := dataset(PersonBookName, PersonBookRelatedIdRec, thor);

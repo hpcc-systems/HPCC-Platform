@@ -17,7 +17,7 @@
 //skip type==setup TBD
 
 //define constants
-EXPORT files(string p) := module
+EXPORT files(string platform) := module
 SHARED DG_GenFlat           := true;   //TRUE gens FlatFile
 SHARED DG_GenChild          := true;   //TRUE gens ChildFile
 SHARED DG_GenGrandChild     := true;   //TRUE gens GrandChildFile
@@ -36,14 +36,13 @@ EXPORT DG_MaxGrandChildren  := 3;    //maximum (1 to n) number of grandchild rec
 SHARED useDynamic := false;
 SHARED useLayoutTrans := false;
 SHARED useVarIndex := false;
-SHARED prefix := 'hthor';
 
 #if (useDynamic=true)
-SHARED  VarString EmptyString := '' : STORED('dummy');
-SHARED  filePrefix := prefix + EmptyString;
- #option ('allowVariableRoxieFilenames', 1)
+VarString EmptyString := '' : STORED('dummy');
+EXPORT  filePrefix := platform + EmptyString;
+#option ('allowVariableRoxieFilenames', 1);
 #else
-SHARED  filePrefix := prefix;
+EXPORT  filePrefix := platform;
 #end
 
 EXPORT DG_FileOut           := '~REGRESS::' + filePrefix + '::DG_';
@@ -227,47 +226,9 @@ END, THOR);
 
 
 //----------------------------- Text search definitions ----------------------------------
-EXPORT TS_MaxTerms             := 50;
-EXPORT TS_MaxStages            := 50;
-EXPORT TS_MaxProximity         := 10;
-EXPORT TS_MaxWildcard          := 1000;
-EXPORT TS_MaxMatchPerDocument  := 1000;
-EXPORT TS_MaxFilenameLength        := 255;
-EXPORT TS_MaxActions           := 255;
-EXPORT TS_MaxTagNesting        := 40;
-EXPORT TS_MaxColumnsPerLine := 10000;          // used to create a pseudo document position
 
-EXPORT TS_kindType         := enum(unsigned1, UnknownEntry=0, TextEntry, OpenTagEntry, CloseTagEntry, OpenCloseTagEntry, CloseOpenTagEntry);
-EXPORT TS_sourceType       := unsigned2;
-EXPORT TS_wordCountType    := unsigned8;
-EXPORT TS_segmentType      := unsigned1;
-EXPORT TS_wordPosType      := unsigned8;
-EXPORT TS_docPosType       := unsigned8;
-EXPORT TS_documentId       := unsigned8;
-EXPORT TS_termType         := unsigned1;
-EXPORT TS_distanceType     := integer8;
-EXPORT TS_indexWipType     := unsigned1;
-EXPORT TS_wipType          := unsigned8;
-EXPORT TS_stageType        := unsigned1;
-EXPORT TS_dateType         := unsigned8;
-
-EXPORT TS_sourceType TS_docid2source(TS_documentId x) := (x >> 48);
-EXPORT TS_documentId TS_docid2doc(TS_documentId x) := (x & 0xFFFFFFFFFFFF);
-EXPORT TS_documentId TS_createDocId(TS_sourceType source, TS_documentId doc) := (TS_documentId)(((unsigned8)source << 48) | doc);
-EXPORT boolean      TS_docMatchesSource(TS_documentId docid, TS_sourceType source) := (docid between TS_createDocId(source,0) and (TS_documentId)(TS_createDocId(source+1,0)-1));
-
-EXPORT TS_wordType := string20;
-EXPORT TS_wordFlags    := enum(unsigned1, HasLower=1, HasUpper=2);
-
-EXPORT TS_wordIdType       := unsigned4;
-
-EXPORT TS_NameWordIndex        := '~REGRESS::' + filePrefix + '::TS_wordIndex';
-EXPORT TS_NameSearchIndex      := '~REGRESS::' + filePrefix + '::TS_searchIndex';
-
-EXPORT TS_wordIndex        := index({ TS_kindType kind, TS_wordType word, TS_documentId doc, TS_segmentType segment, TS_wordPosType wpos, TS_indexWipType wip } , { TS_wordFlags flags, TS_wordType original, TS_docPosType dpos}, TS_NameWordIndex);
-EXPORT TS_searchIndex      := index(TS_wordIndex, TS_NameSearchIndex);
-
-EXPORT TS_wordIndexRecord := recordof(TS_wordIndex);
+EXPORT NameWordIndex(boolean useLocal) := '~REGRESS::' + filePrefix + '::wordIndex' + IF(useLocal, '_Local', '');
+EXPORT NameSearchIndex      := '~REGRESS::' + filePrefix + '::searchIndex';
 
 //----------------------------- End of text search definitions --------------------------
 
