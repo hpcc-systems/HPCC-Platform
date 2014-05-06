@@ -109,7 +109,7 @@ static bool isSimpleIndexActivity(ThorActivityKind kind)
 const char *queryNodeFileName(const IPropertyTree &graphNode, ThorActivityKind kind)
 {
     if (isSimpleIndexActivity(kind))
-        return false;
+        return NULL;
     else
         return _queryNodeFileName(graphNode);
 }
