@@ -40,6 +40,10 @@ IF (NOT R_FOUND)
   FIND_LIBRARY (RCPP_LIBRARY NAMES ${Rcpp_lib} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/Rcpp/lib/ R/site-library/Rcpp/lib/)
   FIND_LIBRARY (RINSIDE_LIBRARY NAMES ${RInside_lib} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/RInside/lib/ R/site-library/RInside/lib/)
 
+  IF (RCPP_LIBRARY STREQUAL "RCPP_LIBRARY-NOTFOUND")
+    SET (RCPP_LIBRARY "")    # Newer versions of Rcpp are header-only, with no associated library.
+  ENDIF()
+
   SET (R_INCLUDE_DIRS ${R_INCLUDE_DIR} ${RINSIDE_INCLUDE_DIR} ${RCPP_INCLUDE_DIR})
   SET (R_LIBRARIES ${R_LIBRARY} ${RINSIDE_LIBRARY} ${RCPP_LIBRARY})
 
