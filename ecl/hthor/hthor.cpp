@@ -7927,9 +7927,21 @@ void CHThorDiskReadBaseActivity::closepart()
 
 bool CHThorDiskReadBaseActivity::openNext()
 {
+    PROGLOG("CHThorDiskReadBaseActivity::openNext() called.");
     offsetOfPart += localOffset;
     localOffset = 0;
     saveOpenExc.clear();
+
+    if ( (dfsParts && dfsParts->isValid()) || (!dfsParts && ldFile && ldFile->numParts() && (partNum == 0)) )
+    {
+        IDistributedFile * distFile = dfIter ? &dfIter->query() : NULL;
+        if (distFile)
+        {
+            logicalFileName.set(distFile->queryLogicalName());
+            if (dfIter)
+                dfIter->next();
+        }
+    }
 
     if (dfsParts||ldFile)
     {
@@ -7946,20 +7958,9 @@ bool CHThorDiskReadBaseActivity::openNext()
             {
                 RemoteFilename rfilename;
                 if (curPart)
-                {
                     curPart->getFilename(rfilename,copy);
-                    IDistributedFile * distFile = dfIter ? &dfIter->query() : NULL;
-                    if (distFile)
-                    {
-                        logicalFileName.set(distFile->queryLogicalName());
-                        if (dfIter)
-                            dfIter->next();
-                    }
-                }
                 else
-                {
                     ldFile->getPartFilename(rfilename,partNum,copy);
-                }
 
                 rfilename.getPath(file.clear());
                 filelist.append('\n').append(file);

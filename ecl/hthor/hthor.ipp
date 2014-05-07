@@ -2194,7 +2194,11 @@ public:
 //interface IFilePositionProvider
     virtual unsigned __int64 getFilePosition(const void * row);
     virtual unsigned __int64 getLocalFilePosition(const void * row);
-    virtual const char * queryLogicalFilename(const void * row) { return logicalFileName.get(); }
+    virtual const char * queryLogicalFilename(const void * row) 
+    {
+        PROGLOG("CHThorDiskReadBaseActivity::queryLogicalFilename() called."); 
+        return logicalFileName.get(); 
+    }
 };
 
 class CHThorBinaryDiskReadBase : public CHThorDiskReadBaseActivity, implements IIndexReadContext
