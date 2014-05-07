@@ -20,6 +20,7 @@
 #include "jiface.hpp"
 #include "jiter.hpp"
 #include "hql.hpp"
+#include "hqlerror.hpp"
 
 //-----------------------------------------------------------------------------
 // Class Definitions
@@ -58,7 +59,7 @@ interface ITemplateContext : public IInterface
     virtual StringBuffer& demangle(const char* mangled, StringBuffer& demangled) = 0;
 
     virtual void reportError(int errNo,const char* format,...) __attribute__((format(printf, 3, 4))) = 0;
-    virtual void reportWarning(int warnNo,const char* format,...) __attribute__((format(printf, 3, 4))) = 0;      
+    virtual void reportWarning(WarnErrorCategory category, int warnNo,const char* format,...) __attribute__((format(printf, 4, 5))) = 0;
 
     // Ideally, the user has no need to use this.
     virtual IEclRepository* queryDataServer() = 0;

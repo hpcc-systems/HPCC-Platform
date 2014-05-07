@@ -101,7 +101,7 @@ public:
     virtual StringBuffer& demangle(const char* mangled, StringBuffer& demangled) { return ::mangle(m_lookupContext.errs,mangled,demangled,true); }
 
     virtual void reportError(int errNo,const char* format,...);
-    virtual void reportWarning(int warnNo,const char* format,...);
+    virtual void reportWarning(WarnErrorCategory category, int warnNo,const char* format,...);
 };
 
 void CTemplateContext::reportError(int errNo,const char* format,...)
@@ -117,7 +117,7 @@ void CTemplateContext::reportError(int errNo,const char* format,...)
     }
 }
 
-void CTemplateContext::reportWarning(int warnNo,const char* format,...)
+void CTemplateContext::reportWarning(WarnErrorCategory category,int warnNo,const char* format,...)
 {
     if (m_lookupContext.errs)
     {
@@ -125,7 +125,7 @@ void CTemplateContext::reportWarning(int warnNo,const char* format,...)
         va_start(args, format);
         StringBuffer msg;
         msg.valist_appendf(format,args);
-        m_lookupContext.errs->reportWarning(warnNo,msg.str(),NULL,m_startLine,m_startCol,0);
+        m_lookupContext.errs->reportWarning(category,warnNo,msg.str(),NULL,m_startLine,m_startCol,0);
         va_end(args);
     }
 }

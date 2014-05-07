@@ -19,16 +19,83 @@
 #include "hqlerror.hpp"
 #include "hqlerrors.hpp"
 
+//---------------------------------------------------------------------------------------------------------------------
+
+ErrorSeverity getSeverity(IAtom * name)
+{
+    if (name == failAtom)
+        return SeverityFatal;
+    if (name == errorAtom)
+        return SeverityError;
+    if (name == warningAtom)
+        return SeverityWarning;
+    if (name == ignoreAtom)
+        return SeverityIgnore;
+    if (name == logAtom)
+        return SeverityInfo;
+    return SeverityUnknown;
+}
+
+ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
+{
+    if (category == CategoryError)
+        return SeverityFatal;
+    if (category == CategoryInformation)
+        return SeverityInfo;
+    return SeverityWarning;
+}
+
+WarnErrorCategory getCategory(const char * category)
+{
+    if (strieq(category, "all"))
+        return CategoryAll;
+    if (strieq(category, "cast"))
+        return CategoryCast;
+    if (strieq(category, "confuse"))
+        return CategoryConfuse;
+    if (strieq(category, "deprecated"))
+        return CategoryDeprecated;
+    if (strieq(category, "efficiency"))
+        return CategoryEfficiency;
+    if (strieq(category, "future"))
+        return CategoryFuture;
+    if (strieq(category, "ignored"))
+        return CategoryIgnored;
+    if (strieq(category, "index"))
+        return CategoryIndex;
+    if (strieq(category, "info"))
+        return CategoryInformation;
+    if (strieq(category, "mistype"))
+        return CategoryMistyped;
+    if (strieq(category, "syntax"))
+        return CategorySyntax;
+    if (strieq(category, "unusual"))
+        return CategoryUnusual;
+    if (strieq(category, "unexpected"))
+        return CategoryUnexpected;
+    return CategoryUnknown;
+}
+
+ErrorSeverity getCheckSeverity(IAtom * name)
+{
+    ErrorSeverity severity = getSeverity(name);
+    assertex(severity != SeverityUnknown);
+    return severity;
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
 class HQL_API CECLError : public CInterfaceOf<IECLError>
 {
 public:
-    CECLError(ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position);
+    CECLError(WarnErrorCategory _category,ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position);
 
     virtual int             errorCode() const { return no; }
     virtual StringBuffer &  errorMessage(StringBuffer & ret) const { return ret.append(msg); }
     virtual MessageAudience errorAudience() const { return MSGAUD_user; }
     virtual const char* getFilename() const { return filename; }
-    virtual WarnErrorCategory getCategory() const { return CategoryUnknown; }
+    virtual WarnErrorCategory getCategory() const { return category; }
     virtual int getLine() const { return lineno; }
     virtual int getColumn() const { return column; }
     virtual int getPosition() const { return position; }
@@ -38,6 +105,7 @@ public:
 
 protected:
     ErrorSeverity severity;
+    WarnErrorCategory category;
     int no;
     StringAttr msg;
     StringAttr filename;
@@ -46,8 +114,8 @@ protected:
     int position;
 };
 
-CECLError::CECLError(ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position):
-  severity(_severity), msg(_msg), filename(_filename)
+CECLError::CECLError(WarnErrorCategory _category, ErrorSeverity _severity, int _no, const char* _msg, const char* _filename, int _lineno, int _column, int _position):
+  category(_category),severity(_severity), msg(_msg), filename(_filename)
 {
     no = _no;
     lineno = _lineno;
@@ -70,14 +138,14 @@ StringBuffer& CECLError::toString(StringBuffer& buf) const
 
 IECLError * CECLError::cloneSetSeverity(ErrorSeverity newSeverity) const
 {
-    return new CECLError(newSeverity,
+    return new CECLError(category, newSeverity,
                          errorCode(), msg, filename,
                          getLine(), getColumn(), getPosition());
 }
 
-extern HQL_API IECLError *createECLError(ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos)
+extern HQL_API IECLError *createECLError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char * filename, int lineno, int column, int pos)
 {
-    return new CECLError(severity,errNo,msg,filename,lineno,column,pos);
+    return new CECLError(category,severity,errNo,msg,filename,lineno,column,pos);
 }
 
 //---------------------------------------------------------------------------------------------------------------------
@@ -88,9 +156,10 @@ void IErrorReceiver::reportError(int errNo, const char *msg, const char *filenam
     report(err);
 }
 
-void IErrorReceiver::reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int position)
+void IErrorReceiver::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int position)
 {
-    Owned<IECLError> warn = createECLError(SeverityWarning,warnNo,msg,filename,lineno,column,position);
+    ErrorSeverity severity = queryDefaultSeverity(category);
+    Owned<IECLError> warn = createECLError(category, severity,warnNo,msg,filename,lineno,column,position);
     report(warn);
 }
 
@@ -332,18 +401,18 @@ void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * ecl
             if (major != LANGUAGE_VERSION_MAJOR)
             {
                 VStringBuffer msg("Mismatch in major version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
-                errors->reportWarning(HQLERR_VersionMismatch, msg.str(), NULL, 0, 0, 0);
+                errors->reportWarning(CategoryUnexpected, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0, 0);
             }
             else if (minor != LANGUAGE_VERSION_MINOR)
             {
                 VStringBuffer msg("Mismatch in minor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
-                errors->reportWarning(HQLERR_VersionMismatch, msg.str(), NULL, 0, 0, 0);
+                errors->reportWarning(CategoryUnexpected, SeverityInfo, msg.str(), NULL, 0, 0, 0);
             }
             else if (subminor != LANGUAGE_VERSION_SUB)
             {
                 //This adds the warning if any other warnings occur.
                 VStringBuffer msg("Mismatch in subminor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
-                Owned<IECLError> warning = createECLError(SeverityWarning, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
+                Owned<IECLError> warning = createECLError(CategoryUnexpected, SeverityInfo, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
                 errors.setown(new ErrorInserter(*errors, warning));
             }
         }

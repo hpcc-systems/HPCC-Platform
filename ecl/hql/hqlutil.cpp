@@ -5770,7 +5770,7 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    errorProcessor.reportWarning(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    errorProcessor.reportWarning(CategoryUnknown, code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
 }
 
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
@@ -6449,57 +6449,6 @@ void gatherGraphReferences(HqlExprCopyArray & graphs, IHqlExpression * value, bo
 }
 
 //---------------------------------------------------------------------------
-
-ErrorSeverity getSeverity(IAtom * name)
-{
-    if (name == failAtom)
-        return SeverityFatal;
-    if (name == errorAtom)
-        return SeverityError;
-    if (name == warningAtom)
-        return SeverityWarning;
-    if (name == ignoreAtom)
-        return SeverityIgnore;
-    if (name == logAtom)
-        return SeverityInfo;
-    return SeverityUnknown;
-}
-
-WarnErrorCategory getCategory(const char * category)
-{
-    if (strieq(category, "all"))
-        return CategoryAll;
-    if (strieq(category, "cast"))
-        return CategoryCast;
-    if (strieq(category, "confuse"))
-        return CategoryConfuse;
-    if (strieq(category, "deprecated"))
-        return CategoryDeprecated;
-    if (strieq(category, "efficiency"))
-        return CategoryEfficiency;
-    if (strieq(category, "future"))
-        return CategoryFuture;
-    if (strieq(category, "ignored"))
-        return CategoryIgnored;
-    if (strieq(category, "index"))
-        return CategoryIndex;
-    if (strieq(category, "mistype"))
-        return CategoryMistyped;
-    if (strieq(category, "syntax"))
-        return CategorySyntax;
-    if (strieq(category, "unusual"))
-        return CategoryUnusual;
-    if (strieq(category, "unexpected"))
-        return CategoryUnexpected;
-    return CategoryUnknown;
-}
-
-static ErrorSeverity getCheckSeverity(IAtom * name)
-{
-    ErrorSeverity severity = getSeverity(name);
-    assertex(severity != SeverityUnknown);
-    return severity;
-}
 
 static ErrorSeverity getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first, ErrorSeverity defaultSeverity)
 {

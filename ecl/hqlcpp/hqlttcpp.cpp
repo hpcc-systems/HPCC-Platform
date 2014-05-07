@@ -9059,7 +9059,7 @@ void HqlScopeTagger::checkActiveRow(IHqlExpression * expr)
         getECL(expr, exprText);
         elideString(exprText, 20);
         VStringBuffer msg("ROW(%s) - dataset argument is not in scope.  Did you mean dataset[1]?", exprText.str());
-        reportError(msg, SeverityFatal);
+        reportError(CategoryError, msg);
     }
 }
 
@@ -9090,7 +9090,7 @@ void HqlScopeTagger::reportSelectorError(IHqlExpression * selector, IHqlExpressi
             getExprIdentifier(datasetName, selector).str());
     }
 
-    reportError(msg, SeverityFatal);
+    reportError(CategoryError, msg);
 }
 
 
@@ -9108,7 +9108,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             case no_right:
                 StringBuffer exprText, datasetName;
                 VStringBuffer msg("%s - %s not in scope, possibly passed into a global/workflow definition", getECL(expr, exprText), getExprIdentifier(datasetName, ds).str());
-                reportError(msg, SeverityFatal);
+                reportError(CategoryError, msg);
                 break;
             }
         }
@@ -9122,7 +9122,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
         {
             StringBuffer exprText;
             VStringBuffer msg("dictionary %s must be explicitly NORMALIZED", getECL(expr, exprText));
-            reportError(msg, SeverityFatal);
+            reportError(CategoryError, msg);
         }
         else if (expr->isDataset())
         {
@@ -9130,7 +9130,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset %s may not be supported without using NORMALIZE", getECL(expr, exprText));
-                reportError(msg, SeverityWarning);
+                reportError(CategoryUnexpected, msg);
             }
         }
         else
@@ -9207,7 +9207,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
             {
                 StringBuffer exprText;
                 VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
-                reportError(msg, SeverityFatal);
+                reportError(CategoryError, msg);
             }
         }
         return transformed.getClear();
@@ -9219,7 +9219,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
         {
             StringBuffer exprText;
             VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
-            reportError(msg, SeverityFatal);
+            reportError(CategoryError, msg);
         }
 
         return ensureActiveRow(transformed->queryNormalizedSelector());
@@ -9327,7 +9327,7 @@ IHqlExpression * HqlScopeTagger::transformWithin(IHqlExpression * dataset, IHqlE
     {
         StringBuffer exprText;
         VStringBuffer msg("%s - dataset filtered by WITHIN is too complex", getECL(dataset, exprText));
-        reportError(msg, SeverityFatal);
+        reportError(CategoryError, msg);
         return transform(dataset);
     }
 
@@ -9351,7 +9351,7 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     {
         StringBuffer exprText;
         VStringBuffer msg("dataset \"%s\" used in WITHIN is not in scope", getECL(scope, exprText));
-        reportError(msg, SeverityFatal);
+        reportError(CategoryError, msg);
     }
 
     //Check the ds is a table
@@ -9360,7 +9360,7 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     {
         StringBuffer exprText;
         VStringBuffer msg("dataset \"%s\" used as parameter to WITHIN is too complex", getECL(expr, exprText));
-        reportError(msg, SeverityFatal);
+        reportError(CategoryError, msg);
     }
 
     return transformWithin(ds, scope->queryNormalizedSelector());
@@ -9436,7 +9436,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset %s mistakenly interpreted as a datarow, possibly due to missing dataset() in parameter type", getECL(ds, exprText));
-                reportError(msg, SeverityFatal);
+                reportError(CategoryError, msg);
             }
             return transformAmbiguousChildren(expr);
         }
@@ -9464,7 +9464,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), lhs->queryChild(1)->queryName()->str());
-                reportError(msg.str(), SeverityFatal);
+                reportError(CategoryError, msg.str());
             }
             if (rhs == newRhs)
                 return LINK(expr);
@@ -9480,7 +9480,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         {
             OwnedHqlExpr transformed = Parent::createTransformed(expr);
             if (transformed->queryChild(0)->isDataset())
-                reportError("PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?", SeverityFatal);
+                reportError(CategoryError, "PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?");
             return transformed.getClear();
         }
     case no_merge:
@@ -9504,7 +9504,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
                 {
                     if (sorts.item(i).isAttribute())
                     {
-                        reportError(HQLWRN_MergeBadSortOrder_Text, SeverityWarning);
+                        reportError(CategorySyntax, HQLWRN_MergeBadSortOrder_Text);
                         sorts.remove(i);
                     }
                 }
@@ -9518,14 +9518,15 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
 }
 
 
-void HqlScopeTagger::reportError(const char * msg, ErrorSeverity severity)
+void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg)
 {
     IHqlExpression * location = errorMapper.queryActiveSymbol();
     //Make this an error when we are confident...
     int startLine= location ? location->getStartLine() : 0;
     int startColumn = location ? location->getStartColumn() : 0;
     ISourcePath * sourcePath = location ? location->querySourcePath() : NULL;
-    Owned<IECLError> err = createECLError(severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
+    ErrorSeverity severity = queryDefaultSeverity(category);
+    Owned<IECLError> err = createECLError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
     errors.report(err);        // will throw immediately if it is an error.
 }
 
