@@ -162,6 +162,28 @@
       </listitem>
     </itemizedlist>
 
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic
+              fileref="../../images/caution.png" /></entry>
+
+              <entry><para><emphasis role="bold">NOTE:</emphasis> Use caution
+              when setting any explicit <emphasis role="bold">deny</emphasis>
+              permission setting. In general, the most restrictive permission
+              is applied. </para></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable> </para>
+
     <sect3>
       <title>Setting and modifying user permissions</title>
 
@@ -979,7 +1001,13 @@
     <para>Access to features of the HPCC system is controlled by via the
     <emphasis role="bold">ESP Features for SMC</emphasis> category. These
     features are listed as <emphasis role="bold">Resources</emphasis> when
-    setting permissions using ECL Watch.</para>
+    setting permissions using ECL Watch. </para>
+
+    <para>There are many ECL Watch feature permissions, and not all of them
+    are shown in detail here. The permissions shown and described here, are
+    the more common and relevant permissions. There are additional permissions
+    which are typically not relevant to the vast majority of system users.
+    </para>
 
     <para>The following sections show the level of access required to be able
     to use ECL Watch features:</para>
@@ -1564,7 +1592,7 @@
     <para>The structure in LDAP corresponds to this logical structure in
     DFU:</para>
 
-    <para><emphasis role="bold">thor::specialdata::secure </emphasis></para>
+    <para><emphasis role="bold">specialdata::secure </emphasis></para>
 
     <para>Which corresponds to this physical structure:</para>
 
@@ -1582,7 +1610,7 @@
       </listitem>
 
       <listitem>
-        <para>Administrative utilities </para>
+        <para>Administrative utilities</para>
       </listitem>
     </itemizedlist>
 
