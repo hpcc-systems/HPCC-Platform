@@ -5030,10 +5030,12 @@ IWUResult * HqlCppTranslator::createWorkunitResult(int sequence, IHqlExpression 
 
 void checkAppendXpathNamePrefix(StringArray &prefixes, const char *xpathName)
 {
-    if (!xpathName || !*xpathName || *xpathName==':')
+    if (!xpathName || !*xpathName)
         return;
     if (*xpathName=='@')
         xpathName++;
+    if (*xpathName==':')
+        return;
     const char *colon = strchr(xpathName, ':');
     if (!colon)
         return;
