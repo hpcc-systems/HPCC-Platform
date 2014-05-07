@@ -554,6 +554,8 @@ interface IConstWUClusterInfo : extends IInterface
     virtual const StringArray & getThorProcesses() const = 0;
     virtual const StringArray & getPrimaryThorProcesses() const = 0;
     virtual const SocketEndpointArray & getRoxieServers() const = 0;
+    virtual const char *getLdapUser() const = 0;
+    virtual const char *getLdapPassword() const = 0;
 };
 
 //! IWorkflowItem
