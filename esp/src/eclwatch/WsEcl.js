@@ -47,10 +47,19 @@ define([
         Call: function (target, method, query) {
             var deferred = new Deferred();
             var context = this;
-            xhr.get("/WsEcl/submit/query/" + target + "/" + method + "/json", {
-                query: query,
-                handleAs: "json"
-            }).then(function (response) {
+            var request = null;
+            if (dojoConfig.urlInfo.baseHost) {
+                request = script.get(dojoConfig.urlInfo.baseHost + "/WsEcl/submit/query/" + target + "/" + method + "/json", {
+                    query: query,
+                    jsonp: "jsonp"
+                });
+            } else {
+                request = xhr.get("/WsEcl/submit/query/" + target + "/" + method + "/json", {
+                    query: query,
+                    handleAs: "json"
+                });
+            }
+            request.then(function (response) {
                 var results = response[method + "Response"] && response[method + "Response"].Results ? response[method + "Response"].Results : {};
                 results = context._flattenResults(results);
                 deferred.resolve(results);
