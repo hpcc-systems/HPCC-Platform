@@ -904,7 +904,7 @@ public:
         if (dll)
         {
             hashValue = rtlHash64VStr(dll->queryDll()->queryName(), hashValue);
-            if (!allFilesDynamic && !isDynamic)
+            if (!allFilesDynamic && !isDynamic && !package.isCompulsory())
             {
                 IConstWorkUnit *wu = dll->queryWorkUnit();
                 if (wu) // wu may be null in some unit test cases

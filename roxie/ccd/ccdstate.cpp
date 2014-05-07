@@ -682,6 +682,10 @@ public:
     {
         return CPackageNode::getEnableFieldTranslation();
     }
+    virtual bool isCompulsory() const
+    {
+        return CPackageNode::isCompulsory();
+    }
     virtual const IPropertyTree *queryTree() const
     {
         return CPackageNode::queryTree();
