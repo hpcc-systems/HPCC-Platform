@@ -182,7 +182,7 @@
             </row>
           </tbody>
         </tgroup>
-      </informaltable> </para>
+      </informaltable></para>
 
     <sect3>
       <title>Setting and modifying user permissions</title>
@@ -1001,13 +1001,13 @@
     <para>Access to features of the HPCC system is controlled by via the
     <emphasis role="bold">ESP Features for SMC</emphasis> category. These
     features are listed as <emphasis role="bold">Resources</emphasis> when
-    setting permissions using ECL Watch. </para>
+    setting permissions using ECL Watch.</para>
 
-    <para>There are many ECL Watch feature permissions, and not all of them
-    are shown in detail here. The permissions shown and described here, are
-    the more common and relevant permissions. There are additional permissions
-    which are typically not relevant to the vast majority of system users.
-    </para>
+    <para>There are many ECL Watch feature permissions, not all of them are
+    shown in detail here. The permissions shown and described here are the
+    more common and relevant permissions. There are additional permissions
+    which are typically not relevant to the vast majority of system
+    users.</para>
 
     <para>The following sections show the level of access required to be able
     to use ECL Watch features:</para>
