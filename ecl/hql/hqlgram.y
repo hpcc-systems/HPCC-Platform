@@ -1506,7 +1506,14 @@ setMetaCommand
                         }
     | HASH_ONWARNING '(' expression ',' warningAction ')'
                         {
-                            parser->normalizeExpression($3, type_int, false);
+                            if (isNumericType($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($3, type_int, false);
+                            }
+                            else
+                            {
+                                parser->normalizeExpression($3, type_string, false);
+                            }
                             $$.setExpr(createValue(no_setmeta, makeVoidType(), createAttribute(onWarningAtom), $3.getExpr(), $5.getExpr()), $1);
                         }
     ;

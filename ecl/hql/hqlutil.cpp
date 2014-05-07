@@ -6465,6 +6465,35 @@ ErrorSeverity getSeverity(IAtom * name)
     return SeverityUnknown;
 }
 
+WarnErrorCategory getCategory(const char * category)
+{
+    if (strieq(category, "all"))
+        return CategoryAll;
+    if (strieq(category, "cast"))
+        return CategoryCast;
+    if (strieq(category, "confuse"))
+        return CategoryConfuse;
+    if (strieq(category, "deprecated"))
+        return CategoryDeprecated;
+    if (strieq(category, "efficiency"))
+        return CategoryEfficiency;
+    if (strieq(category, "future"))
+        return CategoryFuture;
+    if (strieq(category, "ignored"))
+        return CategoryIgnored;
+    if (strieq(category, "index"))
+        return CategoryIndex;
+    if (strieq(category, "mistype"))
+        return CategoryMistyped;
+    if (strieq(category, "syntax"))
+        return CategorySyntax;
+    if (strieq(category, "unusual"))
+        return CategoryUnusual;
+    if (strieq(category, "unexpected"))
+        return CategoryUnexpected;
+    return CategoryUnknown;
+}
+
 static ErrorSeverity getCheckSeverity(IAtom * name)
 {
     ErrorSeverity severity = getSeverity(name);
@@ -6491,6 +6520,8 @@ ErrorSeverityMapper::ErrorSeverityMapper(IErrorReceiver & _errorProcessor) : Ind
 {
     firstActiveMapping = 0;
     activeSymbol = NULL;
+    for (unsigned category = 0; category < CategoryMax; category++)
+        categoryAction[category] = SeverityUnknown;
 }
 
 
@@ -6506,7 +6537,10 @@ bool ErrorSeverityMapper::addCommandLineMapping(const char * mapping)
     const char * equals = strchr(mapping, '=');
     const char * value;
     if (equals)
+    {
         value = equals+1;
+        len = equals-mapping;
+    }
     else if (mapping[len-1] == '+')
     {
         len--;
@@ -6520,24 +6554,46 @@ bool ErrorSeverityMapper::addCommandLineMapping(const char * mapping)
     else
         value = "error";
 
-    IAtom * action = createAtom(value);
-    if (getSeverity(action) == SeverityUnknown)
+    StringAttr category(mapping, len);
+    return addMapping(category, value);
+ }
+
+bool ErrorSeverityMapper::addMapping(const char * category, const char * value)
+{
+    if (!category || !*category)
     {
-        fprintf(stderr, "invalid warning severity '%s'\n", value);
+        ERRLOG("Error: No warning category supplied");
         return false;
     }
 
-    if (isdigit(mapping[0]))
+    //Ignore mappings with no action
+    if (!value || !*value)
+        return true;
+
+    IAtom * action = createAtom(value);
+    ErrorSeverity severity = getSeverity(action);
+    if (severity == SeverityUnknown)
     {
-        unsigned errorCode = atoi(mapping);
+        ERRLOG("Error: Invalid warning severity '%s'", value);
+        return false;
+    }
+
+    if (isdigit(*category))
+    {
+        unsigned errorCode = atoi(category);
         addOnWarning(errorCode, action);
         return true;
     }
-    else
+
+    WarnErrorCategory cat = getCategory(category);
+    if (cat != CategoryUnknown)
     {
-        fprintf(stderr, "mapping doesn't specify a valid warning code '%s'\n", mapping);
-        return false;
+        categoryAction[cat] = severity;
+        return true;
     }
+
+    ERRLOG("Error: Mapping doesn't specify a valid warning code or category '%s'", category);
+    return false;
 }
 
 void ErrorSeverityMapper::addOnWarning(unsigned code, IAtom * action)
@@ -6547,7 +6603,23 @@ void ErrorSeverityMapper::addOnWarning(unsigned code, IAtom * action)
 
 void ErrorSeverityMapper::addOnWarning(IHqlExpression * setMetaExpr)
 {
-    severityMappings.append(*createAttribute(onWarningAtom, LINK(setMetaExpr->queryChild(1)), LINK(setMetaExpr->queryChild(2))));
+    IHqlExpression * code = setMetaExpr->queryChild(1);
+    IHqlExpression * action = setMetaExpr->queryChild(2);
+    if (isStringType(code->queryType()))
+    {
+        StringBuffer text;
+        getStringValue(text, code, NULL);
+        WarnErrorCategory cat = getCategory(text);
+        ErrorSeverity severity = getSeverity(action->queryName());
+        if (cat == CategoryUnknown)
+            throwError1(HQLERR_InvalidErrorCategory, text.str());
+
+        categoryAction[cat] = severity;
+    }
+    else
+    {
+        severityMappings.append(*createAttribute(onWarningAtom, LINK(code), LINK(action)));
+    }
 }
 
 unsigned ErrorSeverityMapper::processMetaAnnotation(IHqlExpression * expr)
@@ -6598,6 +6670,13 @@ IECLError * ErrorSeverityMapper::mapError(IECLError * error)
         ErrorSeverity newSeverity = getWarningAction(mappedError->errorCode(), severityMappings, firstActiveMapping, SeverityUnknown);
         if (newSeverity != SeverityUnknown)
             return mappedError->cloneSetSeverity(newSeverity);
+
+        WarnErrorCategory category = mappedError->getCategory();
+        if (categoryAction[category] != SeverityUnknown)
+            return mappedError->cloneSetSeverity(categoryAction[category]);
+
+        if (categoryAction[CategoryAll] != SeverityUnknown)
+            return mappedError->cloneSetSeverity(categoryAction[CategoryAll]);
     }
     return mappedError.getClear();
 }
