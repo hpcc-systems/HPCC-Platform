@@ -513,6 +513,7 @@ ESPresponse [exceptions_inline] FileListResponse
     string Mask;
     int    OS;
     bool DirectoryOnly(false);
+    [min_ver("1.10")] string AcceptLanguage;
     ESParray<ESPStruct PhysicalFileStruct> files;   
 };
 

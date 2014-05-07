@@ -111,7 +111,7 @@ private:
     void loadThresholdValue(IPropertyTree* pServiceNode, const char* attrName, unsigned int& thresholdValue, 
                                     bool& bThresholdIsPercentage);
 
-    //void getThorXml(const char* ClusterName req.getName(),returnStr);
+    StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
 public:
     IMPLEMENT_IINTERFACE;
     virtual ~CWsTopologyEx(){};

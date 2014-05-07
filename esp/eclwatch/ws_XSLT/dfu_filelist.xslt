@@ -19,6 +19,10 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:fo="http://www.w3.org/1999/XSL/Format">
     <xsl:output method="html"/>
     
+    <xsl:variable name="acceptLanguage" select="/FileListResponse/AcceptLanguage"/>
+    <xsl:variable name="localiseFile"><xsl:value-of select="concat('nls/', $acceptLanguage, '/hpcc.xml')"/></xsl:variable>
+    <xsl:variable name="hpccStrings" select="document($localiseFile)/hpcc/strings"/>
+
     <!--note that /FileListResponse/Path is guaranteed to contain no backslashes and end with / -->
     <xsl:variable name="baseUrl">
         <xsl:for-each select="/FileListResponse">
@@ -50,6 +54,7 @@
                     var originalPath = '<xsl:value-of select="FileListResponse/Path"/>';
                     var os = <xsl:value-of select="/FileListResponse/OS"/>;
                     var dironly = <xsl:value-of select="/FileListResponse/DirectoryOnly"/>;
+                    var lostReferenceToParentWindowAlert = '<xsl:value-of select="$hpccStrings/st[@id='LostReferenceToParentWindow']"/>';
                     <xsl:text disable-output-escaping="yes"><![CDATA[
                     var nSelected = -1;
                     var nPrevClass = null;
@@ -84,7 +89,7 @@
                         }
                         else
                         {
-                            alert('Lost reference to parent window.  Please traverse the path again!');
+                            alert(lostReferenceToParentWindowAlert);
                             unselect();
                         }
                     }
@@ -120,15 +125,11 @@
     
     
     <xsl:template match="FileListResponse">
-        <b>
-            <xsl:choose>
-                <xsl:when test="string(Mask)!=''">
-                    <xsl:value-of select="Mask"/>
-                    <xsl:text> f</xsl:text>
-                </xsl:when>
-                <xsl:otherwise>F</xsl:otherwise>
-            </xsl:choose>
-            <xsl:text>iles under </xsl:text>
+        <xsl:if test="string(Mask)!=''">
+            <b><xsl:value-of select= "$hpccStrings/st[@id='Files']"/>: </b><xsl:value-of select="Mask"/>
+            <br/>
+        </xsl:if>
+        <b><xsl:value-of select= "$hpccStrings/st[@id='Folder']"/>: </b>
             <xsl:choose>
                 <xsl:when test="substring(Path, 2, 1)=':'">
                     <xsl:value-of select="translate(Path, '/', '\')"/>
@@ -137,9 +138,8 @@
                     <xsl:value-of select="Path"/>
                 </xsl:otherwise>
             </xsl:choose>
-            <xsl:text> on </xsl:text>
-            <xsl:value-of select="Netaddr"/>
-        </b>
+        <br/>
+        <b><xsl:value-of select= "$hpccStrings/st[@id='NetworkAddress']"/>: </b><xsl:value-of select="Netaddr"/>
         <p/>
         <form method="POST">
             <table class="sort-table" id="resultsTable" align="center" width="100%">
@@ -148,9 +148,9 @@
                         <xsl:if test="/FileListResponse/DirectoryOnly=1">
                             <th></th>
                         </xsl:if>
-                        <th>Name</th>
-                        <th>Size</th>
-                        <th>Date</th>
+                        <th><xsl:value-of select= "$hpccStrings/st[@id='Name']"/></th>
+                        <th><xsl:value-of select= "$hpccStrings/st[@id='Size']"/></th>
+                        <th><xsl:value-of select= "$hpccStrings/st[@id='Date']"/></th>
                     </tr>
                 </thead>                
                 <colgroup>
@@ -176,16 +176,16 @@
                     </xsl:when>
                     <xsl:otherwise>
                         <tr>
-                            <td colspan="3">No items.</td>
+                            <td colspan="3"><xsl:value-of select= "$hpccStrings/st[@id='NoItems']"/></td>
                         </tr>
                     </xsl:otherwise>
                 </xsl:choose>
             </table>
             <input type="hidden" id="selected"/>
             <p align="center">
-                <input type="button" value="Select" id="selectBtn" onclick="onOK('')" disabled="true"/>
+                <input type="button" value="{$hpccStrings/st[@id='Select']}" id="selectBtn" onclick="onOK('')" disabled="true"/>
                 <xsl:text disable-output-escaping='yes'>&amp;nbsp;&amp;nbsp;</xsl:text>
-                <input type="button" value="Cancel" onclick="window.close()"/>
+                <input type="button" value="{$hpccStrings/st[@id='Cancel']}" onclick="window.close()"/>
             </p>
         </form>
     </xsl:template>
@@ -231,7 +231,7 @@
             </xsl:attribute>
             <xsl:if test="/FileListResponse/DirectoryOnly=1">
                 <td>
-                    <input type="button" value="Select" id="selectBtn_i{position()}" onclick="onOK('{name}')"/>
+                    <input type="button" value="{$hpccStrings/st[@id='Select']}" id="selectBtn_i{position()}" onclick="onOK('{name}')"/>
                 </td>
             </xsl:if>
             <td align="left">

@@ -44,9 +44,12 @@
   <xsl:variable name="showDetails" select="/TpTargetClusterQueryResponse/ShowDetails"/>
   <xsl:variable name="fromTargetClusterPage" select="1"/>
   <xsl:variable name="countTargetClusters" select="count(/TpTargetClusterQueryResponse/TpTargetClusters/TpTargetCluster)"/>
+  <xsl:variable name="acceptLanguage" select="/TpTargetClusterQueryResponse/AcceptLanguage"/>
+  <xsl:variable name="localiseFile"><xsl:value-of select="concat('nls/', $acceptLanguage, '/hpcc.xml')"/></xsl:variable>
+  <xsl:variable name="hpccStrings" select="document($localiseFile)/hpcc/strings"/>
 
   <xsl:include href="&xsltPathEntity;/ws_machine/preflightControls.xslt"/>
-  
+
   <xsl:template match="TpTargetClusterQueryResponse">
         <html>
             <head>
@@ -231,7 +234,7 @@
         <xsl:call-template name="GenerateScriptForPreflightControls"/>
       </head>
             <body class="yui-skin-sam" onload="nof5();onLoad();">
-                <h3>Target Clusters:</h3>
+                <h3><xsl:value-of select="$hpccStrings/st[@id='TargetClusters']"/></h3>
                 <form id="listitems" action="/ws_machine/GetTargetClusterInfo" method="post">
                     <input type="hidden" name="TargetClusters.itemcount" value=""/>
                     <xsl:if test="TpTargetClusters/TpTargetCluster[2]">
@@ -239,9 +242,9 @@
                             <tr>
                                 <th id="selectAll" width="1%" style="padding-left:4px">
                                     <input type="checkbox" id="TargetClusters.All" name="TargetClusters.ALL"
-                                           title="Select all target clusters" onclick="return clickTCCheckbox('', '', this);"></input>
+                                           title="{$hpccStrings/st[@id='SelectAllTargetClusters']}" onclick="return clickTCCheckbox('', '', this);"></input>
                                 </th>
-                                <th colspan="5" align="left">Select All / None</th>
+                                <th colspan="5" align="left"><xsl:value-of select="$hpccStrings/st[@id='SelectAllOrNone']"/></th>
                             </tr>
                         </table>
                     </xsl:if>
@@ -256,9 +259,9 @@
                             <tr>
                                 <th id="selectAll2" width="1%" style="padding-left:4px">
                                     <input type="checkbox" id="TargetClusters.All2" name="TargetClusters.ALL2"
-                                           title="Select all target clusters" onclick="return clickTCCheckbox('', '', this);"></input>
+                                           title="{$hpccStrings/st[@id='SelectAllTargetClusters']}" onclick="return clickTCCheckbox('', '', this);"></input>
                                 </th>
-                                <th colspan="5" align="left">Select All / None</th>
+                                <th colspan="5" align="left"><xsl:value-of select="$hpccStrings/st[@id='SelectAllOrNone']"/></th>
                             </tr>
                             <tr>
                                 <td height="20"/>
@@ -290,16 +293,16 @@
 
     <xsl:template name="show-cluster">
         <xsl:param name="type"/>
-    <xsl:param name="name"/>
+        <xsl:param name="name"/>
         <table id="resultsTable" class="sort-table" width="100%">
             <tr class="grey">
                 <td valign="top" width="20">
           <input type="checkbox" id="TargetClusters.{count(preceding::TpTargetCluster)}" name="TargetClusters.{count(preceding::TpTargetCluster)}"
-                                value="{$type}:{$name}" title="Select this target cluster" onclick="return clickTCCheckbox('{$type}', '{$name}', this);"></input>
+                                value="{$type}:{$name}" title="{$hpccStrings/st[@id='SelectThisTargetCluster']}" onclick="return clickTCCheckbox('{$type}', '{$name}', this);"></input>
         </td>
         <td align="left" width="20">
           <a href="javascript:showDetails('{$type}', '{$name}');">
-            <img id="view_details_{$name}" border="0" src="&filePathEntity;/img/keyfile.png" alt="View details" title="View details" align="middle"/>
+            <img id="view_details_{$name}" border="0" src="&filePathEntity;/img/keyfile.png" alt="{$hpccStrings/st[@id='ViewDetails']}" title="{$hpccStrings/st[@id='ViewDetails']}" align="middle"/>
           </a>
         </td>
         <!--xsl:if test="type='RoxieCluster'">
@@ -336,12 +339,12 @@
                   </colgroup>
                   <tr bgcolor="#C0C0C0">
                     <th/>
-                    <th align="center">Name</th>
-                    <th align="center">Component</th>
-                    <th align="center">Computer</th>
-                    <th align="center">Platform</th>
-                    <th align="center">Network Address</th>
-                    <th align="center">Directory</th>
+                    <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Name']"/></th>
+                    <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Component']"/></th>
+                    <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Computer']"/></th>
+                    <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Platform']"/></th>
+                    <th align="center"><xsl:value-of select="$hpccStrings/st[@id='NetworkAddress']"/></th>
+                    <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Directory']"/></th>
                   </tr>
 
                   <xsl:if test="count(TpClusters/TpCluster)">
@@ -415,9 +418,9 @@
             </xsl:variable>
             <xsl:variable name="type4">
               <xsl:choose>
-                <xsl:when test="Type='RoxieCluster'">Roxie Cluster Process</xsl:when>
-                <xsl:when test="Type='ThorCluster'">Thor Cluster Process</xsl:when>
-                <xsl:when test="Type='HoleCluster'">Hole Cluster Process</xsl:when>
+                <xsl:when test="Type='RoxieCluster'">Roxie <xsl:value-of select="$hpccStrings/st[@id='ClusterProcess']"/></xsl:when>
+                <xsl:when test="Type='ThorCluster'">Thor <xsl:value-of select="$hpccStrings/st[@id='ClusterProcess']"/></xsl:when>
+                <xsl:when test="Type='HoleCluster'">Hole <xsl:value-of select="$hpccStrings/st[@id='ClusterProcess']"/></xsl:when>
               </xsl:choose>
             </xsl:variable>
             <xsl:variable name="type3" select="translate($type2, 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
@@ -463,19 +466,17 @@
                   <xsl:when test="OS=0">Windows</xsl:when>
                   <xsl:when test="OS=2">Linux</xsl:when>
                   <xsl:when test="OS=1">Solaris</xsl:when>
-                  <xsl:otherwise>Unknown</xsl:otherwise>
+                  <xsl:otherwise><xsl:value-of select="$hpccStrings/st[@id='Unknown']"/></xsl:otherwise>
                 </xsl:choose>
               </td>
               <td/>
               <td>
                 <xsl:variable name="href0">
-                  <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
-                  <xsl:value-of select="concat($type2, ' cluster - ', Name)"/>
+                  <xsl:value-of select="concat('/esp/iframe?esp_iframe_title=', $type2, ' ', $hpccStrings/st[@id='Cluster'], ' ', Name, ' -- ', $hpccStrings/st[@id='Configuration'])"/>
                   <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fFileType%3dcfg%26CompType%3d</xsl:text>
                   <xsl:value-of select="concat($type2, 'Cluster%26CompName%3d', Name, '%26Directory%3d', $absolutePath, '%26OsType%3d', OS)"/>
                 </xsl:variable>
-                <img onclick="getConfigXML('{$href0}')" border="0" src="&filePathEntity;/img/config.png" alt="View configuration file..." 
-                  title="View configuration file..." width="14" height="14"/>
+                <img onclick="getConfigXML('{$href0}')" border="0" src="&filePathEntity;/img/config.png" alt="{$hpccStrings/st[@id='ViewConfigurationFile']}" title="{$hpccStrings/st[@id='ViewConfigurationFile']}" width="14" height="14"/>
                 <xsl:value-of select="Directory"/>
               </td>
             </tr>
@@ -504,14 +505,14 @@
                       </colgroup>
                       <thead>
                         <tr>
-                          <th align="center">Name</th>
-                          <th align="center">Component</th>
+                          <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Name']"/></th>
+                          <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Component']"/></th>
                           <xsl:if test="Type='ThorCluster' and HasThorSpareProcess/text()='1'">
-                            <th>Action</th>
+                            <th><xsl:value-of select="$hpccStrings/st[@id='Action']"/></th>
                           </xsl:if>
-                          <th align="center">Network Address</th>
-                          <th align="center">Domain</th>
-                          <th align="center">Platform</th>
+                          <th align="center"><xsl:value-of select="$hpccStrings/st[@id='NetworkAddress']"/></th>
+                          <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Domain']"/></th>
+                          <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Platform']"/></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -536,10 +537,10 @@
               </xsl:variable>
               <xsl:variable name="type4">
                 <xsl:choose>
-                  <xsl:when test="$compType='EclCCServerProcess'">Ecl CC Server Process</xsl:when>
-                  <xsl:when test="$compType='EclServerProcess'">Ecl Server Process</xsl:when>
-                  <xsl:when test="$compType='EclAgentProcess'">Ecl Agent Process</xsl:when>
-                  <xsl:when test="$compType='EclSchedulerProcess'">Ecl Scheduler Process</xsl:when>
+                  <xsl:when test="$compType='EclCCServerProcess'">Ecl CC <xsl:value-of select="$hpccStrings/st[@id='ServerProcess']"/></xsl:when>
+                  <xsl:when test="$compType='EclServerProcess'">Ecl <xsl:value-of select="$hpccStrings/st[@id='ServerProcess']"/></xsl:when>
+                  <xsl:when test="$compType='EclAgentProcess'"><xsl:value-of select="$hpccStrings/st[@id='ECLAgentProcess']"/></xsl:when>
+                  <xsl:when test="$compType='EclSchedulerProcess'">Ecl <xsl:value-of select="$hpccStrings/st[@id='SchedulerProcess']"/></xsl:when>
                 </xsl:choose>
               </xsl:variable>              <xsl:variable name="compName" select="../../Name"/>
               <tr onmouseenter="this.bgColor = '#F0F0FF'">
@@ -599,7 +600,7 @@
                 <xsl:when test="OS=0">Windows</xsl:when>
                 <xsl:when test="OS=2">Linux</xsl:when>
                 <xsl:when test="OS=1">Solaris</xsl:when>
-                <xsl:otherwise>Unknown</xsl:otherwise>
+                <xsl:otherwise><xsl:value-of select="$hpccStrings/st[@id='Unknown']"/></xsl:otherwise>
               </xsl:choose>
             </td>
             <td align="center">
@@ -668,13 +669,7 @@
                               <xsl:text disable-output-escaping="yes">%26Directory%3d</xsl:text>
                             </xsl:variable>
                             <xsl:variable name="pageCaption">
-                              <xsl:variable name="captionLen" select="string-length($caption)-1"/>
-                              <!--xsl:text>&amp;esp_iframe_title=Log file for </xsl:text-->
-                              <xsl:text disable-output-escaping="yes">esp_iframe_title=Log file for </xsl:text>
-                              <xsl:value-of select="substring($caption, 1, $captionLen)"/>
-                              <xsl:text disable-output-escaping="yes"> '</xsl:text>
-                              <xsl:value-of select="../../Name"/>
-                              <xsl:text disable-output-escaping="yes">'</xsl:text>
+                              <xsl:value-of select="concat('esp_iframe_title=', $caption, ' ', ../../Name, ' -- ', $hpccStrings/st[@id='LogFile'])"/>
                             </xsl:variable>
                             <xsl:attribute name="href">
                               <xsl:if test="$compType!='EclAgentProcess'">
@@ -698,7 +693,7 @@
                               <xsl:value-of select="OS"/>
                               <xsl:text disable-output-escaping="yes">);</xsl:text>
                             </xsl:attribute>
-                            <img border="0" src="&filePathEntity;/img/base.gif" alt="View log file" title="View log file" width="19" height="16"/>
+                            <img border="0" src="&filePathEntity;/img/base.gif" alt="{$hpccStrings/st[@id='ViewLogFile']}" title="{$hpccStrings/st[@id='ViewLogFile']}" width="19" height="16"/>
                           </a>
                         </xsl:if>
                       </td>
@@ -707,11 +702,7 @@
                           <xsl:when test="$compType!='' and ($compType!='EclAgentProcess' or OS=0)">
                             <xsl:variable name="captionLen" select="string-length($caption)-1"/>
                             <xsl:variable name="href0">
-                              <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
-                              <xsl:value-of select="substring($caption, 1, $captionLen)"/>
-                              <xsl:text disable-output-escaping="yes"> - </xsl:text>
-                              <xsl:value-of select="../../Name"/>
-                              <xsl:text disable-output-escaping="yes"></xsl:text>
+                              <xsl:value-of select="concat('/esp/iframe?esp_iframe_title=', $caption, ' ', ../../Name, ' -- ', $hpccStrings/st[@id='Configuration'])"/>
                               <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
                               <xsl:value-of select="Netaddress"/>
                               <xsl:text disable-output-escaping="yes">%26FileType%3dcfg%26Directory%3d</xsl:text>
@@ -721,8 +712,7 @@
                               <xsl:text disable-output-escaping="yes">%26OsType%3d</xsl:text>
                               <xsl:value-of select="OS"/>
                             </xsl:variable>
-                            <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="View deployed configuration file"
-                              title="View configuration file..." width="14" height="14"/>
+                            <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="{$hpccStrings/st[@id='ViewConfigurationFile']}" title="{$hpccStrings/st[@id='ViewConfigurationFile']}" width="14" height="14"/>
                           </xsl:when>
                           <xsl:otherwise>
                             <img border="0" src="/esp/files_/img/blank.png" width="14" height="14"/>
@@ -786,10 +776,10 @@
                   <table class="blueline" border="2" frame="box" rules="groups">
                     <thead>
                       <tr>
-                        <th align="center">Component</th>
-                        <th align="center">Dali Server</th>
+                        <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Component']"/></th>
+                        <th align="center"><xsl:value-of select="$hpccStrings/st[@id='DaliServer']"/></th>
                         <!--th>WUQueueName</th-->
-                        <th align="center">Configuration</th>
+                        <th align="center"><xsl:value-of select="$hpccStrings/st[@id='Configuration']"/></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -802,12 +792,7 @@
                         <td>
                           <a>
                             <xsl:attribute name="href">
-                              <xsl:variable name="captionLen" select="string-length($caption)-1"/>
-                              <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
-                              <xsl:value-of select="substring($caption, 1, $captionLen)"/>
-                              <xsl:text disable-output-escaping="yes"> '</xsl:text>
-                              <xsl:value-of select="../../Name"/>
-                              <xsl:text disable-output-escaping="yes">'</xsl:text>
+                              <xsl:value-of select="concat('/esp/iframe?esp_iframe_title=', $caption, ' ', ../../Name, ' -- ', $hpccStrings/st[@id='Configuration'])"/>
                               <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fNetAddress%3d</xsl:text>
                               <xsl:value-of select="Netaddress"/>
                               <xsl:text disable-output-escaping="yes">%26FileType%3dcfg%26Directory%3d</xsl:text>
@@ -816,8 +801,8 @@
                               <xsl:text disable-output-escaping="yes">%26OsType%3d</xsl:text>
                               <xsl:value-of select="OS"/>
                             </xsl:attribute>
-                            <img border="0" src="/esp/files_/img/config.png" alt="View deployed configuration file"
-                              title="View configuration file..." width="14" height="14"/>
+                            <img border="0" src="/esp/files_/img/config.png" alt="{$hpccStrings/st[@id='ViewConfigurationFile']}"
+                              title="{$hpccStrings/st[@id='ViewConfigurationFile']}" width="14" height="14"/>
                           </a>
                           <xsl:value-of select="Directory"/>
                         </td>
@@ -901,7 +886,7 @@
             <xsl:when test="OS=0">Windows</xsl:when>
             <xsl:when test="OS=1">Solaris</xsl:when>
             <xsl:when test="OS=2">Linux</xsl:when>
-            <xsl:otherwise>Unknown</xsl:otherwise>
+            <xsl:otherwise><xsl:value-of select="$hpccStrings/st[@id='Unknown']"/></xsl:otherwise>
           </xsl:choose>
       </td>
     </tr>
