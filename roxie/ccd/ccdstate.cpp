@@ -519,10 +519,10 @@ protected:
     }
 
     // Use local package and its bases to resolve existing file into physical file info via all supported resolvers
-    IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate) const
+    IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool checkCompulsory) const
     {
         IResolvedFile *result = lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
-        if (!result)
+        if (!result && (!checkCompulsory || !isCompulsory()))
             result = resolveLFNusingDaliOrLocal(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
         return result;
     }
@@ -557,7 +557,7 @@ protected:
                     }
                     if (traceLevel > 9)
                         DBGLOG("Looking up subfile %s", subFileName.str());
-                    Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, false, false);  // NOTE - overwriting a superfile does NOT require write access to subfiles
+                    Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, false, false, false);  // NOTE - overwriting a superfile does NOT require write access to subfiles
                     if (subFileInfo)
                     {
                         if (!super)
@@ -623,13 +623,16 @@ public:
         if (traceLevel > 5)
             DBGLOG("lookupFileName %s", fileName.str());
 
-        const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, false, false);
+        const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, false, false, true);
         if (!result)
         {
+            StringBuffer compulsoryMsg;
+            if (isCompulsory())
+                    compulsoryMsg.append(" (Package is compulsory)");
             if (!opt)
-                throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s", fileName.str());
+                throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s%s", fileName.str(), compulsoryMsg.str());
             if (traceLevel > 4)
-                DBGLOG("Could not resolve OPT filename %s", fileName.str());
+                DBGLOG("Could not resolve OPT filename %s%s", fileName.str(), compulsoryMsg.str());
         }
         return result;
     }
