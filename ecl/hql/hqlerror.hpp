@@ -43,7 +43,7 @@ enum WarnErrorCategory
     CategoryConfuse,    // Likely to cause confusion
     CategoryDeprecated, // deprecated features or syntax
     CategoryEfficiency, // Something that is likely to be inefficient
-    CategoryFuture,     // Likely to cause problems in fiture versions
+    CategoryFuture,     // Likely to cause problems in future versions
     CategoryIgnored,    // Something that has no effect, or is ignored
     CategoryIndex,      // Unusual indexing of datasets or strings
     CategoryMistyped,   // Almost certainly mistyped
