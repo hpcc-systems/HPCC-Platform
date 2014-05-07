@@ -1,3 +1,4 @@
+//class=stress
 unsigned numgroups := 10000;
 unsigned largeGroupSize := 500;
 unsigned largeGroupFreq := 30;
