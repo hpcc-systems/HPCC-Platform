@@ -99,7 +99,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         StringBuffer alternativeText;
         if (alternative && alternative->queryValue())
             alternative->queryValue()->getStringValue(alternativeText);
-        lexer->reportWarning(returnToken, ERR_DEPRECATED_ATTR, "Definition %s is marked as deprecated.  %s", name->str(), alternativeText.str());
+        lexer->reportWarning(CategoryDeprecated, returnToken, ERR_DEPRECATED_ATTR, "Definition %s is marked as deprecated.  %s", name->str(), alternativeText.str());
     }                   
     
 #if defined(TRACE_MACRO)
@@ -1591,7 +1591,7 @@ FUNCTIONMACRO|MACRO {
                         }
                         if (after > MAX_DECIMAL_PRECISION)
                         {
-                            lexer->reportWarning(returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant may lose significant digits (>%d)", MAX_DECIMAL_PRECISION);
+                            lexer->reportWarning(CategoryCast, returnToken, ERR_ILLSIZE_DECIMAL, "Decimal constant may lose significant digits (>%d)", MAX_DECIMAL_PRECISION);
                             after = MAX_DECIMAL_PRECISION;
                         }
                         Owned<ITypeInfo> type = makeDecimalType(before+after, after, true);
@@ -1749,7 +1749,7 @@ FUNCTIONMACRO|MACRO {
                                     *bf++ = value;
                                     if(!(isValidAsciiLikeCharacter(value) || (tc == type_data)))
                                     {
-                                        lexer->reportWarning(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
+                                        lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE);
                                         if (lexer->isAborting())
                                             return EOF;
                                     }
@@ -1799,7 +1799,7 @@ FUNCTIONMACRO|MACRO {
                                 {
                                     finger += extraCharsRead;
                                     if (*bf == ASCII_LIKE_SUBS_CHAR)
-                                        lexer->reportWarning(returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE ", try using a unicode constant");
+                                        lexer->reportWarning(CategoryCast, returnToken, ERR_STRING_NON_ASCII, "Character in string literal is not defined in encoding " ASCII_LIKE_CODEPAGE ", try using a unicode constant");
                                 }
                                 bf++;
                             }
@@ -1874,7 +1874,7 @@ FUNCTIONMACRO|MACRO {
 [xX]\'{err_hexpairs}\'  { 
                         /* error pattern: odd hex data */
                         setupdatepos;
-                        lexer->reportWarning(returnToken, ERR_HEXDATA_ODDDIGITS,"hex data must have even number of hex digits");
+                        lexer->reportWarning(CategorySyntax, returnToken, ERR_HEXDATA_ODDDIGITS,"hex data must have even number of hex digits");
                         char* str = (char*)malloc(CUR_TOKEN_LENGTH-1);
                         str[0] = '0'; // add a leading zero
                         strncpy(str+1,(char*)CUR_TOKEN_TEXT+2,CUR_TOKEN_LENGTH-3);
@@ -1919,7 +1919,7 @@ FUNCTIONMACRO|MACRO {
 \357\273\277        {
                         setupdatepos;
                         if (lexer->yyPosition != 3)
-                            lexer->reportWarning(returnToken, ERR_STRING_ILLDELIMITER, "Misplaced BOM - should be at the start of the file");
+                            lexer->reportWarning(CategorySyntax, returnToken, ERR_STRING_ILLDELIMITER, "Misplaced BOM - should be at the start of the file");
                     }
 
 "("                 {

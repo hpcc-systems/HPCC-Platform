@@ -564,26 +564,27 @@ public:
     IHqlExpression * nextEnumValue();
 
 // Error handling
-    void doReportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
+    void doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
     void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
-    void reportMacroExpansionPosition(int errNo, HqlLex * lexer, bool isError);
+    void reportMacroExpansionPosition(IECLError * warning, HqlLex * lexer);
     void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
 
     // Don't use overloading: va_list is the same as char*!!
     void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args);
     void reportError(int errNo, const char *msg, int lineno, int column, int position=0);
-    void reportWarning(int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
-    void reportWarning(ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 5, 6)));
-    void reportWarningVa(int errNo, const attribute& a, const char* format, va_list args);
-    void reportWarning(int warnNo, const char *msg, int lineno, int column);
+    void reportWarning(WarnErrorCategory category, int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 5,6)));
+    void reportWarning(WarnErrorCategory category, ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 6, 7)));
+    void reportWarningVa(WarnErrorCategory category, int errNo, const attribute& a, const char* format, va_list args);
+    void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, int lineno, int column);
     void addResult(IHqlExpression *query, const attribute& errpos);
 
     // interface IErrorReceiver
     virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual void report(IECLError * error);
     virtual IECLError * mapError(IECLError * error);
-    virtual void reportWarning(int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
+
+    void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual size32_t errCount();
     virtual size32_t warnCount();
     
@@ -1100,7 +1101,7 @@ class HqlLex
 
         IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
         void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
-        void reportWarning(const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
+        void reportWarning(WarnErrorCategory category, const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 5, 6)));
 
         void beginNestedHash(unsigned kind) { hashendKinds.append(kind); hashendFlags.append(0); }
         void endNestedHash() { hashendKinds.pop(); hashendFlags.pop(); }

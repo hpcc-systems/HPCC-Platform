@@ -42,9 +42,8 @@ ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
         return SeverityFatal;
     if (category == CategoryInformation)
         return SeverityInfo;
-//MORE: Should the following be enabled?
-//    if (category == CategoryMistake)
-//        return SeverityError;
+    if (category == CategoryMistake)
+        return SeverityError;
     return SeverityWarning;
 }
 
@@ -61,7 +60,7 @@ WarnErrorCategory getCategory(const char * category)
     if (strieq(category, "efficiency"))
         return CategoryEfficiency;
     if (strieq(category, "fold"))
-        CategoryFolding;
+        return CategoryFolding;
     if (strieq(category, "future"))
         return CategoryFuture;
     if (strieq(category, "ignored"))

@@ -2040,10 +2040,11 @@ void HqlCppTranslator::doReportWarning(WarnErrorCategory category, IHqlExpressio
     Owned<IECLError> warnError;
     if (!location)
         location = queryActiveActivityLocation();
+    ErrorSeverity severity = queryDefaultSeverity(category);
     if (location)
-        warnError.setown(createECLError(category, SeverityWarning, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
+        warnError.setown(createECLError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
     else
-        warnError.setown(createECLError(category, SeverityWarning, id, msg, NULL, 0, 0, 0));
+        warnError.setown(createECLError(category, severity, id, msg, NULL, 0, 0, 0));
 
     errorProcessor->report(warnError);
 }

@@ -668,7 +668,7 @@ importItem
     | importSelectorList AS '*'
                         {
                             if (queryLegacyImportSemantics())
-                                parser->reportWarning(ERR_DEPRECATED, $1.pos, "IMPORT <module> AS * is deprecated, use IMPORT * FROM <module>");
+                                parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "IMPORT <module> AS * is deprecated, use IMPORT * FROM <module>");
                             else
                                 parser->reportError(ERR_DEPRECATED, $1.pos, "IMPORT <module> AS * is deprecated, use IMPORT * FROM <module>");
                             parser->processImportAll($1);
@@ -1459,7 +1459,7 @@ metaCommandWithNoSemicolon
     : setMetaCommand
                         {
                             //These are really treated like actions now, this is here for backward compatibility
-                            parser->reportWarning(ERR_DEPRECATED, $1.pos, "#command with no trailing semicolon is deprecated");
+                            parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "#command with no trailing semicolon is deprecated");
                             parser->addResult($1.getExpr(), $1);
                             $$.clear();
                         }
@@ -2480,7 +2480,7 @@ actionStmt
                         {
                             parser->normalizeExpression($3);
                             // change error to warning.
-                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            parser->reportWarning(CategoryUnusual, WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
                             HqlExprArray list;
                             parser->endList(list);
                             ::Release($3.getExpr());
@@ -3867,7 +3867,7 @@ attriblist
 attrib
     : knownOrUnknownId EQ UNKNOWN_ID        
                         {
-                            parser->reportWarning(WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
+                            parser->reportWarning(CategoryDeprecated, SeverityError, WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
                             $$.setExpr(createAttribute($1.getId()->lower(), createConstant(*$3.getId())));
                         }
     | knownOrUnknownId EQ expr %prec reduceAttrib
@@ -5626,7 +5626,7 @@ primexpr1
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($6);
                             // change error to warning.
-                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            parser->reportWarning(CategoryUnusual, WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
                             HqlExprArray args;
                             parser->endList(args);
                             ::Release($3.getExpr());
@@ -6081,7 +6081,7 @@ primexpr1
                         }
     | COUNT             {
                             $$.setExpr(parser->getActiveCounter($1));
-                            parser->reportWarning(SeverityError, ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
+                            parser->reportWarning(CategoryDeprecated, SeverityError, ERR_COUNTER_NOT_COUNT, $1.pos, "Use of COUNT instead of COUNTER is deprecated");
                         }
     | COUNTER               {
                             $$.setExpr(parser->getActiveCounter($1));
@@ -6419,7 +6419,7 @@ primexpr1
     | EXISTS '(' expressionList ')'
                         {
                             if (parser->isSingleValuedExpressionList($3))
-                                parser->reportWarning(WRN_SILLY_EXISTS,$1.pos,"EXISTS() on a scalar expression is always true, was this intended?");
+                                parser->reportWarning(CategoryMistake, WRN_SILLY_EXISTS,$1.pos,"EXISTS() on a scalar expression is always true, was this intended?");
 
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
                             $$.setExpr(createValue(no_existslist, makeBoolType(), LINK(list)));
@@ -7397,7 +7397,7 @@ simpleDictionary
                         {
                             parser->normalizeExpression($3, type_scalar, false);
                             // change error to warning.
-                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            parser->reportWarning(CategoryUnusual, WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
                             HqlExprArray list;
                             parser->endList(list);
                             $3.release();
@@ -7647,7 +7647,7 @@ simpleDataSet
                             
                             IHqlExpression * limit = $5.getExpr();
                             if (limit->queryValue() && limit->queryValue()->getIntValue() == 0)
-                                parser->reportWarning(WRN_CHOOSEN_ALL,$1.pos,"Use CHOOSEN(dataset, ALL) to remove implicit choosen.  CHOOSEN(dataset, 0) now returns no records.");
+                                parser->reportWarning(CategoryUnusual, WRN_CHOOSEN_ALL,$1.pos,"Use CHOOSEN(dataset, ALL) to remove implicit choosen.  CHOOSEN(dataset, 0) now returns no records.");
                             $$.setExpr(createDataset(no_choosen, $3.getExpr(), createComma(limit, $6.getExpr())), $1);
                             parser->attachPendingWarnings($$);
                         }
@@ -7859,7 +7859,7 @@ simpleDataSet
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
                             if (!queryAttribute(sortedAtom, sortItems))
-                                parser->reportWarning(WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
+                                parser->reportWarning(CategoryDeprecated, WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
 
                             IHqlExpression * ds = $3.getExpr();
                             parser->expandSortedAsList(sortItems);
@@ -8108,7 +8108,7 @@ simpleDataSet
                             OwnedHqlExpr newSorted;
                             if (!sorted)
                             {
-                                parser->reportWarning(WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
+                                parser->reportWarning(CategoryDeprecated, WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
                                 OwnedHqlExpr order = getExistingSortOrder(ds, isLocal, true);
                                 HqlExprArray sorts;
                                 if (order)
@@ -8352,7 +8352,7 @@ simpleDataSet
                             {
                                 parser->checkGrouping($7, dataset,record,grouping);
                                 if (dataset->getOperator() == no_group && isGrouped(dataset))
-                                    parser->reportWarning(WRN_GROUPINGIGNORED, $3.pos, "Grouping of table input will have no effect, was this intended?");
+                                    parser->reportWarning(CategoryIgnored, WRN_GROUPINGIGNORED, $3.pos, "Grouping of table input will have no effect, was this intended?");
                             }
 
                             HqlExprArray args;
@@ -8858,7 +8858,7 @@ simpleDataSet
                         {
                             parser->normalizeExpression($3, type_scalar, false);
                             // change error to warning.
-                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            parser->reportWarning(CategoryUnusual, WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
                             HqlExprArray list;
                             parser->endList(list);
                             $3.release();
@@ -12272,7 +12272,7 @@ featureValueList
 featureModifiers
     : '{' featureValueList '}'
                         {
-                            parser->reportWarning(WRN_FEATURE_NOT_REPEAT, $1.pos, "Curly brackets are not used for repeats - they are reserved for future functionality");
+                            parser->reportWarning(CategorySyntax, SeverityError, WRN_FEATURE_NOT_REPEAT, $1.pos, "Curly brackets are not used for repeats - they are reserved for future functionality");
                             $$.setExpr($2.getExpr());
                         }
     ;

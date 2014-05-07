@@ -7512,7 +7512,10 @@ protected:
         default:
             if (!isIndependentOfScope(expr))
             {
-                translator.WARNINGAT(CategoryMistake, queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
+                //There appears to be partial support for functions generated as workflow items - which are not
+                //scope independent since they depend on their paramaters => don't complain about them
+                if (expr->getOperator() != no_return_stmt)
+                    translator.WARNINGAT(CategoryMistake, queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
 
     #if 0
                 checkIndependentOfScope(expr);
@@ -10328,7 +10331,7 @@ IHqlExpression * NestedCompoundTransformer::createTransformed(IHqlExpression * e
                     //so needs to stay a warning.
 //                  translator.ERRORAT1(location, HQLERR_GlobalSideEffectDependent, s.str());
                     //GH: Make this a default error severity
-                    translator.WARNINGAT1(CategoryMistake, location, HQLWRN_GlobalSideEffectDependent, s.str());
+                    translator.WARNINGAT1(CategoryUnexpected, location, HQLWRN_GlobalSideEffectDependent, s.str());
                 }
                 break;
             }
