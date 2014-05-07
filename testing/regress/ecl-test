@@ -29,10 +29,10 @@ import glob
 
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import checkPqParam,  getVersionNumbers
+from hpcc.util.util import checkPqParam,  getVersionNumbers,  checkXParam
 from hpcc.common.error import Error
 
-prog_version = "0.0.16"
+prog_version = "0.0.17"
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -89,15 +89,15 @@ class RegressMain:
             try:
                 if len(eclfiles) > 1:
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
-                    self.regress.bootstrap(cluster, eclfiles)
-                    if  'pq' in self.args:
+                    self.regress.bootstrap(cluster, self.args,  eclfiles)
+                    if  self.args.pq:
                         self.regress.runSuiteP(cluster, self.regress.suites[cluster])
                     else:
                         self.regress.runSuite(cluster, self.regress.suites[cluster])
                 elif len(eclfiles) == 1:
                     # Execute one ECL file on the cluster
                     for ecl in eclfiles:
-                        eclfile = ECLFile(ecl, self.regress.dir_a, self.regress.dir_ex, self.regress.dir_r, cluster)
+                        eclfile = ECLFile(ecl, self.regress.dir_a, self.regress.dir_ex, self.regress.dir_r, cluster,  self.args)
                         # Check if this query is not skip on this cluster and not part of setup
                         if (not eclfile.testSkip(cluster)['skip']) and (not eclfile.testSkip('setup')['skip'] ):
                             if not eclfile.testExclusion(cluster):
@@ -116,16 +116,16 @@ class RegressMain:
     def setup(self):
         if self.args.target in self.regress.config.Clusters:
             if  self.args.pq :
-                self.regress.runSuiteP(self.args.target, self.regress.Setup(self.args.target))
+                self.regress.runSuiteP(self.args.target, self.regress.Setup(self.args))
             else:
-                self.regress.runSuite(self.args.target, self.regress.Setup(self.args.target))
+                self.regress.runSuite(self.args.target, self.regress.Setup(self.args))
         else:
             logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
             raise Error("4000")
 
     def run(self):
         if self.args.target in self.regress.config.Clusters:
-            self.regress.bootstrap(self.args.target)
+            self.regress.bootstrap(self.args.target, self.args)
             if  self.args.pq :
                 self.regress.runSuiteP(self.args.target, self.regress.suites[self.args.target])
             else:
@@ -171,6 +171,8 @@ class RegressMain:
                             nargs='?', default="ecl/key")
         parser.add_argument('--ignoreResult', '-i', help="completely ignore the result.",
                             action='store_true')
+        parser.add_argument('-X', help="sets the stored input value (stored('name')).",
+                            nargs=1, type=checkXParam,  default='None',  metavar="name1=value1[,name2=value2...]")
 
         subparsers = parser.add_subparsers(help='sub-command help')
 
@@ -205,18 +207,21 @@ class RegressMain:
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
 
         self.args = parser.parse_args()
-
-        # Resolve Regression Suite starting path for ecl-test.json config file
-        # It is necessary when Regression Suite doesn't started from its home directory
-        regressionSuiteMainDir = os.path.dirname(__file__)
-        regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
-        self.args.config = str(os.path.join(regressionSuiteFullPath, self.args.config))
-
-        self.regress = Regression(self.args)
-        logging.debug("Suite version:%s",  versionStr)
-        logging.debug("Suite full path:%s",  regressionSuiteFullPath)
-
         try:
+            if self.args.X[0]== "5000":
+                self.regress = None
+                raise Error(self.args.X[0])
+
+            # Resolve Regression Suite starting path for ecl-test.json config file
+            # It is necessary when Regression Suite doesn't started from its home directory
+            regressionSuiteMainDir = os.path.dirname(__file__)
+            regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
+            self.args.config = str(os.path.join(regressionSuiteFullPath, self.args.config))
+
+            self.regress = Regression(self.args)
+            logging.debug("Suite version:%s",  versionStr)
+            logging.debug("Suite full path:%s",  regressionSuiteFullPath)
+
             if self.args.func == 'list':
                 self.listClusters()
             elif self.args.func == 'query':
@@ -234,7 +239,8 @@ class RegressMain:
         except KeyboardInterrupt:
             logging.critical("Keyboard Interrupt Caught.")
         finally:
-            self.regress.StopTimeoutThread()
+            if self.regress:
+                self.regress.StopTimeoutThread()
         exit()
 
 if __name__ == "__main__":
