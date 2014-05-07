@@ -2734,9 +2734,9 @@ void HqlCppTranslator::doBuildCheckDatasetLimit(BuildCtx & ctx, IHqlExpression *
                 failMessage->queryValue()->getStringValue(failMessageText);
         }
         if (failMessageText.length())
-            WARNING1(HQLWRN_LimitAlwaysExceededX, failMessageText.str());
+            WARNING1(CategoryUnexpected, HQLWRN_LimitAlwaysExceededX, failMessageText.str());
         else
-            WARNING(HQLWRN_LimitAlwaysExceeded);
+            WARNING(CategoryUnexpected, HQLWRN_LimitAlwaysExceeded);
     }
 
     if (!fail)
@@ -5325,7 +5325,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityForceLocal(BuildCtx & ctx, IHq
     IHqlExpression * child = expr->queryChild(0);
     if (targetHThor() || (targetThor() && !insideChildQuery(ctx)))
     {
-        WARNING(HQLWRN_LocalHasNoEffect);
+        WARNING(CategoryIgnored, HQLWRN_LocalHasNoEffect);
         return buildCachedActivity(ctx, child);
     }
 

@@ -296,7 +296,7 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
             StringBuffer nameText,valueText;
             name->getStringValue(nameText);
             if (isOptionTooLate(nameText.str()))
-                translator.reportWarning(HQLWRN_OptionSetToLate, HQLWRN_OptionSetToLate_Text, nameText.str());
+                translator.reportWarning(CategoryIgnored, HQLWRN_OptionSetToLate, HQLWRN_OptionSetToLate_Text, nameText.str());
 
             if (value->queryType()->getTypeCode() == type_boolean)
                 valueText.append(value->getBoolValue() ? 1 : 0);
@@ -1371,7 +1371,7 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
     case no_outputscalar:
         if (applyDepth)
         {
-            translator.WARNINGAT(expr, HQLERR_ScalarOutputWithinApply);
+            translator.WARNINGAT(CategoryUnexpected, expr, HQLERR_ScalarOutputWithinApply);
         }
         break;
     }
@@ -2225,7 +2225,7 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 
             if (equalities.ordinality() == 0)
             {
-                translator.reportWarning(queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
+                translator.reportWarning(CategoryEfficiency, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
             }
             else
             {
@@ -5652,7 +5652,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                         throwError1(HQLERR_DuplicateDefinitionDiffType, s.str());
                 }
                 else if (translator.queryOptions().allowStoredDuplicate)            // only here as a temporary workaround
-                    translator.reportWarning(queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
+                    translator.reportWarning(CategoryMistake, queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
                 else
                 {
                     if (queryLocationIndependent(prevValue) != queryLocationIndependent(value))
@@ -6589,7 +6589,7 @@ void WorkflowTransformer::analyseExpr(IHqlExpression * expr)
                 if (expr->queryName())
                     s.appendf(" '%s'", expr->queryName()->str());
                 //MORE: Better if we also kept nested track of locations
-                translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
+                translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
             }
 
             unsigned prevWfid = activeWfid;
@@ -7383,9 +7383,9 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                             s.append(" in ").append(symbol->queryName());
                     }
                     if (op == no_nothor)
-                        translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
+                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
                     else
-                        translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
+                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
                 }
                 if (value->getOperator() == no_createset)
                 {
@@ -7502,7 +7502,7 @@ protected:
                 StringBuffer s;
                 if (filename)
                     getExprECL(filename, s);
-                translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
+                translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
 
     #if 0
                 checkIndependentOfScope(expr);
@@ -7512,7 +7512,7 @@ protected:
         default:
             if (!isIndependentOfScope(expr))
             {
-                translator.WARNINGAT(queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
+                translator.WARNINGAT(CategoryMistake, queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
 
     #if 0
                 checkIndependentOfScope(expr);
@@ -10327,7 +10327,8 @@ IHqlExpression * NestedCompoundTransformer::createTransformed(IHqlExpression * e
                     //MORE: This should be an error, but there are still occasional false positives e.g., OUTPUT(ds1.childds)
                     //so needs to stay a warning.
 //                  translator.ERRORAT1(location, HQLERR_GlobalSideEffectDependent, s.str());
-                    translator.WARNINGAT1(location, HQLWRN_GlobalSideEffectDependent, s.str());
+                    //GH: Make this a default error severity
+                    translator.WARNINGAT1(CategoryMistake, location, HQLWRN_GlobalSideEffectDependent, s.str());
                 }
                 break;
             }

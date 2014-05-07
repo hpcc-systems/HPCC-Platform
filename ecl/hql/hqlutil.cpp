@@ -5490,7 +5490,7 @@ protected:
     void createTempTableAssign(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * curRow, IHqlExpression * expr, unsigned & col, IHqlExpression * selector, HqlMapTransformer & mapper, bool included);
     IHqlExpression * createTempTableTransform(IHqlExpression * self, IHqlExpression * curRow, IHqlExpression * expr, unsigned & col, IHqlExpression * selector, HqlMapTransformer & mapper, bool included);
 
-    void reportWarning(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
+    void reportWarning(WarnErrorCategory category, IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 5, 6)));
     void reportError(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
 
 protected:
@@ -5715,7 +5715,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
             if (included)
             {
                 if (!mappedValue)
-                    reportWarning(NULL, HQLWRN_CouldNotConstantFoldIf, HQLWRN_CouldNotConstantFoldIf_Text);
+                    reportWarning(CategoryUnexpected, NULL, HQLWRN_CouldNotConstantFoldIf, HQLWRN_CouldNotConstantFoldIf_Text);
                 else if (!mappedValue->getBoolValue())
                     included = false;
             }
@@ -5755,7 +5755,7 @@ void TempTableTransformer::reportError(IHqlExpression * location, int code,const
     errorProcessor.report(err);
 }
 
-void TempTableTransformer::reportWarning(IHqlExpression * location, int code,const char *format, ...)
+void TempTableTransformer::reportWarning(WarnErrorCategory category, IHqlExpression * location, int code,const char *format, ...)
 {
     ECLlocation * where = &defaultLocation;
     ECLlocation thisLocation;
@@ -5770,7 +5770,7 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    errorProcessor.reportWarning(CategoryUnknown, code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    errorProcessor.reportWarning(category, code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
 }
 
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)

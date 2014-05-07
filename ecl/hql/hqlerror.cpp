@@ -42,6 +42,9 @@ ErrorSeverity queryDefaultSeverity(WarnErrorCategory category)
         return SeverityFatal;
     if (category == CategoryInformation)
         return SeverityInfo;
+//MORE: Should the following be enabled?
+//    if (category == CategoryMistake)
+//        return SeverityError;
     return SeverityWarning;
 }
 
@@ -57,6 +60,8 @@ WarnErrorCategory getCategory(const char * category)
         return CategoryDeprecated;
     if (strieq(category, "efficiency"))
         return CategoryEfficiency;
+    if (strieq(category, "fold"))
+        CategoryFolding;
     if (strieq(category, "future"))
         return CategoryFuture;
     if (strieq(category, "ignored"))
@@ -65,8 +70,10 @@ WarnErrorCategory getCategory(const char * category)
         return CategoryIndex;
     if (strieq(category, "info"))
         return CategoryInformation;
-    if (strieq(category, "mistype"))
-        return CategoryMistyped;
+    if (strieq(category, "mistake"))
+        return CategoryMistake;
+    if (strieq(category, "limit"))
+        return CategoryLimit;
     if (strieq(category, "syntax"))
         return CategorySyntax;
     if (strieq(category, "unusual"))

@@ -915,9 +915,9 @@ public:
     bool registerGlobalUsage(IHqlExpression * filename);
     IHqlExpression * queryActiveNamedActivity();
     IHqlExpression * queryActiveActivityLocation() const;
-    void reportWarning(unsigned id, const char * msg, ...) __attribute__((format(printf, 3, 4)));
-    void reportWarning(IHqlExpression * location, unsigned id, const char * msg, ...) __attribute__((format(printf, 4, 5)));
-    void reportError(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
+    void reportWarning(WarnErrorCategory category, unsigned id, const char * msg, ...) __attribute__((format(printf, 4, 5)));
+    void reportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg, ...) __attribute__((format(printf, 5, 6)));
+    void reportError(IHqlExpression * location, int code, const char *format, ...) __attribute__((format(printf, 4, 5)));
     void reportErrorDirect(IHqlExpression * location, int code,const char *msg, bool alwaysAbort);
     void addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * msg, IHqlExpression * location);
     void useFunction(IHqlExpression * funcdef);
@@ -1821,7 +1821,7 @@ protected:
 
 //ThorHole helper functions...
     IHqlExpression * doBuildDatabaseLoader(BuildCtx & ctx, IHqlExpression * expr);
-    void doReportWarning(IHqlExpression * location, unsigned id, const char * msg);
+    void doReportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg);
 
     void optimizePersists(HqlExprArray & exprs);
     void allocateSequenceNumbers(HqlExprArray & exprs);

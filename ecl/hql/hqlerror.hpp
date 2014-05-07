@@ -45,10 +45,12 @@ enum WarnErrorCategory
     CategoryConfuse,    // Likely to cause confusion
     CategoryDeprecated, // deprecated features or syntax
     CategoryEfficiency, // Something that is likely to be inefficient
+    CategoryFolding,    // Unusual results from constant folding
     CategoryFuture,     // Likely to cause problems in future versions
     CategoryIgnored,    // Something that has no effect, or is ignored
     CategoryIndex,      // Unusual indexing of datasets or strings
-    CategoryMistyped,   // Almost certainly mistyped
+    CategoryMistake,    // Almost certainly a mistake
+    CategoryLimit,      // An operation that should really have some limits to protect data runaway
     CategorySyntax,     // Invalid syntax which is painless to recover from
     CategoryUnusual,    // Not strictly speaking an error, but highly unusual and likely to be a mistake
     CategoryUnexpected, // Code that could be correct, but has the potential for unexpected behaviour
