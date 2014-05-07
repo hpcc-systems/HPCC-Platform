@@ -53,6 +53,7 @@ public:
             ensureNavLink(*folder, "Users", "/ws_access/Users", "Users");
             ensureNavLink(*folder, "Groups", "/ws_access/Groups", "Groups");
             ensureNavLink(*folder, "Permissions", "/ws_access/Permissions", "Permissions");
+            ensureNavLink(*folder, "FileScopes", "/ws_access/Resources?rtype=file&rtitle=FileScope", "FileScopes");
         }
     }
 
@@ -67,6 +68,7 @@ class Cws_accessEx : public Cws_access
     SecResourceType str2type(const char* rtstr);
 
     void setBasedns(IEspContext &context);
+    const char* getBaseDN(IEspContext &context, const char* rtype, StringBuffer& baseDN);
     bool permissionAddInputOnResource(IEspContext &context, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
     bool permissionAddInputOnAccount(IEspContext &context, const char* accountName, IEspPermissionAddRequest &req, IEspPermissionAddResponse &resp);
     bool getNewFileScopePermissions(ISecManager* secmgr, IEspResourceAddRequest &req, StringBuffer& existingResource, StringArray& newResources);
