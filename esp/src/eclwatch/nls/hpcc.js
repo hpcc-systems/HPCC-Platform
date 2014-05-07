@@ -116,7 +116,6 @@ define({root:
     Error: "Error",
     Errorparsingserverresult: "Error parsing server result",
     Errors: "Error(s)",
-    Errors: "Errors",
     ErrorsStatus: "Errors/Status",
     ErrorWarnings: "Error/Warning(s)",
     Escape: "Escape",
@@ -528,6 +527,7 @@ define({root:
 "es": true,
 "hu": true,
 "hr": true,
+"pt-br": true,
 "sr": true,
 "zh": true
 });
