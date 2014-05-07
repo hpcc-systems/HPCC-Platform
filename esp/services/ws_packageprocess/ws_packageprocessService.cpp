@@ -350,7 +350,10 @@ void getPkgInfo(const char *target, const char *process, StringBuffer &info)
     Owned<IPropertyTree> tree = createPTree("PackageMaps");
     Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(process, true);
     if (!pkgSetRegistry)
-        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process %s", (process && *process) ? process : "*");
+    {
+        toXML(tree, info);
+        return;
+    }
     StringBuffer xpath("PackageMap[@active='1']");
     if (target && *target)
         xpath.appendf("[@querySet='%s']", target);
@@ -705,6 +708,9 @@ bool CWsPackageProcessEx::onGetPackage(IEspContext &context, IEspGetPackageReque
     StringAttr process(req.getProcess());
     StringBuffer info;
     getPkgInfo(req.getTarget(), process.length() ? process.get() : "*", info);
+    if ((info.length() < 16) && !strieq(process, "*"))
+        getPkgInfo(req.getTarget(), "*", info.clear());
+
     resp.setInfo(info);
     return true;
 }

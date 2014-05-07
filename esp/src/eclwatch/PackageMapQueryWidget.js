@@ -38,6 +38,7 @@ define([
     "dojo/data/ItemFileWriteStore",
 
     "hpcc/_TabContainerWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/PackageMapDetailsWidget",
     "hpcc/PackageMapValidateWidget",
     "hpcc/WsPackageMaps",
@@ -57,7 +58,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domForm, ObjectStore, on, topic,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
     Uploader, FileUploader, EnhancedGrid, Pagination, IndirectSelection, ItemFileWriteStore,
-    _TabContainerWidget, PackageMapDetailsWidget, PackageMapValidateWidget,
+    _TabContainerWidget, DelayLoadWidget, PackageMapDetailsWidget, PackageMapValidateWidget,
     WsPackageMaps, ESPPackageProcess, SFDetailsWidget,
     template) {
     return declare("PackageMapQueryWidget", [_TabContainerWidget, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -75,6 +76,7 @@ define([
         processFilters: null,
         addPackageMapDialog: null,
         validateTab: null,
+        params: null,
 
         buildRendering: function (args) {
             this.inherited(arguments);
@@ -133,6 +135,11 @@ define([
 
         _onChangeTarget: function (event) {
             this.updateProcessSelections(this.processSelect, this.processesToList, this.targetSelect.getValue());
+            this.refreshGrid();
+        },
+
+        _onChangeProcess: function (event) {
+            this.refreshGrid();
         },
 
         _onChangeAddProcessMapTarget: function (event) {
@@ -330,6 +337,7 @@ define([
                         context.processFilters = response.ProcessFilters.Item;
                     }
                     context.initPackagesGrid();
+                    context.initTabs();
                 },
                 error: function (errMsg, errStack) {
                     context.showErrors(errMsg, errStack);
@@ -397,17 +405,31 @@ define([
                 return;
 
             this.initalized = true;
+            this.params = params;
+            this.getSelections();
+        },
 
-            this.validateTab = new PackageMapValidateWidget({
-                id: this.id + "_ValidatePackageMap",
-                title: this.i18n.ValidatePackageMap,
-                params: params
+        initTabs: function() {
+            this.params.targets = this.targets;
+            this.validateTab = this.initValidateTab("ValidatePackageMap", {
+                title: "Validate Package Map",
+                params: this.params
             });
-            //this.tabMap[this.id + "_ValidatePackageMap"] = this.validateTab;
-            this.tabContainer.addChild(this.validateTab, 1);
 
             this.tabContainer.selectChild(this.packagesTab);
-            this.getSelections();
+        },
+
+        initValidateTab: function (id, params) {
+            id = this.createChildTabID(id);
+            var retVal = new DelayLoadWidget({
+                id: id,
+                title: params.title,
+                closable: false,
+                delayWidget: "PackageMapValidateWidget",
+                params: params
+            });
+            this.tabContainer.addChild(retVal, 1);
+            return retVal;
         },
 
         initPackagesGrid: function() {
@@ -430,7 +452,6 @@ define([
             ]);
             var objStore = ESPPackageProcess.CreatePackageMapQueryObjectStore();
             this.packagesGrid.setStore(objStore);
-            this.packagesGrid.setQuery(this.getFilter());
 
             var context = this;
             this.packagesGrid.on("RowDblClick", function (evt) {
