@@ -299,7 +299,15 @@ define([
                             return "<img src='" + img + "'/>&nbsp;<a href='#' class='" + context.id + "RowClick'>" + name + "</a>";
                         }
                     }),
-                    DisplaySize: { label: this.i18n.Size, width: 59, sortable: true },
+                    GID: {
+                        label: this.i18n.Graph, width: 90, sortable: true,
+                        formatter: function (_gid, row) {
+                            if (context.activity.isInstanceOfWorkunit(row)) {
+                                return "<a href='#' class='" + context.id + "GraphClick'>" + row.GraphName + "-" + row.GID + "</a>";
+                            }
+                            return "";
+                        }
+                    },
                     State: {
                         label: this.i18n.State,
                         sortable: false,
@@ -333,9 +341,21 @@ define([
             on(document, "." + this.id + "RowClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var row = retVal.row(evt).data;
-                    context._onRowDblClick(row);
+                    context._onRowDblClick(row, {
+                        OpenMode: "WU"
+                    });
                 }
             });
+
+            on(document, "." + this.id + "GraphClick:click", function (evt) {
+                if (context._onRowDblClick) {
+                    var row = retVal.row(evt).data;
+                    context._onRowDblClick(row, {
+                        OpenMode: "Graph"
+                    });
+                }
+            });
+
             return retVal;
         },
 
@@ -353,6 +373,21 @@ define([
                     }
                 });
             } else if (this.activity.isInstanceOfWorkunit(row)) {
+                if (lang.exists("OpenMode", params) && params.OpenMode === "Graph") {
+                    return new DelayLoadWidget({
+                        id: id,
+                        title: row.GraphName,
+                        closable: true,
+                        delayWidget: "GraphPageWidget",
+                        hpcc: {
+                            params: {
+                                Wuid: row.Wuid,
+                                GraphName: row.GraphName,
+                                SubGraphId: row.GID
+                            }
+                        }
+                    });
+                }
                 if (row.Server === "DFUserver") {
                     return new DelayLoadWidget({
                         id: id,

@@ -87,8 +87,8 @@ define([
             }
         },
 
-        _onRowDblClick: function (row) {
-            var tab = this.ensurePane(row);
+        _onRowDblClick: function (row, params) {
+            var tab = this.ensurePane(row, params);
             if (tab) {
                 this.selectChild(tab);
             }
