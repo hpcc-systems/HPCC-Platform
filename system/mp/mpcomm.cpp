@@ -1783,7 +1783,7 @@ CMPChannel &CMPServer::lookup(const SocketEndpoint &endpoint)
         checkclosed = false;
         CMPChannel *c = NULL;
         loop { 
-            c = (CMPChannel *)next(c);
+            c = next(c);
             if (!c) {
                 break;
             }

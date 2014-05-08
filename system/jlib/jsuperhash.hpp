@@ -115,6 +115,8 @@ class SuperHashTableOf : public SuperHashTable
       { return static_cast<ET *>(SuperHashTable::addOrFind(&et)); }
     inline ET *      find(const FP * fp) const
       { return static_cast<ET *>(SuperHashTable::find(fp)); }
+    inline ET *      next(const ET * et) const
+      { return static_cast<ET *>(SuperHashTable::next(et)); }
     inline ET *      find(unsigned hashCode, const FP * fp) const
       { return static_cast<ET *>(SuperHashTable::find(hashCode, fp)); }
     inline ET *      findExact(const ET & et) const
