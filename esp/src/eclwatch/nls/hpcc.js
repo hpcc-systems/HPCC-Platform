@@ -14,6 +14,7 @@ define({root:
     Activity: "Activity",
     ActualSize: "Actual Size",
     Add: "Add",
+    AddFile: "Add File",
     AddGroup: "Add Group",
     AdditionalResources: "Additional Resources",
     AddProcessMap: "Add Package Map",

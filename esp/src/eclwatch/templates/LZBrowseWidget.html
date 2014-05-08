@@ -12,6 +12,21 @@
                     <div id="${id}Download" data-dojo-attach-event="onClick:_onDownload" data-dojo-type="dijit.form.Button">${i18n.Download}</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}AddFileDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>${i18n.AddFile}</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}AddFileForm" style="width: 530px;" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-type="hpcc.TableContainer">
+                                    <input id="${id}AddFileIP" title="${i18n.IP}:" style="width: 95%;" name="NetAddress" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}AddFilePath" title="${i18n.Path}:" style="width: 95%;" name="fullPath" data-dojo-props="trim: true, placeHolder:'${i18n.NamePrefixPlaceholder}'" data-dojo-type="dijit.form.TextBox" />
+                                </div>
+                                <div class="dijitDialogPaneActionBar">
+                                    <button type="submit" data-dojo-attach-event="onClick:_onAddFile" data-dojo-type="dijit.form.Button">${i18n.Add}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <b>${i18n.Spray}:</b>
                     <div id="${id}SprayFixedDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Fixed}</span>
