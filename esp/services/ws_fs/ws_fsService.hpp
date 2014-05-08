@@ -110,6 +110,7 @@ protected:
     bool getDropZoneFiles(IEspContext &context, const char* netaddr, const char* osStr, const char* path, IEspDropZoneFilesRequest &req, IEspDropZoneFilesResponse &resp);
     bool ParseLogicalPath(const char * pLogicalPath, StringBuffer &title);
     bool ParseLogicalPath(const char * pLogicalPath, const char* cluster, StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder);
+    StringBuffer& getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage);
 };
 
 #endif //_ESPWIZ_FileSpray_HPP__

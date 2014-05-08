@@ -129,6 +129,22 @@ void CFileSprayEx::init(IPropertyTree *cfg, const char *process, const char *ser
 
 }
 
+StringBuffer& CFileSprayEx::getAcceptLanguage(IEspContext& context, StringBuffer& acceptLanguage)
+{
+    context.getAcceptLanguage(acceptLanguage);
+    if (!acceptLanguage.length())
+    {
+        acceptLanguage.set("en");
+        return acceptLanguage;
+    }
+    acceptLanguage.setLength(2);
+    VStringBuffer languageFile("%ssmc_xslt/nls/%s/hpcc.xml", getCFD(), acceptLanguage.str());
+    if (!checkFileExists(languageFile.str()))
+        acceptLanguage.set("en");
+    return acceptLanguage;
+}
+
+
 void ParsePath(const char * fullPath, StringBuffer &ip, StringBuffer &filePath, StringBuffer &title)
 {
     ip.clear();
@@ -2681,6 +2697,7 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         if (!path || !*path)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Path not specified.");
 
+        double version = context.getClientVersion();
         const char* netaddr = req.getNetaddr();
         const char* mask = req.getMask();
         bool directoryOnly = req.getDirectoryOnly();
@@ -2759,6 +2776,11 @@ bool CFileSprayEx::onFileList(IEspContext &context, IEspFileListRequest &req, IE
         if (mask && *mask)
             resp.setMask(mask);
 
+        if (version >= 1.10)
+        {
+            StringBuffer acceptLanguage;
+            resp.setAcceptLanguage(getAcceptLanguage(context, acceptLanguage).str());
+        }
         resp.setDirectoryOnly(directoryOnly);
     }
     catch(IException* e)

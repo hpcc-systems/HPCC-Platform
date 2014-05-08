@@ -127,25 +127,25 @@ class Regression:
         self.createDirectory(self.dir_r)
         self.createDirectory(self.logDir)
 
-        if cluster in self.config.Clusters:
-            self.createSuite(cluster,  fileList)
-            self.maxtasks = len(self.suites[cluster].getSuite())
+        self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir,  False,  fileList)
+        self.maxtasks = len(self.suites[cluster].getSuite())
         os.chdir(self.regressionDir)
-
 
     def createDirectory(self, dir_n):
         if not os.path.isdir(dir_n):
             os.makedirs(dir_n)
 
-    def createSuite(self, cluster,  fileList):
-        self.suites[cluster] = Suite(cluster, self.dir_ec,
-                                     self.dir_a, self.dir_ex, self.dir_r, self.logDir,  fileList)
-
-    def Setup(self):
+    def Setup(self,  cluster):
+        self.createDirectory(self.regressionDir)
+        self.createDirectory(self.dir_a)
+        self.createDirectory(self.dir_r)
+        self.createDirectory(self.logDir)
         self.setupDir = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.setupDir), True)
         logging.debug("Setup Dir      : %s", self.setupDir)
-        return Suite('setup', self.setupDir, self.dir_a, self.dir_ex,
-                     self.dir_r, self.logDir)
+        self.setupSuite = Suite(cluster, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir,  True)
+        self.maxtasks = len(self.setupSuite.getSuite())
+        os.chdir(self.regressionDir)
+        return self.setupSuite
 
     def buildLogging(self, name):
         report = Report(name)

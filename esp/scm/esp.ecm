@@ -151,6 +151,9 @@ interface IEspContext : extends IInterface
 
     virtual ESPSerializationFormat getResponseFormat()=0;
     virtual void setResponseFormat(ESPSerializationFormat fmt)=0;
+
+    virtual void setAcceptLanguage(const char * acceptLanguage) = 0;
+    virtual StringBuffer& getAcceptLanguage(StringBuffer& acceptLanguage) = 0;
 };
 
 

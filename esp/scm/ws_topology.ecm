@@ -315,6 +315,7 @@ ESPresponse [exceptions_inline]TpTargetClusterQueryResponse
     string MemThresholdType;
     string DiskThresholdType;
     [min_ver("1.13")] string PreflightProcessFilter;
+    [min_ver("1.20")] string AcceptLanguage;
 
     ESParray<ESPstruct TpTargetCluster> TpTargetClusters;
 };
@@ -327,6 +328,7 @@ ESPrequest TpClusterQueryRequest
 ESPresponse [exceptions_inline]TpClusterQueryResponse
 {
     [min_ver("1.08")] bool EnableSNMP;
+    [min_ver("1.20")] string AcceptLanguage;
     ESParray<ESPstruct TpCluster> TpClusters;
 };
 
@@ -406,6 +408,7 @@ ESPresponse [exceptions_inline] TpMachineQueryResponse
     string DiskThresholdType;
     [min_ver("1.13")] string PreflightProcessFilter;
     [min_ver("1.08")] bool EnableSNMP;
+    [min_ver("1.20")] string AcceptLanguage;
     ESParray<ESPstruct TpMachine> TpMachines;
 };
 
@@ -422,6 +425,7 @@ ESPresponse [nil_remove, exceptions_inline] TpServiceQueryResponse
     [min_ver("1.07")] bool EncapsulatedSystem;
     [min_ver("1.08")] bool EnableSNMP;
     [min_ver("1.13")] string PreflightProcessFilter;
+    [min_ver("1.20")] string AcceptLanguage;
     string MemThresholdType;
     string DiskThresholdType;
     ESPstruct TpServices ServiceList;
@@ -501,7 +505,7 @@ ESPresponse [exceptions_inline] TpLogFileResponse
     [min_ver("1.05")] int PrevPage(-1);
     [min_ver("1.05")] int NextPage(-1);
     [min_ver("1.06")] int TotalPages;
-    
+    [min_ver("1.20")] string AcceptLanguage;
     [http_content("application/octet-stream")] binary thefile;
 };
 
@@ -561,7 +565,7 @@ ESPresponse [exceptions_inline,encode(0)] TpThorStatusResponse
     int AutoRefresh;
 };
 
-ESPservice [noforms, version("1.19"), default_client_version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
+ESPservice [noforms, version("1.20"), default_client_version("1.20"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsTopology
 {
     ESPuses ESPStruct TpBinding;
     ESPuses ESPstruct TpCluster;

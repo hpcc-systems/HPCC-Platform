@@ -186,3 +186,5 @@ FOREACH ( iFILES
 )
     Install ( FILES ${iFILES} DESTINATION componentfiles/wsecl/wsecl COMPONENT Runtime )
 ENDFOREACH ( iFILES )
+
+Install ( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/nls DESTINATION componentfiles/smc_xslt COMPONENT Runtime USE_SOURCE_PERMISSIONS PATTERN ".svn" EXCLUDE )

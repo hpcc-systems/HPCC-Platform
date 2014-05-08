@@ -1,4 +1,4 @@
-Overview of Regression Suite usage (v:0.0.15)
+Overview of Regression Suite usage (v:0.0.16)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
@@ -72,13 +72,14 @@ Command:
 Result:
 
 |
-|       usage: usage: ecl-test setup [-h] [--target [TARGET]]
+|       usage: usage: ecl-test setup [-h] [--target [TARGET]] [--pq threadNumber]
 |
 |       optional arguments:
 |         -h, --help            show this help message and exit
 |         --target [TARGET], -t [TARGET]
 |                               Run the setup on target cluster. Default value is
 |                               thor.
+|         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
 Parameters of Regression Suite run sub-command:
@@ -97,7 +98,7 @@ Result:
 |         -h, --help         show this help message and exit
 |         --target [TARGET], -t [TARGET]
 |                            Run the cluster suite. Default value is thor.
-|         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2)
+|         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
 
@@ -123,7 +124,7 @@ Result:
 |         --target [target_cluster | all], -t [target_cluster | all]
 |                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
 |         --publish, -p               Publish compiled query instead of run.
-|         --pq threadNumber           Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumer = numberOfLocalCore * 2 )
+|         --pq threadNumber           Parallel query execution for multiple test cases specified in CLI with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )
 |
 
 Steps to run Regression Suite
@@ -488,6 +489,41 @@ Then the RS executes alljoin.ecl on all target clusters and
     on hthor the output compared with hthor/alljoin.xml
     on thor and roxie the output compared with key/alljoin.xml
 
+For Setup keyfile handling same as Run/Query except the target specific keyfile stored platform directory under setup:
+
+ecl
+   |---hthor
+   |     alljoin.xml
+   |---key
+   |     alljoin.xml
+   |     setup.xml
+   |     setup_fetch.xml
+   |     setup_sq.xml
+   |     setup_xml.xml
+   |---setup
+   |      |
+   |      ---hthor
+   |      |       setup.xml
+   |      setup.ecl
+   |      setup_fetch.ecl
+   |      setup_sq.ecl
+   |      setup_xml.ecl
+   alljoin.ecl|
+
+If we execute setup on target hthor:
+
+     ./regress  setup -t hthor
+
+Then the RS executes all ecl files from setup directory and 
+    - the result of setup.ecl compared with ecl/setup/hthor/setup.xml
+    - all other test cases results compared with corresponding file in ecl/key directory.
+
+If we execute setup on any other target:
+
+     ./regress  setup -t thor|roxie
+
+Then the RS executes all ecl files from setup directory and 
+    - the test cases results compared with corresponding file in ecl/key directory.
 
 8. Key file generation:
 -----------------------
@@ -534,8 +570,3 @@ If your HPCC System is configured to use LDAP authentication you should change v
 
 Alternatively, ensure that your test system has a user "regress" with password "regress" and appropriate rights to be able to run the suite.
 
-
-Misc.
------
-
-**Important! Actually regression suite compares the test case result with xml files stored in testing/regression/ecl/key independently from the cluster.**

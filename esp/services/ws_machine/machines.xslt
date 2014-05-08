@@ -33,7 +33,10 @@
    <xsl:variable name="clusterType" select="string($reqInfo/ClusterType)"/>
    <xsl:variable name="memThresholdType" select="number($reqInfo/MemThresholdType)"/>
    <xsl:variable name="diskThresholdType" select="number($reqInfo/DiskThresholdType)"/>
-   
+   <xsl:variable name="acceptLanguage" select="/GetMachineInfoResponse/AcceptLanguage"/>
+   <xsl:variable name="localiseFile"><xsl:value-of select="concat('../nls/', $acceptLanguage, '/hpcc.xml')"/></xsl:variable>
+   <xsl:variable name="hpccStrings" select="document($localiseFile)/hpcc/strings"/>
+
    <xsl:variable name="memThreshold"><!-- from 0 to 100 (%)-->
       <xsl:choose>
          <xsl:when test="$reqInfo/MemThreshold">
@@ -94,20 +97,21 @@
                <xsl:choose>
                   <xsl:when test="$SwapNode">
                      var swapNode = true;
-                  var OldIP = '<xsl:value-of select="$reqInfo/OldIP"/>';
-                   var ClusterName = '<xsl:value-of select="$clusterName"/>';
-                  var Path = '<xsl:value-of select="$reqInfo/Path"/>';
-                   <xsl:text disable-output-escaping="yes"><![CDATA[
-                       singleSelect = true;
-                   function onSwapNode()           
-                   {
+                     var OldIP = '<xsl:value-of select="$reqInfo/OldIP"/>';
+                     var ClusterName = '<xsl:value-of select="$clusterName"/>';
+                     var Path = '<xsl:value-of select="$reqInfo/Path"/>';
+                     var confirmSwapStr = '<xsl:value-of select="$hpccStrings/st[@id='ConfirmSwap']"/>';
+                     <xsl:text disable-output-escaping="yes"><![CDATA[
+                        singleSelect = true;
+                        function onSwapNode()
+                        {
                             var table = document.getElementById('resultsTable');
                             var row = table.rows(lastClicked);
                            var checkbox = row.cells(0).children[0];
                            var cbValue = checkbox.value;
                         var NewIP = cbValue.substring(0, cbValue.indexOf(':'));
                                               
-                        if (confirm('Swap ' + OldIP + ' with ' + NewIP + ' ?'))
+                        if (confirm(confirmSwapStr + ' ' + OldIP + ' - ' + NewIP + ' ?'))
                         {
                                 var s = "/WsTopology/TpSwapNode?Cluster=" + ClusterName;
                                 s += "&OldIP=" + OldIP;
@@ -180,7 +184,7 @@
                      <h1><xsl:value-of select="Exceptions"/></h1>
                   </xsl:when>
                   <xsl:when test="not(Machines)">
-                     <h2>No machines selected!</h2>
+                     <h2><xsl:value-of select= "$hpccStrings/st[@id='NoMachinesSelected']"/></h2>
                   </xsl:when>
                   <xsl:otherwise>
                       <center>
@@ -190,20 +194,20 @@
                               <th align="left">
                               <h3>
                                      <xsl:choose>                       
-                                    <xsl:when test="$SwapNode">Select a spare node to swap</xsl:when>
-                                    <xsl:when test="$clusterType='THORSPARENODES'">Thor Slaves</xsl:when>
-                                    <xsl:when test="$clusterType='ALLSERVICES'">System Service Nodes</xsl:when>
+                                    <xsl:when test="$SwapNode"><xsl:value-of select= "$hpccStrings/st[@id='SelectASpareNodeToSwap']"/></xsl:when>
+                                    <xsl:when test="$clusterType='THORSPARENODES'"><xsl:value-of select= "$hpccStrings/st[@id='ThorSlaves']"/></xsl:when>
+                                    <xsl:when test="$clusterType='ALLSERVICES'"><xsl:value-of select= "$hpccStrings/st[@id='SystemServiceNodes']"/></xsl:when>
                                     <xsl:when test="$clusterName!=''">
                                         <xsl:choose>
                                                                 <xsl:when test="$clusterType='ROXIEMACHINES'">Roxie </xsl:when>
                                                                 <xsl:when test="$clusterType='THORMACHINES'">Thor </xsl:when>
                                                                 <xsl:when test="$clusterType='HOLEMACHINES'">Hole </xsl:when>
                                                             </xsl:choose>
-                                                            <xsl:text disable-output-escaping="yes">Cluster '</xsl:text>
+                                                            <xsl:value-of select= "$hpccStrings/st[@id='Cluster']"/><xsl:text disable-output-escaping="yes"> '</xsl:text>
                                         <xsl:value-of select="$clusterName"/>
                                         <xsl:text disable-output-escaping="yes">'</xsl:text>
                                     </xsl:when>
-                                    <xsl:otherwise>Machine Information</xsl:otherwise>
+                                    <xsl:otherwise><xsl:value-of select= "$hpccStrings/st[@id='MachineInfo']"/></xsl:otherwise>
                                  </xsl:choose>
                               </h3>
                               </th>
@@ -213,11 +217,11 @@
                                                     <xsl:apply-templates select="Machines"/>                                                    
                                                     <xsl:choose>
                                       <xsl:when test="$SwapNode">
-                                         <input type="submit" value="Submit" id="submitBtn" disabled="true"/>
-                                         <input type="button" value="Cancel" name="Cancel" onclick="javascript:history.go(-1)"/>
+                                         <input type="submit" value="{$hpccStrings/st[@id='Submit']}" id="submitBtn" disabled="true"/>
+                                         <input type="button" value="{$hpccStrings/st[@id='Cancel']}" name="Cancel" onclick="javascript:history.go(-1)"/>
                                       </xsl:when>
                                       <xsl:otherwise>
-                                        <b>Fetched: </b>
+                                        <b><xsl:value-of select= "$hpccStrings/st[@id='Fetched']"/>: </b>
                                         <xsl:value-of select="TimeStamp"/>
                                         <br/>
                                         <br/>
@@ -258,29 +262,32 @@
                <th width="5">
                   <xsl:if test="MachineInfoEx[2] and not($SwapNode)">
                      <xsl:attribute name="id">selectAll1</xsl:attribute>
-                     <input type="checkbox" id="All1" title="Select or deselect all machines" onclick="selectAll(this.checked)" checked="true"/>
+                     <input type="checkbox" id="All1" title="{$hpccStrings/st[@id='SelectDeselectAllMachines']}" onclick="selectAll(this.checked)" checked="true"/>
                   </xsl:if>
                </th>
-               <th>Location</th>
-               <th>Component</th>
+               <th><xsl:value-of select= "$hpccStrings/st[@id='Location']"/></th>
+               <th><xsl:value-of select= "$hpccStrings/st[@id='Component']"/></th>
                <xsl:if test="$numSlaveNodes > 0">
-                  <th>Slave Number</th>
+                  <th><xsl:value-of select= "$hpccStrings/st[@id='SlaveNumber']"/></th>
                </xsl:if>
                <xsl:choose>
                   <xsl:when test="../Columns/Item">
                      <xsl:for-each select="../Columns/Item[text()='Condition']">
-                        <th align="center">Condition</th>
+                        <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='Condition']"/></th>
                      </xsl:for-each>
                      <xsl:for-each select="../Columns/Item[text()='State']">
-                        <th align="center">State</th>
+                        <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='State']"/></th>
                      </xsl:for-each>
                      <xsl:for-each select="../Columns/Item[text()='UpTime']">
-                        <th align="center">Up Time</th>
+                        <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='UpTime']"/></th>
                      </xsl:for-each>
                      <!--process Processes first-->
                      <xsl:for-each select="../Columns/Item[text()='Processes']">
-                        <th align="center"><xsl:value-of select="."/>
-                           <xsl:if test="text()='Processes' and $reqInfo/ApplyProcessFilter=1"> Down</xsl:if>
+                        <th align="center">
+                           <xsl:choose>
+                              <xsl:when test="$reqInfo/ApplyProcessFilter=1"><xsl:value-of select= "$hpccStrings/st[@id='ProcessesDown']"/></xsl:when>
+                              <xsl:otherwise><xsl:value-of select= "$hpccStrings/st[@id='Processes']"/></xsl:otherwise>
+                           </xsl:choose>
                         </th>
                      </xsl:for-each>
                      <!--process disk storage next-->
@@ -288,20 +295,23 @@
                         <th align="center"><xsl:value-of select="."/></th>
                      </xsl:for-each>
                      <!--process physical memory and swap next-->      
-                     <xsl:for-each select="../Columns/Item[text() = 'Physical Memory' or text()='Swap']">
-                        <th align="center"><xsl:value-of select="."/></th>
+                     <xsl:for-each select="../Columns/Item[text() = 'Physical Memory']">
+                        <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='PhysicalMemory']"/></th>
+                     </xsl:for-each>
+                     <xsl:for-each select="../Columns/Item[text() = 'Swap']">
+                        <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='Swap']"/></th>
                      </xsl:for-each>
                      <!--process CPU Load next -->      
                      <xsl:for-each select="../Columns/Item[starts-with(text(), 'CPU') and contains(text(), 'Load')]">
-                        <th align="center"><xsl:value-of select="."/></th>
+                        <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='CPULoad']"/></th>
                      </xsl:for-each>
                      <!--process Up Time next -->
                      <xsl:for-each select="../Columns/Item[text()='Up Time']">
-                        <th align="center">Computer Up Time</th>
+                        <th align="center"><xsl:value-of select= "$hpccStrings/st[@id='ComputerUpTime']"/></th>
                      </xsl:for-each>
                   </xsl:when>
                   <xsl:otherwise>
-                     <th>Description</th>
+                     <th><xsl:value-of select= "$hpccStrings/st[@id='Description']"/></th>
                   </xsl:otherwise>
                </xsl:choose>
             </tr>
@@ -324,9 +334,9 @@
          <table  class="select-all">
             <tr>
                <th id="selectAll2">
-                  <input type="checkbox" id="All2" title="Select or deselect all machines" onclick="selectAll(this.checked)" checked="true"/>
+                  <input type="checkbox" id="All2" title="{$hpccStrings/st[@id='SelectDeselectAllMachines']}" onclick="selectAll(this.checked)" checked="true"/>
                </th>
-               <th align="left" colspan="6">Select All / None</th>
+               <th align="left" colspan="6"><xsl:value-of select="$hpccStrings/st[@id='SelectAllOrNone']"/></th>
             </tr>
          </table>
       </xsl:if>
@@ -392,16 +402,16 @@
                                     <xsl:attribute name="bgcolor">#FF8800</xsl:attribute>
                                 </xsl:if>
                           <xsl:choose>
-                                    <xsl:when test="$cond='0'">Unknown</xsl:when>
-                                    <xsl:when test="$cond='1'">Normal</xsl:when>
-                                    <xsl:when test="$cond='2'">Warning</xsl:when>
-                                    <xsl:when test="$cond='3'">Minor</xsl:when>
-                                    <xsl:when test="$cond='4'">Major</xsl:when>
-                                    <xsl:when test="$cond='5'">Critical</xsl:when>
-                                    <xsl:when test="$cond='6'">Fatal</xsl:when>
+                                    <xsl:when test="$cond='0'"><xsl:value-of select= "$hpccStrings/st[@id='Unknown']"/></xsl:when>
+                                    <xsl:when test="$cond='1'"><xsl:value-of select= "$hpccStrings/st[@id='Normal']"/></xsl:when>
+                                    <xsl:when test="$cond='2'"><xsl:value-of select= "$hpccStrings/st[@id='Warning']"/></xsl:when>
+                                    <xsl:when test="$cond='3'"><xsl:value-of select= "$hpccStrings/st[@id='Minor']"/></xsl:when>
+                                    <xsl:when test="$cond='4'"><xsl:value-of select= "$hpccStrings/st[@id='Major']"/></xsl:when>
+                                    <xsl:when test="$cond='5'"><xsl:value-of select= "$hpccStrings/st[@id='Critical']"/></xsl:when>
+                                    <xsl:when test="$cond='6'"><xsl:value-of select= "$hpccStrings/st[@id='Fatal']"/></xsl:when>
                                     <xsl:when test="$cond='7'">-</xsl:when>
                     <xsl:when test="$cond='-1'">
-                      <xsl:attribute name="title">Failed to retrieve information.  Please check configuration.</xsl:attribute>
+                      <xsl:attribute name="title"><xsl:value-of select= "$hpccStrings/st[@id='FailedToRetrieveInformation']"/></xsl:attribute>
                     </xsl:when>
                                 </xsl:choose>
                             </td>
@@ -410,17 +420,17 @@
                             <td id="state_{position()}">
                             <xsl:variable name="state" select="ComponentInfo/State"/>
                               <xsl:choose>
-                                        <xsl:when test="$state='0'"><xsl:attribute name="bgcolor">#FF8800</xsl:attribute>Unknown</xsl:when>
-                                        <xsl:when test="$state='1'">Starting</xsl:when>
-                                        <xsl:when test="$state='2'">Stopping</xsl:when>
-                                        <xsl:when test="$state='3'">Suspended</xsl:when>
-                                        <xsl:when test="$state='4'">Recycling</xsl:when>
-                                        <xsl:when test="$state='5'">Ready</xsl:when>
-                                        <xsl:when test="$state='6'">Busy</xsl:when>
+                                        <xsl:when test="$state='0'"><xsl:attribute name="bgcolor">#FF8800</xsl:attribute><xsl:value-of select= "$hpccStrings/st[@id='Unknown']"/></xsl:when>
+                                        <xsl:when test="$state='1'"><xsl:value-of select= "$hpccStrings/st[@id='Starting']"/></xsl:when>
+                                        <xsl:when test="$state='2'"><xsl:value-of select= "$hpccStrings/st[@id='Stopping']"/></xsl:when>
+                                        <xsl:when test="$state='3'"><xsl:value-of select= "$hpccStrings/st[@id='Suspended']"/></xsl:when>
+                                        <xsl:when test="$state='4'"><xsl:value-of select= "$hpccStrings/st[@id='Recycling']"/></xsl:when>
+                                        <xsl:when test="$state='5'"><xsl:value-of select= "$hpccStrings/st[@id='Ready']"/></xsl:when>
+                                        <xsl:when test="$state='6'"><xsl:value-of select= "$hpccStrings/st[@id='Busy']"/></xsl:when>
                                         <xsl:when test="$state='7'">-</xsl:when>
                                         <xsl:when test="$cond='-1'">
-                      <xsl:attribute name="title">Failed to retrieve information.  Please check configuration.</xsl:attribute>
-                                            <xsl:text>N/A</xsl:text>
+                                            <xsl:attribute name="title"><xsl:value-of select= "$hpccStrings/st[@id='FailedToRetrieveInformation']"/></xsl:attribute>
+                                            <xsl:value-of select= "$hpccStrings/st[@id='NA']"/>
                                         </xsl:when>
                                     </xsl:choose>
                             </td>
@@ -429,8 +439,8 @@
                         <td id="uptime_{position()}">
                             <xsl:choose>
                                     <xsl:when test="$cond='-1' or $cond='7'">
-                    <xsl:attribute name="title">Failed to retrieve information.  Please check configuration.</xsl:attribute>
-                                        <xsl:text>N/A</xsl:text>
+                                        <xsl:attribute name="title">Failed to retrieve information.  Please check configuration.</xsl:attribute>
+                                        <xsl:value-of select= "$hpccStrings/st[@id='NA']"/>
                                     </xsl:when>
                                     <xsl:otherwise>
                                     <xsl:value-of select="ComponentInfo/UpTime"/>
@@ -477,8 +487,11 @@
                                             </xsl:otherwise>
                                         </xsl:choose>
                      </xsl:variable>
-                     <xsl:variable name="caption">Processes
-                        <xsl:if test="$reqInfo/ApplyProcessFilter=1"> Down</xsl:if>
+                     <xsl:variable name="caption">
+                        <xsl:choose>
+                           <xsl:when test="$reqInfo/ApplyProcessFilter=1"><xsl:value-of select= "$hpccStrings/st[@id='ProcessesDown']"/></xsl:when>
+                           <xsl:otherwise><xsl:value-of select= "$hpccStrings/st[@id='Processes']"/></xsl:otherwise>
+                        </xsl:choose>
                      </xsl:variable>
                     <xsl:attribute name="title">
                       <xsl:value-of select="$caption"/>,<xsl:value-of select="$processNames"/>
@@ -600,12 +613,12 @@
         <xsl:attribute name="title">
           <xsl:value-of select="$memNode/Description"/>
           <xsl:text disable-output-escaping="yes"><![CDATA[ <br /> ]]></xsl:text>
-          <xsl:value-of select="$memNode/Available"/><xsl:text> MB Avail</xsl:text>
+          <xsl:value-of select="$memNode/Available"/><xsl:text> MB </xsl:text><xsl:value-of select="$hpccStrings/st[@id='Available']"/>
           <xsl:text disable-output-escaping="yes"><![CDATA[ <br /> ]]></xsl:text>
-          <xsl:value-of select="$memNode/Total"/> MB Total
+          <xsl:value-of select="$memNode/Total"/> MB <xsl:value-of select="$hpccStrings/st[@id='Total']"/>
         </xsl:attribute>
         <xsl:choose>
-          <xsl:when test="$memNode/Total=0">N/A</xsl:when>
+          <xsl:when test="$memNode/Total=0"><xsl:value-of select="$hpccStrings/st[@id='NA']"/></xsl:when>
           <xsl:otherwise>
             <xsl:if test="$threshold != 0">
               <xsl:choose>
