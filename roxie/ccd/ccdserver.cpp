@@ -19746,7 +19746,8 @@ public:
             response = serverContext->queryResult(sequence);
             if (response)
             {
-                response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0);
+                const IProperties *xmlns = serverContext->queryXmlns(sequence);
+                response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0, xmlns);
                 if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
                 {
                     unsigned int writeFlags = serverContext->getXmlFlags();

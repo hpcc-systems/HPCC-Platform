@@ -37,6 +37,7 @@
 #include "jtime.hpp"
 #include "jsocket.hpp"
 #include "jstats.h"
+#include "jprop.hpp"
 
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
@@ -300,6 +301,7 @@ interface IConstWUResult : extends IInterface
     virtual unsigned getResultHash() const = 0;
     virtual void getResultDecimal(void * val, unsigned length, unsigned precision, bool isSigned) const = 0;
     virtual bool getResultIsAll() const = 0;
+    virtual const IProperties *queryXmlns() = 0;
 };
 
 
@@ -335,6 +337,7 @@ interface IWUResult : extends IConstWUResult
     virtual void setResultFormat(WUResultFormat format) = 0;
     virtual void setResultXML(const char * xml) = 0;
     virtual void setResultRow(unsigned len, const void * data) = 0;
+    virtual void setXmlns(const char *prefix, const char *uri) = 0;
 };
 
 

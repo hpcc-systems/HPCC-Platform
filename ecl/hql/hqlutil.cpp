@@ -3003,7 +3003,7 @@ __int64 getIntValue(IHqlExpression * expr, __int64 dft)
     return dft;
 }
 
-StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft)
+StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft, bool utf8)
 {
     if (expr)
     {
@@ -3012,13 +3012,26 @@ StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const c
         IValue * value = expr->queryValue();
         if (value)
         {
-            value->getStringValue(out);
+            if (utf8)
+                value->getUTF8Value(out);
+            else
+                value->getStringValue(out);
             return out;
         }
     }
     if (dft)
         out.append(dft);
     return out;
+}
+
+StringBuffer & getStringValue(StringBuffer & out, IHqlExpression * expr, const char * dft)
+{
+    return getStringValue(out, expr, dft, false);
+}
+
+StringBuffer & getUTF8Value(StringBuffer & out, IHqlExpression * expr, const char * dft)
+{
+    return getStringValue(out, expr, dft, true);
 }
 
 bool matchesConstantValue(IHqlExpression * expr, __int64 test)
