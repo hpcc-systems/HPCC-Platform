@@ -83,6 +83,13 @@ define([
         isMonitoring: function () {
             return this._timer && this._timer > 0;
         },
+        disableMonitor: function (disableMonitor) {
+            this._disableMonitor = disableMonitor;
+            if (!this._disableMonitor) {
+                this.refresh();
+                this.onMonitor();
+            }
+        },
         startMonitor: function (aggressive) {
             if (this.isMonitoring()) 
                 return;
@@ -96,6 +103,9 @@ define([
             this._timer = 0;
         },
         onMonitor: function () {
+            if (this._disableMonitor) {
+                return;
+            }
             this._timerTickCount++;
 
             if (this.hasCompleted) {
