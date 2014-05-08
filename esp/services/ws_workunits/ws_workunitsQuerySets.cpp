@@ -1189,6 +1189,8 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
             sortOrder[0] = WUQSFwuid;
         else if (strieq(sortBy, "DLL"))
             sortOrder[0] = WUQSFdll;
+        else if (strieq(sortBy, "Activated"))
+            sortOrder[0] = WUQSFActivited;
         else if (strieq(sortBy, "MemoryLimit"))
             sortOrder[0] = (WUQuerySortField) (WUQSFmemoryLimit | WUQSFnumeric);
         else if (strieq(sortBy, "TimeLimit"))
