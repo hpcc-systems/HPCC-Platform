@@ -425,6 +425,7 @@ extern HQL_API IAtom * workunitAtom;
 extern HQL_API IAtom * wuidAtom;
 extern HQL_API IAtom * xmlAtom;
 extern HQL_API IAtom * xmlDefaultAtom;
+extern HQL_API IAtom * xmlnsAtom;
 extern HQL_API IAtom * _xmlParse_Atom;
 extern HQL_API IAtom * xpathAtom;
 

@@ -33,6 +33,9 @@
 class QueryFilesInUse : public CInterface, implements ISDSSubscription
 {
     mutable CriticalSection crit;
+    MapStringTo<IUserDescriptor *> roxieUserMap;
+    IArrayOf<IUserDescriptor> roxieUsers;
+
     Owned<IPropertyTree> tree;
     SubscriptionId qsChange;
     SubscriptionId pmChange;
@@ -44,6 +47,23 @@ public:
     QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0)
     {
         tree.setown(createPTree("QueryFilesInUse"));
+        updateUsers();
+    }
+
+    void updateUsers()
+    {
+        Owned<IStringIterator> clusters = getTargetClusters("RoxieCluster", NULL);
+        ForEach(*clusters)
+        {
+            SCMStringBuffer target;
+            clusters->str(target);
+
+            Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target.str());
+            Owned<IUserDescriptor> user = createUserDescriptor();
+            user->set(info->getLdapUser(), info->getLdapPassword());
+            roxieUserMap.setValue(target.str(), user);
+            roxieUsers.append(*user.getClear());
+        }
     }
 
     const char *getPackageMap(const char *target)

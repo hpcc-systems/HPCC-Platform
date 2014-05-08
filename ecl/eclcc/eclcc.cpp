@@ -1014,9 +1014,18 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         Owned<IPropertyTreeIterator> iter = instance.srcArchive->getElements("OnWarning");
         ForEach(*iter)
         {
+            const char * name = iter->query().queryProp("@name");
             const char * option = iter->query().queryProp("@value");
-            if (!severityMapper->addCommandLineMapping(option))
-                return;
+            if (name)
+            {
+                if (!severityMapper->addMapping(name, option))
+                    return;
+            }
+            else
+            {
+                if (!severityMapper->addCommandLineMapping(option))
+                    return;
+            }
         }
     }
 
@@ -2066,7 +2075,8 @@ const char * const helpText[] = {
     "    -specs file   Read eclcc configuration from specified file",
     "!   -split m:n    Process a subset m of n input files (only with -b option)",
     "    -v --verbose  Output additional tracing information while compiling",
-    "    -wcode=level  Set the severity for a particular warning code",
+    "    -wxxxx=level  Set the severity for a particular warning code or category",
+    "!                 -wall sets default severity for all warnings",
     "!                 level=ignore|log|warning|error|fail",
     "    --version     Output version information",
     "!   --timings     Output additional timing information",

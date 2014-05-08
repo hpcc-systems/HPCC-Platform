@@ -39,7 +39,22 @@ inline bool isFatal(ErrorSeverity severity) { return severity == SeverityFatal; 
 //TBD in a separate commit - add support for warnings to be associated with different categories
 enum WarnErrorCategory
 {
-    WECunknown,
+    CategoryCast,       // Suspicious casts between types or out of range values
+    CategoryConfuse,    // Likely to cause confusion
+    CategoryDeprecated, // deprecated features or syntax
+    CategoryEfficiency, // Something that is likely to be inefficient
+    CategoryFuture,     // Likely to cause problems in future versions
+    CategoryIgnored,    // Something that has no effect, or is ignored
+    CategoryIndex,      // Unusual indexing of datasets or strings
+    CategoryMistyped,   // Almost certainly mistyped
+    CategorySyntax,     // Invalid syntax which is painless to recover from
+    CategoryUnusual,    // Not strictly speaking an error, but highly unusual and likely to be a mistake
+    CategoryUnexpected, // Code that could be correct, but has the potential for unexpected behaviour
+
+    CategoryError,
+    CategoryAll,
+    CategoryUnknown,
+    CategoryMax,
 };
 
 interface HQL_API IECLError: public IException

@@ -66,6 +66,7 @@ interface IReferencedFileList : extends IInterface
 extern WORKUNIT_API const char *skipForeign(const char *name, StringBuffer *ip=NULL);
 
 extern WORKUNIT_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles);
+extern WORKUNIT_API IReferencedFileList *createReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles);
 
 extern WORKUNIT_API void splitDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster);
 extern WORKUNIT_API void splitDerivedDfsLocation(const char *address, StringBuffer &cluster, StringBuffer &ip, StringBuffer &prefix, const char *defaultCluster, const char *baseCluster, const char *baseIP, const char *basePrefix);

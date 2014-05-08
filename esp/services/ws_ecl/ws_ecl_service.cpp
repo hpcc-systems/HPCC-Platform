@@ -2209,14 +2209,19 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
     StringBuffer output;
 
     SCMStringBuffer clustertype;
-
+    const char *contentType="application/xml";
     bool isRoxieReq = wsecl->connMap.getValue(wsinfo.qsetname.get())!=NULL;
     bool outputJSON = (format && strieq(format, "json"));
+    const char *jsonp = context.queryRequestParameters()->queryProp("jsonp");
     if (isRoxieReq && outputJSON)
     {
         StringBuffer jsonmsg;
         getWsEclJsonRequest(jsonmsg, context, request, wsinfo, "json", NULL, 0, false);
+        if (jsonp && *jsonp)
+            output.append(jsonp).append('(');
         sendRoxieRequest(wsinfo.qsetname.get(), jsonmsg, output, status, wsinfo.queryname, "application/json");
+        if (jsonp && *jsonp)
+            output.append(");");
     }
     else
     {
@@ -2249,8 +2254,11 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
         }
     }
 
+    if (outputJSON)
+        contentType = (jsonp && *jsonp) ? "application/javascript" : "application/json";
+
     response->setContent(output.str());
-    response->setContentType(outputJSON ? "application/json" : "application/xml");
+    response->setContentType(contentType);
     response->setStatus("200 OK");
     response->send();
 

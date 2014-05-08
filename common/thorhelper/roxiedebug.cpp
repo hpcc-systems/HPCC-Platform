@@ -527,6 +527,10 @@ public:
     {
         // nothing for now
     }
+    virtual void outputXmlns(const char *prefix, const char *uri)
+    {
+        // nothing for now
+    }
 };
 
 class ContainsFieldSearcher : public SimpleFieldSearcher

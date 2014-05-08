@@ -1451,6 +1451,7 @@ extern HQL_API IHqlExpression * queryAttributeInList(IAtom * search, IHqlExpress
 extern HQL_API IHqlExpression * queryAttribute(IAtom * search, const HqlExprArray & exprs);
 extern HQL_API IHqlExpression * queryAnnotation(IHqlExpression * expr, annotate_kind search);       // return first match
 extern HQL_API IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr);
+extern HQL_API void gatherAttributes(HqlExprArray & matches, IAtom * search, IHqlExpression * expr);
 
 inline bool hasAnnotation(IHqlExpression * expr, annotate_kind search){ return queryAnnotation(expr, search) != NULL; }
 inline IHqlExpression * queryNamedSymbol(IHqlExpression * expr) { return queryAnnotation(expr, annotate_symbol); }

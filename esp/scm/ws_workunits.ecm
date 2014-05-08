@@ -1118,6 +1118,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     bool DontCopyFiles(false);
     string SourceProcess;
     bool AllowForeignFiles(false);
+    bool UpdateDfs(false);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse

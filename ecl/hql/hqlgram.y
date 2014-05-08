@@ -461,6 +461,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   XMLDECODE
   XMLDEFAULT
   XMLENCODE
+  XMLNS
   XMLPROJECT
   XMLTEXT
   XMLUNICODE
@@ -1506,7 +1507,14 @@ setMetaCommand
                         }
     | HASH_ONWARNING '(' expression ',' warningAction ')'
                         {
-                            parser->normalizeExpression($3, type_int, false);
+                            if (isNumericType($3.queryExprType()))
+                            {
+                                parser->normalizeExpression($3, type_int, false);
+                            }
+                            else
+                            {
+                                parser->normalizeExpression($3, type_string, false);
+                            }
                             $$.setExpr(createValue(no_setmeta, makeVoidType(), createAttribute(onWarningAtom), $3.getExpr(), $5.getExpr()), $1);
                         }
     ;
@@ -3465,6 +3473,13 @@ outputWuFlags
 outputWuFlag
     : ALL               {
                             $$.setExpr(createAttribute(allAtom));
+                            $$.setPosition($1);
+                        }
+    | XMLNS '(' expression ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_stringorunicode, true);
+                            parser->normalizeExpression($5, type_stringorunicode, true);
+                            $$.setExpr(createExprAttribute(xmlnsAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }
     | FIRST '(' constExpression ')'
