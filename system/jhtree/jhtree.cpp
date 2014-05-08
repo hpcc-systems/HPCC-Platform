@@ -2099,116 +2099,81 @@ CJHTreeNode *CNodeCache::getNode(INodeLoader *keyIndex, int iD, offset_t pos, IC
     // Also one cache per key would surely be faster, and could still use a global total
     if (!pos)
         return NULL;
+    // It's a shame that we don't know the type before we read it. But probably not that big a deal
+    CKeyIdAndPos key(iD, pos);
+    int cacheStatType = -1;
+    atomic_t *cacheStatVar = NULL;
+    CJHTreeNode *node = NULL;
     { 
-        // It's a shame that we don't know the type before we read it. But probably not that big a deal
         SpinBlock block(lock);
-        CKeyIdAndPos key(iD, pos);
-        if (preloadNodes)
+        if (preloadNodes && (node = preloadCache.query(key)) != NULL)
         {
-            CJHTreeNode *cacheNode = preloadCache.query(key);
-            if (cacheNode)
-            {
-                atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_PRELOADCACHEHIT, 1, 1);
-                atomic_inc(&preloadCacheHits);
-                return LINK(cacheNode);
-            }
+            cacheStatType = STATS_PRELOADCACHEHIT;
+            cacheStatVar = &preloadCacheHits;
         }
-        if (cacheNodes)
+        else if (cacheNodes  && (node = nodeCache.query(key)) != NULL)
         {
-            CJHTreeNode *cacheNode = nodeCache.query(key);
-            if (cacheNode)
-            {
-                atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_NODECACHEHIT, 1, 1);
-                atomic_inc(&nodeCacheHits);
-                return LINK(cacheNode);
-            }
+            cacheStatType = STATS_NODECACHEHIT;
+            cacheStatVar = &nodeCacheHits;
         }
-        if (cacheLeaves)
+        else if (cacheLeaves  && (node = leafCache.query(key)) != NULL)
         {
-            CJHTreeNode *cacheNode = leafCache.query(key);
-            if (cacheNode)
-            {
-                atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_LEAFCACHEHIT, 1, 1);
-                atomic_inc(&leafCacheHits);
-                return LINK(cacheNode);
-            }
+            cacheStatType = STATS_LEAFCACHEHIT;
+            cacheStatVar = &leafCacheHits;
         }
+        else if (cacheBlobs && (node = blobCache.query(key)) != NULL)
+        {
+            cacheStatType = STATS_BLOBCACHEHIT;
+            cacheStatVar = &blobCacheHits;
+        }
+    }
+    if (node)
+    {
+        atomic_inc(&cacheHits);
+        if (ctx)
+            ctx->noteStatistic(cacheStatType, 1, 1);
+        atomic_inc(cacheStatVar);
+        return LINK(node);
+    }
+    node = keyIndex->loadNode(pos);  // NOTE - don't want cache locked while we load!
+    CNodeMRUCache *useCache = NULL;
+    if (node->isBlob())
+    {
         if (cacheBlobs)
         {
-            CJHTreeNode *cacheNode = blobCache.query(key);
-            if (cacheNode)
-            {
-                atomic_inc(&cacheHits);
-                if (ctx) ctx->noteStatistic(STATS_BLOBCACHEHIT, 1, 1);
-                atomic_inc(&blobCacheHits);
-                return LINK(cacheNode);
-            }
+            useCache = &blobCache;
+            cacheStatType = STATS_BLOBCACHEADD;
+            cacheStatVar = &blobCacheAdds;
         }
-        CJHTreeNode *node;
-        {
-            SpinUnblock block(lock);
-            node = keyIndex->loadNode(pos);  // NOTE - don't want cache locked while we load!
-        }
-        atomic_inc(&cacheAdds);
-        if (node->isBlob())
-        {
-            if (cacheBlobs)
-            {
-                CJHTreeNode *cacheNode = blobCache.query(key); // check if added to cache while we were reading
-                if (cacheNode)
-                {
-                    ::Release(node);
-                    atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_BLOBCACHEHIT, 1, 1);
-                    atomic_inc(&blobCacheHits);
-                    return LINK(cacheNode);
-                }
-                if (ctx) ctx->noteStatistic(STATS_BLOBCACHEADD, 1, 1);
-                atomic_inc(&blobCacheAdds);
-                blobCache.add(key, *LINK(node));
-            }
-        }
-        else if (node->isLeaf() && !isTLK) // leaves in TLK are cached as if they were nodes
-        {
-            if (cacheLeaves)
-            {
-                CJHTreeNode *cacheNode = leafCache.query(key); // check if added to cache while we were reading
-                if (cacheNode)
-                {
-                    ::Release(node);
-                    atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_LEAFCACHEHIT, 1, 1);
-                    atomic_inc(&leafCacheHits);
-                    return LINK(cacheNode);
-                }
-                if (ctx) ctx->noteStatistic(STATS_LEAFCACHEADD, 1, 1);
-                atomic_inc(&leafCacheAdds);
-                leafCache.add(key, *LINK(node));
-            }
-        }
-        else
-        {
-            if (cacheNodes)
-            {
-                CJHTreeNode *cacheNode = nodeCache.query(key); // check if added to cache while we were reading
-                if (cacheNode)
-                {
-                    ::Release(node);
-                    atomic_inc(&cacheHits);
-                    if (ctx) ctx->noteStatistic(STATS_NODECACHEHIT, 1, 1);
-                    atomic_inc(&nodeCacheHits);
-                    return LINK(cacheNode);
-                }
-                if (ctx) ctx->noteStatistic(STATS_NODECACHEADD, 1, 1);
-                atomic_inc(&nodeCacheAdds);
-                nodeCache.add(key, *LINK(node));
-            }
-        }
-        return node;
     }
+    else if (node->isLeaf() && !isTLK) // leaves in TLK are cached as if they were nodes
+    {
+        if (cacheLeaves)
+        {
+            useCache = &leafCache;
+            cacheStatType = STATS_LEAFCACHEADD;
+            cacheStatVar = &leafCacheAdds;
+        }
+    }
+    else
+    {
+        if (cacheNodes)
+        {
+            useCache = &nodeCache;
+            cacheStatType = STATS_NODECACHEADD;
+            cacheStatVar = &nodeCacheAdds;
+        }
+    }
+    if (useCache)
+    {
+        if (ctx) ctx->noteStatistic(cacheStatType, 1, 1);
+        atomic_inc(cacheStatVar);
+        SpinBlock block(lock);
+        // Used to check at this point if someone had cached while we were reading. But not sure what the point is, may as well just add mine anyway
+        // so long as that correctly removes the previous.
+        useCache->add(key, *LINK(node));
+    }
+    return node;
 }
 
 void CNodeCache::preload(CJHTreeNode *node, int iD, offset_t pos, IContextLogger *ctx)
