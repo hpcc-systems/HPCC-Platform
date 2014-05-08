@@ -336,7 +336,6 @@ define([
                             node.innerHTML = dojoConfig.getImageHTML("active.png", context.i18n.Active);
                         },
                         width: 25,
-                        sortable: false,
                         formatter: function (activated) {
                             if (activated == true) {
                                 return dojoConfig.getImageHTML("active.png");
@@ -372,7 +371,8 @@ define([
                     },
                     PublishedBy: {
                         width: 100,
-                        label: this.i18n.PublishedBy
+                        label: this.i18n.PublishedBy,
+                        sortable: false
                     }
                 }
             }, this.id + "QuerySetGrid");
