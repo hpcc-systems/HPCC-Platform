@@ -1422,6 +1422,7 @@ IHqlExpression * SequenceNumberAllocator::attachSequenceNumber(IHqlExpression * 
                 args.append(*createAttribute(namedAtom, LINK(name)));
             args.append(*createAttribute(outputAtom));
             args.append(*createUniqueId());
+            gatherAttributes(args, xmlnsAtom, expr);
             return createSetResult(args);
         }
     default:

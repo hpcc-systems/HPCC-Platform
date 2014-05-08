@@ -139,6 +139,10 @@ define([
             }
             this.set("timers", timers);
         },
+        _ResourceURLCountSetter: function (ResourceURLCount) {
+            //  All WU's have 1 resource URL, which we are not interested in  ---
+            this.set("resourceURLCount", ResourceURLCount - 1);
+        },
         _ResourceURLsSetter: function (resourceURLs) {
             var data = [];
             arrayUtil.forEach(resourceURLs.URL, function (url, idx) {
@@ -158,6 +162,7 @@ define([
                 }
             }, this);
             this.set("resourceURLs", data);
+            this.set("resourceURLCount", data.length);
         },
         _GraphsSetter: function (Graphs) {
             this.set("graphs", Graphs.ECLGraph);

@@ -148,6 +148,7 @@ ESPresponse [encode(0), exceptions_inline] GetMachineInfoResponse
    string TimeStamp;
    [min_ver("1.02")] string UserName;
    [min_ver("1.02"), password, cols(20)] string Password;
+   [min_ver("1.12")] string AcceptLanguage;
 };
 
 
@@ -159,6 +160,7 @@ ESPrequest GetMachineInfoRequestEx
 
 ESPresponse [encode(0), exceptions_inline] GetMachineInfoResponseEx
 {
+    [min_ver("1.12")] string AcceptLanguage;
     ESParray<ESPstruct MachineInfoEx> Machines;
 };
 
@@ -185,6 +187,7 @@ ESPresponse [encode(0), exceptions_inline] MetricsResponse
    [min_ver("1.02")] string Cluster;
    [min_ver("1.06")] bool   SelectAllChecked(false);
    [min_ver("1.07")] bool   AutoUpdate(true);
+   [min_ver("1.12")] string AcceptLanguage;
 };
 
 ESPstruct RemoteExecResult
@@ -302,9 +305,10 @@ ESPresponse [encode(0), exceptions_inline] GetTargetClusterInfoResponse
     ESPstruct RequestInfoStruct             RequestInfo;
     ESParray<ESPstruct TargetClusterInfo>   TargetClusterInfoList;
     string TimeStamp;
+    [min_ver("1.12")] string AcceptLanguage;
 };
 //-------- service ---------
-ESPservice [version("1.11"), default_client_version("1.11")] ws_machine
+ESPservice [version("1.12"), default_client_version("1.12")] ws_machine
 {
     ESPuses ESPstruct RequestInfoStruct;
     ESPuses ESPstruct MachineInfoEx;

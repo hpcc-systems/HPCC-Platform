@@ -339,7 +339,8 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
         if (pkgid && *pkgid)
             queryTree->setProp("@pkgid", pkgid);
 
-        Owned<IReferencedFileList> wufiles = createReferencedFileList(NULL, NULL, true);
+        IUserDescriptor **roxieUser = roxieUserMap.getValue(target);
+        Owned<IReferencedFileList> wufiles = createReferencedFileList(roxieUser ? *roxieUser : NULL, true);
         wufiles->addFilesFromQuery(cw, pm, queryid);
         if (aborting)
             return;
@@ -740,7 +741,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     }
 
     if (!req.getDontCopyFiles())
-        copyQueryFilesToCluster(context, cw, daliIP, srcPrefix, target.str(), srcCluster, queryName.str(), false, req.getAllowForeignFiles());
+        copyQueryFilesToCluster(context, cw, daliIP, srcPrefix, target.str(), srcCluster, queryName.str(), req.getUpdateDfs(), req.getAllowForeignFiles());
 
     WorkunitUpdate wu(&cw->lock());
     if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))

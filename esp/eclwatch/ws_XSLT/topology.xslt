@@ -21,6 +21,9 @@
     
     <xsl:variable name="apos">'</xsl:variable>
   <xsl:variable name="enableSNMP" select="/TpClusterQueryResponse/EnableSNMP"/>
+  <xsl:variable name="acceptLanguage" select="/TpClusterQueryResponse/AcceptLanguage"/>
+  <xsl:variable name="localiseFile"><xsl:value-of select="concat('nls/', $acceptLanguage, '/hpcc.xml')"/></xsl:variable>
+  <xsl:variable name="hpccStrings" select="document($localiseFile)/hpcc/strings"/>
 
   <xsl:template match="TpClusterQueryResponse">
     <html>
@@ -54,31 +57,6 @@
                 }
               }
 
-              function onSubmit(bStop)
-              {
-                var rc = 0;
-                if (enable_SNMP > 0)
-                {
-                  var username = document.getElementById("submit3").value;
-                  var password = document.getElementById("submit4").value;
-                  if (username == null || password == null || username == '' || password == '')
-                  {
-                    alert("Both UserName and Password have to be filled in.");
-                    return false;
-                  }
-                  rc = confirm('Are you sure you want to ' + (bStop ? 'stop':'start') + ' the selected cluster(s)?');
-                  if (rc)
-                    document.forms[0].action='/ws_machine/StartStopBegin?Key1=' + username + '&Key2=' + password + '&Stop=' + (bStop ? '1' : '0');
-                }
-                else
-                {
-                  rc = confirm('Are you sure you want to ' + (bStop ? 'stop':'start') + ' the selected cluster(s)?');
-                  if (rc)
-                    document.forms[0].action='/ws_machine/StartStopBegin?Stop=' + (bStop ? '1' : '0');
-                }
-                return rc;
-              }
-
               function getConfigXML(url) 
               {
                 document.location.href = url;
@@ -92,7 +70,7 @@
           <xsl:choose>
             <xsl:when test="TpClusters/TpCluster">
               <table class="sort-table" id="clustersTable">
-                <caption><h2 align="left">Clusters</h2></caption>
+                <caption><h2 align="left"><xsl:value-of select="$hpccStrings/st[@id='Clusters']"/></h2></caption>
                 <colgroup>
                   <col width="2%" align="center"/>
                   <col width="15%" align="left"/>
@@ -102,11 +80,11 @@
                   <col width="28%" align="left"/>
                 </colgroup>
                 <tr class="grey">
-                  <th colspan="2">Name</th>
-                  <th>Component</th>
-                  <th>Platform</th>
-                  <th>Directory</th>
-                  <th>Log Directory</th>
+                  <th colspan="2"><xsl:value-of select="$hpccStrings/st[@id='Name']"/></th>
+                  <th><xsl:value-of select="$hpccStrings/st[@id='Component']"/></th>
+                  <th><xsl:value-of select="$hpccStrings/st[@id='Platform']"/></th>
+                  <th><xsl:value-of select="$hpccStrings/st[@id='Directory']"/></th>
+                  <th><xsl:value-of select="$hpccStrings/st[@id='LogDirectory']"/></th>
                 </tr>
                 <xsl:apply-templates select="TpClusters/TpCluster">
                   <xsl:sort select="Name"/>
@@ -114,8 +92,8 @@
               </table>
             </xsl:when>
             <xsl:otherwise>
-              <h3 align="center">Clusters</h3>
-              <br/>No clusters defined.
+              <h3 align="center"><xsl:value-of select="$hpccStrings/st[@id='Clusters']"/></h3>
+              <br/><xsl:value-of select="$hpccStrings/st[@id='NoClustersDefined']"/>
             </xsl:otherwise>
           </xsl:choose>
         </form>
@@ -141,9 +119,9 @@
       <xsl:variable name="type3" select="translate($type2, 'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
       <xsl:variable name="type4">
         <xsl:choose>
-            <xsl:when test="Type='RoxieCluster'">Roxie Cluster Process</xsl:when>
-            <xsl:when test="Type='ThorCluster'">Thor Cluster Process</xsl:when>
-            <xsl:when test="Type='HoleCluster'">Hole Cluster Process</xsl:when>
+            <xsl:when test="Type='RoxieCluster'">Roxie <xsl:value-of select="$hpccStrings/st[@id='ClusterProcess']"/></xsl:when>
+            <xsl:when test="Type='ThorCluster'">Thor <xsl:value-of select="$hpccStrings/st[@id='ClusterProcess']"/></xsl:when>
+            <xsl:when test="Type='HoleCluster'">Hole <xsl:value-of select="$hpccStrings/st[@id='ClusterProcess']"/></xsl:when>
         </xsl:choose>
       </xsl:variable>
       <xsl:variable name="absolutePath">
@@ -182,13 +160,11 @@
             </xsl:variable>
       <td width="45" nowrap="true">
         <xsl:variable name="href0">
-          <xsl:text disable-output-escaping="yes">/esp/iframe?esp_iframe_title=Configuration file for </xsl:text>
-          <xsl:value-of select="concat($type2, ' cluster - ', Name)"/>
+          <xsl:value-of select="concat('/esp/iframe?esp_iframe_title=', $type2, ' ', $hpccStrings/st[@id='Cluster'], ' ', Name, ' -- ', $hpccStrings/st[@id='Configuration'])"/>
           <xsl:text disable-output-escaping="yes">&amp;inner=/WsTopology/TpGetComponentFile%3fFileType%3dcfg%26CompType%3d</xsl:text>
           <xsl:value-of select="concat($type2, 'Cluster%26CompName%3d', Name, '%26Directory%3d', $absolutePath, '%26OsType%3d', OS)"/>
         </xsl:variable>
-        <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="View configuration file..."
-          title="View configuration file..." width="14" height="14"/>
+        <img onclick="getConfigXML('{$href0}')" border="0" src="/esp/files_/img/config.png" alt="{$hpccStrings/st[@id='ViewConfigurationFile']}" title="{$hpccStrings/st[@id='ViewConfigurationFile']}" width="14" height="14"/>
       </td>
       <td>
         <a  href="/WsTopology/TpMachineQuery?Type={$type3}MACHINES&amp;Cluster={Name}&amp;Path={Path}&amp;Directory={Directory}&amp;LogDirectory={$logPath}">
@@ -203,7 +179,7 @@
           <xsl:when test="OS=0">Windows</xsl:when>
           <xsl:when test="OS=2">Linux</xsl:when>
           <xsl:when test="OS=1">Solaris</xsl:when>
-          <xsl:otherwise>Unknown</xsl:otherwise>
+          <xsl:otherwise><xsl:value-of select="$hpccStrings/st[@id='Unknown']"/></xsl:otherwise>
         </xsl:choose>
       </td>
       <td>

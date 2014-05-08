@@ -832,7 +832,13 @@ protected:
                 const rowcount_t &rowsWritten = parent.readerWait(rowsRead);
                 {
                     CriticalUnblock b(parent.crit);
-                    readWaitSem.wait();
+                    unsigned mins=0;
+                    loop
+                    {
+                        if (readWaitSem.wait(60000))
+                            break; // NB: will also be signal if aborting
+                        ActPrintLog(parent.activity, "output %d @ row # %"RCPF"d, has been blocked for %d minute(s)", output, rowsRead, ++mins);
+                    }
                 }
                 if (parent.isEof(rowsRead))
                     return 0;

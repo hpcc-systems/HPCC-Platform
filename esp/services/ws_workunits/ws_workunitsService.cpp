@@ -2189,7 +2189,7 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
     return true;
 }
 
-void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt)
+void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, __int64 start, unsigned& count, __int64& total, bool bin, bool xsd, ESPSerializationFormat fmt, const IProperties *xmlns)
 {
     if (!result)
         return;
@@ -2217,7 +2217,7 @@ void appendResultSet(MemoryBuffer& mb, INewResultSet* result, const char *name, 
         if (fmt==ESPSerializationJSON)
             count = getResultJSON(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
         else
-            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL);
+            count = getResultXml(adaptor, result, name, (unsigned) start, count, (xsd) ? "myschema" : NULL, xmlns);
     }
 }
 
@@ -2296,11 +2296,11 @@ void getWsWuResult(IEspContext &context, const char* wuid, const char *name, con
     else
         rs.setown(resultSetFactory->createNewResultSet(result, wuid));
     if (!filterBy || !filterBy->length())
-        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat());
+        appendResultSet(mb, rs, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryXmlns());
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(rs, filterBy);
-        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat());
+        appendResultSet(mb, filteredResult, name, start, count, total, bin, xsd, context.getResponseFormat(), result->queryXmlns());
     }
 }
 
@@ -2673,11 +2673,11 @@ void getFileResults(IEspContext &context, const char* logicalName, const char* c
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<INewResultSet> result(resultSetFactory->createNewFileResultSet(logicalName, cluster));
     if (!filterBy || !filterBy->length())
-        appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat());
+        appendResultSet(buf, result, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
     else
     {
         Owned<INewResultSet> filteredResult = createFilteredResultSet(result, filterBy);
-        appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat());
+        appendResultSet(buf, filteredResult, resname.str(), start, count, total, bin, xsd, context.getResponseFormat(), NULL);
     }
 }
 

@@ -12,6 +12,7 @@ var dojoConfig = (function () {
             pathname: location.pathname,
             hash: hashNodes.length >= 2 ? hashNodes[1] : "",
             params: searchNodes.length >= 2 ? searchNodes[1] : "",
+            baseHost: baseHost,
             basePath: baseHost + "/esp/files",
             resourcePath: baseHost + "/esp/files/eclwatch",
             scriptsPath: baseHost + "/esp/files/eclwatch",

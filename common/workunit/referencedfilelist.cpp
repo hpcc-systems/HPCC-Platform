@@ -187,6 +187,12 @@ public:
         }
     }
 
+    ReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles) : allowForeign(allowForeignFiles)
+    {
+        if (userDesc)
+            user.set(userDesc);
+    }
+
     void ensureFile(const char *ln, unsigned flags, const char *pkgid, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
 
     virtual void addFile(const char *ln, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
@@ -327,7 +333,7 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     if (flags & RefFileInPackage)
         return;
     reset();
-    if (checkLocalFirst)
+    if (checkLocalFirst) //usually means we don't want to overwrite existing file info
     {
         Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user);
         if(df)
@@ -338,9 +344,17 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
     }
     Owned<IPropertyTree> tree = getSpecifiedOrRemoteFileTree(user, remote, remotePrefix);
     if (tree)
+    {
         processRemoteFileTree(tree, srcCluster, subfiles);
-    else
-        flags |= RefFileNotFound;
+        return;
+    }
+    else if (!checkLocalFirst && (!srcCluster || !*srcCluster)) //haven't already checked and not told to use a specific copy
+    {
+        resolveLocal(dstCluster, srcCluster, user, subfiles);
+        return;
+    }
+
+    flags |= RefFileNotFound;
 }
 
 void ReferencedFile::resolve(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, INode *remote, const char *remotePrefix, bool checkLocalFirst, StringArray *subfiles, bool resolveForeign)
@@ -702,4 +716,9 @@ IReferencedFileIterator *ReferencedFileList::getFiles()
 IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles)
 {
     return new ReferencedFileList(user, pw, allowForeignFiles);
+}
+
+IReferencedFileList *createReferencedFileList(IUserDescriptor *user, bool allowForeignFiles)
+{
+    return new ReferencedFileList(user, allowForeignFiles);
 }

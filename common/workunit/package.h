@@ -38,6 +38,7 @@ interface IHpccPackage : extends IInterface
 
     virtual const char *queryEnv(const char *varname) const = 0;
     virtual bool getEnableFieldTranslation() const = 0;
+    virtual bool isCompulsory() const = 0;
     virtual const IPropertyTree *queryTree() const = 0;
     virtual hash64_t queryHash() const = 0;
     virtual const char *queryId() const = 0;
