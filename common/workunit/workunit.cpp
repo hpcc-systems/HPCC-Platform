@@ -4360,8 +4360,11 @@ class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
     StringArray thorProcesses;
     StringArray primaryThorProcesses;
     StringAttr prefix;
+    StringAttr ldapUser;
+    StringBuffer ldapPassword;
     ClusterType platform;
     unsigned clusterWidth;
+
 public:
     IMPLEMENT_IINTERFACE;
     CEnvironmentClusterInfo(const char *_name, const char *_prefix, IPropertyTree *agent, IArrayOf<IPropertyTree> &thors, IPropertyTree *roxie)
@@ -4405,6 +4408,10 @@ public:
             platform = RoxieCluster;
             getRoxieProcessServers(roxie, roxieServers);
             clusterWidth = roxieServers.length();
+            ldapUser.set(roxie->queryProp("@ldapUser"));
+            StringBuffer encPassword = roxie->queryProp("@ldapPassword");
+            if (encPassword.length())
+                decrypt(ldapPassword, encPassword);
         }
         else 
         {
@@ -4472,6 +4479,14 @@ public:
     const SocketEndpointArray & getRoxieServers() const
     {
         return roxieServers;
+    }
+    const char *getLdapUser() const
+    {
+        return ldapUser.get();
+    }
+    virtual const char *getLdapPassword() const
+    {
+        return ldapPassword.str();
     }
 };
 

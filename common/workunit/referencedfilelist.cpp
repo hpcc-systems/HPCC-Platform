@@ -187,6 +187,12 @@ public:
         }
     }
 
+    ReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles) : allowForeign(allowForeignFiles)
+    {
+        if (userDesc)
+            user.set(userDesc);
+    }
+
     void ensureFile(const char *ln, unsigned flags, const char *pkgid, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
 
     virtual void addFile(const char *ln, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
@@ -710,4 +716,9 @@ IReferencedFileIterator *ReferencedFileList::getFiles()
 IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles)
 {
     return new ReferencedFileList(user, pw, allowForeignFiles);
+}
+
+IReferencedFileList *createReferencedFileList(IUserDescriptor *user, bool allowForeignFiles)
+{
+    return new ReferencedFileList(user, allowForeignFiles);
 }
