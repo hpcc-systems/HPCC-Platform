@@ -25,7 +25,7 @@ from ..util.ecl.file import ECLFile
 from ..common.error import Error
 
 class Suite:
-    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir,  fileList = None):
+    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir,  isSetup=False,  fileList = None):
         self.name = name
         self.suite = []
         self.dir_ec = dir_ec
@@ -36,7 +36,7 @@ class Suite:
         self.exclude = []
         self.publish = []
 
-        self.buildSuite(fileList)
+        self.buildSuite(isSetup,  fileList)
 
         if len(self.exclude):
             curTime = time.strftime("%y-%m-%d-%H-%M")
@@ -46,10 +46,8 @@ class Suite:
             for item in self.exclude:
                 self.log.write(item+"\n")
             self.log.close();
-            
 
-
-    def buildSuite(self,  fileList):
+    def buildSuite(self,  isSetup,  fileList):
         if fileList == None:
             if not os.path.isdir(self.dir_ec):
                 raise Error("2001", err="Not Found: %s" % self.dir_ec)
@@ -63,14 +61,23 @@ class Suite:
                 ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
                                   self.dir_r,  self.name)
-                result = eclfile.testSkip(self.name)
-                if not result['skip']:
-                    if not eclfile.testExclusion(self.name):
+                if isSetup:
+                    skipResult = eclfile.testSkip('setup')
+                else:
+                    skipResult = eclfile.testSkip(self.name)
+
+                if not skipResult['skip']:
+                    if isSetup:
+                        exclude = eclfile.testExclusion('setup')
+                    else:
+                        exclude = eclfile.testExclusion(self.name)
+
+                    if not exclude:
                         self.suite.append(eclfile)
                     else:
                         self.exclude.append(format(file, "25")+" excluded")
                 else:
-                    self.exclude.append(format(file, "25")+" skipped (reason:"+result['reason']+")");
+                    self.exclude.append(format(file, "25")+" skipped (reason:"+skipResult['reason']+")");
 
                 if eclfile.testPublish():
                     self.publish.append(file)
