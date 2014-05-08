@@ -51,7 +51,7 @@ q1 := dataset([
             ], TextSearch.queryInputRecord);
 
 boolean useLocal := false;
-Files := Setup.Files('hthor');
+Files := Setup.Files('thor');
 searchIndex := index(TS.textSearchIndex, Files.NameSearchIndex);
 p := project(q1, TextSearch.doBatchExecute(searchIndex, LEFT, useLocal, 0x00000200));
 output(p);

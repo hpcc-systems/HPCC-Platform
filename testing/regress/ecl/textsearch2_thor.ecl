@@ -15,5 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-import $.common;
-common.aggidx2('hthor');
+//nothor
+
+#option ('checkAsserts',false);
+import $.Common.TextSearch;
+import $.Common.TextSearchQueries;
+
+q1 := TextSearchQueries.WordTests;
+
+output(TextSearch.executeBatchAgainstWordIndex(q1, false, 'thorlcr', 0x40000000)); // 0x40000000 means never optimize

@@ -18,9 +18,6 @@
 import $.setup;
 sq := setup.sq('hthor');
 
-//Check fixed size disk count correctly checks canMatchAny()
-inlineDs := dataset([1,2],{integer value});
-
 sequential(
 //Simple disk aggregate
 output(table(sq.SimplePersonBookDs, { sum(group, aage),exists(group),exists(group,aage>0),exists(group,aage>100),count(group,aage>20) })),

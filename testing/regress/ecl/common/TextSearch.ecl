@@ -15,11 +15,9 @@
     limitations under the License.
 ############################################################################## */
 
-//This is a module which is imported and used from other queries - don't execute it.
-//skip type==setup TBD
-
-import $.Options;
-import $.TS;
+import $.^.Setup;
+import Setup.Options;
+import Setup.TS;
 
 EXPORT TextSearch := FUNCTION
 
@@ -1861,6 +1859,13 @@ publicExports := MODULE
         result := SearchExecutor(wordIndex, internalFlags).doExecuteQuery(request, useLocal);
         return result;
     end;
+
+    EXPORT executeBatchAgainstWordIndex(DATASET(queryInputRecord) queries, boolean useLocal, string source, unsigned4 internalFlags=0) := FUNCTION
+        Files := Setup.Files(source);
+        wordIndex := index(TS.textSearchIndex, Files.NameWordIndex(useLocal));
+        p := project(nofold(queries), doBatchExecute(wordIndex, LEFT, useLocal, internalFlags));
+        RETURN p;
+    END;
 
 END;
 

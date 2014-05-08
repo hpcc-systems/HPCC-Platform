@@ -15,16 +15,5 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup;
-sq := setup.sq('hthor');
-
-pr:= table(sq.SimplePersonBookDs, { fullname := trim(surname) + ', ' + trim(forename), aage });
-
-//Aggregate on a projected table that can't be merged
-pr2:= table(sq.SimplePersonBookDs, { surname, forename, aage, unsigned8 seq := (random() % 100) / 2000 + aage; });
-
-//Filtered Aggregate on a projected table.
-output(sort(table(pr(aage > 20), { aage, max(group, fullname) }, aage, few), record));
-
-//Filtered Aggregate on a projected table.
-output(sort(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few), record));
+import $.common;
+common.aggds4('hthor');

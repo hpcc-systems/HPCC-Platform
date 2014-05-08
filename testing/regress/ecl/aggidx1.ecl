@@ -15,31 +15,5 @@
     limitations under the License.
 ############################################################################## */
 
-#onwarning (4515, ignore);
-
-import $.setup;
-sq := setup.sq('hthor');
-
-//Check correctly checks canMatchAny()
-inlineDs := dataset([1,2],{integer value});
-
-//Simple disk aggregate
-output(table(sq.SimplePersonBookIndex, { sum(group, aage),exists(group),exists(group,aage>0),exists(group,aage>100),count(group,aage>20) }));
-
-//Filtered disk aggregate, which also requires a beenProcessed flag
-output(table(sq.SimplePersonBookIndex(surname != 'Halliday'), { max(group, aage) }));
-
-//Special case count.
-output(table(sq.SimplePersonBookIndex(forename = 'Gavin'), { count(group) }));
-
-output(count(sq.SimplePersonBookIndex));
-
-//Special case count.
-output(table(sq.SimplePersonBookIndex, { count(group, (forename = 'Gavin')) }));
-
-output(table(inlineDs, { count(sq.SimplePersonBookIndex(inlineDs.value = 1)); }));
-
-//existance checks
-output(exists(sq.SimplePersonBookIndex));
-output(exists(sq.SimplePersonBookIndex(forename = 'Gavin')));
-output(exists(sq.SimplePersonBookIndex(forename = 'Joshua')));
+import $.common;
+common.aggidx1('hthor');

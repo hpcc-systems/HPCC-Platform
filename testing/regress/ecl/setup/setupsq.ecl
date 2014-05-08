@@ -101,7 +101,7 @@ rawHouse := dataset([
             ]
         }]
     }
-    ], sq.HousePersonBookRec);
+    ], sq.HousePersonBookRec, DISTRIBUTED);
 
 
 //First reproject the datasets to
