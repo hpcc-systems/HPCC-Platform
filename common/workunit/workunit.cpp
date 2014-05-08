@@ -1926,7 +1926,7 @@ mapEnums workunitSortFields[] =
    { WUSFbatchmachine, "Application/Dispatcher/Machine" },
    { WUSFbatchinputfile, "Application/Dispatcher/InputFileName" },
    { WUSFbatchoutputfile, "Application/Dispatcher/OutputFileName" },
-   { WUSFtotalthortime, "Timings/Timing[@name='Total thor time']/@duration" },
+   { WUSFtotalthortime, "Statistics/Statistic[@desc='Total thor time']/@value|Timings/Timing[@name='Total thor time']/@duration" },//Use Statistics first. If not found, use Timings
    { WUSFterm, NULL }
 };
 
