@@ -21,13 +21,8 @@ define([
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/tree",
     "dgrid/editor",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ws_access",
@@ -35,7 +30,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC,
                 registry,
-                OnDemandGrid, Keyboard, Selection, tree, editor, ColumnResizer, DijitRegistry,
+                tree, editor,
                 GridDetailsWidget, WsAccess, ESPUtil) {
     return declare("PermissionsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
@@ -60,7 +55,7 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     DisplayName: tree({

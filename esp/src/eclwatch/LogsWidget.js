@@ -28,12 +28,7 @@ define([
     "dijit/form/Button",
     "dijit/ToolbarSeparator",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPUtil",
@@ -43,7 +38,7 @@ define([
 
 ],  function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, domConstruct, on,
             registry, Button, ToolbarSeparator,
-            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+            selector,
             GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, DelayLoadWidget) {
         return declare("LogsWidget", [GridDetailsWidget], {
             baseClass: "LogsWidget",
@@ -147,8 +142,7 @@ define([
                 domConstruct.place(downloadLabal, this.openButton.domNode, "after");
                 tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
 
-                var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                    allowSelectAll: true,
+                var retVal = new declare([ESPUtil.Grid(false, true)])({
                     store: this.store,
                     columns: {
                         sel: selector({

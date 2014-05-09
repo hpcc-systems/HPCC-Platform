@@ -20,12 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/on",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/WsDfu",
     "hpcc/ESPUtil",
@@ -45,7 +40,7 @@ define([
     "dijit/form/TimeTextBox"
 
 ], function (declare, lang, i18n, nlsHPCC, on,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                selector,
                 WsDfu, ESPUtil, FilterDropDownWidget,
                 template) {
     return declare("DiskUsageWidget", [_Widget, ESPUtil.FormHelper], {
@@ -86,9 +81,7 @@ define([
 
         initDiskUsageGrid: function () {
             var store = new WsDfu.CreateDiskUsageStore();
-            this.diskUsageGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            this.diskUsageGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: store,
                 query: this.getFilter(),
                 columns: {

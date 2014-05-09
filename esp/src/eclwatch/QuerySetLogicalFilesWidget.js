@@ -21,19 +21,14 @@ define([
     "dojo/_base/array",
     "dojo/on",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/ESPQuery",
     "hpcc/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                selector,
                 GridDetailsWidget, DelayLoadWidget, ESPQuery, ESPUtil) {
     return declare("QuerySetLogicalFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
@@ -55,9 +50,7 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),

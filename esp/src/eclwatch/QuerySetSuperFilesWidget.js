@@ -22,20 +22,15 @@ define([
     "dojo/on",
     "dojo/store/util/QueryResults",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/tree",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPQuery"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, QueryResults,
-                OnDemandGrid, Keyboard, Selection, tree, selector, ColumnResizer, DijitRegistry,
+                tree, selector,
                 GridDetailsWidget, DelayLoadWidget, ESPUtil, ESPQuery) {
     return declare("QuerySetSuperFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
@@ -67,9 +62,7 @@ define([
             this.store.mayHaveChildren = function (object) {
                 return object.__hpcc_type;
             };
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({

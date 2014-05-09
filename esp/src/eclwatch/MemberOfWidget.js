@@ -21,12 +21,7 @@ define([
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/editor",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ws_access",
@@ -34,7 +29,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC,
                 registry,
-                OnDemandGrid, Keyboard, Selection, editor, ColumnResizer, DijitRegistry,
+                editor,
                 GridDetailsWidget, WsAccess, ESPUtil) {
     return declare("MemberOfWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
@@ -58,7 +53,7 @@ define([
         },
 
         createGrid: function (domID) {
-            var retVal = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+            var retVal = new declare([ESPUtil.Grid(false, false)])({
                 store: this.store,
                 columns: {
                     isMember: editor({

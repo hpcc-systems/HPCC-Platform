@@ -27,13 +27,7 @@ define([
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
 
-    "dgrid/Grid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-    "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
@@ -61,7 +55,7 @@ define([
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, on, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
+                selector,
                 _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil,
                 template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
@@ -281,17 +275,10 @@ define([
         initQuerySetGrid: function (params) {
             var context = this;
             var store = ESPQuery.CreateQueryStore();
-            this.querySetGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            this.querySetGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
                 query: this.getFilter(),
                 sort: [{ attribute: "Id" }],
-                rowsPerPage: 50,
-                pagingLinks: 1,
-                pagingTextBox: true,
-                firstLastArrows: true,
-                pageSizeOptions: [25, 50, 100],
                 columns: {
                     col1: selector({
                         width: 27,

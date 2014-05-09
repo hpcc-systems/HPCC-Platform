@@ -23,12 +23,7 @@ define([
 
     "dijit/form/Button",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
@@ -39,7 +34,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 Button,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                selector,
                 GridDetailsWidget, ESPWorkunit, ESPQuery, DelayLoadWidget, TimingTreeMapWidget, ESPUtil) {
     return declare("GraphsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
@@ -118,9 +113,7 @@ define([
                 }
             }).placeAt(this.widget.Open.domNode, "after");
 
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({

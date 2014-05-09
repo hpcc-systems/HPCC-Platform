@@ -33,13 +33,7 @@ define([
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
 
-    "dgrid/Grid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-    "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPUtil",
@@ -66,7 +60,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,dom, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
+                selector,
                 _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget,
                 template) {
     return declare("GetDFUWorkunitsWidget", [_TabContainerWidget], {
@@ -309,15 +303,8 @@ define([
         initWorkunitsGrid: function() {
             var context = this;
             var store = new ESPDFUWorkunit.CreateWUQueryStore();
-            this.workunitsGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
-                rowsPerPage: 50,
-                pagingLinks: 1,
-                pagingTextBox: true,
-                firstLastArrows: true,
-                pageSizeOptions: [25, 50, 100],
                 columns: {
                     col1: selector({
                         width: 27,

@@ -27,13 +27,7 @@ define([
     "dijit/Menu",
     "dijit/MenuItem",
 
-    "dgrid/Grid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-    "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
     "hpcc/TargetSelectWidget",
@@ -58,7 +52,7 @@ define([
     "dojox/layout/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, dom, domForm, arrayUtil, on,
                 registry, Menu, MenuItem,
-                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
+                selector,
                 _TabContainerWidget, TargetSelectWidget, WUDetailsWidget, WsWorkunits, ESPUtil, FilterDropDownWidget,
                 template) {
     return declare("EventScheduleWorkunitWidget", [_TabContainerWidget], {
@@ -138,16 +132,9 @@ define([
         initEventGrid: function (params) {
             var context = this;
             var store = WsWorkunits.CreateEventScheduleStore();
-            this.eventGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            this.eventGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: store,
                 query: this.getFilter(),
-                rowsPerPage: 50,
-                pagingLinks: 1,
-                pagingTextBox: true,
-                firstLastArrows: true,
-                pageSizeOptions: [25, 50, 100],
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
                     Wuid: {
