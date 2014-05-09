@@ -115,6 +115,7 @@ define([
                 if (lang.exists("WUQueryDetailsResponse", response)) {
                     context.updateData(response.WUQueryDetailsResponse);
                 }
+                return response;
             });
         },
         getWorkunit: function() {
@@ -134,6 +135,7 @@ define([
                 WsEcl.Submit(this.QuerySetId, this.Id, query).then(function (response) {
                     context.queries[xml] = response;
                     deferred.resolve(response);
+                    return response;
                 });
             }
             return deferred.promise;
@@ -146,6 +148,7 @@ define([
                 Name: this.Name
             }], action).then(function (responses) {
                 context.refresh();
+                return response;
             });
         },
         setSuspended: function (suspended) {
