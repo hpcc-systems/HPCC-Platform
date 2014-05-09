@@ -1332,6 +1332,16 @@ void StringArray::appendListUniq(const char *list, const char *delim)
     DelimToStringArray(list, *this, delim, true);
 }
 
+void StringArray::sort(bool nocase)
+{
+    PARENT::sort(nocase ? CCmp::compareNC : CCmp::compare);
+}
+
+void StringArray::sortReverse(bool nocase)
+{
+    PARENT::sort(nocase ? CCmp::revCompareNC : CCmp::revCompare);
+}
+
 #ifdef _WIN32
 
 
