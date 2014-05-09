@@ -7800,21 +7800,31 @@ IStringVal& CLocalWUResult::getResultXml(IStringVal &str) const
     getSchema(types, names);
 
     StringBuffer xml;
-    MemoryBuffer raw;
-    p->getPropBin("Value", raw);
     const char * name = p->queryProp("@name");
     if (name)
         xml.appendf("<Dataset name=\'%s\'>\n", name);
     else
         xml.append("<Dataset>\n");
 
-    unsigned __int64 numrows = getResultRowCount();
-    while (numrows--)
+    if (p->hasProp("Value"))
+    {
+        MemoryBuffer raw;
+        p->getPropBin("Value", raw);
+        unsigned __int64 numrows = getResultRowCount();
+        while (numrows--)
+        {
+            xml.append(" <Row>");
+            readRow(xml, raw, types, names);
+            xml.append("</Row>\n");
+        }
+    }
+    else if (p->hasProp("xmlValue"))
     {
         xml.append(" <Row>");
-        readRow(xml, raw, types, names);
+        appendXMLTag(xml, name, p->queryProp("xmlValue"));
         xml.append("</Row>\n");
     }
+
     xml.append("</Dataset>\n");
     str.set(xml.str());
     return str;
@@ -9507,6 +9517,38 @@ extern WORKUNIT_API bool secDebugWorkunit(const char * wuid, ISecManager &secmgr
         return true;
     }
     return false;
+}
+
+void updateSuppliedXmlParams(IWorkUnit * w)
+{
+    Owned<const IPropertyTree> params = w->getXmlParams();
+    if (!params)
+        return;
+    Owned<IPropertyTreeIterator> elems = params->getElements("*");
+    ForEach(*elems)
+    {
+        IPropertyTree & curVal = elems->query();
+        const char *name = curVal.queryName();
+        Owned<IWUResult> r = updateWorkUnitResult(w, name, -1);
+        if (r)
+        {
+            StringBuffer s;
+            if (r->isResultScalar() && !curVal.hasChildren())
+            {
+                curVal.getProp(".", s);
+                r->setResultXML(s);
+                r->setResultStatus(ResultStatusSupplied);
+            }
+            else
+            {
+                toXML(&curVal, s);
+                bool isSet = (curVal.hasProp("Item") || curVal.hasProp("string"));
+                r->setResultRaw(s.length(), s.str(), isSet ? ResultFormatXmlSet : ResultFormatXml);
+            }
+        }
+        else
+            DBGLOG("WARNING: no matching variable in workunit for input parameter %s", name);
+    }
 }
 
 IWUResult * updateWorkUnitResult(IWorkUnit * w, const char *name, unsigned sequence)

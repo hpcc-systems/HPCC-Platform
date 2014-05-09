@@ -558,14 +558,10 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
         SCMStringBuffer jobName;
         debugContext->debugInitialize(wuid, wu->getJobName(jobName).str(), true);
     }
+    Owned<IWorkUnit> w = updateWorkUnit();
     if (_queryXML)
-    {
-        Owned<IWorkUnit> w = updateWorkUnit();
         w->setXmlParams(_queryXML);
-    }
-    Owned<const IPropertyTree> xmlParams = wuRead->getXmlParams();
-    if (xmlParams)
-        processXmlParams(xmlParams);
+    updateSuppliedXmlParams(w);
 }
 
 EclAgent::~EclAgent()
@@ -592,35 +588,6 @@ void EclAgent::setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkuni
     if (isRemoteWorkunit)
         wuRead->subscribe(SubscribeOptionAbort);
     standAloneUDesc.set(_standAloneUDesc);
-}
-
-void EclAgent::processXmlParams(const IPropertyTree *params)
-{
-    Owned<IPropertyTreeIterator> elems = params->getElements("*");
-    ForEach(*elems)
-    {
-        IPropertyTree & curVal = elems->query();
-        const char *name = curVal.queryName();
-        Owned<IWUResult> r = updateResult(name, -1);
-        if (r)
-        {
-            StringBuffer s;
-            if (r->isResultScalar() && !curVal.hasChildren())
-            {
-                curVal.getProp(".", s);
-                r->setResultXML(s.str());
-                r->setResultStatus(ResultStatusSupplied);
-            }
-            else
-            {
-                toXML(&curVal, s);
-                bool isSet = (curVal.hasProp("Item") || curVal.hasProp("string"));
-                r->setResultRaw(s.length(), s.str(), isSet ? ResultFormatXmlSet : ResultFormatXml);
-            }
-        }
-        else
-            DBGLOG("WARNING: no matching variable in workunit for input parameter %s", name);
-    }
 }
 
 ICodeContext *EclAgent::queryCodeContext()
