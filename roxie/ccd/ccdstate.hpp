@@ -92,6 +92,12 @@ interface IFileIOArray : extends IInterface
     virtual StringBuffer &getId(StringBuffer &) const = 0;
 };
 
+interface IRoxieQuerySetManagerSet : extends IInterface
+{
+    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash) = 0;
+    virtual void getQueries(const char *id, IArrayOf<IQueryFactory> &queries, const IRoxieContextLogger &logctx) const = 0;
+};
+
 interface IRoxieQuerySetManager : extends IInterface
 {
     virtual bool isActive() const = 0;
@@ -101,7 +107,7 @@ interface IRoxieQuerySetManager : extends IInterface
     virtual void resetQueryTimings(const char *queryName, const IRoxieContextLogger &logctx) = 0;
     virtual void resetAllQueryTimings() = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
-    virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const = 0;
+    virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieQuerySetManagerSet *slaves, const IRoxieContextLogger &logctx) const = 0;
 };
 
 interface IRoxieDebugSessionManager : extends IInterface
@@ -111,16 +117,11 @@ interface IRoxieDebugSessionManager : extends IInterface
     virtual IDebuggerContext *lookupDebuggerContext(const char *id) = 0;
 };
 
-interface IRoxieQuerySetManagerSet : extends IInterface
-{
-    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash) = 0;
-};
-
 interface IRoxieQueryPackageManagerSet : extends IInterface
 {
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const = 0;
+    virtual IQueryFactory *getQuery(const char *id, IArrayOf<IQueryFactory> *slaves, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual int getActivePackageCount() const = 0;
 };

@@ -1611,7 +1611,7 @@ readAnother:
                     }
                     else
                     {
-                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, logctx));
+                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, NULL, logctx));
                         if (isHTTP)
                             client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
                         if (queryFactory)
