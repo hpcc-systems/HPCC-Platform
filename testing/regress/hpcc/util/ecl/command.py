@@ -61,6 +61,9 @@ class ECLcmd(Shell):
                 name = eclfile.getJobname()
 
             args.append("--name=" + name)
+
+            args = args + eclfile.getStoredInputParameters()
+
             args.append(eclfile.getArchive())
         data = ""
         wuid = "N/A"

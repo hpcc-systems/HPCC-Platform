@@ -51,7 +51,7 @@ def checkXParam(string):
         msg = "Missing argument of -X parameter!"
         raise argparse.ArgumentTypeError(msg)
 
-    return value   
+    return value
 
 def getVersionNumbers():
     version = platform.python_version_tuple()

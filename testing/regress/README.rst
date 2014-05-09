@@ -566,7 +566,7 @@ So if you have a new test case and it works well on all clusters (or some of the
         "timeout":"600",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
         "maxAttemptCount":"3"                           - Max retry count to reset timeout if a testcase in any early stage (compiled, blocked) of execution pipeline.
 
-Optionally the config file can contain section for default values of stored parameters like this:
+Optionally the config file can contain a section of default values for stored parameters like this:
 
     "Params":[
                 "querya.ecl:param1=value1,param2=value2",
@@ -575,7 +575,7 @@ Optionally the config file can contain section for default values of stored para
                 "*.ecl:globalparam=blah"
             ]
 
-Regression Suite process the group definition(s) (contains '*') of Params array first. Than the test specific line  to override global value(s) if exists. The -Xname=value command line parameter overrides the values defined in config Params.
+The Regression Suite processes the Params definition(s) that contains wildcard '*' first. Then the test specific line(s) which will override the global values. The -Xname=value command line parameter overrides any values defined in this section.
 Examples:
 
 We have an ECL source called PassTest.ecl with these lines:
@@ -584,7 +584,7 @@ We have an ECL source called PassTest.ecl with these lines:
 |    string bla := 'EN' : STORED('bla');
 |    output(bla);
 
-1. We have not Params in the testing/regress/ecl_test.json file or we have Params but it is empty or there is not any global and PassTest.ecl related entry.
+1. For the purposes of this example, we assume there is no Params section in the testing/regress/ecl_test.json file or it is empty and there are no PassTest.ecl related global entries.
 
 If we execute it with query mode:
 
@@ -597,7 +597,7 @@ The result is:
 |     [Action]   1. Test: PassTest.ecl
 |     [Pass]   1. Pass W20140508-180241 (1 sec)
 |     [Pass]   1. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140508-180241
-|     [Action] 
+|     [Action]
 |         Results
 |         -------------------------------------------------
 |         Passing: 1
@@ -607,7 +607,7 @@ The result is:
 |         -------------------------------------------------
 |         Log: /home/ati/HPCCSystems-regression/log/hthor.14-05-08-18-02-41.log
 |         -------------------------------------------------
-|         Elapsed time: 4 sec  (00:00:04) 
+|         Elapsed time: 4 sec  (00:00:04)
 |         -------------------------------------------------
 
 2. Same as 1. but execute it in query mode with -X parameter:
@@ -629,7 +629,7 @@ We can execute it with a simple query mode:
 
 |     ./ecl_test query PassTest.ecl -t hthor
 
-then the output of PassTest.ecl changes in the result accordingly the value stored in Params array:
+then the output of PassTest.ecl changes in the result accordingly with the value from the Params option:
 |         -------------------------------------------------
 |         u"Output of PassTest.ecl test is:\n\t<Dataset name='Result 1'>\n <Row><Result_1>A value</Result_1></Row>\n</Dataset>\n"
 |         -------------------------------------------------
@@ -638,22 +638,22 @@ then the output of PassTest.ecl changes in the result accordingly the value stor
 
 In this case we can use same command as in 2. with a new value:
 
-|     ./ecl_test -Xbla='Another value' query PassTest.ecl  -t hthor
+|     ./ecl_test -Xbla='Another value' query PassTest.ecl -t hthor
 
 then the output of PassTest.ecl changes in the result:
 |         -------------------------------------------------
 |         u"Output of PassTest.ecl test is:\n\t<Dataset name='Result 1'>\n <Row><Result_1>Another value</Result_1></Row>\n</Dataset>\n"
 |         -------------------------------------------------
 
-We can use as many values as we need in this form: 
+We can use as many values as we need in this form:
 |       -Xname1=value1,name2=value2...
 
 Important!
-    There should not put space between coma and following name!
+    There should not be any spaces before or after the commas.
     If there is more than one -X in the command line, the last will be the active and all other discarded.
 
 
-   
+
 10. Authentication:
 -------------------
 
