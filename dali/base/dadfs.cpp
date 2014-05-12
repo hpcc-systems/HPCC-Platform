@@ -1295,7 +1295,7 @@ public:
     void doDelete() // Throw on error!
     {
         const char *logicalname = lfn.get();
-        if (!lfn.isExternal() && checkLogicalName(lfn,user,true,true,true,"remove"))
+        if (!lfn.isExternal() && !checkLogicalName(lfn,user,true,true,true,"remove"))
             ThrowStringException(-1, "Logical Name fails for removal on %s", lfn.get());
 
         // Transaction files have already been unlocked at this point, delete all remaining files
