@@ -47,18 +47,28 @@ define([
         },
 
         pause: function () {
+            var context = this;
             return WsSMC.PauseQueue({
                 request: {
-                    QueueName: this.QueueName
+                    QueueName: this.QueueName,
+                    Cluster: this.ClusterName,
+                    ServerType: this.ServerType
                 }
+            }).then(function (response) {
+                context.refresh();
             });
         },
 
         resume: function () {
+            var context = this;
             return WsSMC.ResumeQueue({
                 request: {
-                    QueueName: this.QueueName
+                    QueueName: this.QueueName,
+                    Cluster: this.ClusterName,
+                    ServerType: this.ServerType
                 }
+            }).then(function (response) {
+                context.refresh();
             });
         },
 
@@ -171,6 +181,42 @@ define([
     });
 
     var TargetCluster = declare([Queue], {
+        _QueueNameSetter: function(QueueName) {
+            this.QueueName = QueueName;
+            this.ServerName = QueueName;
+        },
+        _ClusterTypeSetter: function(ClusterType) {
+            this.ClusterType = ClusterType;
+            switch(this.ClusterType) {
+            case 1:
+                this.ServerType = "HThorServer";
+                break;
+            case 2: 
+                this.ServerType = "RoxieServer";
+                break;
+            case 3:
+                this.ServerType = "ThorMaster"
+                break;
+            default:
+                this.ServerType = ""
+            }
+        },
+
+        refresh: function () {
+            var context = this;
+            return WsSMC.GetStatusServerInfo({
+                request: {
+                    ServerName: this.ClusterName,
+                    ServerType: this.ServerType
+                }
+            }).then(function (response) {
+                if (lang.exists("GetStatusServerInfoResponse.StatusServerInfo.TargetClusterInfo", response)) {
+                    context.updateData(response.GetStatusServerInfoResponse.StatusServerInfo.TargetClusterInfo);
+                }
+                return response;
+            });
+        },
+
         getDisplayName: function () {
             return this.ClusterName;
         },
@@ -226,6 +272,26 @@ define([
     });
 
     var ServerJobQueue = declare([Queue], {
+        _ServerNameSetter: function(ServerName) {
+            this.ServerName = ServerName;
+            this.ClusterName = ServerName;
+        },
+        
+        refresh: function () {
+            var context = this;
+            return WsSMC.GetStatusServerInfo({
+                request: {
+                    ServerName: this.ServerName,
+                    ServerType: this.ServerType
+                }
+            }).then(function (response) {
+                if (lang.exists("GetStatusServerInfoResponse.StatusServerInfo.ServerInfo", response)) {
+                    context.updateData(response.GetStatusServerInfoResponse.StatusServerInfo.ServerInfo);
+                }
+                return response;
+            });
+        },
+        
         getDisplayName: function () {
             return this.QueueName;
         },
