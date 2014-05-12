@@ -25,6 +25,9 @@ define([
         Activity: function (params) {
             return ESPRequest.send("WsSMC", "Activity", params);
         },
+        GetStatusServerInfo: function (params) {
+            return ESPRequest.send("WsSMC", "GetStatusServerInfo", params);
+        },
         PauseQueue: function (params) {
             return ESPRequest.send("WsSMC", "PauseQueue", params);
         },
