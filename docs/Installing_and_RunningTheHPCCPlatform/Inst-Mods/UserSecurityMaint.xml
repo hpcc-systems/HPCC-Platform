@@ -1003,11 +1003,7 @@
     features are listed as <emphasis role="bold">Resources</emphasis> when
     setting permissions using ECL Watch.</para>
 
-    <para>There are many ECL Watch feature permissions, not all of them are
-    shown in detail here. The permissions shown and described here are the
-    more common and relevant permissions. There are additional permissions
-    which are typically not relevant to the vast majority of system
-    users.</para>
+    <para>ECL Watch feature permission settings that are not listed are not relevant and should not be used.</para>
 
     <para>The following sections show the level of access required to be able
     to use ECL Watch features:</para>
