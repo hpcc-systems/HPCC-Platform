@@ -50,7 +50,7 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/eclcc.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/eclccserver.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/eclscheduler.xsd
-    ${CMAKE_CURRENT_SOURCE_DIR}/Environment.xsd
+    ${CMAKE_CURRENT_SOURCE_DIR}/environment.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_account.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_ecldirect.xsd
     ${CMAKE_CURRENT_SOURCE_DIR}/esp_service_wsecl.xsd
