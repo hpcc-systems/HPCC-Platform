@@ -10327,10 +10327,9 @@ IHqlExpression * NestedCompoundTransformer::createTransformed(IHqlExpression * e
                     location = queryActiveLocation();
                 if (!isSimpleSideeffect(sideEffect))
                 {
-                    //MORE: This should be an error, but there are still occasional false positives e.g., OUTPUT(ds1.childds)
+                    //MORE: This should possibly be an error, but there are still false positives e.g., OUTPUT(ds1.childds)
                     //so needs to stay a warning.
 //                  translator.ERRORAT1(location, HQLERR_GlobalSideEffectDependent, s.str());
-                    //GH: Make this a default error severity
                     translator.WARNINGAT1(CategoryUnexpected, location, HQLWRN_GlobalSideEffectDependent, s.str());
                 }
                 break;

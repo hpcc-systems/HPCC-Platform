@@ -412,7 +412,8 @@ void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * ecl
             else if (minor != LANGUAGE_VERSION_MINOR)
             {
                 VStringBuffer msg("Mismatch in minor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
-                errors->reportWarning(CategoryUnexpected, SeverityInfo, msg.str(), NULL, 0, 0, 0);
+                Owned<IECLError> warning = createECLError(CategoryUnexpected, SeverityInfo, HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
+                errors.setown(new ErrorInserter(*errors, warning));
             }
             else if (subminor != LANGUAGE_VERSION_SUB)
             {

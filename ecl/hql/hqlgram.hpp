@@ -583,7 +583,6 @@ public:
     virtual void reportError(int errNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual void report(IECLError * error);
     virtual IECLError * mapError(IECLError * error);
-
     void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename=NULL, int lineno=0, int column=0, int pos=0);
     virtual size32_t errCount();
     virtual size32_t warnCount();

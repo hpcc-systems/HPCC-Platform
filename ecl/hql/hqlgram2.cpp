@@ -54,6 +54,7 @@
 //#define USE_WHEN_FOR_SIDEEFFECTS
 #define MANYFIELDS_THRESHOLD                        2000
 #define MAX_SENSIBLE_FIELD_LENGTH                   1000000000
+#define MAX_POSSIBLE_FIELD_LENGTH                   (INFINITE_LENGTH-1)
 
 struct TokenMap
 {
@@ -2434,8 +2435,14 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
         }
     }
 
-    if ((fieldType->getSize() != UNKNOWN_LENGTH) && (fieldType->getSize() > MAX_SENSIBLE_FIELD_LENGTH))
-        reportWarning(CategoryEfficiency, SeverityError, ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is too large", name->str());
+    size32_t fieldSize = fieldType->getSize();
+    if (fieldSize != UNKNOWN_LENGTH)
+    {
+        if (fieldSize > MAX_SENSIBLE_FIELD_LENGTH)
+            reportWarning(CategoryEfficiency, SeverityError, ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is larger than max sensible size", name->str());
+        else if (fieldSize > MAX_POSSIBLE_FIELD_LENGTH)
+            reportError(ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is too large", name->str());
+    }
 
     OwnedHqlExpr newField = createField(name, fieldType.getClear(), value.getClear(), attrs);
     OwnedHqlExpr annotated = createLocationAnnotation(LINK(newField), errpos.pos);
