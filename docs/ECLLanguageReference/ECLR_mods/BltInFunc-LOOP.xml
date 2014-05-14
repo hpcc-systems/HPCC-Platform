@@ -217,15 +217,15 @@ OUTPUT(LOOP(namesTable2,
      SELF := LEFT))));
 //Form 3:
 OUTPUT(LOOP(namesTable2,
+  LEFT.age &lt; 100,
+  loopBody(ROWS(LEFT), COUNTER)));
+//Form 4:
+OUTPUT(LOOP(namesTable2,
   SUM(ROWS(LEFT), age) &lt; 1000 * COUNTER,
             PROJECT(ROWS(LEFT),
      TRANSFORM(namesRec,
      SELF.age := LEFT.age*2;
      SELF := LEFT))));
-//Form 4:
-OUTPUT(LOOP(namesTable2,
-  LEFT.age &lt; 100,
-  loopBody(ROWS(LEFT), COUNTER)));
 //Form 5:
 OUTPUT(LOOP(namesTable2,
   LEFT.age &lt; 100,
