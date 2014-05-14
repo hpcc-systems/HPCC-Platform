@@ -17,6 +17,7 @@
 
 #include <jlib.hpp>
 #include <jmisc.hpp>
+#include <jisem.hpp>
 #include <jfile.hpp>
 #include <jencrypt.hpp>
 #include <jregexp.hpp>
@@ -119,6 +120,52 @@ private:
     IPipeProcess *pipe;
     IErrorReporter *errorReporter;
     unsigned errors;
+};
+
+//------------------------------------------------------------------------------------------------------------------
+// Check for aborts of the workunit as it is compiling
+//------------------------------------------------------------------------------------------------------------------
+
+class AbortWaiter : public Thread
+{
+public:
+    AbortWaiter(IPipeProcess *_pipe, IConstWorkUnit *_wu)
+        : Thread("EclccCompileThread::AbortWaiter"), pipe(_pipe), wu(_wu)
+    {
+    }
+
+    virtual int run()
+    {
+        wu->subscribe(SubscribeOptionAbort);
+        try
+        {
+            loop
+            {
+                if (sem.wait(2000))
+                    break;
+                if (wu->aborting())
+                {
+                    pipe->abort();
+                    break;
+                }
+            }
+        }
+        catch (IException *E)
+        {
+            ::Release(E);
+        }
+        return 0;
+    }
+
+    void stop()
+    {
+        sem.interrupt(NULL);
+        join();
+    }
+private:
+    IPipeProcess *pipe;
+    IConstWorkUnit *wu;
+    InterruptableSemaphore sem;
 };
 
 //------------------------------------------------------------------------------------------------------------------
@@ -307,9 +354,11 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         {
             unsigned time = msTick();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
+            Owned<AbortWaiter> abortWaiter = new AbortWaiter(pipe, workunit);
             eclccCmd.insert(0, eclccProgName);
-            pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0);
+            pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0, true);
             errorReader->start();
+            abortWaiter->start();
             try
             {
                 pipe->write(eclQuery.s.length(), eclQuery.s.str());
@@ -322,6 +371,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             }
             unsigned retcode = pipe->wait();
             errorReader->join();
+            abortWaiter->stop();
             if (retcode == 0)
             {
                 StringBuffer realdllname, dllurl;
