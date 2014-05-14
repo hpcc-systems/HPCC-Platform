@@ -74,6 +74,11 @@
 #define DFTERR_EndOfXmlRecordNotFound           8101
 #define DFTERR_EndOfCsvRecordNotFound           8102
 #define DFTERR_EndOfUtfRecordNotFound           8103
+#define DFTERR_WrongRECFMvRecordDescriptorWord  8104
+#define DFTERR_WrongRECFMvbBlockDescriptorWord  8105
+#define DFTERR_WrongRECFMvbBlockSize            8106
+#define DFTERR_WrongRECFMvRecordSize            8107
+#define DFTERR_WrongSplitRecordSize             8108
 
 //Internal errors
 #define DFTERR_UnknownFormatType                8190
@@ -136,6 +141,11 @@
 #define DFTERR_EndOfXmlRecordNotFound_Text      "End of XML record not found (need to increase maxRecordSize?)! At offset:%"I64F"d, record size (>%d bytes) is larger than expected maxRecordSize (%d bytes)."
 #define DFTERR_EndOfCsvRecordNotFound_Text      "End of CSV record not found (wrong record terminator defined or need to increase maxRecordSize?) after processing %d bytes!"
 #define DFTERR_EndOfUtfRecordNotFound_Text      "End of UTF record not found (wrong record terminator defined or need to increase maxRecordSize?) after processing %d bytes!"
+#define DFTERR_WrongRECFMvRecordDescriptorWord_Text  "RECFMv(b) file Record Description Word contains invalid data (0x%4x) or the file is not RECFMv(b) format!"
+#define DFTERR_WrongRECFMvbBlockDescriptorWord_Text  "RECFMvb file Block Description Word contains invalid data (0x%8x) or the file is not RECFMvb format!"
+#define DFTERR_WrongRECFMvbBlockSize_Text       "Invalid RECFMvb file Block Size (%d) or the file is not RECFMvb format!"
+#define DFTERR_WrongRECFMvRecordSize_Text       "Invalid RECFMv file Record Size (%d) or the file is not RECFMv format!"
+#define DFTERR_WrongSplitRecordSize_Text        "Invalid Record Size (%d, 0x%08x)!"
 
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%"I64F"d expected %"I64F"d) at %s of block %d"

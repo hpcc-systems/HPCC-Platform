@@ -270,7 +270,14 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 
         if (size==0)
             throwError1(DFTERR_PartitioningZeroSizedRowLink,((offset_t)(buffer+bufferOffset)));
-        ensureBuffered(size); 
+
+        if (size > bufferSize)
+        {
+            LOG(MCdebugProgressDetail, unknownJob, "Split record size %d (0x%08x) is larger than the buffer size: %d", size, size, bufferSize);
+            throwError2(DFTERR_WrongSplitRecordSize, size, size);
+        }
+
+        ensureBuffered(size);
 
         nextInputOffset += size;
         if (target)
@@ -479,8 +486,8 @@ void CVariablePartitioner::setTarget(IOutputProcessor * _target)
 
 //----------------------------------------------------------------------------
 
-#define BDW_SIZE (4)  // first 2 bytes size
-#define RDW_SIZE (4)  // first 2 bytes size
+#define BDW_SIZE (4)  // 4 bytes of the block size (including BDW) and should be >= 4
+#define RDW_SIZE (4)  // first 2 bytes size (including RDW), size >= 4 and next 2 byte should be 0.
 
 CRECFMvbPartitioner::CRECFMvbPartitioner(bool blocked) : CInputBasePartitioner(blocked?BDW_SIZE:RDW_SIZE, EXPECTED_VARIABLE_LENGTH)
 {
@@ -489,21 +496,40 @@ CRECFMvbPartitioner::CRECFMvbPartitioner(bool blocked) : CInputBasePartitioner(b
 
 size32_t CRECFMvbPartitioner::getRecordSize(const byte * record, unsigned maxToRead)
 {
-    unsigned short blksize;
-    _WINCPYREV2(&blksize, record);
-    return blksize;
+    unsigned short recordsize;
+    _WINCPYREV2(&recordsize, record);
+
+    unsigned short rest;
+    _WINCPYREV2(&rest, record+2);
+
+    if (rest)
+    {
+        LOG(MCdebugProgressDetail, unknownJob, "Wrong RECFMv RDW info: size:%d (0x%04x) rest:%d (0x%04x) at pos :%d", recordsize ,recordsize, rest, rest, unsigned (record - bufferBase()) );
+        throwError1(DFTERR_WrongRECFMvRecordDescriptorWord, rest);
+    }
+
+    return recordsize;
+}
+
+size32_t CRECFMvbPartitioner::getBlockSize(const byte * record, unsigned maxToRead)
+{
+    size32_t bdw;           //RECFMVB Block Description Word
+    _WINCPYREV4(&bdw, record);
+    if ( bdw < 4 )
+        throwError1(DFTERR_WrongRECFMvbBlockDescriptorWord, bdw);
+    return bdw;
 }
 
 
 size32_t CRECFMvbPartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
 {
-    return getRecordSize(record, maxToRead);
+    return (isBlocked ? getBlockSize(record, maxToRead) : getRecordSize(record, maxToRead));
 }
 
 
 size32_t CRECFMvbPartitioner::getTransformRecordSize(const byte * record, unsigned maxToRead)
 {
-    return getRecordSize(record, maxToRead);
+    return (isBlocked ? getBlockSize(record, maxToRead) : getRecordSize(record, maxToRead));
 }
 
 
@@ -516,6 +542,7 @@ size32_t CRECFMvbPartitioner::getTransformRecordSize(const byte * record, unsign
 
 unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor & cursor)
 {
+    LOG(MCdebugProgressDetail, unknownJob, "CRECFMvbPartitioner::transformBlock(offset_t endOffset: %d (0x%08x), TransformCursor & cursor)", endOffset ,endOffset);
     const byte *buffer = bufferBase();
     offset_t startOffset = cursor.inputOffset;
     offset_t inputOffset = startOffset;
@@ -530,7 +557,13 @@ unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor
         if (readSize + inputOffset > endOffset)
             readSize = (unsigned)(endOffset - inputOffset);
         size32_t size = getTransformRecordSize(buffer+bufferOffset, readSize);
-        ensureBuffered(size);
+
+        if (!ensureBuffered(size))
+            if (isBlocked)
+                throwError1(DFTERR_WrongRECFMvbBlockSize, size);
+            else
+                throwError1(DFTERR_WrongRECFMvRecordSize, size);
+        assertex((numInBuffer != bufferOffset));
         const byte * r;
         if (isBlocked) {
             // now we have all block so loop through records
@@ -538,8 +571,8 @@ unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor
             r = buffer+bufferOffset+BDW_SIZE;
             while (pos+RDW_SIZE<size) {
                 unsigned short recsize;
-                _WINCPYREV2(&recsize, r);
-                r += RDW_SIZE;          // 2 bytes skipped
+                recsize = getRecordSize(r, RDW_SIZE);  // For error handling
+                r += RDW_SIZE;          // 4 bytes (RDW) skipped
                 if (recsize<=RDW_SIZE)
                     break;
                 recsize -= RDW_SIZE;    // its inclusive
