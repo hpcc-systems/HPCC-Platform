@@ -575,7 +575,7 @@ Optionally the config file can contain a section of default values for stored pa
                 "*.ecl:globalparam=blah"
             ]
 
-The Regression Suite processes the Params definition(s) that contains wildcard '*' first. Then the test specific line(s) which will override the global values. The -Xname=value command line parameter overrides any values defined in this section.
+The Regression Suite processes the Params definition(s) sequentially. The -Xname=value command line parameter overrides any values defined in this section.
 Examples:
 
 We have an ECL source called PassTest.ecl with these lines:

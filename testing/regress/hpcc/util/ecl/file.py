@@ -83,7 +83,7 @@ class ECLFile:
             # It seems there is no Params array in the config file
             pass
 
-        # Process -X CLI paramteres
+        # Process -X CLI parameters
         if args.X != 'None':
             optXs = ("-X"+args.X[0].replace(',',  ',-X')).split(',')
             for optX in optXs:
