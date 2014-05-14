@@ -20,10 +20,6 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
     "dojo/dom-attr",
-    "dojo/dom-class",
-    "dojo/query",
-    "dojo/store/Memory",
-    "dojo/store/Observable",
     "dojo/promise/all",
 
     "dijit/registry",
@@ -35,10 +31,7 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
-    "hpcc/ESPWorkunit",
     "hpcc/ESPQuery",
-    "hpcc/WsWorkunits",
-    "hpcc/WsTopology",
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
 
@@ -55,10 +48,10 @@ define([
     "dijit/TooltipDialog",
     "dijit/TitlePane"
 
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, query, Memory, Observable, all,
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr, all,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                ESPWorkunit, ESPQuery, WsWorkunits, WsTopology, _TabContainerWidget, DelayLoadWidget,
+                ESPQuery, _TabContainerWidget, DelayLoadWidget,
                 template) {
     return declare("QuerySetDetailsWidget", [_TabContainerWidget], {
         templateString: template,

@@ -18,10 +18,6 @@ define([
     "dojo/_base/lang",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
-    "dojo/dom",
-    "dojo/dom-form",
-    "dojo/request/iframe",
-    "dojo/_base/array",
     "dojo/on",
     "dojo/topic",
 
@@ -40,15 +36,10 @@ define([
     "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPBase",
-    "hpcc/ESPWorkunit",
-    "hpcc/ESPLogicalFile",
-    "hpcc/TargetSelectWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/WsWorkunits",
     "hpcc/ESPQuery",
     "hpcc/ESPUtil",
-    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/QuerySetQueryWidget.html",
 
@@ -65,11 +56,13 @@ define([
     "dijit/form/DropDownButton",
     "dijit/TooltipDialog",
 
+    "hpcc/TargetSelectWidget",
+    "hpcc/FilterDropDownWidget",
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, dom, domForm, iframe, arrayUtil, on, topic,
+], function (declare, lang, i18n, nlsHPCC, on, topic,
                 registry, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, ESPBase, ESPWorkunit, ESPLogicalFile, TargetSelectWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil, FilterDropDownWidget,
+                _TabContainerWidget, DelayLoadWidget, WsWorkunits, ESPQuery, ESPUtil,
                 template) {
     return declare("QuerySetQueryWidget", [_TabContainerWidget], {
         templateString: template,

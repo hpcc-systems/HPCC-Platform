@@ -31,12 +31,12 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/SFDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPQuery"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, QueryResults,
                 OnDemandGrid, Keyboard, Selection, tree, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, SFDetailsWidget, ESPUtil, ESPQuery) {
+                GridDetailsWidget, DelayLoadWidget, ESPUtil, ESPQuery) {
     return declare("QuerySetSuperFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         query: null,
@@ -58,7 +58,8 @@ define([
                 arrayUtil.forEach(parent.SubFiles.File, function (item, idx) {
                     children.push({
                         __hpcc_id: item,
-                        __hpcc_display: item
+                        __hpcc_display: item,
+                        __hpcc_type: "LF"
                     });
                 });
                 return QueryResults(children);
@@ -86,42 +87,37 @@ define([
         },
 
         createDetail: function (id, row, params) {
-            if (row.Name) {
-                return new SFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: row.Name,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: row.Name
+            switch (row.__hpcc_type) {
+                case "SF": {
+                    return new DelayLoadWidget({
+                        id: id,
+                        title: row.__hpcc_id,
+                        closable: true,
+                        delayWidget: "SFDetailsWidget",
+                        hpcc: {
+                            type: "SFDetailsWidget",
+                            params: {
+                                Name: row.__hpcc_id
+                            }
                         }
-                    }
-                });
-            }
-            if (row.__hpcc_id) {
-                return new SFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: row.__hpcc_id,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: row.__hpcc_id
+                    });
+                }
+                case "LF": {
+                    return new SFDetailsWidget.fixCircularDependency({
+                        id: id,
+                        title: row.__hpcc_id,
+                        closable: true,
+                        delayWidget: "LFDetailsWidget",
+                        hpcc: {
+                            type: "LFDetailsWidget",
+                            params: {
+                                Name: row.__hpcc_id
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
-            if (params.Name) {
-                return new SFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: params.Name,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: params.Name
-                        }
-                    }
-                });
-            }
+            return null;
         },
 
         refreshGrid: function (args) {
@@ -133,7 +129,7 @@ define([
                         superfiles.push(lang.mixin({
                             __hpcc_id: item.Name,
                             __hpcc_display: item.Name,
-                            __hpcc_type: item.Name
+                            __hpcc_type: "SF"
                         }, item));
                     });
                 }

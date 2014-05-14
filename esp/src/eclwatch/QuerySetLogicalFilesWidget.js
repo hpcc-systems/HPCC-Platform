@@ -29,12 +29,12 @@ define([
     "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/LFDetailsWidget",
-    "hpcc/WsWorkunits",
+    "hpcc/DelayLoadWidget",
+    "hpcc/ESPQuery",
     "hpcc/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, LFDetailsWidget, WsWorkunits, ESPUtil) {
+                GridDetailsWidget, DelayLoadWidget, ESPQuery, ESPUtil) {
     return declare("QuerySetLogicalFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -69,29 +69,18 @@ define([
         },
 
         createDetail: function (id, row, params) {
-            if(row.Name) {
-                return new LFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: row.Name,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: row.Name
-                        }
+            return new DelayLoadWidget({
+                id: id,
+                title: row.Name,
+                closable: true,
+                delayWidget: "LFDetailsWidget",
+                hpcc: {
+                    type: "LFDetailsWidget",
+                    params: {
+                        Name: row.Name
                     }
-                });
-            } else {
-                return new LFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: params.Name,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: params.Name
-                        }
-                    }
-                });
-            }
+                }
+            });
         },
 
         refreshGrid: function (args) {
