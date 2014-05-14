@@ -32,6 +32,7 @@ define({root:
     ArchivedOnly: "Archived Only",
     ArchivedWarning: "Warning: please specify a small date range. If not, it may take some time to retrieve the workunits and the browser may be timed out.",
     BinaryInstalls: "Binary Installs",
+    AutoRefresh: "Auto Refresh",
     Blob: "BLOB",
     BlobPrefix: "BLOB Prefix",
     Bottom: "Bottom",

@@ -47,7 +47,7 @@ define([
         },
 
         startsWith: function (tst, str) {
-            if (tst.length > str.length) {
+            if (!tst || !str || tst.length > str.length) {
                 return false;
             }
             for (var i = 0; i < tst.length; ++i) {
