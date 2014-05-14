@@ -246,7 +246,7 @@ void CommonXmlWriter::outputXmlns(const char *name, const char *uri)
     StringBuffer fieldname;
     if (!streq(name, "xmlns"))
         fieldname.append("xmlns:");
-    outputXmlAttrUtf8(strlen(uri), uri, fieldname.append(name), out);
+    outputXmlAttrUtf8(rtlUtf8Length(strlen(uri), uri), uri, fieldname.append(name), out);
 }
 
 void CommonXmlWriter::outputBeginDataset(const char *dsname, bool nestChildren)
@@ -257,7 +257,7 @@ void CommonXmlWriter::outputBeginDataset(const char *dsname, bool nestChildren)
     if (!dsname || !*dsname)
         return;
     out.append(" name='"); //single quote for backward compatibility
-    outputXmlUtf8(strlen(dsname), dsname, NULL, out);
+    outputXmlUtf8(rtlUtf8Length(strlen(dsname), dsname), dsname, NULL, out);
     out.append("'");
 }
 
