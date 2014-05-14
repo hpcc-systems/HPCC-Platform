@@ -19,6 +19,7 @@ define([
     "dojo/_base/Deferred",
     "dojo/_base/lang",
     "dojo/dom-construct",
+    "dojo/promise/all",
 
     "dojox/xml/parser",
     "dojox/html/entities",
@@ -26,7 +27,7 @@ define([
     "hpcc/ESPBase",
     "hpcc/ESPRequest",
     "hpcc/WsWorkunits"
-], function (declare, arrayUtil, Deferred, lang, domConstruct,
+], function (declare, arrayUtil, Deferred, lang, domConstruct, all,
             parser, entities,
             ESPBase, ESPRequest, WsWorkunits) {
 
@@ -460,6 +461,43 @@ define([
                 }).then(function(results) {
                     deferred.resolve(results);
                 });
+            });
+            return deferred.promise;
+        },
+
+        fetchSamples: function (sampleCount, sampleSize) {
+            var deferred = new Deferred()
+            var context = this;
+            this.store.query({
+                Start: 0,
+                Count: 1
+            }).total.then(function (total) {
+                if (sampleCount * sampleSize >= total) {
+                    context.store.query({
+                        Start: 0,
+                        Count: total
+                    }).then(function (results) {
+                        deferred.resolve(results);
+                    });
+                } else {
+                    var step = Math.floor(total / sampleCount);
+                    var requests = []
+                    for (var i = 0 ; i < sampleCount; ++i) {
+                        requests.push(context.store.query({
+                            Start: i * step,
+                            Count: sampleSize
+                        }));
+                    }
+                    all(requests).then(function (responses) {
+                        var results = [];
+                        arrayUtil.forEach(responses, function (response, idx) {
+                            arrayUtil.forEach(response, function (item, idx) {
+                                results.push(item);
+                            });
+                        });
+                        deferred.resolve(results);
+                    });
+                }
             });
             return deferred.promise;
         },
