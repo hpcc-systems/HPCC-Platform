@@ -927,7 +927,7 @@ const char * VarUnicodeValue::getStringValue(StringBuffer & out)
 
 void * VarUnicodeValue::getUCharStringValue(unsigned len, void * out)
 {
-    unsigned vallen = val.length()/2;
+    unsigned vallen = val.length();
     if(vallen > len)
         vallen = len;
     memcpy(out, val.get(), vallen*2);
