@@ -2344,16 +2344,14 @@ public:
             PROGLOG(LOGPFX2 "Deleting %s",lfn);
             try
             {
-                queryDistributedFileDirectory().removeEntry(lfn,UNKNOWN_USER);//MORE:Pass IUserDescriptor
+                queryDistributedFileDirectory().removeEntry(lfn, UNKNOWN_USER, NULL, INFINITE, true); //MORE:Pass IUserDescriptor
+                PROGLOG(LOGPFX2 "Deleted %s",lfn);
             }
             catch (IException *e) // may want to just detach if fails
             {
-                StringBuffer s;
                 EXCLOG(e, LOGPFX2 "remove");
                 e->Release();
             }
-            PROGLOG(LOGPFX2 "Deleted %s",lfn);
-
         }
         PROGLOG(LOGPFX2 "%s",stopped?"Stopped":"Done");
     }
