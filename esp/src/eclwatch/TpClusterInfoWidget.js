@@ -19,13 +19,7 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/tree",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/WsTopology",
@@ -33,7 +27,7 @@ define([
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC,
-                OnDemandGrid, Keyboard, Selection, selector, tree, ColumnResizer, DijitRegistry,
+                selector,
                 GridDetailsWidget, WsTopology, DelayLoadWidget, ESPUtil) {
     return declare("TpClusterInfoWidget", [GridDetailsWidget], {
 
@@ -51,9 +45,7 @@ define([
         createGrid: function (domID) {
             var context = this;
 
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({

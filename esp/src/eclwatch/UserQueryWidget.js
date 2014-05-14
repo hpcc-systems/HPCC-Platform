@@ -30,13 +30,8 @@ define([
     "dijit/MenuSeparator",
     "dijit/form/Select",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/tree",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/_TabContainerWidget",
     "hpcc/ws_access",
@@ -64,7 +59,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
                 registry, Menu, MenuItem, MenuSeparator, Select,
-                OnDemandGrid, Keyboard, Selection, tree, selector, ColumnResizer, DijitRegistry,
+                tree, selector,
                 _TabContainerWidget, WsAccess, ESPUtil, UserDetailsWidget, GroupDetailsWidget,
                 template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
@@ -301,9 +296,7 @@ define([
         initGroupsGrid: function () {
             this.initGroupsContextMenu();
             var store = WsAccess.CreateGroupsStore();
-            this.groupsGrid = declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            this.groupsGrid = declare([ESPUtil.Grid(false, true)])({
                 store: store,
                 columns: {
                     check: selector({
@@ -388,9 +381,7 @@ define([
         initUsersGrid: function () {
             this.initUsersContextMenu();
             var store = WsAccess.CreateUsersStore();
-            this.usersGrid = declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            this.usersGrid = declare([ESPUtil.Grid(false, true)])({
                 store: store,
                 columns: {
                     check: selector({
@@ -503,7 +494,7 @@ define([
 
             this.initPermissionsContextMenu();
             var store = WsAccess.CreatePermissionsStore();
-            this.permissionsGrid = declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+            this.permissionsGrid = declare([ESPUtil.Grid(false, true)])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,

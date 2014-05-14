@@ -59,9 +59,7 @@ define([
         },
 
         createGrid: function (domID) {
-            var retVal = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     EventName: { label: this.i18n.Name, width: 180 },
