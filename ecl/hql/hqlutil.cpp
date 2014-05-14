@@ -7783,7 +7783,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) 
                 default:
                     extractName(name.clear(), NULL, NULL, cur, NULL);
                     if (name.length())
-                        builder.addField(name, *type);
+                        builder.addField(name, *type, false);
                     else
                         hasMixedContent = true;
                     break;

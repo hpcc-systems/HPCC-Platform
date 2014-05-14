@@ -5312,7 +5312,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
                 StringBuffer xml;
                 {
                     XmlSchemaBuilder xmlbuilder(false);
-                    xmlbuilder.addField(fieldName, *schemaType);
+                    xmlbuilder.addField(fieldName, *schemaType, false);
                     xmlbuilder.getXml(xml);
                 }
                 addSchemaResource(sequence, resultName.str(), xml.length()+1, xml.str());
