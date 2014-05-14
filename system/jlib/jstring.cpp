@@ -1963,9 +1963,9 @@ jlib_decl StringBuffer &appendJSONDataValue(StringBuffer& s, const char *name, u
     return s.append('"');
 }
 
-inline StringBuffer &encodeJSON(StringBuffer &s, const char ch)
+inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch)
 {
-    switch (ch)
+    switch (*ch)
     {
         case '\b':
             s.append("\\b");
@@ -1985,9 +1985,27 @@ inline StringBuffer &encodeJSON(StringBuffer &s, const char ch)
         case '\"':
         case '\\':
         case '/':
-            s.append('\\'); //fall through
+            s.append('\\');
+            s.append(*ch);
+            break;
         default:
-            s.append(ch);
+            if (*ch >= ' ' && ((byte)*ch) < 128)
+                s.append(*ch);
+            else if (*ch < ' ' && *ch > 0)
+                s.append("\\u00").appendhex(*ch, true);
+            else //json is always supposed to be utf8 (or other unicode formats)
+            {
+                unsigned chlen = utf8CharLen((const unsigned char *)ch);
+                if (chlen==0)
+                    s.append("\\u00").appendhex(*ch, true);
+                else
+                {
+                    s.append(*ch);
+                    while(--chlen)
+                        s.append(*(++ch));
+                }
+            }
+            break;
     }
     return s;
 }
@@ -1996,9 +2014,8 @@ StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value)
 {
     if (!value)
         return s;
-    unsigned pos=0;
-    while(pos<len && value[pos]!=0)
-        encodeJSON(s, value[pos++]);
+    while (len-- && *value)
+        encodeJSONChar(s, value++);
     return s;
 }
 
@@ -2007,7 +2024,7 @@ StringBuffer &encodeJSON(StringBuffer &s, const char *value)
     if (!value)
         return s;
     while (*value)
-        encodeJSON(s, *value++);
+        encodeJSONChar(s, value++);
     return s;
 }
 
