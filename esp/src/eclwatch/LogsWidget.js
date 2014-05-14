@@ -28,12 +28,7 @@ define([
     "dijit/form/Button",
     "dijit/ToolbarSeparator",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPUtil",
@@ -41,9 +36,9 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/DelayLoadWidget"
 
-],  function (declare, lang, i18n, nlsHPCC, array, Memory, Observable, domConstruct, on,
+],  function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable, domConstruct, on,
             registry, Button, ToolbarSeparator,
-            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+            selector,
             GridDetailsWidget, ESPUtil, ESPRequest, ESPWorkunit, DelayLoadWidget) {
         return declare("LogsWidget", [GridDetailsWidget], {
             baseClass: "LogsWidget",
@@ -96,7 +91,9 @@ define([
                 var urls = [];
 
                 for (var i = 0; i < selection.length; ++i) {
-                    window.open(this._getURL(selection[i], option));
+                    if (this.canDownload(selection[i].Type)) {
+                        window.open(this._getURL(selection[i], option));
+                    }
                 }
             },
             _onDownload: function (args) {
@@ -145,8 +142,7 @@ define([
                 domConstruct.place(downloadLabal, this.openButton.domNode, "after");
                 tmpSplitter = new ToolbarSeparator().placeAt(this.openButton.domNode, "after");
 
-                var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                    allowSelectAll: true,
+                var retVal = new declare([ESPUtil.Grid(false, true)])({
                     store: this.store,
                     columns: {
                         sel: selector({
@@ -157,7 +153,10 @@ define([
                             label: this.i18n.Type,
                             width: 117,
                             formatter: function (Type, row) {
-                                return "<a href='#' rowIndex=" + row.id + " class='" + context.id + "HelperClick'>" + Type + "</a>";
+                                if (context.canShowContent(Type)) {
+                                    return "<a href='#' rowIndex=" + row.id + " class='" + context.id + "HelperClick'>" + Type + "</a>";
+                                }
+                                return Type;
                             }
                         },
                         Description: {
@@ -180,36 +179,39 @@ define([
             },
 
             createDetail: function (id, row, params) {
-                var name = row.Type;
-                if (row.Description) {
-                    var descParts = row.Description.split("/");
-                    name = descParts.length ? descParts[descParts.length - 1] : row.Description;
-                }
-                var Wuid = "";
-                var sourceMode = "text";
-                switch (row.Type) {
-                    case "ECL":
-                        Wuid = this.wu.Wuid;
-                        sourceMode = "ecl";
-                        break;
-                    case "Workunit XML":
-                    case "Archive Query":
-                        sourceMode = "xml";
-                        break;
-                }
-                return new DelayLoadWidget({
-                    id: id,
-                    title: name,
-                    closable: true,
-                    delayWidget: "ECLSourceWidget",
-                    hpcc: {
-                        params: {
-                            Wuid: Wuid,
-                            sourceMode: sourceMode,
-                            sourceURL: this._getURL(row)
-                        }
+                if (this.canShowContent(row.Type)) {
+                    var name = row.Type;
+                    if (row.Description) {
+                        var descParts = row.Description.split("/");
+                        name = descParts.length ? descParts[descParts.length - 1] : row.Description;
                     }
-                });
+                    var Wuid = "";
+                    var sourceMode = "text";
+                    switch (row.Type) {
+                        case "ECL":
+                            Wuid = this.wu.Wuid;
+                            sourceMode = "ecl";
+                            break;
+                        case "Workunit XML":
+                        case "Archive Query":
+                            sourceMode = "xml";
+                            break;
+                    }
+                    return new DelayLoadWidget({
+                        id: id,
+                        title: name,
+                        closable: true,
+                        delayWidget: "ECLSourceWidget",
+                        hpcc: {
+                            params: {
+                                Wuid: Wuid,
+                                sourceMode: sourceMode,
+                                sourceURL: this._getURL(row)
+                            }
+                        }
+                    });
+                }
+                return null;
             },
 
             refreshGrid: function (args) {
@@ -242,6 +244,37 @@ define([
                         context.grid.refresh();
                     }
                 });
+            },
+            
+            canShowContent: function (type) {
+                switch (type) {
+                    case "dll":
+                        return false;
+                }
+                return true;
+            },
+
+            canDownload: function (type) {
+                switch(type) {
+                    case "ECL":
+                        return false;
+                }
+                return true;
+            },
+
+            refreshActionState: function (selection) {
+                var canShowContent = false;
+                var canDownload = false;
+                arrayUtil.forEach(selection, function (item, idx) {
+                    if (item.Type !== "dll") {
+                        isNotDll = true;
+                    }
+                    canShowContent = canShowContent ? canShowContent : this.canShowContent(item.Type);
+                    canDownload = canDownload ? canDownload : this.canDownload(item.Type);
+                }, this);
+                registry.byId(this.id + "Open").set("disabled", !canShowContent);
+                this.downloadGZip.set("disabled", !canDownload);
+                this.downloadZip.set("disabled", !canDownload);
             },
 
             loadLogs: function (logs) {

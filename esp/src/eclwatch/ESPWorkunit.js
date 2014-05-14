@@ -17,6 +17,8 @@ define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/Deferred",
     "dojo/promise/all",
     "dojo/store/Observable",
@@ -27,7 +29,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
-], function (declare, arrayUtil, lang, Deferred, all, Observable, topic,
+], function (declare, arrayUtil, lang, i18n, nlsHPCC, Deferred, all, Observable, topic,
     WsWorkunits, WsTopology, ESPUtil, ESPRequest, ESPResult) {
 
     var _workunits = {};
@@ -67,6 +69,8 @@ define([
     });
 
     var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
+        i18n: nlsHPCC,
+
         //  Asserts  ---
         _assertHasWuid: function () {
             if (!this.Wuid) {
@@ -264,25 +268,62 @@ define([
         _resubmit: function (clone, resetWorkflow) {
             this._assertHasWuid();
             var context = this;
-            WsWorkunits.WUResubmit({
+            return WsWorkunits.WUResubmit({
                 request: {
                     Wuids: this.Wuid,
                     CloneWorkunit: clone,
                     ResetWorkflow: resetWorkflow
-                },
-                load: function (response) {
-                    context.refresh();
                 }
+            }).then(function (response) {
+                context.refresh();
+                return response;
             });
         },
         clone: function () {
-            this._resubmit(true, false);
+            var context = this;
+            this._resubmit(true, false).then(function (response) {
+                if (!lang.exists("Exceptions.Source", response)) {
+                    var msg = "";
+                    if (lang.exists("WUResubmitResponse.WUs.WU", response) && response.WUResubmitResponse.WUs.WU.length) {
+                        msg = context.i18n.ClonedWUID + ":  " + response.WUResubmitResponse.WUs.WU[0].WUID;
+                        topic.publish("hpcc/ecl_wu_created", {
+                            wuid: response.WUResubmitResponse.WUs.WU[0].WUID
+                        });
+                    }
+                    dojo.publish("hpcc/brToaster", {
+                        Severity: "Message",
+                        Source: "ESPWorkunit.clone",
+                        Exceptions: [{ Source: context.Wuid, Message: msg }]
+                    });
+                }
+                return response;
+            });
         },
         resubmit: function () {
-            this._resubmit(false, false);
+            var context = this;
+            this._resubmit(false, false).then(function (response) {
+                if (!lang.exists("Exceptions.Source", response)) {
+                    dojo.publish("hpcc/brToaster", {
+                        Severity: "Message",
+                        Source: "ESPWorkunit.resubmit",
+                        Exceptions: [{ Source: context.Wuid, Message: context.i18n.Resubmitted }]
+                    });
+                }
+                return response;
+            });
         },
         restart: function () {
-            this._resubmit(false, true);
+            var context = this;
+            this._resubmit(false, true).then(function (response) {
+                if (!lang.exists("Exceptions.Source", response)) {
+                    dojo.publish("hpcc/brToaster", {
+                        Severity: "Message",
+                        Source: "ESPWorkunit.resubmit",
+                        Exceptions: [{ Source: context.Wuid, Message: context.i18n.Restarted }]
+                    });
+                }
+                return response;
+            });
         },
         _action: function (action) {
             this._assertHasWuid();

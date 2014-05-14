@@ -21,20 +21,15 @@ define([
     "dojo/_base/array",
     "dojo/on",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/LFDetailsWidget",
-    "hpcc/WsWorkunits",
+    "hpcc/DelayLoadWidget",
+    "hpcc/ESPQuery",
     "hpcc/ESPUtil"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, LFDetailsWidget, WsWorkunits, ESPUtil) {
+                selector,
+                GridDetailsWidget, DelayLoadWidget, ESPQuery, ESPUtil) {
     return declare("QuerySetLogicalFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
 
@@ -55,9 +50,7 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),
@@ -69,29 +62,18 @@ define([
         },
 
         createDetail: function (id, row, params) {
-            if(row.Name) {
-                return new LFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: row.Name,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: row.Name
-                        }
+            return new DelayLoadWidget({
+                id: id,
+                title: row.Name,
+                closable: true,
+                delayWidget: "LFDetailsWidget",
+                hpcc: {
+                    type: "LFDetailsWidget",
+                    params: {
+                        Name: row.Name
                     }
-                });
-            } else {
-                return new LFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: params.Name,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: params.Name
-                        }
-                    }
-                });
-            }
+                }
+            });
         },
 
         refreshGrid: function (args) {

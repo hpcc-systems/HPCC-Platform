@@ -37,15 +37,9 @@ define([
     "dijit/form/Textarea",
     "dijit/form/ValidationTextBox",
 
-    "dgrid/Grid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/editor",
     "dgrid/selector",
     "dgrid/tree",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-    "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
     "hpcc/WsDfu",
@@ -82,7 +76,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea, ValidationTextBox,
-                Grid, Keyboard, Selection, editor, selector, tree, ColumnResizer, DijitRegistry, Pagination,
+                editor, selector, tree,
                 _TabContainerWidget, WsDfu, FileSpray, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, FilterDropDownWidget, SelectionGridWidget,
                 put,
                 template) {
@@ -401,15 +395,8 @@ define([
             var context = this;
             this.listStore = new ESPLogicalFile.CreateLFQueryStore();
             this.treeStore = new ESPLogicalFile.CreateLFQueryTreeStore();
-            this.workunitsGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            this.workunitsGrid = new declare([ESPUtil.Grid(true, true)])({
                 store: this.listStore,
-                rowsPerPage: 50,
-                pagingLinks: 1,
-                pagingTextBox: true,
-                firstLastArrows: true,
-                pageSizeOptions: [25, 50, 100],
                 columns: {
                     col1: selector({
                         width: 27,

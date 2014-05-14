@@ -62,4 +62,14 @@ perl -pe "
 #  s/<script src=\"$LOADERMID.*?\/script>//;  # Remove script eclwatch/run
   s/\s+/ /g;                                 # Collapse white-space" > "$DISTDIR/stub.htm"
 
+
+for dojodir in dojo dojox dijit
+do
+  for f in  $(find ${DISTDIR}/${dojo_dir} -type f -perm /a+x ! -name "*.sh" \
+              ! -name "*.php" ! -name "*.cgi" -print)
+  do
+     chmod -x $f
+  done
+done
+
 echo "Build complete"

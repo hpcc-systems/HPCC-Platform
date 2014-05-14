@@ -40,6 +40,9 @@ define([
         countProperty: "Count",
         useSingletons: false,
         preRequest: function (request) {
+            if (request.FilterBy) {
+                ESPRequest.flattenMap(request, "FilterBy", "NamedValue", true, true);
+            }
             if (this.name && this.cluster) {
                 this.idPrefix = this.name + "_" + this.cluster;
                 request['LogicalName'] = this.name;

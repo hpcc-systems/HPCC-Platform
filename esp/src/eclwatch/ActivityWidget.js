@@ -26,13 +26,8 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
     "dgrid/tree",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPRequest",
@@ -42,7 +37,7 @@ define([
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on,
                 registry, Button, ToolbarSeparator, ContentPane,
-                OnDemandGrid, Keyboard, Selection, selector, tree, ColumnResizer, DijitRegistry,
+                selector, tree,
                 GridDetailsWidget, ESPRequest, ESPActivity, DelayLoadWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
@@ -260,9 +255,7 @@ define([
             }).placeAt(this.openButton.domNode, "after");
 
             this.activity = ESPActivity.Get();
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.activity.getStore(),
                 columns: {
                     col1: selector({

@@ -30,14 +30,6 @@ define([
 
     "dojox/html/entities",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/ColumnHider",
-    "dgrid/extensions/DijitRegistry",
-
     "hpcc/_Widget",
     "hpcc/GraphWidget",
     "hpcc/ESPUtil",
@@ -62,7 +54,6 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
             registry, Dialog,
             entities,
-            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, ColumnHider, DijitRegistry,
             _Widget, GraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
             template) {
     return declare("GraphPageWidget", [_Widget], {
@@ -249,7 +240,7 @@ define([
 
         _initSubgraphs: function () {
             this.subgraphsStore = this.global.createStore();
-            this.subgraphsGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, ESPUtil.GridHelper])({
+            this.subgraphsGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: this.subgraphsStore
             }, this.id + "SubgraphsGrid");
 
@@ -258,7 +249,7 @@ define([
 
         _initVertices: function () {
             this.verticesStore =  this.global.createStore();
-            this.verticesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, ESPUtil.GridHelper])({
+            this.verticesGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: this.verticesStore
             }, this.id + "VerticesGrid");
 
@@ -267,7 +258,7 @@ define([
 
         _initEdges: function () {
             this.edgesStore =  this.global.createStore();
-            this.edgesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, ESPUtil.GridHelper])({
+            this.edgesGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: this.edgesStore
             }, this.id + "EdgesGrid");
 

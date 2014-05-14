@@ -34,14 +34,7 @@ define([
 
     "dojox/html/entities",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/selector",
     "dgrid/tree",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/ColumnHider",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/_Widget",
     "hpcc/GraphWidget",
@@ -65,7 +58,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Deferred, dom, domConstruct, on, html,
             registry, Dialog, Menu, MenuItem, MenuSeparator, CheckedMenuItem,
             entities,
-            OnDemandGrid, Keyboard, Selection, selector, tree, ColumnResizer, ColumnHider, DijitRegistry,
+            tree,
             _Widget, GraphWidget, ESPUtil, ESPWorkunit, TimingTreeMapWidget, WsWorkunits,
             template) {
 
@@ -208,7 +201,7 @@ define([
 
         _initTree: function () {
             this.treeStore = this.global.createTreeStore();
-            this.treeGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, ESPUtil.GridHelper])({
+            this.treeGrid = new declare([ESPUtil.Grid(false, true)])({
                 treeDepth: this.main.depth.get("value"),
                 store: this.treeStore
             }, this.id + "TreeGrid");
@@ -256,7 +249,7 @@ define([
 
         _initSubgraphs: function () {
             this.subgraphsStore = this.global.createStore();
-            this.subgraphsGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, ESPUtil.GridHelper])({
+            this.subgraphsGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: this.subgraphsStore
             }, this.id + "SubgraphsGrid");
 
@@ -265,7 +258,7 @@ define([
 
         _initVertices: function () {
             this.verticesStore =  this.global.createStore();
-            this.verticesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, ESPUtil.GridHelper])({
+            this.verticesGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: this.verticesStore
             }, this.id + "VerticesGrid");
 
@@ -274,7 +267,7 @@ define([
 
         _initEdges: function () {
             this.edgesStore =  this.global.createStore();
-            this.edgesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, ColumnHider, DijitRegistry, ESPUtil.GridHelper])({
+            this.edgesGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: this.edgesStore
             }, this.id + "EdgesGrid");
 

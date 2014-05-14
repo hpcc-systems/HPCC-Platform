@@ -27,12 +27,7 @@ define([
     "dojox/widget/Standby",
     "dojox/validate",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
     "hpcc/WsWorkunits",
@@ -44,7 +39,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, all,
                 Button,
                 Standby, validate,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                selector,
                 GridDetailsWidget, WsWorkunits, FileSpray, WsDfu, DelayLoadWidget, ESPUtil) {
     return declare("SearchResultsWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
@@ -77,9 +72,7 @@ define([
 
         createGrid: function (domID) {
             var context = this;
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({ width: 27, selectorType: 'checkbox' }),

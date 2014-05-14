@@ -250,7 +250,8 @@ interface IPipeProcess: extends IInterface
 {
     virtual bool run(const char *title,const char *prog, const char *dir,
                        bool hasinput,bool hasoutput,bool haserror=false,
-                       size32_t stderrbufsize=0) = 0;               // set to non-zero to automatically buffer stderror output
+                       size32_t stderrbufsize=0,                      // set to non-zero to automatically buffer stderror output
+                       bool newProcessGroup=false) = 0;
     virtual bool hasInput() = 0;                                    // i.e. can write to pipe
     virtual size32_t write(size32_t sz, const void *buffer) = 0;    // write pipe process standard output
     virtual bool hasOutput() = 0;                                   // i.e. can read from pipe
