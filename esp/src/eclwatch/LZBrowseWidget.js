@@ -32,15 +32,9 @@ define([
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
 
-    "dgrid/OnDemandGrid",
     "dgrid/tree",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/editor",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-    "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
     "hpcc/FileSpray",
@@ -75,7 +69,7 @@ define([
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, iframe, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-                OnDemandGrid, tree, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
+                tree, editor, selector,
                 _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, SelectionGridWidget,
                 template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
@@ -384,9 +378,7 @@ define([
 
         initLandingZonesGrid: function () {
             var store = new FileSpray.CreateLandingZonesStore();
-            this.landingZonesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            this.landingZonesGrid = new declare([ESPUtil.Grid(false, true)])({
                 store: store,
                 columns: {
                     col1: selector({

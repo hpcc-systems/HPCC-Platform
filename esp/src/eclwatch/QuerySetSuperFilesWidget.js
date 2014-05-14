@@ -22,21 +22,16 @@ define([
     "dojo/on",
     "dojo/store/util/QueryResults",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/tree",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/GridDetailsWidget",
-    "hpcc/SFDetailsWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPQuery"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, on, QueryResults,
-                OnDemandGrid, Keyboard, Selection, tree, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, SFDetailsWidget, ESPUtil, ESPQuery) {
+                tree, selector,
+                GridDetailsWidget, DelayLoadWidget, ESPUtil, ESPQuery) {
     return declare("QuerySetSuperFilesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
         query: null,
@@ -58,7 +53,8 @@ define([
                 arrayUtil.forEach(parent.SubFiles.File, function (item, idx) {
                     children.push({
                         __hpcc_id: item,
-                        __hpcc_display: item
+                        __hpcc_display: item,
+                        __hpcc_type: "LF"
                     });
                 });
                 return QueryResults(children);
@@ -66,9 +62,7 @@ define([
             this.store.mayHaveChildren = function (object) {
                 return object.__hpcc_type;
             };
-            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, true)])({
                 store: this.store,
                 columns: {
                     col1: selector({
@@ -86,42 +80,37 @@ define([
         },
 
         createDetail: function (id, row, params) {
-            if (row.Name) {
-                return new SFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: row.Name,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: row.Name
+            switch (row.__hpcc_type) {
+                case "SF": {
+                    return new DelayLoadWidget({
+                        id: id,
+                        title: row.__hpcc_id,
+                        closable: true,
+                        delayWidget: "SFDetailsWidget",
+                        hpcc: {
+                            type: "SFDetailsWidget",
+                            params: {
+                                Name: row.__hpcc_id
+                            }
                         }
-                    }
-                });
-            }
-            if (row.__hpcc_id) {
-                return new SFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: row.__hpcc_id,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: row.__hpcc_id
+                    });
+                }
+                case "LF": {
+                    return new SFDetailsWidget.fixCircularDependency({
+                        id: id,
+                        title: row.__hpcc_id,
+                        closable: true,
+                        delayWidget: "LFDetailsWidget",
+                        hpcc: {
+                            type: "LFDetailsWidget",
+                            params: {
+                                Name: row.__hpcc_id
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
-            if (params.Name) {
-                return new SFDetailsWidget.fixCircularDependency({
-                    id: id,
-                    title: params.Name,
-                    closable: true,
-                    hpcc: {
-                        params: {
-                            Name: params.Name
-                        }
-                    }
-                });
-            }
+            return null;
         },
 
         refreshGrid: function (args) {
@@ -133,7 +122,7 @@ define([
                         superfiles.push(lang.mixin({
                             __hpcc_id: item.Name,
                             __hpcc_display: item.Name,
-                            __hpcc_type: item.Name
+                            __hpcc_type: "SF"
                         }, item));
                     });
                 }

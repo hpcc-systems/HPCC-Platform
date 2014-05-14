@@ -16,17 +16,20 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
     "dojo/dom",
 
     "dijit/registry",
+    "dijit/form/TextBox",
 
     "dgrid/Grid",
     "dgrid/Keyboard",
     "dgrid/Selection",
     "dgrid/selector",
     "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/ColumnHider",
     "dgrid/extensions/DijitRegistry",
     "dgrid/extensions/Pagination",
 
@@ -34,6 +37,8 @@ define([
     "hpcc/ESPBase",
     "hpcc/ESPWorkunit",
     "hpcc/ESPLogicalFile",
+    "hpcc/FilterDropDownWidget",
+    "hpcc/TableContainer",
 
     "dojo/text!../templates/ResultWidget.html",
 
@@ -42,10 +47,10 @@ define([
     "dijit/Toolbar",
     "dijit/form/Button",
     "dijit/ToolbarSeparator"
-], function (declare, lang, i18n, nlsHPCC, dom,
-                registry,
-                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _Widget, ESPBase, ESPWorkunit, ESPLogicalFile,
+], function (declare, lang, arrayUtil, i18n, nlsHPCC, dom,
+                registry, TextBox,
+                Grid, Keyboard, Selection, selector, ColumnResizer, ColumnHider, DijitRegistry, Pagination,
+                _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, FilterDropDownWidget, TableContainer,
                 template) {
     return declare("ResultWidget", [_Widget], {
         templateString: template,
@@ -152,7 +157,7 @@ define([
             if (result) {
                 var context = this;
                 result.fetchStructure(function (structure) {
-                    context.grid = new declare([Grid, Pagination, Keyboard, ColumnResizer, DijitRegistry])({
+                    context.grid = new declare([Grid, Pagination, Keyboard, ColumnResizer, ColumnHider, DijitRegistry])({
                         columns: structure,
                         rowsPerPage: 50,
                         pagingLinks: 1,
@@ -162,6 +167,29 @@ define([
                         store: result.getStore()
                     }, context.id + "Grid");
                     context.grid.startup();
+                    var filterForm = registry.byId(context.widget.Filter.id + "FilterForm");
+                    var origTableContainer = registry.byId(context.widget.Filter.id + "TableContainer");
+                    var tableContainer = new TableContainer({
+                    });
+                    arrayUtil.forEach(structure, function (item, idx) {
+                        if (item.label !== "##") {
+                            var textBox = new TextBox({
+                                title: item.label,
+                                label: item.label,
+                                name: item.field,
+                                colSpan: 2
+                            });
+                            tableContainer.addChild(textBox);
+                        }
+                    });
+                    tableContainer.placeAt(origTableContainer.domNode, "replace");
+                    context.widget.Filter.on("clear", function (evt) {
+                        context.refresh();
+                    });
+                    context.widget.Filter.on("apply", function (evt) {
+                        context.refresh();
+                    });
+
                 });
             } else {
                 this.grid = new declare([Grid, DijitRegistry])({
@@ -177,13 +205,17 @@ define([
             }
         },
 
+        getFilter: function () {
+            return this.widget.Filter.toObject();
+        },
+
         refresh: function () {
             if (this.result && !this.result.isComplete()) {
                 this.grid.showMessage(this.result.getLoadingMessage());
-            } else if (!this.loaded) {
-                this.loaded = true;
+            } else if (this.loaded !== this.getFilter()) {
+                this.loaded = this.getFilter();
                 this.grid.set("query", {
-                    id: "*"
+                    FilterBy: this.getFilter()
                 });
             }
         }

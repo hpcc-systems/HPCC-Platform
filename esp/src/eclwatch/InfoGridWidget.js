@@ -33,12 +33,6 @@ define([
     "dojox/data/AndOrReadStore",
     "dojox/html/entities",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-
     "hpcc/_Widget",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
@@ -57,7 +51,6 @@ define([
     function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domConstruct, domClass, Memory, Observable, topic, has, sniff,
             registry, 
             AndOrReadStore, entities,
-            OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
             _Widget, ESPUtil, ESPWorkunit,
             template) {
         return declare("InfoGridWidget", [_Widget], {
@@ -110,9 +103,8 @@ define([
                 });
                 this.infoStore = Observable(store);
 
-                this.infoGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                this.infoGrid = new declare([ESPUtil.Grid(false, true)])({
                     selectionMode: "single",
-                    allowTextSelection: true,
                     columns: {
                         Severity: {
                             label: this.i18n.Severity, field: "", width: 72, sortable: false,

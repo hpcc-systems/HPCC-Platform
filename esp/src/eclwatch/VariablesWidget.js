@@ -20,18 +20,12 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
-
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
     "hpcc/DelayLoadWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil,
-                OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry,
                 GridDetailsWidget, ESPWorkunit, DelayLoadWidget, ESPUtil) {
     return declare("VariablesWidget", [GridDetailsWidget], {
         i18n: nlsHPCC,
@@ -59,9 +53,7 @@ define([
         },
 
         createGrid: function (domID) {
-            var retVal = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
-                deselectOnRefresh: false,
+            var retVal = new declare([ESPUtil.Grid(false, false)])({
                 store: this.store,
                 columns: {
                     Type: { label: this.i18n.Type, width: 180 },

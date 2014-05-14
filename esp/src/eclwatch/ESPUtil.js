@@ -24,9 +24,18 @@ define([
     "dojo/json",
 
     "dijit/registry",
-    "dijit/Tooltip"
+    "dijit/Tooltip",
+
+    "dgrid/Grid",
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+    "dgrid/extensions/Pagination"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, Stateful, query, json,
-    registry, Tooltip) {
+    registry, Tooltip,
+    Grid, OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, Pagination) {
 
     var SingletonData = declare([Stateful], {
         //  Attributes  ---
@@ -83,6 +92,13 @@ define([
         isMonitoring: function () {
             return this._timer && this._timer > 0;
         },
+        disableMonitor: function (disableMonitor) {
+            this._disableMonitor = disableMonitor;
+            if (!this._disableMonitor) {
+                this.refresh();
+                this.onMonitor();
+            }
+        },
         startMonitor: function (aggressive) {
             if (this.isMonitoring()) 
                 return;
@@ -96,6 +112,9 @@ define([
             this._timer = 0;
         },
         onMonitor: function () {
+            if (this._disableMonitor) {
+                return;
+            }
             this._timerTickCount++;
 
             if (this.hasCompleted) {
@@ -128,6 +147,94 @@ define([
         }
     });
 
+    var GridHelper = declare(null, {
+        allowTextSelection: true,
+        noDataMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.noDataMessage + "</span>",
+        loadingMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.loadingMessage + "</span>",
+
+        postCreate: function (args) {
+            this.inherited(arguments);
+
+            this.__hpcc_tooltip = new Tooltip({
+                connectId: [this.id],
+                selector: "td",
+                showDelay: 800,
+                getContent: function (node) {
+                    if (node.offsetWidth < node.scrollWidth) {
+                        return node.innerHTML;
+                    }
+                    return "";
+                }
+            });
+        },
+
+        _onNotify: function(object, existingId){
+            this.inherited(arguments);
+            if (this.onSelectedChangedCallback) {
+                this.onSelectedChangedCallback();
+            }
+        },
+
+        onSelectionChanged: function (callback) {
+            this.onSelectedChangedCallback = callback;
+            this.on("dgrid-select, dgrid-deselect, dgrid-refresh-complete", function (event) {
+                callback(event);
+            });
+        },
+
+        clearSelection: function () {
+            this.inherited(arguments);
+            query("input[type=checkbox]", this.domNode).forEach(function (node) {
+                node.checked = false;
+                node.indeterminate = false;
+            });
+        },
+
+        setSelection: function (arrayOfIDs) {
+            this.clearSelection();
+            var context = this;
+            arrayUtil.forEach(arrayOfIDs, function (item, idx) {
+                if (idx === 0) {
+                    var row = context.row(item);
+                    if (row.element) {
+                        row.element.scrollIntoView();
+                    }
+                }
+                context.select(item);
+            });
+        },
+
+        setSelected: function (items) {
+            this.clearSelection();
+            var context = this;
+            arrayUtil.forEach(items, function (item, idx) {
+                if (idx === 0) {
+                    var row = context.row(item);
+                    if (row.element) {
+                        row.element.scrollIntoView();
+                    }
+                }
+                context.select(context.store.getIdentity(item));
+            });
+        },
+
+        getSelected: function(store) {
+            if (!store) {
+                store = this.store;
+            }
+            var retVal = [];
+            for (var id in this.selection) {
+                if (this.selection[id]) {
+                    var storeItem = store.get(id);
+                    if (storeItem) {
+                        retVal.push(storeItem);
+                    }
+                }
+            }
+            return retVal;
+        }
+    });
+
     return {
         Singleton: SingletonData,
         Monitor: Monitor,
@@ -148,92 +255,30 @@ define([
             }
         }),
 
-        GridHelper: declare(null, {
-            allowTextSelection: true,
-            noDataMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.noDataMessage + "</span>",
-            loadingMessage: "<span class='dojoxGridNoData'>" + nlsHPCC.loadingMessage + "</span>",
-
-            postCreate: function (args) {
-                this.inherited(arguments);
-
-                this.__hpcc_tooltip = new Tooltip({
-                    connectId: [this.id],
-                    selector: "td",
-                    showDelay: 800,
-                    getContent: function (node) {
-                        if (node.offsetWidth < node.scrollWidth) {
-                            return node.innerHTML;
-                        }
-                        return "";
-                    }
+        Grid: function (pagination, selection) {
+            var baseClass = [];
+            var params = {};
+            if (pagination) {
+                baseClass = [Grid, Pagination, ColumnResizer, Keyboard, DijitRegistry];
+                lang.mixin(params, {
+                    rowsPerPage: 50,
+                    pagingLinks: 1,
+                    pagingTextBox: true,
+                    firstLastArrows: true,
+                    pageSizeOptions: [25, 50, 100, 1000]
                 });
-            },
-
-            _onNotify: function(object, existingId){
-                this.inherited(arguments);
-                if (this.onSelectedChangedCallback) {
-                    this.onSelectedChangedCallback();
-                }
-            },
-
-            onSelectionChanged: function (callback) {
-                this.onSelectedChangedCallback = callback;
-                this.on("dgrid-select, dgrid-deselect, dgrid-refresh-complete", function (event) {
-                    callback(event);
-                });
-            },
-
-            clearSelection: function () {
-                this.inherited(arguments);
-                query("input[type=checkbox]", this.domNode).forEach(function (node) {
-                    node.checked = false;
-                    node.indeterminate = false;
-                });
-            },
-
-            setSelection: function (arrayOfIDs) {
-                this.clearSelection();
-                var context = this;
-                arrayUtil.forEach(arrayOfIDs, function (item, idx) {
-                    if (idx === 0) {
-                        var row = context.row(item);
-                        if (row.element) {
-                            row.element.scrollIntoView();
-                        }
-                    }
-                    context.select(item);
-                });
-            },
-
-            setSelected: function (items) {
-                this.clearSelection();
-                var context = this;
-                arrayUtil.forEach(items, function (item, idx) {
-                    if (idx === 0) {
-                        var row = context.row(item);
-                        if (row.element) {
-                            row.element.scrollIntoView();
-                        }
-                    }
-                    context.select(context.store.getIdentity(item));
-                });
-            },
-
-            getSelected: function(store) {
-                if (!store) {
-                    store = this.store;
-                }
-                var retVal = [];
-                for (var id in this.selection) {
-                    if (this.selection[id]) {
-                        var storeItem = store.get(id);
-                        if (storeItem) {
-                            retVal.push(storeItem);
-                        }
-                    }
-                }
-                return retVal;
+            } else {
+                baseClass = [OnDemandGrid, ColumnResizer, Keyboard, DijitRegistry];
             }
-        })
+            if (selection) {
+                baseClass.push(Selection);
+                lang.mixin(params, {
+                    allowSelectAll: true,
+                    deselectOnRefresh: false
+                });
+            }
+            baseClass.push(GridHelper);
+            return declare(baseClass, params);
+        }
     };
 });

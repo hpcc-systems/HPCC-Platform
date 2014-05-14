@@ -243,6 +243,7 @@ define([
             var context = this;
             this.stackContainer.selectChild(this.mainPage);
             this.mainPage.ensureWidget().then(function (mainPage) {
+                mainPage.widget.TabContainer.selectChild(mainPage.widget._Search);
                 mainPage.widget._Search.ensureWidget().then(function (searchPage) {
                     searchPage.doSearch(context.searchText.get("value"));
                 });

@@ -709,6 +709,18 @@ margin-left:-20px;
     height: 16px;
 }
 
+.iconAutoRefresh {
+    background-image: url("../img/autoRefresh.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconAutoRefreshDisabled {
+    background-image: url("../img/autoRefresh_disabled.png"); 
+    width: 16px;
+    height: 16px;
+}
+
 .iconNewPage {
     background-image: url("../img/openNewPage.png"); 
     width: 16px;

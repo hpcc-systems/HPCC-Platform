@@ -2580,7 +2580,14 @@ bool getInterfaceIp(IpAddress &ip,const char *ifname)
                 if (!WildMatch(item->ifr_name,ifname))
                     continue;
             IpAddress iptest((inet_ntoa(((struct sockaddr_in *)&item->ifr_addr)->sin_addr)));
-            if (iptest.isLoopBack() == useLoopback)
+            if (ioctl(fd, SIOCGIFFLAGS, item) < 0)
+            {
+                DBGLOG("Error retrieving interface flags for interface %s", item->ifr_name);
+                continue;
+            }
+            bool isLoopback = iptest.isLoopBack() || ((item->ifr_flags & IFF_LOOPBACK) != 0);
+            bool isUp = (item->ifr_flags & IFF_UP) != 0;
+            if ((isLoopback==useLoopback) && isUp)
             {
                 if (ip.isNull())
                     ip.ipset(iptest);

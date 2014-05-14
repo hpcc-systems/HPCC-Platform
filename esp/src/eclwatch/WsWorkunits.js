@@ -17,13 +17,15 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/array",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/Deferred",
     "dojo/promise/all",
     "dojo/store/Observable",
     "dojo/topic",
 
     "hpcc/ESPRequest"
-], function (declare, lang, arrayUtil, Deferred, all, Observable, topic,
+], function (declare, lang, arrayUtil, i18n, nlsHPCC, Deferred, all, Observable, topic,
     ESPRequest) {
 
     var EventScheduleStore = declare([ESPRequest.Store], {
@@ -137,15 +139,21 @@ define([
                     if (response.WUPublishWorkunitResponse.ErrorMesssage) {
                         topic.publish("hpcc/brToaster", {
                             Severity: "Error",
-                            Source: service + "." + action,
+                            Source: "WsWorkunits.WUPublishWorkunit",
                             Exceptions: response.Exceptions
                         });
                     } else {
+                        dojo.publish("hpcc/brToaster", {
+                            Severity: "Message",
+                            Source: "WsWorkunits.WUPublishWorkunit",
+                            Exceptions: [{ Source: params.request.Wuid, Message: nlsHPCC.Published + ":  " + response.WUPublishWorkunitResponse.QueryId }]
+                        });
                         topic.publish("hpcc/ecl_wu_published", {
                             wuid: params.request.Wuid
                         });
                     }
                 }
+                return response;
             });
         },
 

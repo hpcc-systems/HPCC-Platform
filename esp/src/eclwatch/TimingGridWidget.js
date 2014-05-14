@@ -24,12 +24,7 @@ define([
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/_Widget",
     "hpcc/ESPUtil",
@@ -39,7 +34,7 @@ define([
 ],
     function (declare, lang, i18n, nlsHPCC, arrayUtil, Memory, Observable,
             registry,
-            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+            selector,
             _Widget, ESPUtil, ESPWorkunit,
             template) {
         return declare("TimingGridWidget", [_Widget], {
@@ -67,7 +62,7 @@ define([
                 });
                 this.timingStore = Observable(store);
 
-                this.timingGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                this.timingGrid = new declare([ESPUtil.Grid(false, true)])({
                     columns: {
                         id: { label: "##", width: 45 },
                         Name: { label: this.i18n.Component },

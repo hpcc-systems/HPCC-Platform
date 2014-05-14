@@ -26,12 +26,7 @@ define([
 
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/_Widget",
     "hpcc/ESPBase",
@@ -48,7 +43,7 @@ define([
     "dijit/ToolbarSeparator"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, iframe, Memory, Observable,
                 registry,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                selector,
                 _Widget, ESPBase, ESPWorkunit, ESPLogicalFile, ESPUtil,
                 template) {
     return declare("FullResultWidget", [_Widget], {
@@ -156,7 +151,7 @@ define([
                     data: result
                 });
                 this.store = Observable(store);
-                this.grid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                this.grid = new declare([ESPUtil.Grid(false, true)])({
                     columns: columns,
                     store: this.store
                 }, this.id + "Grid");

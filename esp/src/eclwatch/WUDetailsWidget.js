@@ -149,6 +149,9 @@ define([
         _onRestore: function (event) {
             this.wu.restore();
         },
+        _onAutoRefresh: function (event) {
+            this.wu.disableMonitor(!this.widget.AutoRefresh.get("checked"));
+        },
         _onRefresh: function (event) {
             this.wu.refresh(true);
         },
@@ -440,6 +443,7 @@ define([
 
         refreshActionState: function () {
             var isArchived = this.wu.get("Archived");
+            this.setDisabled(this.id + "AutoRefresh", isArchived || this.wu.isComplete(), "iconAutoRefresh", "iconAutoRefreshDisabled");
             registry.byId(this.id + "Save").set("disabled", isArchived || !this.wu.isComplete());
             registry.byId(this.id + "Delete").set("disabled", isArchived || !this.wu.isComplete());
             registry.byId(this.id + "Restore").set("disabled", !isArchived);

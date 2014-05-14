@@ -42,12 +42,7 @@ define([
     "dijit/TitlePane",
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
-    "dgrid/Keyboard",
-    "dgrid/Selection",
     "dgrid/selector",
-    "dgrid/extensions/ColumnResizer",
-    "dgrid/extensions/DijitRegistry",
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPUtil",
@@ -58,7 +53,7 @@ define([
     "dijit/TooltipDialog"
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable, all,
                 BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                selector,
                 _TabContainerWidget,
                 ESPUtil, ESPLogicalFile,
                 template) {
@@ -156,8 +151,7 @@ define([
                 data: []
             });
             this.subfilesStore = Observable(store);
-            this.subfilesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
-                allowSelectAll: true,
+            this.subfilesGrid = new declare([ESPUtil.Grid(false, true)])({
                 columns: {
                     sel: selector({
                         width: 27,
