@@ -601,11 +601,11 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
     wuOptions->setReplicate(replicate);
 }
 
-void getNodeGroupFromLFN(const char* lfn, StringBuffer& nodeGroup, const char* username, const char* passwd)
+StringBuffer& getNodeGroupFromLFN(StringBuffer& nodeGroup, const char* lfn, const char* username, const char* passwd)
 {
     Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     if (!conn)
-        return;
+        return nodeGroup;
 
     Owned<IUserDescriptor> udesc;
     if(username != NULL && *username != '\0')
@@ -618,6 +618,7 @@ void getNodeGroupFromLFN(const char* lfn, StringBuffer& nodeGroup, const char* u
     LogicFileWrapper lfw;
     lfw.FindClusterName(lfn, clusterName, udesc);
     getClusterThorGroupName(nodeGroup, clusterName.str());
+    return nodeGroup;
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
@@ -2344,7 +2345,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         const char* destNodeGroupReq = req.getDestGroup();
         if(!destNodeGroupReq || !*destNodeGroupReq)
         {
-            getNodeGroupFromLFN(srcname, destNodeGroup, context.queryUserId(), context.queryPassword());
+            getNodeGroupFromLFN(destNodeGroup, srcname, context.queryUserId(), context.queryPassword());
             DBGLOG("Destination node group not specified, using source node group %s", destNodeGroup.str());
         }
         else
