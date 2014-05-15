@@ -1100,7 +1100,8 @@ void CWsSMCEx::getWUsNotOnTargetCluster(IEspContext &context, IPropertyTree* ser
         const char* instance = serverNode.queryProp("@node");
         const char* queueName = serverNode.queryProp("@queue");
         unsigned port = serverNode.getPropInt("@mpport", 0);
-        if (!serverName || !*serverName || !instance || !*instance || strieq(serverName, "DFUserver"))//DFUServer already handled separately
+        if (!serverName || !*serverName || !instance || !*instance || strieq(serverName, "DFUserver") ||//DFUServer already handled separately
+            strieq(serverName, "ThorMaster") || strieq(serverName, "RoxieServer") || strieq(serverName, "HThorServer"))//target clusters already handled separately
             continue;
 
         VStringBuffer instanceName("%s_on_%s:%d", serverName, instance, port);

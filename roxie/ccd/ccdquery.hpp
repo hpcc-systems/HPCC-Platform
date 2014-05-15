@@ -124,7 +124,7 @@ interface IQueryFactory : extends IInterface
     virtual void getGraphNames(StringArray &ret) const = 0;
 
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
-    virtual void getQueryInfo(StringBuffer &result, bool full, const IRoxieContextLogger &logctx) const = 0;
+    virtual void getQueryInfo(StringBuffer &result, bool full, IArrayOf<IQueryFactory> *slaveQueries,const IRoxieContextLogger &logctx) const = 0;
     virtual bool isDynamic() const = 0;
 };
 
