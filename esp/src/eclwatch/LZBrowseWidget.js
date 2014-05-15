@@ -32,9 +32,15 @@ define([
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
 
+    "dgrid/OnDemandGrid",
     "dgrid/tree",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
     "dgrid/editor",
     "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+    "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
     "hpcc/FileSpray",
@@ -69,7 +75,7 @@ define([
     "hpcc/TableContainer"
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, iframe, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
-                tree, editor, selector,
+                OnDemandGrid, tree, Keyboard, Selection, editor, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, SelectionGridWidget,
                 template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
@@ -99,6 +105,7 @@ define([
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
             this.dropZoneSelect = registry.byId(this.id + "DropZoneTargetSelect");
             this.fileListDialog = registry.byId(this.id + "FileListDialog");
+            this.overwriteCheckbox = registry.byId(this.id + "Overwrite");
 
             var context = this;
             this.connect(this.uploader, "onComplete", function (response) {
@@ -146,6 +153,7 @@ define([
         },
 
         _onUploadBegin: function (dataArray) {
+            var context = this;
             this.fileListDialog.hide();
             this.uploadString = this.i18n.FileUploadStillInProgress + ":";
             arrayUtil.forEach(dataArray, function (item, idx) {
@@ -163,6 +171,40 @@ define([
             } else {
                 this.widget.Upload.set("label", this.i18n.Upload);
                 window.onbeforeunload = null;
+            }
+        },
+
+        _onCheckUploadSubmit: function () {
+            var context = this;
+            var fileList = registry.byId(this.id + "Upload").getFileList();
+            if (this.overwriteCheckbox.checked){
+                this._onUploadSubmit();
+                this.fileListDialog.hide();
+            }
+            else {
+                var item = context.dropZoneSelect.get("row");
+                FileSpray.FileList({
+                    request: {
+                        Netaddr: item.machine.Netaddress,
+                        Path: item.machine.Directory
+                    }
+                }).then(function (response) {
+                    if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
+                        var fileName = "";
+                        arrayUtil.forEach(response.FileListResponse.files.PhysicalFileStruct, function (item, index) {
+                            arrayUtil.forEach(fileList, function (file,idx){
+                                if (item.name === file.name){
+                                    fileName = file.name;
+                                }
+                            });
+                        });
+                        if (fileName === ""){
+                            context._onUploadSubmit();
+                        } else {
+                            alert(context.i18n.OverwriteMessage);
+                        }
+                    }
+                });
             }
         },
 
@@ -192,7 +234,7 @@ define([
                 arrayUtil.forEach(this.landingZonesGrid.getSelected(), function(item, idx) {
                     FileSpray.DeleteDropZoneFile({
                         request:{
-                            NetAddress:	item.DropZone.NetAddress,
+                            NetAddress: item.DropZone.NetAddress,
                             Path: item.DropZone.Path,
                             OS: item.DropZone.OS,
                             Names: item.partialPath
@@ -378,7 +420,9 @@ define([
 
         initLandingZonesGrid: function () {
             var store = new FileSpray.CreateLandingZonesStore();
-            this.landingZonesGrid = new declare([ESPUtil.Grid(false, true)])({
+            this.landingZonesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                allowSelectAll: true,
+                deselectOnRefresh: false,
                 store: store,
                 columns: {
                     col1: selector({
@@ -517,6 +561,13 @@ define([
             if (clearSelection) {
                 this.landingZonesGrid.clearSelection();
             }
+        },
+
+        overwriteDialog: function(file){
+            this.validateDialog = new Dialog({
+                title: this.i18n.Overwrite,
+                content: "The file" + file + "already exists. Please check overwrite option to overwrite"
+            });
         },
 
         refreshActionState: function () {
