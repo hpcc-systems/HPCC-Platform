@@ -274,6 +274,7 @@ define({root:
     Outputs: "Outputs",
     Overview: "Overview",
     Overwrite: "Overwrite",
+    OverwriteMessage: "Some file(s) already exist. Please check overwrite box to continue.",
     Owner: "Owner",
     PackageContent: "Package Content",
     PackageContentNotSet: "Package content not set",
