@@ -26,6 +26,7 @@
 #include "daclient.hpp"
 #include "wshelpers.hpp"
 #include "dfuwu.hpp"
+#include "workunit.hpp"
 #include "ws_fsService.hpp"
 #ifdef _WIN32
 #include "windows.h"
@@ -616,18 +617,7 @@ void getNodeGroupFromLFN(const char* lfn, StringBuffer& nodeGroup, const char* u
     StringBuffer clusterName;
     LogicFileWrapper lfw;
     lfw.FindClusterName(lfn, clusterName, udesc);
-
-    Owned<IPropertyTreeIterator> it = conn->queryRoot()->getElements("Software/ThorCluster");
-    ForEach(*it)
-    {
-        IPropertyTree& cluster = it->query();
-        const char* name = cluster.queryProp("@name");
-        if (name && strieq(name, clusterName.str()))
-        {
-            getClusterGroupName(cluster, nodeGroup);
-            break;
-        }
-    }
+    getClusterThorGroupName(nodeGroup, clusterName.str());
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)

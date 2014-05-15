@@ -11757,16 +11757,16 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
                 groups.appendListUniq(group, ",");
                 ForEachItemIn(i,groups)
                 {
-                    //Add a cluster if no cluster filter or the cluster matchs with cluster filter
+                    //Add a group if no group filter or the group matches with group filter
                     const char* node = groups.item(i);
                     if (node && *node && ((!nodeGroupFilter.length()) || (nodeGroupFilter.find(node) != NotFound)))
                         fileNodeGroups.append(node);
                 }
                 if (fileNodeGroups.length())
                 {
-                    //if this file exists on multiple clusters, set one of the clusters as the "@DFUSFcluster" prop for
-                    //this attr, leaving the rest inside the fileNodeGroups array. Those clusters will be used by the
-                    //duplicateFileAttrOnOtherClusterGroup() to duplicate this file attr on other clusters.
+                    //if this file exists on multiple groups, set one of the groups as the "@DFUSFnodegroup" prop for
+                    //this attr, leaving the rest inside the fileNodeGroups array. Those groups will be used by the
+                    //duplicateFileAttrOnOtherNodeGroup() to duplicate this file attr on other groups.
                     attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), fileNodeGroups.item(fileNodeGroups.length() -1));
                     fileNodeGroups.pop();
                 }
