@@ -169,7 +169,6 @@
     History: "历史",
     HPCCSystems: "HPCC系统",
     ID: "标识",
-    Import: "输入",
     Inactive: "未激活",
     Index: "索引",
     Info: "信息",

@@ -170,7 +170,6 @@
     History: "Istorija",
     HPCCSystems: "HPCC Systems",
     ID: "Identifikator",
-    Import: "Uvoz",
     Inactive: "Neaktivan",
     Index: "Indeks",
     Info: "Informacija",
