@@ -2286,7 +2286,7 @@ void ActivityInstance::buildSuffix()
         if (options.spotComplexClasses && (approxSize >= options.complexClassesThreshold))
         {
             if ((options.complexClassesActivityFilter == 0) || (kind == options.complexClassesActivityFilter))
-                translator.WARNING2(HQLWRN_ComplexHelperClass, activityId, approxSize);
+                translator.WARNING2(CategoryEfficiency, HQLWRN_ComplexHelperClass, activityId, approxSize);
         }
         if (options.showActivitySizeInGraph)
             addAttributeInt("approxClassSize", approxSize);
@@ -5312,7 +5312,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
                 StringBuffer xml;
                 {
                     XmlSchemaBuilder xmlbuilder(false);
-                    xmlbuilder.addField(fieldName, *schemaType);
+                    xmlbuilder.addField(fieldName, *schemaType, false);
                     xmlbuilder.getXml(xml);
                 }
                 addSchemaResource(sequence, resultName.str(), xml.length()+1, xml.str());
@@ -11686,7 +11686,7 @@ void HqlCppTranslator::doBuildJoinRowLimitHelper(ActivityInstance & instance, IH
             StringBuffer fname;
             if (filename)
                 getExprECL(filename, fname.append(" "));
-            WARNING2(HQLWRN_ImplicitJoinLimit, options.defaultImplicitKeyedJoinLimit, fname.str());
+            WARNING2(CategoryLimit, HQLWRN_ImplicitJoinLimit, options.defaultImplicitKeyedJoinLimit, fname.str());
         }
     }
 }
@@ -11784,7 +11784,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         dataset2.set(dataset2->queryChild(0));
 
     if (expr->hasAttribute(groupedAtom) && targetThor())
-        WARNING(HQLWRN_GroupedJoinIsLookupJoin);
+        WARNING(CategoryEfficiency, HQLWRN_GroupedJoinIsLookupJoin);
 
     //Hash and smart joins are not valid inside child queries - convert to a normal join.
     //The flags should already have been stripped if targetting hthor/roxie
@@ -11874,7 +11874,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             //Possibly if KEEP(1) was added, no limits, no skipping in transform etc.
             if (isLookupJoin && !isManyLookup)
                 isAllJoin = false;
-            WARNING(HQLWRN_JoinConditionFoldedNowAll);
+            WARNING(CategoryUnusual, HQLWRN_JoinConditionFoldedNowAll);
         }
         else
         {
@@ -14078,7 +14078,7 @@ void HqlCppTranslator::checkAmbiguousRollupCondition(IHqlExpression * expr)
         OwnedHqlExpr newSelect = replaceSelector(select, dataset->queryNormalizedSelector(), queryActiveTableSelector());
         StringBuffer selectText;
         getExprECL(newSelect, selectText);
-        reportWarning(queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupCondition), selectText.str());
+        reportWarning(CategoryUnexpected, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupCondition), selectText.str());
     }
 }
 
@@ -15389,7 +15389,7 @@ void HqlCppTranslator::buildLimitHelpers(BuildCtx & ctx, IHqlExpression * rowLim
     doBuildUnsigned64Function(ctx, "getRowLimit", rowLimit);
 
     if (isZero(rowLimit))
-        WARNING(HQLWRN_LimitIsZero);
+        WARNING(CategoryUnusual, HQLWRN_LimitIsZero);
 
     if (!isSkip)
     {

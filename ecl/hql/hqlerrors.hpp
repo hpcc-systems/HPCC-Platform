@@ -525,10 +525,10 @@
 
 #define ECODETEXT(x)                (x), (x##_Text)
 
-#define WARNING(x)                  reportWarning(x, x##_Text)
-#define WARNING1(x, a)              reportWarning(x, x##_Text, a)
-#define WARNING2(x, a, b)           reportWarning(x, x##_Text, a, b)
-#define WARNING3(x, a, b, c)        reportWarning(x, x##_Text, a, b, c)
+#define WARNING(cat, x)                  reportWarning(cat, x, x##_Text)
+#define WARNING1(cat, x, a)              reportWarning(cat, x, x##_Text, a)
+#define WARNING2(cat, x, a, b)           reportWarning(cat, x, x##_Text, a, b)
+#define WARNING3(cat, x, a, b, c)        reportWarning(cat, x, x##_Text, a, b, c)
 
 #define ERRORAT(e, x)               reportError(e, x, x##_Text)
 #define ERRORAT1(e, x, a)           reportError(e, x, x##_Text, a)

@@ -2035,37 +2035,38 @@ bool HqlCppTranslator::getDebugFlag(const char * name, bool defValue)
     return wu()->getDebugValueBool(name, defValue);
 }
 
-void HqlCppTranslator::doReportWarning(IHqlExpression * location, unsigned id, const char * msg)
+void HqlCppTranslator::doReportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg)
 {
     Owned<IECLError> warnError;
     if (!location)
         location = queryActiveActivityLocation();
+    ErrorSeverity severity = queryDefaultSeverity(category);
     if (location)
-        warnError.setown(createECLError(SeverityWarning, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
+        warnError.setown(createECLError(category, severity, id, msg, location->querySourcePath()->str(), location->getStartLine(), location->getStartColumn(), 0));
     else
-        warnError.setown(createECLError(SeverityWarning, id, msg, NULL, 0, 0, 0));
+        warnError.setown(createECLError(category, severity, id, msg, NULL, 0, 0, 0));
 
     errorProcessor->report(warnError);
 }
 
-void HqlCppTranslator::reportWarning(IHqlExpression * location, unsigned id, const char * msg, ...)
+void HqlCppTranslator::reportWarning(WarnErrorCategory category, IHqlExpression * location, unsigned id, const char * msg, ...)
 {
     StringBuffer s;
     va_list args;
     va_start(args, msg);
     s.valist_appendf(msg, args);
     va_end(args);
-    doReportWarning(location, id, s.str());
+    doReportWarning(category, location, id, s.str());
 }
 
-void HqlCppTranslator::reportWarning(unsigned id, const char * msg, ...)
+void HqlCppTranslator::reportWarning(WarnErrorCategory category, unsigned id, const char * msg, ...)
 {
     StringBuffer s;
     va_list args;
     va_start(args, msg);
     s.valist_appendf(msg, args);
     va_end(args);
-    doReportWarning(NULL, id, s.str());
+    doReportWarning(category, NULL, id, s.str());
 }
 
 void HqlCppTranslator::addWorkunitException(WUExceptionSeverity severity, unsigned code, const char * text, IHqlExpression * location)

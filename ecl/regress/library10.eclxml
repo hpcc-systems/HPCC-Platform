@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
-<Archive useArchivePlugins="1">
+<Archive useArchivePlugins="1" legacyImport="1">
  <Module name="example">
   <Attribute name="namesRecord">
 

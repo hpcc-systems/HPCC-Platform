@@ -167,6 +167,10 @@
                           path="FileIOAccess"
                           resource="FileIOAccess"
                           service="ws_fileio"/>
+     <AuthenticateFeature description="Access to permissions for file scopes"
+                          path="FileScopeAccess"
+                          resource="FileScopeAccess"
+                          service="ws_access"/>
      <AuthenticateFeature description="Access to WS ECL service"
                           path="WsEclAccess"
                           resource="WsEclAccess"
@@ -535,6 +539,11 @@
                          resource="FileIOAccess"
                          service="ws_fileio"/>
     <AuthenticateFeature authenticate="Yes"
+                         description="Access to permissions for file scopes"
+                         path="FileScopeAccess"
+                         resource="FileScopeAccess"
+                         service="ws_access"/>
+    <AuthenticateFeature authenticate="Yes"
                          description="Access to WS ECL service"
                          path="WsEclAccess"
                          resource="WsEclAccess"
@@ -695,6 +704,10 @@
                          path="FileIOAccess"
                          resource="FileIOAccess"
                          service="ws_fileio"/>
+    <AuthenticateFeature description="Access to permissions for file scopes"
+                         path="FileScopeAccess"
+                         resource="FileScopeAccess"
+                         service="ws_access"/>
     <AuthenticateFeature description="Access to WS ECL service"
                          path="WsEclAccess"
                          resource="WsEclAccess"

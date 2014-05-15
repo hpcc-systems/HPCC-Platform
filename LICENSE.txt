@@ -14,3 +14,7 @@ HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+
+Includes d3-cloud (https://github.com/jasondavies/d3-cloud). 
+Copyright (c) 2013, Jason Davies.  All rights reserved.

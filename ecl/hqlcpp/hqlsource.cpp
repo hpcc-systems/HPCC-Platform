@@ -2016,7 +2016,7 @@ void SourceBuilder::buildKeyedLimitHelper(IHqlExpression * self)
         func1ctx.addQuotedCompound("virtual unsigned __int64 getKeyedLimit()");
         translator.buildReturn(func1ctx, limitValue);
         if (isZero(limitValue))
-            translator.WARNING(HQLWRN_KeyedLimitIsZero);
+            translator.WARNING(CategoryUnusual, HQLWRN_KeyedLimitIsZero);
 
         LinkedHqlExpr fail = keyedLimitExpr->queryChild(2);
         if (!fail || fail->isAttribute())
@@ -4637,7 +4637,7 @@ void MonitorExtractor::buildKeySegment(BuildMonitorState & buildState, BuildCtx 
                         translator.throwError3(HQLERR_KeyedFollowsGap, getExprECL(field, s).str(), buildState.implicitWildField->queryChild(1)->queryName()->str(), queryKeyName(keyname));
                     else if (!buildState.doneImplicitWarning)
                     {
-                        translator.WARNING3(HQLWRN_KeyedFollowsGap, getExprECL(field, s).str(), buildState.implicitWildField->queryChild(1)->queryName()->str(), queryKeyName(keyname));
+                        translator.WARNING3(CategoryEfficiency, HQLWRN_KeyedFollowsGap, getExprECL(field, s).str(), buildState.implicitWildField->queryChild(1)->queryName()->str(), queryKeyName(keyname));
                         buildState.doneImplicitWarning = true;
                     }
                 }
@@ -4647,7 +4647,7 @@ void MonitorExtractor::buildKeySegment(BuildMonitorState & buildState, BuildCtx 
     if (buildState.wildWasKeyed && (matches.ordinality() == 0))
     {
         StringBuffer keyname;
-        translator.WARNING2(HQLWRN_FoldRemoveKeyed, field->queryName()->str(), queryKeyName(keyname));
+        translator.WARNING2(CategoryFolding, HQLWRN_FoldRemoveKeyed, field->queryName()->str(), queryKeyName(keyname));
     }
 
     StringBuffer s;
@@ -4664,7 +4664,7 @@ void MonitorExtractor::buildKeySegment(BuildMonitorState & buildState, BuildCtx 
             else
             {
                 StringBuffer keyname;
-                translator.WARNING2(HQLERR_OptKeyedFollowsWild, getExprECL(field, s).str(), queryKeyName(keyname));
+                translator.WARNING2(CategoryEfficiency, HQLERR_OptKeyedFollowsWild, getExprECL(field, s).str(), queryKeyName(keyname));
             }
         }
         //previous condition folded so always true, so keyed,opt will always be a wildcard.
@@ -6201,9 +6201,9 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
         {
             StringBuffer keyname;
             if (implicitLimit)
-                translator.WARNINGAT2(queryLocation(expr), HQLWRN_ImplicitReadAddLimit, implicitLimit, monitors.queryKeyName(keyname));
+                translator.WARNINGAT2(CategoryLimit, queryLocation(expr), HQLWRN_ImplicitReadAddLimit, implicitLimit, monitors.queryKeyName(keyname));
             else
-                translator.WARNINGAT1(queryLocation(expr), HQLWRN_ImplicitReadLimit, monitors.queryKeyName(keyname));
+                translator.WARNINGAT1(CategoryLimit, queryLocation(expr), HQLWRN_ImplicitReadLimit, monitors.queryKeyName(keyname));
         }
 
         if (implicitLimit)

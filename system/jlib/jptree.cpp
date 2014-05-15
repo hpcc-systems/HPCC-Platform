@@ -5148,12 +5148,19 @@ IPTreeMaker *createRootLessPTreeMaker(byte flags, IPropertyTree *root, IPTreeNod
 
 ////////////////////////////
 ///////////////////////////
+
+static IPTreeMaker *createDefaultPTreeMaker(byte flags, PTreeReaderOptions readFlags)
+{
+    bool noRoot = 0 != ((unsigned)readFlags & (unsigned)ptr_noRoot);
+    return new CPTreeMaker(flags, NULL, NULL, noRoot);
+}
+
 IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags, PTreeReaderOptions readFlags, IPTreeMaker *iMaker)
 {
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createXMLStreamReader(stream, *iMaker, readFlags);
@@ -5189,7 +5196,7 @@ IPropertyTree *createPTreeFromXMLString(const char *xml, byte flags, PTreeReader
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createXMLStringReader(xml, *iMaker, readFlags);
@@ -5202,7 +5209,7 @@ IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flag
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createXMLBufferReader(xml, len, *iMaker, readFlags);
@@ -7076,7 +7083,7 @@ IPropertyTree *createPTreeFromJSONString(const char *json, byte flags, PTreeRead
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createJSONStringReader(json, *iMaker, readFlags);
@@ -7089,7 +7096,7 @@ IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte fl
     Owned<IPTreeMaker> _iMaker;
     if (!iMaker)
     {
-        iMaker = new CPTreeMaker(flags);
+        iMaker = createDefaultPTreeMaker(flags, readFlags);
         _iMaker.setown(iMaker);
     }
     Owned<IPTreeReader> reader = createJSONBufferReader(json, len, *iMaker, readFlags);
