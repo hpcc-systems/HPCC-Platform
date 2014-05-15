@@ -268,6 +268,28 @@ define([
             }
         },
 
+        _onAddFile: function (event) {
+            if (registry.byId(this.id + "AddFileForm").validate()) {
+                var tmpFile = domForm.toObject(this.id + "AddFileForm");
+                var dropZone = lang.mixin(this.landingZoneStore.get(tmpFile.NetAddress), {
+                    NetAddress: tmpFile.NetAddress
+                });
+                var fullPathParts = tmpFile.fullPath.split("/");
+                if (fullPathParts.length === 1) {
+                    fullPathParts = tmpFile.fullPath.split("\\");
+                }
+                var file = lang.mixin(this.landingZoneStore.get(tmpFile.NetAddress + tmpFile.fullPath), {
+                    displayName: fullPathParts[fullPathParts.length - 1],
+                    fullPath: tmpFile.fullPath,
+                    isDir: false,
+                    DropZone: dropZone
+                });
+                this.landingZoneStore.addUserFile(file);
+                this.refreshGrid();
+                registry.byId(this.id + "AddFileDropDown").closeDropDown();
+            }
+        },
+
         _onSprayFixed: function (event) {
             var context = this;
             this._spraySelectedOneAtATime("SprayFixedDropDown", "SprayFixedForm", function (request, item) {
