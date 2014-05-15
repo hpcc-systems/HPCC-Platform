@@ -1157,7 +1157,7 @@ public:
             }
         }
     }
-    virtual void getQueryInfo(StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
+    virtual void getQueryInfo(StringBuffer &reply, bool full, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
     {
         Owned<IPropertyTree> xref = createPTree("Query", 0);
         xref->setProp("@id", id);
@@ -1173,6 +1173,17 @@ public:
             {
                 IActivityFactory *f = *allActivities.mapToValue(&i.query());
                 f->getXrefInfo(*xref, logctx);
+            }
+        }
+        if (slaveQueries)
+        {
+            ForEachItemIn(idx, *slaveQueries)
+            {
+                if (slaveQueries->item(idx).suspended())
+                {
+                    xref->setPropBool("@suspended", true);
+                    xref->setPropBool("@slaveSuspended", true);
+                }
             }
         }
         toXML(xref, reply, 1);
