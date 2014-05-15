@@ -335,6 +335,7 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
             continue;
 
         queryTree = targetTree->addPropTree("Query", createPTree("Query"));
+        queryTree->setProp("@target", target); //for reference when searching across targets
         queryTree->setProp("@id", queryid);
         if (pkgid && *pkgid)
             queryTree->setProp("@pkgid", pkgid);
@@ -384,12 +385,25 @@ void QueryFilesInUse::loadTargets(IPropertyTree *t, unsigned flags)
     }
 }
 
+IPropertyTreeIterator *QueryFilesInUse::findAllQueriesUsingFile(const char *lfn)
+{
+    CriticalBlock b(crit);
+
+    if (!lfn || !*lfn)
+        return NULL;
+
+    VStringBuffer xpath("*/Query[File/@lfn='%s']", lfn);
+    return tree->getElements(xpath);
+}
+
 IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target, const char *lfn)
 {
     CriticalBlock b(crit);
 
-    if (!target || !*target || !lfn || !*lfn)
+    if (!lfn || !*lfn)
         return NULL;
+    if (!target || !*target)
+        return findAllQueriesUsingFile(lfn);
     IPropertyTree *targetTree = tree->getPropTree(target);
     if (!targetTree)
         return NULL;
@@ -1248,15 +1262,43 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     Owned<IConstQuerySetQueryIterator> it = factory->getQuerySetQueriesSorted(sortOrder, filters, filterBuf.bufferBase(), pageStartFrom, pageSize, &cacheHint, &numberOfQueries);
     resp.setCacheHint(cacheHint);
 
+    MapStringTo<bool> queriesUsingFileMap;
+    const char *lfn = req.getFileName();
+    if (lfn && *lfn)
+    {
+        Owned<IPropertyTreeIterator> queriesUsingFile = filesInUse.findQueriesUsingFile(clusterReq, lfn);
+        ForEach (*queriesUsingFile)
+        {
+            IPropertyTree &queryUsingFile = queriesUsingFile->query();
+            const char *queryTarget = queryUsingFile.queryProp("@target");
+            const char *queryId = queryUsingFile.queryProp("@id");
+            if (queryTarget && *queryTarget && queryId && *queryId)
+            {
+                VStringBuffer targetQuery("%s/%s", queryTarget, queryId);
+                queriesUsingFileMap.setValue(targetQuery, true);
+            }
+        }
+    }
     IArrayOf<IEspQuerySetQuery> queries;
     double version = context.getClientVersion();
     ForEach(*it)
     {
         IPropertyTree &query=it->query();
+        const char *queryId = query.queryProp("@id");
+        const char *queryTarget = query.queryProp("@querySetId");
+        if (lfn && *lfn)
+        {
+            if (!queryTarget || !*queryTarget || !queryId || !*queryId)
+                continue;
+            VStringBuffer targetQuery("%s/%s", queryTarget, queryId);
+            if (!queriesUsingFileMap.getValue(targetQuery))
+                continue;
+        }
+
         Owned<IEspQuerySetQuery> q = createQuerySetQuery();
-        q->setId(query.queryProp("@id"));
+        q->setId(queryId);
+        q->setQuerySetId(queryTarget);
         q->setName(query.queryProp("@name"));
-        q->setQuerySetId(query.queryProp("@querySetId"));
         q->setDll(query.queryProp("@dll"));
         q->setWuid(query.queryProp("@wuid"));
         q->setActivated(query.getPropBool("@activated", false));
@@ -1304,7 +1346,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         queries.append(*q.getClear());
     }
     resp.setQuerysetQueries(queries);
-    resp.setNumberOfQueries(numberOfQueries);
+    resp.setNumberOfQueries(queries.length());
 
     return true;
 }
