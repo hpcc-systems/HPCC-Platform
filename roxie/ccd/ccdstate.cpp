@@ -368,10 +368,10 @@ protected:
     }
 
     // Use local package and its bases to resolve existing file into physical file info via all supported resolvers
-    IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate) const
+    IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool checkCompulsory) const
     {
         IResolvedFile *result = lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
-        if (!result)
+        if (!result && (!checkCompulsory || !isCompulsory()))
             result = resolveLFNusingDaliOrLocal(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
         return result;
     }
@@ -406,7 +406,7 @@ protected:
                     }
                     if (traceLevel > 9)
                         DBGLOG("Looking up subfile %s", subFileName.str());
-                    Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, false, false);  // NOTE - overwriting a superfile does NOT require write access to subfiles
+                    Owned<const IResolvedFile> subFileInfo = lookupExpandedFileName(subFileName, useCache, cacheResult, false, false, false);  // NOTE - overwriting a superfile does NOT require write access to subfiles
                     if (subFileInfo)
                     {
                         if (!super)
@@ -472,13 +472,16 @@ public:
         if (traceLevel > 5)
             DBGLOG("lookupFileName %s", fileName.str());
 
-        const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, false, false);
+        const IResolvedFile *result = lookupExpandedFileName(fileName, useCache, cacheResult, false, false, true);
         if (!result)
         {
+            StringBuffer compulsoryMsg;
+            if (isCompulsory())
+                    compulsoryMsg.append(" (Package is compulsory)");
             if (!opt)
-                throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s", fileName.str());
+                throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s%s", fileName.str(), compulsoryMsg.str());
             if (traceLevel > 4)
-                DBGLOG("Could not resolve OPT filename %s", fileName.str());
+                DBGLOG("Could not resolve OPT filename %s%s", fileName.str(), compulsoryMsg.str());
         }
         return result;
     }
@@ -839,14 +842,16 @@ public:
         }
     }
 
-    virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
+    virtual void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieQuerySetManagerSet *slaves, const IRoxieContextLogger &logctx) const
     {
         HashIterator elems(queries);
         for (elems.first(); elems.isValid(); elems.next())
         {
             IMapping &cur = elems.query();
             IQueryFactory *query = queries.mapToValue(&cur);
-            query->getQueryInfo(reply, full, logctx);
+            IArrayOf<IQueryFactory> slaveQueries;
+            slaves->getQueries(query->queryQueryName(), slaveQueries, logctx);
+            query->getQueryInfo(reply, full, &slaveQueries, logctx);
         }
         HashIterator aliasIterator(aliases);
         for (aliasIterator.first(); aliasIterator.isValid(); aliasIterator.next())
@@ -950,6 +955,17 @@ public:
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
                 managers[channel]->load(querySets, packages, hash); // MORE - this means the hash depends on the number of channels. Is that desirable?
+    }
+
+    virtual void getQueries(const char *id, IArrayOf<IQueryFactory> &queries, const IRoxieContextLogger &logctx) const
+    {
+        for (unsigned channel = 0; channel < numChannels; channel++)
+            if (managers[channel])
+            {
+                IQueryFactory *query = managers[channel]->getQuery(id, logctx);
+                if (query)
+                    queries.append(*query);
+            }
     }
 
 private:
@@ -1061,6 +1077,12 @@ public:
         return serverManager.getLink();
     }
 
+    IRoxieQuerySetManagerSet* getRoxieSlaveManagers()
+    {
+        CriticalBlock b2(updateCrit);
+        return slaveManagers.getLink();
+    }
+
     void getInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
     {
         reply.appendf(" <PackageSet id=\"%s\" querySet=\"%s\"/>\n", queryPackageId(), querySet.get());
@@ -1124,10 +1146,10 @@ public:
             }
         }
     }
-    void getAllQueryInfo(StringBuffer &reply, bool full,  const IRoxieContextLogger &logctx) const
+    void getAllQueryInfo(StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
     {
         CriticalBlock b2(updateCrit);
-        serverManager->getAllQueryInfo(reply, full, logctx);
+        serverManager->getAllQueryInfo(reply, full, slaveManagers, logctx);
     }
 protected:
     void reloadQueryManagers(CRoxieSlaveQuerySetManagerSet *newSlaveManagers, IRoxieQuerySetManager *newServerManager, hash64_t newHash)
@@ -1325,7 +1347,7 @@ public:
         throw MakeStringException(ROXIE_LIBRARY_ERROR, "No library available for %s", libraryName);
     }
 
-    IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
+    IQueryFactory *getQuery(const char *id, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
     {
         ForEachItemIn(idx, allQueryPackages)
         {
@@ -1334,7 +1356,14 @@ public:
             {
                 IQueryFactory *query = sm->getQuery(id, logctx);
                 if (query)
+                {
+                    if (slaveQueries)
+                    {
+                        Owned<IRoxieQuerySetManagerSet> slaveManagers = allQueryPackages.item(idx).getRoxieSlaveManagers();
+                        slaveManagers->getQueries(id, *slaveQueries, logctx);
+                    }
                     return query;
+                }
             }
         }
         return NULL;
@@ -1362,8 +1391,9 @@ public:
     {
         ForEachItemIn(idx, allQueryPackages)
         {
-            Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
-            sm->getAllQueryInfo(reply, full, logctx);
+            Owned<IRoxieQuerySetManager> serverManager = allQueryPackages.item(idx).getRoxieServerManager();
+            Owned<IRoxieQuerySetManagerSet> slaveManagers = allQueryPackages.item(idx).getRoxieSlaveManagers();
+            serverManager->getAllQueryInfo(reply, full, slaveManagers, logctx);
         }
     }
 
@@ -1546,10 +1576,10 @@ public:
         return allQueryPackages->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
-    virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *getQuery(const char *id, IArrayOf<IQueryFactory> *slaveQueries, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
-        return allQueryPackages->getQuery(id, logctx);
+        return allQueryPackages->getQuery(id, slaveQueries, logctx);
     }
 
     virtual int getActivePackageCount() const
@@ -1606,9 +1636,10 @@ private:
                 const char *id = ids->query().queryProp("@id");
                 if (id)
                 {
-                    Owned<IQueryFactory> query = getQuery(id, logctx);
+                    IArrayOf<IQueryFactory> slaveQueries;
+                    Owned<IQueryFactory> query = getQuery(id, &slaveQueries, logctx);
                     if (query)
-                        query->getQueryInfo(reply, full, logctx);
+                        query->getQueryInfo(reply, full, &slaveQueries, logctx);
                     else
                         reply.appendf(" <Query id=\"%s\" error=\"Query not found\"/>\n", id);
                 }
@@ -1827,7 +1858,7 @@ private:
                 if (!id)
                     throw MakeStringException(ROXIE_MISSING_PARAMS, "No query name specified");
 
-                Owned<IQueryFactory> q = getQuery(id, logctx);
+                Owned<IQueryFactory> q = getQuery(id, NULL, logctx);
                 if (q)
                 {
                     Owned<IPropertyTree> tempTree = q->cloneQueryXGMML();
@@ -1842,7 +1873,7 @@ private:
                 const char *id = control->queryProp("Query/@id");
                 if (!id)
                     badFormat();
-                Owned<IQueryFactory> f = getQuery(id, logctx);
+                Owned<IQueryFactory> f = getQuery(id, NULL, logctx);
                 if (f)
                 {
                     unsigned warnLimit = f->getWarnTimeLimit();
@@ -2046,7 +2077,7 @@ private:
                 const char *id = control->queryProp("Query/@id");
                 if (id)
                 {
-                    Owned<IQueryFactory> f = getQuery(id, logctx);
+                    Owned<IQueryFactory> f = getQuery(id, NULL, logctx); // MORE - slave too?
                     if (f)
                     {
                         Owned<const IPropertyTree> stats = f->getQueryStats(from, to);
@@ -2078,7 +2109,7 @@ private:
                 {
                     if (stricmp(action, "listGraphNames") == 0)
                     {
-                        Owned<IQueryFactory> query = getQuery(id, logctx);
+                        Owned<IQueryFactory> query = getQuery(id, NULL, logctx); // MORE - slave too?
                         if (query)
                         {
                             reply.appendf("<Query id='%s'>\n", id);
@@ -2216,7 +2247,7 @@ private:
                 if (!id.length())
                     badFormat();
                 {
-                    Owned<IQueryFactory> f = getQuery(id, logctx);
+                    Owned<IQueryFactory> f = getQuery(id, NULL, logctx); // MORE - slave too?
                     if (f)
                         id.clear().append(f->queryQueryName());  // use the spelling of the query stored with the query factory
                 }

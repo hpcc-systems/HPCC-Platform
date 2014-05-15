@@ -1261,7 +1261,8 @@ public:
             {
                 if (state==STATEstarted || state==STATEstarting)
                 {
-                    CTXLOG("STATE: activity %d reset without stop", activityId);
+                    if (traceStartStop || traceLevel > 2)
+                        CTXLOG("STATE: activity %d reset without stop", activityId);
                     stop(false);
                 }
                 if (ctx->queryTimeActivities())
