@@ -261,14 +261,15 @@ define([
 
         //  Stub waiting for HPCC-10308
         visualisations: [
-                {value: "DojoD3ScatterChart", label: "Scatter Chart"},
-                {value: "DojoD3BarChart", label:  "Bar Chart"},
-                {value: "DojoD3PieChart", label:  "Pie Chart"},
-                {value: "DojoD3DonutChart", label:  "Donut Chart"},
-                {value: "DojoD3Choropleth", label:  "Choropleth"},
-                {value: "DojoD3CooccurrenceGraph", label:  "Co-Occurrence Graph"},
-                {value: "DojoD3ForceDirectedGraph", label:  "Force Directed Graph"},
-                {value: "DojoD3Histogram", label:  "Histogram"}
+            { value: "DojoD3ScatterChart", label: "Scatter Chart" },
+            { value: "DojoD3BarChart", label: "Bar Chart" },
+            { value: "DojoD3PieChart", label: "Pie Chart" },
+            { value: "DojoD3DonutChart", label: "Donut Chart" },
+            { value: "DojoD3Choropleth", label: "Choropleth" },
+            { value: "DojoD3CooccurrenceGraph", label: "Co-Occurrence Graph" },
+            { value: "DojoD3ForceDirectedGraph", label: "Force Directed Graph" },
+            { value: "DojoD3Histogram", label: "Histogram" },
+            { value: "DojoD3WordCloud", label: "Word Cloud" }
         ],
         GetVisualisations:  function() {
             var deferred = new Deferred();

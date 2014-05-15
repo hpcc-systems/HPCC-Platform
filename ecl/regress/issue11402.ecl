@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
     limitations under the License.
 ############################################################################## */
 
-//Error: The reference to words.word in the OUTPUT should complain that "words" is not in scope
-//Unfortunately it gets optimized away by EXISTS(x) always being true.  Check a warning is output.
+import javascript;
 
-#option ('pickBestEngine', false);
-#onwarning (1051, warning);
+unicode add5(unicode val) := EMBED(javascript, (varunicode)U' val+\' at Oh là là Straße\';');
 
-IMPORT SerialTest;
+add5(U'Hi');
 
-interestingWords := DICTIONARY([{'elves'},{'cheddar'}], SerialTest.wordRec);
 
-output(SerialTest.bookIndex(WILD(title), EXISTS(words.word IN interestingWords)));
+x := dataset('x', { unsigned id; }, csv(terminator((varunicode)'abc')));
+output(x);
 
+OUTPUT(UNICODEORDER(U'abcdef', U'abcxyz'));
+OUTPUT(UNICODEORDER((varunicode)U'abcdef', (varunicode)U'abcxyz'));

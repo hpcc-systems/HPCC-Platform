@@ -58,6 +58,32 @@ define([
             return false;
         },
 
+        getPackage: function (params, callback) {
+            var request = {
+                Target: params.target,
+                Process: params.process
+            };
+
+            var context = this;
+            return ESPRequest.send("WsPackageProcess", "GetPackage", {
+                request: request,
+                load: function (response) {
+                    if (context.checkExceptions(callback, response) &&
+                        context.checkStatus(callback, lang.exists("GetPackageResponse.status", response),
+                        response.GetPackageResponse.status))
+                    {
+                        if (!lang.exists("GetPackageResponse.Info", response))
+                            callback.load(i18n.NoContent);
+                        else
+                            callback.load(response.GetPackageResponse.Info);
+                    }
+                },
+                error: function (err) {
+                    context.errorMessageCallback(callback, err.message, err.stack);
+                }
+            });
+        },
+
         getPackageMapById: function (params, callback) {
             var request = {
                 PackageMapId: params.packageMap
