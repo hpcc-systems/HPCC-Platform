@@ -39,19 +39,23 @@ inline bool isFatal(ErrorSeverity severity) { return severity == SeverityFatal; 
 //TBD in a separate commit - add support for warnings to be associated with different categories
 enum WarnErrorCategory
 {
+    CategoryInformation,// Some kind of information [default severity information]
+
     CategoryCast,       // Suspicious casts between types or out of range values
     CategoryConfuse,    // Likely to cause confusion
     CategoryDeprecated, // deprecated features or syntax
     CategoryEfficiency, // Something that is likely to be inefficient
+    CategoryFolding,    // Unusual results from constant folding
     CategoryFuture,     // Likely to cause problems in future versions
     CategoryIgnored,    // Something that has no effect, or is ignored
     CategoryIndex,      // Unusual indexing of datasets or strings
-    CategoryMistyped,   // Almost certainly mistyped
+    CategoryMistake,    // Almost certainly a mistake
+    CategoryLimit,      // An operation that should really have some limits to protect data runaway
     CategorySyntax,     // Invalid syntax which is painless to recover from
     CategoryUnusual,    // Not strictly speaking an error, but highly unusual and likely to be a mistake
     CategoryUnexpected, // Code that could be correct, but has the potential for unexpected behaviour
 
-    CategoryError,
+    CategoryError,      // Typically severity fatal
     CategoryAll,
     CategoryUnknown,
     CategoryMax,
@@ -81,7 +85,7 @@ interface HQL_API IErrorReceiver : public IInterface
 
     //global helper functions
     void reportError(int errNo, const char *msg, const char *filename, int lineno, int column, int pos);
-    void reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
+    void reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos);
 };
 
 typedef IArrayOf<IECLError> IECLErrorArray;
@@ -153,10 +157,17 @@ private:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-extern HQL_API IECLError *createECLError(ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0);
+ErrorSeverity queryDefaultSeverity(WarnErrorCategory category);
+WarnErrorCategory getCategory(const char * category);
+ErrorSeverity getSeverity(IAtom * name);
+ErrorSeverity getCheckSeverity(IAtom * name);
+
+//---------------------------------------------------------------------------------------------------------------------
+
+extern HQL_API IECLError *createECLError(WarnErrorCategory category, ErrorSeverity severity, int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0);
 inline IECLError * createECLError(int errNo, const char *msg, const char *filename, int lineno=0, int column=0, int pos=0)
 {
-    return createECLError(SeverityFatal, errNo, msg, filename, lineno, column, pos);
+    return createECLError(CategoryError, SeverityFatal, errNo, msg, filename, lineno, column, pos);
 }
 extern HQL_API void reportErrors(IErrorReceiver & receiver, IECLErrorArray & errors);
 void HQL_API reportErrorVa(IErrorReceiver * errors, int errNo, const ECLlocation & loc, const char* format, va_list args);

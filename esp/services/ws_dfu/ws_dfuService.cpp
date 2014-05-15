@@ -2044,22 +2044,22 @@ void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor*
                     pref.append(logicalName);
 
                 const char* owner=attr.queryProp("@owner");
-#if 0
-                char* clusterName=(char*)attr.queryProp("@group");   
-#else //Handling for multiple clusters
-                StringArray clusters;
-                if (getFileGroups(&attr,clusters)==0) 
+                StringArray groups;
+                if (getFileGroups(&attr,groups)==0)
                 {
-                    clusters.append("");
+                    groups.append("");
                 }
-#endif
-                ForEachItemIn(i, clusters)
+
+                ForEachItemIn(i, groups)
                 {
-                    const char* clusterName = clusters.item(i);
-                Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
+                    const char* groupName = groups.item(i);
+                    Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
 
                     File->setPrefix(pref);
-                    File->setClusterName(clusterName);
+                    if (version < 1.26)
+                        File->setClusterName(groupName);
+                    else
+                        File->setNodeGroup(groupName);
                     File->setName(logicalName);
                     File->setOwner(owner);
                     File->setReplicate(true);
@@ -2067,7 +2067,7 @@ void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor*
                     ForEachItemIn(j, roxieClusterNames)
                     {
                         const char* roxieClusterName = roxieClusterNames.item(j);
-                        if (roxieClusterName && clusterName && !stricmp(roxieClusterName, clusterName))
+                        if (roxieClusterName && groupName && strieq(roxieClusterName, groupName))
                         {
                             File->setFromRoxieCluster(true);
                             break;
@@ -2292,9 +2292,9 @@ __int64 CWsDfuEx::findPositionByName(const char *name, bool descend, IArrayOf<IE
     return addToPos;
 }
 
-__int64 CWsDfuEx::findPositionByCluster(const char *cluster, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles)
+__int64 CWsDfuEx::findPositionByNodeGroup(double version, const char *node, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles)
 {
-    if (!cluster || (strlen(cluster) < 1))
+    if (!node || !*node)
     {
         if (descend)
             return -1;
@@ -2306,16 +2306,20 @@ __int64 CWsDfuEx::findPositionByCluster(const char *cluster, bool descend, IArra
     ForEachItemIn(i, LogicalFiles)
     {
         IEspDFULogicalFile& File = LogicalFiles.item(i);
-        const char *ClusterName = File.getClusterName();
-        if (!ClusterName)
+        const char *nodeGroup = NULL;
+        if (version < 1.26)
+            nodeGroup = File.getClusterName();
+        else
+            nodeGroup = File.getNodeGroup();
+        if (!nodeGroup)
             continue;
 
-        if (descend && strcmp(cluster, ClusterName)>0)
+        if (descend && strcmp(node, nodeGroup)>0)
         {
             addToPos = i;
             break;
         }
-        if (!descend && strcmp(cluster, ClusterName)<0)
+        if (!descend && strcmp(node, nodeGroup)<0)
         {
             addToPos = i;
             break;
@@ -2595,30 +2599,10 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
         roxieClusterNames.append(sName.str());
     }
 
-    StringArray clustersReq;
-    const char* clustersReq0 = req.getClusterName();
-    if (clustersReq0 && *clustersReq0)
-    {
-        char* pStr = (char*) clustersReq0;
-        while (pStr)
-        {
-            char clusterName[256];
-            char* ppStr = strchr(pStr, ',');
-            if (!ppStr)
-            {
-                strcpy(clusterName, pStr);
-                pStr = NULL;
-            }
-            else
-            {
-                strncpy(clusterName, pStr, ppStr - pStr );
-                clusterName[ppStr - pStr] = 0;
-                pStr = ppStr+1;
-            }
-
-            clustersReq.append(clusterName);
-        }
-    }
+    StringArray nodeGroupsReq;
+    const char* nodeGroupsReqString = req.getNodeGroup();
+    if (nodeGroupsReqString && *nodeGroupsReqString)
+        nodeGroupsReq.appendListUniq(nodeGroupsReqString, ",");
 
     StringBuffer size;
     __int64 totalFiles = 0;
@@ -2646,48 +2630,32 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                 if (!owner || stricmp(owner, req.getOwner()))
                     continue;
             }
-            StringArray clusters;
-            StringArray clusters1;
-            if (getFileGroups(&attr,clusters1)==0)
+            StringArray nodeGroups;
+            StringArray fileNodeGroups;
+            if (getFileGroups(&attr,fileNodeGroups)==0)
             {
-                if (clustersReq.length() < 1)
+                if (!nodeGroupsReq.length())
+                    nodeGroups.append("");
+            }
+            else if (nodeGroupsReq.length() > 0) // check specified cluster name in list
+            {
+                ForEachItemIn(ii,nodeGroupsReq)
                 {
-                    clusters.append("");
+                    const char* nodeGroupReq = nodeGroupsReq.item(ii);
+                    ForEachItemIn(i,fileNodeGroups)
+                    {
+                        if (strieq(fileNodeGroups.item(i), nodeGroupReq))
+                        {
+                            nodeGroups.append(nodeGroupReq);
+                            break;
+                        }
+                    }
                 }
             }
-            else
+            else if (fileNodeGroups.length())
             {
-                // check specified cluster name in list
-                if (clustersReq.length() > 0)
-                {
-                    ForEachItemIn(ii,clustersReq)
-                    {
-                        StringBuffer clusterFound;
-
-                        const char * cluster0 = clustersReq.item(ii);
-                        ForEachItemIn(i,clusters1)
-                        {
-                            if (!stricmp(clusters1.item(i), cluster0))
-                            {
-                                clusterFound.append(cluster0);
-                                break;
-                            }
-                        }
-                        if (clusterFound.length() > 0)
-                            clusters.append(clusterFound);
-                    }
-                }
-                else
-                {
-                    if (clusters1.length() > 0)
-                    {
-                        ForEachItemIn(i,clusters1)
-                        {
-                            const char * cluster0 = clusters1.item(i);
-                            clusters.append(cluster0);
-                        }
-                    }
-                }
+                ForEachItemIn(i,fileNodeGroups)
+                    nodeGroups.append(fileNodeGroups.item(i));
             }
 
             const char* desc = attr.queryProp("@description");
@@ -2749,9 +2717,9 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                 }
             }
 
-            ForEachItemIn(i, clusters)
+            ForEachItemIn(i, nodeGroups)
             {
-                const char* clusterName = clusters.item(i);
+                const char* nodeGroup = nodeGroups.item(i);
                 __int64 addToPos = -1; //Add to tail
                 if (stricmp(sortBy, "FileSize")==0)
                 {
@@ -2765,9 +2733,9 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                 {
                     addToPos = findPositionByOwner(owner, descending, LogicalFileList);
                 }
-                else if (stricmp(sortBy, "Cluster")==0)
+                else if (stricmp(sortBy, "NodeGroup")==0)
                 {
-                    addToPos = findPositionByCluster(clusterName, descending, LogicalFileList);
+                    addToPos = findPositionByNodeGroup(version, nodeGroup, descending, LogicalFileList);
                 }
                 else if (stricmp(sortBy, "Records")==0)
                 {
@@ -2793,7 +2761,10 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                 Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
 
                 File->setPrefix(pref);
-                File->setClusterName(clusterName);
+                if (version < 1.26)
+                    File->setClusterName(nodeGroup);
+                else
+                    File->setNodeGroup(nodeGroup);
                 File->setName(logicalName);
                 File->setOwner(owner);
                 File->setDescription(description);
@@ -2803,7 +2774,7 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
                 ForEachItemIn(j, roxieClusterNames)
                 {
                     const char* roxieClusterName = roxieClusterNames.item(j);
-                    if (roxieClusterName && clusterName && !stricmp(roxieClusterName, clusterName))
+                    if (roxieClusterName && nodeGroup && strieq(roxieClusterName, nodeGroup))
                     {
                         File->setFromRoxieCluster(true);
                         break;
@@ -2911,10 +2882,13 @@ void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor
     }
 
     StringBuffer basicQuery;
-    if (req.getClusterName() && *req.getClusterName())
+    if (req.getNodeGroup() && *req.getNodeGroup())
     {
-        resp.setClusterName(req.getClusterName());
-        addToQueryString(basicQuery, "ClusterName", req.getClusterName());
+        if (version < 1.26)
+            resp.setClusterName(req.getNodeGroup());
+        else
+            resp.setNodeGroup(req.getNodeGroup());
+        addToQueryString(basicQuery, "NodeGroup", req.getNodeGroup());
     }
     if (req.getOwner() && *req.getOwner())
     {
@@ -3103,7 +3077,7 @@ void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filter
     setFileTypeFilter(req.getFileType(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFdescription), DFUQFTwildcardMatch, req.getDescription(), filterBuf);
     appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
-    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getClusterName(), ",", filterBuf);
+    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getNodeGroup(), ",", filterBuf);
 
     __int64 sizeFrom = req.getFileSizeFrom();
     __int64 sizeTo = req.getFileSizeTo();
@@ -3164,8 +3138,8 @@ void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sort
         sortOrder[0] = (DFUQResultField) (DFUQRFrecordcount | DFUQRFnumeric);
     else if (strieq(sortByPtr, "Owner"))
         sortOrder[0] = DFUQRFowner;
-    else if (strieq(sortByPtr, "Cluster"))
-        sortOrder[0] = DFUQRFcluster;
+    else if (strieq(sortByPtr, "NodeGroup"))
+        sortOrder[0] = DFUQRFnodegroup;
     else if (strieq(sortByPtr, "Modified"))
         sortOrder[0] = DFUQRFtimemodified;
     else if (strieq(sortByPtr, "Description"))
@@ -3224,9 +3198,14 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, double version, IArrayO
         lFile->setDescription(getShortDescription(file.queryProp(getDFUQResultFieldName(DFUQRFdescription)), buf.clear()));
         lFile->setTotalsize((buf.clear()<<comma(file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),-1))).str());
 
-        const char* clusterName = file.queryProp(getDFUQResultFieldName(DFUQRFcluster));
-        if (clusterName && *clusterName)
-            lFile->setClusterName(clusterName);
+        const char* nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
+        if (nodeGroup && *nodeGroup)
+        {
+            if (version < 1.26)
+                lFile->setClusterName(nodeGroup);
+            else
+                lFile->setNodeGroup(nodeGroup);
+        }
 
         int numSubFiles = file.hasProp(getDFUQResultFieldName(DFUQRFnumsubfiles));
         if(numSubFiles)
@@ -3287,6 +3266,7 @@ void CWsDfuEx::setDFUQueryResponse(IEspContext &context, unsigned totalFiles, St
                                    IEspDFUQueryRequest& req, IEspDFUQueryResponse& resp)
 {
     //for legacy
+    double version = context.getClientVersion();
     unsigned pageEnd = pageStart + pageSize;
     if (pageEnd > totalFiles)
         pageEnd = totalFiles;
@@ -3305,10 +3285,13 @@ void CWsDfuEx::setDFUQueryResponse(IEspContext &context, unsigned totalFiles, St
     }
 
     StringBuffer queryReq;
-    if (req.getClusterName() && *req.getClusterName())
+    if (req.getNodeGroup() && *req.getNodeGroup())
     {
-        resp.setClusterName(req.getClusterName());
-        addToQueryString(queryReq, "ClusterName", req.getClusterName());
+        if (version < 1.26)
+            resp.setClusterName(req.getNodeGroup());
+        else
+            resp.setNodeGroup(req.getNodeGroup());
+        addToQueryString(queryReq, "NodeGroup", req.getNodeGroup());
     }
     if (req.getOwner() && *req.getOwner())
     {
@@ -3403,7 +3386,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
     unsigned short localFilterCount = 0;
     DFUQResultField localFilters[8];
     MemoryBuffer localFilterBuf;
-    addDFUQueryFilter(localFilters, localFilterCount, localFilterBuf, req.getClusterName(), DFUQRFcluster);
+    addDFUQueryFilter(localFilters, localFilterCount, localFilterBuf, req.getNodeGroup(), DFUQRFnodegroup);
     localFilters[localFilterCount] = DFUQRFterm;
 
     StringBuffer sortBy;

@@ -240,7 +240,7 @@ enum DFUQResultField
 {
     DFUQRFname = 0,
     DFUQRFdescription = 1,
-    DFUQRFgroup = 2,
+    DFUQRFnodegroups = 2,
     DFUQRFkind = 3,
     DFUQRFtimemodified = 4,
     DFUQRFjob = 5,
@@ -251,7 +251,7 @@ enum DFUQResultField
     DFUQRFsize = 10,
     DFUQRForigsize = 11,
     DFUQRFworkunit = 12,
-    DFUQRFcluster = 13,
+    DFUQRFnodegroup = 13,
     DFUQRFnumsubfiles = 14,
     DFUQRFaccessed = 15,
     DFUQRFnumparts = 16,

@@ -362,7 +362,7 @@ typedef IArrayOf<ITypeInfo> TypeInfoArray;
 interface ISchemaBuilder
 {
 public:
-    virtual void addField(const char * name, ITypeInfo & type) = 0;
+    virtual void addField(const char * name, ITypeInfo & type, bool keyed) = 0;
     virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type) = 0;
     virtual void beginIfBlock() = 0;
     virtual bool beginDataset(const char * name, const char * childname, bool hasMixedContent, unsigned *updateMixed) = 0;
@@ -379,7 +379,7 @@ class DEFTYPE_API XmlSchemaBuilder : public ISchemaBuilder
 public:
     XmlSchemaBuilder(bool _addHeader) { optionalNesting = 0; addHeader = _addHeader; }
 
-    virtual void addField(const char * name, ITypeInfo & type);
+    virtual void addField(const char * name, ITypeInfo & type, bool keyed);
     virtual void addSetField(const char * name, const char * itemname, ITypeInfo & type);
     virtual void beginIfBlock()                                     { optionalNesting++; }
     virtual bool beginDataset(const char * name, const char * childname, bool hasMixedContent, unsigned *updateMixed);
@@ -398,7 +398,7 @@ private:
     void addSchemaSuffix();
     void clear();
     void getXmlTypeName(StringBuffer & xmlType, ITypeInfo & type);
-    void appendField(StringBuffer &xml, const char * name, ITypeInfo & type);
+    void appendField(StringBuffer &xml, const char * name, ITypeInfo & type, bool keyed);
 
 protected:
     StringBuffer xml;

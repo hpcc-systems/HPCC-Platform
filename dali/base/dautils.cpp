@@ -1625,7 +1625,7 @@ class cSort
     static CriticalSection sortsect;
     static cSort *sortthis;
     mutable CLargeMemoryAllocator buf;
-    StringArray sortkeys;
+    CIArrayOf<CIStringArray> sortKeys;
     IArrayOf<IPropertyTree> sortvalues;
     IntArray modifiers;
     mutable char **vals;
@@ -1645,7 +1645,9 @@ public:
             if (!*s||(*s==',')) {
                 if (sk.length()) {
                     // could add '-' and '?' prefixes here (reverse/caseinsensitive)
-                    sortkeys.append(sk.str());
+                    Owned<CIStringArray> keyList = new CIStringArray;
+                    keyList->appendListUniq(sk.str(), "|");
+                    sortKeys.append(*keyList.getClear());
                     modifiers.append(mod);
                     sk.clear();
                 }
@@ -1666,7 +1668,7 @@ public:
         ForEach(iter)
             filteredAdd(sortvalues,namefilterlo,namefilterhi,unknownAttributes,&iter.query());
         nv = sortvalues.ordinality();
-        nk = sortkeys.ordinality();
+        nk = sortKeys.ordinality();
         vals = (char **)calloc(sizeof(char *),nv*nk);
         unsigned *idx=(unsigned *)malloc(sizeof(unsigned)*nv);
         unsigned i;
@@ -1688,12 +1690,25 @@ public:
 
     void getkeyval(unsigned idx,unsigned k,char *&val) const
     {
-        const char *key = sortkeys.item(k);
+        StringArray &keys = sortKeys.item(k);
+        const char *key = keys.item(0); // must be >=1
         const char *v;
         if ((key[0]=='@')&&(key[1]==0))
+        {
             v = sortvalues.item(idx).queryName();
+            dbgassertex(1 == keys.ordinality()); // meaningless for multivalue key if key is special key "@"
+        }
         else
-            v = sortvalues.item(idx).queryProp(key);
+        {
+            unsigned k2=1;
+            loop
+            {
+                v = sortvalues.item(idx).queryProp(key);
+                if (v || k2 == keys.ordinality())
+                    break;
+                key = keys.item(k2++);
+            }
+        }
         if (!v)
             v = "";
         size32_t l = strlen(v)+1;

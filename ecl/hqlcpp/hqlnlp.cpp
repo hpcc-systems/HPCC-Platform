@@ -634,7 +634,7 @@ void HqlCppTranslator::doBuildParseValidators(BuildCtx & classctx, IHqlExpressio
 void HqlCppTranslator::doBuildParseCompiled(BuildCtx & classctx, MemoryBuffer & buffer)
 {
     if (buffer.length() > 1000000)
-        WARNING1(HQLWRN_ParseVeryLargeDefinition, buffer.length());
+        WARNING1(CategoryEfficiency, HQLWRN_ParseVeryLargeDefinition, buffer.length());
 
     BuildCtx funcctx(classctx);
 
@@ -723,7 +723,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     nlpParse->compileSearchPattern();
     nlpParse->queryParser()->serialize(buffer);
     if (nlpParse->isGrammarAmbiguous())
-        WARNING1(HQLWRN_GrammarIsAmbiguous, instance->activityId);
+        WARNING1(CategoryEfficiency, HQLWRN_GrammarIsAmbiguous, instance->activityId);
 
     doBuildParseCompiled(instance->classctx, buffer);
     updateTimer("workunit;Generate PARSE: Compile", msTick()-startCompileTime);

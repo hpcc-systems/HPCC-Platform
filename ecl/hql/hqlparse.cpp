@@ -125,7 +125,8 @@ void CTemplateContext::reportWarning(int warnNo,const char* format,...)
         va_start(args, format);
         StringBuffer msg;
         msg.valist_appendf(format,args);
-        m_lookupContext.errs->reportWarning(warnNo,msg.str(),NULL,m_startLine,m_startCol,0);
+        WarnErrorCategory category = CategoryUnusual; // a reasonable default
+        m_lookupContext.errs->reportWarning(category, warnNo,msg.str(),NULL,m_startLine,m_startCol,0);
         va_end(args);
     }
 }
@@ -989,7 +990,7 @@ void HqlLex::doError(YYSTYPE & returnToken, bool isError)
     if (isError)
         reportError(returnToken, ERR_HASHERROR, "#ERROR: %s", buf.str());
     else
-        reportWarning(returnToken, WRN_HASHWARNING, "#WARNING: %s", buf.str());
+        reportWarning(CategoryUnusual, returnToken, WRN_HASHWARNING, "#WARNING: %s", buf.str());
 }
 
 void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
@@ -1967,13 +1968,13 @@ void HqlLex::reportError(const YYSTYPE & returnToken, int errNo, const char *for
     }
 }
 
-void HqlLex::reportWarning(const YYSTYPE & returnToken, int warnNo, const char *format, ...)
+void HqlLex::reportWarning(WarnErrorCategory category, const YYSTYPE & returnToken, int warnNo, const char *format, ...)
 {
     if (yyParser)
     {
         va_list args;
         va_start(args, format);
-        yyParser->reportWarningVa(warnNo, returnToken, format, args);
+        yyParser->reportWarningVa(category, warnNo, returnToken, format, args);
         va_end(args);
     }
 }

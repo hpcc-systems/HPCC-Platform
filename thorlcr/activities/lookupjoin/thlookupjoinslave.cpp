@@ -1449,7 +1449,7 @@ protected:
  * 10) The LHS side is loaded and spilt and sorted if necessary
  * 11) A regular join helper is created to perform a local join against the two hash distributed sorted sides.
  */
-        bool rhsAlreadySorted = helper->isRightAlreadySorted();
+        bool rhsAlreadySorted = helper->isRightAlreadyLocallySorted();
         CMarker marker(*this);
         if (needGlobal)
         {
@@ -1622,10 +1622,10 @@ protected:
 
                 rowLoader.clear();
 
-                // If stable already sorted by rowLoader
+                // If stable (and sort needed), already sorted by rowLoader
                 rowidx_t uniqueKeys = marker.calculate(rhs, compareRight, !rhsAlreadySorted && !stable);
 
-                Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), compareRight, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
+                Owned<IThorRowCollector> collector = createThorRowCollector(*this, queryRowInterfaces(rightITDL), cmp, stableSort_none, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN);
                 collector->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it resorted
                 collector->transferRowsIn(rhs); // can spill after this
 
@@ -1645,7 +1645,7 @@ protected:
                 if (grouped)
                     throw MakeActivityException(this, 0, "Degraded to standard join, LHS order cannot be preserved");
 
-                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(leftITDL), compareLeft));
+                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(leftITDL), helper->isLeftAlreadyLocallySorted() ? NULL : compareLeft));
                 left.setown(rowLoader->load(left, abortSoon, false));
                 leftITDL = inputs.item(0); // reset
                 ActPrintLog("LHS loaded/sorted");

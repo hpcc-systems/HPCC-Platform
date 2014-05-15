@@ -33,7 +33,8 @@ ESPStruct SpaceItem
 ESPStruct DFULogicalFile
 {
     string Prefix;      
-    string ClusterName; 
+    [depr_ver("1.26")] string ClusterName;
+    [min_ver("1.26")] string NodeGroup;
     string Directory;
     string Description;
     string Parts;
@@ -135,7 +136,8 @@ ESPStruct DFUSpaceItem
 ESPrequest [nil_remove] DFUQueryRequest
 {
     string Prefix;
-    string ClusterName;
+    [depr_ver("1.26")] string ClusterName;
+    [min_ver("1.26")] string NodeGroup;
     string LogicalName;
     string Description;
     string Owner;
@@ -166,7 +168,8 @@ DFUQueryResponse
     ESParray<ESPstruct DFULogicalFile> DFULogicalFiles;
 
     string Prefix;
-    string ClusterName;
+    [depr_ver("1.26")] string ClusterName;
+    [min_ver("1.26")] string NodeGroup;
     string LogicalName;
     string Description;
     string Owner;
@@ -638,7 +641,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.25"), default_client_version("1.25"),
+    version("1.26"), default_client_version("1.26"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

@@ -396,11 +396,9 @@ public:
     }
     void dolocaljoin()
     {
-        // NB: old version used to force both sides all to disk
-        Owned<IThorRowLoader> iLoaderL = createThorRowLoader(*this, ::queryRowInterfaces(leftInput), leftCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
-        Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(rightInput), rightCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
         bool isemptylhs = false;
-        if (helper->isLeftAlreadySorted()) {
+        if (helper->isLeftAlreadyLocallySorted())
+        {
             ThorDataLinkMetaInfo info;
             leftInput->getMetaInfo(info);
             if (info.totalRowsMax==0) 
@@ -410,25 +408,29 @@ public:
             else
                 leftStream.setown(createUngroupStream(leftInput));
         }
-        else {
-            StringBuffer tmpStr;
+        else
+        {
+            Owned<IThorRowLoader> iLoaderL = createThorRowLoader(*this, ::queryRowInterfaces(leftInput), leftCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
             leftStream.setown(iLoaderL->load(leftInput, abortSoon));
             isemptylhs = 0 == iLoaderL->numRows();
             stopLeftInput();
         }
-        if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0)) {
+        if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0))
+        {
             ActPrintLog("ignoring RHS as LHS empty");
             rightStream.setown(createNullRowStream());
             stopRightInput();
         }
-        else if (helper->isRightAlreadySorted()) 
+        else if (helper->isRightAlreadyLocallySorted())
         {
             if (rightpartition)
                 rightStream.set(createUngroupStream(rightInput));
             else
                 rightStream.set(rightInput.get()); // already ungrouped
         }
-        else {
+        else
+        {
+            Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(rightInput), rightCompare, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
             rightStream.setown(iLoaderR->load(rightInput, abortSoon));
             stopRightInput();
         }

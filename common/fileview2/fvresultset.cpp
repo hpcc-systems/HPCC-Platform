@@ -613,6 +613,7 @@ void fvSplitXPath(const char *xpath, StringBuffer &s, const char *&name, const c
 void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) const
 {
     StringBuffer xname;
+    unsigned keyedCount = getNumKeyedColumns();
     ForEachItemIn(idx, columns)
     {
         CResultSetColumnInfo & column = columns.item(idx);
@@ -669,7 +670,7 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
                 {
                     if (useXPath)
                         fvSplitXPath(meta->queryXPath(idx), xname, name);
-                    builder.addField(name, type);
+                    builder.addField(name, type, idx < keyedCount);
                 }
                 break;
             }

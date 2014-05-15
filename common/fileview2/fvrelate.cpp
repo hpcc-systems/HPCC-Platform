@@ -699,7 +699,7 @@ void ViewERdiagramVisitor::visit(ViewRelation * relation)
 }
 
 
-void ViewERdiagramVisitor::addField(const char * name, ITypeInfo & type)
+void ViewERdiagramVisitor::addField(const char * name, ITypeInfo & type, bool keyed)
 {
     StringBuffer eclTypeName;
     noteNextField();
@@ -712,7 +712,7 @@ void ViewERdiagramVisitor::addField(const char * name, ITypeInfo & type)
 
 void ViewERdiagramVisitor::addSetField(const char * name, const char * itemname, ITypeInfo & type)
 {
-    addField(name, type);
+    addField(name, type, false);
 }
 
 void ViewERdiagramVisitor::beginIfBlock()
