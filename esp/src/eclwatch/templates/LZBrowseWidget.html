@@ -209,7 +209,9 @@
             </p>
         </div>
         <div class="dijitDialogPaneActionBar">
-            <button id="${id}FileListDialogUpload" data-dojo-attach-event="onClick:_onUploadSubmit" data-dojo-type="dijit.form.Button">${i18n.Start}</button>
+            <label>${i18n.Overwrite}</label>
+            <input id="${id}Overwrite" title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
+            <button id="${id}FileListDialogUpload" data-dojo-attach-event="onClick:_onCheckUploadSubmit" data-dojo-type="dijit.form.Button">${i18n.Start}</button>
             <button id="${id}FileListDialogCancel" type="button" data-dojo-attach-event="onClick:_onUploadCancel" data-dojo-type="dijit.form.Button">${i18n.Close}</button>
         </div>
     </div>
