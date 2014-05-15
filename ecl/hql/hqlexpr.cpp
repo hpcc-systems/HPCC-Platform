@@ -8064,7 +8064,7 @@ IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned loo
     if (repositoryFlags&ob_sandbox)
     {
         if (ctx.errs)
-            ctx.errs->reportWarning(WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
+            ctx.errs->reportWarning(CategoryInformation,WRN_DEFINITION_SANDBOXED,"Definition is sandboxed",filename,0,0,0);
     }
 
     if (!(newSymbol->isExported() || (lookupFlags & LSFsharedOK)))

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,15 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-//Error: The reference to words.word in the OUTPUT should complain that "words" is not in scope
-//Unfortunately it gets optimized away by EXISTS(x) always being true.  Check a warning is output.
+#onwarning ('mistake', warning);
 
-#option ('pickBestEngine', false);
-#onwarning (1051, warning);
-
-IMPORT SerialTest;
-
-interestingWords := DICTIONARY([{'elves'},{'cheddar'}], SerialTest.wordRec);
-
-output(SerialTest.bookIndex(WILD(title), EXISTS(words.word IN interestingWords)));
-
+output(exists(true));

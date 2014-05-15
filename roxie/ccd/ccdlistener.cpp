@@ -1653,7 +1653,7 @@ readAnother:
                     else
                     {
                         StringBuffer querySetName;
-                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, logctx));
+                        queryFactory.setown(globalPackageSetManager->getQuery(queryName, &querySetName, NULL, logctx));
                         if (isHTTP)
                             client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
                         if (queryFactory)

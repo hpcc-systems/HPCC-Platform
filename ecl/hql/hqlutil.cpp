@@ -5503,7 +5503,7 @@ protected:
     void createTempTableAssign(HqlExprArray & assigns, IHqlExpression * self, IHqlExpression * curRow, IHqlExpression * expr, unsigned & col, IHqlExpression * selector, HqlMapTransformer & mapper, bool included);
     IHqlExpression * createTempTableTransform(IHqlExpression * self, IHqlExpression * curRow, IHqlExpression * expr, unsigned & col, IHqlExpression * selector, HqlMapTransformer & mapper, bool included);
 
-    void reportWarning(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
+    void reportWarning(WarnErrorCategory category, IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 5, 6)));
     void reportError(IHqlExpression * location, int code,const char *format, ...) __attribute__((format(printf, 4, 5)));
 
 protected:
@@ -5728,7 +5728,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
             if (included)
             {
                 if (!mappedValue)
-                    reportWarning(NULL, HQLWRN_CouldNotConstantFoldIf, HQLWRN_CouldNotConstantFoldIf_Text);
+                    reportWarning(CategoryUnexpected, NULL, HQLWRN_CouldNotConstantFoldIf, HQLWRN_CouldNotConstantFoldIf_Text);
                 else if (!mappedValue->getBoolValue())
                     included = false;
             }
@@ -5768,7 +5768,7 @@ void TempTableTransformer::reportError(IHqlExpression * location, int code,const
     errorProcessor.report(err);
 }
 
-void TempTableTransformer::reportWarning(IHqlExpression * location, int code,const char *format, ...)
+void TempTableTransformer::reportWarning(WarnErrorCategory category, IHqlExpression * location, int code,const char *format, ...)
 {
     ECLlocation * where = &defaultLocation;
     ECLlocation thisLocation;
@@ -5783,7 +5783,7 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
     va_start(args, format);
     errorMsg.valist_appendf(format, args);
     va_end(args);
-    errorProcessor.reportWarning(code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
+    errorProcessor.reportWarning(category, code, errorMsg.str(), where->sourcePath->str(), where->lineno, where->column, where->position);
 }
 
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
@@ -6462,57 +6462,6 @@ void gatherGraphReferences(HqlExprCopyArray & graphs, IHqlExpression * value, bo
 }
 
 //---------------------------------------------------------------------------
-
-ErrorSeverity getSeverity(IAtom * name)
-{
-    if (name == failAtom)
-        return SeverityFatal;
-    if (name == errorAtom)
-        return SeverityError;
-    if (name == warningAtom)
-        return SeverityWarning;
-    if (name == ignoreAtom)
-        return SeverityIgnore;
-    if (name == logAtom)
-        return SeverityInfo;
-    return SeverityUnknown;
-}
-
-WarnErrorCategory getCategory(const char * category)
-{
-    if (strieq(category, "all"))
-        return CategoryAll;
-    if (strieq(category, "cast"))
-        return CategoryCast;
-    if (strieq(category, "confuse"))
-        return CategoryConfuse;
-    if (strieq(category, "deprecated"))
-        return CategoryDeprecated;
-    if (strieq(category, "efficiency"))
-        return CategoryEfficiency;
-    if (strieq(category, "future"))
-        return CategoryFuture;
-    if (strieq(category, "ignored"))
-        return CategoryIgnored;
-    if (strieq(category, "index"))
-        return CategoryIndex;
-    if (strieq(category, "mistype"))
-        return CategoryMistyped;
-    if (strieq(category, "syntax"))
-        return CategorySyntax;
-    if (strieq(category, "unusual"))
-        return CategoryUnusual;
-    if (strieq(category, "unexpected"))
-        return CategoryUnexpected;
-    return CategoryUnknown;
-}
-
-static ErrorSeverity getCheckSeverity(IAtom * name)
-{
-    ErrorSeverity severity = getSeverity(name);
-    assertex(severity != SeverityUnknown);
-    return severity;
-}
 
 static ErrorSeverity getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first, ErrorSeverity defaultSeverity)
 {
@@ -7783,7 +7732,7 @@ void EclXmlSchemaBuilder::build(IHqlExpression * record, bool &hasMixedContent) 
                 default:
                     extractName(name.clear(), NULL, NULL, cur, NULL);
                     if (name.length())
-                        builder.addField(name, *type);
+                        builder.addField(name, *type, false);
                     else
                         hasMixedContent = true;
                     break;

@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,15 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-//Error: The reference to words.word in the OUTPUT should complain that "words" is not in scope
-//Unfortunately it gets optimized away by EXISTS(x) always being true.  Check a warning is output.
+#onwarning ('efficiency', ignore);
 
-#option ('pickBestEngine', false);
-#onwarning (1051, warning);
+namesRecord :=
+            RECORD
+string2000000000  surname;
+string10        forename;
+integer2        age := 25;
+            END;
 
-IMPORT SerialTest;
+namesTable := dataset('x',namesRecord,FLAT);
 
-interestingWords := DICTIONARY([{'elves'},{'cheddar'}], SerialTest.wordRec);
 
-output(SerialTest.bookIndex(WILD(title), EXISTS(words.word IN interestingWords)));
-
+output(nofold(namesTable)(surname[1] in ['0','1','3']),,'out.d00',overwrite);
