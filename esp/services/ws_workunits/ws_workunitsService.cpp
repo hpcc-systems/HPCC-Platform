@@ -2064,11 +2064,7 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
                 if (cachedResults->m_results.length())
                 {
                     ForEachItemIn(ai, cachedResults->m_results)
-                    {
-                        Owned<IEspECLWorkunit> info= createECLWorkunit("","");
-                        info->copy(cachedResults->m_results.item(ai));
-                        archivedWUs.append(*info.getClear());
-                    }
+                        archivedWUs.append(*LINK(&cachedResults->m_results.item(ai)));
                 }
             }
             else
@@ -2120,16 +2116,13 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
     unsigned pageSize = (unsigned) req.getPageSize();
     if(pageSize < 1)
         pageSize=500;
-
     IArrayOf<IEspECLWorkunit> archivedWUs;
     Owned<IArchivedWUsReader> archiveWUsReader = new CArchivedWUsReader(context, sashaServerIP, sashaServerPort, archivedWuCache,
         cacheMinutes, pageStart, pageSize, req);
     archiveWUsReader->getArchivedWUs(archivedWUs);
 
     resp.setWorkunits(archivedWUs);
-    int numWUs = archiveWUsReader->getNumberOfWUsReturned();
-    if (numWUs >= 0)
-        resp.setNumWUs(numWUs);
+    resp.setNumWUs(archiveWUsReader->getNumberOfWUsReturned());
 
     resp.setType("archived only");
     resp.setPageSize(pageSize);

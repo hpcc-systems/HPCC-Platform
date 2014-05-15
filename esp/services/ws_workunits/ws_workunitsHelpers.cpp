@@ -2174,7 +2174,7 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
         if (list_iter == cache.end())
             break;
 
-        ArchivedWuCacheElement* awu = list_iter->getLink();
+        ArchivedWuCacheElement* awu = list_iter->get();
         if (awu && !stricmp(sashaUpdatedWhen, awu->m_sashaUpdatedWhen.c_str()) && (awu->m_timeCached > timeNow))
             break;
 
