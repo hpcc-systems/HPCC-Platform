@@ -514,6 +514,7 @@ define({root:
     Who: "Who",
     Width: "Width",
     Workflows: "Workflows",
+    WorkFlowTip: "No scheduled workunits to display",
     Workunit: "Workunit",
     Workunits: "Workunits",
     Wrap: "Wrap",

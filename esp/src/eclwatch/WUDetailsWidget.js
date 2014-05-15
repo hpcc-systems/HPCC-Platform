@@ -348,6 +348,8 @@ define([
             } else if (name === "WorkflowCount" && newValue) {
                 this.widget._Workflows.set("title", this.i18n.Workflows + " (" + newValue + ")");
                 this.setDisabled(this.widget._Workflows.id, false);
+            } else if (name === "WorkflowCount" && newValue === 0){
+                this.widget._Workflows.set("tooltip", this.i18n.WorkFlowTip);
             } else if (name === "variables") {
                 var tooltip = "";
                 for (var key in newValue) {
