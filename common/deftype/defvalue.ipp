@@ -121,7 +121,7 @@ public:
     virtual __int64 getIntValue();
     virtual void pushDecimalValue();
     virtual const char *getStringValue(StringBuffer &); 
-
+    virtual const char *getUTF8Value(StringBuffer & out);
 }; 
 
 class UnicodeValue : public MemoryValue
