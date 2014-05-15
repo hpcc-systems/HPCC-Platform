@@ -25,7 +25,7 @@ from ..util.ecl.file import ECLFile
 from ..common.error import Error
 
 class Suite:
-    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir,  isSetup=False,  fileList = None):
+    def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir, args, isSetup=False,  fileList = None):
         self.name = name
         self.suite = []
         self.dir_ec = dir_ec
@@ -36,7 +36,7 @@ class Suite:
         self.exclude = []
         self.publish = []
 
-        self.buildSuite(isSetup,  fileList)
+        self.buildSuite(args, isSetup, fileList)
 
         if len(self.exclude):
             curTime = time.strftime("%y-%m-%d-%H-%M")
@@ -47,7 +47,7 @@ class Suite:
                 self.log.write(item+"\n")
             self.log.close();
 
-    def buildSuite(self,  isSetup,  fileList):
+    def buildSuite(self, args, isSetup,  fileList):
         if fileList == None:
             if not os.path.isdir(self.dir_ec):
                 raise Error("2001", err="Not Found: %s" % self.dir_ec)
@@ -60,7 +60,7 @@ class Suite:
             if file.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, file)
                 eclfile = ECLFile(ecl, self.dir_a, self.dir_ex,
-                                  self.dir_r,  self.name)
+                                  self.dir_r,  self.name, args)
                 if isSetup:
                     skipResult = eclfile.testSkip('setup')
                 else:

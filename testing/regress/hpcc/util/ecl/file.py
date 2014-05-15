@@ -21,8 +21,9 @@ import difflib
 import logging
 import os
 import traceback
+import re
 
-from ...util.util import isPositiveIntNum
+from ...util.util import isPositiveIntNum, getConfig
 
 class ECLFile:
     ecl = None
@@ -42,7 +43,7 @@ class ECLFile:
     taskId = -1
     ignoreResult=False
 
-    def __init__(self, ecl, dir_a, dir_ex, dir_r,  cluster):
+    def __init__(self, ecl, dir_a, dir_ex, dir_r,  cluster, args):
         self.dir_ec = os.path.dirname(ecl)
         self.dir_ex = dir_ex
         self.dir_r = dir_r
@@ -58,6 +59,43 @@ class ECLFile:
         self.jobname = self.basename
         self.diff = ''
         self.abortReason =''
+
+        self.optX =[]
+        self.optXHash={}
+        self.config = getConfig()
+        try:
+            # Process definitions of stored input value(s) from config
+            for param in self.config.Params:
+                [testSpec,  val] = param.split(':')
+
+                if '*' in testSpec:
+                    testSpec = testSpec.replace('*',  '\w+')
+
+                testSpec = testSpec.replace('.',  '\.')
+                match = re.match(testSpec,  baseEcl)
+                if match:
+                    optXs = ("-X"+val.replace(',',  ',-X')).split(',')
+                    for optX in optXs:
+                        [key,  val] = optX.split('=')
+                        self.optXHash[key] = val
+                pass
+        except AttributeError:
+            # It seems there is no Params array in the config file
+            pass
+
+        # Process -X CLI parameters
+        if args.X != 'None':
+            optXs = ("-X"+args.X[0].replace(',',  ',-X')).split(',')
+            for optX in optXs:
+                [key,  val] = optX.split('=')
+                self.optXHash[key] = val
+            pass
+
+        # Merge all parameters into a string array
+        for key in self.optXHash:
+            self.optX.append(key+'='+self.optXHash[key].replace('\'', ''))
+        pass
+
 
     def getExpected(self):
         path = os.path.join(self.dir_ec, self.cluster)
@@ -254,3 +292,6 @@ class ECLFile:
     def getIgnoreResult(self):
         logging.debug("%3d. getIgnoreResult (ecl:'%s', ignore result is:'%s')", self.taskId,  self.ecl, self.ignoreResult)
         return self.ignoreResult
+
+    def getStoredInputParameters(self):
+        return self.optX

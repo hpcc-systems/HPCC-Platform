@@ -19,6 +19,9 @@
             "roxie"
         ],
         "timeout":"600",
-        "maxAttemptCount":"3"
+        "maxAttemptCount":"3",
+        "Params":[
+            "PassTest.ecl:bla='A value'"
+        ]
     }
 }

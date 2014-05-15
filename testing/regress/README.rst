@@ -1,12 +1,12 @@
-Overview of Regression Suite usage (v:0.0.16)
+Overview of Regression Suite usage (v:0.0.17)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
 
 Regression Suite requires Python environment version >=2.6.6 and < 3.x
 
-Parameters of Regression Suite:
--------------------------------
+Global parameters of Regression Suite:
+--------------------------------------
 
 Command:
  
@@ -19,6 +19,7 @@ Result:
 |                       [--loglevel [{info,debug}]] [--suiteDir [SUITEDIR]]
 |                       [--timeout [TIMEOUT]] [--keyDir [KEYDIR]]
 |                       [--ignoreResult]
+|                       [-X name1=value1[,name2=value2...]]
 |                       {list,setup,run,query} ...
 | 
 |       HPCC Platform Regression suite
@@ -42,6 +43,9 @@ Result:
 |            --keyDir [KEYDIR], -k [KEYDIR]
 |                                  key file directory to compare test output. Default value defined in regress.json config file.
 |            --ignoreResult, -i    completely ignore the result.
+|            -X name1=value1[,name2=value2...]
+|                                  sets the stored input value (stored('name')).
+
 
 Parameters of Regression Suite list sub-command:
 ------------------------------------------------
@@ -561,6 +565,93 @@ So if you have a new test case and it works well on all clusters (or some of the
         ],
         "timeout":"600",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
         "maxAttemptCount":"3"                           - Max retry count to reset timeout if a testcase in any early stage (compiled, blocked) of execution pipeline.
+
+Optionally the config file can contain a section of default values for stored parameters like this:
+
+    "Params":[
+                "querya.ecl:param1=value1,param2=value2",
+                "queryb.ecl:param1=value3",
+                "some*.ecl:paramforsome=value4",
+                "*.ecl:globalparam=blah"
+            ]
+
+The Regression Suite processes the Params definition(s) sequentially. The -Xname=value command line parameter overrides any values defined in this section.
+Examples:
+
+We have an ECL source called PassTest.ecl with these lines:
+
+|    //nokey        # To avoid result comparison error
+|    string bla := 'EN' : STORED('bla');
+|    output(bla);
+
+1. For the purposes of this example, we assume there is no Params section in the testing/regress/ecl_test.json file or it is empty and there are no PassTest.ecl related global entries.
+
+If we execute it with query mode:
+
+|     ./ecl_test query PassTest.ecl -t hthor
+
+The result is:
+
+|     [Action] Target: hthor
+|     [Action] Queries: 1
+|     [Action]   1. Test: PassTest.ecl
+|     [Pass]   1. Pass W20140508-180241 (1 sec)
+|     [Pass]   1. URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20140508-180241
+|     [Action]
+|         Results
+|         -------------------------------------------------
+|         Passing: 1
+|         Failure: 0
+|         -------------------------------------------------
+|         u"Output of PassTest.ecl test is:\n\t<Dataset name='Result 1'>\n <Row><Result_1>EN</Result_1></Row>\n</Dataset>\n"
+|         -------------------------------------------------
+|         Log: /home/ati/HPCCSystems-regression/log/hthor.14-05-08-18-02-41.log
+|         -------------------------------------------------
+|         Elapsed time: 4 sec  (00:00:04)
+|         -------------------------------------------------
+
+2. Same as 1. but execute it in query mode with -X parameter:
+
+|     ./ecl_test -Xbla=blabla query PassTest.ecl -t hthor
+
+then the output of PassTest.ecl changes in the result:
+|         -------------------------------------------------
+|         u"Output of PassTest.ecl test is:\n\t<Dataset name='Result 1'>\n <Row><Result_1>blabla</Result_1></Row>\n</Dataset>\n"
+|         -------------------------------------------------
+
+3. If we want to apply same stored value every execution then we can put it into the ecl_test.json configuration file:
+
+|    "Params":[
+|                "PassTest.ecl:bla='A value'"
+|          ]
+
+We can execute it with a simple query mode:
+
+|     ./ecl_test query PassTest.ecl -t hthor
+
+then the output of PassTest.ecl changes in the result accordingly with the value from the Params option:
+|         -------------------------------------------------
+|         u"Output of PassTest.ecl test is:\n\t<Dataset name='Result 1'>\n <Row><Result_1>A value</Result_1></Row>\n</Dataset>\n"
+|         -------------------------------------------------
+
+4. Finally we have value(s) in the config file, but we want to run PassTest.ecl with another input value.
+
+In this case we can use same command as in 2. with a new value:
+
+|     ./ecl_test -Xbla='Another value' query PassTest.ecl -t hthor
+
+then the output of PassTest.ecl changes in the result:
+|         -------------------------------------------------
+|         u"Output of PassTest.ecl test is:\n\t<Dataset name='Result 1'>\n <Row><Result_1>Another value</Result_1></Row>\n</Dataset>\n"
+|         -------------------------------------------------
+
+We can use as many values as we need in this form:
+|       -Xname1=value1,name2=value2...
+
+Important!
+    There should not be any spaces before or after the commas.
+    If there is more than one -X in the command line, the last will be the active and all other discarded.
+
 
 
 10. Authentication:

@@ -21,6 +21,8 @@ import argparse
 import platform
 import logging
 
+from ..common.error import Error
+
 def isPositiveIntNum(string):
     for i in range(0,  len(string)):
         if (string[i] < '0') or (string[i] > '9'):
@@ -33,6 +35,20 @@ def checkPqParam(string):
         value = int(string)
     else:
         msg = "Wrong value of threadNumber parameter: '"+string+"' !"
+        raise argparse.ArgumentTypeError(msg)
+
+    return value
+
+def checkXParam(string):
+    param=str(string)
+    if len(param):
+        if ('=' in param) or ('None' == param):
+            value = param
+        else:
+            #logging.error("%s. Missing or wrong argument '%s' after -X parameter!\nIt should be 'name=val[,name2=val2..]'\n5000\n" % (1,  param))
+            value="5000"
+    else:
+        msg = "Missing argument of -X parameter!"
         raise argparse.ArgumentTypeError(msg)
 
     return value
@@ -56,6 +72,9 @@ gConfig = None
 def setConfig(config):
     global gConfig
     gConfig = config
+
+def getConfig():
+    return gConfig
 
 def queryWuid(jobname,  taskId):
     server = gConfig.server
