@@ -296,7 +296,7 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
             StringBuffer nameText,valueText;
             name->getStringValue(nameText);
             if (isOptionTooLate(nameText.str()))
-                translator.reportWarning(HQLWRN_OptionSetToLate, HQLWRN_OptionSetToLate_Text, nameText.str());
+                translator.reportWarning(CategoryIgnored, HQLWRN_OptionSetToLate, HQLWRN_OptionSetToLate_Text, nameText.str());
 
             if (value->queryType()->getTypeCode() == type_boolean)
                 valueText.append(value->getBoolValue() ? 1 : 0);
@@ -1371,7 +1371,7 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
     case no_outputscalar:
         if (applyDepth)
         {
-            translator.WARNINGAT(expr, HQLERR_ScalarOutputWithinApply);
+            translator.WARNINGAT(CategoryUnexpected, expr, HQLERR_ScalarOutputWithinApply);
         }
         break;
     }
@@ -2226,7 +2226,7 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 
             if (equalities.ordinality() == 0)
             {
-                translator.reportWarning(queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
+                translator.reportWarning(CategoryEfficiency, queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
             }
             else
             {
@@ -5653,7 +5653,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                         throwError1(HQLERR_DuplicateDefinitionDiffType, s.str());
                 }
                 else if (translator.queryOptions().allowStoredDuplicate)            // only here as a temporary workaround
-                    translator.reportWarning(queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
+                    translator.reportWarning(CategoryMistake, queryActiveLocation(expr), HQLERR_DuplicateDefinition, HQLERR_DuplicateDefinition_Text, s.str());
                 else
                 {
                     if (queryLocationIndependent(prevValue) != queryLocationIndependent(value))
@@ -6590,7 +6590,7 @@ void WorkflowTransformer::analyseExpr(IHqlExpression * expr)
                 if (expr->queryName())
                     s.appendf(" '%s'", expr->queryName()->str());
                 //MORE: Better if we also kept nested track of locations
-                translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
+                translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_WorkflowSeemsToBeDependent, s.str());
             }
 
             unsigned prevWfid = activeWfid;
@@ -7384,9 +7384,9 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                             s.append(" in ").append(symbol->queryName());
                     }
                     if (op == no_nothor)
-                        translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
+                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_NoThorContextDependent), s.str());
                     else
-                        translator.reportWarning(queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
+                        translator.reportWarning(CategoryMistake, queryActiveLocation(expr), ECODETEXT(HQLWRN_GlobalDoesntSeemToBe), s.str());
                 }
                 if (value->getOperator() == no_createset)
                 {
@@ -7503,7 +7503,7 @@ protected:
                 StringBuffer s;
                 if (filename)
                     getExprECL(filename, s);
-                translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
+                translator.WARNINGAT1(CategoryMistake, queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
 
     #if 0
                 checkIndependentOfScope(expr);
@@ -7513,7 +7513,10 @@ protected:
         default:
             if (!isIndependentOfScope(expr))
             {
-                translator.WARNINGAT(queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
+                //There appears to be partial support for functions generated as workflow items - which are not
+                //scope independent since they depend on their paramaters => don't complain about them
+                if (expr->getOperator() != no_return_stmt)
+                    translator.WARNINGAT(CategoryMistake, queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
 
     #if 0
                 checkIndependentOfScope(expr);
@@ -9060,7 +9063,7 @@ void HqlScopeTagger::checkActiveRow(IHqlExpression * expr)
         getECL(expr, exprText);
         elideString(exprText, 20);
         VStringBuffer msg("ROW(%s) - dataset argument is not in scope.  Did you mean dataset[1]?", exprText.str());
-        reportError(msg, SeverityFatal);
+        reportError(CategoryError, msg);
     }
 }
 
@@ -9091,7 +9094,7 @@ void HqlScopeTagger::reportSelectorError(IHqlExpression * selector, IHqlExpressi
             getExprIdentifier(datasetName, selector).str());
     }
 
-    reportError(msg, SeverityFatal);
+    reportError(CategoryError, msg);
 }
 
 
@@ -9109,7 +9112,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             case no_right:
                 StringBuffer exprText, datasetName;
                 VStringBuffer msg("%s - %s not in scope, possibly passed into a global/workflow definition", getECL(expr, exprText), getExprIdentifier(datasetName, ds).str());
-                reportError(msg, SeverityFatal);
+                reportError(CategoryError, msg);
                 break;
             }
         }
@@ -9123,7 +9126,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
         {
             StringBuffer exprText;
             VStringBuffer msg("dictionary %s must be explicitly NORMALIZED", getECL(expr, exprText));
-            reportError(msg, SeverityFatal);
+            reportError(CategoryError, msg);
         }
         else if (expr->isDataset())
         {
@@ -9131,7 +9134,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset %s may not be supported without using NORMALIZE", getECL(expr, exprText));
-                reportError(msg, SeverityWarning);
+                reportError(CategoryUnexpected, msg);
             }
         }
         else
@@ -9208,7 +9211,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
             {
                 StringBuffer exprText;
                 VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
-                reportError(msg, SeverityFatal);
+                reportError(CategoryError, msg);
             }
         }
         return transformed.getClear();
@@ -9220,7 +9223,7 @@ IHqlExpression * HqlScopeTagger::transformNewDataset(IHqlExpression * expr, bool
         {
             StringBuffer exprText;
             VStringBuffer msg("%s - Need to use active(dataset) to refer to the current row of an active dataset", getECL(expr, exprText));
-            reportError(msg, SeverityFatal);
+            reportError(CategoryError, msg);
         }
 
         return ensureActiveRow(transformed->queryNormalizedSelector());
@@ -9328,7 +9331,7 @@ IHqlExpression * HqlScopeTagger::transformWithin(IHqlExpression * dataset, IHqlE
     {
         StringBuffer exprText;
         VStringBuffer msg("%s - dataset filtered by WITHIN is too complex", getECL(dataset, exprText));
-        reportError(msg, SeverityFatal);
+        reportError(CategoryError, msg);
         return transform(dataset);
     }
 
@@ -9352,7 +9355,7 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     {
         StringBuffer exprText;
         VStringBuffer msg("dataset \"%s\" used in WITHIN is not in scope", getECL(scope, exprText));
-        reportError(msg, SeverityFatal);
+        reportError(CategoryError, msg);
     }
 
     //Check the ds is a table
@@ -9361,7 +9364,7 @@ IHqlExpression * HqlScopeTagger::transformRelated(IHqlExpression * expr)
     {
         StringBuffer exprText;
         VStringBuffer msg("dataset \"%s\" used as parameter to WITHIN is too complex", getECL(expr, exprText));
-        reportError(msg, SeverityFatal);
+        reportError(CategoryError, msg);
     }
 
     return transformWithin(ds, scope->queryNormalizedSelector());
@@ -9437,7 +9440,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset %s mistakenly interpreted as a datarow, possibly due to missing dataset() in parameter type", getECL(ds, exprText));
-                reportError(msg, SeverityFatal);
+                reportError(CategoryError, msg);
             }
             return transformAmbiguousChildren(expr);
         }
@@ -9465,7 +9468,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
             {
                 StringBuffer exprText;
                 VStringBuffer msg("dataset expression (%s) assigned to field '%s' with type row", getECL(rhs, exprText), lhs->queryChild(1)->queryName()->str());
-                reportError(msg.str(), SeverityFatal);
+                reportError(CategoryError, msg.str());
             }
             if (rhs == newRhs)
                 return LINK(expr);
@@ -9481,7 +9484,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         {
             OwnedHqlExpr transformed = Parent::createTransformed(expr);
             if (transformed->queryChild(0)->isDataset())
-                reportError("PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?", SeverityFatal);
+                reportError(CategoryError, "PROJECT() row argument resolved to a dataset.  Missing DATASET() from parameter type?");
             return transformed.getClear();
         }
     case no_merge:
@@ -9505,7 +9508,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
                 {
                     if (sorts.item(i).isAttribute())
                     {
-                        reportError(HQLWRN_MergeBadSortOrder_Text, SeverityWarning);
+                        reportError(CategorySyntax, HQLWRN_MergeBadSortOrder_Text);
                         sorts.remove(i);
                     }
                 }
@@ -9519,14 +9522,15 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
 }
 
 
-void HqlScopeTagger::reportError(const char * msg, ErrorSeverity severity)
+void HqlScopeTagger::reportError(WarnErrorCategory category, const char * msg)
 {
     IHqlExpression * location = errorMapper.queryActiveSymbol();
     //Make this an error when we are confident...
     int startLine= location ? location->getStartLine() : 0;
     int startColumn = location ? location->getStartColumn() : 0;
     ISourcePath * sourcePath = location ? location->querySourcePath() : NULL;
-    Owned<IECLError> err = createECLError(severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
+    ErrorSeverity severity = queryDefaultSeverity(category);
+    Owned<IECLError> err = createECLError(category, severity, ERR_ASSERT_WRONGSCOPING, msg, sourcePath->str(), startLine, startColumn, 0);
     errors.report(err);        // will throw immediately if it is an error.
 }
 
@@ -10324,10 +10328,10 @@ IHqlExpression * NestedCompoundTransformer::createTransformed(IHqlExpression * e
                     location = queryActiveLocation();
                 if (!isSimpleSideeffect(sideEffect))
                 {
-                    //MORE: This should be an error, but there are still occasional false positives e.g., OUTPUT(ds1.childds)
+                    //MORE: This should possibly be an error, but there are still false positives e.g., OUTPUT(ds1.childds)
                     //so needs to stay a warning.
 //                  translator.ERRORAT1(location, HQLERR_GlobalSideEffectDependent, s.str());
-                    translator.WARNINGAT1(location, HQLWRN_GlobalSideEffectDependent, s.str());
+                    translator.WARNINGAT1(CategoryUnexpected, location, HQLWRN_GlobalSideEffectDependent, s.str());
                 }
                 break;
             }

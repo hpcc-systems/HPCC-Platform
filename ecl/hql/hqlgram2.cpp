@@ -54,6 +54,7 @@
 //#define USE_WHEN_FOR_SIDEEFFECTS
 #define MANYFIELDS_THRESHOLD                        2000
 #define MAX_SENSIBLE_FIELD_LENGTH                   1000000000
+#define MAX_POSSIBLE_FIELD_LENGTH                   (INFINITE_LENGTH-1)
 
 struct TokenMap
 {
@@ -176,9 +177,6 @@ protected:
 };
 
 
-/* This enables warning on a assignall which tries to reassign a field. */
-//#define _WARN_ON_ASSIGNALL
-
 void attribute::annotateExprWithLocation()
 {
     if ((atr_type==t_expr) && expr && !queryLocation(expr))
@@ -264,22 +262,12 @@ bool HqlGramCtx::hasAnyActiveParameters()
 }
 
 
-static IECLError * createErrorVA(ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args)
+static IECLError * createErrorVA(WarnErrorCategory category, ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, va_list args)
 {
     StringBuffer msg;
     msg.valist_appendf(format, args);
-    return createECLError(severity, errNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
+    return createECLError(category, severity, errNo, msg.str(), pos.sourcePath->str(), pos.lineno, pos.column, pos.position);
 }
-
-static IECLError * createError(ErrorSeverity severity, int errNo, const ECLlocation & pos, const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    IECLError * error = createErrorVA(severity, errNo, pos, format, args);
-    va_end(args);
-    return error;
-}
-
 
 void HqlGram::gatherActiveParameters(HqlExprCopyArray & target)
 {
@@ -974,7 +962,7 @@ IHqlExpression * HqlGram::processUserAggregate(const attribute & mainPos, attrib
     OwnedHqlExpr grouping = itemsAttr ? processSortList(*itemsAttr, no_aggregate, dataset, sortItems, NULL, &attrs) : NULL;
 
     if (grouping && (dataset->getOperator() == no_group) && isGrouped(dataset))
-        reportWarning(WRN_GROUPINGIGNORED, dsAttr.pos, "Grouping of aggregate input will have no effect, was this intended?");
+        reportWarning(CategoryIgnored, WRN_GROUPINGIGNORED, dsAttr.pos, "Grouping of aggregate input will have no effect, was this intended?");
 
     HqlExprArray args;
     args.append(*LINK(dataset));
@@ -1754,11 +1742,8 @@ void HqlGram::addAssignall(IHqlExpression *tgt, IHqlExpression *src, const attri
     assignall = assignall->closeExpr();
     if (assignall->numChildren() > firstAssign) 
         curTransform->addOperand(assignall);
-    else // empty assignall.
-    {
-        //reportWarning(WRN_TRANX_EMPTYASSIGNALL, errpos.pos, "Assignment has no effect; ignored");
+    else
         assignall->Release();
-    }
 }
 
 
@@ -1875,13 +1860,6 @@ void HqlGram::doAddAssignCompound(IHqlExpression * assignall, IHqlExpression * t
                     else
                         doAddAssignment(assignall,LINK(lhs),LINK(rhs),errpos);
                 }
-                else
-                {
-    #ifdef _WARN_ON_ASSIGNALL
-                    StringBuffer fldName;
-                    reportWarning(WRN_TRANX_HASASSIGNEDVALUE, errpos.pos, "A value for \"%s\" has already been specified", getFldName(lhs,fldName).str());
-    #endif
-                }   
             }
         }
     }
@@ -2066,7 +2044,7 @@ void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpr
                         //Not very nice - only ok in some situations....
                         if (cur->hasAttribute(virtualAtom))
                         {
-                            reportWarning(ERR_TRANS_NOVALUE4FIELD, errpos.pos, "Transform does not supply a value for field \"%s\"", fldName.str());
+                            reportWarning(CategorySyntax, ERR_TRANS_NOVALUE4FIELD, errpos.pos, "Transform does not supply a value for field \"%s\"", fldName.str());
                             OwnedHqlExpr null = createNullExpr(cur);
                             if (assigns)
                                 assigns->append(*createAssign(LINK(targetSelected), LINK(null)));
@@ -2264,7 +2242,7 @@ void HqlGram::addFields(const attribute &errpos, IHqlExpression *e, IHqlExpressi
         if (match)
         {
             if (!clone)
-                reportWarning(ERR_REC_DUPFIELD, errpos.pos, "A field called %s is already defined in this record",id->str());
+                reportWarning(CategorySyntax, ERR_REC_DUPFIELD, errpos.pos, "A field called %s is already defined in this record",id->str());
             continue;
         }
 
@@ -2396,7 +2374,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
                     canNotAssignTypeError(fieldType,defvalueType,errpos);
                 IValue * constValue = defaultValue->queryValue();
                 if (constValue && (constValue->rangeCompare(expectedType) > 0))
-                    reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", "Default value too large");
+                    reportWarning(CategorySyntax, ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", "Default value too large");
                 if (expectedType->getTypeCode() != type_row)
                 {
                     HqlExprArray allAttrs;
@@ -2424,7 +2402,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
     case type_decimal:
         if (fieldType->getSize() == UNKNOWN_LENGTH)
         {
-            reportWarning(ERR_BAD_FIELD_TYPE, errpos.pos, "Fields of unknown length decimal not currently supported");
+            reportWarning(CategorySyntax, ERR_BAD_FIELD_TYPE, errpos.pos, "Fields of unknown length decimal not currently supported");
             fieldType.setown(makeDecimalType(MAX_DECIMAL_DIGITS, MAX_DECIMAL_PRECISION, fieldType->isSigned()));
         }
         break;
@@ -2457,8 +2435,14 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
         }
     }
 
-    if ((fieldType->getSize() != UNKNOWN_LENGTH) && (fieldType->getSize() > MAX_SENSIBLE_FIELD_LENGTH))
-        reportError(ERR_BAD_FIELD_SIZE, errpos, "Field %s is too large", name->str());
+    size32_t fieldSize = fieldType->getSize();
+    if (fieldSize != UNKNOWN_LENGTH)
+    {
+        if (fieldSize > MAX_SENSIBLE_FIELD_LENGTH)
+            reportWarning(CategoryEfficiency, SeverityError, ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is larger than max sensible size", name->str());
+        else if (fieldSize > MAX_POSSIBLE_FIELD_LENGTH)
+            reportError(ERR_BAD_FIELD_SIZE, errpos.pos, "Field %s is too large", name->str());
+    }
 
     OwnedHqlExpr newField = createField(name, fieldType.getClear(), value.getClear(), attrs);
     OwnedHqlExpr annotated = createLocationAnnotation(LINK(newField), errpos.pos);
@@ -3527,7 +3511,7 @@ void HqlGram::checkMaxCompatible(IHqlExpression * sortOrder, IHqlExpression * va
 void HqlGram::checkSvcAttrNoValue(IHqlExpression* attr, const attribute& errpos)
 {
     if (attr->numChildren()>0)
-        reportWarning(WRN_SVC_ATTRNEEDNOVALUE, errpos.pos,"Service attribute '%s' requires no value; ignored",attr->queryName()->str());
+        reportWarning(CategorySyntax, WRN_SVC_ATTRNEEDNOVALUE, errpos.pos,"Service attribute '%s' requires no value; ignored",attr->queryName()->str());
 }
 
 void cleanupService(IHqlScope*& serviceScope)
@@ -3644,7 +3628,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
 
                 /* should be really an error */
                 if (invalid)
-                    reportWarning(ERR_SVC_INVALIDINCLUDE,errpos.pos,"Invalid include: can not be empty");
+                    reportWarning(CategorySyntax, ERR_SVC_INVALIDINCLUDE,errpos.pos, "Invalid include: can not be empty");
             }
             else if (name == eclrtlAtom)
             {
@@ -3678,7 +3662,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
                 //backward compatibility
             }
             else // unsupported
-                reportWarning(WRN_SVC_UNSUPPORTED_ATTR, errpos.pos, "Unsupported service attribute: '%s'; ignored", name->str());
+                reportWarning(CategorySyntax,WRN_SVC_UNSUPPORTED_ATTR, errpos.pos, "Unsupported service attribute: '%s'; ignored", name->str());
         }
 
         // check attribute conflicts
@@ -3687,7 +3671,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,IIdAtom * name,
         if (cApi)   apiAttrs++;
         if (bcdApi) apiAttrs++;
         if (apiAttrs>1)
-            reportWarning(ERR_SVC_ATTRCONFLICTS, errpos.pos, "Attributes eclrtl, bcd, c are conflict: only 1 can be used at a time");
+            reportWarning(CategorySyntax, ERR_SVC_ATTRCONFLICTS, errpos.pos, "Attributes eclrtl, bcd, c are conflict: only 1 can be used at a time");
     }
 
     if (!hasEntrypoint)
@@ -3809,7 +3793,7 @@ bool HqlGram::checkAlienTypeDef(IHqlScope* scope, const attribute& errpos)
             else
             {
                 if (phyLen)
-                    reportWarning(WRN_USRTYPE_EXTRAPHYLEN,errpos.pos,"physicalLength not needed since the type size is known");
+                    reportWarning(CategoryIgnored, WRN_USRTYPE_EXTRAPHYLEN,errpos.pos,"physicalLength not needed since the type size is known");
             }
         }
 
@@ -3875,19 +3859,19 @@ ITypeInfo * HqlGram::checkStringIndex(attribute & strAttr, attribute & idxAttr)
     if (info.knownStart() && (startIndex < 1 || ((strSize != UNKNOWN_LENGTH) && startIndex > strSize)))
     {
         if (startIndex<1)
-            reportWarning(ERR_SUBSTR_INVALIDRANGE, idxAttr.pos,"Invalid substring range: start index %d must >= 1", startIndex);
+            reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos,"Invalid substring range: start index %d must >= 1", startIndex);
         else  /* assert: strSize != UNKNOWN_LENGTH */
-            reportWarning(ERR_SUBSTR_INVALIDRANGE, idxAttr.pos,"Invalid substring range: index %d out of bound: 1..%d", startIndex, strSize);
+            reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos,"Invalid substring range: index %d out of bound: 1..%d", startIndex, strSize);
     }
     else if (info.knownEnd() && (endIndex < 1 || ((strSize != UNKNOWN_LENGTH) && endIndex > strSize)))
     {
         if (endIndex < 1)
-            reportWarning(ERR_SUBSTR_INVALIDRANGE, idxAttr.pos, "Invalid substring range: end index %d must >= 1", endIndex);
+            reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos, "Invalid substring range: end index %d must >= 1", endIndex);
         else
-            reportWarning(ERR_SUBSTR_INVALIDRANGE, idxAttr.pos, "Invalid substring range: index %d out of bound: 1..%d", endIndex, strSize);
+            reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos, "Invalid substring range: index %d out of bound: 1..%d", endIndex, strSize);
     }
     else if (info.knownStart() && info.knownEnd() && startIndex > endIndex)
-        reportWarning(ERR_SUBSTR_INVALIDRANGE, idxAttr.pos, "Invalid substring range: start index %d > end index %d", startIndex, endIndex);
+        reportWarning(CategoryIndex, ERR_SUBSTR_INVALIDRANGE, idxAttr.pos, "Invalid substring range: start index %d > end index %d", startIndex, endIndex);
 
     unsigned resultSize = UNKNOWN_LENGTH;
 //  if (strSize != UNKNOWN_LENGTH)
@@ -4215,7 +4199,7 @@ IHqlExpression * HqlGram::createSortExpr(node_operator op, attribute & dsAttr, c
     IHqlExpression *sortOrder = processSortList(orderAttr, no_sort, input, args, &joinedClause, &attrs);
     if (!sortOrder)
     {
-        reportError(ERR_SORT_EMPTYLIST, orderAttr, "The list to be sorted on is empty");
+        reportWarning(CategoryMistake, SeverityError, ERR_SORT_EMPTYLIST, orderAttr.pos, "The list to be sorted on is empty");
         return input;
     }
 
@@ -4308,7 +4292,7 @@ void HqlGram::ensureTypeCanBeIndexed(attribute &a)
         default:
             {
                 StringBuffer typeName;
-                reportWarning(ERR_TYPEMISMATCH_STRING, a.pos, "substring applied to value of type %s", getFriendlyTypeStr(t1, typeName).str());
+                reportWarning(CategorySyntax, ERR_TYPEMISMATCH_STRING, a.pos, "substring applied to value of type %s", getFriendlyTypeStr(t1, typeName).str());
                 ensureString(a);
                 break;
             }
@@ -4916,9 +4900,9 @@ void HqlGram::promoteToSameCompareType(attribute &a1, attribute &a2, node_operat
         }
 
         if (alwaysTrue)
-            reportWarning(WRN_COND_ALWAYS_TRUE, a2.pos, "Condition is always true");
+            reportWarning(CategoryFolding, WRN_COND_ALWAYS_TRUE, a2.pos, "Condition is always true");
         if (alwaysFalse)
-            reportWarning(WRN_COND_ALWAYS_FALSE, a2.pos, "Condition is always false");
+            reportWarning(CategoryFolding, WRN_COND_ALWAYS_FALSE, a2.pos, "Condition is always false");
     }
 
 #if 0
@@ -4952,9 +4936,9 @@ void HqlGram::warnIfFoldsToConstant(IHqlExpression * expr, const attribute & err
         if (folded->queryValue())
         {
             if (folded->queryValue()->getBoolValue())
-                reportWarning(WRN_COND_ALWAYS_TRUE, errpos.pos, "Condition is always true");
+                reportWarning(CategoryFolding, WRN_COND_ALWAYS_TRUE, errpos.pos, "Condition is always true");
             else
-                reportWarning(WRN_COND_ALWAYS_FALSE, errpos.pos, "Condition is always false");
+                reportWarning(CategoryFolding, WRN_COND_ALWAYS_FALSE, errpos.pos, "Condition is always false");
         }
     }
 }
@@ -4964,7 +4948,7 @@ void HqlGram::warnIfRecordPacked(IHqlExpression * expr, const attribute & errpos
 {
     IHqlExpression * record = expr->queryRecord();
     if (record && record->hasAttribute(packedAtom))
-        reportWarning(WRN_PACKED_MAY_CHANGE, errpos.pos, "Packed record used for external input or output, packed formats may change");
+        reportWarning(CategoryFuture, WRN_PACKED_MAY_CHANGE, errpos.pos, "Packed record used for external input or output, packed formats may change");
 }
 
 
@@ -5169,7 +5153,7 @@ void HqlGram::checkCaseForDuplicates(HqlExprArray & exprs, attribute &err)
             StringBuffer s;
             s.append("Duplicate case entry: ");
             toECL(e1, s, false);
-            reportWarning(WRN_DUPLICATECASE, err.pos, "%s", s.str());
+            reportWarning(CategoryIgnored, WRN_DUPLICATECASE, err.pos, "%s", s.str());
         }
         else
             e1->setTransformExtraUnlinked(e1);
@@ -5221,7 +5205,7 @@ void HqlGram::checkReal(attribute &a1)
         Owned<ITypeInfo> realType = makeRealType(DEFAULT_REAL_SIZE);
         if (t1->getTypeCode() == type_decimal)
         {
-            reportWarning(ERR_TYPEMISMATCH_REAL, a1.pos, "Decimal implicitly converted to a real");
+            reportWarning(CategoryCast, ERR_TYPEMISMATCH_REAL, a1.pos, "Decimal implicitly converted to a real");
         }
         else
         {
@@ -5262,7 +5246,7 @@ void HqlGram::checkPositive(attribute &a1)
         //MORE: Recode to allow decimal and other types
         Owned<IValue> zero = value->queryType()->castFrom(0, (const char *)NULL);
         if (value->compare(zero) < 0)
-            reportError(ERR_TYPEMISMATCH_INT, a1, "Type mismatch - the value must be positive");
+            reportWarning(CategoryIndex, SeverityError, ERR_TYPEMISMATCH_INT, a1.pos, "Type mismatch - the value must be positive");
     }   
 }
 
@@ -5687,12 +5671,12 @@ IHqlExpression * HqlGram::processSortList(const attribute & errpos, node_operato
         else if (eop == no_constant)
         {
             if ((op != no_hash) && (op != no_hash32) && (op != no_hash64) && (op != no_crc) && (op != no_hashmd5) && (op != no_list))
-                reportWarning(ERR_CONSTANT_DAFT, errpos.pos, "Constant group/sort clauses make no sense");
+                reportWarning(CategoryUnusual, ERR_CONSTANT_DAFT, errpos.pos, "Constant group/sort clauses make no sense");
         }
         else if (!containsAnyDataset(&e))
         {
             if ((op != no_hash) && (op != no_hash32) && (op != no_hash64) && (op != no_crc) && (op != no_hashmd5) && (op != no_list))
-                reportWarning(WRN_SORT_INVARIANT, errpos.pos, "Sort/Group element is not related to the dataset");
+                reportWarning(CategoryUnusual, WRN_SORT_INVARIANT, errpos.pos, "Sort/Group element is not related to the dataset");
         }
         else if (e.isDatarow() && expandRows)
         {
@@ -5801,13 +5785,13 @@ void HqlGram::reportErrorUnexpectedX(const attribute& errpos, IAtom * unexpected
     reportError(ERR_UNEXPECTED_ATTRX, errpos, "Unexpected attribute %s", unexpected->str());
 }
 
-void HqlGram::doReportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
+void HqlGram::doReportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
 {
-    Owned<IECLError> error = createECLError(SeverityWarning, warnNo, msg, filename, lineno, column, pos);
+    Owned<IECLError> error = createECLError(category, queryDefaultSeverity(category), warnNo, msg, filename, lineno, column, pos);
     report(error);
 }
 
-void HqlGram::reportMacroExpansionPosition(int errNo, HqlLex * lexer, bool isError)
+void HqlGram::reportMacroExpansionPosition(IECLError * warning, HqlLex * lexer)
 {
     if (expandingMacroPosition)
         return;
@@ -5815,21 +5799,22 @@ void HqlGram::reportMacroExpansionPosition(int errNo, HqlLex * lexer, bool isErr
     if (!macro)
         return;
 
-    reportMacroExpansionPosition(errNo, macro, isError);
+    reportMacroExpansionPosition(warning, macro);
     StringBuffer s;
     s.appendf("While expanding macro %s", macro->getMacroName());
 
     expandingMacroPosition = true;
-    if (isError)
-        errorHandler->reportError(errNo, s.str(), lexer->querySourcePath()->str(), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
+    unsigned code = warning->errorCode();
+    if (warning->getSeverity() == SeverityFatal)
+        errorHandler->reportError(code, s.str(), lexer->querySourcePath()->str(), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
     else
-        doReportWarning(errNo, s.str(), lexer->querySourcePath()->str(), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
+        doReportWarning(warning->getCategory(), code, s.str(), lexer->querySourcePath()->str(), lexer->get_yyLineNo(), lexer->get_yyColumn(), 0);
     expandingMacroPosition = false;
 }
 
 void HqlGram::reportErrorVa(int errNo, const ECLlocation & pos, const char* format, va_list args)
 {
-    Owned<IECLError> error = createErrorVA(SeverityFatal, errNo, pos, format, args);
+    Owned<IECLError> error = createErrorVA(CategoryError, SeverityFatal, errNo, pos, format, args);
     report(error);
 }
 
@@ -5842,47 +5827,47 @@ void HqlGram::reportError(int errNo, const char *msg, int lineno, int column, in
     }
 }
 
-void HqlGram::reportWarning(int warnNo, const ECLlocation & pos, const char* format, ...)
+void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const ECLlocation & pos, const char* format, ...)
 {
     if (errorHandler && !errorDisabled)
     {
         va_list args;
         va_start(args, format);
-        Owned<IECLError> error = createErrorVA(SeverityWarning, warnNo, pos, format, args);
+        Owned<IECLError> error = createErrorVA(category, queryDefaultSeverity(category), warnNo, pos, format, args);
         va_end(args);
 
         report(error);
     }
 }
 
-void HqlGram::reportWarning(ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...)
+void HqlGram::reportWarning(WarnErrorCategory category, ErrorSeverity severity, int warnNo, const ECLlocation & pos, const char* format, ...)
 {
     if (errorHandler && !errorDisabled)
     {
         StringBuffer msg;
         va_list args;
         va_start(args, format);
-        Owned<IECLError> error = createErrorVA(severity, warnNo, pos, format, args);
+        Owned<IECLError> error = createErrorVA(category, severity, warnNo, pos, format, args);
         va_end(args);
 
         report(error);
     }
 }
 
-void HqlGram::reportWarningVa(int warnNo, const attribute& a, const char* format, va_list args)
+void HqlGram::reportWarningVa(WarnErrorCategory category, int warnNo, const attribute& a, const char* format, va_list args)
 {
     const ECLlocation & pos = a.pos;
     if (errorHandler && !errorDisabled)
     {
-        Owned<IECLError> error = createErrorVA(SeverityWarning, warnNo, pos, format, args);
+        Owned<IECLError> error = createErrorVA(category, queryDefaultSeverity(category), warnNo, pos, format, args);
         report(error);
     }
 }
 
-void HqlGram::reportWarning(int warnNo, const char *msg, int lineno, int column)
+void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, int lineno, int column)
 {
     if (errorHandler && !errorDisabled)
-        doReportWarning(warnNo, msg, querySourcePathText(), lineno, column, 0);
+        doReportWarning(category, warnNo, msg, querySourcePathText(), lineno, column, 0);
 }
 
 
@@ -5923,14 +5908,14 @@ void HqlGram::report(IECLError* error)
             }
         }
 
-        reportMacroExpansionPosition(error->errorCode(), lexObject, isFatalError);
+        reportMacroExpansionPosition(error, lexObject);
     }
 }
 
-void HqlGram::reportWarning(int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
+void HqlGram::reportWarning(WarnErrorCategory category, int warnNo, const char *msg, const char *filename, int lineno, int column, int pos)
 {
     if (errorHandler && !errorDisabled)
-        doReportWarning(warnNo, msg, filename, lineno, column, pos);
+        doReportWarning(category, warnNo, msg, filename, lineno, column, pos);
 }
 
 size32_t HqlGram::errCount()
@@ -6878,7 +6863,7 @@ void HqlGram::checkOutputRecord(attribute & errpos, bool outerLevel)
     bool allConstant = true;
     errpos.setExpr(checkOutputRecord(record, errpos, allConstant, outerLevel));
     if (allConstant && (record->getOperator() != no_null) && (record->numChildren() != 0))
-        reportWarning(WRN_OUTPUT_ALL_CONSTANT,errpos.pos,"All values for OUTPUT are constant - is this the intention?");
+        reportWarning(CategoryUnusual, WRN_OUTPUT_ALL_CONSTANT,errpos.pos,"All values for OUTPUT are constant - is this the intention?");
 }
 
 void HqlGram::checkSoapRecord(attribute & errpos)
@@ -7455,7 +7440,7 @@ void HqlGram::checkGrouping(const attribute& errpos, HqlExprArray & parms, IHqlE
                         if (id)
                             msg.append("'").append(id->str()).append("' ");
                         msg.append("in TABLE does not appear to be properly defined by grouping conditions");
-                        reportWarning(ERR_GROUP_BADSELECT,errpos.pos, "%s", msg.str());
+                        reportWarning(CategoryUnexpected, ERR_GROUP_BADSELECT,errpos.pos, "%s", msg.str());
                     }
                 }
                 else if (field->isDatarow())
@@ -7675,7 +7660,7 @@ void HqlGram::checkDistribution(attribute &errpos, IHqlExpression *input, bool l
             if (!inputIsGrouped || ignoreGrouping)
             {
                 const char * name = getName(input);
-                reportWarning(WRN_LOCALONEXPLICITDIST,errpos.pos,"Input %s is explicitly DISTRIBUTEd but LOCAL not specified", name);
+                reportWarning(CategoryEfficiency, WRN_LOCALONEXPLICITDIST,errpos.pos,"Input %s is explicitly DISTRIBUTEd but LOCAL not specified", name);
             }
         }
     }
@@ -7748,7 +7733,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
     {
         //The following should be, and will become, an error.  However too many legacy queries have it, so make a warning for now.
         if (isAll)
-            reportWarning(ERR_KEYEDINDEXINVALID, err.pos, "ALL is not compatible with LOOKUP");
+            reportWarning(CategorySyntax, ERR_KEYEDINDEXINVALID, err.pos, "ALL is not compatible with LOOKUP");
         if (isSmart)
             reportError(ERR_KEYEDINDEXINVALID, err.pos, "SMART is not compatible with LOOKUP");
     }
@@ -7769,7 +7754,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
                 IHqlExpression * indexDataset = index->queryChild(0)->queryNormalizedSelector();
 
                 if (indexDataset != rhs->queryNormalizedSelector())
-                    reportWarning(ERR_KEYEDNOTMATCHDATASET,err.pos,"Parameter to KEYED is not an index on the RIGHT dataset");
+                    reportWarning(CategoryUnusual, ERR_KEYEDNOTMATCHDATASET,err.pos,"Parameter to KEYED is not an index on the RIGHT dataset");
                 else if (!isFilteredDiskFile(rhs))
                     reportError(ERR_KEYEDNOTMATCHDATASET,err,"RIGHT side of a full keyed join must be a disk file");
                 else
@@ -7818,7 +7803,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
         if (rowLimit && !isMany)
             reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support LIMIT (they can only match 1 entry)", joinText);
         if (isKey(join->queryChild(1)))
-            reportWarning(ERR_BADKIND_LOOKUPJOIN, err.pos, "%s specified on an unfiltered keyed join - was this intended?", joinText);
+            reportWarning(CategoryEfficiency, ERR_BADKIND_LOOKUPJOIN, err.pos, "%s specified on an unfiltered keyed join - was this intended?", joinText);
     }
     else if (isKeyedJoin(join))
     {
@@ -7866,7 +7851,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
         while (cur->getOperator() == no_filter)
             cur = cur->queryChild(0);
         if (isKey(cur))
-            reportWarning(ERR_BAD_JOINFLAG, err.pos, "Filtered RIGHT prevents a keyed join being used.  Consider including the filter in the join condition.");
+            reportWarning(CategoryEfficiency, ERR_BAD_JOINFLAG, err.pos, "Filtered RIGHT prevents a keyed join being used.  Consider including the filter in the join condition.");
     }
 
     IHqlExpression * group = join->queryAttribute(groupAtom);
@@ -7909,9 +7894,9 @@ void HqlGram::checkLoopFlags(const attribute &err, IHqlExpression * loopExpr)
     {
         unsigned base = (loopExpr->getOperator() == no_loop ? 1 : 2);
         if (!queryRealChild(loopExpr, base))
-            reportWarning(WRN_BAD_LOOPFLAG, err.pos, "PARALLEL is currently only supported with a defined number of iterations");
+            reportWarning(CategorySyntax, WRN_BAD_LOOPFLAG, err.pos, "PARALLEL is currently only supported with a defined number of iterations");
         if (queryRealChild(loopExpr, base+2))
-            reportWarning(WRN_BAD_LOOPFLAG, err.pos, "PARALLEL is not supported with dataset loop termination condition");
+            reportWarning(CategorySyntax, WRN_BAD_LOOPFLAG, err.pos, "PARALLEL is not supported with dataset loop termination condition");
     }
 }
 
@@ -8478,7 +8463,7 @@ void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray &
         if (value != checked)
         {
             args.replace(*replaceChild(&mapTo, 1, checked), i);
-            reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "Datasets in list have slightly different records");
+            reportWarning(CategoryCast, ERR_TYPE_INCOMPATIBLE, errpos.pos, "Datasets in list have slightly different records");
         }
     }
 
@@ -8490,7 +8475,7 @@ void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray &
         if (defaultExpr != checked)
         {
             defaultExpr.set(checked);
-            reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "Default value has a slightly different record");
+            reportWarning(CategoryCast, ERR_TYPE_INCOMPATIBLE, errpos.pos, "Default value has a slightly different record");
         }
     }
 
@@ -8592,7 +8577,7 @@ void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
         return;
     if (!isLocal && appearsToBeSorted(expr, true, true))
     {
-        reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "INPUT to MERGE appears to be sorted locally but not globally");
+        reportWarning(CategoryUnexpected, WRN_MERGE_NOT_SORTED, atr.pos, "INPUT to MERGE appears to be sorted locally but not globally");
         return;
     }
         
@@ -8610,9 +8595,9 @@ void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
     }
     
     if (isGrouped(expr) && appearsToBeSorted(expr, false, false))
-        reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE is only sorted with the group");
+        reportWarning(CategoryUnexpected, WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE is only sorted with the group");
     else
-        reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE doesn't appear to be sorted");
+        reportWarning(CategoryUnexpected, WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE doesn't appear to be sorted");
 }
 
 
@@ -8651,7 +8636,7 @@ void HqlGram::checkNotAlreadyDefined(IIdAtom * name, IHqlScope * scope, const at
     if (expr)
     {
         if (legacyImportSemantics && isImport(expr))
-            reportWarning(ERR_ID_REDEFINE, idattr.pos, "Identifier '%s' hides previous import", name->str());
+            reportWarning(CategoryConfuse, ERR_ID_REDEFINE, idattr.pos, "Identifier '%s' hides previous import", name->str());
         else
             reportError(ERR_ID_REDEFINE, idattr, "Identifier '%s' is already defined", name->str());
     }
@@ -8716,7 +8701,7 @@ IHqlExpression * HqlGram::addSideEffects(IHqlExpression * expr)
             }
 
             ECLlocation location(next);
-            reportWarning(ERR_RESULT_IGNORED, location, "Expression ignored");
+            reportWarning(CategoryIgnored, ERR_RESULT_IGNORED, location, "Expression ignored");
         }
         else
             compound = createCompound(next.getClear(), compound);
@@ -8954,7 +8939,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
             {
                 if (expr->isScope())
                 {
-                    Owned<IECLError> error = createError(SeverityError, ERR_RESULT_IGNORED_SCOPE, errpos, "Cannot associate a side effect with a module - action will be lost");
+                    Owned<IECLError> error = createECLError(CategorySyntax, SeverityError, ERR_RESULT_IGNORED_SCOPE, "Cannot associate a side effect with a module - action will be lost", errpos.sourcePath->str(), errpos.lineno, errpos.column, errpos.position);
                     //Unusual processing.  Create a warning and save it in the parse context
                     //The reason is that this error is reporting "the associated side-effects will be lost" - but
                     //the same will apply to the warning, and if it's lost there will be no way to report it later...
@@ -8991,7 +8976,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
 
         //Ignore SHARED and EXPORT flags 
         if (defineid->scope & (EXPORT_FLAG | SHARED_FLAG))
-            reportWarning(WRN_EXPORT_IGNORED, idattr.pos, "EXPORT/SHARED qualifiers are ignored in this context");
+            reportWarning(CategorySyntax, WRN_EXPORT_IGNORED, idattr.pos, "EXPORT/SHARED qualifiers are ignored in this context");
 
         defineid->scope = 0;
         defineSymbolInScope(activeScope.privateScope, defineid, expr.getClear(), failure, idattr, assignPos, semiColonPos, isParametered, activeScope.activeParameters, activeScope.createDefaults());
@@ -9012,7 +8997,7 @@ void HqlGram::doDefineSymbol(DefineIdSt * defineid, IHqlExpression * _expr, IHql
                 {
                     //Make this warning come out now - otherwise a subsequent error about an undefined symbol makes less sense.
                     RestoreValueBlock<bool> block(associateWarnings, false);
-                    reportWarning(ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Name of exported symbol '%s' does not match the expected name '%s'", name->str(), expectedAttribute->str());
+                    reportWarning(CategorySyntax, ERR_UNEXPECTED_PUBLIC_ID, idattr.pos, "Name of exported symbol '%s' does not match the expected name '%s'", name->str(), expectedAttribute->str());
                 }
                 defineid->scope = 0;
             }
@@ -9448,7 +9433,7 @@ IHqlExpression * HqlGram::extractBranchMatch(const attribute & errpos, IHqlExpre
         // The following test is no good though, we need to check if reused only in this branch.
 //      if (curSym.isShared())
 //          return NULL;
-        reportWarning(WRN_COND_ASSIGN_NO_PREV, errpos.pos, "Conditional assignment to %s isn't defined in all branches, and has no previous definition", id->str());
+        reportWarning(CategoryMistake, WRN_COND_ASSIGN_NO_PREV, errpos.pos, "Conditional assignment to %s isn't defined in all branches, and has no previous definition", id->str());
         return NULL;
     }
 
@@ -9713,7 +9698,7 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
     }
 
     if (body->hasAttribute(libraryAtom))
-        reportWarning(WRN_NOT_INTERFACE, errpos.pos, "LIBRARY() seems to reference an implementation rather than the interface definition");
+        reportWarning(CategorySyntax, WRN_NOT_INTERFACE, errpos.pos, "LIBRARY() seems to reference an implementation rather than the interface definition");
     IHqlExpression * internalAttr = queryAttributeInList(internalAtom,name);
     if (internalAttr)
     {
@@ -9923,7 +9908,7 @@ void HqlGram::canNotAssignTypeWarn(ITypeInfo* expected, ITypeInfo* given, const 
     StringBuffer msg("Incompatible types: should cast ");
     getFriendlyTypeStr(given, msg).append(" to a ");
     getFriendlyTypeStr(expected, msg);
-    reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", msg.str());
+    reportWarning(CategoryCast, ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", msg.str());
 }
 
 IIdAtom * HqlGram::getNameFromExpr(attribute& attr)
@@ -10198,7 +10183,7 @@ void HqlGram::defineImport(const attribute & errpos, IHqlExpression * imported, 
         if (previous->queryBody() == imported->queryBody())
             return;
 
-        reportWarning(ERR_ID_REDEFINE, errpos.pos, "import hides previously defined identifier");
+        reportWarning(CategoryConfuse, ERR_ID_REDEFINE, errpos.pos, "import hides previously defined identifier");
     }
 
     parseScope->defineSymbol(newName, NULL, LINK(imported), false, false, ob_import, NULL, errpos.pos.lineno, errpos.pos.column, errpos.pos.position, 0, errpos.pos.position);

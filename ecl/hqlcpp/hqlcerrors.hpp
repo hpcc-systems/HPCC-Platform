@@ -581,9 +581,9 @@
 #define HQLERR_UnknownCompoundAssign_Text       "INTERNAL: Unrecognised compound assign %s"
 #define HQLERR_ReadSpillBeforeWriteFix_Text     "INTERNAL: Attempt to read spill file %s before it is written.  Try adding #option ('allowThroughSpill', false); to the query."
 
-#define WARNINGAT(e, x)                 reportWarning(e, x, x##_Text)
-#define WARNINGAT1(e, x, a)             reportWarning(e, x, x##_Text, a)
-#define WARNINGAT2(e, x, a, b)          reportWarning(e, x, x##_Text, a, b)
-#define WARNINGAT3(e, x, a, b, c)       reportWarning(e, x, x##_Text, a, b, c)
+#define WARNINGAT(cat, e, x)                 reportWarning(cat, e, x, x##_Text)
+#define WARNINGAT1(cat, e, x, a)             reportWarning(cat, e, x, x##_Text, a)
+#define WARNINGAT2(cat, e, x, a, b)          reportWarning(cat, e, x, x##_Text, a, b)
+#define WARNINGAT3(cat, e, x, a, b, c)       reportWarning(cat, e, x, x##_Text, a, b, c)
 
 #endif
