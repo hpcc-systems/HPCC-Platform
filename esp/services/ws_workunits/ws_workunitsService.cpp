@@ -1993,51 +1993,36 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
             return;
         }
 
-        void addArchivedWU(const char* archiveWUData, SecAccessFlags accessOwn, SecAccessFlags accessOthers, IArrayOf<IEspECLWorkunit>& results)
+        void addArchivedWU(IArrayOf<IEspECLWorkunit>& archivedWUs, StringArray& wuDataArray, bool canAccess)
         {
-            StringArray wuidArray;
-            wuidArray.appendList(archiveWUData, ",");
-
-            const char* wuid = wuidArray.item(0);
-            if (isEmpty(wuid))
-            {
-                WARNLOG("Empty WUID in SCA_LIST response");
-                return;
-            }
-
-            const char* owner =  NULL;
-            if (notEmpty(wuidArray.item(1)))
-                owner = wuidArray.item(1);
-
             Owned<IEspECLWorkunit> info= createECLWorkunit("","");
+            const char* wuid = wuDataArray.item(0);
             info->setWuid(wuid);
-            if (chooseWuAccessFlagsByOwnership(context.queryUserId(), owner, accessOwn, accessOthers) < SecAccess_Read)
-            {
+            if (!canAccess)
                 info->setState("<Hidden>");
-            }
             else
             {
-                if (notEmpty(owner))
-                    info->setOwner(owner);
-                if (notEmpty(wuidArray.item(2)))
-                    info->setJobname(wuidArray.item(2));
-                if (notEmpty(wuidArray.item(3)))
-                    info->setCluster(wuidArray.item(3));
-                if (notEmpty(wuidArray.item(4)))
-                    info->setState(wuidArray.item(4));
+                if (notEmpty(wuDataArray.item(1)))
+                    info->setOwner(wuDataArray.item(1));
+                if (notEmpty(wuDataArray.item(2)))
+                    info->setJobname(wuDataArray.item(2));
+                if (notEmpty(wuDataArray.item(3)))
+                    info->setCluster(wuDataArray.item(3));
+                if (notEmpty(wuDataArray.item(4)))
+                    info->setState(wuDataArray.item(4));
             }
 
             //Sort WUs by WUID
-            ForEachItemIn(ii, results)
+            ForEachItemIn(i, archivedWUs)
             {
-                IEspECLWorkunit& w = results.item(ii);
+                IEspECLWorkunit& w = archivedWUs.item(i);
                 if (!isEmpty(w.getWuid()) && strcmp(wuid, w.getWuid())>0)
                 {
-                    results.add(*info.getClear(), (aindex_t) ii);
+                    archivedWUs.add(*info.getClear(), (aindex_t) i);
                     return;
                 }
             }
-            results.append(*info.getClear());
+            archivedWUs.append(*info.getClear());
             return;
         }
 
@@ -2098,8 +2083,20 @@ void doWUQueryFromArchive(IEspContext &context, const char* sashaServerIP, unsig
                     for (unsigned i=0; i<numberOfWUsReturned; i++)
                     {
                         const char *csline = cmd->queryId(i);
-                        if (csline && *csline)
-                            addArchivedWU(csline, accessOwn, accessOthers, archivedWUs);
+                        if (!csline || !*csline)
+                            continue;
+
+                        StringArray wuDataArray;
+                        wuDataArray.appendList(csline, ",");
+
+                        const char* wuid = wuDataArray.item(0);
+                        if (isEmpty(wuid))
+                        {
+                            WARNLOG("Empty WUID in SCA_LIST response");
+                            continue;
+                        }
+
+                        addArchivedWU(archivedWUs, wuDataArray, chooseWuAccessFlagsByOwnership(context.queryUserId(), wuDataArray.item(1), accessOwn, accessOthers) >= SecAccess_Read);
                     }
 
                     archivedWuCache.add(filterStr, "AddWhenAvailable", hasMoreWU, numberOfWUsReturned, archivedWUs);

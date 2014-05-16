@@ -2107,7 +2107,7 @@ DataCacheElement* DataCache::lookup(IEspContext &context, const char* filter, un
         if (list_iter == cache.end())
             break;
 
-        DataCacheElement* awu = list_iter->getLink();
+        DataCacheElement* awu = list_iter->get();
         if (!awu || (awu->m_timeCached > timeNow))
             break;
 
