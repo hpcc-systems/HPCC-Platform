@@ -544,6 +544,24 @@ const char *StringValue::getStringValue(StringBuffer &out)
     return out.toCharArray();
 }
 
+const char *StringValue::getUTF8Value(StringBuffer &out)
+{
+    ICharsetInfo * srcCharset = type->queryCharset();
+    Owned<ICharsetInfo> asciiCharset = getCharset(asciiAtom);
+    if (queryDefaultTranslation(asciiCharset, srcCharset))
+    {
+        Owned<ITypeInfo> asciiType = getAsciiType(type);
+        Owned<IValue> asciiValue = castTo(asciiType);
+        return asciiValue->getUTF8Value(out);
+    }
+
+    rtlDataAttr temp;
+    unsigned bufflen;
+    rtlStrToUtf8X(bufflen, temp.refstr(), type->getSize(), (const char *)val.get());
+    out.append(rtlUtf8Size(bufflen, temp.getstr()), temp.getstr());
+    return out.toCharArray();
+}
+
 void StringValue::pushDecimalValue()
 {
     DecPushString(type->getSize(),(char *)val.get());

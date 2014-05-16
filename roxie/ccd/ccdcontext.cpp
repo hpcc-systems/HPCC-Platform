@@ -2637,6 +2637,7 @@ protected:
         wu->addTimeStamp("Roxie", GetCachedHostName(), "Started");
         if (!context->getPropBool("@outputToSocket", false))
             client = NULL;
+        updateSuppliedXmlParams(wu);
         SCMStringBuffer wuParams;
         if (workUnit->getXmlParams(wuParams).length())
         {

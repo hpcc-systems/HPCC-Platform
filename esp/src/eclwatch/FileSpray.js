@@ -125,6 +125,20 @@ define([
             if (options) {
                 declare.safeMixin(this, options);
             }
+            this.userAddedFiles = {};
+        },
+        addUserFile: function (_file) {
+            var fileListStore = new FileListStore({
+                parent: null
+            });
+            var file = fileListStore.get(_file.calculatedID);
+            fileListStore.update(_file.calculatedID, _file);
+            this.userAddedFiles[file.calculatedID] = file;
+        },
+        postProcessResults: function (items) {
+            for (var key in this.userAddedFiles) {
+                items.push(this.userAddedFiles[key]);
+            }
         },
         preProcessRow: function (row) {
             lang.mixin(row, {
