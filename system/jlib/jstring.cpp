@@ -2007,6 +2007,7 @@ inline StringBuffer &encodeJSONChar(StringBuffer &s, const char *&ch)
             }
             break;
     }
+    ch++;
     return s;
 }
 
@@ -2015,7 +2016,7 @@ StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value)
     if (!value)
         return s;
     while (len-- && *value)
-        encodeJSONChar(s, value++);
+        encodeJSONChar(s, value);
     return s;
 }
 
@@ -2024,7 +2025,7 @@ StringBuffer &encodeJSON(StringBuffer &s, const char *value)
     if (!value)
         return s;
     while (*value)
-        encodeJSONChar(s, value++);
+        encodeJSONChar(s, value);
     return s;
 }
 
