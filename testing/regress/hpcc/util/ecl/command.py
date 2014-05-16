@@ -49,7 +49,7 @@ class ECLcmd(Shell):
             args.append("--password=" + password)
 
         if cmd == 'publish':
-            args.append(eclfile.getEcl())
+            args.append(eclfile.getArchive())
         else:
             args.append('--noroot')
             server = kwargs.pop('server', False)

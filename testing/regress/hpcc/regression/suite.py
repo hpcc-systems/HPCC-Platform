@@ -80,7 +80,7 @@ class Suite:
                     self.exclude.append(format(file, "25")+" skipped (reason:"+skipResult['reason']+")");
 
                 if eclfile.testPublish():
-                    self.publish.append(file)
+                    self.publish.append(eclfile.getBaseEcl())
 
     def testPublish(self, ecl):
         if ecl in self.publish:
