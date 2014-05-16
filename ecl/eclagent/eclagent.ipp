@@ -382,7 +382,6 @@ private:
     const char *queryTempfilePath();
     void deleteTempFiles();
 
-    void processXmlParams(const IPropertyTree *params);
     bool checkPersistUptoDate(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer & errText);
     bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
     bool changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat);
