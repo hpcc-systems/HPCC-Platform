@@ -5585,7 +5585,7 @@ static void _toJSON(const IPropertyTree *tree, IIOStream &out, unsigned indent, 
             isNull = (NULL == (thislevel = tree->queryProp(NULL)));
     }
 
-    if (isNull && !complex)
+    if (isNull && !root && !complex)
     {
         writeJSONValueToStream(out, NULL, delimit);
         return;
