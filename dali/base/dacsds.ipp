@@ -293,7 +293,14 @@ public:
     CClientRemoteTree(CRemoteConnection &conn, CPState _state=CPS_Unchanged);
     CClientRemoteTree(const char *name, IPTArrayValue *value, ChildMap *children, CRemoteConnection &conn, CPState _state=CPS_Unchanged);
     void beforeDispose();
-    inline bool queryStateChanges() const;
+    void resetState(unsigned state, bool sub=false);
+    inline bool queryStateChanges() const { return connection.queryStateChanges(); }
+    inline unsigned queryState() { return state; }
+    void mergeState(unsigned _state) { setState(state | _state); }
+    void clearState(unsigned _state) { setState(state & ~_state); }
+    void setState(unsigned _state) { if (queryStateChanges()) state = _state; }
+    IPropertyTree *collateData();
+    void clearCommitChanges(MemoryBuffer *mb=NULL);
 
     virtual void Link() const;
     virtual bool Release() const;
@@ -359,6 +366,7 @@ public:
     virtual void registerPropAppend(size32_t l);
 
 private: // data
+    unsigned state;
     mutable byte serverTreeInfo;
     CRemoteConnection &connection;
 };

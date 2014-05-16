@@ -2193,32 +2193,15 @@ void CServerConnection::aborted(SessionId id)
 ///////////////////
 enum IncCmd { None, PropDelete, AttrDelete, PropChange, PropNew, PropExisting, ChildEndMarker, PropRename, AttrChange };
 
-CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children, CPState _state)
-    : PTree(name, ipt_none, value, children), state(_state)
+CRemoteTreeBase::CRemoteTreeBase(const char *name, IPTArrayValue *value, ChildMap *children)
+    : PTree(name, ipt_none, value, children)
 {
     serverId = 0;
 }
 
-CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb, CPState _state)
-    : state(_state)
+CRemoteTreeBase::CRemoteTreeBase(MemoryBuffer &mb)
 {
     serverId = 0;
-}
-
-void CRemoteTreeBase::reset(unsigned _state, bool sub)
-{
-    state = _state;
-    serverId = 0;
-    if (sub)
-    {
-        IPropertyTreeIterator *iter = getElements("*");
-        ForEach(*iter)
-        {
-            CRemoteTreeBase &child = (CRemoteTreeBase &)iter->query();
-            child.reset(state, sub);
-        }
-        iter->Release();
-    }
 }
 
 void CRemoteTreeBase::deserializeRT(MemoryBuffer &src)
@@ -2251,165 +2234,6 @@ void CRemoteTreeBase::deserializeSelfRT(MemoryBuffer &mb)
     mb.read(_serverId);
     if (_serverId)
         setServerId(_serverId); // ignore deserializing 0 serverId (indicated new)
-}
-
-IPropertyTree *CRemoteTreeBase::collateData()
-{
-    ChangeInfo *changes = queryChanges();
-    struct ChangeTree
-    {
-        ChangeTree(IPropertyTree *donor=NULL) { ptree = LINK(donor); }
-        ~ChangeTree() { ::Release(ptree); }
-        inline void createTree() { assertex(!ptree); ptree = createPTree(RESERVED_CHANGE_NODE); }
-        inline IPropertyTree *queryTree() { return ptree; }
-        inline IPropertyTree *getTree() { return LINK(ptree); }
-        inline IPropertyTree *queryCreateTree()
-        {
-            if (!ptree)
-                ptree = createPTree(RESERVED_CHANGE_NODE);
-            return ptree;
-        }
-    private:
-        StringAttr name;
-        IPropertyTree *ptree;
-    } ct(changes?changes->tree:NULL);
-    if (changes) changes->tree.clear();
-
-    if (0 == serverId)
-    {
-        if (ct.queryTree())
-        {
-            ct.queryTree()->removeProp(ATTRDELETE_TAG);
-            ct.queryTree()->removeProp(ATTRCHANGE_TAG);
-            ct.queryTree()->removeProp(DELETE_TAG);
-        }
-        else
-            ct.createTree();
-        Owned<IAttributeIterator> iter = getAttributes();
-        if (iter->count())
-        {
-            IPropertyTree *t = createPTree();
-            ForEach(*iter)
-                t->setProp(iter->queryName(), queryProp(iter->queryName()));
-            ct.queryTree()->addPropTree(ATTRCHANGE_TAG, t);
-        }
-        ct.queryTree()->setPropBool("@new", true);
-    }
-    else
-    {
-        if (ct.queryTree())
-        {
-            Linked<IPropertyTree> ac = ct.queryTree()->queryPropTree(ATTRCHANGE_TAG);
-            if (ac)
-            {
-                ct.queryTree()->removeTree(ac);
-                Owned<IAttributeIterator> iter = ac->getAttributes();
-                IPropertyTree *t = createPTree();
-                ForEach(*iter)
-                    t->setProp(iter->queryName(), queryProp(iter->queryName()));
-                ct.queryTree()->addPropTree(ATTRCHANGE_TAG, t);
-            }
-        }
-    }
-    if ((CPS_Changed & state) || (0 == serverId && queryValue()))
-    {
-        ct.queryCreateTree()->setPropBool("@localValue", true);
-        if (queryValue())
-        {
-            bool binary=isBinary(NULL);
-            ((PTree *)ct.queryTree())->setValue(new CPTValue(queryValue()->queryValueRawSize(), queryValue()->queryValueRaw(), binary, true, isCompressed(NULL)), binary);
-        }
-        else
-            ((PTree *)ct.queryTree())->setValue(new CPTValue(0, NULL, false, true, false), false);
-    }
-    else if (CPS_PropAppend & state)
-    {
-        assertex(serverId);
-        IPropertyTree *pa = ct.queryTree()->queryPropTree(APPEND_TAG);
-        assertex(pa);
-        unsigned from = pa->getPropInt(NULL);
-        ct.queryTree()->removeTree(pa);
-        ct.queryCreateTree()->setPropBool("@appendValue", true);
-        MemoryBuffer mb;
-        bool binary=isBinary(NULL);
-        queryValue()->getValue(mb, true);
-        ((PTree *)ct.queryTree())->setValue(new CPTValue(mb.length()-from, mb.toByteArray()+from, binary), binary);
-    }
-
-    Owned<IPropertyTree> childTree;
-    Owned<IPropertyTreeIterator> _iter = getElements("*");
-    IPropertyTreeIterator *iter = _iter;
-    if (iter->first())
-    {
-        while (iter->isValid())
-        {
-            CRemoteTreeBase *child = (CRemoteTreeBase *) &iter->query();
-            childTree.setown(child->collateData());
-            if (childTree)
-            {
-                if (0 == child->queryServerId())
-                {
-                    if (CPS_InsPos & child->queryState())
-                    {
-                        int pos = findChild(child);
-                        assertex(NotFound != pos);
-                        childTree->setPropInt("@pos", pos+1);
-                    }
-                }
-                else
-                {
-                    int pos = findChild(child);
-                    assertex(NotFound != pos);
-                    childTree->setPropInt("@pos", pos+1);
-                    childTree->setPropInt64("@id", child->queryServerId());
-                }
-            }
-            if (childTree)
-                ct.queryCreateTree()->addPropTree(RESERVED_CHANGE_NODE, childTree.getClear());
-            iter->next();
-        }
-    }
-    if (ct.queryTree())
-        ct.queryTree()->setProp("@name", queryName());
-    return ct.getTree();
-}
-
-void CRemoteTreeBase::clearCommitChanges(MemoryBuffer *mb)
-{
-    class Cop : implements IIteratorOperator
-    {
-    public:
-        Cop(MemoryBuffer *_mb=NULL) : mb(_mb) { }
-        virtual bool applyTop(IPropertyTree &_tree)
-        {
-            CRemoteTreeBase &tree = (CRemoteTreeBase &) _tree;
-            tree.clearChanges();
-            if (tree.queryState())
-                tree.setState(0);
-            return true;
-        }
-        virtual bool applyChild(IPropertyTree &parent, IPropertyTree &child, bool &levelBreak)
-        {
-            CRemoteTreeBase &tree = (CRemoteTreeBase &) child;
-            if (mb && 0==tree.queryServerId())
-            {
-                __int64 serverId;
-                mb->read(serverId);
-                tree.setServerId(serverId);
-            }
-            return true;
-        }
-    private:
-        MemoryBuffer *mb;
-    } op(mb);
-
-    CIterationOperation iop(op);
-    iop.iterate(*this);
-}
-
-bool CRemoteTreeBase::queryStateChanges() const
-{
-    return false;
 }
 
 void CRemoteTreeBase::setServerId(__int64 _serverId)
@@ -3023,7 +2847,6 @@ PDState CServerRemoteTree::processData(IPropertyTree &changeTree, Owned<CBranchC
                 child = (CServerRemoteTree *)createChild(childChanges.getPropInt("@pos", -1), childChanges.queryProp("@name"));
                 mergePDState(res, PDS_Structure);
                 newIds.append(child->queryServerId());
-                mergePDState(state, PDS_Added);
             }
             else
             {
@@ -6685,7 +6508,7 @@ void CCovenSDSManager::commit(CRemoteConnection &connection, bool *disconnectDel
     if (!RTM_MODE(connection.queryMode(), RTM_INTERNAL))
         lockBlock.setown(new CLCWriteLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
 
-    CRemoteTreeBase *tree = (CRemoteTreeBase *) connection.queryRoot();
+    CClientRemoteTree *tree = (CClientRemoteTree *) connection.queryRoot();
 
     bool lazyFetch = connection.setLazyFetch(false);
     Owned<IPropertyTree> changeTree = tree->collateData();
