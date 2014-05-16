@@ -60,6 +60,8 @@ interface IRoxiePackage : public IHpccPackage
     virtual IRoxieWriteHandler *createFileName(const char *fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu) const = 0;
     // Lookup information in package about what in-memory indexes should be built for file
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const = 0;
+    // Set the hash to be used for this package
+    virtual void setHash(hash64_t newhash)  = 0;
 };
 
 interface IResolvedFileCache
