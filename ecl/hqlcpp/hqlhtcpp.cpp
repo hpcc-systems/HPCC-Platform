@@ -6549,6 +6549,8 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_executewhen:
                 result = doBuildActivityExecuteWhen(ctx, expr, isRoot);
                 break;
+            case no_param:
+                throwUnexpectedX("Create Parameter as an activity");
             case no_thor:
                 UNIMPLEMENTED;
                 break;
