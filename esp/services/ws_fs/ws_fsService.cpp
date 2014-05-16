@@ -617,8 +617,7 @@ StringBuffer& getNodeGroupFromLFN(StringBuffer& nodeGroup, const char* lfn, cons
     StringBuffer clusterName;
     LogicFileWrapper lfw;
     lfw.FindClusterName(lfn, clusterName, udesc);
-    getClusterThorGroupName(nodeGroup, clusterName.str());
-    return nodeGroup;
+    return getClusterThorGroupName(nodeGroup, clusterName.str());
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
