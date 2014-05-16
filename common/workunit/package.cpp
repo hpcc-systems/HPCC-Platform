@@ -41,7 +41,7 @@ CPackageNode::CPackageNode(IPropertyTree *p)
     else
         node.setown(createPTree("HpccPackages"));
     StringBuffer xml;
-    toXML(node, xml);
+    toXML(node, xml, 0, XML_SortTags);
     hash = rtlHash64Data(xml.length(), xml.str(), 9994410);
 }
 
