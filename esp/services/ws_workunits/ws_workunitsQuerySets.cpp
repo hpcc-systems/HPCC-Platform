@@ -1258,14 +1258,11 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     if (!req.getCacheHint_isNull())
         cacheHint = req.getCacheHint();
 
-    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    Owned<IConstQuerySetQueryIterator> it = factory->getQuerySetQueriesSorted(sortOrder, filters, filterBuf.bufferBase(), pageStartFrom, pageSize, &cacheHint, &numberOfQueries);
-    resp.setCacheHint(cacheHint);
-
-    MapStringTo<bool> queriesUsingFileMap;
+    Owned<MapStringTo<bool> > queriesUsingFileMap;
     const char *lfn = req.getFileName();
     if (lfn && *lfn)
     {
+        queriesUsingFileMap.setown(new MapStringTo<bool>());
         Owned<IPropertyTreeIterator> queriesUsingFile = filesInUse.findQueriesUsingFile(clusterReq, lfn);
         ForEach (*queriesUsingFile)
         {
@@ -1275,10 +1272,15 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
             if (queryTarget && *queryTarget && queryId && *queryId)
             {
                 VStringBuffer targetQuery("%s/%s", queryTarget, queryId);
-                queriesUsingFileMap.setValue(targetQuery, true);
+                queriesUsingFileMap->setValue(targetQuery, true);
             }
         }
     }
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned<IConstQuerySetQueryIterator> it = factory->getQuerySetQueriesSorted(sortOrder, filters, filterBuf.bufferBase(), pageStartFrom, pageSize, &cacheHint, &numberOfQueries, queriesUsingFileMap);
+    resp.setCacheHint(cacheHint);
+
     IArrayOf<IEspQuerySetQuery> queries;
     double version = context.getClientVersion();
     ForEach(*it)
@@ -1286,14 +1288,6 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         IPropertyTree &query=it->query();
         const char *queryId = query.queryProp("@id");
         const char *queryTarget = query.queryProp("@querySetId");
-        if (lfn && *lfn)
-        {
-            if (!queryTarget || !*queryTarget || !queryId || !*queryId)
-                continue;
-            VStringBuffer targetQuery("%s/%s", queryTarget, queryId);
-            if (!queriesUsingFileMap.getValue(targetQuery))
-                continue;
-        }
 
         Owned<IEspQuerySetQuery> q = createQuerySetQuery();
         q->setId(queryId);
