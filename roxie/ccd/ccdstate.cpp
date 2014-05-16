@@ -458,6 +458,11 @@ public:
         // we could set the cache field to null here for any objects still in cache but there would be a race condition
     }
 
+    virtual void setHash(hash64_t newhash)
+    {
+        hash = newhash;
+    }
+
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const 
     {
         StringBuffer xpath;
@@ -620,6 +625,7 @@ extern const IRoxiePackage &queryRootRoxiePackage()
     {
         // Set up the root package. This contains global settings from topology file
         rootPackage = new CRoxiePackage(topology); // attributes become control: environment settings. Rest of topology ignored.
+        rootPackage->setHash(0);  // we don't include the topology in the package hashes...
         rootPackage->resolveBases(NULL);
     }
     return *rootPackage;
@@ -2148,8 +2154,13 @@ private:
                     reply.appendf("<Dali connected='1'/>");
                 else
                     reply.appendf("<Dali connected='0'/>");
-                ReadLockBlock readBlock(packageCrit);
-                reply.appendf("<State hash='%"I64F"u'/>", (unsigned __int64) allQueryPackages->queryHash());
+                unsigned __int64 thash = getTopologyHash();
+                unsigned __int64 shash;
+                {
+                    ReadLockBlock readBlock(packageCrit);
+                    shash = allQueryPackages->queryHash();
+                }
+                reply.appendf("<State hash='%"I64F"u' topologyHash='%"I64F"u'/>", shash, thash);
             }
             else if (stricmp(queryName, "control:resetindexmetrics")==0)
             {
@@ -2234,8 +2245,13 @@ private:
                     reply.appendf("<Dali connected='1'/>");
                 else
                     reply.appendf("<Dali connected='0'/>");
-                ReadLockBlock readBlock(packageCrit);
-                reply.appendf("<State hash='%"I64F"u'/>", (unsigned __int64) allQueryPackages->queryHash());
+                unsigned __int64 thash = getTopologyHash();
+                unsigned __int64 shash;
+                {
+                    ReadLockBlock readBlock(packageCrit);
+                    shash = allQueryPackages->queryHash();
+                }
+                reply.appendf("<State hash='%"I64F"u' topologyHash='%"I64F"u'/>", shash, thash);
             }
             else if (stricmp(queryName, "control:steppingEnabled")==0)
             {
@@ -2450,6 +2466,12 @@ private:
         throw MakeStringException(ROXIE_INVALID_INPUT, "Badly formated control query");
     }
 
+    hash64_t getTopologyHash()
+    {
+        StringBuffer xml;
+        toXML(topology, xml, 0, XML_SortTags);
+        return rtlHash64Data(xml.length(), xml.str(), 707018);
+    }
 };
 
 extern IRoxieQueryPackageManagerSet *createRoxiePackageSetManager(const IQueryDll *standAloneDll)
