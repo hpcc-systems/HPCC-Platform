@@ -85,6 +85,9 @@ define([
                     mode = "xml";
                 }
 
+                if (params.readOnly !== undefined)
+                    this.readOnly = params.readOnly;
+
                 this.editor = CodeMirror.fromTextArea(document.getElementById(this.id + "EclCode"), {
                     tabMode: "indent",
                     matchBrackets: true,

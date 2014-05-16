@@ -2826,6 +2826,7 @@ void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr)
             meta.setUnknownGrouping();
         break;
     case no_externalcall:
+    case no_external:
         if (isGrouped(expr))
             meta.setUnknownGrouping();
         //No support for grouping?

@@ -1,17 +1,17 @@
 /*##############################################################################
-#   HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+#       http://www.apache.org/licenses/LICENSE-2.0
 #
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
 ############################################################################## */
 define([
     "dojo/_base/declare",
@@ -24,23 +24,21 @@ define([
     "dijit/registry",
 
     "hpcc/_Widget",
-    "hpcc/_TabContainerWidget",
-    "hpcc/DelayLoadWidget",
     "hpcc/ECLSourceWidget",
     "hpcc/WsPackageMaps",
 
-    "dojo/text!../templates/PackageMapValidateWidget.html",
+    "dojo/text!../templates/PackageMapValidateContentWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/form/Button"
 ], function (declare, lang, i18n, nlsHPCC, dom, query, topic, registry,
-                _Widget, _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps,
+                _Widget, EclSourceWidget, WsPackageMaps,
                 template) {
-    return declare("PackageMapValidateWidget", [_TabContainerWidget], {
+    return declare("PackageMapValidateContentWidget", [_Widget], {
         templateString: template,
-        baseClass: "PackageMapValidateWidget",
+        baseClass: "PackageMapValidateContentWidget",
         i18n: nlsHPCC,
 
         initalized: false,
@@ -48,12 +46,10 @@ define([
 
         targetSelectControl: null,
         processSelectControl: null,
+        selectFileControl: null,
         validateButton: null,
         editorControl: null,
         resultControl: null,
-
-        validatePackageMapContentWidget: null,
-        validatePackageMapContentWidgetLoaded: false,
 
         constructor: function() {
             this.processes = new Array();
@@ -67,34 +63,50 @@ define([
             this.inherited(arguments);
         },
 
-        destroy: function (args) {
+        resize: function (args) {
+            this.inherited(arguments);
+            this.borderContainer.resize();
+        },
+
+        layout: function (args) {
             this.inherited(arguments);
         },
 
         getTitle: function () {
-            return this.i18n.ValidateActivePackageMap;
+            return this.i18n.ValidatePackageContent;
         },
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.targetSelectControl = registry.byId(this.id + "TargetSelect");
             this.processSelectControl = registry.byId(this.id + "ProcessSelect");
             this.validateButton = registry.byId(this.id + "ValidateBtn");
-            this.validatePackageMapContentWidget = registry.byId(this.id + "_ValidatePackageMapContent");
         },
 
-        //  init this page
+        //  Init  ---
         init: function (params) {
             if (this.initalized)
                 return;
 
             this.initalized = true;
-            if (params.params.targets !== undefined)
-                this.initSelections(params.params.targets);
+            if (params.targets !== undefined)
+                this.initSelections(params.targets);
 
             this.editorControl = registry.byId(this.id + "Source");
             this.editorControl.init(params);
+            this.editorControl.setText(this.i18n.LoadPackageContentHere);
             this.initResultDisplay();
+
+            var context = this;
+            this.selectFileControl = document.getElementById(this.id + "SelectFile");
+            this.selectFileControl.addEventListener('change', function(event) {
+                var reader = new FileReader();
+                reader.onload = function(e){
+                    context.editorControl.setText(e.target.result);
+                };
+                reader.readAsText(event.target.files[0]);
+            }, false);
         },
 
         initSelections: function (targets) {
@@ -131,6 +143,9 @@ define([
 
         addProcessSelections: function (processes) {
             this.processes.length = 0;
+
+            if (processes.length < 1)
+                return;
             for (var i = 0; i < processes.length; ++i) {
                 var process = processes[i];
                 if ((this.processes !== null) && (this.processes.indexOf(process) !== -1))
@@ -146,43 +161,14 @@ define([
             this.resultControl.setText(this.i18n.ValidateResultHere);
         },
 
-        //  init tab
-        initTab: function () {
-            var currSel = this.getSelectedChild();
-            if (!this.validatePackageMapContentWidgetLoaded && (currSel.id === this.validatePackageMapContentWidget.id)) {
-                this.validatePackageMapContentWidgetLoaded = true;
-                this.validatePackageMapContentWidget.init({
-                    targets: this.targets
-                });
-            }
-        },
-
         //  action
         _onChangeTarget: function (event) {
             this.targetSelected  = this.targetSelectControl.getValue();
             this.updateProcessSelections(null, this.targetSelected);
         },
 
-        _onChangeProcess: function (event) {
-            var process = this.processSelectControl.getValue();
-            if (process === 'ANY')
-                process = '*';
-
-            var context = this;
-            this.editorControl.setText('');
-            WsPackageMaps.getPackage({
-                    target: this.targetSelectControl.getValue(),
-                    process: process
-                }, {
-                load: function (content) {
-                    if (content !== '') {
-                        context.editorControl.setText(content);;
-                    }
-                },
-                error: function (errMsg, errStack) {
-                    context.showErrors(errMsg, errStack);
-                }
-            });
+        _onLoadBtnClicked: function (event) {
+            this.selectFileControl.click();
         },
 
         _onValidate: function (evt) {
@@ -236,7 +222,7 @@ define([
         addArrayToText: function (arrayTitle, arrayItems, text) {
             if ((arrayItems.Item !== undefined) && (arrayItems.Item.length > 0)) {
                 text += arrayTitle + ":\n";
-                for (var i=0;i<arrayItems.Item.length;i++)
+                for (i=0;i<arrayItems.Item.length;i++)
                     text += "  " + arrayItems.Item[i] + "\n";
                 text += "\n";
             }
