@@ -4,6 +4,8 @@ var profile = (function(){
             "hpcc/eclwatch.profile": true,
             "hpcc/eclwatch.json": true,
             "hpcc/dojoConfig": true,
+            "hpcc/viz/DojoD3WordCloud": true,
+            "hpcc/viz/d3-cloud/d3.layout.cloud": true,
             "hpcc/viz/map/us.json": true,
             "hpcc/viz/map/us_counties.json": true
         };
