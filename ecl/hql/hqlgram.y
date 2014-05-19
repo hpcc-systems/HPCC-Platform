@@ -5644,8 +5644,7 @@ primexpr1
                         {
                             parser->normalizeExpression($5);
                             parser->normalizeExpression($7);
-                            ITypeInfo * type = parser->checkPromoteIfType($5, $7);
-                            $$.setExpr(createValue(no_if, type, $3.getExpr(), $5.getExpr(), $7.getExpr()), $1);
+                            $$.setExpr(parser->processIfProduction($3, $5, &$7), $1);
                         }
     | IFF '(' booleanExpr ',' expression ',' expression ')'
                         {

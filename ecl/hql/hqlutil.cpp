@@ -1479,8 +1479,13 @@ IHqlExpression * createIf(IHqlExpression * cond, IHqlExpression * left, IHqlExpr
     if (left->isDatarow() || right->isDatarow())
         return createRow(no_if, cond, createComma(left, right));
 
-    ITypeInfo * type = ::getPromotedECLType(left->queryType(), right->queryType());
-    return createValue(no_if, type, cond, left, right);
+    ITypeInfo * leftType = left->queryType();
+    ITypeInfo * rightType = right->queryType();
+    Owned<ITypeInfo> type = ::getPromotedECLType(leftType, rightType);
+    if (isStringType(type) && (leftType->getStringLen() != rightType->getStringLen()))
+        type.setown(getStretchedType(UNKNOWN_LENGTH, type));
+
+    return createValue(no_if, type.getClear(), cond, left, right);
 }
 
 extern HQL_API unsigned numRealChildren(IHqlExpression * expr)
