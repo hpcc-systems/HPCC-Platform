@@ -31,7 +31,7 @@ from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam,  getVersionNumbers
 from hpcc.common.error import Error
 
-prog_version = "0.0.20"
+prog_version = "0.0.21"
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -170,6 +170,10 @@ class RegressMain:
                             nargs='?', default="ecl/key")
         parser.add_argument('--ignoreResult', '-i', help="completely ignore the result.",
                             action='store_true')
+        parser.add_argument('-X', help="sets the stored input value (stored('name')).",
+                            nargs=1, type=checkXParam,  default='None',  metavar="name1=value1[,name2=value2...]")
+        parser.add_argument('-f', help="set an ECL option (equivalent to #option).",
+                            nargs=1, type=checkXParam,  default='None',  metavar="optionA=valueA[,optionB=valueB...]")
 
         subparsers = parser.add_subparsers(help='sub-command help')
 
