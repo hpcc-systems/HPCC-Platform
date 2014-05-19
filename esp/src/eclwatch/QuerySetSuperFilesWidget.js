@@ -67,7 +67,7 @@ define([
                 columns: {
                     col1: selector({
                         width: 27,
-                        selectorType: 'checkbox',
+                        selectorType: 'checkbox'
                     }),
                     __hpcc_display: tree({
                         label: this.i18n.SuperFiles,
