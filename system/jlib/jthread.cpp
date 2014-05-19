@@ -1290,7 +1290,7 @@ public:
         }
     }
 
-    bool run(const char *_title,const char *prog,const char *dir,bool hasinput,bool hasoutput,bool haserror, size32_t stderrbufsize)
+    bool run(const char *_title,const char *prog,const char *dir,bool hasinput,bool hasoutput,bool haserror, size32_t stderrbufsize,bool newProcessGroup)
     {
         // size32_t stderrbufsize ignored as not required (I think)
         CriticalBlock block(sect);

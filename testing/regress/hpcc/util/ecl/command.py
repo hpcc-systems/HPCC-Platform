@@ -50,6 +50,13 @@ class ECLcmd(Shell):
 
         if cmd == 'publish':
             args.append(eclfile.getArchive())
+
+            name = kwargs.pop('name', False)
+            if not name:
+                name = eclfile.getBaseEclName()
+
+            args.append("--name=" + name)
+
         else:
             args.append('--noroot')
             server = kwargs.pop('server', False)

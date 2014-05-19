@@ -45,7 +45,6 @@
 ###<REPLACE>###
 
 
-
 function print_usage {
     echo "Usage: $0 [-c component] {start|stop|restart|status|setup}
        $0 [--componentlist] Display node component name list.
@@ -312,6 +311,8 @@ if [ ! -z "${compDafilesrv}" ];then
             /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
             if [ $? -ne 0 ];then
               /etc/init.d/dafilesrv $1 2>/dev/null
+            else
+              echo "Dependent service dafilesrv, ${compDafilesrv} is already running."
             fi
             ;;
         status|setup)
@@ -360,6 +361,11 @@ if [ ${cmd} = "restart" ] && [ "${isComp}" -eq 0 ]; then
     echo "Starting the entire System"
     echo "***************************************************"
     cmd=start
+    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+    if [ $? -ne 0 ];then
+        /etc/init.d/dafilesrv $1 2>/dev/null
+    fi
+
     statForStart=0
     for (( i=0; i<=${compListLen}; i++ ));do
         if [ -z "${compList[$i]}" ];then
@@ -416,4 +422,19 @@ for C in ${component} ; do
         STATUS=$(( $STATUS == 0 ? $statForEach : $STATUS))
     fi
 done 
+
+
+if [ "$cmd" = "stop" ] && [ -n "$compDafilesrv" ]
+then
+     echo 
+    /etc/init.d/dafilesrv status 1>/dev/null 2>/dev/null
+    if [ $? -ne 0 ];then
+       echo "Service dafilesrv, ${compDafilesrv} is already stopped.".
+    else
+       echo "Service dafilesrv, ${compDafilesrv} is still running".
+       echo "To stop it, run \"service dafilesrv stop\"."
+    fi
+    echo 
+
+fi
 exit ${STATUS}

@@ -1102,7 +1102,7 @@ void FlushingJsonBuffer::encodeXML(const char *x, unsigned flags, unsigned len, 
     appendJSONStringValue(s, NULL, len, x, true);
 }
 
-void FlushingJsonBuffer::startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend)
+void FlushingJsonBuffer::startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend, const IProperties *xmlns)
 {
     CriticalBlock b(crit);
     extend = _extend;

@@ -1601,7 +1601,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 </programlisting>See the appendix for more information on using this
             script.</para>
           </listitem>
+        </orderedlist>
 
+        <?hard-pagebreak ?>
+
+        <orderedlist continuation="continues">
           <listitem>
             <para>Restart the HPCC system on <emphasis
             role="bold">every</emphasis> node. The following command starts

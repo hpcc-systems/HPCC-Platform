@@ -261,11 +261,18 @@ struct DataCache: public CInterface, implements IInterface
     size32_t cacheSize;
 };
 
+interface IArchivedWUsReader : extends IInterface
+{
+    virtual void getArchivedWUs(IArrayOf<IEspECLWorkunit>& results) = 0;
+    virtual bool getHasMoreWU() = 0;
+    virtual unsigned getNumberOfWUsReturned() = 0;
+};
+
 struct ArchivedWuCacheElement: public CInterface, implements IInterface
 {
     IMPLEMENT_IINTERFACE;
-    ArchivedWuCacheElement(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, /*const char* data,*/ IArrayOf<IEspECLWorkunit>& wus):m_filter(filter),
-        m_sashaUpdatedWhen(sashaUpdatedWhen), m_hasNextPage(hasNextPage)/*, m_data(data)*/
+    ArchivedWuCacheElement(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned _numWUsReturned, IArrayOf<IEspECLWorkunit>& wus):m_filter(filter),
+        m_sashaUpdatedWhen(sashaUpdatedWhen), m_hasNextPage(hasNextPage), numWUsReturned(_numWUsReturned)
     {
         m_timeCached.setNow();
         if (wus.length() > 0)
@@ -283,6 +290,7 @@ struct ArchivedWuCacheElement: public CInterface, implements IInterface
     std::string m_filter;
     std::string m_sashaUpdatedWhen;
     bool m_hasNextPage;
+    unsigned numWUsReturned;
 
     CDateTime m_timeCached;
     IArrayOf<IEspECLWorkunit> m_results;
@@ -295,7 +303,7 @@ struct ArchivedWuCache: public CInterface, implements IInterface
     ArchivedWuCache(size32_t _cacheSize=0): cacheSize(_cacheSize){}
     ArchivedWuCacheElement* lookup(IEspContext &context, const char* filter, const char* sashaUpdatedWhen, unsigned timeOutMin);
 
-    void add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, IArrayOf<IEspECLWorkunit>& wus);
+    void add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus);
 
     std::list<Linked<ArchivedWuCacheElement> > cache;
     CriticalSection crit;

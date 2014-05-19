@@ -39,6 +39,14 @@ fi
 mkdir -p "$DISTDIR"
 cp -r "$SRCDIR/CodeMirror2" "$DISTDIR/CodeMirror2"
 
+# Copy & minify stub.htm to dist
+cat "$SRCDIR/stub.htm" | tr '\n' ' ' | \
+perl -pe "
+  s/<\!--.*?-->//g;                          # Strip comments
+#  s/isDebug: *1/deps:['$LOADERMID']/;        # Remove isDebug, add deps
+#  s/<script src=\"$LOADERMID.*?\/script>//;  # Remove script eclwatch/run
+  s/\s+/ /g;                                 # Collapse white-space" > "$DISTDIR/stub.htm"
+
 cd "$TOOLSDIR"
 
 if which node >/dev/null; then
@@ -50,18 +58,11 @@ else
     exit 1
 fi
 
+echo "Build complete"
+
 cd "$BASEDIR"
 
 LOADERMID=${LOADERMID//\//\\\/}
-
-# Copy & minify stub.htm to dist
-cat "$SRCDIR/stub.htm" | tr '\n' ' ' | \
-perl -pe "
-  s/<\!--.*?-->//g;                          # Strip comments
-#  s/isDebug: *1/deps:['$LOADERMID']/;        # Remove isDebug, add deps
-#  s/<script src=\"$LOADERMID.*?\/script>//;  # Remove script eclwatch/run
-  s/\s+/ /g;                                 # Collapse white-space" > "$DISTDIR/stub.htm"
-
 
 for dojodir in dojo dojox dijit
 do
@@ -72,4 +73,4 @@ do
   done
 done
 
-echo "Build complete"
+echo "Post process complete"
