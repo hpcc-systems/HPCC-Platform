@@ -134,6 +134,7 @@ public:
         CriticalBlock b(crit);
     }
     IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn);
+    IPropertyTreeIterator *findAllQueriesUsingFile(const char *lfn);
     StringBuffer &toStr(StringBuffer &s)
     {
         CriticalBlock b(crit);
