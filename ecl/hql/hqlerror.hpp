@@ -157,10 +157,10 @@ private:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-ErrorSeverity queryDefaultSeverity(WarnErrorCategory category);
-WarnErrorCategory getCategory(const char * category);
-ErrorSeverity getSeverity(IAtom * name);
-ErrorSeverity getCheckSeverity(IAtom * name);
+extern HQL_API ErrorSeverity queryDefaultSeverity(WarnErrorCategory category);
+extern HQL_API WarnErrorCategory getCategory(const char * category);
+extern HQL_API ErrorSeverity getSeverity(IAtom * name);
+extern HQL_API ErrorSeverity getCheckSeverity(IAtom * name);
 
 //---------------------------------------------------------------------------------------------------------------------
 

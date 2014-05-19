@@ -213,6 +213,7 @@ jlib_decl IPropertyTree *createPTreeFromJSONString(unsigned len, const char *jso
 #define XML_SanitizeAttributeValues 0x10
 #define XML_SingleQuoteAttributeValues 0x20
 #define XML_NoBinaryEncode64 0x40
+#define XML_NewlinesOnly 0x80
 
 jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, byte flags=XML_Format);
 jlib_decl void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, byte flags=XML_Format);

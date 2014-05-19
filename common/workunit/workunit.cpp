@@ -2450,12 +2450,13 @@ public:
     }
 
     IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
-                                                WUQuerySortField *filters,   // NULL or list of fields to folteron (terminated by WUSFterm)
+                                                WUQuerySortField *filters,   // NULL or list of fields to filter on (terminated by WUSFterm)
                                                 const void *filterbuf,  // (appended) string values for filters
                                                 unsigned startoffset,
                                                 unsigned maxnum,
                                                 __int64 *cachehint,
-                                                unsigned *total)
+                                                unsigned *total,
+                                                const MapStringTo<bool> *_subset)
     {
         struct PostFilters
         {
@@ -2475,6 +2476,7 @@ public:
             StringAttr sortOrder;
             PostFilters postFilters;
             StringArray unknownAttributes;
+            const MapStringTo<bool> *subset;
 
             void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
             {
@@ -2487,6 +2489,12 @@ public:
                     const char* queryId = query.queryProp("@id");
                     if (queryId && *queryId)
                     {
+                        if (subset)
+                        {
+                            VStringBuffer match("%s/%s", querySetId, queryId);
+                            if (!subset->getValue(match))
+                                continue;
+                        }
                         VStringBuffer xPath("Alias[@id='%s']", queryId);
                         IPropertyTree *alias = queryRegistry->queryPropTree(xPath.str());
                         if (alias)
@@ -2538,8 +2546,8 @@ public:
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes)
-                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder)
+            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, PostFilters& _postFilters, StringArray& _unknownAttributes, const MapStringTo<bool> *_subset)
+                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), subset(_subset)
             {
                 postFilters.activatedFilter = _postFilters.activatedFilter;
                 postFilters.suspendedByUserFilter = _postFilters.suspendedByUserFilter;
@@ -2611,7 +2619,7 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters, unknownAttributes);
+        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, postFilters, unknownAttributes, _subset);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
         return new CConstQuerySetQueryIterator(results);
     }
@@ -2887,9 +2895,10 @@ public:
                                                 unsigned startoffset,
                                                 unsigned maxnum,
                                                 __int64 *cachehint,
-                                                unsigned *total)
+                                                unsigned *total,
+                                                const MapStringTo<bool> *subset)
     {
-        return factory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total);
+        return factory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total, subset);
     }
 
     virtual unsigned numWorkUnits()

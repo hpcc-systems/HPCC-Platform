@@ -1257,6 +1257,7 @@ ESPrequest [nil_remove] WUListQueriesRequest
     string Sortby;
     bool Descending(false);
     int64 CacheHint;
+    string FileName;
 };
 
 ESPresponse [exceptions_inline] WUListQueriesResponse

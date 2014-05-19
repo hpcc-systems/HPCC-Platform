@@ -11741,34 +11741,34 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
     class CFileAttrIterator: public CInterface, implements IPropertyTreeIterator
     {
         Owned<IPropertyTree> cur;
-        StringArray fileClusterGroups;
+        StringArray fileNodeGroups;
 
-        void setFileCluster(IPropertyTree *attr, const char* group, StringArray& clusterFilter)
+        void setFileNodeGroup(IPropertyTree *attr, const char* group, StringArray& nodeGroupFilter)
         {
             if (!group || !*group)
                 return;
 
             //The group may contain multiple clusters and some of them may match with the clusterFilter.
-            if (clusterFilter.length() == 1)
-                attr->setProp(getDFUQResultFieldName(DFUQRFcluster), clusterFilter.item(0));//Filter has been handled on server side.
+            if (nodeGroupFilter.length() == 1)
+                attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), nodeGroupFilter.item(0));//Filter has been handled on server side.
             else
             {
-                StringArray clusters;
-                clusters.appendListUniq(group, ",");
-                ForEachItemIn(i,clusters)
+                StringArray groups;
+                groups.appendListUniq(group, ",");
+                ForEachItemIn(i,groups)
                 {
-                    //Add a cluster if no cluster filter or the cluster matchs with cluster filter
-                    const char* cluster = clusters.item(i);
-                    if (cluster && *cluster && ((!clusterFilter.length()) || (clusterFilter.find(cluster) != NotFound)))
-                        fileClusterGroups.append(cluster);
+                    //Add a group if no group filter or the group matches with group filter
+                    const char* node = groups.item(i);
+                    if (node && *node && ((!nodeGroupFilter.length()) || (nodeGroupFilter.find(node) != NotFound)))
+                        fileNodeGroups.append(node);
                 }
-                if (fileClusterGroups.length())
+                if (fileNodeGroups.length())
                 {
-                    //if this file exists on multiple clusters, set one of the clusters as the "@DFUSFcluster" prop for
-                    //this attr, leaving the rest inside the fileClusterGroups array. Those clusters will be used by the
-                    //duplicateFileAttrOnOtherClusterGroup() to duplicate this file attr on other clusters.
-                    attr->setProp(getDFUQResultFieldName(DFUQRFcluster), fileClusterGroups.item(fileClusterGroups.length() -1));
-                    fileClusterGroups.pop();
+                    //if this file exists on multiple groups, set one of the groups as the "@DFUSFnodegroup" prop for
+                    //this attr, leaving the rest inside the fileNodeGroups array. Those groups will be used by the
+                    //duplicateFileAttrOnOtherNodeGroup() to duplicate this file attr on other groups.
+                    attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), fileNodeGroups.item(fileNodeGroups.length() -1));
+                    fileNodeGroups.pop();
                 }
             }
         }
@@ -11791,7 +11791,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
             return;
         }
 
-        IPropertyTree *deserializeFileAttr(MemoryBuffer &mb, StringArray& clusterFilter)
+        IPropertyTree *deserializeFileAttr(MemoryBuffer &mb, StringArray& nodeGroupFilter)
         {
             IPropertyTree *attr = getEmptyAttr();
             StringAttr val;
@@ -11823,22 +11823,22 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
                 mb.read(at);
                 mb.read(val);
                 attr->setProp(at.get(),val.get());
-                if (strieq(at.get(), getDFUQResultFieldName(DFUQRFgroup)))
-                    setFileCluster(attr, val.get(), clusterFilter);
+                if (strieq(at.get(), getDFUQResultFieldName(DFUQRFnodegroups)))
+                    setFileNodeGroup(attr, val.get(), nodeGroupFilter);
             }
             attr->setPropInt64(getDFUQResultFieldName(DFUQRFsize), attr->getPropInt64(getDFUQResultFieldName(DFUQRForigsize), -1));//Sort the files with empty size to front
             setRecordCount(attr);
             return attr;
         }
 
-        IPropertyTree *duplicateFileAttrOnOtherClusterGroup(IPropertyTree *previousAttr)
+        IPropertyTree *duplicateFileAttrOnOtherNodeGroup(IPropertyTree *previousAttr)
         {
             IPropertyTree *attr = getEmptyAttr();
             Owned<IAttributeIterator> ai = previousAttr->getAttributes();
             ForEach(*ai)
                 attr->setProp(ai->queryName(),ai->queryValue());
-            attr->setProp(getDFUQResultFieldName(DFUQRFcluster), fileClusterGroups.item(fileClusterGroups.length()-1));
-            fileClusterGroups.pop();
+            attr->setProp(getDFUQResultFieldName(DFUQRFnodegroup), fileNodeGroups.item(fileNodeGroups.length()-1));
+            fileNodeGroups.pop();
             return attr;
         }
 
@@ -11846,7 +11846,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
         IMPLEMENT_IINTERFACE;
         MemoryBuffer mb;
         unsigned numfiles;
-        StringArray clusterFilter;
+        StringArray nodeGroupFilter;
 
         bool first()
         {
@@ -11858,9 +11858,9 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
 
         bool next()
         {
-            if (fileClusterGroups.length())
+            if (fileNodeGroups.length())
             {
-                IPropertyTree *attr = duplicateFileAttrOnOtherClusterGroup(cur);
+                IPropertyTree *attr = duplicateFileAttrOnOtherNodeGroup(cur);
                 cur.clear();
                 cur.setown(attr);
                 return true;
@@ -11868,7 +11868,7 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
             cur.clear();
             if (mb.getPos()>=mb.length())
                 return false;
-            cur.setown(deserializeFileAttr(mb, clusterFilter));
+            cur.setown(deserializeFileAttr(mb, nodeGroupFilter));
             return true;
         }
 
@@ -11892,8 +11892,8 @@ IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultF
             {
                 int fmt = localFilters[i];
                 int subfmt = (fmt&0xff);
-                if ((subfmt==DFUQRFcluster) && fv && *fv)
-                    clusterFilter.appendListUniq(fv, ",");
+                if ((subfmt==DFUQRFnodegroup) && fv && *fv)
+                    nodeGroupFilter.appendListUniq(fv, ",");
                 //Add more if needed
                 fv = fv + strlen(fv)+1;
             }

@@ -9156,9 +9156,14 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     ITypeInfo *etype = expr->queryType();
     if (isSaved(failure) && !type)
     {
-        if ((etype->getSize() == 0) && (etype->isScalar()))
-            reportError(ERR_ZEROLENSTORED, nameattr, "Saved definition has zero length - missing type?");
-        else if ((etype->getTypeCode() == type_set) && etype->queryChildType() == NULL) 
+        size32_t exprTypeSize = etype->getSize();
+        if (queryOperatorInList(no_stored, failure) && (exprTypeSize != UNKNOWN_LENGTH))
+        {
+            if (isStringType(etype) || isUnicodeType(etype))
+                type.setown(getStretchedType(UNKNOWN_LENGTH, etype));
+        }
+
+        if ((etype->getTypeCode() == type_set) && etype->queryChildType() == NULL)
             reportError(ERR_ZEROLENSTORED, nameattr, "Type must be specified for this stored list");
     }
 

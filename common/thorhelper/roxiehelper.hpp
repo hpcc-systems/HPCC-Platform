@@ -174,7 +174,7 @@ public:
     }
 
     void encodeXML(const char *x, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
-    void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false);
+    void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false, const IProperties *xmlns=NULL);
     void startScalar(const char *resultName, unsigned sequence);
 };
 

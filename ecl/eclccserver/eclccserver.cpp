@@ -231,7 +231,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                     err->setExceptionFileName(file);
                     err->setExceptionLineNo(atoi(line));
                     err->setExceptionColumn(atoi(col));
-                    if (stricmp(errClass, "warning")==0)
+                    if (stricmp(errClass, "info")==0)
+                        err->setSeverity(ExceptionSeverityInformation);
+                    else if (stricmp(errClass, "warning")==0)
                         err->setSeverity(ExceptionSeverityWarning);
                     else
                         err->setSeverity(ExceptionSeverityError);
