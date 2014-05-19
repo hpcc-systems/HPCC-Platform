@@ -1421,7 +1421,7 @@ void appendEclInputXsds(StringBuffer &content, IPropertyTree *xsd, BoolHash &add
 
 void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest, IPropertyTree *xsdtree)
 {
-    Owned<IPropertyTree> tree = createPTreeFromXMLString(parmXml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_noRoot));
+    Owned<IPropertyTree> tree = createPTreeFromXMLString(parmXml);
 
     schema.appendf("<xsd:element name=\"%s%s\">", wsinfo.queryname.sget(), isRequest ? "Request" : "Response");
     schema.append("<xsd:complexType>");
