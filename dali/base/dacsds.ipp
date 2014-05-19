@@ -113,12 +113,10 @@ public:
     ~CConnectionLock() { conn.lockCrit.leave(); }
 };
 //////////////////
-class CSDSConnectionSubscriberProxy : public CInterface, implements ISubscription
+class CSDSConnectionSubscriberProxy : public CInterfaceOf<ISubscription>
 {
     DECL_NAMEDCOUNT;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSDSConnectionSubscriberProxy(ISDSConnectionSubscription &_sdsNotify, ConnectionId connId) : sdsNotify(&_sdsNotify)
     {
         INIT_NAMEDCOUNT;
@@ -154,43 +152,47 @@ private:
     Linked<ISDSConnectionSubscription> sdsNotify;
 };
 
+static void checkValidSubscriptionPath(const char *xpath)
+{
+    bool quote=false, sep=false;
+    const char *_xpath = xpath;
+    loop
+    {
+        char next = *_xpath;
+        if ('\0' == next)
+            break;
+        if ('\"' == next)
+        {
+            sep = false;
+            if (quote) quote = false;
+            else quote = true;
+        }
+        else if ('/' == next && !quote)
+        {
+            if (sep)
+                throw MakeStringException(0, "UNSUPPORTED: '//' syntax unsupported in subscriber xpath (path=\"%s\")", xpath); // JCSMORE - TBD?
+            sep = true;
+        }
+        else
+            sep = false;
+        ++_xpath;
+    }
+}
+
 //////////////////
-class CSDSSubscriberProxyBase : public CInterface, implements ISubscription
+class CSDSSubscriberProxyBase : public CInterfaceOf<ISubscription>
 {
     DECL_NAMEDCOUNT;
 protected:
     SubscriptionId id;
     StringAttr xpath;
-    MemoryAttr data, valueData;
+    MemoryAttr data;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSDSSubscriberProxyBase(const char *_xpath, bool sendValue)
     {
         INIT_NAMEDCOUNT;
-        bool quote=false, sep=false;
+        checkValidSubscriptionPath(_xpath);
         xpath.set(_xpath);
-        loop
-        {
-            char next = *_xpath;
-            if ('\0' == next)
-                break;
-            if ('\"' == next)
-            {
-                sep = false;
-                if (quote) quote = false;
-                else quote = true;
-            }
-            else if ('/' == next && !quote)
-            {
-                if (sep)
-                    throw MakeStringException(0, "UNSUPPORTED: '//' syntax unsupported in subscriber xpath (path=\"%s\")", xpath.get()); // JCSMORE - TBD?
-                sep = true;
-            }
-            else
-                sep = false;
-            ++_xpath;
-        }
         id = queryCoven().getUniqueId();
     }
     SubscriptionId getId() const { return id; }
@@ -214,8 +216,6 @@ class CSDSSubscriberProxy : public CSDSSubscriberProxyBase
 {
     Linked<ISDSSubscription> sdsNotify;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSDSSubscriberProxy(const char *_xpath, bool sub, bool sendValue, ISDSSubscription &_sdsNotify)
         : CSDSSubscriberProxyBase(_xpath, sendValue), sdsNotify(&_sdsNotify)
     {
@@ -252,8 +252,6 @@ class CSDSNodeSubscriberProxy : public CSDSSubscriberProxyBase
 {
     Linked<ISDSNodeSubscription> sdsNotify;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSDSNodeSubscriberProxy(const char *_xpath, bool sendValue, ISDSNodeSubscription &_sdsNotify)
         : CSDSSubscriberProxyBase(_xpath, sendValue) , sdsNotify(&_sdsNotify)
     {
@@ -264,8 +262,8 @@ public:
 // ISubscription impl.
     virtual void notify(MemoryBuffer &returnData)
     {
-        SDSNotifyFlags flags;
-        returnData.read((int &) flags);
+        int flags;
+        returnData.read(flags);
         unsigned valueLen = 0;
         const void *valueData = NULL;
         bool isValueData;
@@ -275,7 +273,7 @@ public:
             returnData.read(valueLen);
             valueData = returnData.readDirect(valueLen);
         }
-        sdsNotify->notify(id, flags, valueLen, valueData);
+        sdsNotify->notify(id, (SDSNotifyFlags)flags, valueLen, valueData);
     }
 };
 

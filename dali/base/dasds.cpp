@@ -487,16 +487,14 @@ private:
 
 //////////////
 
-class CSubscriberContainerBase : public CInterface, implements IInterface
+class CSubscriberContainerBase : public CInterfaceOf<IInterface>
 {
     DECL_NAMEDCOUNT;
 protected:
+    bool unsubscribed;
     Owned<ISubscription> subscriber;
     SubscriptionId id;
-    bool unsubscribed;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSubscriberContainerBase(ISubscription *_subscriber, SubscriptionId _id) :
       subscriber(_subscriber), id(_id)
     {
@@ -2863,23 +2861,28 @@ public:
         CNodeSubscriberContainerList *subscriberList = subscriberListByNode.find(node);
         assertex(subscriberList);
         ICopyArrayOf<CNodeSubscriberContainer> &subscribers = subscriberList->querySubscribers();
+        int lastSendValue = -1;
         ForEachItemIn(s, subscribers)
         {
             CNodeSubscriberContainer &subscriber = subscribers.item(s);
             if (subscriber.querySendValue())
             {
-                if (0 == sendValueNotifyData.length()) // overkill unless many subscribers to same node
+                if (1 != lastSendValue) // overkill unless many subscribers to same node
                 {
                     MemoryBuffer mb;
                     node->getPropBin(NULL, mb);
-                    buildNotifyData(sendValueNotifyData, state, NULL, &mb);
+                    buildNotifyData(sendValueNotifyData.clear(), state, NULL, &mb);
+                    lastSendValue = 1;
                 }
                 SDSManager->handleNotify(subscriber, sendValueNotifyData);
             }
             else
             {
-                if (0 == simpleNotifyData.length()) // overkill unless many subscribers to same node
-                    buildNotifyData(simpleNotifyData, state, NULL, NULL);
+                if (0 != lastSendValue) // overkill unless many subscribers to same node
+                {
+                    buildNotifyData(simpleNotifyData.clear(), state, NULL, NULL);
+                    lastSendValue = 0;
+                }
                 SDSManager->handleNotify(subscriber, simpleNotifyData);
             }
         }
@@ -2944,7 +2947,7 @@ public:
          */
         owner.removeNodeSubscriber(id);
     }
-    virtual void removeSubscriberAssociation(SubscriptionId id)
+    virtual void removeSubscriberAssociation(SubscriptionId id) // Always called back from within remove() above.
     {
         CNodeSubscriberContainer *subscriber = subscribersById.find(id);
         if (!subscriber)
@@ -2957,7 +2960,7 @@ public:
         }
         verifyex(subscribersById.removeExact(subscriber));
     }
-    void associateSubscriber(CNodeSubscriberContainer &subscriber)
+    void associateSubscriber(CNodeSubscriberContainer &subscriber) // Always called back from within add() above.
     {
         /* caller has established there are matches and added them to 'subscriber'
          * add to HT's
@@ -8468,6 +8471,7 @@ public:
             MemoryBuffer notifyData;
             if (changes.state && changes.local)
             {
+                int lastSendValue = -1;
                 ForEachItemInRev(s, subs)
                 {
                     CSubscriberContainer &subscriber = subs.item(s);
@@ -8475,16 +8479,23 @@ public:
                     {
                         if (subscriber.qualify(stack))
                         {
-                            if (0 == notifyData.length())
+                            if (subscriber.querySendValue())
                             {
-                                if (subscriber.querySendValue())
+                                if (1 != lastSendValue)
                                 {
                                     MemoryBuffer mb;
                                     changes.tree->getPropBin(NULL, mb);
-                                    buildNotifyData(notifyData, changes.state, &stack, &mb);
+                                    buildNotifyData(notifyData.clear(), changes.state, &stack, &mb);
+                                    lastSendValue = 1;
                                 }
-                                else
-                                    buildNotifyData(notifyData, changes.state, &stack, NULL);
+                            }
+                            else
+                            {
+                                if (0 != lastSendValue)
+                                {
+                                    buildNotifyData(notifyData.clear(), changes.state, &stack, NULL);
+                                    lastSendValue = 0;
+                                }
                             }
                             SDSManager->handleNotify(subscriber, notifyData);
                         }
