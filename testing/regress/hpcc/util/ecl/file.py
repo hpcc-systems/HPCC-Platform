@@ -126,6 +126,9 @@ class ECLFile:
     def getBaseEcl(self):
         return self.ecl
 
+    def getBaseEclName(self):
+        return self.basename
+
     def getWuid(self):
         return self.wuid
 
