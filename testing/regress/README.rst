@@ -1,4 +1,4 @@
-Overview of Regression Suite usage (v:0.0.17)
+Overview of Regression Suite usage (v:0.0.21)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
@@ -20,6 +20,7 @@ Result:
 |                       [--timeout [TIMEOUT]] [--keyDir [KEYDIR]]
 |                       [--ignoreResult]
 |                       [-X name1=value1[,name2=value2...]]
+|                       [-f optionA=valueA[,optionB=valueB...]]
 |                       {list,setup,run,query} ...
 | 
 |       HPCC Platform Regression suite
@@ -45,6 +46,21 @@ Result:
 |            --ignoreResult, -i    completely ignore the result.
 |            -X name1=value1[,name2=value2...]
 |                                  sets the stored input value (stored('name')).
+|            -f optionA=valueA[,optionB=valueB...]
+|                                  set an ECL option (equivalent to #option).
+
+Important!
+    There is a bug in Python argparse library whichis impacts the quoted parameters. So either in -X or -f or both contains a value with space(s) inside then the whole argument should be put in double quote!
+
+    Example: We should pass these names values pairs to set stored input values:
+                param1 = 1
+                param2 = A string
+                param2 = Other string
+
+    The proper ecl-test command is:
+            ./ecl-test -X"param1=1,param2=A string,param3=Other String" ...
+
+    Same format should use for -f option(s) and values. This problem doesn't impact parameters are stored in ecl-test.json config file. (See 9.)
 
 
 Parameters of Regression Suite list sub-command:
