@@ -234,16 +234,19 @@ function onClickTriButton(btn, clicks)
         { 
             btn.value='true'; 
             btn.style.color='green';
+            btn.name=btn.id;
         } 
         else if (btn.value=='true') 
         {
             btn.value='false'; 
             btn.style.color='red';
+            btn.name=btn.id;
         } 
         else 
         {
             btn.value='default'; 
             btn.style.color='gray';
+            btn.name='';
         }
     }
 }
