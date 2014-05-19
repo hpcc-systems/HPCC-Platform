@@ -2139,7 +2139,7 @@ public:
                             {
                                 case TAKkeyedjoin:
                                 {
-                                    transformedSize = helper->transform(row.ensureRow(), djg->queryLeft(), defaultRight, 0);
+                                    transformedSize = helper->transform(row.ensureRow(), djg->queryLeft(), defaultRight, (__uint64)0, 0U);
                                     break;
                                 }
                                 case TAKkeyeddenormalize:
@@ -2174,7 +2174,7 @@ public:
                                     offset_t fpos;
                                     const void *rhs = djg->queryRow(currentMatchIdx, fpos);
                                     row.ensureRow();
-                                    transformedSize = helper->transform(row, djg->queryLeft(), rhs, fpos);
+                                    transformedSize = helper->transform(row, djg->queryLeft(), rhs, fpos, currentMatchIdx+1);
                                     if (transformedSize)
                                     {
                                         currentAdded++;

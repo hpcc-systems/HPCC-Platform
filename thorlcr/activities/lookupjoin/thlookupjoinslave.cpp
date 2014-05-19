@@ -629,10 +629,6 @@ public:
     {
         return helper->match(lhs, rhsrow);
     }
-    inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *lhs, const void *rhsrow)
-    {
-        return helper->transform(rowBuilder, lhs, rhsrow);
-    }
     inline const size32_t joinTransform(ARowBuilder &rowBuilder, const void *left, const void *right, unsigned numRows, const void **rows)
     {
         return helper->transform(rowBuilder, left, right, numRows, rows);
@@ -776,6 +772,7 @@ protected:
     rowidx_t nextRhsRow;
     unsigned keepLimit;
     unsigned joined;
+    unsigned joinCounter;
     OwnedConstThorRow defaultLeft;
 
     bool leftMatch, grouped;
@@ -979,6 +976,7 @@ protected:
                 if (NULL == rhsNext)
                 {
                     leftRow.setown(left->nextRow());
+                    joinCounter = 0;
                     if (leftRow)
                     {
                         eog = false;
@@ -1018,7 +1016,7 @@ protected:
                             leftMatch = true;
                             if (!exclude)
                             {
-                                size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, rhsNext);
+                                size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, rhsNext, ++joinCounter);
                                 if (sz)
                                 {
                                     OwnedConstThorRow row = rowBuilder.finalizeRowClear(sz);
@@ -1037,7 +1035,7 @@ protected:
                     }
                     if (!leftMatch && NULL == rhsNext && 0!=(flags & JFleftouter))
                     {
-                        size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, defaultRight);
+                        size32_t sz = HELPERBASE::joinTransform(rowBuilder, leftRow, defaultRight, 0);
                         if (sz)
                             ret.setown(rowBuilder.finalizeRowClear(sz));
                     }
@@ -1068,6 +1066,7 @@ public:
         leftITDL = rightITDL = NULL;
 
         joined = 0;
+        joinCounter = 0;
         leftMatch = false;
         returnMany = false;
 
@@ -1116,6 +1115,7 @@ public:
         gotRHS = false;
         nextRhsRow = 0;
         joined = 0;
+        joinCounter = 0;
         leftMatch = false;
         rhsNext = NULL;
         rhsTableLen = 0;
