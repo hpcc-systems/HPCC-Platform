@@ -5240,7 +5240,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
             {
                 if (first)
                 {
-                    if (flags & XML_Format) inlinebody = false;
+                    if (flags & XML_Format || flags & XML_NewlinesOnly) inlinebody = false;
                     first = false;
                     writeCharToStream(out, ' ');
                 }
@@ -5288,7 +5288,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
     bool empty;
     if (isBinary)
     {
-        if (flags & XML_Format) inlinebody = false;
+        if (flags & XML_Format || flags & XML_NewlinesOnly) inlinebody = false;
         writeStringToStream(out, " xsi:type=\"SOAP-ENC:base64\"");
         empty = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
     }
@@ -5305,11 +5305,11 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
     }
     if (sub->first())
     {
-        if (flags & XML_Format) inlinebody = false;
+        if (flags & XML_Format || flags & XML_NewlinesOnly) inlinebody = false;
     }
     else if (empty && !(flags & XML_Sanitize))
     {
-        if (flags & XML_Format)
+        if (flags & XML_Format || flags & XML_NewlinesOnly)
             writeStringToStream(out, "/>\n");
         else
             writeStringToStream(out, "/>");
@@ -5364,7 +5364,8 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
             else
                 JBASE64_Encode(thislevelbin.toByteArray(), thislevelbin.length(), out);
         }
-        else {
+        else
+        {
             if (flags & XML_NoEncode)
             {
                 writeStringToStream(out, thislevel);
@@ -5385,7 +5386,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
                     encodeXML(s, out, ENCODE_WHITESPACE, (unsigned)-1, true);
                 }
             }
-            
+
             if (!inlinebody)
                 writeStringToStream(out, "\n");
         }
@@ -5395,7 +5396,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
 
     writeStringToStream(out, "</");
     writeStringToStream(out, name);
-    if (flags & XML_Format)
+    if (flags & XML_Format || flags & XML_NewlinesOnly)
         writeStringToStream(out, ">\n");
     else
         writeCharToStream(out, '>');
