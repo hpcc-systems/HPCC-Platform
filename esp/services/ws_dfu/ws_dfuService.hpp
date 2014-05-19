@@ -100,7 +100,7 @@ private:
     __int64 findPositionByRecords(const __int64 records, bool decsend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
     __int64 findPositionByName(const char *name, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
     __int64 findPositionByOwner(const char *owner, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    __int64 findPositionByCluster(const char *Cluster, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
+    __int64 findPositionByNodeGroup(double version, const char *nodeGroup, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
     __int64 findPositionByDate(const char *datetime, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
     __int64 findPositionByDescription(const char *description, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
     bool checkDescription(const char *description, const char *descriptionFilter);

@@ -303,9 +303,23 @@ IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, c
             }
         }
 
+        //For Spray files on Thor Cluster, fetch all the group names for all the thor instances (and dedup them)
+        BoolHash uniqueThorClusterGroupNames;
         it.setown(pEnvSoftware->getElements("ThorCluster"));
         ForEach(*it)
-            pSoftware->addPropTree("ThorCluster", &it->get());
+        {
+            StringBuffer thorClusterGroupName;
+            IPropertyTree& cluster = it->query();
+            getClusterGroupName(cluster, thorClusterGroupName);
+            if (!thorClusterGroupName.length())
+                continue;
+            if (uniqueThorClusterGroupNames.getValue(thorClusterGroupName.str()))
+                continue;
+
+            uniqueThorClusterGroupNames.setValue(thorClusterGroupName.str(), true);
+            IPropertyTree* newClusterTree = pSoftware->addPropTree("ThorCluster", &it->get());
+            newClusterTree->setProp("@name", thorClusterGroupName.str()); //set group name into @name for spray target
+        }
 
         it.setown(pEnvSoftware->getElements("EclAgentProcess"));
         ForEach(*it)
