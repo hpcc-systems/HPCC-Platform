@@ -371,7 +371,7 @@ protected:
     IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool checkCompulsory) const
     {
         IResolvedFile *result = lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
-        if (!result && (!checkCompulsory || !isCompulsory()))
+        if (!result && (!checkCompulsory || !CPackageNode::isCompulsory()))
             result = resolveLFNusingDaliOrLocal(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
         return result;
     }
@@ -547,6 +547,10 @@ public:
     virtual const char *queryId() const
     {
         return CPackageNode::queryId();
+    }
+    virtual bool isCompulsory() const
+    {
+        return CPackageNode::isCompulsory();
     }
 };
 

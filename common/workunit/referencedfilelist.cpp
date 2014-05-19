@@ -124,7 +124,7 @@ class ReferencedFile : public CInterface, implements IReferencedFile
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid) : flags(_flags), pkgid(_pkgid)
+    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs) : flags(_flags), pkgid(_pkgid), noDfsResolution(noDfs)
     {
         logicalName.set(skipForeign(lfn, &daliip)).toLowerCase();
         if (daliip.length())
@@ -173,6 +173,7 @@ public:
     StringBuffer filePrefix;
     StringAttr fileSrcCluster;
     unsigned flags;
+    bool noDfsResolution;
 };
 
 class ReferencedFileList : public CInterface, implements IReferencedFileList
@@ -194,7 +195,7 @@ public:
             user.set(userDesc);
     }
 
-    void ensureFile(const char *ln, unsigned flags, const char *pkgid, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
+    void ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
 
     virtual void addFile(const char *ln, const char *daliip=NULL, const char *srcCluster=NULL, const char *remotePrefix=NULL);
     virtual void addFiles(StringArray &files);
@@ -288,8 +289,11 @@ void ReferencedFile::processRemoteFileTree(IPropertyTree *tree, const char *srcC
 
 void ReferencedFile::resolveLocal(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, StringArray *subfiles)
 {
-    if (flags & RefFileInPackage)
+    if (noDfsResolution || (flags & RefFileInPackage))
+    {
+        flags |= RefFileNotFound;
         return;
+    }
     reset();
     Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalName.str(), user);
     if(df)
@@ -331,8 +335,11 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
 {
     if ((flags & RefFileForeign) && !resolveForeign)
         return;
-    if (flags & RefFileInPackage)
+    if (noDfsResolution || (flags & RefFileInPackage))
+    {
+        flags |= RefFileNotFound;
         return;
+    }
     reset();
     if (checkLocalFirst)
     {
@@ -482,12 +489,12 @@ public:
     Owned<HashIterator> iter;
 };
 
-void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, const char *daliip, const char *srcCluster, const char *prefix)
+void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *pkgid, bool noDfsResolution, const char *daliip, const char *srcCluster, const char *prefix)
 {
     if (!allowForeign && checkForeign(ln))
         throw MakeStringException(-1, "Foreign file not allowed%s: %s", (flags & RefFileInPackage) ? " (declared in package)" : "", ln);
 
-    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid);
+    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid, noDfsResolution);
     if (!file->logicalName.length())
         return;
     ReferencedFile *existing = map.getValue(file->getLogicalName());
@@ -593,14 +600,14 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
                         {
                             StringBuffer subfile;
                             ssfe->getSubFileName(count, subfile);
-                            ensureFile(subfile, RefSubFile | RefFileInPackage, pkgid);
+                            ensureFile(subfile, RefSubFile | RefFileInPackage, pkgid, pkg->isCompulsory());
                         }
                     }
                 }
-                ensureFile(logicalName, flags, pkgid);
+                ensureFile(logicalName, flags, pkgid, pkg->isCompulsory());
             }
             else
-                ensureFile(logicalName, flags, NULL);
+                ensureFile(logicalName, flags, NULL, false);
         }
     }
 }
@@ -627,7 +634,7 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalF
         if (!allowForeign && checkForeign(lfn))
             throw MakeStringException(-1, "Foreign sub file not allowed: %s", lfn);
 
-        Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL);
+        Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL, false);
         if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
         {
             file->resolve(process.get(), srcCluster, user, remote, remotePrefix, checkLocalFirst, &childSubFiles, resolveForeign);
