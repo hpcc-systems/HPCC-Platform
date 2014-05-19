@@ -19113,6 +19113,7 @@ public:
         savedExtractSize = parentExtractSize;
         savedExtract = parentExtract;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
+        executeDependencies(parentExtractSize, parentExtract, WhenBeforeId);
         executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
     }
 
@@ -19176,6 +19177,7 @@ public:
         savedExtractSize = parentExtractSize;
         savedExtract = parentExtract;
         CRoxieServerActionBaseActivity::start(parentExtractSize, parentExtract, paused);
+        executeDependencies(parentExtractSize, parentExtract, WhenBeforeId);
         executeDependencies(parentExtractSize, parentExtract, WhenParallelId);        // MORE: This should probably be done in parallel!
     }
 
