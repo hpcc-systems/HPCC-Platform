@@ -1344,6 +1344,7 @@ const int WhenDefaultId = 0;
 const int WhenSuccessId = -1;
 const int WhenFailureId = -2;
 const int WhenParallelId = -3;
+const int WhenBeforeId = -3;
 
 typedef IHThorNullArg IHThorWhenActionArg;
 
