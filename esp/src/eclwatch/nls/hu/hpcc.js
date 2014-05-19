@@ -170,7 +170,6 @@ define(
     History: "Történet",
     HPCCSystems: "HPCC Systems",
     ID: "Azonosító",
-    Import: "Import",
     Inactive: "Inaktív",
     Index: "Index",
     Info: "Információ",
