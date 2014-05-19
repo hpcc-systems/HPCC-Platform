@@ -242,8 +242,24 @@ public:
         ErrorReceiverSink::report(error);
 
         ErrorSeverity severity = error->getSeverity();
-        if (severity <= SeverityInfo)
+        const char * severityText;
+        switch (severity)
+        {
+        case SeverityIgnore:
             return;
+        case SeverityInfo:
+            severityText = "info";
+            break;
+        case SeverityWarning:
+            severityText = "warning";
+            break;
+        case SeverityError:
+        case SeverityFatal:
+            severityText = "error";
+            break;
+        default:
+            throwUnexpected();
+        }
 
         unsigned code = error->errorCode();
         const char * filename = error->getFilename();
@@ -253,16 +269,8 @@ public:
 
         StringBuffer msg;
         error->errorMessage(msg);
-        if (isError(severity))
-        {
-            if (!filename) filename = "";
-            fprintf(f, "%s(%d,%d): error C%04d: %s\n", filename, line, column, code, msg.str());
-        }
-        else
-        {
-            if (!filename) filename = *unknownAtom;
-            fprintf(f, "%s(%d,%d): warning C%04d: %s\n", filename, line, column, code, msg.str());
-        }
+        if (!filename) filename = isError(severity) ? "" : *unknownAtom;
+        fprintf(f, "%s(%d,%d): %s C%04d: %s\n", filename, line, column, severityText, code, msg.str());
     }
 
 protected:
