@@ -515,9 +515,31 @@ size32_t CRECFMvbPartitioner::getBlockSize(const byte * record, unsigned maxToRe
 {
     size32_t bdw;           //RECFMVB Block Description Word
     _WINCPYREV4(&bdw, record);
-    if ( bdw < 4 )
+    size32_t blockSize = 0;
+    if ( bdw & 0x80000000 )
+    {
+        // Extended BDW
+        // Bit 0 -> 1       MSB0
+        // Bit 1..31 -> block size
+        blockSize = bdw & 0x7fffffff;
+    }
+    else
+    {
+        // Standard BDW
+        // Bit 0 -> 0;      MSB0
+        // Bit 1..15 -> block size
+        // Bit 16..31 -> must be 0
+        if ( bdw & 0x0000ffff )
+        {
+            throwError1(DFTERR_WrongRECFMvbBlockDescriptorWord, bdw);
+        }
+
+        blockSize = bdw >> 16;
+    }
+    if ( blockSize < 8 )
         throwError1(DFTERR_WrongRECFMvbBlockDescriptorWord, bdw);
-    return bdw;
+
+    return blockSize;
 }
 
 
@@ -542,7 +564,7 @@ size32_t CRECFMvbPartitioner::getTransformRecordSize(const byte * record, unsign
 
 unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor & cursor)
 {
-    LOG(MCdebugProgressDetail, unknownJob, "CRECFMvbPartitioner::transformBlock(offset_t endOffset: %d (0x%08x), TransformCursor & cursor)", endOffset ,endOffset);
+    LOG(MCdebugProgressDetail, unknownJob, "CRECFMvbPartitioner::transformBlock(offset_t endOffset: %"I64F"d (0x%"I64F"016x), TransformCursor & cursor)", endOffset ,endOffset);
     const byte *buffer = bufferBase();
     offset_t startOffset = cursor.inputOffset;
     offset_t inputOffset = startOffset;
