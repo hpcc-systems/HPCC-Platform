@@ -2107,7 +2107,7 @@ DataCacheElement* DataCache::lookup(IEspContext &context, const char* filter, un
         if (list_iter == cache.end())
             break;
 
-        DataCacheElement* awu = list_iter->getLink();
+        DataCacheElement* awu = list_iter->get();
         if (!awu || (awu->m_timeCached > timeNow))
             break;
 
@@ -2174,7 +2174,7 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
         if (list_iter == cache.end())
             break;
 
-        ArchivedWuCacheElement* awu = list_iter->getLink();
+        ArchivedWuCacheElement* awu = list_iter->get();
         if (awu && !stricmp(sashaUpdatedWhen, awu->m_sashaUpdatedWhen.c_str()) && (awu->m_timeCached > timeNow))
             break;
 
@@ -2192,12 +2192,12 @@ ArchivedWuCacheElement* ArchivedWuCache::lookup(IEspContext &context, const char
     return NULL;
 }
 
-void ArchivedWuCache::add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, IArrayOf<IEspECLWorkunit>& wus)
+void ArchivedWuCache::add(const char* filter, const char* sashaUpdatedWhen, bool hasNextPage, unsigned numWUsReturned, IArrayOf<IEspECLWorkunit>& wus)
 {
     CriticalBlock block(crit);
 
     //Save new data
-    Owned<ArchivedWuCacheElement> e=new ArchivedWuCacheElement(filter, sashaUpdatedWhen, hasNextPage, /*data.str(),*/ wus);
+    Owned<ArchivedWuCacheElement> e=new ArchivedWuCacheElement(filter, sashaUpdatedWhen, hasNextPage, numWUsReturned, wus);
     if (cacheSize > 0)
     {
         if (cache.size() >= cacheSize)
