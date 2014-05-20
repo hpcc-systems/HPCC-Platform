@@ -268,10 +268,12 @@ private:
             ++finger;
         }
         if(charcount == 0)
+        {
             if(subcount == 0)
                 fail("empty domain");
             else
                 fail("illegal . at end of domain");
+        }
         ++subcount;
         if(subcount < 2)
             fail("domain has only 1 subdomain");

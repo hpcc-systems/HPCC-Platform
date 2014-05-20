@@ -601,10 +601,12 @@ static inline int cmpicindstable(VECTOR a, VECTOR b, const ICompare & compare)
 {
     int ret = compare.docompare(**a,**b);
     if (ret==0) 
+    {
         if (*a>*b)
             ret = 1;
         else if (*a<*b)
             ret = -1;
+    }
     return ret;
 }
 

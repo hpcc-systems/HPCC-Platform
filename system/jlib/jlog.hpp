@@ -322,10 +322,12 @@ inline unsigned LogMsgFieldsFromAbbrevs(char const * abbrevs)
         if(strlen(abbrevs)<3) break;
         unsigned field = LogMsgFieldFromAbbrev(abbrevs);
         if(field)
+        {
             if(negate)
                 fields &= ~field;
             else
                 fields |= field;
+        }
         switch(abbrevs[3])
         {
         case '+':

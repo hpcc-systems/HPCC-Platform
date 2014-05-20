@@ -1167,11 +1167,12 @@ static void checksuperfile(const char *lfn,bool fix=false)
             unsigned pn = sub->getPropInt("@num");
             if (pn>subnum) {
                 ERRLOG("SuperFile %s: corrupt, subfile file part %d spurious",lname.get(),pn);
-                if (fixstate==0)
+                if (fixstate==0) {
                     if (fix&&doFix())
                         fixstate = 1;
                     else
                         fixstate = 2;
+                }
                 if (fixstate==1) {
                     root->removeTree(sub);
                     fixed = true;

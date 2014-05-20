@@ -165,11 +165,15 @@ public:
     inline void removekey(AttrStr *a,bool nc)
     {
         if (a->linkcount!=(unsigned short)-1)
+        {
             if (--(a->linkcount)==0) 
+            {
                 if (nc)
                     htnc.remove((AttrStrNC *)a);
                 else
                     htc.remove((AttrStrC *)a);
+            }
+        }
     }
 
     inline void removeval(AttrStr *a)

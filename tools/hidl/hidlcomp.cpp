@@ -2097,7 +2097,7 @@ void ProcInfo::out_clarion_method()
 
 void ProcInfo::out_method(const char *classpfx, int omitvirt)
 {
-    if (virt&&!omitvirt)
+    if (virt&&!omitvirt) {
         if (callback) 
             outf("HRPCvirtualcallback ");
         else {
@@ -2126,6 +2126,7 @@ void ProcInfo::out_method(const char *classpfx, int omitvirt)
             else
                 outf(" HRPCpure%s",callback?"callback":"");
         }
+    }
 }
 
 void ProcInfo::out_parameter_list(const char *pfx,int forclarion)
