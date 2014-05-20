@@ -1235,7 +1235,8 @@ public:
             CriticalBlock cb(statecrit);
             if (state != STATEstopped)
             {
-                state=STATEstopped;
+                if (state != STATEreset)
+                    state=STATEstopped;
 #ifdef TRACE_STARTSTOP
                 if (traceStartStop)
                 {
