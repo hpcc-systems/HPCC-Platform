@@ -2884,28 +2884,48 @@ public:
 
     virtual void *allocate(memsize_t _size, unsigned activityId)
     {
-        beforeAllocate(_size, activityId);
-        if (_size > FixedSizeHeaplet::maxHeapSize())
-            return hugeHeap.doAllocate(_size, activityId, SpillAllCost);
-        size32_t size32 = (size32_t) _size;
+        try
+        {
+            beforeAllocate(_size, activityId);
+            if (_size > FixedSizeHeaplet::maxHeapSize())
+                return hugeHeap.doAllocate(_size, activityId, SpillAllCost);
+            size32_t size32 = (size32_t) _size;
 
-        size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
-        size32_t whichHeap = ROUNDEDHEAP(rounded);
-        CFixedChunkedHeap & normalHeap = normalHeaps.item(whichHeap);
-        return normalHeap.doAllocate(activityId, SpillAllCost);
+            size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
+            size32_t whichHeap = ROUNDEDHEAP(rounded);
+            CFixedChunkedHeap & normalHeap = normalHeaps.item(whichHeap);
+            return normalHeap.doAllocate(activityId, SpillAllCost);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CChunkingRowManager::allocate(memsize_t _size, unsigned activityId)");
+            reportMemoryUsage(false);
+            PrintStackReport();
+            throw;
+        }
     }
 
     virtual void *allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost)
     {
-        beforeAllocate(_size, activityId);
-        if (_size > FixedSizeHeaplet::maxHeapSize())
-            return hugeHeap.doAllocate(_size, activityId, maxSpillCost);
-        size32_t size32 = (size32_t) _size;
+        try
+        {
+            beforeAllocate(_size, activityId);
+            if (_size > FixedSizeHeaplet::maxHeapSize())
+                return hugeHeap.doAllocate(_size, activityId, maxSpillCost);
+            size32_t size32 = (size32_t) _size;
 
-        size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
-        size32_t whichHeap = ROUNDEDHEAP(rounded);
-        CFixedChunkedHeap & normalHeap = normalHeaps.item(whichHeap);
-        return normalHeap.doAllocate(activityId, maxSpillCost);
+            size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
+            size32_t whichHeap = ROUNDEDHEAP(rounded);
+            CFixedChunkedHeap & normalHeap = normalHeaps.item(whichHeap);
+            return normalHeap.doAllocate(activityId, maxSpillCost);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CChunkingRowManager::allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost)");
+            reportMemoryUsage(false);
+            PrintStackReport();
+            throw;
+        }
     }
 
     virtual const char *cloneVString(size32_t len, const char *str)
@@ -2981,7 +3001,17 @@ public:
         if (curCapacity > FixedSizeHeaplet::maxHeapSize())
         {
             CVariableRowResizeCallback callback(capacity, ptr);
-            hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, SpillAllCost, callback);
+            try
+            {
+                hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, SpillAllCost, callback);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "CChunkingRowManager::resizeRow(memsize_t &capacity, void * & ptr, memsize_t copysize, memsize_t newsize, unsigned activityId)");
+                reportMemoryUsage(false);
+                PrintStackReport();
+                throw;
+            }
             return;
         }
 
@@ -3004,7 +3034,19 @@ public:
             return true;
         }
         if (curCapacity > FixedSizeHeaplet::maxHeapSize())
-            return hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, maxSpillCost, callback);
+        {
+            try
+            {
+                return hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, maxSpillCost, callback);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "CChunkingRowManager::resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)");
+                reportMemoryUsage(false);
+                PrintStackReport();
+                throw;
+            }
+        }
 
         void *ret = allocate(newsize, activityId, maxSpillCost);
         if (!ret)
@@ -3497,7 +3539,10 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
         {
             if (maxSpillCost == SpillAllCost)
+            {
+                rowManager->reportMemoryUsage(false);
                 throwHeapExhausted(numPages);
+            }
             return NULL;
         }
     }
@@ -3627,7 +3672,10 @@ bool CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
         {
             if (maxSpillCost == SpillAllCost)
+            {
+                rowManager->reportMemoryUsage(false);
                 throwHeapExhausted(numPages);
+            }
             return false;
         }
     }
