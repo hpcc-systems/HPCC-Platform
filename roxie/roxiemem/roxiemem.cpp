@@ -389,6 +389,12 @@ static void throwHeapExhausted(unsigned pages)
     throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "Memory pool exhausted");
 }
 
+static void throwHeapExhausted(unsigned newPages, unsigned oldPages)
+{
+    DBGLOG("RoxieMemMgr: Memory pool (%u pages) exhausted requested %u, had %u", heapTotalPages, newPages, oldPages);
+    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "Memory pool exhausted");
+}
+
 static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
 {
     //It would be tempting to make this lock free and use cas, but on reflection I suspect it will perform worse.
@@ -3627,7 +3633,7 @@ bool CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
         {
             if (maxSpillCost == SpillAllCost)
-                throwHeapExhausted(numPages);
+                throwHeapExhausted(newPages, oldPages);
             return false;
         }
     }
