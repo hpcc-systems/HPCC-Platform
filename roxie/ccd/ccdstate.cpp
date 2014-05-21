@@ -483,7 +483,7 @@ public:
             StringBuffer compulsoryMsg;
             if (isCompulsory())
                     compulsoryMsg.append(" (Package is compulsory)");
-            if (!opt)
+            if (!opt && !pretendAllOpt)
                 throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s%s", fileName.str(), compulsoryMsg.str());
             if (traceLevel > 4)
                 DBGLOG("Could not resolve OPT filename %s%s", fileName.str(), compulsoryMsg.str());
