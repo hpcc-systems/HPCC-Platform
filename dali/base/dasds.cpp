@@ -2807,7 +2807,7 @@ PDState CServerRemoteTree::checkChange(IPropertyTree &changeTree, CBranchChange 
                 Owned<CBranchChange> childChange = new CBranchChange(*(CRemoteTreeBase *)idTree);
                 if (!removeTree(idTree))
                     throw MakeSDSException(-1, "::checkChange - Failed to remove child(%s) from parent(%s) at %s(%d)", idTree->queryName(), queryName(), __FILE__, __LINE__);
-                mergePDState(res, PDS_Deleted);
+                mergePDState(res, PDS_Structure);
                 if (parentBranchChange)
                 {
                     PDState _res = res;
