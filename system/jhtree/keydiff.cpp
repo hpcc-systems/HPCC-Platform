@@ -1341,6 +1341,7 @@ public:
         }
         verifyCRCs();
         if(newOutput->queryCount())
+        {
             if(tlkGen)
             {
                 bool wait = tlkGen->addNode(newprev.getNodeInfo(newOutput->queryCount()-1));
@@ -1352,6 +1353,7 @@ public:
                 Owned<CNodeInfo> ni(newprev.getNodeInfo(newOutput->queryCount()-1));
                 tlkSender->send(*ni);
             }
+        }
     }
 
     virtual void getHeaderVersionInfo(unsigned short & versionMajor, unsigned short & versionMinor, unsigned short & minPatchVersionMajor, unsigned short & minPatchVersionMinor)
@@ -1399,10 +1401,12 @@ private:
         if(tlkGen)
         {
             if(!newTLK.get())
+            {
                 if(keydiff.queryHeader().hasTLKInfo())
                     newTLK.set(keydiff.queryHeader().queryNewTLK());
                 else
                     throw MakeStringException(0, "Trying to generate TLK using filename from patch, but patch does not include TLK header information");
+            }
         }
         else if(keydiff.queryHeader().hasTLKInfo() && !ignoreTLK)
             throw MakeStringException(0, "Patch includes TLK header information, but TLK generation not enabled --- aborting, invoke with warning suppressed to go ahead");

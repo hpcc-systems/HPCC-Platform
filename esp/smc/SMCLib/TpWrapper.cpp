@@ -1268,12 +1268,14 @@ void CTpWrapper::getClusterProcessList(const char* ClusterType, IArrayOf<IEspTpC
                     unsigned int clusterTypeLen = strlen(ClusterType);
                     const char* childType = NULL;
                     if (clusterTypeLen > 4)
+                    {
                         if (!strnicmp(ClusterType, "roxie", 4))
                             childType = "RoxieServerProcess[1]";
                         else if (!strnicmp(ClusterType, "thor", 4))
                             childType = "ThorMasterProcess";
                         else
                             childType = "HoleControlProcess";
+                    }
                     if (childType)
                     {
                         IPropertyTree* pChild = cluster.queryPropTree(childType);

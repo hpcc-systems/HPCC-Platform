@@ -126,10 +126,12 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_thread)
         out.appendf("tid=%d ",sysInfo.queryThreadID());
     if(fields & MSGFIELD_session)
+    {
         if(sysInfo.querySessionID() == UnknownSession)
             out.append("sid=unknown ");
         else
             out.appendf("sid=%"I64F"u ", sysInfo.querySessionID());
+    }
     if(fields & MSGFIELD_node)
     {
         size32_t len = out.length();
@@ -137,15 +139,19 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
         out.append(" ");
     }
     if(fields & MSGFIELD_job)
+    {
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("job=unknown ");
         else
             out.appendf("job=%"I64F"u ", jobInfo.queryJobID());
+    }
     if(fields & MSGFIELD_user)
+    {
         if(jobInfo.queryUserID() == UnknownUser)
             out.append("usr=unknown ");
         else
             out.appendf("usr=%"I64F"u ", jobInfo.queryUserID());
+    }
     if(fields & MSGFIELD_component)
         out.appendf("cmp=%u ", component);
     if (fields & MSGFIELD_quote)
@@ -206,10 +212,12 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_thread)
         out.append("TID=\"").append(sysInfo.queryThreadID()).append("\" ");
     if(fields & MSGFIELD_session)
+    {
         if(sysInfo.querySessionID() == UnknownSession)
             out.append("SessionID=\"unknown\" ");
         else
             out.append("SessionID=\"").append(sysInfo.querySessionID()).append("\" ");
+    }
     if(fields & MSGFIELD_node)
     {
         out.append("Node=\"");
@@ -220,15 +228,19 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_allSysInfo) out.append("\n     ");
 #endif
     if(fields & MSGFIELD_job)
+    {
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("JobID=\"unknown\" ");
         else
             out.append("JobID=\"").append(jobInfo.queryJobID()).append("\" ");
+    }
     if(fields & MSGFIELD_user)
+    {
         if(jobInfo.queryUserID() == UnknownUser)
             out.append("UserID=\"unknown\" ");
         else
             out.append("UserID=\"").append(jobInfo.queryUserID()).append("\" ");
+    }
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allJobInfo) out.append("\n     ");
 #endif
@@ -280,10 +292,12 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
     if(fields & MSGFIELD_thread)
         out.appendf("%5d ",sysInfo.queryThreadID());
     if(fields & MSGFIELD_session)
+    {
         if(sysInfo.querySessionID() == UnknownSession)
             out.append("      unknown        ");
         else
             out.appendf("%20"I64F"u ", sysInfo.querySessionID());
+    }
     if(fields & MSGFIELD_node)
     {
         size32_t len = out.length();
@@ -291,15 +305,19 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         out.appendN(20 + len - out.length(), ' ');
     }
     if(fields & MSGFIELD_job)
+    {
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("unknown ");
         else
             out.appendf("%7"I64F"u ", jobInfo.queryJobID());
+    }
     if(fields & MSGFIELD_user)
+    {
         if(jobInfo.queryUserID() == UnknownUser)
             out.append("unknown ");
         else
             out.appendf("%7"I64F"u ", jobInfo.queryUserID());
+    }
     if(fields & MSGFIELD_component)
         out.appendf("%6u ", component);
     if (fields & MSGFIELD_quote)
@@ -388,10 +406,12 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
     if(fields & MSGFIELD_thread)
         fprintf(handle, "tid=%d ",sysInfo.queryThreadID());
     if(fields & MSGFIELD_session)
+    {
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "sid=unknown ");
         else
             fprintf(handle, "sid=%"I64F"u ", sysInfo.querySessionID());
+    }
     if(fields & MSGFIELD_node)
     {
         StringBuffer buff;
@@ -399,15 +419,19 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
         fprintf(handle, "%s ", buff.str());
     }
     if(fields & MSGFIELD_job)
+    {
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "job=unknown ");
         else
             fprintf(handle, "job=%"I64F"u ", jobInfo.queryJobID());
+    }
     if(fields & MSGFIELD_user)
+    {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "usr=unknown ");
         else
             fprintf(handle, "usr=%"I64F"u ", jobInfo.queryUserID());
+    }
     if(fields & MSGFIELD_component)
         fprintf(handle, "cmp=%u ", component);
     
@@ -463,10 +487,12 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
     if(fields & MSGFIELD_thread)
         fprintf(handle, "TID=\"%d\" ", sysInfo.queryThreadID());
     if(fields & MSGFIELD_session)
+    {
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "SessionID=\"unknown\" ");
         else
             fprintf(handle, "SessionID=\"%"I64F"u\" ", sysInfo.querySessionID());
+    }
     if(fields & MSGFIELD_node)
     {
         StringBuffer buff;
@@ -477,15 +503,19 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
     if(fields & MSGFIELD_allSysInfo) fprintf(handle, "\n     ");
 #endif
     if(fields & MSGFIELD_job)
+    {
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "JobID=\"unknown\" ");
         else
             fprintf(handle, "JobID=\"%"I64F"u\" ", jobInfo.queryJobID());
+    }
     if(fields & MSGFIELD_user)
+    {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "UserID=\"unknown\" ");
         else
             fprintf(handle, "UserID=\"%"I64F"u\" ", jobInfo.queryUserID());
+    }
     if(fields & MSGFIELD_component)
         fprintf(handle, "Component=\"%6u\" ", component);
 #ifdef LOG_MSG_NEWLINE
@@ -536,10 +566,12 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
     if(fields & MSGFIELD_thread)
         fprintf(handle, "%5d ",sysInfo.queryThreadID());
     if(fields & MSGFIELD_session)
+    {
         if(sysInfo.querySessionID() == UnknownSession)
             fprintf(handle, "       unknown       ");
         else
             fprintf(handle, "%20"I64F"u ", sysInfo.querySessionID());
+    }
     if(fields & MSGFIELD_node)
     {
         StringBuffer buff;
@@ -548,15 +580,19 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
         fprintf(handle, "%s%s", buff.str(), (buff.length()<=20) ? twenty_spaces+buff.length() : "");
     }
     if(fields & MSGFIELD_job)
+    {
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "unknown ");
         else
             fprintf(handle, "%7"I64F"u ", jobInfo.queryJobID());
+    }
     if(fields & MSGFIELD_user)
+    {
         if(jobInfo.queryUserID() == UnknownUser)
             fprintf(handle, "unknown ");
         else
             fprintf(handle, "%7"I64F"u ", jobInfo.queryUserID());
+    }
     if(fields & MSGFIELD_component)
         fprintf(handle, "%6u ", component);
     const char * quote = (fields & MSGFIELD_quote) ? "\"" : "";
@@ -1918,10 +1954,12 @@ ILogMsgFilter * queryPassNoneLogMsgFilter()
 ILogMsgFilter * getCategoryLogMsgFilter(unsigned audiences, unsigned classes, LogMsgDetail maxDetail, bool local)
 {
     if((audiences==MSGAUD_all) && (classes==MSGCLS_all) && (maxDetail==TopDetail))
+    {
         if(local)
             return LINK(thePassLocalFilter);
         else
             return LINK(thePassAllFilter);
+    }
     return new CategoryLogMsgFilter(audiences, classes, maxDetail, local);
 }
 
@@ -2073,10 +2111,12 @@ ILogMsgHandler * getLogMsgHandlerFromPTree(IPropertyTree * tree)
     unsigned fields = MSGFIELD_all;
     char const * fstr = tree->queryProp("@fields");
     if(fstr)
+    {
         if(isdigit(fstr[0]))
             fields = atoi(fstr);
         else
             fields = LogMsgFieldsFromAbbrevs(fstr);
+    }
     if(strcmp(type.str(), "stderr")==0)
         return getHandleLogMsgHandler(stderr, fields, tree->hasProp("@writeXML"));
     else if(strcmp(type.str(), "file")==0)

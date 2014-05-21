@@ -202,7 +202,7 @@ void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtr
             Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, false, true);
             if (file)
             {
-                if (0 == (TDWextend+TDWoverwrite & diskHelperBase->getFlags()))
+                if (0 == ((TDWextend+TDWoverwrite) & diskHelperBase->getFlags()))
                     throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
                 checkSuperFileOwnership(*file);
             }

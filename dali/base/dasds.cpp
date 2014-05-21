@@ -4656,8 +4656,10 @@ public:
                         Owned<IJlibDateTime> nowTime = createDateTimeNow();
                         nowTime->setGmtDate(1970, 1, 1);
                         if (within24)
+                        {
                             if (!(nowTime->compare(*quietStartTime) >= 0 && nowTime->compare(*quietEndTime) <= 0))
                                 continue; // if outside quiet period within 0-24
+                        }
                         else if (nowTime->compare(*quietEndTime) > 0 && nowTime->compare(*quietStartTime) < 0)
                             continue; // if inside period excluded by quiet period
                     }

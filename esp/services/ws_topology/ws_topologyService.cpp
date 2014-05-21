@@ -1430,24 +1430,28 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
             {
                 const unsigned int len = strlen(compType);
                 if (len>4)
+                {
                     if (!strnicmp(compType, "Roxie", 5))
                         compType = "RoxieCluster", fileName = "RoxieTopology.xml", bCluster = true;
                     else if (!strnicmp(compType, "Thor", 4))
                         compType = "ThorCluster", fileName = "thor.xml", bCluster = true;
                     else if (!strnicmp(compType, "Hole", 4))
                         compType = "HoleCluster", fileName = "edata.ini", bCluster = true;
+                }
             }
         }
         else
         {
             fileName = "";
             if (strlen(compType)>4)
+            {
                 if (!strnicmp(compType, "Roxie", 5))
                     compType = "RoxieCluster", bCluster = true;
                 else if (!strnicmp(compType, "Thor", 4))
                     compType = "ThorCluster", bCluster = true;
                 else if (!strnicmp(compType, "Hole", 4))
                     compType = "HoleCluster", bCluster = true;
+            }
         }
 
         if (!fileName)

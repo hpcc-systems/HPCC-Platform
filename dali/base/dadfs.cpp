@@ -9353,10 +9353,12 @@ public:
                 const char *name = grp.queryProp("@name");
                 bool iscluster = NotFound != clusternames.find(name);
                 if (iscluster!=grp.getPropBool("@cluster"))
+                {
                     if (iscluster)
                         grp.setPropBool("@cluster", true);
                     else
                         grp.removeProp("@cluster");
+                }
             }
         }
     }

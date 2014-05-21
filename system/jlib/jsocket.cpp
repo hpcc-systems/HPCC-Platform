@@ -2649,10 +2649,12 @@ IpAddress & queryLocalIP()
 {
     CriticalBlock c(hostnamesect);
     if (localhostip.isNull()) 
+    {
         if (IP6preferred)
             localhostip.ipset("::1");   //IPv6 
         else
             localhostip.ipset("127.0.0.1"); //IPv4
+    }
     return localhostip;
 }
 

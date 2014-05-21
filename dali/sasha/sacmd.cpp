@@ -234,10 +234,12 @@ public:
     void addDT(CDateTime &dt)
     {
         if ((numdts+16)/16!=(numdts+15)/16)
+        {
             if (dts)
                 dts = (CDateTime *)realloc(dts,(numdts+16)*sizeof(CDateTime));
             else
                 dts = (CDateTime *)malloc((numdts+16)*sizeof(CDateTime));
+        }
         memset(dts+numdts,0,sizeof(CDateTime));
         dts[numdts++].set(dt);
     }
