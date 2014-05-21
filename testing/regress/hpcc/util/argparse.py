@@ -82,7 +82,7 @@ __all__ = [
 ]
 
 
-import collections as _collections
+import hpcc.util.collections as _collections
 import copy as _copy
 import os as _os
 import re as _re
