@@ -371,7 +371,7 @@ protected:
     IResolvedFile *lookupExpandedFileName(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool checkCompulsory) const
     {
         IResolvedFile *result = lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
-        if (!result && (!checkCompulsory || !CPackageNode::isCompulsory()))
+        if (!result && (!checkCompulsory || !isCompulsory()))
             result = resolveLFNusingDaliOrLocal(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
         return result;
     }
