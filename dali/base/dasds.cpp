@@ -8133,7 +8133,8 @@ public:
         else if (sub) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
         {
             bool ret = false;
-            if (changes.state && changes.local)
+            // avoid notifying on PDS_Structure only, which signifies changes deeper down only
+            if (changes.state && changes.local && (changes.local != PDS_Structure))
             {
                 ForEachItemInRev(s, subs)
                 {
