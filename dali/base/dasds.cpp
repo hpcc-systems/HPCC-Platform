@@ -682,7 +682,7 @@ public:
     bool querySub() const { return sub; }
     bool querySendValue() const { return sendValue; }
     unsigned queryDepth() const { return depth; }
-    bool qualify(CPTStack &stack)
+    bool qualify(CPTStack &stack, bool below)
     {
         ForEachItemIn(q, qualifierStack)
         {
@@ -690,7 +690,7 @@ public:
             if (stack.ordinality() <= q+1)
             {
                 // No more stack available (e.g. because deleted below this point)
-                return true;
+                return below; // NB: return true if below=true (meaning head of subscriber path)
             }
             PTree &item = stack.item(q+1); // stack +1, top is root unqualified.
             if (qualifier && '\0' != *qualifier)
@@ -778,7 +778,7 @@ public:
         ForEachItemIn(s, *list)
         {
             CSubscriberContainer &subscriber = list->item(s);
-            if (subscriber.qualify(stack))
+            if (subscriber.qualify(stack, false))
             {
                 if (!results) results = new CSubscriberContainerList(xpath);
                 subscriber.Link();
@@ -8071,7 +8071,7 @@ public:
                     CSubscriberContainer &subscriber = subs.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
-                        if (subscriber.qualify(stack))
+                        if (subscriber.qualify(stack, true))
                             SDSManager->handleNotify(subscriber, state, stack);
                         else
                             pruned.append(*LINK(&subscriber));
@@ -8088,7 +8088,7 @@ public:
                         CSubscriberContainer &subscriber = subs.item(s);
                         if (!subscriber.isUnsubscribed())
                         {
-                            if (subscriber.qualify(stack))
+                            if (subscriber.qualify(stack, true))
                                 SDSManager->handleNotify(subscriber, state, stack);
                             else
                                 pruned.append(*LINK(&subscriber));
@@ -8133,14 +8133,15 @@ public:
         else if (sub) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
         {
             bool ret = false;
-            if (changes.state && changes.local)
+            // avoid notifying on PDS_Structure only, which signifies changes deeper down only
+            if (changes.state && changes.local && (changes.local != PDS_Structure))
             {
                 ForEachItemInRev(s, subs)
                 {
                     CSubscriberContainer &subscriber = subs.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
-                        if (subscriber.qualify(stack))
+                        if (subscriber.qualify(stack, false))
                         {
                             if (subscriber.querySendValue())
                             {
