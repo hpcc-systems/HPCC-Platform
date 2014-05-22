@@ -40,8 +40,8 @@ trueValue := true : stored('trueValue');
 
 osumx := IF(trueValue, osum, FAIL('Should not be called'));
 
-x1 := when(simple, osumx, before);
+x1 := when(simple, osumx, parallel);
 
 o1 := output(TABLE(x1, { f1 }));
 o2 := output(TABLE(simple, { c := count(group) }, f3));
-when(o1, o2);
+when(o1, o2, parallel);

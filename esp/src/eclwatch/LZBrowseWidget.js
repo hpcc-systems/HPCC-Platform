@@ -99,6 +99,7 @@ define([
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
             this.dropZoneSelect = registry.byId(this.id + "DropZoneTargetSelect");
             this.fileListDialog = registry.byId(this.id + "FileListDialog");
+            this.overwriteCheckbox = registry.byId(this.id + "FileOverwriteCheckbox");
 
             var context = this;
             this.connect(this.uploader, "onComplete", function (response) {
@@ -151,6 +152,40 @@ define([
             arrayUtil.forEach(dataArray, function (item, idx) {
                 this.uploadString += "\n" + item.name;
             }, this);
+        },
+
+        _onCheckUploadSubmit: function () {
+            var context = this;
+            if (this.overwriteCheckbox.checked){
+                this._onUploadSubmit();
+                this.fileListDialog.hide();
+            } else {
+                var fileList = registry.byId(this.id + "Upload").getFileList();
+                var item = context.dropZoneSelect.get("row");
+                FileSpray.FileList({
+                    request: {
+                        Netaddr: item.machine.Netaddress,
+                        Path: item.machine.Directory
+                    }
+                }).then(function (response) {
+                    if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
+                        var fileName = "";
+                        arrayUtil.forEach(response.FileListResponse.files.PhysicalFileStruct, function (item, index) {
+                            arrayUtil.forEach(fileList, function (file,idx){
+                                if (item.name === file.name){
+                                    fileName = file.name;
+                                }
+                            });
+                        });
+                        if (fileName === ""){
+                            context._onUploadSubmit();
+                            context.fileListDialog.hide();
+                        } else {
+                            alert(context.i18n.OverwriteMessage);
+                        }
+                    }
+                });
+            }
         },
 
         _onUploadProgress: function (progress) {
