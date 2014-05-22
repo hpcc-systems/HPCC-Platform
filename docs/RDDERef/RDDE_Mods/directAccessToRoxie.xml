@@ -87,8 +87,10 @@
           role="bold">&lt;query&gt;</emphasis>?_jobname=<emphasis role="bold">&lt;jobname&gt;</emphasis></programlisting>
 
       <para>This is useful for testing queries. It is also suitable for
-      providing real-time access to a small set of users; however, it is not
-      intended to scale to larger audiences.</para>
+      providing real-time access to a small set of users; however, to use it
+      for larger larger audiences, you must use proxy mode to reduce latency.
+      See <link linkend="proxymode">WsECL and Low Latency (Proxy mode)</link>
+      </para>
     </sect2>
 
     <sect2>
@@ -273,6 +275,50 @@
       should implement a similar load distribution scheme. Alternatively, you
       can use a load balancer and submit the query to the Virtual IP created
       by the load balancer.</para>
+    </sect2>
+
+    <sect2 id="proxymode">
+      <title>WsECL and Low Latency (Proxy mode)</title>
+
+      <para>For low-latency HTTP-GET and HTTP-FORM-POST calls through WsECL to
+      Roxie, change the URL to use proxy mode as shown below:<programlisting>Change:
+/WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName
+to
+/WsEcl/<emphasis role="bold">proxy</emphasis>/query/RoxieTargetName/QueryName</programlisting></para>
+
+      <para>Parameterized WsEcl proxy calls to roxie support a subset of the
+      parameter formats supported by non-proxy mode calls.</para>
+
+      <para><programlisting>/WsEcl/proxy/query/mytarget/myquery?param1=value</programlisting>For
+      complex parameters, use dot notation to specify nested values. For
+      example:</para>
+
+      <programlisting>&lt;MyQuery&gt;
+  &lt;State&gt;FL&lt;/State&gt;
+  &lt;Regs&gt;
+    &lt;Reg&gt;
+      &lt;Name&gt;SOUTH&lt;/Name&gt;
+      &lt;Codes&gt;
+        &lt;Code&gt;PBI&lt;/Code&gt;
+        &lt;Code&gt;FLL&lt;/Code&gt;
+      &lt;/Code&gt;
+    &lt;/Reg&gt;
+    &lt;Reg&gt;
+      &lt;Name&gt;NORTH&lt;/Name&gt;
+      &lt;Codes&gt;
+        &lt;Code&gt;MCO&lt;/Code&gt;
+      &lt;/Code&gt;
+    &lt;/Reg&gt;
+  &lt;/Regs&gt;
+&lt;/MyQuery&gt;</programlisting>
+
+      <para>The URL or HTTP Form would set the following
+      parameters:<programlisting>State=FL
+Regs.Reg.0.Name=SOUTH
+Regs.Reg.0.Codes.Code.0=PBI
+Regs.Reg.0.Codes.Code.1=FLL
+Regs.Reg.1.Name=NORTH
+Regs.Reg.1.Codes.Code=MCO</programlisting></para>
     </sect2>
   </sect1>
 </chapter>
