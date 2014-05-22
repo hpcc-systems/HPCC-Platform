@@ -579,11 +579,13 @@ public:
     {
         StringBuffer xpath;
         dlfn.makeFullnameQuery(xpath,DXB_File,true).append("/ClusterLock");
-        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_CREATE | RTM_LOCK_WRITE | RTM_DELETE_ON_DISCONNECT, SDS_CONNECT_TIMEOUT));
-    }
 
-    ~CClustersLockedSection()
-    {
+        /* Avoid RTM_CREATE_QUERY connect() if possible by making 1st call without. This is to avoid write contention caused by RTM_CREATE*
+         * NB: RTM_CREATE_QUERY should probably only gain exclusive access in Dali if node is missing.
+         */
+        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_CONNECT_TIMEOUT));
+        if (!conn.get()) // NB: ClusterLock is now created at File create time, so this can only be true for pre-existing File's
+            conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_CREATE_QUERY | RTM_LOCK_WRITE, SDS_CONNECT_TIMEOUT));
     }
 };
 
@@ -3192,6 +3194,7 @@ public:
 #endif
         parent = _parent;
         root.setown(createPTree(queryDfsXmlBranchName(DXB_File)));
+        root->setPropTree("ClusterLock", createPTree());
 //      fdesc->serializeTree(*root,IFDSF_EXCLUDE_NODES);
         setFileAttrs(fdesc,true);
         setClusters(fdesc);
@@ -7969,7 +7972,13 @@ void CDistributedFileDirectory::addEntry(CDfsLogicalFileName &dlfn,IPropertyTree
     }
     root->setProp("@name",tail.str());
     root->setProp("OrigName",dlfn.get());
-    sroot->addPropTree(superfile?queryDfsXmlBranchName(DXB_SuperFile):queryDfsXmlBranchName(DXB_File),root); // now owns root  
+    if (superfile)
+        sroot->addPropTree(queryDfsXmlBranchName(DXB_SuperFile), root); // now owns root
+    else
+    {
+        IPropertyTree *file = sroot->addPropTree(queryDfsXmlBranchName(DXB_File), root); // now owns root
+        file->setPropTree("ClusterLock", createPTree());
+    }
 }
 
 IDistributedFileIterator *CDistributedFileDirectory::getIterator(const char *wildname, bool includesuper, IUserDescriptor *user)
