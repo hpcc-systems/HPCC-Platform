@@ -10818,10 +10818,15 @@ public:
         }
         else
         {
-            outSeq->flush(&crc);
-            updateWorkUnitResult(processed);
-            uncompressedBytesWritten = outSeq->getPosition();
-            writer->finish(true, this);
+            if (outSeq)
+                outSeq->flush(&crc);
+            if (outSeq)
+                uncompressedBytesWritten = outSeq->getPosition();
+            if (writer)
+            {
+                updateWorkUnitResult(processed);
+                writer->finish(true, this);
+            }
         }
         writer.clear();
         CRoxieServerActivity::stop(aborting);
