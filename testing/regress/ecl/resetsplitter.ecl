@@ -15,33 +15,22 @@
     limitations under the License.
 ############################################################################## */
 
-//skip type==thorlcr TBD
+idRecord := { unsigned id; };
 
-r := {unsigned f1, unsigned f2, unsigned f3, unsigned f4 };
+myDataset := DATASET(100, TRANSFORM(idRecord, SELF.id := COUNTER), DISTRIBUTED);
 
-r t(unsigned a, unsigned b, unsigned c, unsigned d) := TRANSFORM
-    SELF.f1 := a;
-    SELF.f2 := b;
-    SELF.f3 := c;
-    SELF.f4 := d;
-END;
+filtered := NOFOLD(myDataset)(id % 20 != 0);
 
-ds := dataset([
-        t(1,2,3,4),
-        t(1,4,2,5),
-        t(9,3,4,5),
-        t(3,4,2,9)]);
+filter1 := NOFOLD(filtered)(id % 3 != 0);
 
-simple := dedup(nofold(ds), f1);
+filter2 := NOFOLD(filtered)(id % 3 != 1);
 
-osum := output(TABLE(simple, { s := sum(group, f1) }, f3));
+p1 := PROJECT(NOFOLD(filtered), TRANSFORM(idRecord, SELF.id := LEFT.id + COUNT(filter1)));
 
-trueValue := true : stored('trueValue');
+p2 := PROJECT(NOFOLD(filtered), TRANSFORM(idRecord, SELF.id := LEFT.id + COUNT(filter2)));
 
-osumx := IF(trueValue, osum, FAIL('Should not be called'));
+boolean test := false : stored('test');
 
-x1 := when(simple, osumx, before);
+r := IF(test, NOFOLD(p1), NOFOLD(p2));
 
-o1 := output(TABLE(x1, { f1 }));
-o2 := output(TABLE(simple, { c := count(group) }, f3));
-when(o1, o2);
+output(CHOOSEN(NOFOLD(r), 10));

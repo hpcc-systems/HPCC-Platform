@@ -678,6 +678,29 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                     return true;
                 break;
             }
+
+            case TAKsequential:
+            case TAKparallel:
+            {
+                /* NB - The executeDependencies code below is only needed if actionLinkInNewGraph=true, which is no longer the default
+                 * It should be removed, once we are positive there are no issues with in-line sequential/parallel activities
+                 */
+                for (unsigned s=1; s<=dependsOn.ordinality(); s++)
+                {
+                    if (!executeDependencies(parentExtractSz, parentExtract, s, async))
+                        return false;
+                }
+                break;
+            }
+            case TAKwhen_dataset:
+            case TAKwhen_action:
+            {
+                if (!executeDependencies(parentExtractSz, parentExtract, WhenBeforeId, async))
+                    return false;
+                if (!executeDependencies(parentExtractSz, parentExtract, WhenParallelId, async))
+                    return false;
+                break;
+            }
         }
         ForEachItemIn(i, inputs)
         {

@@ -6217,6 +6217,7 @@ CHThorWhenActionActivity::CHThorWhenActionActivity(IAgentContext &_agent, unsign
 void CHThorWhenActionActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
+    graphElement->executeDependentActions(agent, NULL, WhenBeforeId);
     graphElement->executeDependentActions(agent, NULL, WhenParallelId);
 }
 
