@@ -1237,21 +1237,22 @@ public:
 
     inline void stop(bool aborting)
     {
-        if (state != STATEstopped && state != STATEreset)
+        // NOTE - don't be tempted to skip the stop for activities that are reset - splitters need to see the stops
+        if (state != STATEstopped)
         {
             CriticalBlock cb(statecrit);
+            if (state != STATEstopped)
+            {
 #ifdef TRACE_STARTSTOP
-            if (traceStartStop)
-            {
-                CTXLOG("stop %p %d (state currently %s)", this, activityId, queryStateText(state));
-                if (watchActivityId && watchActivityId==activityId)
+                if (traceStartStop)
                 {
-                    CTXLOG("WATCH: stop %p %d", this, activityId);
+                    CTXLOG("stop %p %d (state currently %s)", this, activityId, queryStateText(state));
+                    if (watchActivityId && watchActivityId==activityId)
+                    {
+                        CTXLOG("WATCH: stop %p %d", this, activityId);
+                    }
                 }
-            }
 #endif
-            if (state != STATEstopped && state != STATEreset)
-            {
                 state=STATEstopped;
                 // NOTE - this is needed to ensure that dependencies which were not used are properly stopped
                 ForEachItemIn(idx, dependencies)
@@ -15172,7 +15173,12 @@ public:
         {
             CRoxieServerActivity::reset();
             libraryGraph->reset();
-            //Call reset on all unused outputs from the graph - no one else will.
+            //Call reset on all unused inputs/outputs from the graph - no one else will.
+            for (unsigned i1 = 0; i1 < numInputs; i1++)
+            {
+                if (!inputUsed[i1])
+                    inputAdaptors[i1]->reset();
+            }
             IRoxieServerChildGraph * graph = libraryGraph->queryLoopGraph();
             ForEachItemIn(i3, extra.unusedOutputs)
             {
