@@ -634,7 +634,7 @@ public:
             StringBuffer compulsoryMsg;
             if (isCompulsory())
                     compulsoryMsg.append(" (Package is compulsory)");
-            if (!opt)
+            if (!opt && !pretendAllOpt)
                 throw MakeStringException(ROXIE_FILE_ERROR, "Could not resolve filename %s%s", fileName.str(), compulsoryMsg.str());
             if (traceLevel > 4)
                 DBGLOG("Could not resolve OPT filename %s%s", fileName.str(), compulsoryMsg.str());
@@ -1454,9 +1454,6 @@ public:
     CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, ISDSSubscription *_owner, unsigned numChannels, bool forceReload)
     : stateHash(0), daliHelper(_daliHelper), owner(_owner)
     {
-        Owned<IDaliPackageWatcher> notifier = daliHelper->getPackageSetsSubscription(this);
-        if (notifier)
-            notifiers.append(*notifier.getClear());
         ForEachItemIn(idx, allQuerySetNames)
         {
             createQueryPackageManagers(numChannels, allQuerySetNames.item(idx), forceReload);
@@ -1684,6 +1681,7 @@ private:
 
 class CRoxiePackageSetManager : public CInterface, implements IRoxieQueryPackageManagerSet, implements ISDSSubscription
 {
+    Owned<IDaliPackageWatcher> notifier;
 public:
     IMPLEMENT_IINTERFACE;
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
@@ -1692,6 +1690,7 @@ public:
         daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
         atomic_set(&autoPending, 0);
         autoReloadThread.start();
+        notifier.setown(daliHelper->getPackageSetsSubscription(this));
     }
 
     ~CRoxiePackageSetManager()

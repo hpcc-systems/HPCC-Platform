@@ -15032,10 +15032,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IH
         label = "Parallel";
         when = WhenParallelId;
     }
-    else
+    else if (expr->hasAttribute(beforeAtom))
     {
         label = "Before";
-        when = WhenDefaultId;
+        when = WhenBeforeId;
+    }
+    else
+    {
+        //Should WHEN default to BEFORE or PARALLEL??
+        label = "Parallel";
+        when = WhenParallelId;
     }
 
     bool useImplementationClass = options.minimizeActivityClasses;
