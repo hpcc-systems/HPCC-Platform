@@ -1295,9 +1295,6 @@ public:
     CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, ISDSSubscription *_owner, unsigned numChannels)
     : stateHash(0), daliHelper(_daliHelper), owner(_owner)
     {
-        Owned<IDaliPackageWatcher> notifier = daliHelper->getPackageSetsSubscription(this);
-        if (notifier)
-            notifiers.append(*notifier.getClear());
         ForEachItemIn(idx, allQuerySetNames)
         {
             createQueryPackageManagers(numChannels, allQuerySetNames.item(idx));
@@ -1525,12 +1522,14 @@ private:
 
 class CRoxiePackageSetManager : public CInterface, implements IRoxieQueryPackageManagerSet, implements ISDSSubscription
 {
+    Owned<IDaliPackageWatcher> notifier;
 public:
     IMPLEMENT_IINTERFACE;
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
         standAloneDll(_standAloneDll)
     {
         daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
+        notifier.setown(daliHelper->getPackageSetsSubscription(this));
     }
 
     ~CRoxiePackageSetManager()
