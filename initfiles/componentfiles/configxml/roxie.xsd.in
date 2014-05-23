@@ -683,6 +683,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="slaveQueryReleaseDelaySeconds" type="xs:nonNegativeInteger" use="optional" default="60">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Delay before unregistering slave queries to allow in-flight to complete</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
 
    <xs:attribute name="slaveThreads" type="xs:nonNegativeInteger" use="optional" default="30">
       <xs:annotation>

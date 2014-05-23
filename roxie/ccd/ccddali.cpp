@@ -434,12 +434,6 @@ public:
         return ret.getClear();
     }
 
-    static const char *getPackageMapPath(StringBuffer &buf, const char *id)
-    {
-        buf.appendf("PackageMaps/PackageMap[@id='%s']", id);
-        return buf.str();
-    }
-
     virtual IPropertyTree *getPackageMap(const char *id)
     {
         Owned<IPropertyTree> ret = loadDaliTree("PackageMaps/PackageMap", id);
@@ -663,10 +657,10 @@ public:
         return getSubscription("PackageSets", "PackageSets", notifier);
     }
 
-    virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier)
+    virtual IDaliPackageWatcher *getPackageMapsSubscription(ISDSSubscription *notifier)
     {
         StringBuffer xpath;
-        return getSubscription(id, getPackageMapPath(xpath, id), notifier);
+        return getSubscription("PackageMaps", "PackageMaps", notifier);
     }
 
     virtual bool connected() const

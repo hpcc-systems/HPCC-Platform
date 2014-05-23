@@ -85,6 +85,120 @@ const char *queryNodeIndexName(const IPropertyTree &graphNode)
     return id;
 }
 
+// DelayedReleaser mechanism hangs on to a link to an object for a while...
+
+class DelayedReleaseQueueItem : public CInterfaceOf<IInterface>
+{
+    Owned<IInterface> goer;
+    time_t goTime;
+public:
+    DelayedReleaseQueueItem(IInterface *_goer, unsigned delaySeconds)
+    : goer(_goer)
+    {
+        time(&goTime);
+        goTime += delaySeconds;
+    }
+    unsigned remaining()
+    {
+        time_t now;
+        time(&now);
+        if (now > goTime)
+            return 0;
+        else
+            return goTime - now;
+    }
+};
+
+class DelayedReleaserThread : public Thread
+{
+private:
+    bool closing;
+    bool started;
+    CriticalSection lock;
+    IArrayOf<DelayedReleaseQueueItem> queue;
+    Semaphore sem;
+public:
+    DelayedReleaserThread() : Thread("DelayedReleaserThread")
+    {
+        closing = false;
+        started = false;
+    }
+
+    ~DelayedReleaserThread()
+    {
+        stop();
+    }
+
+    virtual int run()
+    {
+        if (traceLevel)
+            DBGLOG("DelayedReleaserThread %p starting", this);
+        unsigned nextTimeout = INFINITE;
+        while (!closing)
+        {
+            sem.wait(nextTimeout);
+            CriticalBlock b(lock);
+            nextTimeout = INFINITE;
+            ForEachItemInRev(idx, queue)
+            {
+                DelayedReleaseQueueItem &goer = queue.item(idx);
+                unsigned timeRemaining = goer.remaining();
+                if (!timeRemaining)
+                    queue.remove(idx);
+                else if (timeRemaining < nextTimeout)
+                    nextTimeout = timeRemaining;
+            }
+            if (nextTimeout != INFINITE)
+                nextTimeout = nextTimeout * 1000;
+        }
+        if (traceLevel)
+            DBGLOG("DelayedReleaserThread %p exiting", this);
+        return 0;
+    }
+
+    void stop()
+    {
+        if (started)
+        {
+            closing = true;
+            sem.signal();
+            join();
+        }
+    }
+
+    void delayedRelease(IInterface *goer, unsigned delaySeconds)
+    {
+        if (goer)
+        {
+            CriticalBlock b(lock);
+            if (!started)
+            {
+                start();
+                started = true;
+            }
+            queue.append(*new DelayedReleaseQueueItem(goer, delaySeconds));
+            sem.signal();
+        }
+    }
+};
+
+Owned<DelayedReleaserThread> delayedReleaser;
+
+void createDelayedReleaser()
+{
+    delayedReleaser.setown(new DelayedReleaserThread);
+}
+
+void stopDelayedReleaser()
+{
+    if (delayedReleaser)
+        delayedReleaser->stop();
+    delayedReleaser.clear();
+}
+
+
+//-------------------------------------------------------------------------
+
 class CSimpleSuperFileArray : public CInterface, implements ISimpleSuperFileEnquiry
 {
     IArrayOf<IPropertyTree> subFiles;
@@ -1171,6 +1285,8 @@ protected:
             serverManager.setown(newServerManager);
             queryHash = newHash;
         }
+        if (slaveQueryReleaseDelaySeconds)
+            delayedReleaser->delayedRelease(oldSlaveManagers.getClear(), slaveQueryReleaseDelaySeconds);
     }
 
     mutable CriticalSection updateCrit;  // protects updates of slaveManagers and serverManager
@@ -1288,12 +1404,12 @@ extern IRoxieDebugSessionManager &queryRoxieDebugSessionManager()
     return *debugSessionManager;
 }
 
-class CRoxiePackageSetWatcher : public CInterface, implements ISDSSubscription
+class CRoxiePackageSetWatcher : public CInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, ISDSSubscription *_owner, unsigned numChannels)
-    : stateHash(0), daliHelper(_daliHelper), owner(_owner)
+    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, unsigned numChannels)
+    : stateHash(0), daliHelper(_daliHelper)
     {
         ForEachItemIn(idx, allQuerySetNames)
         {
@@ -1301,8 +1417,8 @@ public:
         }
     }
 
-    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, ISDSSubscription *_owner, const IQueryDll *standAloneDll, unsigned numChannels, const char *querySet)
-    : stateHash(0), daliHelper(_daliHelper), owner(_owner)
+    CRoxiePackageSetWatcher(IRoxieDaliHelper *_daliHelper, const IQueryDll *standAloneDll, unsigned numChannels, const char *querySet)
+    : stateHash(0), daliHelper(_daliHelper)
     {
         Owned<IPropertyTree> standAloneDllTree;
         standAloneDllTree.setown(createPTree("Query"));
@@ -1312,16 +1428,6 @@ public:
         qpm->load();
         stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, qpm->getHash());
         allQueryPackages.append(*qpm.getClear());
-    }
-
-    ~CRoxiePackageSetWatcher()
-    {
-        unsubscribe();
-    }
-
-    virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
-    {
-        owner->notify(id, xpath, flags, valueLen, valueData);
     }
 
     IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
@@ -1436,9 +1542,7 @@ public:
     }
 
 private:
-    ISDSSubscription *owner;
     CIArrayOf<CRoxieQueryPackageManager> allQueryPackages;
-    IArrayOf<IDaliPackageWatcher> notifiers;
     Linked<IRoxieDaliHelper> daliHelper;
     hash64_t stateHash;
 
@@ -1487,7 +1591,6 @@ private:
                             loadedPackages++;
                             if (isActive)
                                 activePackages++;
-                            notifiers.append(*daliHelper->getPackageMapSubscription(packageMapId, this));
                         }
                         catch (IException *E)
                         {
@@ -1510,30 +1613,34 @@ private:
             DBGLOG("Loaded %d packages (%d active)", loadedPackages, activePackages);
     }
 
-    void unsubscribe()
-    {
-        ForEachItemIn(idx, notifiers)
-        {
-            daliHelper->releaseSubscription(&notifiers.item(idx));
-        }
-        notifiers.kill();
-    }
 };
 
 class CRoxiePackageSetManager : public CInterface, implements IRoxieQueryPackageManagerSet, implements ISDSSubscription
 {
-    Owned<IDaliPackageWatcher> notifier;
+    Owned<IDaliPackageWatcher> pSetsNotifier;
+    Owned<IDaliPackageWatcher> pMapsNotifier;
 public:
     IMPLEMENT_IINTERFACE;
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
-        standAloneDll(_standAloneDll)
+        autoReloadThread(*this), standAloneDll(_standAloneDll)
     {
         daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
-        notifier.setown(daliHelper->getPackageSetsSubscription(this));
+        atomic_set(&autoPending, 0);
+        autoReloadThread.start();
+        pSetsNotifier.setown(daliHelper->getPackageSetsSubscription(this));
+        pMapsNotifier.setown(daliHelper->getPackageMapsSubscription(this));
     }
 
     ~CRoxiePackageSetManager()
     {
+        autoReloadThread.stop();
+        autoReloadThread.join();
+    }
+
+    virtual void requestReload()
+    {
+        atomic_inc(&autoPending);
+        autoReloadTrigger.signal();
     }
 
     virtual void load()
@@ -1595,8 +1702,7 @@ public:
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        reload();
-        daliHelper->commitCache();
+        requestReload();
     }
 
 private:
@@ -1607,6 +1713,61 @@ private:
     InterruptableSemaphore controlSem;
     Owned<CRoxiePackageSetWatcher> allQueryPackages;
 
+    Semaphore autoReloadTrigger;
+    atomic_t autoPending;
+
+    class AutoReloadThread : public Thread
+    {
+        bool closing;
+        CRoxiePackageSetManager &owner;
+    public:
+        AutoReloadThread(CRoxiePackageSetManager &_owner)
+        : owner(_owner), Thread("AutoReloadThread")
+        {
+            closing = false;
+        }
+
+        virtual int run()
+        {
+            if (traceLevel)
+                DBGLOG("AutoReloadThread %p starting", this);
+            while (!closing)
+            {
+                owner.autoReloadTrigger.wait();
+                if (closing)
+                    break;
+                Sleep(500); // Typically notifications come in clumps - this avoids reloading too often
+                if (atomic_read(&owner.autoPending))
+                {
+                    atomic_set(&owner.autoPending, 0);
+                    try
+                    {
+                        owner.reload();
+                    }
+                    catch (IException *E)
+                    {
+                        if (!closing)
+                            EXCLOG(MCoperatorError, E, "AutoReloadThread: ");
+                        E->Release();
+                    }
+                    catch (...)
+                    {
+                        DBGLOG("Unknown exception in AutoReloadThread");
+                    }
+                }
+            }
+            if (traceLevel)
+                DBGLOG("AutoReloadThread %p exiting", this);
+            return 0;
+        }
+
+        void stop()
+        {
+            closing = true;
+            owner.autoReloadTrigger.signal();
+        }
+    } autoReloadThread;
+
     void reload()
     {
         clearDaliMisses();
@@ -1614,9 +1775,9 @@ private:
         // So that the query/dll caching will work for anything that is not affected by the changes
         Owned<CRoxiePackageSetWatcher> newPackages;
         if (standAloneDll)
-            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, standAloneDll, numChannels, "roxie"));
+            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, standAloneDll, numChannels, "roxie"));
         else
-            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, numChannels));
+            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, numChannels));
         // Hold the lock for as little time as we can
         // Note that we must NOT hold the lock during the delete of the old object - or we deadlock.
         // Hence the slightly convoluted code below
@@ -1626,6 +1787,7 @@ private:
             oldPackages.setown(allQueryPackages.getLink());  // To ensure that the setown just below does not delete it
             allQueryPackages.setown(newPackages.getClear());
         }
+        daliHelper->commitCache();
     }
 
     // Common code used by control:queries and control:getQueryXrefInfo
