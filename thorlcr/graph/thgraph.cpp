@@ -706,6 +706,15 @@ bool CGraphElementBase::prepareContext(size32_t parentExtractSz, const byte *par
                 }
                 break;
             }
+            case TAKwhen_dataset:
+            case TAKwhen_action:
+            {
+                if (!executeDependencies(parentExtractSz, parentExtract, WhenBeforeId, async))
+                    return false;
+                if (!executeDependencies(parentExtractSz, parentExtract, WhenParallelId, async))
+                    return false;
+                break;
+            }
         }
         ForEachItemIn(i, inputs)
         {

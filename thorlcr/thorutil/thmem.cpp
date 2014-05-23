@@ -264,6 +264,7 @@ class CSharedSpillableRowSet : public CSpillableStreamBase, implements IInterfac
             if (owner->spillFile) // i.e. has spilt
             {
                 assertex(((offset_t)-1) != outputOffset);
+                owner->rows.kill(); // no longer needed, frees pointer array
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (owner->preserveNulls)
                     rwFlags |= rw_grouped;
@@ -353,6 +354,7 @@ public:
             CThorArrayLockBlock block(rows);
             if (spillFile)
             {
+                rows.kill(); // no longer needed, frees pointer array
                 unsigned rwFlags = DEFAULT_RWFLAGS;
                 if (preserveNulls)
                     rwFlags |= rw_grouped;
@@ -1481,15 +1483,15 @@ protected:
 
         // NB: CStreamFileOwner links CFileOwner - last usage will auto delete file
         // which may be one of these streams or CThorRowCollectorBase itself
+        unsigned rwFlags = DEFAULT_RWFLAGS;
+        if (activity.getOptBool(THOROPT_COMPRESS_SPILLS, true))
+            rwFlags |= rw_compress;
+        if (preserveGrouping)
+            rwFlags |= rw_grouped;
         IArrayOf<IRowStream> instrms;
         ForEachItemIn(f, spillFiles)
         {
             CFileOwner *fileOwner = spillFiles.item(f);
-            unsigned rwFlags = DEFAULT_RWFLAGS;
-            if (activity.getOptBool(THOROPT_COMPRESS_SPILLS, true))
-                rwFlags |= rw_compress;
-            if (preserveGrouping)
-                rwFlags |= rw_grouped;
             Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, rwFlags);
             instrms.append(* new CStreamFileOwner(fileOwner, strm));
         }

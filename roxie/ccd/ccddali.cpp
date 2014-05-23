@@ -57,6 +57,8 @@ public:
         CriticalBlock b(crit);
         try
         {
+            if (traceLevel > 5)
+                DBGLOG("Subscribing to %s, %p", xpath.get(), this);
             change = querySDS().subscribe(xpath, *this, true);
         }
         catch (IException *E)
@@ -71,6 +73,8 @@ public:
         notifier = NULL;
         try
         {
+            if (traceLevel > 5)
+                DBGLOG("unsubscribing from %s, %p", xpath.get(), this);
             if (change)
                 querySDS().unsubscribe(change);
         }
@@ -91,21 +95,25 @@ public:
         // Despite the danger of deadlocks (that requires careful code in the notifier to avoid), I think it is neccessary to hold the lock during the call,
         // as otherwise notifier may point to a deleted object.
         CriticalBlock b(crit);
+        if (traceLevel > 5)
+            DBGLOG("resubscribing to %s, %p", xpath.get(), this);
         change = querySDS().subscribe(xpath, *this, true);
         if (notifier)
             notifier->notify(0, NULL, SDSNotify_None);
     }
-    virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
+    virtual void notify(SubscriptionId subid, const char *daliXpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         Linked<CDaliPackageWatcher> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
         Linked<ISDSSubscription> myNotifier;
         {
             CriticalBlock b(crit);
+            if (traceLevel > 5)
+                DBGLOG("Notification on %s (%s), %p", xpath.get(), daliXpath, this);
             myNotifier.set(notifier);
             // allow crit to be released, allowing this to be unsubscribed, to avoid deadlocking when other threads via notify call unsubscribe
         }
         if (myNotifier)
-            myNotifier->notify(subid, xpath, flags, valueLen, valueData);
+            myNotifier->notify(subid, daliXpath, flags, valueLen, valueData);
     }
 };
 
