@@ -9516,7 +9516,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
 
     doBuildSizetFunction(classctx, "queryMaxSize", getCsvMaxLength(csvAttr));
 
-    buildCsvListFunc(classctx, "getQuote", queryAttribute(quoteAtom, attrs), isReading ? "'" : NULL);
+    buildCsvListFunc(classctx, "getQuote", queryAttribute(quoteAtom, attrs), isReading ? "\"" : NULL);
     buildCsvListFunc(classctx, "getSeparator", separator, ",");
     buildCsvListFunc(classctx, "getTerminator", terminator, isReading ? "\r\n|\n" : "\n");
     buildCsvListFunc(classctx, "getEscape", escape, NULL);

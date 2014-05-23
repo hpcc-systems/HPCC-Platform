@@ -577,7 +577,7 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     maxElementLength = 1;
     format.set(_format);
     addActionList(matcher, format.separate.get() ? format.separate.get() : "\\,", SEPARATOR, &maxElementLength);
-    addActionList(matcher, format.quote.get() ? format.quote.get() : "'", QUOTE, &maxElementLength);
+    addActionList(matcher, format.quote.get() ? format.quote.get() : "\"", QUOTE, &maxElementLength);
     addActionList(matcher, format.terminate.get() ? format.terminate.get() : "\\n,\\r\\n", TERMINATOR, &maxElementLength);
     const char * escape = format.escape.get();
     if (escape && *escape)
@@ -904,7 +904,7 @@ CUtfPartitioner::CUtfPartitioner(const FileFormat & _format) : CInputBasePartiti
     format.set(_format);
     utfFormat = getUtfFormatType(format.type);
     addUtfActionList(matcher, format.separate ? format.separate.get() : "\\,", SEPARATOR, &maxElementLength, utfFormat);
-    addUtfActionList(matcher, format.quote ? format.quote.get() : "'", QUOTE, &maxElementLength, utfFormat);
+    addUtfActionList(matcher, format.quote ? format.quote.get() : "\"", QUOTE, &maxElementLength, utfFormat);
     addUtfActionList(matcher, format.terminate ? format.terminate.get() : "\\n,\\r\\n", TERMINATOR, &maxElementLength, utfFormat);
     addUtfActionList(matcher, " ", WHITESPACE, NULL, utfFormat);
     addUtfActionList(matcher, "\t", WHITESPACE, NULL, utfFormat);
