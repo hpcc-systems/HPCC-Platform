@@ -931,7 +931,8 @@ bool CWsPackageProcessEx::onGetQueryFileMapping(IEspContext &context, IEspGetQue
     const char *pmid = req.getPMID();
     if (pmid && *pmid)
     {
-        ownedmap.setown(createPackageMapFromPtree(getPackageMapById(req.getGlobalScope() ? NULL : target, pmid, true), target, pmid));
+        Owned<IPropertyTree> pm = getPackageMapById(req.getGlobalScope() ? NULL : target, pmid, true);
+        ownedmap.setown(createPackageMapFromPtree(pm, target, pmid));
         if (!ownedmap)
             throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", req.getPMID());
         map = ownedmap;
