@@ -169,7 +169,7 @@ define([
 
             var context = this;
             if (params.Name) {
-                this.logicalFile = ESPLogicalFile.Get(params.ClusterName, params.Name);
+                this.logicalFile = ESPLogicalFile.Get(params.NodeGroup, params.Name);
                 var data = this.logicalFile.getData();
                 for (var key in data) {
                     this.updateInput(key, null, data[key]);
@@ -197,7 +197,7 @@ define([
                 if (currSel.id == this.summaryWidget.id) {
                 } else if (currSel.id == this.contentWidget.id) {
                     this.contentWidget.init({
-                        ClusterName: this.logicalFile.ClusterName,
+                        ClusterName: this.logicalFile.NodeGroup,
                         LogicalName: this.logicalFile.Name
                     });
                 } else if (currSel.id == this.sourceWidget.id) {
@@ -221,6 +221,10 @@ define([
                 } else if (currSel.id == this.filePartsWidget.id) {
                     this.filePartsWidget.init({
                         fileParts: lang.exists("logicalFile.DFUFileParts.DFUPart", this) ? this.logicalFile.DFUFileParts.DFUPart : []
+                    });
+                } else if (currSel.id == this.widget._Queries.id && !this.widget._Queries.__hpcc_initalized) {
+                    this.widget._Queries.init({
+                        LogicalName: this.logicalFile.Name
                     });
                 } else if (this.workunitWidget && currSel.id == this.workunitWidget.id) {
                     this.workunitWidget.init({
