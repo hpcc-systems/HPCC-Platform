@@ -129,7 +129,6 @@ class Regression:
 
         self.suites[cluster] = Suite(cluster, self.dir_ec, self.dir_a, self.dir_ex, self.dir_r, self.logDir,  False,  fileList)
         self.maxtasks = len(self.suites[cluster].getSuite())
-        os.chdir(self.regressionDir)
 
     def createDirectory(self, dir_n):
         if not os.path.isdir(dir_n):
@@ -144,7 +143,6 @@ class Regression:
         logging.debug("Setup Dir      : %s", self.setupDir)
         self.setupSuite = Suite(cluster, self.setupDir, self.dir_a, self.dir_ex, self.dir_r, self.logDir,  True)
         self.maxtasks = len(self.setupSuite.getSuite())
-        os.chdir(self.regressionDir)
         return self.setupSuite
 
     def buildLogging(self, name):
