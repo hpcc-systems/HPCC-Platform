@@ -4230,7 +4230,11 @@ class CSocketEpollThread: public CSocketBaseThread
         int srtn;
         struct epoll_event event;
         event.events = event_mask;
-        event.data.fd = fd;
+
+        // write all bytes to remove uninitialed warnings
+        // event.data.fd = fd;
+        event.data.u64 = (uint64_t)fd;
+
 # ifdef EPOLLTRACE
         DBGLOG("EPOLL: op(%d) fd %d to epfd %d", op, fd, efd);
 # endif
