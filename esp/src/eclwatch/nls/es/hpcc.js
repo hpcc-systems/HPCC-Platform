@@ -361,7 +361,7 @@ define(
     SearchResults: "Resultados de búsqueda",
     SecondsRemaining: "Segundos que faltan",
     SelectPackageFile: "Seleccione 'Package File'",
-    Seperators: "Seperadores",
+    Separators: "Seperadores",
     SetBanner: "Configurar la bandera",
     SetTextError: "No se pudo visualizar el texto (muy grande?). Use 'helpers' para descargar.",
     SetToFailed: "Marcar como fallado",
