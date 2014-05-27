@@ -78,6 +78,7 @@ define([
                 return;
 
             this.query = ESPQuery.Get(params.QuerySetId, params.Id);
+            this.initTab();
         },
 
         setContent: function (target, type, postfix) {
