@@ -2694,6 +2694,10 @@ void FileSprayer::spray()
     if ((sourceSize == 0) && failIfNoSourceFile)
         throwError(DFTERR_NoFilesMatchWildcard);
 
+    LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
+    if (compressedInput && !compressOutput)
+        compressOutput = true;
+
     LocalAbortHandler localHandler(daftAbortHandler);
 
     if (allowRecovery && progressTree->getPropBool(ANcomplete))
