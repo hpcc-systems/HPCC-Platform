@@ -19,33 +19,70 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jargv.hpp"
+#include "jflz.hpp"
 #include "build-config.h"
+#include "httpclient.hpp"
 
 #include "workunit.hpp"
 #include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
 
+size32_t getMaxRequestEntityLength(EclCmdCommon &cmd)
+{
+    if(cmd.optServer.isEmpty())
+        throw MakeStringException(-1, "Server IP not specified");
+
+    EclCmdURL url("?config_", cmd.optServer, cmd.optPort, cmd.optSSL);
+    Owned<IHttpClientContext> httpCtx = getHttpClientContext();
+
+    StringBuffer request; //empty
+    StringBuffer response;
+    StringBuffer status;
+    Owned<IHttpClient> httpclient = httpCtx->createHttpClient(NULL, url);
+    if (cmd.optUsername.length())
+        httpclient->setUserID(cmd.optUsername);
+    if (cmd.optPassword.length())
+        httpclient->setPassword(cmd.optPassword);
+    if (0 > httpclient->sendRequest("GET", NULL, request, response, status) || !response.length() || strncmp("200", status, 3))
+        throw MakeStringException(-1, "Error checking ESP configuration: %s:%s %s", cmd.optServer.sget(), cmd.optPort.sget(), status.str());
+
+    Owned<IPropertyTree> config = createPTreeFromXMLString(response);
+    return config->getPropInt("Software[1]/EspProcess[1]/EspProtocol[@type='http_protocol'][1]/@maxRequestEntityLength");
+}
 
 bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true)
 {
+    bool compressed = false;
+    size32_t maxRequestEntityLength = getMaxRequestEntityLength(cmd);
+    if (cmd.optObj.mb.length() > maxRequestEntityLength)
+    {
+        MemoryBuffer mb;
+        fastLZCompressToBuffer(mb, cmd.optObj.mb.length(), cmd.optObj.mb.bufferBase());
+        if (mb.length() > maxRequestEntityLength)
+            throw MakeStringException(-1, "Even compressed object size is bigger than maxRequestEntityLength in ESP configuration: %s:%s %d", cmd.optServer.sget(), cmd.optPort.sget(), maxRequestEntityLength);
+        cmd.optObj.mb.swapWith(mb);
+        compressed=true;
+    }
+
     StringBuffer s;
     if (cmd.optVerbose)
         fprintf(stdout, "\nDeploying %s\n", cmd.optObj.getDescription(s).str());
 
+    StringBuffer objType(compressed ? "compressed_" : ""); //change compressed type string so old ESPs will fail gracefully
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
     switch (cmd.optObj.type)
     {
         case eclObjArchive:
-            req->setObjType("archive");
+            req->setObjType(objType.append("archive"));
             break;
         case eclObjSharedObject:
-            req->setObjType("shared_object");
+            req->setObjType(objType.append("shared_object"));
             break;
         case eclObjSource:
         {
             if (noarchive)
-                req->setObjType("ecl_text");
+                req->setObjType(objType.append("ecl_text"));
             else
             {
                 fprintf(stderr, "Failed to create archive from ECL Text\n");

@@ -19,6 +19,7 @@
 #include "ws_fs.hpp"
 
 #include "jlib.hpp"
+#include "jflz.hpp"
 #include "daclient.hpp"
 #include "dalienv.hpp"
 #include "dadfs.hpp"
@@ -3535,6 +3536,19 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
     return onGetNotFound(context, request, response, service);
 }
 
+bool isDeploymentTypeCompressed(const char *type)
+{
+    if (type && *type)
+        return (0==strncmp(type, "compressed_", strlen("compressed_")));
+    return false;
+}
+
+const char *skipCompressedTypeQualifier(const char *type)
+{
+    if (isDeploymentTypeCompressed(type))
+        type += strlen("compressed_");
+    return type;
+}
 
 void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
 {
@@ -3553,7 +3567,15 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
 
     if (req.getObject().length())
     {
-        StringBuffer text(req.getObject().length(), req.getObject().toByteArray());
+        MemoryBuffer mb;
+        const MemoryBuffer *uncompressed = &req.getObject();
+        if (isDeploymentTypeCompressed(req.getObjType()))
+        {
+            fastLZDecompressToBuffer(mb, req.getObject().bufferBase());
+            uncompressed = &mb;
+        }
+
+        StringBuffer text(uncompressed->length(), uncompressed->toByteArray());
         wu.setQueryText(text.str());
     }
     if (req.getQueryMainDefinition())
@@ -3676,8 +3698,16 @@ void CWsWorkunitsEx::deploySharedObject(IEspContext &context, IEspWUDeployWorkun
     if (isEmpty(cluster))
        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Cluster name required when deploying a shared object.");
 
+    const MemoryBuffer *uncompressed = &req.getObject();
+    MemoryBuffer mb;
+    if (isDeploymentTypeCompressed(req.getObjType()))
+    {
+        fastLZDecompressToBuffer(mb, req.getObject().bufferBase());
+        uncompressed = &mb;
+    }
+
     StringBuffer wuid;
-    deploySharedObject(context, wuid, req.getFileName(), cluster, req.getName(), req.getObject(), dir, xml);
+    deploySharedObject(context, wuid, req.getFileName(), cluster, req.getName(), *uncompressed, dir, xml);
 
     WsWuInfo winfo(context, wuid.str());
     winfo.getCommon(resp.updateWorkunit(), WUINFO_All);
@@ -3687,8 +3717,7 @@ void CWsWorkunitsEx::deploySharedObject(IEspContext &context, IEspWUDeployWorkun
 
 bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkunitRequest & req, IEspWUDeployWorkunitResponse & resp)
 {
-    const char *type = req.getObjType();
-
+    const char *type = skipCompressedTypeQualifier(req.getObjType());
     try
     {
         if (!context.validateFeatureAccess(OWN_WU_ACCESS, SecAccess_Write, false))
@@ -3696,12 +3725,14 @@ bool CWsWorkunitsEx::onWUDeployWorkunit(IEspContext &context, IEspWUDeployWorkun
 
         if (notEmpty(req.getCluster()) && !isValidCluster(req.getCluster()))
             throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", req.getCluster());
+        if (!type || !*type)
+            throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "WUDeployWorkunit unspecified object type.");
         if (strieq(type, "archive")|| strieq(type, "ecl_text"))
             deployEclOrArchive(context, req, resp);
         else if (strieq(type, "shared_object"))
             deploySharedObject(context, req, resp, queryDirectory.str());
         else
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "WUDeployWorkunit '%s' unkown object type.", type);
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "WUDeployWorkunit '%s' unknown object type.", type);
     }
     catch(IException* e)
     {
