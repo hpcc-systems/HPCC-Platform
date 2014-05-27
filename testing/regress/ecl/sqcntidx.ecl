@@ -15,7 +15,10 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+#onwarning (1036, ignore);
+
+import $.setup;
+sq := setup.sq('hthor');
 
 sequential(
 output(count(sq.SimplePersonBookIndex));

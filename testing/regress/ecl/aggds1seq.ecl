@@ -15,10 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
-
-//Check fixed size disk count correctly checks canMatchAny()
-inlineDs := dataset([1,2],{integer value});
+import $.setup;
+sq := setup.sq('hthor');
 
 sequential(
 //Simple disk aggregate

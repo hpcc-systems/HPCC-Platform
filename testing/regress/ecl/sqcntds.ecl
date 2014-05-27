@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 output(count(sq.HouseDs));
 output(count(sq.HouseDs)=5);

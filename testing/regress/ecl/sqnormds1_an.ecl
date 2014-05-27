@@ -17,7 +17,8 @@
 
 //nothorlcr
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 mask:=0xffff;
 

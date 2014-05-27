@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 forceSubQuery(a) := macro
     { dedup(a,true)[1] }

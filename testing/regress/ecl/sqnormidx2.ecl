@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 //Normalized, count
 output(table(sq.SimplePersonBookIndex.books(rating100>50), { count(group) }, keyed));
