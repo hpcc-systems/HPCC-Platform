@@ -2617,6 +2617,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
     bool ignoreLeaks;
+    bool outputOOMReports;
     bool trackMemoryByActivity;
     bool minimizeFootprint;
     bool minimizeFootprintCritical;
@@ -2629,7 +2630,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
+    CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
         : callbacks(this), logctx(_logctx), allocatorCache(_allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
     {
         logctx.Link();
@@ -2654,6 +2655,7 @@ public:
         activeBuffs = NULL;
         dataBuffPages = 0;
         ignoreLeaks = _ignoreLeaks;
+        outputOOMReports = _outputOOMReports;
         minimizeFootprint = false;
         minimizeFootprintCritical = false;
 #ifdef _DEBUG
@@ -2708,6 +2710,15 @@ public:
             dfinger = next;
         }
         logctx.Release();
+    }
+
+    inline void doOomReport()
+    {
+        if (outputOOMReports)
+        {
+            reportMemoryUsage(false);
+            PrintStackReport();
+        }
     }
 
     virtual void reportLeaks()
@@ -2899,8 +2910,7 @@ public:
         catch (IException *e)
         {
             EXCLOG(e, "CChunkingRowManager::allocate(memsize_t _size, unsigned activityId)");
-            reportMemoryUsage(false);
-            PrintStackReport();
+            doOomReport();
             throw;
         }
     }
@@ -2922,8 +2932,7 @@ public:
         catch (IException *e)
         {
             EXCLOG(e, "CChunkingRowManager::allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost)");
-            reportMemoryUsage(false);
-            PrintStackReport();
+            doOomReport();
             throw;
         }
     }
@@ -3008,8 +3017,7 @@ public:
             catch (IException *e)
             {
                 EXCLOG(e, "CChunkingRowManager::resizeRow(memsize_t &capacity, void * & ptr, memsize_t copysize, memsize_t newsize, unsigned activityId)");
-                reportMemoryUsage(false);
-                PrintStackReport();
+                doOomReport();
                 throw;
             }
             return;
@@ -3042,8 +3050,7 @@ public:
             catch (IException *e)
             {
                 EXCLOG(e, "CChunkingRowManager::resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)");
-                reportMemoryUsage(false);
-                PrintStackReport();
+                doOomReport();
                 throw;
             }
         }
@@ -3216,8 +3223,7 @@ public:
                             return false;
 
                         logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
-                        reportMemoryUsage(false);
-                        PrintStackReport();
+                        doOomReport();
                         throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
                     }
                 }
@@ -4136,9 +4142,9 @@ void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); 
 #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks)
+extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports)
 {
-    return new CChunkingRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks);
+    return new CChunkingRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks, outputOOMReports);
 }
 
 extern void setMemoryStatsInterval(unsigned secs)
