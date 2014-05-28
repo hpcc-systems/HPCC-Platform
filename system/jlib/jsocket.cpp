@@ -4229,10 +4229,11 @@ class CSocketEpollThread: public CSocketBaseThread
     {
         int srtn;
         struct epoll_event event;
-        event.events = event_mask;
 
         // write all bytes to eliminate uninitialized warnings
         memset(&event, 0, sizeof(event));
+
+        event.events = event_mask;
         event.data.fd = fd;
 
 # ifdef EPOLLTRACE
