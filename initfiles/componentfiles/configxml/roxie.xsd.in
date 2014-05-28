@@ -212,6 +212,31 @@
             </xs:attribute>
           </xs:complexType>
         </xs:element>
+        <xs:element name="PreferredCluster" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Preferred Clusters</title>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" >
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Name of the cluster</tooltip>
+                                    <colIndex>1</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="priority" type="xs:integer" use="required">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Priority (negative to disable)</tooltip>
+                                    <colIndex>2</colIndex>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
         <xs:element name="UserMetric" maxOccurs="unbounded">
           <xs:annotation>
             <xs:appinfo>
