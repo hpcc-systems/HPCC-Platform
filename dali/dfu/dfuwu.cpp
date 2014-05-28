@@ -1331,7 +1331,7 @@ public:
         const char *ter=t->queryProp("@csvTerminate");
         terminate.append(ter?ter:"\\n,\\r\\n");
         const char *quo=t->queryProp("@csvQuote");
-        quote.append(quo?quo:"'");
+        quote.append(quo?quo:"\"");
         const char *esc=t->queryProp("@csvEscape");
         if (esc && *esc)
             escape.set(esc);

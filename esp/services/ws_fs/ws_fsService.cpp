@@ -2096,7 +2096,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
                 ct = "\\n,\\r\\n";
             const char* cq = req.getSourceCsvQuote();
             if(cq== NULL)
-                cq = "'";
+                cq = "\"";
             source->setCsvOptions(cs, ct, cq, req.getSourceCsvEscape(), req.getQuotedTerminator());
 
             options->setQuotedTerminator(req.getQuotedTerminator());

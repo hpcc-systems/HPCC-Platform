@@ -360,7 +360,7 @@ void CsvRecordSize::init(IDistributedFile * df)
     addUtfActionList(matcher, separate ? separate : "\\,", SEPARATOR, NULL, utfType);
 
     const char * quote = props->queryProp("@csvQuote");
-    addUtfActionList(matcher, quote ? quote : "'", QUOTE, NULL, utfType);
+    addUtfActionList(matcher, quote ? quote : "\"", QUOTE, NULL, utfType);
 
     const char * escape = props->queryProp("@csvEscape");
     addUtfActionList(matcher, escape, ESCAPE, NULL, utfType);
