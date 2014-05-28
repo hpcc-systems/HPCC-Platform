@@ -116,10 +116,10 @@
 <st id='Select'>Escoja</st>
 <st id='SelectASpareNodeToSwap'>Escoja un nodo disponible para intercambiar</st>
 <st id='SelectAllOrNone'>Eligir Todo / Nada</st>
-<st id='SelectAllTargetClusters'>Eligir todos los clusters</st>
+<st id='SelectAllTargetClusters'>Eligir todos los clústeres</st>
 <st id='SelectDeselectAll'>Eligir o des-elegir todo</st>
 <st id='SelectDeselectAllMachines'>Eligir o des-elegir todas las maquinas</st>
-<st id='SelectThisTargetCluster'>Eligir este cluster</st>
+<st id='SelectThisTargetCluster'>Eligir este clúster</st>
 <st id='ServerProcess'>Proceso de servidor</st>
 <st id='ServiceName'>Nombre del servicio</st>
 <st id='ServiceType'>Tipo del servicio</st>
