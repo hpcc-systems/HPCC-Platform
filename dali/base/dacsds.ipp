@@ -164,8 +164,7 @@ static void checkValidSubscriptionPath(const char *xpath)
         if ('\"' == next)
         {
             sep = false;
-            if (quote) quote = false;
-            else quote = true;
+            quote = !quote;
         }
         else if ('/' == next && !quote)
         {
@@ -227,9 +226,9 @@ public:
     virtual void notify(MemoryBuffer &returnData)
     {
         StringAttr xpath;
-        SDSNotifyFlags flags;
+        int flags;
         returnData.read(xpath);
-        returnData.read((int &) flags);
+        returnData.read(flags);
         bool valueData;
         if (returnData.length()-returnData.getPos()) // remaining
         {
@@ -238,13 +237,13 @@ public:
             {
                 unsigned l;
                 returnData.read(l);
-                sdsNotify->notify(id, xpath, flags, l, returnData.readDirect(l));
+                sdsNotify->notify(id, xpath, (SDSNotifyFlags)flags, l, returnData.readDirect(l));
             }
             else
-                sdsNotify->notify(id, xpath, flags);
+                sdsNotify->notify(id, xpath, (SDSNotifyFlags)flags);
         }
         else
-            sdsNotify->notify(id, xpath, flags);
+            sdsNotify->notify(id, xpath, (SDSNotifyFlags)flags);
     }
 };
 

@@ -1760,7 +1760,7 @@ void buildNotifyData(MemoryBuffer &notifyData, PDState state, CPTStack *stack, M
         }
         notifyData.append('\0');
     }
-    notifyData.append(translatePDState(state));
+    notifyData.append((int)translatePDState(state));
     if (data)
     {
         notifyData.append(true);
