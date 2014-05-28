@@ -207,20 +207,22 @@ jlib_decl IPropertyTree *createPTreeFromJSONString(const char *json, byte flags=
 jlib_decl IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 
 #define XML_SortTags 0x01
-#define XML_Format   0x02
+#define XML_Embed    0x02
 #define XML_NoEncode 0x04
 #define XML_Sanitize 0x08
 #define XML_SanitizeAttributeValues 0x10
 #define XML_SingleQuoteAttributeValues 0x20
 #define XML_NoBinaryEncode64 0x40
-#define XML_NewlinesOnly 0x80
+#define XML_LineBreak 0x100
+#define XML_LineBreakAttributes 0x80
+#define XML_Format (XML_Embed|XML_LineBreakAttributes|XML_LineBreak)
 
-jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, byte flags=XML_Format);
-jlib_decl void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, byte flags=XML_Format);
-jlib_decl void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
-jlib_decl void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
-jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
-jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, byte flags=XML_Format);
+jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent = 0, unsigned flags=XML_Format);
+jlib_decl void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent = 0, unsigned flags=XML_Format);
+jlib_decl void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
+jlib_decl void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent = 0, unsigned=XML_Format);
+jlib_decl void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
+jlib_decl void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent = 0, unsigned flags=XML_Format);
 
 jlib_decl const char *splitXPath(const char *xpath, StringBuffer &head); // returns tail, fills 'head' with leading xpath
 jlib_decl bool validateXPathSyntax(const char *xpath, StringBuffer *error=NULL);
