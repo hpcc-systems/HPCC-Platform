@@ -1282,12 +1282,12 @@ public:
     }
     virtual int getDebugValueInt(const char * propname, int defVal) const
     {
-        assertex(dll->queryWorkUnit());
+        assertex(dll && dll->queryWorkUnit());
         return dll->queryWorkUnit()->getDebugValueInt(propname, defVal);
     }
     virtual bool getDebugValueBool(const char * propname, bool defVal) const
     {
-        assertex(dll->queryWorkUnit());
+        assertex(dll && dll->queryWorkUnit());
         return dll->queryWorkUnit()->getDebugValueBool(propname, defVal);
     }
     bool getEnableFieldTranslation() const

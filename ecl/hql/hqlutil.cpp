@@ -5922,6 +5922,7 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver & errorProcessor
     HqlExprArray children;
     children.append(*createValue(no_transformlist, makeNullType(), transforms));
     children.append(*LINK(record));
+    unwindChildren(children, expr, 2);
     OwnedHqlExpr ret = createDataset(no_inlinetable, children);
     return expr->cloneAllAnnotations(ret);
 }

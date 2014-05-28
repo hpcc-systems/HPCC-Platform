@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 //A mistyped query, but interesting never the less - needs to access a stored variable from the child.
 secondBookNameX := (string20)sort(sq.SimplePersonBookDs.books, name)[2].name;

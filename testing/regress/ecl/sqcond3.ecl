@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 ded := dedup(sq.HousePersonBookDs.persons, forename);
 cnt := table(ded, { cnt := count(group); })[1].cnt;

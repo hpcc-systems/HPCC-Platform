@@ -15,38 +15,41 @@
     limitations under the License.
 ############################################################################## */
 
-//Code that is common to text searching
+import $.^.Setup;
+import Setup.Options;
+import Setup.TS;
 
+EXPORT TextSearch := FUNCTION
 
 INCLUDE_DEBUG_INFO := false;
 import lib_stringlib;
 
-MaxTerms            := TS_MaxTerms;
-MaxStages           := TS_MaxStages;
-MaxProximity        := TS_MaxProximity;
-MaxWildcard     := TS_MaxWildcard;
-MaxMatchPerDocument := TS_MaxMatchPerDocument;
-MaxFilenameLength := TS_MaxFilenameLength;
-MaxActions       := TS_MaxActions;
+MaxTerms            := TS.MaxTerms;
+MaxStages           := TS.MaxStages;
+MaxProximity        := TS.MaxProximity;
+MaxWildcard     := TS.MaxWildcard;
+MaxMatchPerDocument := TS.MaxMatchPerDocument;
+MaxFilenameLength := TS.MaxFilenameLength;
+MaxActions       := TS.MaxActions;
 
-kindType        := TS_kindType;
-sourceType      := TS_sourceType;
-wordCountType   := TS_wordCountType;
-segmentType     := TS_segmentType;
-wordPosType     := TS_wordPosType;
-docPosType      := TS_docPosType;
-documentId      := TS_documentId;
-termType        := TS_termType;
-distanceType    := TS_distanceType;
-stageType       := TS_stageType;
-dateType        := TS_dateType;
+kindType        := TS.kindType;
+sourceType      := TS.sourceType;
+wordCountType   := TS.wordCountType;
+segmentType     := TS.segmentType;
+wordPosType     := TS.wordPosType;
+docPosType      := TS.docPosType;
+documentId      := TS.documentId;
+termType        := TS.termType;
+distanceType    := TS.distanceType;
+stageType       := TS.stageType;
+dateType        := TS.dateType;
 matchCountType  := unsigned2;
-wordType        := TS_wordType;
-wordFlags       := TS_wordFlags;
-wordIdType      := TS_wordIdType;
+wordType        := TS.wordType;
+wordFlags       := TS.wordFlags;
+wordIdType      := TS.wordIdType;
 
 //May want the following, probably not actually implemented as an index - would save having dpos in the index, but more importantly storing it in the candidate match results because the mapping could be looked up later.
-wordIndexRecord := TS_wordIndexRecord;
+wordIndexRecord := TS.wordIndexRecord;
 
 MaxWipWordOrAlias  := 4;
 MaxWipTagContents  := 65535;
@@ -61,9 +64,9 @@ actionEnum := ENUM(
 //Minimal operations required to implement the searching.
     ReadWord,           // termNum, source, segment, word, wordFlagMask, wordFlagCompare,
     ReadWordSet,        // termNum, source, segment, words, wordFlagMask, wordFlagCompare,
-    AndTerms,           // 
-    OrTerms,            // 
-    AndNotTerms,        // 
+    AndTerms,           //
+    OrTerms,            //
+    AndNotTerms,        //
     PhraseAnd,          //
     ProximityAnd,       // distanceBefore, distanceAfter
     MofNTerms,          // minMatches, maxMatches
@@ -75,16 +78,16 @@ actionEnum := ENUM(
     ContainedAtLeast,
     TagContainsSearch,  // Used for the outermost IN() expression - check it overlaps and rolls up
     TagContainsTerm,    // Used for an inner tag contains - checks, but doesn't roll up
-    TagNotContainsTerm, // 
+    TagNotContainsTerm, //
     SameContainer,
-    NotSameContainer,   // 
-    MofNContainer,      // 
+    NotSameContainer,   //
+    MofNContainer,      //
     RankContainer,      // NOTIMPLEMENTED
     OverlapProximityAnd,
 
 //The following aren't very sensible as far as text searching goes, but are here to test the underlying functionality
     AndJoinTerms,       // join on non-proximity
-    AndNotJoinTerms,    // 
+    AndNotJoinTerms,    //
     MofNJoinTerms,      // minMatches, maxMatches
     RankJoinTerms,      // left outer join
     ProximityMergeAnd,  // merge join on proximity
@@ -102,13 +105,13 @@ actionEnum := ENUM(
 
     //The following are only used in the production
     FlagModifier,       // wordFlagMask, wordFlagCompare
-    QuoteModifier,      // 
+    QuoteModifier,      //
     Max
 );
 
 //  FAIL(stageType, 'Missing entry: ' + (string)action));
 
-boolean definesTerm(actionEnum action) := 
+boolean definesTerm(actionEnum action) :=
     (action in [actionEnum.ReadWord, actionEnum.ReadWordSet]);
 
 booleanRecord := { boolean value };
@@ -124,7 +127,7 @@ createStage(stageType stage) := transform(stageRecord, self.stage := stage);
 createTerm(termType term) := transform(termRecord, self.term := term);
 
 //should have an option to optimize the order
-searchRecord := 
+searchRecord :=
             RECORD  //,PACK
 stageType       stage;
 termType        term;
@@ -183,8 +186,8 @@ StageSetToDataset(stageSet x) := dataset(x, stageRecord);
 StageDatasetToSet(dataset(stageRecord) x) := set(x, stage);
 
 hasSingleRowPerMatch(actionEnum kind) :=
-    (kind IN [  actionEnum.ReadWord, 
-                actionEnum.ReadWordSet, 
+    (kind IN [  actionEnum.ReadWord,
+                actionEnum.ReadWordSet,
                 actionEnum.PhraseAnd,
                 actionEnum.ProximityAnd,
                 actionEnum.ContainedAtLeast,
@@ -193,7 +196,7 @@ hasSingleRowPerMatch(actionEnum kind) :=
                 actionEnum.OverlapProximityAnd]);
 
 inheritsSingleRowPerMatch(actionEnum kind) :=
-    (kind IN [  actionEnum.OrTerms, 
+    (kind IN [  actionEnum.OrTerms,
 //              actionEnum.AndNotTerms,                 // move container inside an andnot
                 actionEnum.TagNotContainsTerm,
                 actionEnum.NotSameContainer]);
@@ -236,8 +239,8 @@ combineChildren(dataset(childMatchRecord) l, dataset(childMatchRecord) r) := fun
     return dedup(mergedDs, wpos, wip, term);
 end;
 
-SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) := MODULE
-    
+SearchExecutor(dataset(TS.wordIndexRecord) wordIndex, unsigned4 internalFlags) := MODULE
+
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Matching helper functions
 
@@ -254,7 +257,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
         matchSearchFlags(wIndex, search);
 
     EXPORT matchSearchSource(wordIndex wIndex, searchRecord search) :=
-        keyed(search.source = 0 OR TS_docMatchesSource(wIndex.doc, search.source), opt);
+        keyed(search.source = 0 OR TS.docMatchesSource(wIndex.doc, search.source), opt);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     // ReadWord
@@ -271,7 +274,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
             self := [];
         end;
 
-        steppedMatches :=   IF(search.priority <> 0, 
+        steppedMatches :=   IF(search.priority <> 0,
                                 stepped(matches, doc, segment, wpos, priority(search.priority)),
                                 stepped(matches, doc, segment, wpos)
                             );
@@ -298,7 +301,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
             self := [];
         end;
 
-        steppedMatches :=   IF(search.priority <> 0, 
+        steppedMatches :=   IF(search.priority <> 0,
                                 stepped(matches, doc, segment, wpos, priority(search.priority)),
                                 stepped(matches, doc, segment, wpos)
                             );
@@ -312,7 +315,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
     // OrTerms
 
     EXPORT doOrTerms(searchRecord search, SetOfInputs inputs) := FUNCTION
-        return merge(inputs, doc, segment, wpos, dedup);        // MORE  option to specify priority?
+        return merge(inputs, doc, segment, wpos, dedup, SORTED(doc, segment, wpos));        // MORE  option to specify priority?
     END;
 
 
@@ -336,7 +339,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
     // ButNotTerms
 
     EXPORT doButNotTerms(searchRecord search, SetOfInputs inputs) := FUNCTION
-        return mergejoin(inputs, STEPPED(left.doc = right.doc and left.segment=right.segment) and 
+        return mergejoin(inputs, STEPPED(left.doc = right.doc and left.segment=right.segment) and
                                  (LEFT.wpos BETWEEN RIGHT.wpos AND RIGHT.wpos+RIGHT.wip), doc, segment, wpos, left only, internal(internalFlags));
     END;
 
@@ -345,7 +348,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
     // ButNotJoinTerms
 
     EXPORT doButNotJoinTerms(searchRecord search, SetOfInputs inputs) := FUNCTION
-        return join(inputs, STEPPED(left.doc = right.doc and left.segment=right.segment) and 
+        return join(inputs, STEPPED(left.doc = right.doc and left.segment=right.segment) and
                                  (LEFT.wpos BETWEEN RIGHT.wpos AND RIGHT.wpos+RIGHT.wip), transform(left), sorted(doc, segment, wpos), left only, internal(internalFlags));
     END;
 
@@ -418,7 +421,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     // PhraseAnd
 
-    steppedPhraseCondition(matchRecord l, matchRecord r, distanceType maxWip) := 
+    steppedPhraseCondition(matchRecord l, matchRecord r, distanceType maxWip) :=
             (l.doc = r.doc) and (l.segment = r.segment) and
             (r.wpos between l.wpos+1 and l.wpos+maxWip);
 
@@ -426,7 +429,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
 
         steppedCondition(matchRecord l, matchRecord r) := steppedPhraseCondition(l, r, search.maxWipLeft);
 
-        condition(matchRecord l, matchRecord r) :=  
+        condition(matchRecord l, matchRecord r) :=
             (r.wpos = l.wpos + l.wip);
 
         matchRecord createMatch(matchRecord l, dataset(matchRecord) allRows) := transform
@@ -444,7 +447,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     // PhraseAnd
 
-    steppedPhrase1To5Condition(matchRecord l, matchRecord r, distanceType maxWip) := 
+    steppedPhrase1To5Condition(matchRecord l, matchRecord r, distanceType maxWip) :=
             (l.doc = r.doc) and (l.segment = r.segment) and
             (r.wpos between l.wpos+1 and l.wpos+5);
 
@@ -452,7 +455,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
 
         steppedCondition(matchRecord l, matchRecord r) := steppedPhrase1To5Condition(l, r, search.maxWipLeft);
 
-        condition(matchRecord l, matchRecord r) :=  
+        condition(matchRecord l, matchRecord r) :=
             (r.wpos = l.wpos + l.wip);
 
         matchRecord createMatch(matchRecord l, dataset(matchRecord) allRows) := transform
@@ -654,7 +657,7 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
             maxRightBeforeLeft := IF(maxDistanceRightBeforeLeft >= 0, maxDistanceRightBeforeLeft + maxWipRight, maxDistanceRightBeforeLeft);
             maxRightAfterLeft := IF(maxDistanceRightAfterLeft >= 0, maxDistanceRightAfterLeft + maxWipLeft, maxDistanceRightAfterLeft);
 
-            return 
+            return
                 (l.doc = r.doc) and (l.segment = r.segment) and
                 (r.wpos + maxRightBeforeLeft >= l.wpos) and             // (right.wpos + right.wip + maxRightBeforeLeft >= left.wpos)
                 (r.wpos <= l.wpos + (maxRightAfterLeft));               // (right.wpos <= left.wpos + left.wip + maxRightAfterLeft)
@@ -665,14 +668,14 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
 
         steppedCondition(matchRecord l, matchRecord r) := steppedProximityCondition(l, r, search.maxWipLeft, search.maxWipRight, search.maxDistanceRightBeforeLeft, search.maxDistanceRightAfterLeft);
 
-        condition(matchRecord l, matchRecord r) :=  
+        condition(matchRecord l, matchRecord r) :=
             (r.wpos + r.wip + search.maxDistanceRightBeforeLeft >= l.wpos) and
             (r.wpos <= l.wpos + l.wip + search.maxDistanceRightAfterLeft);
 
         overlaps(wordPosType wpos, childMatchRecord r) := (wpos between r.wpos and r.wpos + (r.wip - 1));
 
         createMatch(matchRecord l, matchRecord r) := function
-        
+
             wpos := min(l.wpos, r.wpos);
             wend := max(l.wpos + l.wip, r.wpos + r.wip);
 
@@ -704,14 +707,14 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
 
         steppedCondition(matchRecord l, matchRecord r) := steppedProximityCondition(l, r, search.maxWipLeft, search.maxWipRight, search.maxDistanceRightBeforeLeft, search.maxDistanceRightAfterLeft);
 
-        condition(matchRecord l, matchRecord r) :=  
+        condition(matchRecord l, matchRecord r) :=
             (r.wpos + r.wip + search.maxDistanceRightBeforeLeft >= l.wpos) and
             (r.wpos <= l.wpos + l.wip + search.maxDistanceRightAfterLeft);
 
         overlaps(wordPosType wpos, childMatchRecord r) := (wpos between r.wpos and r.wpos + (r.wip - 1));
 
         anyOverlaps (matchRecord l, matchRecord r) := function
-        
+
             wpos := min(l.wpos, r.wpos);
             wend := max(l.wpos + l.wip, r.wpos + r.wip);
 
@@ -735,17 +738,17 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
 
     EXPORT doOverlapProximityAnd(searchRecord search, SetOfInputs inputs) := FUNCTION
 
-        steppedCondition(matchRecord l, matchRecord r) := 
+        steppedCondition(matchRecord l, matchRecord r) :=
                 (l.doc = r.doc) and (l.segment = r.segment) and
                 (r.wpos + search.maxWipRight >= l.wpos) and
                 (r.wpos <= l.wpos + search.maxWipLeft);
 
-        condition(matchRecord l, matchRecord r) :=  
+        condition(matchRecord l, matchRecord r) :=
             (r.wpos + r.wip >= l.wpos) and (r.wpos <= l.wpos + l.wip);
 
 
         createMatch(matchRecord l, matchRecord r) := function
-        
+
             wpos := min(l.wpos, r.wpos);
             wend := max(l.wpos + l.wip, r.wpos + r.wip);
 
@@ -855,26 +858,33 @@ SearchExecutor(dataset(TS_wordIndexRecord) wordIndex, unsigned4 internalFlags) :
     EXPORT convertToUserOutput(dataset(matchRecord) results) := function
 
         simpleUserOutputRecord createUserOutput(matchRecord l) := transform
-                self.source := TS_docid2source(l.doc);
-                self.subDoc := TS_docid2doc(l.doc);
+                self.source := TS.docid2source(l.doc);
+                self.subDoc := TS.docid2doc(l.doc);
                 self.words := l.children;
-                SELF.line := l.dpos DIV TS_MaxColumnsPerLine;
-                SELF.column := l.dpos % TS_MaxColumnsPerLine;
+                SELF.line := l.dpos DIV TS.MaxColumnsPerLine;
+                SELF.column := l.dpos % TS.MaxColumnsPerLine;
                 SELF := l;
             END;
 
         return project(results, createUserOutput(left));
     end;
 
-    EXPORT doExecuteQuery(dataset(searchRecord) queryDefinition, dataset(matchRecord) initialResults = dataset([], matchRecord)) := function
+    EXPORT doExecuteQuery(dataset(searchRecord) queryDefinition, boolean useLocal) := function
 
-    #if (useLocal=true)
-        executionPlan := thisnode(global(queryDefinition, opt, few));           // Store globally for efficient access
-        results := ALLNODES(LOCAL(graph(initialResults, count(executionPlan), processStage(executionPlan[NOBOUNDCHECK COUNTER], rowset(left)), parallel)));
-    #else
-        executionPlan := global(queryDefinition, opt, few);         // Store globally for efficient access
-        results := graph(initialResults, count(executionPlan), processStage(executionPlan[NOBOUNDCHECK COUNTER], rowset(left)), parallel);
-    #end
+        initialResults := dataset([], matchRecord);
+        localResults := FUNCTION
+            executionPlan := thisnode(global(queryDefinition, opt, few));           // Store globally for efficient access
+            results := ALLNODES(LOCAL(graph(initialResults, count(executionPlan), processStage(executionPlan[NOBOUNDCHECK COUNTER], rowset(left)), parallel)));
+            RETURN results;
+        END;
+
+        globalResults := FUNCTION
+            executionPlan := global(queryDefinition, opt, few);         // Store globally for efficient access
+            results := graph(initialResults, count(executionPlan), processStage(executionPlan[NOBOUNDCHECK COUNTER], rowset(left)), parallel);
+            RETURN results;
+        END;
+
+        results := IF(useLocal, localResults, globalResults);
         userOutput := convertToUserOutput(results);
 
         return userOutput;
@@ -887,12 +897,12 @@ end;
 // A simplified query language
 parseQuery(string queryText) := function
 
-searchParseRecord := 
+searchParseRecord :=
             RECORD(searchRecord)
 unsigned        numInputs;
             END;
 
-productionRecord  := 
+productionRecord  :=
             record
 unsigned        termCount;
 dataset(searchParseRecord) actions{maxcount(MaxActions)};
@@ -924,7 +934,7 @@ END;
 
 PRULE forwardExpr := use(productionRecord, 'ExpressionRule');
 
-ARULE term0 
+ARULE term0
     := quotedword                               transform(searchParseRecord,
                                                     SELF.action := actionEnum.ReadWord;
                                                     SELF.word := StringLib.StringToLowerCase($1[2..length($1)-1]);
@@ -1020,11 +1030,11 @@ PRULE term1
                                                     )
                                                 )
     | 'RANK' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.RankMergeTerms; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.RankMergeTerms;
                                                             self.numInputs := 2;
                                                             self := []
                                                         )
@@ -1085,11 +1095,11 @@ PRULE term1
                                                     )
                                                 )
     | 'PROXIMITY' '(' forwardExpr ',' forwardExpr ',' number ',' number ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.ProximityAnd; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.ProximityAnd;
                                                             self.numInputs := 2;
                                                             self.maxDistanceRightBeforeLeft := (integer)$7;
                                                             self.maxDistanceRightAfterLeft := (integer)$9;
@@ -1098,22 +1108,22 @@ PRULE term1
                                                     )
                                                 )
     | 'OVERLAP' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.OverlapProximityAnd; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.OverlapProximityAnd;
                                                             self.numInputs := 2;
                                                             self := []
                                                         )
                                                     )
                                                 )
     | 'PRE' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.ProximityAnd; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.ProximityAnd;
                                                             self.numInputs := 2;
                                                             self.maxDistanceRightBeforeLeft := -1;
                                                             self.maxDistanceRightAfterLeft := MaxWordsInDocument;
@@ -1122,11 +1132,11 @@ PRULE term1
                                                     )
                                                 )
     | 'AFT' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.ProximityAnd; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.ProximityAnd;
                                                             self.numInputs := 2;
                                                             self.maxDistanceRightBeforeLeft := MaxWordsInDocument;
                                                             self.maxDistanceRightAfterLeft := -1;
@@ -1135,10 +1145,10 @@ PRULE term1
                                                     )
                                                 )
     | 'PROXMERGE' '(' forwardExpr ',' forwardExpr ',' number ',' number ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
+                                                        transform(searchParseRecord,
                                                             self.action := actionEnum.ProximityMergeAnd;
                                                             self.numInputs := 2;
                                                             self.maxDistanceRightBeforeLeft := (integer)$7;
@@ -1193,11 +1203,11 @@ PRULE term1
                                                     )
                                                 )
     | 'RANKJOIN' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.RankJoinTerms; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.RankJoinTerms;
                                                             self.numInputs := 2;
                                                             self := []
                                                         )
@@ -1263,11 +1273,11 @@ PRULE term1
                                                     )
                                                 )
     | 'SAME' '(' forwardExpr ',' forwardExpr ')'
-                                                transform(productionRecord, 
+                                                transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + $5.actions + row(
-                                                        transform(searchParseRecord, 
-                                                            self.action := actionEnum.SameContainer; 
+                                                        transform(searchParseRecord,
+                                                            self.action := actionEnum.SameContainer;
                                                             self.numInputs := 2;
                                                             self := []
                                                         )
@@ -1295,7 +1305,7 @@ PRULE term1
                                                         )
                                                     )
                                                 )
-    | 'AT' '(' forwardExpr ',' number ')'   
+    | 'AT' '(' forwardExpr ',' number ')'
                                                 transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + row(
@@ -1307,7 +1317,7 @@ PRULE term1
                                                         )
                                                     )
                                                 )
-    | 'NOTAT' '(' forwardExpr ',' number ')'    
+    | 'NOTAT' '(' forwardExpr ',' number ')'
                                                 transform(productionRecord,
                                                     self.termCount := 1;
                                                     self.actions := $3.actions + row(
@@ -1373,11 +1383,11 @@ dataset(searchParseRecord) actions{maxcount(MaxActions)};
         end;
 
 
-resultsRecord extractResults(dataset(searchParseRecord) actions) := 
+resultsRecord extractResults(dataset(searchParseRecord) actions) :=
         TRANSFORM
             SELF.actions := actions;
         END;
-            
+
 p1 := PARSE(infile,line,expr,extractResults($1.actions),first,whole,skip(ws),nocase,parse);
 
 pnorm := normalize(p1, left.actions, transform(right));
@@ -1547,14 +1557,14 @@ transformAtLeast(dataset(searchRecord) parsed) := function
         shared inputTerms := r.mapping(stage in set(l.inputs, stage)).outputTerms;
         shared inputAtleast := r.mapping(stage in set(l.inputs, stage)).activeAtleast;
         shared outputTerms := IF(hasSingleRowPerMatch(l.action), dataset([createTerm(l.term)]), inputTerms);
-        shared outputAtleast := 
+        shared outputAtleast :=
             MAP(l.action = actionEnum.GlobalAtLeast=>inputAtleast + row(createAtleast(l, inputTerms)),
                 l.action <> actionEnum.TagContainsSearch=>inputAtleast);
 
         export processRecord nextRow := transform
             SELF.moved := IF(l.action = actionEnum.TagContainsSearch, inputAtLeast);
 #if (INCLUDE_DEBUG_INFO)
-            SELF.debug := trim(l.debug) + '[' + 
+            SELF.debug := trim(l.debug) + '[' +
                     (string)COUNT(inputTerms) + ':' +
                     (string)COUNT(inputAtleast) + ':' +
                     (string)COUNT(outputTerms) + ':' +
@@ -1663,8 +1673,8 @@ transformNotIn(dataset(searchRecord) input) := function
     doStage2(processRecord l, stage2Record r) := module
         shared newContainer := r.map(stage = l.stage)[1].container;
         shared newTerm := r.map(stage = l.stage)[1].term;
-        shared numStages := 
-                    MAP(l.singleRowPerMatch and newContainer <> ''=>2, 
+        shared numStages :=
+                    MAP(l.singleRowPerMatch and newContainer <> ''=>2,
                         l.action = actionEnum.TagNotContainsTerm and not l.singleRowPerMatch=>0,
                         1);
         export processRecord nextRow := transform
@@ -1792,7 +1802,7 @@ transformIn(dataset(searchRecord) input) := function
                  actionEnum.RankMergeTerms  => IF(l.newContainer <> '', actionEnum.RankContainer, l.action),
                  actionEnum.TagContainsSearch => IF(l.inputsSingleRowPerMatch, actionEnum.TagContainsSearch, actionEnum.rollupContainer),
                  l.action);
-                 
+
 
         SELF.stage := l.stage + (c - 1);
         SELF.inputs := IF(c=2, dataset([createStage(l.stage)]), l.inputs);
@@ -1817,37 +1827,48 @@ applySearchTransformations(dataset(searchRecord) input) := FUNCTION
     RETURN processed4;
 END;
 
-queryProcessor(dataset(TS_wordIndexRecord) wordIndex, string query, unsigned4 internalFlags) := module//,library('TextSearch',1,0)
+queryProcessor(dataset(TS.wordIndexRecord) wordIndex, string query, boolean useLocal, unsigned4 internalFlags) := module//,library('TextSearch',1,0)
 export string queryText := query;
 export request := parseQuery(query);
 export processed := applySearchTransformations(request);
-export result := SearchExecutor(wordIndex, internalFlags).doExecuteQuery(processed);
+export result := SearchExecutor(wordIndex, internalFlags).doExecuteQuery(processed, useLocal);
     end;
 
 
-queryInputRecord := { string query{maxlength(2048)}; };
-
 MaxResults := 10000;
 
-processedRecord := record(queryInputRecord)
-dataset(searchRecord) request{maxcount(MaxActions)};
-dataset(simpleUserOutputRecord) result{maxcount(MaxResults)};
-        end;
+publicExports := MODULE
+
+    EXPORT queryInputRecord := { string query{maxlength(2048)}; };
+
+    EXPORT processedRecord := record(queryInputRecord)
+        dataset(searchRecord) request{maxcount(MaxActions)};
+        dataset(simpleUserOutputRecord) result{maxcount(MaxResults)};
+    END;
+
+    EXPORT processedRecord doBatchExecute(dataset(TS.wordIndexRecord) wordIndex, queryInputRecord l, boolean useLocal, unsigned4 internalFlags=0) := transform
+        processed := queryProcessor(wordIndex, l.query, useLocal, internalFlags);
+        self.request := processed.processed;
+        self.result := choosen(processed.result, MaxResults);
+        self := l;
+    end;
 
 
-processedRecord doBatchExecute(dataset(TS_wordIndexRecord) wordIndex, queryInputRecord l, unsigned4 internalFlags=0) := transform
-    processed := queryProcessor(wordIndex, l.query, internalFlags);
-    self.request := processed.processed;
-    self.result := choosen(processed.result, MaxResults);
-    self := l;
-end;
+    EXPORT doSingleExecute(dataset(TS.wordIndexRecord) wordIndex, string queryText, boolean useLocal, unsigned4 internalFlags=0) := function
+        request := parseQuery(queryText);
+        result := SearchExecutor(wordIndex, internalFlags).doExecuteQuery(request, useLocal);
+        return result;
+    end;
 
+    EXPORT executeBatchAgainstWordIndex(DATASET(queryInputRecord) queries, boolean useLocal, string source, unsigned4 internalFlags=0) := FUNCTION
+        Files := Setup.Files(source);
+        wordIndex := index(TS.textSearchIndex, Files.NameWordIndex(useLocal));
+        p := project(nofold(queries), doBatchExecute(wordIndex, LEFT, useLocal, internalFlags));
+        RETURN p;
+    END;
 
-doSingleExecute(dataset(TS_wordIndexRecord) wordIndex, string queryText, unsigned4 internalFlags=0) := function
-    request := parseQuery(queryText);
-    result := SearchExecutor(wordIndex, internalFlags).doExecuteQuery(request);
-    return result;
-end;
+END;
 
+   RETURN publicExports;
 
-#line(0)
+END;

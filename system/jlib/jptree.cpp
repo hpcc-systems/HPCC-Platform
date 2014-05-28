@@ -6464,7 +6464,9 @@ public:
     void readValueNotify(const char *name, bool skipAttributes)
     {
         StringBuffer value;
-        readValue(value);
+        if (readValue(value)==elementTypeNull)
+            return;
+
         if ('@'==*name)
         {
             if (!skipAttributes)

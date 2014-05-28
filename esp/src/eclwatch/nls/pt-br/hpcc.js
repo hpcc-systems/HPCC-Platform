@@ -212,7 +212,7 @@
     Scope: "Escopo",
     SearchResults: "Resultado da Busca",
     SecondsRemaining: "Segundos Restantes",
-    Seperators: "Seperadores",
+    Separators: "Seperadores",
     SetBanner: "Fixar Banner",
     SetToFailed: "Indicar como Falhado",
     Severity: "Severidade",

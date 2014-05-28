@@ -17,7 +17,8 @@
 
 //nothorlcr
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 // Test filtering at different levels, making sure parent fields are available in the child query.
 // Also tests scoping of sub expressions using within.

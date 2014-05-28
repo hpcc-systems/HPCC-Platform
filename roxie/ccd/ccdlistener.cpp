@@ -96,7 +96,7 @@ static void sendJsonException(SafeSocket &client, IException *E, const char *que
         if (!queryName)
             queryName = "Unknown"; // Exceptions when parsing query XML can leave queryName unset/unknowable....
 
-        StringBuffer response("{");
+        StringBuffer response;
         appendfJSONName(response, "%sResponse", queryName).append(" {");
         appendJSONName(response, "Results").append(" {");
         appendJSONName(response, "Exception").append(" [{");
@@ -104,7 +104,7 @@ static void sendJsonException(SafeSocket &client, IException *E, const char *que
         appendJSONValue(response, "Code", E->errorCode());
         StringBuffer s;
         appendJSONValue(response, "Message", E->errorMessage(s).str());
-        response.append("}]}}}");
+        response.append("}]}}");
         client.write(response.str(), response.length());
     }
     catch(IException *EE)
@@ -1794,7 +1794,7 @@ readAnother:
             if (client)
             {
                 if (isHTTP)
-                    sendSoapException(*client, E, queryName);
+                    sendHttpException(*client, httpHelper.queryContentFormat(), E, queryName);
                 else
                     client->sendException("Roxie", code, error.str(), isBlocked, logctx);
             }
@@ -1819,7 +1819,7 @@ readAnother:
             if (client)
             {
                 if (isHTTP)
-                    sendHttpException(*client, mlFmt, E, queryName);
+                    sendHttpException(*client, httpHelper.queryContentFormat(), E, queryName);
                 else
                     client->sendException("Roxie", code, error.str(), isBlocked, logctx);
             }
@@ -1839,7 +1839,7 @@ readAnother:
                 if (isHTTP)
                 {
                     Owned<IException> E = MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception");
-                    sendSoapException(*client, E, queryName);
+                    sendHttpException(*client, httpHelper.queryContentFormat(), E, queryName);
                 }
                 else
                     client->sendException("Roxie", ROXIE_INTERNAL_ERROR, "Unknown exception", isBlocked, logctx);

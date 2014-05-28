@@ -55,14 +55,11 @@ define([
         },
         preRequest: function (request) {
             switch (request.Sortby) {
-                case "ClusterName":
-                    request.Sortby = "Cluster";
-                    break;
                 case "RecordCount":
                     request.Sortby = "Records";
                     break;
                 case "Totalsize":
-                    request.Sortby = "Size";
+                    request.Sortby = "FileSize";
                     break;
             }
         },
@@ -80,7 +77,7 @@ define([
         },
         preProcessRow: function (item, request, query, options) {
             lang.mixin(item, {
-                __hpcc_id: createID(item.ClusterName, item.Name),
+                __hpcc_id: createID(item.NodeGroup, item.Name),
                 __hpcc_isDir: false,
                 __hpcc_displayName: item.Name
             });

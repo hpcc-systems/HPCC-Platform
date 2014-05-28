@@ -8573,21 +8573,21 @@ simpleDataSet
                             $$.setExpr(dataset);
                             $$.setPosition($1);
                         }
-    | DATASET '(' '[' beginList inlineDatasetValueList ']' ',' recordDef ')'
+    | DATASET '(' '[' beginList inlineDatasetValueList ']' ',' recordDef optDatasetFlags ')'
                         {
                             HqlExprArray values;
                             parser->endList(values);
-                            OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $8.getExpr());
+                            OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), createComma($8.getExpr(), $9.getExpr()));
                             $$.setExpr(convertTempTableToInlineTable(*parser->errorHandler, $5.pos, table));
                             $$.setPosition($1);
                         }
-    | DATASET '(' '[' beginList transformList ']' ')'
+    | DATASET '(' '[' beginList transformList ']' optDatasetFlags ')'
                         {
                             HqlExprArray values;
                             parser->endList(values);
                             IHqlExpression * record = values.item(0).queryRecord();
                             parser->checkCompatibleTransforms(values, record, $5);
-                            $$.setExpr(createDataset(no_inlinetable, createValue(no_transformlist, makeNullType(), values), LINK(record)));
+                            $$.setExpr(createDataset(no_inlinetable, createValue(no_transformlist, makeNullType(), values), createComma(LINK(record), $7.getExpr())));
                             $$.setPosition($1);
                         }
     | DATASET '(' thorFilenameOrList ',' beginCounterScope recordDef endCounterScope ')'

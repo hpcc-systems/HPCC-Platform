@@ -95,7 +95,7 @@ define([
 
         DFUArrayAction: function (logicalFiles, actionType, callback) {
             arrayUtil.forEach(logicalFiles, function (item, idx) {
-                item.qualifiedName = item.Name + "@" + item.ClusterName;
+                item.qualifiedName = item.Name + "@" + item.NodeGroup;
             });
             var request = {
                 LogicalFiles: logicalFiles,

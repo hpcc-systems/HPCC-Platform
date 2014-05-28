@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 //Normalized, no filter
 output(sq.SimplePersonBookIndex.books, { name, author, rating100 });

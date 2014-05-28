@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 // Test a case that needs serialize due to child dataset...
 table(sq.SimplePersonBookds, { dataset books := sq.SimplePersonBookDs.books, sq.SimplePersonBookDs.surname, count(group) });

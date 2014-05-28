@@ -362,7 +362,7 @@ define(
     SearchResults: "Keresések",
     SecondsRemaining: "másodperc maradt",
     SelectPackageFile: "Csomagfájl választás",
-    Seperators: "Elválasztó jelek",
+    Separators: "Elválasztó jelek",
     SetBanner: "Fejléc megadása",
     SetTextError: "Nem sikerült a szöveget megjeleníteni. Lehetséges, hogy túl hosszú. Használja a 'segédleteket' a letöltéshez.",
     SetToFailed: "Elront",
