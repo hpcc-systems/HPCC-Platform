@@ -52,7 +52,6 @@ include_directories (
          ./../../common/dllserver
          ./../../common/fileview2
          ./../../common/workunit
-         ./../../esp/bindings/http/client
          ./../../common/environment
          ./../../esp/bindings/SOAP/xpp
          ./../../system/include

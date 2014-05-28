@@ -1821,7 +1821,7 @@ int CHttpRequest::processHeaders(IMultiException *me)
     if (getEspLogRequests() || getEspLogLevel()>LogNormal)
         logMessage(LOGHEADERS, "HTTP request headers received:\n");
 
-    if(m_content_length > 0 && m_MaxRequestEntityLength > 0 && m_content_length > m_MaxRequestEntityLength && (!isUpload()))
+    if(m_content_length > 0 && m_MaxRequestEntityLength > 0 && m_content_length > m_MaxRequestEntityLength && (!isUpload(false)))
         throw createEspHttpException(HTTP_STATUS_BAD_REQUEST_CODE, "The request length was too long.", HTTP_STATUS_BAD_REQUEST);
 
     return 0;
