@@ -113,6 +113,8 @@ define([
             });
             if (params.Wuid) {
                 this.filter.setValue(this.id + "Wuid", params.Wuid);
+            } else if (params.LogicalName) {
+                this.filter.setValue(this.id + "FileName", params.LogicalName);
             }
             this.initQuerySetGrid();
 

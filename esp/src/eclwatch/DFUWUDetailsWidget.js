@@ -264,15 +264,19 @@ define([
                 case "hasCompleted":
                     this.refreshActionState();
                     break;
-                case "SourceLogicalName":
-                    this.ensurePane("SourceLogicalName", this.i18n.Source, {
-                        Name: newValue
-                    });
-                    break;
-                case "DestLogicalName":
-                    this.ensurePane("DestLogicalName", this.i18n.Target, {
-                        Name: newValue
-                    });
+                case "changedCount":
+                    if (this.wu.SourceLogicalName) {
+                        this.ensurePane("SourceLogicalName", this.i18n.Source, {
+                            NodeGroup: this.wu.SourceGroupName,
+                            Name: this.wu.SourceLogicalName
+                        });
+                    }
+                    if (this.wu.DestLogicalName) {
+                        this.ensurePane("DestLogicalName", this.i18n.Target, {
+                            NodeGroup: this.wu.DestGroupName,
+                            Name: this.wu.DestLogicalName
+                        });
+                    }
                     break;
             }
         },

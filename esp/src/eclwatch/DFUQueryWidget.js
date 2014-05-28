@@ -179,7 +179,7 @@ define([
             if (this.copyForm.validate()) {
                 var context = this;
                 arrayUtil.forEach(this.copyGrid.store.data, function (item, idx) {
-                    var logicalFile = ESPLogicalFile.Get(item.ClusterName, item.Name);
+                    var logicalFile = ESPLogicalFile.Get(item.NodeGroup, item.Name);
                     var request = domForm.toObject(context.id + "CopyForm");
                     request.RenameSourceName = item.Name;
                     request.destLogicalName = item.targetCopyName;
@@ -198,7 +198,7 @@ define([
             if (this.renameForm.validate()) {
                 var context = this;
                 arrayUtil.forEach(this.renameGrid.store.data, function (item, idx) {
-                    var logicalFile = ESPLogicalFile.Get(item.ClusterName, item.Name);
+                    var logicalFile = ESPLogicalFile.Get(item.NodeGroup, item.Name);
                     var request = domForm.toObject(context.id + "RenameForm");
                     request.RenameSourceName = item.Name;
                     request.dstname = item.targetRenameName;
@@ -258,14 +258,14 @@ define([
             if (item) {
                 this.menuFilterOwner.set("label", this.i18n.Owner + ":  " + item.Owner);
                 this.menuFilterOwner.set("hpcc_value", item.Owner);
-                this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + item.ClusterName);
-                this.menuFilterCluster.set("hpcc_value", item.ClusterName);
+                this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + item.NodeGroup);
+                this.menuFilterCluster.set("hpcc_value", item.NodeGroup);
             }
             if (item.Owner == "") {
                 this.menuFilterOwner.set("disabled", true);
                 this.menuFilterOwner.set("label", this.i18n.Owner + ":  " + this.i18n.NA);
             }
-            if (item.ClusterName == "") {
+            if (item.NodeGroup == "") {
                 this.menuFilterCluster.set("disabled", true);
                 this.menuFilterCluster.set("label", this.i18n.Cluster + ":  " + this.i18n.NA);
             }
@@ -462,7 +462,7 @@ define([
                     }),
                     Owner: { label: this.i18n.Owner, width: 72 },
                     Description: { label: this.i18n.Description, width: 153 },
-                    ClusterName: { label: this.i18n.Cluster, width: 108 },
+                    NodeGroup: { label: this.i18n.Cluster, width: 108 },
                     RecordCount: { label: this.i18n.Records, width: 72},
                     Totalsize: { label: this.i18n.Size, width: 72},
                     Parts: { label: this.i18n.Parts, width: 45},
@@ -646,7 +646,7 @@ define([
                         closable: true,
                         delayWidget: "LFDetailsWidget",
                         _hpccParams: {
-                            ClusterName: params.ClusterName,
+                            NodeGroup: params.NodeGroup,
                             Name: params.Name
                         }
                     });
