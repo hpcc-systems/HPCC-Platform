@@ -548,6 +548,10 @@ public:
     {
         return CPackageNode::queryId();
     }
+    virtual bool isCompulsory() const
+    {
+        return CPackageNode::isCompulsory();
+    }
 };
 
 CResolvedFileCache CRoxiePackageNode::daliFiles;
