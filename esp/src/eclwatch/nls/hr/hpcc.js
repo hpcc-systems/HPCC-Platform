@@ -361,7 +361,7 @@
     SearchResults: "Rezultati Pretraživanja",
     SecondsRemaining: "Preostalo Sekundi",
     SelectPackageFile: "Izaberi Paket",
-    Seperators: "Seperatori",
+    Separators: "Seperatori",
     SetBanner: "Postavite Zastavicu",
     SetTextError: "Neuspješno prikazivanje teksta (da li je tekst predug?). Koristite 'pomagače' za preuzimanje datoteka.",
     SetToFailed: "Postavite Na Neuspješan",

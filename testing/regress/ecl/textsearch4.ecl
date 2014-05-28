@@ -15,16 +15,13 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-//UseTextSearch
-//tidyoutput
 //nothor
-//nothorlcr
-//DoesntReallyUseIndexes
-//xxvarskip type==roxie && setuptype==thor && !local
 
-#option ('checkAsserts',false)
-
+#option ('checkAsserts',false);
+import $.Setup.TS;
+import $.Common.TextSearch;
+import $.Common.TextSearchQueries;
+import $.Setup;
 
 q1 := dataset([
             '"increase"',
@@ -47,11 +44,14 @@ q1 := dataset([
 // What about the duplicates that can come out of the proximity operators?
 // where the next on the rhs is at a compatible position, but in a different document
 // What about inverse of proximity x not w/n y
-// Can inverse proximity be used for sentance/paragraph.  Can we combine them so short circuited before temporaries created.
+// Can inverse proximity be used for sentence/paragraph.  Can we combine them so short circuited before temporaries created.
 //MORE: What other boundary conditions can we think of.
 
                 ''
-            ], queryInputRecord);
+            ], TextSearch.queryInputRecord);
 
-p := project(q1, doBatchExecute(TS_searchIndex, LEFT, 0x00000200));
+boolean useLocal := false;
+Files := Setup.Files('hthor');
+searchIndex := index(TS.textSearchIndex, Files.NameSearchIndex);
+p := project(q1, TextSearch.doBatchExecute(searchIndex, LEFT, useLocal, 0x00000200));
 output(p);

@@ -47,7 +47,6 @@
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
-                                        <input title="${i18n.RecordStructurePresent}:" name="recordStructurePresent" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -84,15 +83,16 @@
                                             <option value="9">UTF-32BE</option>
                                         </select>
                                         <input id="${id}SprayDelimitedMaxRecordLength" title="${i18n.MaxRecordLength}:" style="width: 95%;" name="sourceMaxRecordSize" value="8192" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'8192'" data-dojo-type="dijit.form.ValidationTextBox" />
-                                        <input id="${id}SprayDelimitedSeperators" title="${i18n.Seperators}:" style="width: 95%;" name="sourceCsvSeparate" value="," data-dojo-props="trim: true, placeHolder:'\,'" colspan="2" data-dojo-type="dijit.form.ValidationTextBox" />
+                                        <input id="${id}SprayDelimitedSeparators" title="${i18n.Separators}:" style="width: 95%;" name="sourceCsvSeparate" value="," data-dojo-props="trim: true, placeHolder:'\,'" colspan="2" data-dojo-type="dijit.form.ValidationTextBox" />
                                         <input title="${i18n.OmitSeparator}:" name="NoSourceCsvSeparator" colspan="2" data-dojo-type="dijit.form.CheckBox" />
                                         <input id="${id}SprayDelimitedEscape" title="${i18n.Escape}:" style="width: 95%;" name="sourceCsvEscape" data-dojo-props="trim: true" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                         <input id="${id}SprayDelimitedTerminators" title="${i18n.LineTerminators}:" name="sourceCsvTerminate" style="width: 95%;" value="\n,\r\n" required="true" colspan="2" data-dojo-props="trim: true, placeHolder:'\\n,\\r\\n'" data-dojo-type="dijit.form.ValidationTextBox" />
-                                        <input id="${id}SprayDelimitedQuote" title="${i18n.Quote}:" style="width: 95%;" name="sourceCsvQuote" value="'" data-data-dojo-props="trim: true, placeHolder:'\''" colspan="2" data-dojo-type="dijit.form.TextBox" />
+                                        <input id="${id}SprayDelimitedQuote" title="${i18n.Quote}:" style="width: 95%;" name="sourceCsvQuote" value='"' data-data-dojo-props="trim: true, placeHolder:'\''" colspan="2" data-dojo-type="dijit.form.TextBox" />
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.RecordStructurePresent}:" name="recordStructurePresent" data-dojo-type="dijit.form.CheckBox" />
+                                        <input title="${i18n.QuotedTerminator}:" name="quotedTerminator" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -132,7 +132,6 @@
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
-                                        <input title="${i18n.RecordStructurePresent}:" name="recordStructurePresent" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -166,7 +165,6 @@
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
-                                        <input title="${i18n.RecordStructurePresent}:" name="recordStructurePresent" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">
@@ -195,7 +193,6 @@
                                         <input title="${i18n.Overwrite}:" name="overwrite" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.Compress}:" name="compress" data-dojo-type="dijit.form.CheckBox" />
                                         <input title="${i18n.FailIfNoSourceFile}:" name="failIfNoSourceFile" data-dojo-type="dijit.form.CheckBox" />
-                                        <input title="${i18n.RecordStructurePresent}:" name="recordStructurePresent" data-dojo-type="dijit.form.CheckBox" />
                                     </div>
                                 </div>
                                 <div class="dijitDialogPaneActionBar">

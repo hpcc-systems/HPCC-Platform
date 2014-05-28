@@ -78,7 +78,7 @@
                             </li>
                             <li>
                                 <label for="${id}ClusterName">${i18n.ClusterName}: </label>
-                                <div id="${id}ClusterName"></div>
+                                <div id="${id}NodeGroup"></div>
                             </li>
                             <li>
                                 <label for="${id}Description">${i18n.Description}: </label>
@@ -133,6 +133,8 @@
             <div id="${id}_XML" title="${i18n.XML}" data-dojo-props="delayProps: {WUXml: true}, delayWidget: 'ECLSourceWidget', disabled: true" data-dojo-type="DelayLoadWidget">
             </div>
             <div id="${id}_FileParts" title="${i18n.FileParts}" data-dojo-props="delayWidget: 'FilePartsWidget'" data-dojo-type="DelayLoadWidget">
+            </div>
+            <div id="${id}_Queries" title="${i18n.Queries}" data-dojo-props="delayWidget: 'QuerySetQueryWidget', iconClass:'iconFind'" data-dojo-type="DelayLoadWidget">
             </div>
             <div id="${id}_Workunit" title="${i18n.Workunit}" data-dojo-props="delayWidget: 'WUDetailsWidget'" data-dojo-type="DelayLoadWidget">
             </div>

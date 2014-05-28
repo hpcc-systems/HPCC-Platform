@@ -15,16 +15,21 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-#option ('checkAsserts',false)
+#option ('checkAsserts',false);
 
 import Std.Str;
 import Std.File AS FileServices;
 
-rebuildSimpleIndex := true;
-rebuildSearchIndex := setupTextFileLocation <> '';
+import $;
+import $.Options;
+import $.TS;
+Files := $.Files(__PLATFORM__);
 
-DirectoryPath := '~file::' + setupTextFileLocation + '::';          // path of the documents that are used to build the search index
+
+rebuildSimpleIndex := true;
+rebuildSearchIndex := Options.OriginalTextFilesIp <> '' AND Options.OriginalTextFilesPath <> '';
+
+DirectoryPath := '~file::' + Options.OriginalTextFilesIp + '::' + Options.OriginalTextFilesPath + '::';          // path of the documents that are used to build the search index
 
 MaxDocumentLineLength := 50000;
 
@@ -36,16 +41,16 @@ unsigned8 filepos := 0;
     end;
 
 parseRecord := record
-TS_wordType     word;
-TS_kindType     kind;
-TS_wordType     original;
-TS_documentId   doc;
-TS_segmentType  segment;
-TS_wordFlags    flags;
-TS_wordPosType  wpos;
-TS_indexWipType wip;
-TS_docPosType   dpos;
-TS_docPosType   seq;
+TS.wordType     word;
+TS.kindType     kind;
+TS.wordType     original;
+TS.documentId   doc;
+TS.segmentType  segment;
+TS.wordFlags    flags;
+TS.wordPosType  wpos;
+TS.indexWipType wip;
+TS.docPosType   dpos;
+TS.docPosType   seq;
 boolean         beginSegment;           // could be set to {x:1} to separate title and chapters - would probably be useful.
 boolean         endOfSentence;
 boolean         endOfParagraph;
@@ -54,16 +59,16 @@ boolean         endOfParagraph;
 inputAliasRecord := record
 unsigned2   source;
 unsigned4   subdoc;
-TS_wordType word;
-TS_wordPosType wpos;
-TS_indexWipType wip;
+TS.wordType word;
+TS.wordPosType wpos;
+TS.indexWipType wip;
     end;
 
 spanTagSet := ['p','s'];
-wordKindSortOrder(TS_kindType kind, TS_wordPosType wip, TS_wordType tag) :=
-        MAP(kind = TS_kindType.OpenTagEntry and wip=0=>1,
-            kind = TS_kindType.CloseTagEntry=>2,
-            kind = TS_kindType.OpenTagEntry and wip<>0=>
+wordKindSortOrder(TS.kindType kind, TS.wordPosType wip, TS.wordType tag) :=
+        MAP(kind = TS.kindType.OpenTagEntry and wip=0=>1,
+            kind = TS.kindType.CloseTagEntry=>2,
+            kind = TS.kindType.OpenTagEntry and wip<>0=>
                 100+CASE(tag,'p'=>1,'s'=>2,3),                      // ensure sentences are contained within paragraphs
             1000);
 
@@ -100,17 +105,17 @@ convertDocumentStreamToTokens(dataset(inputDocumentRecord) inFile) := FUNCTION
 
     parseRecord createMatchRecord(inFile l) := transform
 
-            self.kind := MAP(MATCHED(patWord)=>TS_kindType.TextEntry,
-                             MATCHED(openTag)=>TS_kindType.OpenTagEntry,
-                             MATCHED(closeTag)=>TS_kindType.CloseTagEntry,
-                             MATCHED(openCloseTag)=>TS_kindType.OpenCloseTagEntry,
-                             MATCHED(sentenceTerminator)=>TS_kindType.CloseOpenTagEntry,
-                             TS_kindType.UnknownEntry);
+            self.kind := MAP(MATCHED(patWord)=>TS.kindType.TextEntry,
+                             MATCHED(openTag)=>TS.kindType.OpenTagEntry,
+                             MATCHED(closeTag)=>TS.kindType.CloseTagEntry,
+                             MATCHED(openCloseTag)=>TS.kindType.OpenCloseTagEntry,
+                             MATCHED(sentenceTerminator)=>TS.kindType.CloseOpenTagEntry,
+                             TS.kindType.UnknownEntry);
 
             self.original := MAP(MATCHED(sentenceTerminator)=>'s',
                                  MATCHED(patWord)=>matchtext(patWord),
                                  matchText(tag));
-            self.doc := TS_createDocId(l.source, l.subdoc);
+            self.doc := TS.createDocId(l.source, l.subdoc);
             self.dpos := l.filepos + matchposition(matchPattern);
             self.wpos := 0;
             self.wip := IF(MATCHED(anyTag), 0, 1);              // normal tags don't consume space - may want to change
@@ -121,11 +126,11 @@ convertDocumentStreamToTokens(dataset(inputDocumentRecord) inFile) := FUNCTION
     doProcess1 := parse(splitFile, text, S, createMatchRecord(left), first, scan);
 
     parseRecord createMatchPara(inFile l) := transform
-            self.kind := TS_kindType.CloseOpenTagEntry;
+            self.kind := TS.kindType.CloseOpenTagEntry;
             self.original := 'p';
             self.endOfParagraph := true;
             self.wip := 1;
-            self.doc := TS_createDocId(l.source, l.subdoc);
+            self.doc := TS.createDocId(l.source, l.subdoc);
             self.dpos := l.filepos+1;
             self := [];
         END;
@@ -140,25 +145,25 @@ END;
 
 processSentanceAndParagraphMarkers(dataset(parseRecord) extractedWords, set of string spanTagSet) := FUNCTION
 
-    spanTags := dataset(spanTagSet, { Ts_wordType tag });               // special tags which span all the text
+    spanTags := dataset(spanTagSet, { TS.wordType tag });               // special tags which span all the text
 
     //Now normalize sentance and paragraph markers into begin/end markers.  And add leading and trailing markers to each document.
-    withoutMarkers := extractedWords(kind <> TS_kindType.CloseOpenTagEntry);
-    markers := extractedWords(kind = TS_kindType.CloseOpenTagEntry);
+    withoutMarkers := extractedWords(kind <> TS.kindType.CloseOpenTagEntry);
+    markers := extractedWords(kind = TS.kindType.CloseOpenTagEntry);
 
-    parseRecord modifyMarker(parseRecord l, TS_kindType kind) := transform
+    parseRecord modifyMarker(parseRecord l, TS.kindType kind) := transform
         SELF.kind := kind;
-        SELF.wip := IF(kind = TS_kindType.OpenTagEntry, l.wip, 0);      // open may take up space, close dosen't take up space
+        SELF.wip := IF(kind = TS.kindType.OpenTagEntry, l.wip, 0);      // open may take up space, close dosen't take up space
         SELF := l;
     END;
-    markerOpen := project(markers, modifyMarker(left, TS_kindType.OpenTagEntry));
-    markerClose := project(markers, modifyMarker(left, TS_kindType.CloseTagEntry));
+    markerOpen := project(markers, modifyMarker(left, TS.kindType.OpenTagEntry));
+    markerClose := project(markers, modifyMarker(left, TS.kindType.CloseTagEntry));
 
     groupedByDoc := group(extractedWords, doc);
     singlePerDoc := table(groupedByDoc, { doc, maxDocPos := max(group, dpos); });
 
-    parseRecord createSpanTag(TS_documentId doc, TS_docPosType dpos, boolean isOpen, unsigned whichTag) := TRANSFORM
-        SELF.kind := IF(isOpen, TS_kindType.OpenTagEntry, TS_kindType.CloseTagEntry);
+    parseRecord createSpanTag(TS.documentId doc, TS.docPosType dpos, boolean isOpen, unsigned whichTag) := TRANSFORM
+        SELF.kind := IF(isOpen, TS.kindType.OpenTagEntry, TS.kindType.CloseTagEntry);
         SELF.original := spanTagSet[whichTag];
         SELF.doc := doc;
         SELF.dpos := dpos;
@@ -190,15 +195,15 @@ matchOpenCloseTags(dataset(parseRecord) _inFile) := FUNCTION
     //Now need to match up begin tags with end tags, work out the size of the tags, update the begin tags, and strip the end tags.
     //extract all close tags, group by doc, sort by name, sequence, then add a new sequence.
 
-    closeTags1 := inFile(kind = TS_kindType.CloseTagEntry);
+    closeTags1 := inFile(kind = TS.kindType.CloseTagEntry);
 
     //Now extract all the open tags, and do the same
-    openTags1 := inFile(kind = TS_kindType.OpenTagEntry);
+    openTags1 := inFile(kind = TS.kindType.OpenTagEntry);
 
     ////////Version2 - using grouped process to match up open with close ///////////////////
-    positionRecord := { TS_docPosType seq, TS_docPosType wpos };
+    positionRecord := { TS.docPosType seq, TS.docPosType wpos };
     matchTagRecord := RECORD
-        dataset(positionRecord) active{maxcount(TS_MaxTagNesting)}
+        dataset(positionRecord) active{maxcount(TS.MaxTagNesting)}
     END;
     nullMatchTag := row(transform(matchTagRecord, self := []));
 
@@ -209,18 +214,18 @@ matchOpenCloseTags(dataset(parseRecord) _inFile) := FUNCTION
             openWpos := r.active[1].wpos;
             self.wpos := openWpos;
             self.wip := l.wpos - openWpos;
-            self.seq := IF(l.kind = TS_kindType.OpenTagEntry, 0, r.active[1].seq);      // so we can remove them later
-            self.kind := TS_kindType.OpenTagEntry;
+            self.seq := IF(l.kind = TS.kindType.OpenTagEntry, 0, r.active[1].seq);      // so we can remove them later
+            self.kind := TS.kindType.OpenTagEntry;
             self := l;
         END;
         export matchTagRecord createRight := TRANSFORM
-            SELF.active := IF(l.kind = TS_kindType.OpenTagEntry,
+            SELF.active := IF(l.kind = TS.kindType.OpenTagEntry,
                                 row(transform(positionRecord, self.seq := l.seq; self.wpos := l.wpos)) & r.active,
                                 r.active[2..]);
         END;
     END;
 
-    openClose := inFile(kind IN [TS_kindType.OpenTagEntry,TS_kindType.CloseTagEntry]);
+    openClose := inFile(kind IN [TS.kindType.OpenTagEntry,TS.kindType.CloseTagEntry]);
     groupedOpenClose := group(openClose, doc, segment);
     sortedOpenClose := sort(groupedOpenClose, original, wpos, wordKindSortOrder(kind, wip, original));
 
@@ -235,7 +240,7 @@ matchOpenCloseTags(dataset(parseRecord) _inFile) := FUNCTION
     sortedFixedupOpenTags := SORT(fixedupOpentags, doc, segment, wpos, wip);
 
     //Now combine the non tags with the fixed up tags
-    fixedUp := merge(inFile(kind not in [TS_kindType.OpenTagEntry, TS_kindType.CloseTagEntry]), sortedFixedupOpenTags, sorted(doc, segment, wpos, wip));
+    fixedUp := merge(inFile(kind not in [TS.kindType.OpenTagEntry, TS.kindType.CloseTagEntry]), sortedFixedupOpenTags, sorted(doc, segment, wpos, wip));
     return fixedUp;
 END;
 
@@ -252,7 +257,7 @@ normalizeWordFormat(dataset(parseRecord) inFile) := FUNCTION
             hasUpper := REGEXFIND('[A-Z]', l.original);
             hasLower := REGEXFIND('[a-z]', l.original);
             self.word := Str.ToLowerCase(l.original);
-            self.flags := IF(hasUpper, TS_wordFlags.hasUpper, 0) + IF(hasLower, TS_wordFlags.hasLower, 0);
+            self.flags := IF(hasUpper, TS.wordFlags.hasUpper, 0) + IF(hasLower, TS.wordFlags.hasLower, 0);
             self := l;
         end;
     RETURN project(inFile, cleanWords(left));
@@ -260,9 +265,9 @@ END;
 
 createAliasesFromList(dataset(inputAliasRecord) inputAliases) := FUNCTION
     parseRecord createAlias(inputAliasRecord l) := transform
-            self.kind := TS_kindType.TextEntry;
+            self.kind := TS.kindType.TextEntry;
             self.original := l.word;
-            self.doc := TS_createDocId(l.source, l.subdoc);
+            self.doc := TS.createDocId(l.source, l.subdoc);
             self.dpos := 0;
             self.wpos := l.wpos;
             self.wip := l.wip;
@@ -422,20 +427,18 @@ wordsAndAliases := merge(orderedWords, orderedAliases, sorted(doc, segment, wpos
 
 normalizedInversion := normalizeWordFormat(wordsAndAliases);
 
-#if (useLocal=true)
-  processedWords := DISTRIBUTE(normalizedInversion, IF(doc > 6, 0, 1));
-#else
-  processedWords := normalizedInversion;
-#end
+boolean useLocal := false; // MORE: Should we create two different variants?
 
-doCreateSimpleIndex() := sequential(
-    BUILD(processedWords, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, TS_NameWordIndex, overwrite,
+processedWords(boolean useLocal) := IF(useLocal, DISTRIBUTE(normalizedInversion, IF(doc > 6, 0, 1)), normalizedInversion);
+
+doCreateSimpleIndex(boolean useLocal) := sequential(
+    BUILD(processedWords(useLocal), { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(useLocal), overwrite,
 #if (useLocal=true)
             NOROOT,
 #end
             compressed(row)),
     //Add a column mapping, testing done L->R, multiple transforms, and that parameters work
-    fileServices.setColumnMapping(TS_NameWordIndex, 'word{set(stringlib.StringToLowerCase,stringlib.StringFilterOut(\'AEIOU$?.:;,()\'))}')
+    fileServices.setColumnMapping(Files.NameWordIndex(useLocal), 'word{set(stringlib.StringToLowerCase,stringlib.StringFilterOut(\'AEIOU$?.:;,()\'))}')
 );
 
 
@@ -445,7 +448,7 @@ doCreateSimpleIndex() := sequential(
 
 boolean isNewDocumentFunction(string s) := false;
 
-convertTextFileToInversion(TS_sourceType sourceId, string filename, isNewDocumentFunction isNewDocument) := FUNCTION
+convertTextFileToInversion(TS.sourceType sourceId, string filename, isNewDocumentFunction isNewDocument) := FUNCTION
 
 inFile := dataset(filename, { string line{maxlength(MaxDocumentLineLength)}, unsigned8 filepos{virtual(fileposition)} }, csv(SEPARATOR(''),quote([]),maxlength(MaxDocumentLineLength+8+4)));
 
@@ -460,7 +463,7 @@ inFile := dataset(filename, { string line{maxlength(MaxDocumentLineLength)}, uns
     inputDocumentRecord allocateDocuments(inputDocumentRecord l, inputDocumentRecord r) := transform
         SELF.subdoc := IF(l.subdoc = 0, 1, l.subdoc + IF(isNewDocument(r.text), 1, 0));
         //This turns dpos into a (line, column) field instead of byte offset.  Remove for the latter.
-        SELF.filepos := l.filepos + TS_MaxColumnsPerLine;
+        SELF.filepos := l.filepos + TS.MaxColumnsPerLine;
         SELF := r;
     END;
     annotateWithDocument := ITERATE(annotateWithSource, allocateDocuments(LEFT, RIGHT));
@@ -497,14 +500,15 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
 //Build on bible and encyclopedia for the moment.
 //have different characteristics.  Bible has ~74 "documents", encyclopedia has
 doCreateSearchIndex() := sequential(
-    BUILD(bibleStream+encyclopediaStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, TS_NameSearchIndex, overwrite,
+    BUILD(bibleStream+encyclopediaStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex, overwrite,
 #if (useLocal=true)
         NOROOT,
 #end
           compressed(row)),
-    fileServices.setColumnMapping(TS_NameSearchIndex, 'word{set(unicodelib.UnicodeToLowerCase)}')       // unicode just to be perverse
+    fileServices.setColumnMapping(Files.NameSearchIndex, 'word{set(unicodelib.UnicodeToLowerCase)}')       // unicode just to be perverse
 );
 
 
-IF (rebuildSimpleIndex, doCreateSimpleIndex());
+IF (rebuildSimpleIndex, doCreateSimpleIndex(FALSE));
+IF (rebuildSimpleIndex, doCreateSimpleIndex(TRUE));
 IF (rebuildSearchIndex, doCreateSearchIndex());

@@ -15,29 +15,5 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
-
-//A not-so-simple out of line subquery
-secondBookName := (string20)sort(sq.SimplePersonBookDs.books, name)[2].name;
-
-//Simple disk aggregate
-output(sort(table(sq.SimplePersonBookDs, { surname, sumage := sum(group, aage) }, surname, few),surname));
-
-//Filtered disk aggregate, which also requires a beenProcessed flag
-output(sort(table(sq.SimplePersonBookDs(surname != 'Halliday'), { max(group, aage), surname }, surname, few),surname));
-
-//check literals are assigned
-output(sort(table(sq.SimplePersonBookDs(forename = 'Gavin'), { 'Count: ', count(group), 'Name: ', surname }, surname, few),surname));
-
-//Sub query needs serializing or repeating....
-
-// A simple inline subquery
-output(sort(table(sq.SimplePersonBookDs, { cnt := count(books), sumage := sum(group, aage) }, count(books), few),cnt));
-
-output(sort(table(sq.SimplePersonBookDs, { sbn := secondBookName, sumage := sum(group, aage) }, secondBookName, few),sbn));
-
-// An out of line subquery (caused problems accessing parent inside sort criteria
-output(sort(table(sq.SimplePersonBookDs, { cnt := count(books(id != 0)), sumage := sum(group, aage) }, count(books(id != 0)), few),cnt));
-
-//Bizarre - add a dataset that needs serialization/deserialisation to enusre cloned correctly
-output(sort(table(nofold(sq.SimplePersonBookDs)(surname != 'Halliday'), { max(group, aage), surname, dataset books := books}, surname, few),surname));
+import $.common;
+common.aggds3('hthor');

@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 //Simple disk aggregate
 output(preload(sq.HousePersonBookDs), { dataset people := sort(table(persons, { surname, sum(group, aage) }, surname, few), surname)});

@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 unsigned8 skipId := 4 : stored('skipId');
 string searchAuthor := 'Dr. Seuss' : stored('searchAuthor');

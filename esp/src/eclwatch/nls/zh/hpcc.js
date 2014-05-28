@@ -360,7 +360,7 @@
     SearchResults: "查询结果",
     SecondsRemaining: "剩余时间(秒)",
     SelectPackageFile: "选择文件包文件",
-    Seperators: "分割符",
+    Separators: "分割符",
     SetBanner: "标语设置",
     SetTextError: "文本太大无法显示. 请用'帮助'下载",
     SetToFailed: "设为失误状态",

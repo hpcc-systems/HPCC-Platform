@@ -15,24 +15,12 @@
     limitations under the License.
 ############################################################################## */
 
-//UseStandardFiles
-//UseTextSearch
-//tidyoutput
-//nothor
-//nothorlcr
-//nohthor
-//DoesntReallyUseIndexes    Thje test is primarily here to check everything works when the join index optimizer is always on
-//xxvarskip type==roxie && setuptype==thor && !local
+import $.TextSearch;
 
-#option ('checkAsserts',false)
+EXPORT TextSearchQueries := module
 
-//SingleQuery := 'AND(NOTAT(AND("twinkle", "little"), 9999), NOTAT(AND("how", "wonder"),8888))';
+EXPORT WordTests := dataset([
 
-q1 := dataset([
-
-#if (#ISDEFINED(SingleQuery))
-            SingleQuery
-#else
             'AND("black","sheep")',
             'ANDNOT("black","sheep")',
             'MOFN(2,"black","sheep","white")',
@@ -369,6 +357,10 @@ q1 := dataset([
             'BUTNOT("black", PHRASE("black", OR("spotted", "sheep")))',
             'BUTNOTJOIN("black", PHRASE("black", OR("spotted", "sheep")))',
 
+            'AND("the", "software", "source")',
+            'AND("the":1, "software":2, "source":3)',
+            'AND("the":3, "software":2, "source":1)',
+
 //MORE:
 // STEPPED flag on merge to give an error if input doesn't support stepping.
 // What about the duplicates that can come out of the proximity operators?
@@ -379,9 +371,9 @@ q1 := dataset([
 
                 ' '
 
-#end
+            ], TextSearch.queryInputRecord);
 
-            ], queryInputRecord);
 
-p := project(nofold(q1), doBatchExecute(TS_wordIndex, LEFT, 0x40000000));
-output(p);
+EXPORT SingleBatchQuery(string search) := dataset([search], TextSearch.queryInputRecord);
+
+END;

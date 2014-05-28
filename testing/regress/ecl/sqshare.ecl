@@ -15,7 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-import $.setup.sq;
+import $.setup;
+sq := setup.sq('hthor');
 
 udecimal8 todaysDate := 20040602D;
 unsigned4 age(udecimal8 dob) := ((todaysDate - dob) / 10000D);

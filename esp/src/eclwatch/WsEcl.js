@@ -66,6 +66,19 @@ define([
             });
             return deferred.promise;
         },
+        CallURL: function (url, query) {
+            //  http://X.X.X.X:8002/WsEcl/submit/query/roxie/method/json
+            var urlParts = url.split("/");
+            var method = urlParts[urlParts.length - 2];
+            var context = this;
+            return script.get(url, {
+                query: query,
+                jsonp: "jsonp"
+            }).then(function (response) {
+                var results = response[method + "Response"] && response[method + "Response"].Results ? response[method + "Response"].Results : {};
+                return context._flattenResults(results);
+            });
+        },
         Submit: function (target, method, query) {
             var deferred = new Deferred();
             var context = this;

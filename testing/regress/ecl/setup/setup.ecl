@@ -16,8 +16,9 @@
 ############################################################################## */
 
 import Std.File AS FileServices;
-import $; C := $.files('');
-import $.sq;
+import $;
+
+C := $.files(__PLATFORM__);
 
 C.DG_OutRec norm1(C.DG_OutRec l, integer cc) := transform
   self.DG_firstname := C.DG_Fnames[cc];

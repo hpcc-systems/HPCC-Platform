@@ -31,7 +31,7 @@ from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam,  getVersionNumbers
 from hpcc.common.error import Error
 
-prog_version = "0.0.19"
+prog_version = "0.0.20"
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
