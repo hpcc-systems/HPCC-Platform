@@ -1,0 +1,42 @@
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;.::superfile3&apos;) file not found</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;.::superfile4&apos;) file not found</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;.::superfile3&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;.::superfile4&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;.::superfile4&apos;, &apos;.::subfile6&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;, del, remcontents) done</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;.::superfile4&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;.::superfile4&apos;, &apos;.::subfile6&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;, del, remcontents) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;, del, remcontents) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;.::superfile3&apos;) done</Message></Info>
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><Result_2>false</Result_2></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><Result_3>false</Result_3></Row>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>true</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>true</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>false</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>false</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>done</Result_9></Row>
+</Dataset>

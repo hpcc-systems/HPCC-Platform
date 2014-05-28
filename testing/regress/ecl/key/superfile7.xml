@@ -1,0 +1,100 @@
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile7&apos;) file not found</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::superfile7&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile7&apos;, &apos;hthor::regress::subfile1&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile7&apos;, &apos;hthor::regress::subfile2&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile7&apos;, &apos;hthor::regress::subfile3&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile7&apos;, &apos;hthor::regress::subfile4&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile7&apos;) action added to transaction</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile7&apos;) action added to transaction</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile7&apos;) action added to transaction</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>true</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>4</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><i>1</i><id>A</id></Row>
+ <Row><i>1</i><id>B</id></Row>
+ <Row><i>1</i><id>C</id></Row>
+ <Row><i>2</i><id>D</id></Row>
+ <Row><i>2</i><id>E</id></Row>
+ <Row><i>3</i><id>F</id></Row>
+ <Row><i>3</i><id>G</id></Row>
+ <Row><i>3</i><id>H</id></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>true</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>4</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><i>1</i><id>A</id></Row>
+ <Row><i>1</i><id>B</id></Row>
+ <Row><i>1</i><id>C</id></Row>
+ <Row><i>2</i><id>D</id></Row>
+ <Row><i>2</i><id>E</id></Row>
+ <Row><i>3</i><id>F</id></Row>
+ <Row><i>3</i><id>G</id></Row>
+ <Row><i>3</i><id>H</id></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>true</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>true</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>true</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>true</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>true</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>4</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><i>1</i><id>A</id></Row>
+ <Row><i>1</i><id>B</id></Row>
+ <Row><i>1</i><id>C</id></Row>
+ <Row><i>2</i><id>D</id></Row>
+ <Row><i>2</i><id>E</id></Row>
+ <Row><i>3</i><id>F</id></Row>
+ <Row><i>3</i><id>G</id></Row>
+ <Row><i>3</i><id>H</id></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>false</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>false</Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20>false</Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>false</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>false</Result_22></Row>
+</Dataset>

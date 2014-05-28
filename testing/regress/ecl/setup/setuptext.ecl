@@ -15,19 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('checkAsserts',false);
+//This is a module which is imported and used from other queries - don't execute it.
+//skip type==setup TBD
 
 import Std.Str;
 import Std.File AS FileServices;
-
 import $;
 import $.Options;
 import $.TS;
-Files := $.Files(__PLATFORM__);
 
-
-rebuildSimpleIndex := true;
-rebuildSearchIndex := Options.OriginalTextFilesIp <> '' AND Options.OriginalTextFilesPath <> '';
+EXPORT SetupText := FUNCTION
 
 DirectoryPath := '~file::' + Options.OriginalTextFilesIp + '::' + Options.OriginalTextFilesPath + '::';          // path of the documents that are used to build the search index
 
@@ -427,19 +424,21 @@ wordsAndAliases := merge(orderedWords, orderedAliases, sorted(doc, segment, wpos
 
 normalizedInversion := normalizeWordFormat(wordsAndAliases);
 
-boolean useLocal := false; // MORE: Should we create two different variants?
-
-processedWords(boolean useLocal) := IF(useLocal, DISTRIBUTE(normalizedInversion, IF(doc > 6, 0, 1)), normalizedInversion);
-
-doCreateSimpleIndex(boolean useLocal) := sequential(
-    BUILD(processedWords(useLocal), { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(useLocal), overwrite,
-#if (useLocal=true)
-            NOROOT,
-#end
-            compressed(row)),
-    //Add a column mapping, testing done L->R, multiple transforms, and that parameters work
-    fileServices.setColumnMapping(Files.NameWordIndex(useLocal), 'word{set(stringlib.StringToLowerCase,stringlib.StringFilterOut(\'AEIOU$?.:;,()\'))}')
-);
+doCreateSimpleIndex(boolean useLocal) := FUNCTION
+    Files := $.Files(__PLATFORM__, useLocal);
+    distributedWords := DISTRIBUTE(normalizedInversion, IF(doc > 6, 0, 1));
+    
+    RETURN sequential(
+        IF(useLocal,
+            BUILD(distributedWords, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(), 
+                    OVERWRITE, NOROOT, COMPRESSED(row)),
+            BUILD(normalizedInversion, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameWordIndex(), 
+                    OVERWRITE, COMPRESSED(row))
+        );
+        //Add a column mapping, testing done L->R, multiple transforms, and that parameters work
+        fileServices.setColumnMapping(Files.NameWordIndex(), 'word{set(stringlib.StringToLowerCase,stringlib.StringFilterOut(\'AEIOU$?.:;,()\'))}')
+    );
+END;
 
 
 //********************************************************************************************
@@ -499,16 +498,24 @@ shakespeareStream := normalizeWordFormat(convertTextFileToInversion(4, Directory
 
 //Build on bible and encyclopedia for the moment.
 //have different characteristics.  Bible has ~74 "documents", encyclopedia has
-doCreateSearchIndex() := sequential(
-    BUILD(bibleStream+encyclopediaStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex, overwrite,
-#if (useLocal=true)
-        NOROOT,
-#end
-          compressed(row)),
-    fileServices.setColumnMapping(Files.NameSearchIndex, 'word{set(unicodelib.UnicodeToLowerCase)}')       // unicode just to be perverse
-);
+doCreateSearchIndex() := FUNCTION
+    boolean useLocal := false;
+    Files := $.Files(__PLATFORM__, useLocal);
+    RETURN sequential(
+        BUILD(bibleStream+encyclopediaStream, { kind, word, doc, segment, wpos, wip }, { flags, original, dpos }, Files.NameSearchIndex, OVERWRITE,
+    #if (useLocal=true)
+            NOROOT,
+    #end
+              COMPRESSED(ROW)),
+        fileServices.setColumnMapping(Files.NameSearchIndex, 'word{set(unicodelib.UnicodeToLowerCase)}')       // unicode just to be perverse
+    );
+END;
 
-
-IF (rebuildSimpleIndex, doCreateSimpleIndex(FALSE));
-IF (rebuildSimpleIndex, doCreateSimpleIndex(TRUE));
-IF (rebuildSearchIndex, doCreateSearchIndex());
+    exports := MODULE
+        EXPORT createSearchIndex() := doCreateSearchIndex();
+    
+        EXPORT createSimpleIndex(boolean useLocal) := doCreateSimpleIndex(useLocal);
+    END;
+    
+    RETURN exports;
+END;
