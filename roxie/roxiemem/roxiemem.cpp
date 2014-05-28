@@ -385,14 +385,16 @@ static StringBuffer &memmap(StringBuffer &stats)
 
 static void throwHeapExhausted(unsigned pages)
 {
-    DBGLOG("RoxieMemMgr: Memory pool (%u pages) exhausted requested %u", heapTotalPages, pages);
-    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "Memory pool exhausted");
+    VStringBuffer msg("Memory pool exhausted: pool (%u pages) exhausted, requested %u", heapTotalPages, pages);
+    DBGLOG("%s", msg.str());
+    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "%s", msg.str());
 }
 
 static void throwHeapExhausted(unsigned newPages, unsigned oldPages)
 {
-    DBGLOG("RoxieMemMgr: Memory pool (%u pages) exhausted requested %u, had %u", heapTotalPages, newPages, oldPages);
-    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "Memory pool exhausted");
+    VStringBuffer msg("Memory pool exhausted: pool (%u pages) exhausted, requested %u, had %u", heapTotalPages, newPages, oldPages);
+    DBGLOG("%s", msg.str());
+    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "%s", msg.str());
 }
 
 static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
@@ -435,8 +437,9 @@ static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
                 {
                     if (returnNullWhenExhausted)
                         return NULL;
-                    DBGLOG("RoxieMemMgr: Request for large memory denied (%u..%u)", heapLargeBlocks, largeBlocksRequired);
-                    throw MakeStringException(ROXIEMM_LARGE_MEMORY_EXHAUSTED, "Memory pool exhausted");
+                    VStringBuffer msg("Memory pool exhausted: Request for large memory denied (%u..%u)", heapLargeBlocks, largeBlocksRequired);
+                    DBGLOG("%s", msg.str());
+                    throw MakeStringException(ROXIEMM_LARGE_MEMORY_EXHAUSTED, "%s", msg.str());
                 }
 
                 heapLargeBlocks = largeBlocksRequired;
@@ -3179,10 +3182,11 @@ public:
                         if (maxSpillCost != SpillAllCost)
                             return false;
 
-                        logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
+                        VStringBuffer msg("Memory limit exceeded: current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
+                        logctx.CTXLOG("%s", msg.str());
                         reportMemoryUsage(false);
                         PrintStackReport();
-                        throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
+                        throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "%s", msg.str());
                     }
                 }
             }
