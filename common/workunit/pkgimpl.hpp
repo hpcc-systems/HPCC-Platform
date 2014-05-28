@@ -382,7 +382,8 @@ public:
 
     void load(const char *id)
     {
-        load(getPackageMapById(id, true));
+        Owned<IPropertyTree> xml = getPackageMapById(id, true);
+        load(xml);
     }
 
     virtual void gatherFileMappingForQuery(const char *queryname, IPropertyTree *fileInfo) const
