@@ -4231,9 +4231,9 @@ class CSocketEpollThread: public CSocketBaseThread
         struct epoll_event event;
         event.events = event_mask;
 
-        // write all bytes to remove uninitialed warnings
-        // event.data.fd = fd;
-        event.data.u64 = (uint64_t)fd;
+        // write all bytes to eliminate uninitialized warnings
+        memset(&event, 0, sizeof(event));
+        event.data.fd = fd;
 
 # ifdef EPOLLTRACE
         DBGLOG("EPOLL: op(%d) fd %d to epfd %d", op, fd, efd);
