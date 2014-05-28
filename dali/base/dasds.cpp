@@ -682,7 +682,7 @@ public:
     bool querySub() const { return sub; }
     bool querySendValue() const { return sendValue; }
     unsigned queryDepth() const { return depth; }
-    bool qualify(CPTStack &stack, bool below)
+    bool qualify(CPTStack &stack, bool matchIfPartial)
     {
         ForEachItemIn(q, qualifierStack)
         {
@@ -690,7 +690,7 @@ public:
             if (stack.ordinality() <= q+1)
             {
                 // No more stack available (e.g. because deleted below this point)
-                return below; // NB: return true if below=true (meaning head of subscriber path)
+                return matchIfPartial; // NB: return true if matchIfPartial=true (meaning head of subscriber path matched commit stack)
             }
             PTree &item = stack.item(q+1); // stack +1, top is root unqualified.
             if (qualifier && '\0' != *qualifier)
