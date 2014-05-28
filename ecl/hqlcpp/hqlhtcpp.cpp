@@ -12082,6 +12082,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     BuildCtx transformctx(instance->startctx);
     switch (op)
     {
+    case no_join:
+    case no_selfjoin:
     case no_denormalize:
         {
             transformctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned counter)");
@@ -12102,14 +12104,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             BoundRow * selfCursor = buildTransformCursors(transformctx, transform, dataset1, dataset2, instance->dataset, selSeq);
             bindRows(transformctx, no_right, selSeq, expr->queryAttribute(_rowsid_Atom), dataset2, "numRows", "rows", options.mainRowsAreLinkCounted);
             doBuildTransformBody(transformctx, transform, selfCursor);
-            break;
-        }
-    case no_join:
-    case no_selfjoin:
-        {
-            transformctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right)");
-            ensureRowAllocated(transformctx, "crSelf");
-            buildTransformBody(transformctx, transform, dataset1, dataset2, instance->dataset, selSeq);
             break;
         }
     }

@@ -7786,14 +7786,15 @@ simpleDataSet
                             $$.setExpr(createDataset(no_distribute, $3.getExpr(), value.getClear()));
                             $$.setPosition($1);
                         }
-    | JOIN '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression opt_join_transform_flags ')' endSelectorSequence
+    | JOIN '(' startLeftDelaySeqFilter ',' startRightFilter ',' expression beginCounterScope opt_join_transform_flags endCounterScope ')' endSelectorSequence
                         {
                             parser->normalizeExpression($7, type_boolean, false);
 
                             IHqlExpression * left = $3.getExpr();
                             IHqlExpression * right = $5.getExpr();
                             IHqlExpression * cond = $7.getExpr();
-                            OwnedHqlExpr flags = $8.getExpr();
+                            OwnedHqlExpr flags = $9.getExpr();
+                            OwnedHqlExpr counter = $10.getExpr();
                             OwnedHqlExpr transform;
                             if (flags)
                             {
@@ -7812,11 +7813,14 @@ simpleDataSet
 
                             if (!transform)
                             {
-                                IHqlExpression * seq = $10.queryExpr();
+                                IHqlExpression * seq = $12.queryExpr();
                                 transform.setown(parser->createDefJoinTransform(left,right,$1,seq,flags));
                             }
 
-                            IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $10.getExpr())));
+                            if (counter)
+                                flags.setown(createComma(flags.getClear(), createAttribute(_countProject_Atom, counter.getClear())));
+
+                            IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $12.getExpr())));
 
                             bool isLocal = join->hasAttribute(localAtom);
                             parser->checkDistribution($3, left, isLocal, true);

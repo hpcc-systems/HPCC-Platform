@@ -578,10 +578,6 @@ void KeyedJoinInfo::buildTransform(BuildCtx & ctx)
     switch (expr->getOperator())
     {
     case no_join:
-        {
-            funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos)");
-            break;
-        }
     case no_denormalize:
         {
             funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos, unsigned counter)");
