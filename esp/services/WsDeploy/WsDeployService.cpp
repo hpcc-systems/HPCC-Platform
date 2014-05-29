@@ -3951,7 +3951,7 @@ bool CWsDeployFileInfo::handleAttributeAdd(IEspContext &context, IEspHandleAttri
   if (attribName.length() == 0)
     throw MakeStringException(-1,"Attribute name can't be empty!");
 
-  IPropertyTree* pComp =  pEnvRoot->getPropTree(xpath.str());
+  IPropertyTree* pComp =  pEnvRoot->queryPropTree(xpath.str());
 
   if (pComp != NULL)
     pComp->addProp(attribName.str(), "");

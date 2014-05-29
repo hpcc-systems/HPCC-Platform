@@ -5335,7 +5335,7 @@ IConstWUQuery* CLocalWorkUnit::getQuery() const
     {
         IPropertyTree *s = p->getPropTree("Query");
         if (s)
-            query.setown(new CLocalWUQuery(s)); 
+            query.setown(new CLocalWUQuery(s)); // NB takes ownership of 's'
     }
     return query.getLink();
 }
@@ -5727,7 +5727,7 @@ IConstWUWebServicesInfo* CLocalWorkUnit::getWebServicesInfo() const
         assertex(!webServicesInfo);
         IPropertyTree *s = p->getPropTree("WebServicesInfo");
         if (s)
-            webServicesInfo.setown(new CLocalWUWebServicesInfo(s)); 
+            webServicesInfo.setown(new CLocalWUWebServicesInfo(s)); // NB takes ownership of 's'
         webServicesInfoCached = true;
     }
     return webServicesInfo.getLink();
@@ -5763,7 +5763,7 @@ IConstWURoxieQueryInfo* CLocalWorkUnit::getRoxieQueryInfo() const
         assertex(!roxieQueryInfo);
         IPropertyTree *s = p->getPropTree("RoxieQueryInfo");
         if (s)
-            roxieQueryInfo.setown(new CLocalWURoxieQueryInfo(s)); 
+            roxieQueryInfo.setown(new CLocalWURoxieQueryInfo(s)); // NB takes ownership of 's'
         roxieQueryInfoCached = true;
     }
     return roxieQueryInfo.getLink();
