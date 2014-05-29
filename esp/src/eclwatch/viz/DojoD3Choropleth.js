@@ -39,6 +39,11 @@ define([
 
         resize: function (args) {
             //  No resize (yet - its too slow)
+            this.calcGeom();
+            d3.select(this.target.domDivID).select("svg")
+                .attr("width", this.target.width)
+                .attr("height", this.target.height)
+            ;
         },
 
         renderTo: function (_target) {
