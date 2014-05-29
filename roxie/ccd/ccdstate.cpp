@@ -1519,8 +1519,11 @@ public:
         ForEachItemIn(idx, allQueryPackages)
         {
             Owned<IRoxieQuerySetManager> serverManager = allQueryPackages.item(idx).getRoxieServerManager();
-            Owned<IRoxieQuerySetManagerSet> slaveManagers = allQueryPackages.item(idx).getRoxieSlaveManagers();
-            serverManager->getAllQueryInfo(reply, full, slaveManagers, logctx);
+            if (serverManager->isActive())
+            {
+                Owned<IRoxieQuerySetManagerSet> slaveManagers = allQueryPackages.item(idx).getRoxieSlaveManagers();
+                serverManager->getAllQueryInfo(reply, full, slaveManagers, logctx);
+            }
         }
     }
 
