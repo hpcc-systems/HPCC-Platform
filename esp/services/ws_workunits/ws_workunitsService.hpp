@@ -29,6 +29,7 @@
 #define UFO_RELOAD_TARGETS_CHANGED_PMID          0x01
 #define UFO_RELOAD_MAPPED_QUERIES                0x02
 #define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x04
+#define UFO_RELOAD_ALL (UFO_RELOAD_TARGETS_CHANGED_PMID | UFO_RELOAD_MAPPED_QUERIES | UFO_REMOVE_QUERIES_NOT_IN_QUERYSET)
 
 class QueryFilesInUse : public CInterface, implements ISDSSubscription
 {
@@ -40,11 +41,13 @@ class QueryFilesInUse : public CInterface, implements ISDSSubscription
     SubscriptionId qsChange;
     SubscriptionId pmChange;
     SubscriptionId psChange;
+    mutable CriticalSection dirtyCrit; //if there were an atomic_or I would just use atomic
+    unsigned dirty;
     bool aborting;
 
 public:
     IMPLEMENT_IINTERFACE;
-    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0)
+    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(0)
     {
         tree.setown(createPTree("QueryFilesInUse"));
         updateUsers();
@@ -76,21 +79,31 @@ public:
     void loadTargets(IPropertyTree *tree, unsigned flags);
     void reload(unsigned flags)
     {
-        Owned<IPropertyTree> t = createPTreeFromIPT(tree);
-        loadTargets(t, flags);
         CriticalBlock b(crit);
-        tree.setown(t.getClear());
+        loadTargets(tree, flags);
+    }
+    void checkDirtyReload()
+    {
+        unsigned flags;
+        {
+            CriticalBlock b(dirtyCrit);
+            flags = dirty;
+            dirty = 0;
+        }
+        if (flags)
+            reload(flags);
     }
 
     virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         Linked<QueryFilesInUse> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
+        CriticalBlock b(dirtyCrit);
         if (subid == qsChange)
-            reload(UFO_REMOVE_QUERIES_NOT_IN_QUERYSET);
+            dirty |= UFO_REMOVE_QUERIES_NOT_IN_QUERYSET;
         else if (subid == pmChange)
-            reload(UFO_RELOAD_MAPPED_QUERIES);
+            dirty |= UFO_RELOAD_MAPPED_QUERIES;
         else if (subid == psChange)
-            reload(UFO_RELOAD_TARGETS_CHANGED_PMID);
+            dirty |= UFO_RELOAD_TARGETS_CHANGED_PMID;
     }
     virtual void subscribe()
     {
@@ -136,6 +149,7 @@ public:
     IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn);
     StringBuffer &toStr(StringBuffer &s)
     {
+        checkDirtyReload();
         CriticalBlock b(crit);
         return toXML(tree, s);
     }

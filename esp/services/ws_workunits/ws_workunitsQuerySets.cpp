@@ -388,6 +388,8 @@ void QueryFilesInUse::loadTargets(IPropertyTree *t, unsigned flags)
 
 IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target, const char *lfn)
 {
+    checkDirtyReload();
+
     CriticalBlock b(crit);
 
     if (!target || !*target || !lfn || !*lfn)
