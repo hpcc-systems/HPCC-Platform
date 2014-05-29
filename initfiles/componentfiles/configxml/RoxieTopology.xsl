@@ -146,6 +146,12 @@
                     <xsl:copy-of select="@regex"/>
                 </xsl:copy>
             </xsl:for-each>
+            <xsl:for-each select="PreferredCluster">
+                <xsl:copy>
+                    <xsl:copy-of select="@name"/>
+                    <xsl:copy-of select="@priority"/>
+                </xsl:copy>
+            </xsl:for-each>
             <xsl:for-each select="RoxieFarmProcess">
                 <xsl:element name="RoxieFarmProcess">
                     <xsl:copy-of select="@*[name()!='name' and name()!='level']"/>

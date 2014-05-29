@@ -86,7 +86,8 @@ bool runOnce = false;
 unsigned udpMulticastBufferSize = 262142;
 bool roxieMulticastEnabled = true;
 
-IPropertyTree* topology;
+IPropertyTree *topology;
+MapStringTo<int> *preferredClusters;
 StringBuffer topologyFile;
 CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
@@ -509,7 +510,19 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
             topology->setProp("@memTraceLevel", globals->queryProp("--memTraceLevel"));
         }
-
+        if (topology->hasProp("PreferredCluster"))
+        {
+            preferredClusters = new MapStringTo<int>(true);
+            Owned<IPropertyTreeIterator> clusters = topology->getElements("PreferredCluster");
+            ForEach(*clusters)
+            {
+                IPropertyTree &child = clusters->query();
+                const char *name = child.queryProp("@name");
+                int priority = child.getPropInt("@priority", 100);
+                if (name && *name)
+                    preferredClusters->setValue(name, priority);
+            }
+        }
         topology->getProp("@name", roxieName);
         Owned<const IQueryDll> standAloneDll;
         if (globals->hasProp("--loadWorkunit"))

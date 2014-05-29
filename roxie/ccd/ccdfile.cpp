@@ -485,32 +485,32 @@ static IPartDescriptor *queryMatchingRemotePart(IPartDescriptor *pdesc, IFileDes
     return NULL;
 }
 
-static bool checkClusterCount(UnsignedArray &counts, unsigned clusterNo, unsigned max)
+static int getClusterPriority(const char *clusterName)
 {
-    while (!counts.isItem(clusterNo))
-        counts.append(0);
-    unsigned count = counts.item(clusterNo);
-    if (count>=max)
-        return false;
-    counts.replace(++count, clusterNo);
-    return true;
-}
-
-static bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const char *name)
-{
-    StringBuffer s;
-    return strieq(name, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
+    assertex(preferredClusters);
+    int *priority = preferredClusters->getValue(clusterName);
+    return priority ? *priority : 100;
 }
 
 static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster, bool includeFromCluster)
 {
-    UnsignedArray clusterCounts;
+    IFileDescriptor &fdesc = pdesc->queryOwner();
     unsigned numCopies = pdesc->numCopies();
+    unsigned lastClusterNo = (unsigned) -1;
+    unsigned numThisCluster = 0;
+    int priority = 0;
+    IntArray priorities;
     for (unsigned copy = 0; copy < numCopies; copy++)
     {
         unsigned clusterNo = pdesc->copyClusterNum(copy);
-        if (fromCluster && *fromCluster && isCopyFromCluster(pdesc, clusterNo, fromCluster)!=includeFromCluster)
-            continue;
+        StringBuffer clusterName;
+        fdesc.getClusterGroupName(clusterNo, clusterName);
+        if (fromCluster && *fromCluster)
+        {
+            bool matches = strieq(clusterName.str(), fromCluster);
+            if (matches!=includeFromCluster)
+                continue;
+        }
         RemoteFilename r;
         pdesc->getFilename(copy,r);
         StringBuffer path;
@@ -522,25 +522,35 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
             if (streq(l, localFileName))
                 continue; // don't add ourself
         }
-        if (!checkClusterCount(clusterCounts, clusterNo, 2))  // Don't add more than 2 from one cluster
-            continue;
-        locations.append(path.str());
+        if (clusterNo == lastClusterNo)
+        {
+            numThisCluster++;
+            if (numThisCluster > 2)  // Don't add more than 2 from one cluster
+                continue;
+        }
+        else
+        {
+            numThisCluster = 1;
+            lastClusterNo = clusterNo;
+            if (preferredClusters)
+            {
+                priority = getClusterPriority(clusterName);
+            }
+            else
+                priority = copy;
+        }
+        if (priority >= 0)
+        {
+            ForEachItemIn(idx, priorities)
+            {
+                if (priorities.item(idx) < priority)
+                    break;
+            }
+            priorities.add(priority, idx);
+            locations.add(path.str(), idx);
+        }
     }
 }
-
-static void appendPeerLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName)
-{
-    const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
-    if (peerCluster)
-    {
-        if (*peerCluster=='-') //a remote cluster was specified explicitly
-            return;
-        if (streq(peerCluster, roxieName))
-            peerCluster=NULL;
-    }
-    appendRemoteLocations(pdesc, locations, localFileName, peerCluster, true);
-}
-
 
 //----------------------------------------------------------------------------------------------
 
