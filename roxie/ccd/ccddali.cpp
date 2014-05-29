@@ -173,6 +173,7 @@ private:
                     try
                     {
                         owner->disconnectSem.wait();
+                        Sleep(5000);   // Don't retry immediately, give Dali a chance to recover.
                     }
                     catch (IException *E)
                     {
@@ -692,14 +693,16 @@ public:
                     serverStatus->queryProperties()->setProp("@cluster", roxieName.str());
                     serverStatus->commitProperties();
                     initCache();
-                    isConnected = true;
                     ForEachItemIn(idx, watchers)
                     {
                         watchers.item(idx).onReconnect();
                     }
+                    isConnected = true;
                 }
                 catch(IException *e)
                 {
+                    delete serverStatus;
+                    serverStatus = NULL;
                     ::closedownClientProcess(); // undo any partial initialization
                     StringBuffer text;
                     e->errorMessage(text);
