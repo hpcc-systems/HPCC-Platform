@@ -311,6 +311,19 @@ define([
                             return "";
                         }
                     },
+                    MixedNodeStates: {
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = dojoConfig.getImageHTML("mixwarn.png", context.i18n.MixedNodeStates);
+                        },
+                        width: 25,
+                        sortable: false,
+                        formatter: function (mixed) {
+                            if (mixed === true) {
+                                return dojoConfig.getImageHTML("mixwarn.png");
+                            }
+                            return "";
+                        }
+                    },
                     Activated: {
                         renderHeaderCell: function (node) {
                             node.innerHTML = dojoConfig.getImageHTML("active.png", context.i18n.Active);
@@ -353,6 +366,11 @@ define([
                         width: 100,
                         label: this.i18n.PublishedBy,
                         sortable: false
+                    },
+                    Status: {
+                        width: 100,
+                        label: this.i18n.Status,
+                        sortable: false,
                     }
                 }
             }, this.id + "QuerySetGrid");
