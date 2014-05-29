@@ -173,6 +173,7 @@ public:
     void            setLength(unsigned len);
     void            setWritePos(unsigned len);      // only use for back patching data
     void *          detach();
+    void *          detachOwn();  // Never reallocates
     //Non-standard functions:
     void *          reserve(unsigned size);
     void            truncate();                     // truncates (i.e. minimizes allocation) to current size

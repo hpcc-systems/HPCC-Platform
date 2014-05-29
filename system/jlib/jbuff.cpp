@@ -376,6 +376,14 @@ void *MemoryBuffer::detach()
     return ret;
 }
 
+void *MemoryBuffer::detachOwn()
+{
+    assertex(ownBuffer);
+    void *ret = buffer;
+    init();
+    return ret;
+}
+
 void MemoryBuffer::setLength(unsigned len)
 {
     if (len > curLen)
