@@ -53,6 +53,7 @@ IAtom * eclAtom;
 IAtom * endAtom;
 IAtom * ensureCapacityAtom;
 IAtom * fileAtom;
+IAtom * funnelAtom;
 IAtom * forceAllCheckAtom;
 IAtom * goAtom;
 IAtom * guardAtom;
@@ -1440,6 +1441,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(ensureCapacity);
     MAKEATOM(file);
     MAKEATOM(forceAllCheck);
+    MAKEATOM(funnel);
     MAKEATOM(go);
     MAKEATOM(guard);
     MAKEATOM(helper);

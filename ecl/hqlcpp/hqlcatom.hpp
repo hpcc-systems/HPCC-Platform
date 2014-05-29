@@ -54,6 +54,7 @@ extern IAtom * endAtom;
 extern IAtom * ensureCapacityAtom;
 extern IAtom * fileAtom;
 extern IAtom * forceAllCheckAtom;
+extern IAtom * funnelAtom;
 extern IAtom * goAtom;
 extern IAtom * guardAtom;
 extern IAtom * helperAtom;
