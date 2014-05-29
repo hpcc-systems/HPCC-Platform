@@ -4673,14 +4673,14 @@ void CWsDfuEx::mergeDataRow(StringBuffer& newRow, StringBuffer dataRow1, StringB
     newRow.append("<Row>");
 
     StringArray columnLabels;
-    IPropertyTreeIterator* it = data1->getElements("*");
+    Owned<IPropertyTreeIterator> it = data1->getElements("*");
     if (it)
     {
         StringArray columnLabels0;
         mergeDataRow(newRow, 0, it, columnLabels0, columnLabels);   
     }
 
-    IPropertyTreeIterator* it2 = data2->getElements("*");
+    Owned<IPropertyTreeIterator> it2 = data2->getElements("*");
     if (it2)
     {   
         mergeDataRow(newRow, 1, it2, columnsHide, columnLabels);

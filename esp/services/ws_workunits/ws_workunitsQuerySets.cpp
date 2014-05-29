@@ -392,7 +392,7 @@ IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target,
 
     if (!target || !*target || !lfn || !*lfn)
         return NULL;
-    IPropertyTree *targetTree = tree->getPropTree(target);
+    IPropertyTree *targetTree = tree->queryPropTree(target);
     if (!targetTree)
         return NULL;
 
