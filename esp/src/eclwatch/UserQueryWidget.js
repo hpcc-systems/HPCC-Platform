@@ -369,10 +369,11 @@ define([
                 retVal = new GroupDetailsWidget({
                     id: id,
                     title: params.Name,
+                    iconClass: 'iconPeople',
                     closable: true,
                     params: params
                 });
-                this.addChild(retVal, 2);
+                this.addChild(retVal, 3);
             }
             return retVal;
         },
@@ -453,10 +454,11 @@ define([
                 retVal = new UserDetailsWidget({
                     id: id,
                     title: params.Username,
+                    iconClass: 'iconPerson',
                     closable: true,
                     params: params
                 });
-                this.addChild(retVal, 2);
+                this.addChild(retVal, 3);
             }
             return retVal;
         },
@@ -557,21 +559,6 @@ define([
                 label: this.i18n.Refresh,
                 onClick: function (args) { context._onRefreshPermissions(); }
             }));
-        },
-
-        ensurePermissionPane: function (id, params) {
-            id = this.createChildTabID(id);
-            var retVal = registry.byId(id);
-            if (!retVal) {
-                retVal = new UserDetailsWidget({
-                    id: id,
-                    title: params.Username,
-                    closable: true,
-                    params: params
-                });
-                this.addChild(retVal, 2);
-            }
-            return retVal;
         },
 
         refreshPermissionsGrid: function (clearSelection) {

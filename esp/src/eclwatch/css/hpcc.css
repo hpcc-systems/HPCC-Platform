@@ -426,6 +426,18 @@ hr.dashedLine {
     width: 16px;
     height: 16px;
 }
+
+.iconPerson{
+    background-image: url("../img/person.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconPeople{
+    background-image: url("../img/people.png"); 
+    width: 16px;
+    height: 16px;
+}
 /*###############################*/
 #appLayout {
     height: 100%;
