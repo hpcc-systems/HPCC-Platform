@@ -3294,13 +3294,25 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
     Owned<IConstWUExceptionIterator> exceptions = &cw->getExceptions();
     ForEach(*exceptions)
     {
-        WUExceptionSeverity severity = exceptions->query().getSeverity();
+        IConstWUException & exception = exceptions->query();
+        WUExceptionSeverity severity = exception.getSeverity();
         if (severity>=minSeverity)
         {
-            SCMStringBuffer src, msg;
-            exceptions->query().getExceptionSource(src);
-            exceptions->query().getExceptionMessage(msg);
+            SCMStringBuffer src, msg, filename;
+            exception.getExceptionSource(src);
+            exception.getExceptionMessage(msg);
+            exception.getExceptionFileName(filename);
+            unsigned lineno = exception.getExceptionLineNo();
+            unsigned code = exception.getExceptionCode();
+
             writer.outputBeginNested(getSeverityTagname(severity, flags), false);
+            if (code)
+                writer.outputUInt(code, "Code");
+            if (filename.length())
+                writer.outputCString(filename.str(), "Filename");
+            if (lineno)
+                writer.outputUInt(lineno, "Line");
+
             writer.outputCString(src.str(), "Source");
             writer.outputCString(msg.str(), "Message");
             writer.outputEndNested(getSeverityTagname(severity, flags));
@@ -3317,7 +3329,7 @@ extern FILEVIEW_API void writeFullWorkUnitResults(const char *username, const ch
             ForEach(*results)
             {
                 IConstWUResult &ds = results->query();
-                if (ds.getResultSequence()>=0)
+                if (ds.getResultSequence()>=0 && (ds.getResultStatus() != ResultStatusUndefined))
                 {
                     SCMStringBuffer name;
                     ds.getResultName(name);
