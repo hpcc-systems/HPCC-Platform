@@ -92,7 +92,6 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_SNAPSHOT "--snapshot"
 #define ECLOPT_SNAPSHOT_S "-sn"
 #define ECLOPT_ECL_ONLY "--ecl-only"
-#define ECLOPT_NO_COMPRESSION "--no-compress"
 
 #define ECLOPT_WAIT "--wait"
 #define ECLOPT_WAIT_INI "waitTimeout"
@@ -240,7 +239,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optLegacy(false), optNoCompression(false), optNoArchive(false), optResultLimit((unsigned)-1)
+    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -251,7 +250,6 @@ public:
         EclCmdCommon::usage();
         fprintf(stdout,
             "   --main=<definition>    Definition to use from legacy ECL repository\n"
-            "   --no-compress          Don't compress payload when deploying (server < 5.0)"
             "   --snapshot,-sn=<label> Snapshot label to use from legacy ECL repository\n"
             "   --ecl-only             Send ecl text to hpcc without generating archive\n"
             "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
@@ -274,7 +272,6 @@ public:
     IArrayOf<IEspNamedValue> debugValues;
     unsigned optResultLimit;
     bool optNoArchive;
-    bool optNoCompression;
     bool optLegacy;
 };
 

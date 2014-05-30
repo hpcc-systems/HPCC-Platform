@@ -403,6 +403,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         sashaServerPort = cfg->getPropInt(xpath.str(), DEFAULT_SASHA_PORT);
     }
 
+    maxRequestEntityLength = cfg->getPropInt("Software[1]/EspProcess[1]/EspProtocol[@type='http_protocol'][1]/@maxRequestEntityLength");
     directories.set(cfg->queryPropTree("Software/Directories"));
 
     const char *name = cfg->queryProp("Software/EspProcess/@name");
@@ -4029,5 +4030,15 @@ bool CWsWorkunitsEx::onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoReques
     {
         FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
     }
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUCheckFeatures(IEspContext &context, IEspWUCheckFeaturesRequest &req, IEspWUCheckFeaturesResponse &resp)
+{
+    resp.setBuildVersionMajor(BUILD_VERSION_MAJOR);
+    resp.setBuildVersionMinor(BUILD_VERSION_MINOR);
+    resp.setBuildVersionPoint(BUILD_VERSION_POINT);
+    resp.setMaxRequestEntityLength(maxRequestEntityLength);
+    resp.updateDeployment().setUseCompression(true);
     return true;
 }

@@ -1490,6 +1490,24 @@ ESPresponse [exceptions_inline] WUCreateZAPInfoResponse
     [http_content("application/octet-stream")] binary thefile;
 };
 
+ESPrequest [nil_remove] WUCheckFeaturesRequest
+{
+};
+
+ESPStruct DeploymentFeatures
+{
+    bool UseCompression;
+};
+
+ESPresponse [exceptions_inline] WUCheckFeaturesResponse
+{
+    int BuildVersionMajor;
+    int BuildVersionMinor;
+    int BuildVersionPoint;
+    int maxRequestEntityLength;
+    ESPStruct DeploymentFeatures Deployment;
+};
+
 ESPservice [
     version("1.50"), default_client_version("1.50"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
@@ -1563,6 +1581,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);
+    ESPmethod WUCheckFeatures(WUCheckFeaturesRequest, WUCheckFeaturesResponse);
 };
 
 

@@ -166,7 +166,7 @@ class CWsWorkunitsEx : public CWsWorkunits
 public:
     IMPLEMENT_IINTERFACE;
 
-    CWsWorkunitsEx(){port=8010;}
+    CWsWorkunitsEx() : maxRequestEntityLength(0) {port=8010;}
 
     virtual ~CWsWorkunitsEx()
     {
@@ -257,6 +257,8 @@ public:
     bool isQuerySuspended(const char* query, IConstWUClusterInfo *clusterInfo, unsigned wait, StringBuffer& errorMessage);
     bool onWUCreateZAPInfo(IEspContext &context, IEspWUCreateZAPInfoRequest &req, IEspWUCreateZAPInfoResponse &resp);
     bool onWUGetZAPInfo(IEspContext &context, IEspWUGetZAPInfoRequest &req, IEspWUGetZAPInfoResponse &resp);
+    bool onWUCheckFeatures(IEspContext &context, IEspWUCheckFeaturesRequest &req, IEspWUCheckFeaturesResponse &resp);
+
 private:
 #ifdef _USE_ZLIB
     void addProcessLogfile(IZZIPor* zipper, Owned<IConstWorkUnit> &cwu, WsWuInfo &winfo, const char * process, PointerArray &mbArr);
@@ -273,6 +275,7 @@ private:
     WUSchedule m_sched;
     unsigned short port;
     Owned<IPropertyTree> directories;
+    int maxRequestEntityLength;
 public:
     QueryFilesInUse filesInUse;
 };

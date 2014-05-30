@@ -29,8 +29,29 @@
 
 bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
 {
+    bool useCompression = false;
+    int maxBufferSize = 0;
+    try
+    {
+        Owned<IClientWUCheckFeaturesRequest> req = client->createWUCheckFeaturesRequest();
+        Owned<IClientWUCheckFeaturesResponse> resp = client->WUCheckFeatures(req);
+        useCompression = resp->getDeployment().getUseCompression();
+        int maxEntity = resp->getMaxRequestEntityLength();
+        if (maxEntity > 1000)
+        {
+            maxBufferSize = ((maxEntity - 999) / 4) * 3; //account for soap, other parameters, and base64 encoding (n / 4 * 3)
+        }
+    }
+    catch(IException *E) //most likely an older ESP
+    {
+        E->Release();
+    }
+    catch(...)
+    {
+    }
+
     bool compressed = false;
-    if (!cmd.optNoCompression)
+    if (useCompression)
     {
         MemoryBuffer mb;
         fastLZCompressToBuffer(mb, cmd.optObj.mb.length(), cmd.optObj.mb.bufferBase());
@@ -68,6 +89,12 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
             return false;
     }
 
+    if (maxBufferSize && cmd.optObj.mb.length() > maxBufferSize)
+    {
+        fprintf(stderr, "\nError %s is larger than maxRequestEntityLength configured for ESP allows\n", objType.str()); //objType already notes if its compressed
+        return false;
+    }
+
     if (name && *name)
         req->setName(name);
     if (cluster && *cluster)
@@ -88,23 +115,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
 
     Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
     if (resp->getExceptions().ordinality())
-    {
         outputMultiExceptions(resp->getExceptions());
-        if (compressed)
-        {
-            aindex_t count = resp->getExceptions().ordinality();
-            for (aindex_t i=0; i<count; i++)
-            {
-                IException& e = resp->getExceptions().item(i);
-                StringBuffer msg;
-                if (strstr(e.errorMessage(msg), objType))
-                {
-                    fprintf(stderr, "Try --no-compress\n");
-                    return false;
-                }
-            }
-        }
-    }
     const char *w = resp->getWorkunit().getWuid();
     if (w && *w)
     {
