@@ -5220,13 +5220,13 @@ IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flag
 //////////////////////////
 /////////////////////////
 
-static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags)
+static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, unsigned flags)
 {
     const char *name = tree->queryName();
     if (!name) name = "__unnamed__";
     bool isBinary = tree->isBinary(NULL);
     bool inlinebody = true;
-    if (flags & XML_Format) writeCharsNToStream(out, ' ', indent);
+    if (flags & XML_Embed) writeCharsNToStream(out, ' ', indent);
     writeCharToStream(out, '<');
     writeStringToStream(out, name);
     Owned<IAttributeIterator> it = tree->getAttributes(true);
@@ -5243,11 +5243,11 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
             {
                 if (first)
                 {
-                    if (flags & (XML_Format|XML_NewlinesOnly)) inlinebody = false;
+                    if (flags & XML_LineBreak) inlinebody = false;
                     first = false;
                     writeCharToStream(out, ' ');
                 }
-                else if ((flags & XML_Format) && it->count() > 3)
+                else if ((flags & XML_LineBreakAttributes) && it->count() > 3)
                 {
                     writeStringToStream(out, "\n");
                     writeCharsNToStream(out, ' ', attributeindent);
@@ -5291,7 +5291,7 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
     bool empty;
     if (isBinary)
     {
-        if (flags & (XML_Format|XML_NewlinesOnly)) inlinebody = false;
+        if (flags & XML_LineBreak) inlinebody = false;
         writeStringToStream(out, " xsi:type=\"SOAP-ENC:base64\"");
         empty = (!tree->getPropBin(NULL, thislevelbin))||(thislevelbin.length()==0);
     }
@@ -5308,11 +5308,11 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
     }
     if (sub->first())
     {
-        if (flags & (XML_Format|XML_NewlinesOnly)) inlinebody = false;
+        if (flags & XML_LineBreak) inlinebody = false;
     }
     else if (empty && !(flags & XML_Sanitize))
     {
-        if (flags & (XML_Format|XML_NewlinesOnly))
+        if (flags & XML_LineBreak)
             writeStringToStream(out, "/>\n");
         else
             writeStringToStream(out, "/>");
@@ -5399,13 +5399,13 @@ static void _toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, b
 
     writeStringToStream(out, "</");
     writeStringToStream(out, name);
-    if (flags & (XML_Format|XML_NewlinesOnly))
+    if (flags & XML_LineBreak)
         writeStringToStream(out, ">\n");
     else
         writeCharToStream(out, '>');
 }
 
-jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, byte flags)
+jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsigned indent, unsigned flags)
 {
     class CAdapter : public CInterface, implements IIOStream
     {
@@ -5421,18 +5421,18 @@ jlib_decl StringBuffer &toXML(const IPropertyTree *tree, StringBuffer &ret, unsi
     return ret;
 }
 
-void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, byte flags)
+void toXML(const IPropertyTree *tree, IIOStream &out, unsigned indent, unsigned flags)
 {
     _toXML(tree, out, indent, flags);
 }
 
-void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent, byte flags)
+void saveXML(const char *filename, const IPropertyTree *tree, unsigned indent, unsigned flags)
 {
     OwnedIFile ifile = createIFile(filename);
     saveXML(*ifile, tree, indent, flags);
 }
 
-void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent, byte flags)
+void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent, unsigned flags)
 {
     OwnedIFileIO ifileio = ifile.open(IFOcreate);
     if (!ifileio)
@@ -5440,14 +5440,14 @@ void saveXML(IFile &ifile, const IPropertyTree *tree, unsigned indent, byte flag
     saveXML(*ifileio, tree, indent, flags);
 }
 
-void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent, byte flags)
+void saveXML(IFileIO &ifileio, const IPropertyTree *tree, unsigned indent, unsigned flags)
 {
     Owned<IIOStream> stream = createIOStream(&ifileio);
     stream.setown(createBufferedIOStream(stream));
     saveXML(*stream, tree, indent, flags);
 }
 
-void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, byte flags)
+void saveXML(IIOStream &stream, const IPropertyTree *tree, unsigned indent, unsigned flags)
 {
     toXML(tree, stream, indent, flags);
 }

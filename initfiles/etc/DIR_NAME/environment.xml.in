@@ -885,6 +885,7 @@
                 siteCertificate=""
                 slaTimeout="2000"
                 slaveConfig="simple"
+                slaveQueryReleaseDelaySeconds="60"
                 slaveThreads="30"
                 soapTraceLevel="1"
                 socketCheckInterval="5000"

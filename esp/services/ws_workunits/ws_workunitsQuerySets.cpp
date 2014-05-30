@@ -365,6 +365,8 @@ void QueryFilesInUse::loadTarget(IPropertyTree *t, const char *target, unsigned 
                 fileTree->setProp("@lfn", lfn);
                 if (rf.getFlags() & RefFileSuper)
                     fileTree->setPropBool("@super", true);
+                if (rf.getFlags() & RefFileNotFound)
+                    fileTree->setPropBool("@notFound", true);
                 const char *fpkgid = rf.queryPackageId();
                 if (fpkgid && *fpkgid)
                     fileTree->setProp("@pkgid", fpkgid);
@@ -404,7 +406,7 @@ IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target,
         return NULL;
     if (!target || !*target)
         return findAllQueriesUsingFile(lfn);
-    IPropertyTree *targetTree = tree->getPropTree(target);
+    IPropertyTree *targetTree = tree->queryPropTree(target);
     if (!targetTree)
         return NULL;
 

@@ -422,7 +422,7 @@ bool deletePkgInfo(const char *name, const char *target, const char *process, bo
         IPropertyTree *pkgMaps = pkgMapsConn->queryRoot();
         if (!pkgMaps)
             throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve PackageMaps information from dali [/PackageMaps]");
-        IPropertyTree *mapTree = pkgMaps->getPropTree(xpath.clear().appendf("PackageMap[@id='%s']", pmid.get()).str());
+        IPropertyTree *mapTree = pkgMaps->queryPropTree(xpath.clear().appendf("PackageMap[@id='%s']", pmid.get()).str());
         if (mapTree)
             pkgMaps->removeTree(mapTree);
     }

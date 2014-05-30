@@ -324,8 +324,9 @@ extern unsigned slaTimeout;
 extern unsigned headRegionSize;
 extern unsigned ccdMulticastPort;
 extern CriticalSection ccdChannelsCrit;
-extern IPropertyTree* ccdChannels;
-extern IPropertyTree* topology;
+extern IPropertyTree *ccdChannels;
+extern IPropertyTree *topology;
+extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
 
 extern bool allFilesDynamic;
