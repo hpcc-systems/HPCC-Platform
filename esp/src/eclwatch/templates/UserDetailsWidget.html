@@ -43,8 +43,8 @@
                     </form>
                 </div>
             </div>
-            <div id="${id}_MemberOf" data-dojo-props='title:"${i18n.MemberOf}", iconClass:"iconGroups"' data-dojo-type="MemberOfWidget"></div>
-            <div id="${id}_UserPermissions" data-dojo-props='title:"${i18n.UserPermissions}", iconClass:"iconFolder"' data-dojo-type="PermissionsWidget"></div>
+            <div id="${id}_MemberOf" data-dojo-props="delayWidget: 'MemberOfWidget', title:'${i18n.MemberOf}', iconClass:'iconGroups'" data-dojo-type="DelayLoadWidget"></div>
+            <div id="${id}_UserPermissions" data-dojo-props="delayWidget: 'PermissionsWidget', title:'${i18n.UserPermissions}', iconClass:'iconFolder'" data-dojo-type="DelayLoadWidget"></div>
         </div>
     </div>
 </div>

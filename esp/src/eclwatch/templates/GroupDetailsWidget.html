@@ -21,8 +21,8 @@
                     </form>
                 </div>
             </div>
-            <div id="${id}_Members" data-dojo-props='title:"${i18n.Members}", iconClass:"iconGroups"' data-dojo-type="MembersWidget"></div>
-            <div id="${id}_Permissions" data-dojo-props='title:"${i18n.GroupPermissions}", iconClass:"iconFolder"' data-dojo-type="PermissionsWidget"></div>
+            <div id="${id}_Members" data-dojo-props="delayWidget: 'MembersWidget', title:'${i18n.Members}', iconClass:'iconGroups'" data-dojo-type="DelayLoadWidget"></div>
+            <div id="${id}_Permissions" data-dojo-props="delayWidget: 'PermissionsWidget', title:'${i18n.GroupPermissions}', iconClass:'iconFolder'" data-dojo-type="DelayLoadWidget"></div>
         </div>
     </div>
 </div>

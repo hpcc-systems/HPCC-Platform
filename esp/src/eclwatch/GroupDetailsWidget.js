@@ -32,8 +32,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ws_access",
-    "hpcc/MembersWidget",
-    "hpcc/PermissionsWidget",
+    "hpcc/DelayLoadWidget",
 
     "dojo/text!../templates/GroupDetailsWidget.html",
 
@@ -48,7 +47,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, dom, domAttr,
                 registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, WsAccess, MembersWidget, PermissionsWidget,
+                _TabContainerWidget, WsAccess, DelayLoadWidget,
                 template) {
     return declare("GroupDetailsWidget", [_TabContainerWidget], {
         templateString: template,
