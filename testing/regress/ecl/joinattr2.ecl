@@ -25,6 +25,7 @@ END;
 RECORD
         string1 idL;
         string1 idR;
+        unsigned cnt;
 END;
 
  
@@ -40,69 +41,72 @@ ds8 := DATASET([{1,'A'}, {1,'B'}, {1,'C'}], rec);
 ds9 := DATASET([{2,'A'}], rec);
 ds10 := DATASET([{0,'A'}], rec);
 
-recout trans(rec L, rec R) :=
+recout trans(rec L, rec R, unsigned cnt) :=
 TRANSFORM
 
             SELF.idl := L.id;
             SELF.idr := R.id;
+            SELF.cnt := cnt;
 END;
 
-recout transkip(rec L, rec R) :=
+recout transkip(rec L, rec R, unsigned cnt) :=
 TRANSFORM
 
             SELF.idl := if(L.id='A',skip,L.id);
             SELF.idr := if(R.id='A',skip,R.id);
+            SELF.cnt := cnt;
 END;
 
-j1 := JOIN(ds1, ds2, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), KEEP(1), LEFT OUTER);
-j2 := JOIN(ds1, ds2, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), ATMOST(1), LEFT OUTER);
-j3 := JOIN(ds2, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), RIGHT OUTER);
-j4 := JOIN(ds1, ds7, (LEFT.i = RIGHT.i), transkip(LEFT, RIGHT));
-j5 := JOIN(ds1, ds2, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), LEFT OUTER);
-j6 := JOIN(ds2, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), RIGHT OUTER);
-j7 := JOIN(ds4, ds3, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), trans(LEFT, RIGHT), KEEP(2));
-j8 := JOIN(ds1, ds3, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), KEEP(2),LEFT OUTER);
-j9 := JOIN(ds6, ds7, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), KEEP(5));
-j10 := JOIN(ds6, ds7, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), RIGHT OUTER);
-j11 := JOIN(ds1, ds7, (LEFT.i = RIGHT.i), transkip(LEFT, RIGHT));
-j12 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT), RIGHT OUTER);
-j13 := JOIN(ds1, ds3, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), RIGHT OUTER);
-j14 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), transkip(LEFT, RIGHT), KEEP(2));
-j15 := JOIN(ds1, ds1, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), KEEP(1));
-j16 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), KEEP(1));
-j17 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), LOOKUP);
-j18 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), ATMOST(1));
-j19 := JOIN(ds7, ds6, (LEFT.i = RIGHT.i)and(LEFT.id<=RIGHT.id), trans(LEFT, RIGHT), LEFT OUTER, LOOKUP);
-j20 := JOIN(ds1, ds9, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), KEEP(1), LEFT OUTER);
-j21 := JOIN(ds1, ds9, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), LOOKUP, LEFT OUTER);
-j22 := JOIN(ds1, ds9, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), ATMOST(1), LEFT OUTER);
-j23 := JOIN(ds1, ds9, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), RIGHT OUTER);
-j24 := JOIN(ds1, ds9, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), trans(LEFT, RIGHT), KEEP(2));
-j25 := JOIN(ds9, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), KEEP(1), LEFT OUTER);
-j26 := JOIN(ds9, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), LOOKUP, LEFT OUTER);
-j27 := JOIN(ds9, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), ATMOST(1), LEFT OUTER);
-j28 := JOIN(ds9, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), RIGHT OUTER);
-j29 := JOIN(ds9, ds1, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), trans(LEFT, RIGHT), KEEP(2));
-j30 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT), KEEP(1), LEFT OUTER);
-j31 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), LOOKUP);
-j32 := JOIN(ds1, ds1, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT), LOOKUP);
-j33 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), LOOKUP, LEFT OUTER);
-j34 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT), LOOKUP, LEFT OUTER);
-j35 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), transkip(LEFT, RIGHT), LOOKUP);
-j36 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), transkip(LEFT, RIGHT), LOOKUP, LEFT OUTER);
-j37 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT), LOOKUP, LEFT OUTER);
-j38 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT), KEEP(1), LEFT OUTER);
-j39 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT), LOOKUP, LEFT OUTER);
-j40 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT), ATMOST(1), LEFT OUTER);
+j1 := JOIN(ds1, ds2, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), KEEP(1), LEFT OUTER);
+j2 := JOIN(ds1, ds2, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), ATMOST(1), LEFT OUTER);
+j3 := JOIN(ds2, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), RIGHT OUTER);
+j4 := JOIN(ds1, ds7, (LEFT.i = RIGHT.i), transkip(LEFT, RIGHT, COUNTER));
+j5 := JOIN(ds1, ds2, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), LEFT OUTER);
+j6 := JOIN(ds2, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), RIGHT OUTER);
+j7 := JOIN(ds4, ds3, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), trans(LEFT, RIGHT, COUNTER), KEEP(2));
+j8 := JOIN(ds1, ds3, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), KEEP(2),LEFT OUTER);
+j9 := JOIN(ds6, ds7, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), KEEP(5));
+j10 := JOIN(ds6, ds7, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), RIGHT OUTER);
+j11 := JOIN(ds1, ds7, (LEFT.i = RIGHT.i), transkip(LEFT, RIGHT, COUNTER));
+j12 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), RIGHT OUTER);
+j13 := JOIN(ds1, ds3, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), RIGHT OUTER);
+j14 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), transkip(LEFT, RIGHT, COUNTER), KEEP(2));
+j15 := JOIN(ds1, ds1, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), KEEP(1));
+j16 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), KEEP(1));
+j17 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), LOOKUP);
+j18 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), ATMOST(1));
+j19 := JOIN(ds7, ds6, (LEFT.i = RIGHT.i)and(LEFT.id<=RIGHT.id), trans(LEFT, RIGHT, COUNTER), LEFT OUTER, LOOKUP);
+j20 := JOIN(ds1, ds9, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), KEEP(1), LEFT OUTER);
+j21 := JOIN(ds1, ds9, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), LOOKUP, LEFT OUTER);
+j22 := JOIN(ds1, ds9, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), ATMOST(1), LEFT OUTER);
+j23 := JOIN(ds1, ds9, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), RIGHT OUTER);
+j24 := JOIN(ds1, ds9, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), trans(LEFT, RIGHT, COUNTER), KEEP(2));
+j25 := JOIN(ds9, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), KEEP(1), LEFT OUTER);
+j26 := JOIN(ds9, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), LOOKUP, LEFT OUTER);
+j27 := JOIN(ds9, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), ATMOST(1), LEFT OUTER);
+j28 := JOIN(ds9, ds1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), RIGHT OUTER);
+j29 := JOIN(ds9, ds1, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), trans(LEFT, RIGHT, COUNTER), KEEP(2));
+j30 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), KEEP(1), LEFT OUTER);
+j31 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), LOOKUP);
+j32 := JOIN(ds1, ds1, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), LOOKUP);
+j33 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, trans(LEFT, RIGHT, COUNTER), LOOKUP, LEFT OUTER);
+j34 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), LOOKUP, LEFT OUTER);
+j35 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), transkip(LEFT, RIGHT, COUNTER), LOOKUP);
+j36 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i)and(RIGHT.id>'E'), transkip(LEFT, RIGHT, COUNTER), LOOKUP, LEFT OUTER);
+j37 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), LOOKUP, LEFT OUTER);
+j38 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), KEEP(1), LEFT OUTER);
+j39 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), LOOKUP, LEFT OUTER);
+j40 := JOIN(ds1, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), ATMOST(1), LEFT OUTER);
 
-j41 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), MANY LOOKUP);
-j42 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), MANY LOOKUP, KEEP(1));
-j43 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), MANY LOOKUP, ATMOST(1));
-j44 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT), MANY LOOKUP, LEFT OUTER);
-j45 := JOIN(ds1, ds8, RIGHT.id<'B', trans(LEFT, RIGHT), ALL);
-j46 := JOIN(ds1, ds8, RIGHT.id<'B', trans(LEFT, RIGHT), ALL, KEEP(1));
-j47 := JOIN(ds1, ds8, RIGHT.id>'E', trans(LEFT, RIGHT), ALL, LEFT OUTER);
-j48 := JOIN(ds1, ds8, LEFT.i = RIGHT.i AND RIGHT.id>'B', trans(LEFT, RIGHT), LOOKUP);
+j41 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), MANY LOOKUP);
+j42 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), MANY LOOKUP, KEEP(1));
+j43 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), MANY LOOKUP, ATMOST(1));
+j44 := JOIN(ds1, ds8, (LEFT.i = RIGHT.i), trans(LEFT, RIGHT, COUNTER), MANY LOOKUP, LEFT OUTER);
+j45 := JOIN(ds1, ds8, RIGHT.id<'B', trans(LEFT, RIGHT, COUNTER), ALL);
+j46 := JOIN(ds1, ds8, RIGHT.id<'B', trans(LEFT, RIGHT, COUNTER), ALL, KEEP(1));
+j47 := JOIN(ds1, ds8, RIGHT.id>'E', trans(LEFT, RIGHT, COUNTER), ALL, LEFT OUTER);
+j48 := JOIN(ds1, ds8, LEFT.i = RIGHT.i AND RIGHT.id>'B', trans(LEFT, RIGHT, COUNTER), LOOKUP);
+j49 := JOIN(ds9, ds8, LEFT.i = RIGHT.i, transkip(LEFT, RIGHT, COUNTER), RIGHT ONLY);
 
 sequential(
     output(j1),
@@ -152,6 +156,6 @@ sequential(
     output(j45),
     output(j46),
     output(j47),
-    output(j48)
+    output(j48),
+    output(j49),
 );
-

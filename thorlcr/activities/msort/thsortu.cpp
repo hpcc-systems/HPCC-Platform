@@ -298,6 +298,7 @@ class CJoinHelper : public CSimpleInterface, implements IJoinHelper
     RtlDynamicRowBuilder denormTmp;
     CThorExpandingRowArray denormRows;
     unsigned denormCount;
+    unsigned joinCounter;
     size32_t outSz;
     unsigned rightidx;
     enum { JScompare, JSmatch, JSrightgrouponly, JSonfail } state;
@@ -363,6 +364,7 @@ public:
         kind = activity.queryContainer().getKind();
         helper = _helper; 
         denormCount = 0;
+        joinCounter = 0;
         outSz = 0;
         lhsProgressCount = rhsProgressCount = 0;
         keepmax = (unsigned)-1;
@@ -492,10 +494,12 @@ public:
                 nextleft.setown(strmL->nextRow());
                 if (!nextleft) 
                     break;
+
                 lhsProgressCount++;
                 if (!firstonlyL || (lhsProgressCount==1) || (compareL->docompare(prevleft,nextleft)!=0)) {
                     denormLhs.set(nextleft.get());
                     nextleftgot = true;
+                    joinCounter = 0;
                     return true;
                 }
             }
@@ -588,7 +592,7 @@ public:
                         case TAKselfjoinlight:
                         case TAKlookupjoin:
                         case TAKsmartjoin:
-                            gotsz = helper->transform(ret, defaultLeft, nextright);
+                            gotsz = helper->transform(ret, defaultLeft, nextright, 0);
                             nextR();
                             break;
                         default:
@@ -645,7 +649,7 @@ public:
                     case TAKlookupjoin:
                     case TAKsmartjoin:
                         if (!rightgroupmatched[rightidx]) 
-                            gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx));
+                            gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx), 0);
                         rightidx++;
                         break;
                     default:
@@ -675,7 +679,7 @@ public:
                     case TAKselfjoinlight:
                     case TAKlookupjoin:
                     case TAKsmartjoin:
-                        gotsz = helper->transform(ret, nextleft, defaultRight);
+                        gotsz = helper->transform(ret, nextleft, defaultRight, 0);
                         break;
                     default:
                         throwUnexpected();
@@ -714,7 +718,7 @@ public:
             if (r==Onext) {
                 // JCSMORE - I can't see when this can happen? if r==Onext, l is always Oouter.
                 if (!exclude) 
-                    gotsz = helper->transform(ret,nextleft,nextright);
+                    gotsz = helper->transform(ret,nextleft,nextright,++joinCounter);
                 rightmatched = true;
             }
             else {
@@ -752,7 +756,7 @@ public:
                         case TAKselfjoinlight:
                         case TAKlookupjoin:
                         case TAKsmartjoin:
-                            gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx));
+                            gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx), ++joinCounter);
                             break;
                         default:
                             throwUnexpected();
@@ -988,6 +992,7 @@ class SelfJoinHelper: public CSimpleInterface, implements IJoinHelper
     bool *abort;
     unsigned atmost;
     rowcount_t progressCount;
+    unsigned joinCounter;
     unsigned keepmax;
     unsigned abortlimit;
     unsigned keepremaining;
@@ -1076,6 +1081,7 @@ public:
         keepremaining = keepmax;
         outputmetaL = _outputmeta;
         progressCount = 0;
+        joinCounter = 0;
         return true;
     }
 
@@ -1198,6 +1204,7 @@ retry:
                     }
                     leftidx = 0;
                     rightidx = 0;
+                    joinCounter = 0;
                     leftmatched = false;
                     if (state==JSload) {     // catch atmost above
                         rightmatched = (bool *)rightmatchedbuf.clear().reserve(curgroup.ordinality());
@@ -1217,7 +1224,7 @@ retry:
                                 if (keepremaining>0) {
                                     if (!exclude) {
                                         RtlDynamicRowBuilder rtmp(allocator);
-                                        size32_t sz = helper->transform(rtmp,l,r);
+                                        size32_t sz = helper->transform(rtmp,l,r,++joinCounter);
                                         if (sz)
                                             ret.setown(rtmp.finalizeRowClear(sz));
                                     }
@@ -1233,15 +1240,16 @@ retry:
                             }
                             rightidx++;
                         }
-                        else { // right all done 
+                        else { // right all done
                             if (leftouter&&!leftmatched) {
                                 RtlDynamicRowBuilder rtmp(allocator);
-                                size32_t sz = helper->transform(rtmp, l, defaultRight);
+                                size32_t sz = helper->transform(rtmp, l, defaultRight, 0);
                                 if (sz)
                                     ret.setown(rtmp.finalizeRowClear(sz));
                             }
                             keepremaining = keepmax; // lefts don't count in keep
                             rightidx = 0;
+                            joinCounter = 0;
                             leftidx++;
                             if ((leftidx>=curgroup.ordinality())||(firstonlyL&&(leftidx>0)))
                                 state = JSrightonly;
@@ -1254,14 +1262,14 @@ retry:
                     // must be left outer after atmost to get here
                     if (leftidx<curgroup.ordinality()) {
                         RtlDynamicRowBuilder rtmp(allocator);
-                        size32_t sz = helper->transform(rtmp, curgroup.query(leftidx), defaultRight);
+                        size32_t sz = helper->transform(rtmp, curgroup.query(leftidx), defaultRight, 0);
                         if (sz)
                             ret.setown(rtmp.finalizeRowClear(sz));
                         leftidx++;
                     }
                     else if (getRow() && (compare->docompare(nextrow,curgroup.query(0))==0)) {
                         RtlDynamicRowBuilder rtmp(allocator);
-                        size32_t sz = helper->transform(rtmp, nextrow, defaultRight);
+                        size32_t sz = helper->transform(rtmp, nextrow, defaultRight, 0);
                         if (sz)
                             ret.setown(rtmp.finalizeRowClear(sz));
                         next();
@@ -1274,7 +1282,7 @@ retry:
                     if (rightouter&&(rightidx<curgroup.ordinality())) {
                         if (!rightmatched[rightidx]) {
                             RtlDynamicRowBuilder rtmp(allocator);
-                            size32_t sz = helper->transform(rtmp, defaultLeft,curgroup.query(rightidx));
+                            size32_t sz = helper->transform(rtmp, defaultLeft,curgroup.query(rightidx), 0);
                             if (sz)
                                 ret.setown(rtmp.finalizeRowClear(sz));
                         }
@@ -1528,13 +1536,14 @@ public:
         ForEachItemIn(leftidx,work.lgroup)
         {
             bool lmatched = !leftouter;
+            unsigned joinCounter = 0;
             for (unsigned rightidx=0; rightidx<rgroup.ordinality(); rightidx++) {
                 if (helper->match(work.lgroup.query(leftidx),rgroup.query(rightidx))) {
                     lmatched = true;
                     if (rightouter)
                         rmatched[rightidx] = true;
                     RtlDynamicRowBuilder ret(theAllocator);
-                    size32_t sz = exclude?0:helper->transform(ret,work.lgroup.query(leftidx),rgroup.query(rightidx));
+                    size32_t sz = exclude?0:helper->transform(ret,work.lgroup.query(leftidx),rgroup.query(rightidx),++joinCounter);
                     if (sz)
                         writer.putRow(ret.finalizeRowClear(sz));
 
@@ -1542,7 +1551,7 @@ public:
             }
             if (!lmatched) {
                 RtlDynamicRowBuilder ret(theAllocator);
-                size32_t sz =  helper->transform(ret, work.lgroup.query(leftidx), defaultRight);
+                size32_t sz =  helper->transform(ret, work.lgroup.query(leftidx), defaultRight, 0);
                 if (sz)
                     writer.putRow(ret.finalizeRowClear(sz));
             }
@@ -1551,7 +1560,7 @@ public:
             ForEachItemIn(rightidx2,rgroup) {
                 if (!rmatched[rightidx2]) {
                     RtlDynamicRowBuilder ret(theAllocator);
-                    size32_t sz =  helper->transform(ret, defaultLeft, rgroup.query(rightidx2));
+                    size32_t sz =  helper->transform(ret, defaultLeft, rgroup.query(rightidx2), 0);
                     if (sz)
                         writer.putRow(ret.finalizeRowClear(sz));
                 }

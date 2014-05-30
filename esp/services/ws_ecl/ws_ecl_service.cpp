@@ -1393,7 +1393,7 @@ void appendEclInputXsds(StringBuffer &content, IPropertyTree *xsd, BoolHash &add
                 {
 #if 0
                     content.appendf("<xsd:complexType name=\"%s\"><xsd:sequence>", schema_name);
-                    IPropertyTreeIterator *children = item.getElements("xs:complexType/xs:sequence/*");
+                    Owned<IPropertyTreeIterator> children = item.getElements("xs:complexType/xs:sequence/*");
                     ForEach(*children)
                     {
                         IPropertyTree &child = children->query();

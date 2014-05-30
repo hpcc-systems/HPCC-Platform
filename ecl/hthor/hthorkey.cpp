@@ -3710,7 +3710,7 @@ public:
                         {
                             RtlDynamicRowBuilder rowBuilder(rowAllocator);
                             if (kind == TAKkeyedjoin)
-                                transformedSize = helper.transform(rowBuilder, left, defaultRight, 0);
+                                transformedSize = helper.transform(rowBuilder, left, defaultRight, (__uint64)0, (unsigned)0);
                             else if (kind == TAKkeyeddenormalizegroup)
                                 transformedSize = helper.transform(rowBuilder, left, defaultRight, 0, (const void * *)NULL);
                             if (transformedSize)
@@ -3750,6 +3750,7 @@ public:
                 {
                     if(jg->matches.start())
                     {
+                        unsigned counter = 0;
                         do
                         {
                             try
@@ -3759,7 +3760,7 @@ public:
                                 if(!row) continue;
                                 offset_t fpos = jg->matches.queryOffset();
                                 size32_t transformedSize;
-                                transformedSize = helper.transform(rowBuilder, left, row, fpos);
+                                transformedSize = helper.transform(rowBuilder, left, row, fpos, ++counter);
                                 if (transformedSize)
                                 {
                                     const void * shrunk = rowBuilder.finalizeRowClear(transformedSize);

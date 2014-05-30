@@ -1227,6 +1227,7 @@ class CHThorJoinActivity : public CHThorActivityBase
     OwnedConstRoxieRow left;
     OwnedConstRoxieRow pendingRight;
     unsigned rightIndex;
+    unsigned joinCounter;
     BoolArray matchedRight;
     bool matchedLeft;
     Owned<IException> failingLimit;
@@ -1247,7 +1248,7 @@ private:
     void fillRight();
     //bool getMatchingRecords();
     //bool queryAdvanceCursors();
-    const void * joinRecords(const void * curLeft, const void * curRight);
+    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter);
     const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows);
     const void * joinException(const void * curLeft, IException * except);
     void failLimit();
@@ -1297,6 +1298,7 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     unsigned leftIndex;
     unsigned rightIndex;
     unsigned rightOuterIndex;
+    unsigned joinCounter;
     bool eof;
     bool doneFirstFill;
 
@@ -1311,7 +1313,7 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     Owned<CRHDualCache> dualcache;
 private:
     bool fillGroup();
-    const void * joinRecords(const void * curLeft, const void * curRight, IException * except = NULL);
+    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except);
     void failLimit(const void * next);
 
 public:
@@ -1368,6 +1370,7 @@ private:
     unsigned keepLimit;
     unsigned atmostLimit;
     unsigned limitLimit;
+    unsigned joinCounter;
     bool limitFail;
     bool limitOnFail;
     bool hasGroupLimit;
@@ -1390,7 +1393,7 @@ private:
 private:
     void loadRight();
     const void * groupDenormalizeRecords(const void * curLeft, ConstPointerArray & rows);
-    const void * joinRecords(const void * left, const void * right);
+    const void * joinRecords(const void * left, const void * right, unsigned counter);
     const void * joinException(const void * left, IException * except);
     const void * getRightFirst() { if(hasGroupLimit) return fillRightGroup(); else return table->find(left); }
     const void * getRightNext() { if(hasGroupLimit) return readRightGroup(); else return table->findNext(left); }
@@ -1445,6 +1448,7 @@ private:
     unsigned countForLeft;
     unsigned rightIndex;
     unsigned rightOrdinality;
+    unsigned joinCounter;
     OwnedRowArray rightset;
     ConstPointerArray filteredRight;
     BoolArray matchedRight;
@@ -1452,7 +1456,7 @@ private:
 
 private:
     void loadRight();
-    const void * joinRecords(const void * left, const void * right);
+    const void * joinRecords(const void * left, const void * right, unsigned counter);
     const void * groupDenormalizeRecords(const void * left, ConstPointerArray & rows);
     void createDefaultRight();  
 public:

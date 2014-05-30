@@ -73,7 +73,7 @@ void handleSyntax()
     out.append("            maxrecordsize=<max-record-size> -- optional, default is 8192\n");
     out.append("            separator=<separator> -- optional, default is \\,\n");
     out.append("            terminator=<terminator> -- optional, default is \\r,\\r\\n\n");
-    out.append("            quote=<quote> -- optional, default is '\n");
+    out.append("            quote=<quote> -- optional, default is \"\n");
     out.append("            escape=<escape> -- optional, no default value \n");
     out.append("            recordstructurepresent=0|1 -- optional, default is 0 (no field names in first row) \n");
     out.append("            quotedTerminator=1|0 -- optional, default is 1 (quoted terminators in rows) \n");
