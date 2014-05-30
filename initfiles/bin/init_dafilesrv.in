@@ -44,6 +44,7 @@ killed(){
     kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
+ulimit -c unlimited
 ulimit -n $handlelimit
 trap "killed" SIGINT SIGTERM SIGKILL
 dafilesrv -L $log -I ${INSTANCE_NAME} &
