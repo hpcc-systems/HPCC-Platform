@@ -1127,7 +1127,7 @@ public:
                 }
             }
         }
-        toXML(xref, reply, 1, XML_NewlinesOnly|XML_Format|XML_SortTags);
+        toXML(xref, reply, 1, XML_Embed|XML_LineBreak|XML_SortTags);
     }
     virtual void resetQueryTimings()
     {

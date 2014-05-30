@@ -147,4 +147,7 @@ extern const char *queryNodeIndexName(const IPropertyTree &graphNode);
 extern IPropertyTreeIterator *getNodeSubFileNames(const IPropertyTree &graphNode);
 extern IPropertyTreeIterator *getNodeSubIndexNames(const IPropertyTree &graphNode);
 
+extern void createDelayedReleaser();
+extern void stopDelayedReleaser();
+
 #endif

@@ -322,8 +322,9 @@ extern unsigned slaTimeout;
 extern unsigned headRegionSize;
 extern unsigned ccdMulticastPort;
 extern CriticalSection ccdChannelsCrit;
-extern IPropertyTree* ccdChannels;
-extern IPropertyTree* topology;
+extern IPropertyTree *ccdChannels;
+extern IPropertyTree *topology;
+extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
 
 extern bool allFilesDynamic;
@@ -424,6 +425,8 @@ extern unsigned defaultFullKeyedJoinPreload;
 extern unsigned defaultKeyedJoinPreload;
 extern unsigned defaultPrefetchProjectPreload;
 extern bool defaultCheckingHeap;
+
+extern unsigned slaveQueryReleaseDelaySeconds;
 
 extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;

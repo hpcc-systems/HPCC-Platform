@@ -86,7 +86,8 @@ bool runOnce = false;
 unsigned udpMulticastBufferSize = 262142;
 bool roxieMulticastEnabled = true;
 
-IPropertyTree* topology;
+IPropertyTree *topology;
+MapStringTo<int> *preferredClusters;
 StringBuffer topologyFile;
 CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
@@ -126,6 +127,8 @@ unsigned defaultFullKeyedJoinPreload = 0;
 unsigned defaultKeyedJoinPreload = 0;
 unsigned dafilesrvLookupTimeout = 10000;
 bool defaultCheckingHeap = false;
+
+unsigned slaveQueryReleaseDelaySeconds = 60;
 
 unsigned logQueueLen;
 unsigned logQueueDrop;
@@ -507,7 +510,19 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             topology->setProp("@traceLevel", globals->queryProp("--traceLevel"));
             topology->setProp("@memTraceLevel", globals->queryProp("--memTraceLevel"));
         }
-
+        if (topology->hasProp("PreferredCluster"))
+        {
+            preferredClusters = new MapStringTo<int>(true);
+            Owned<IPropertyTreeIterator> clusters = topology->getElements("PreferredCluster");
+            ForEach(*clusters)
+            {
+                IPropertyTree &child = clusters->query();
+                const char *name = child.queryProp("@name");
+                int priority = child.getPropInt("@priority", 100);
+                if (name && *name)
+                    preferredClusters->setValue(name, priority);
+            }
+        }
         topology->getProp("@name", roxieName);
         Owned<const IQueryDll> standAloneDll;
         if (globals->hasProp("--loadWorkunit"))
@@ -713,7 +728,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultFullKeyedJoinPreload = topology->getPropInt("@defaultFullKeyedJoinPreload", 0);
         defaultKeyedJoinPreload = topology->getPropInt("@defaultKeyedJoinPreload", 0);
         defaultPrefetchProjectPreload = topology->getPropInt("@defaultPrefetchProjectPreload", 10);
-        defaultCheckingHeap = topology->getPropInt("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
+        defaultCheckingHeap = topology->getPropBool("@checkingHeap", false);  // NOTE - not in configmgr - too dangerous!
+
+        slaveQueryReleaseDelaySeconds = topology->getPropInt("@slaveQueryReleaseDelaySeconds", 60);
+
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
 
@@ -913,6 +931,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
+        createDelayedReleaser();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
@@ -1037,6 +1056,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     stopPerformanceMonitor();
     ::Release(globalPackageSetManager);
     globalPackageSetManager = NULL;
+    stopDelayedReleaser();
     cleanupPlugins();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();
