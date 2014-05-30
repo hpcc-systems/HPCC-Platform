@@ -355,7 +355,7 @@ define([
     
     return {
         isInstanceOfQueue: function (obj) {
-            return obj.isInstanceOf(Queue);
+            return obj && obj.isInstanceOf && obj.isInstanceOf(Queue);
         },
 
         GetTargetCluster: function (name) {
