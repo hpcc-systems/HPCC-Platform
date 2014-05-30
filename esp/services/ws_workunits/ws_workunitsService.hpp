@@ -26,9 +26,10 @@
 #include "zcrypt.hpp"
 #endif
 
-#define UFO_RELOAD_TARGETS_CHANGED_PMID          0x01
-#define UFO_RELOAD_MAPPED_QUERIES                0x02
-#define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x04
+#define UFO_DIRTY                                0x01
+#define UFO_RELOAD_TARGETS_CHANGED_PMID          0x02
+#define UFO_RELOAD_MAPPED_QUERIES                0x04
+#define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x08
 
 class QueryFilesInUse : public CInterface, implements ISDSSubscription
 {
@@ -40,14 +41,17 @@ class QueryFilesInUse : public CInterface, implements ISDSSubscription
     SubscriptionId qsChange;
     SubscriptionId pmChange;
     SubscriptionId psChange;
+    mutable CriticalSection dirtyCrit; //if there were an atomic_or I would just use atomic
+    unsigned dirty;
     bool aborting;
-
-public:
-    IMPLEMENT_IINTERFACE;
-    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0)
+private:
+    void loadTarget(IPropertyTree *tree, const char *target, unsigned flags);
+    void loadTargets(IPropertyTree *tree, unsigned flags);
+    void load(unsigned flags)
     {
-        tree.setown(createPTree("QueryFilesInUse"));
-        updateUsers();
+        Owned<IPropertyTree> t = createPTreeFromIPT(tree);
+        loadTargets(t, flags);
+        tree.setown(t.getClear());
     }
 
     void updateUsers()
@@ -66,31 +70,24 @@ public:
         }
     }
 
-    const char *getPackageMap(const char *target)
+public:
+    IMPLEMENT_IINTERFACE;
+    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(UFO_DIRTY)
     {
-        VStringBuffer xpath("%s/@pmid", target);
-        return tree->queryProp(xpath);
-    }
-
-    void loadTarget(IPropertyTree *tree, const char *target, unsigned flags);
-    void loadTargets(IPropertyTree *tree, unsigned flags);
-    void reload(unsigned flags)
-    {
-        Owned<IPropertyTree> t = createPTreeFromIPT(tree);
-        loadTargets(t, flags);
-        CriticalBlock b(crit);
-        tree.setown(t.getClear());
+        tree.setown(createPTree("QueryFilesInUse"));
+        updateUsers();
     }
 
     virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         Linked<QueryFilesInUse> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
+        CriticalBlock b(dirtyCrit);
         if (subid == qsChange)
-            reload(UFO_REMOVE_QUERIES_NOT_IN_QUERYSET);
+            dirty |= UFO_REMOVE_QUERIES_NOT_IN_QUERYSET;
         else if (subid == pmChange)
-            reload(UFO_RELOAD_MAPPED_QUERIES);
+            dirty |= UFO_RELOAD_MAPPED_QUERIES;
         else if (subid == psChange)
-            reload(UFO_RELOAD_TARGETS_CHANGED_PMID);
+            dirty |= UFO_RELOAD_TARGETS_CHANGED_PMID;
     }
     virtual void subscribe()
     {
@@ -133,30 +130,26 @@ public:
         aborting=true;
         CriticalBlock b(crit);
     }
-    IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn);
-    StringBuffer &toStr(StringBuffer &s)
+
+    IPropertyTree *getTree()
     {
         CriticalBlock b(crit);
-        return toXML(tree, s);
+        unsigned flags;
+        {
+            CriticalBlock b(dirtyCrit);
+            flags = dirty;
+            dirty = 0;
+        }
+        if (flags)
+            load(flags);
+        return LINK(tree);
     }
 
-};
-
-class QueryFilesInUseUpdateThread : public Thread
-{
-    QueryFilesInUse &filesInUse;
-
-public:
-    QueryFilesInUseUpdateThread(QueryFilesInUse &_filesInUse) : filesInUse(_filesInUse) {}
-
-    virtual int run()
+    IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn, StringAttr &pmid);
+    StringBuffer &toStr(StringBuffer &s)
     {
-        filesInUse.reload(0);
-        return 0;
-    }
-    virtual void start()
-    {
-        Thread::start();
+        Owned<IPropertyTree> t = getTree();
+        return toXML(t, s);
     }
 };
 
