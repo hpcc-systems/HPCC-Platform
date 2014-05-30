@@ -26,10 +26,10 @@
 #include "zcrypt.hpp"
 #endif
 
-#define UFO_RELOAD_TARGETS_CHANGED_PMID          0x01
-#define UFO_RELOAD_MAPPED_QUERIES                0x02
-#define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x04
-#define UFO_RELOAD_ALL (UFO_RELOAD_TARGETS_CHANGED_PMID | UFO_RELOAD_MAPPED_QUERIES | UFO_REMOVE_QUERIES_NOT_IN_QUERYSET)
+#define UFO_DIRTY                                0x01
+#define UFO_RELOAD_TARGETS_CHANGED_PMID          0x02
+#define UFO_RELOAD_MAPPED_QUERIES                0x04
+#define UFO_REMOVE_QUERIES_NOT_IN_QUERYSET       0x08
 
 class QueryFilesInUse : public CInterface, implements ISDSSubscription
 {
@@ -72,7 +72,7 @@ private:
 
 public:
     IMPLEMENT_IINTERFACE;
-    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(0)
+    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(UFO_DIRTY)
     {
         tree.setown(createPTree("QueryFilesInUse"));
         updateUsers();
@@ -131,12 +131,6 @@ public:
         CriticalBlock b(crit);
     }
 
-    void init()
-    {
-        CriticalBlock b(crit);
-        load(0);
-    }
-
     IPropertyTree *getTree()
     {
         CriticalBlock b(crit);
@@ -156,24 +150,6 @@ public:
     {
         Owned<IPropertyTree> t = getTree();
         return toXML(t, s);
-    }
-};
-
-class QueryFilesInUseUpdateThread : public Thread
-{
-    QueryFilesInUse &filesInUse;
-
-public:
-    QueryFilesInUseUpdateThread(QueryFilesInUse &_filesInUse) : filesInUse(_filesInUse) {}
-
-    virtual int run()
-    {
-        filesInUse.init();
-        return 0;
-    }
-    virtual void start()
-    {
-        Thread::start();
     }
 };
 
