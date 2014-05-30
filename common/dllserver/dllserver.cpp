@@ -555,8 +555,6 @@ IDllEntry * DllServer::createEntry(IPropertyTree *owner, IPropertyTree *entry)
 
 void DllServer::doRegisterDll(const char * name, const char * kind, const char * dllPath, const char * libPath)
 {
-    Owned<IRemoteConnection> lock = querySDS().connect("/GeneratedDlls", myProcessSession(), RTM_LOCK_WRITE, CONNECTION_TIMEOUT);
-
     RemoteFilename dllRemote;
     StringBuffer ipText, dllText;
     dllRemote.setRemotePath(dllPath);
@@ -566,7 +564,9 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
     Owned<IRemoteConnection> conn = getEntryConnection(name, RTM_LOCK_WRITE);
     if (conn)
     {
-        //check the entry doesn't exist already....
+        /* check the entry doesn't exist already....
+         * Ideally the connection above would be a RTM_LOCK_READ and be changed to a RTM_LOCK_WRITE only when 'location' not found
+         */
         Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("location");
         ForEach(*iter)
         {
@@ -578,6 +578,9 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
     }
     else
     {
+        /* in theory, two clients/threads could get here at the same time
+         * in practice only one client/thread will be adding a unique named generated dll
+         */
         StringBuffer xpath;
         xpath.append("/GeneratedDlls/");
         getMangledTag(xpath, name);
