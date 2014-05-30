@@ -63,7 +63,7 @@ define([
             if (params.searchText) {
                 this.doSearch(params.searchText);
             }
-            this._refreshActionState();
+            this.refreshGrid();
         },
 
         getTitle: function () {
@@ -338,6 +338,7 @@ define([
             if (this.searchText) {
                 this.searchAll();
             }
+            this._refreshActionState();
         },
 
         refreshActionState: function (selection) {
