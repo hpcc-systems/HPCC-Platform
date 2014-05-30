@@ -11644,6 +11644,7 @@ class CRoxieServerJoinActivity : public CRoxieServerTwoInputActivity
     const void * left;
     const void * pendingRight;
     unsigned rightIndex;
+    unsigned joinCounter;
     BoolArray matchedRight;
     bool matchedLeft;
     Owned<IException> failingLimit;
@@ -11706,6 +11707,7 @@ public:
             collate = collateupper = helper.queryCompareLeftRight();
         }
         rightIndex = 0;
+        joinCounter = 0;
         state = JSfill;
         matchedLeft = false;
         joinLimit = 0;
@@ -11725,6 +11727,7 @@ public:
     {
         left = NULL;
         rightIndex = 0;
+        joinCounter = 0;
         state = JSfill;
         matchedLeft = false;
 
@@ -11805,6 +11808,7 @@ public:
         if (limitedhelper && 0==rightIndex)
         {
             rightIndex = 0;
+            joinCounter = 0;
             right.clear();
             matchedRight.kill();
             if (left)
@@ -11832,6 +11836,7 @@ public:
         else
             right.clear();
         rightIndex = 0;
+        joinCounter = 0;
         unsigned groupCount = 0;
         const void * next;
         while(true)
@@ -11916,7 +11921,7 @@ public:
             matchedRight.append(false);
     }
 
-    const void * joinRecords(const void * curLeft, const void * curRight)
+    const void * joinRecords(const void * curLeft, const void * curRight, unsigned counter)
     {
         if (cloneLeft)
         {
@@ -11926,7 +11931,7 @@ public:
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            size32_t thisSize = helper.transform(rowBuilder, curLeft, curRight);
+            size32_t thisSize = helper.transform(rowBuilder, curLeft, curRight, counter);
             if (thisSize)
                 return rowBuilder.finalizeRowClear(thisSize);
             else
@@ -12065,14 +12070,15 @@ public:
                                 if (!matchedRight.item(rightIndex))
                                 {
                                     const void * rhs = right.item(rightIndex++);
-                                    const void *ret = joinRecords(defaultLeft, rhs);
+                                    const void *ret = joinRecords(defaultLeft, rhs, 0);
                                     if (ret)
                                     {
                                         processed++;
                                         return ret;
                                     }
                                 }
-                                rightIndex++;
+                                else
+                                    rightIndex++;
                             }
                             break;
                         }
@@ -12149,7 +12155,7 @@ public:
                     switch (activityKind)
                     {
                     case TAKjoin:
-                        ret = joinRecords(left, defaultRight);
+                        ret = joinRecords(left, defaultRight, 0);
                         break;
                     case TAKdenormalize:
                         ret = left;
@@ -12188,7 +12194,7 @@ public:
                                     matchedLeft = true;
                                     if (!exclude)
                                     {
-                                        const void *ret = joinRecords(left, rhs);
+                                        const void *ret = joinRecords(left, rhs, ++joinCounter);
                                         if (ret)
                                         {
                                             processed++;
@@ -12277,6 +12283,7 @@ public:
                 }
                 state = JSleftonly;
                 rightIndex = 0;
+                joinCounter = 0;
                 break;
             }
         }
@@ -16863,6 +16870,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     unsigned atmostsTriggered;
     unsigned abortLimit;
     unsigned keepLimit;
+    unsigned joinCounter;
     bool leftOuterJoin;
     bool rightOuterJoin;
     bool exclude;
@@ -16954,6 +16962,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
         leftIndex = 0;
         rightIndex = 0;
         rightOuterIndex = 0;
+        joinCounter = 0;
         joinLimit = keepLimit;
         ForEachItemIn(idx, group)
             matchedRight.append(false);
@@ -16973,7 +16982,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
 
     virtual bool needsAllocator() const { return true; }
 
-    const void *joinRecords(const void * curLeft, const void * curRight, IException * except = NULL)
+    const void *joinRecords(const void * curLeft, const void * curRight, unsigned counter, IException * except)
     {
         try
         {
@@ -16983,7 +16992,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
                 return curLeft;
             }
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            size32_t outsize = except ? helper.onFailTransform(rowBuilder, curLeft, curRight, except) : helper.transform(rowBuilder, curLeft, curRight);
+            size32_t outsize = except ? helper.onFailTransform(rowBuilder, curLeft, curRight, except) : helper.transform(rowBuilder, curLeft, curRight, counter);
             if (outsize)
                 return rowBuilder.finalizeRowClear(outsize);
             else
@@ -17047,6 +17056,7 @@ public:
         leftIndex = 0;
         rightIndex = 0;
         rightOuterIndex = 0;
+        joinCounter = 0;
         dualCacheInput = NULL;
     }
 
@@ -17081,6 +17091,7 @@ public:
             matchedLeft = false;
             leftIndex = 0;
             rightOuterIndex = 0;
+            joinCounter = 0;
 
             limitedhelper.setown(createRHLimitedCompareHelper());
             limitedhelper->init( helper.getJoinLimit(), dualcache->queryOut2(), collate, helper.queryPrefixCompare() );
@@ -17110,6 +17121,7 @@ public:
                     if (lhs)
                     {
                         rightIndex = 0;
+                        joinCounter = 0;
                         group.clear();
                         limitedhelper->getGroup(group,lhs);
                     }
@@ -17124,7 +17136,7 @@ public:
                     const void * rhs = group.item(rightIndex++);
                     if(helper.match(lhs, rhs))
                     {
-                        const void * ret = joinRecords(lhs, rhs);
+                        const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
                         return ret;
                     }
                 }
@@ -17143,7 +17155,7 @@ public:
                 if(failingOuterAtmost)
                     while(group.isItem(leftIndex))
                     {
-                        const void * ret = joinRecords(group.item(leftIndex++), defaultRight);
+                        const void * ret = joinRecords(group.item(leftIndex++), defaultRight, 0, NULL);
                         if(ret)
                         {
                             processed++;
@@ -17154,7 +17166,7 @@ public:
                 {
                     if(leftOuterJoin && !matchedLeft && !failingLimit)
                     {
-                        const void * ret = joinRecords(group.item(leftIndex), defaultRight);
+                        const void * ret = joinRecords(group.item(leftIndex), defaultRight, 0, NULL);
                         if(ret)
                         {
                             matchedLeft = true;
@@ -17165,6 +17177,7 @@ public:
                     leftIndex++;
                     matchedLeft = false;
                     rightIndex = 0;
+                    joinCounter = 0;
                     joinLimit = keepLimit;
                 }
                 if(!group.isItem(leftIndex))
@@ -17174,7 +17187,7 @@ public:
                         const void * lhs;
                         while((lhs = input->nextInGroup()) != NULL)  // dualCache never active here
                         {
-                            const void * ret = joinRecords(lhs, defaultRight, failingLimit);
+                            const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
                             ReleaseRoxieRow(lhs);
                             if(ret)
                             {
@@ -17188,7 +17201,7 @@ public:
                         while(group.isItem(rightOuterIndex))
                             if(!matchedRight.item(rightOuterIndex++))
                             {
-                                const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1));
+                                const void * ret = joinRecords(defaultLeft, group.item(rightOuterIndex-1), 0, NULL);
                                 if(ret)
                                 {
                                     processed++;
@@ -17203,7 +17216,7 @@ public:
                 if(failingLimit)
                 {
                     leftIndex++;
-                    const void * ret = joinRecords(lhs, defaultRight, failingLimit);
+                    const void * ret = joinRecords(lhs, defaultRight, 0, failingLimit);
                     if(ret)
                     {
                         processed++;
@@ -17219,7 +17232,7 @@ public:
                         matchedRight.replace(true, rightIndex-1);
                         if(!exclude)
                         {
-                            const void * ret = joinRecords(lhs, rhs);
+                            const void * ret = joinRecords(lhs, rhs, ++joinCounter, NULL);
                             if(ret)
                             {
                                 processed++;
@@ -17535,6 +17548,7 @@ private:
     unsigned atmostLimit;
     unsigned atmostsTriggered;
     unsigned limitLimit;
+    unsigned joinCounter;
     bool limitFail;
     bool limitOnFail;
     bool hasGroupLimit;
@@ -17580,6 +17594,7 @@ public:
         gotMatch = false;
         keepLimit = 0;
         keepCount = 0;
+        joinCounter = 0;
         atmostLimit = 0;
         atmostsTriggered = 0;
         limitLimit = 0;
@@ -17626,7 +17641,7 @@ public:
                             void **_rows = const_cast<void * *>(rightset.getArray());
                             memcpy(temp, _rows, rightord*sizeof(void **));
                             qsortvecstable(temp, rightord, *helper.queryCompareRight(), (void ***)_rows);
-                            for (int i = 0; i < rightord; i++)
+                            for (unsigned i = 0; i < rightord; i++)
                             {
                                 *_rows = **((void ***)_rows);
                                 _rows++;
@@ -17737,6 +17752,7 @@ private:
             {
                 left = input->nextInGroup();
                 keepCount = keepLimit;
+                joinCounter = 0;
                 if(!left)
                 {
                     if (isSmartJoin)
@@ -17774,7 +17790,7 @@ private:
                         gotMatch = true;
                         if(exclude)
                             break;
-                        ret = joinRecords(left, right);
+                        ret = joinRecords(left, right, ++joinCounter);
                         if(ret)
                             break;
                     }
@@ -17783,7 +17799,7 @@ private:
                 }
                 if(leftOuterJoin && !gotMatch)
                 {
-                    ret = joinRecords(left, defaultRight);
+                    ret = joinRecords(left, defaultRight, 0);
                     gotMatch = true;
                 }
             }
@@ -17900,7 +17916,7 @@ private:
         }
     }
 
-    const void * joinRecords(const void * left, const void * right)
+    const void * joinRecords(const void * left, const void * right, unsigned counter)
     {
         if (cloneLeft)
         {
@@ -17910,7 +17926,7 @@ private:
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            unsigned outSize = helper.transform(rowBuilder, left, right);
+            unsigned outSize = helper.transform(rowBuilder, left, right, counter);
             if (outSize)
                 return rowBuilder.finalizeRowClear(outSize);
             else
@@ -18071,6 +18087,7 @@ private:
     bool leftIsGrouped;
     bool cloneLeft;
     unsigned rightIndex;
+    unsigned joinCounter;
     unsigned rightOrdinality;
     ThorActivityKind activityKind;
     ConstPointerArray filteredRight;
@@ -18122,6 +18139,7 @@ public:
         rightOrdinality = 0;
         leftIsGrouped = false;
         countForLeft = 0;
+        joinCounter = 0;
     }
 
     virtual void reset()
@@ -18149,6 +18167,7 @@ public:
         if(keepLimit==0)
             keepLimit = (unsigned) -1;
         countForLeft = keepLimit;
+        joinCounter = 0;
         leftIsGrouped = input->queryOutputMeta()->isGrouped();
         if((activityKind==TAKalljoin || activityKind==TAKalldenormalizegroup) && leftOuterJoin)
             createDefaultRight();
@@ -18170,6 +18189,7 @@ public:
             matchedRight.append(false);
         }
         rightIndex = 0;
+        joinCounter = 0;
         rightOrdinality = rightset.ordinality();
     }
 
@@ -18189,7 +18209,7 @@ public:
         }
     }
 
-    const void * joinRecords(const void * left, const void * right)
+    const void * joinRecords(const void * left, const void * right, unsigned counter)
     {
         // MORE - could share some code with lookup join
         if (cloneLeft)
@@ -18200,7 +18220,7 @@ public:
         try
         {
             RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            unsigned outSize = helper.transform(rowBuilder, left, right);
+            unsigned outSize = helper.transform(rowBuilder, left, right, counter);
             if (outSize)
                 return rowBuilder.finalizeRowClear(outSize);
             else
@@ -18240,6 +18260,7 @@ public:
             left = input->nextInGroup();
             matchedLeft = false;
             countForLeft = keepLimit;
+            joinCounter = 0;
             if(left == NULL)
             {
                 eos = true;
@@ -18264,7 +18285,7 @@ public:
                     switch(activityKind)
                     {
                     case TAKalljoin:
-                        ret = joinRecords(left, defaultRight);
+                        ret = joinRecords(left, defaultRight, 0);
                         break;
                     case TAKalldenormalize:
                         ret = left;
@@ -18279,6 +18300,7 @@ public:
                     }
                 }
                 rightIndex = 0;
+                joinCounter = 0;
                 ReleaseRoxieRow(left);
                 left = NULL;
                 if(ret)
@@ -18294,6 +18316,7 @@ public:
                 left = input->nextInGroup();
                 matchedLeft = false;
                 countForLeft = keepLimit;
+                joinCounter = 0;
             }
             if(!left)
             {
@@ -18325,7 +18348,7 @@ public:
                         matchedLeft = true;
                         matchedRight.replace(true, rightIndex);
                         if(!exclude)
-                            ret = joinRecords(left, right);
+                            ret = joinRecords(left, right, ++joinCounter);
                     }
                     rightIndex++;
                     if(ret)
@@ -24422,7 +24445,7 @@ public:
 
     virtual bool needsAllocator() const { return true; }
 
-    unsigned doTransform(const void *left, const void *right, offset_t fpos_or_count, IException *except, const void **group)
+    unsigned doTransform(const void *left, const void *right, offset_t fpos_or_count, IException *except, const void **group, unsigned counter)
     {
         if (cloneLeft && !except)
         {
@@ -24437,7 +24460,7 @@ public:
         {   
             outSize = except ? helper.onFailTransform(rowBuilder, left, right, fpos_or_count, except) : 
                       (activityKind == TAKkeyeddenormalizegroup) ? helper.transform(rowBuilder, left, right, (unsigned) fpos_or_count, group) : 
-                      helper.transform(rowBuilder, left, right, fpos_or_count);
+                      helper.transform(rowBuilder, left, right, fpos_or_count, counter);
         }
         catch (IException *E)
         {
@@ -24476,7 +24499,7 @@ public:
                 {
                     except.setown(e);
                 }
-                added = doTransform(left, defaultRight, 0, except, NULL);
+                added = doTransform(left, defaultRight, 0, except, NULL, 0);
             }
         }
         else if (!matched || jg->candidateCount() > atMost)
@@ -24491,7 +24514,7 @@ public:
                 {
                 case TAKkeyedjoin:
                 case TAKkeyeddenormalizegroup:
-                    added = doTransform(left, defaultRight, 0, NULL, NULL);
+                    added = doTransform(left, defaultRight, 0, NULL, NULL, 0);
                     break;
                 case TAKkeyeddenormalize:
                     LinkRoxieRow(left);
@@ -24511,7 +24534,7 @@ public:
                 while (idx < matched)
                 {
                     const KeyedJoinHeader *rhs = jg->queryRow(idx);
-                    added += doTransform(left, &rhs->rhsdata, rhs->fpos, NULL, NULL);
+                    added += doTransform(left, &rhs->rhsdata, rhs->fpos, NULL, NULL, idx+1);
                     if (added==keepLimit)
                         break;
                     idx++;
@@ -24561,7 +24584,7 @@ public:
                         extractedRows.append((void *) &rhs->rhsdata);
                         idx++;
                     }
-                    added += doTransform(left, extractedRows.item(0), extractedRows.ordinality(), NULL, (const void * *)extractedRows.getArray());
+                    added += doTransform(left, extractedRows.item(0), extractedRows.ordinality(), NULL, (const void * *)extractedRows.getArray(), 0);
                 }
                 break;
             }

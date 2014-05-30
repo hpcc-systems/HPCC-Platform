@@ -40,7 +40,7 @@
 
             <tbody>
               <row>
-                <entry><emphasis>--version=</emphasis></entry>
+                <entry><emphasis>--version</emphasis></entry>
 
                 <entry>displays version info.</entry>
               </row>
@@ -96,9 +96,48 @@
               </row>
 
               <row>
+                <entry>roxie</entry>
+
+                <entry>execute commands for Roxie</entry>
+              </row>
+
+              <row>
                 <entry>packagemap</entry>
 
-                <entry>execute package commands (for Roxie)</entry>
+                <entry>execute packagemap commands (for Roxie)</entry>
+              </row>
+
+              <row>
+                <entry>bundle</entry>
+
+                <entry>execute a bundle command</entry>
+              </row>
+
+              <row>
+                <entry>abort</entry>
+
+                <entry>aborts one or more workunits from the given WUID or job
+                name</entry>
+              </row>
+
+              <row>
+                <entry>status</entry>
+
+                <entry>returns the status of a given workunit or job name. If
+                more than one is found, a list returns.</entry>
+              </row>
+
+              <row>
+                <entry>getname</entry>
+
+                <entry>returns the workunit name from the given WUID.</entry>
+              </row>
+
+              <row>
+                <entry>getwuid</entry>
+
+                <entry>returns the WUID(s) of the given workunit job
+                name.</entry>
               </row>
             </tbody>
           </tgroup>
@@ -292,14 +331,14 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -542,14 +581,14 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -674,14 +713,14 @@ ecl unpublish roxie "FindpersonService*"
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -828,14 +867,14 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -972,14 +1011,14 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1062,14 +1101,14 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1201,14 +1240,14 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1261,7 +1300,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>Copies a query from one queryset to another. A query
                   can be copied from one HPCC environment to another by using
                   a path which begins with '//' followed by the IP or hostname
-                  and Port of the source EclWatch and then followed by the
+                  and Port of the source ECL Watch and then followed by the
                   source queryset and query.</entry>
                 </row>
 
@@ -1373,14 +1412,14 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1503,14 +1542,14 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1639,14 +1678,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1721,14 +1760,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1811,14 +1850,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1900,14 +1939,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -1992,14 +2031,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -2085,14 +2124,14 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -2211,8 +2250,8 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
@@ -2238,7 +2277,7 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -2303,14 +2342,14 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -2375,14 +2414,14 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -2447,14 +2486,14 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -2519,14 +2558,14 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>
@@ -2966,8 +3005,8 @@ ecl bundle use myBundle 2
                 <row>
                   <entry>-s, --server</entry>
 
-                  <entry>The IP Address or hostname of ESP server running
-                  eclwatch services</entry>
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
                 </row>
 
                 <row>
@@ -2980,7 +3019,339 @@ ecl bundle use myBundle 2
                 <row>
                   <entry>--port</entry>
 
-                  <entry>The eclwatch services port (Default is 8010)</entry>
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl abort</title>
+
+        <para><emphasis role="bold">ecl abort -wu &lt;WUID&gt; | -n
+        &lt;jobName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl abort -wu W20150516-111213
+ecl abort -n MyJob</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl abort</entry>
+
+                  <entry>aborts one or more Workunits from the given WUID or
+                  job name</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-wu</entry>
+
+                  <entry>The WUID (Workunit ID)</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>The job name</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl status</title>
+
+        <para><emphasis role="bold">ecl status -wu &lt;WUID&gt; | -n
+        &lt;jobName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl status -wu W20150516-111213
+ecl status -n MyJob</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl status</entry>
+
+                  <entry>returns the status of a given workunit or job name.
+                  If more than one is found, a CSV list returns.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-wu</entry>
+
+                  <entry>The WUID (Workunit ID)</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>The job name</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl getwuid</title>
+
+        <para><emphasis role="bold">ecl getwuid -n &lt;jobName&gt;
+        [--limit=&lt;limitCount&gt;]</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl getwuid -n MyJobName
+ecl getwuid -n MyCommonJobName --limit=100</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl getwuid</entry>
+
+                  <entry>returns the WUID(s) for a given job name. If more
+                  than one is found, a list returns.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>The job name</entry>
+                </row>
+
+                <row>
+                  <entry>--limit=<emphasis>nn</emphasis></entry>
+
+                  <entry>Integer to set result limit, default is 100</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl getname</title>
+
+        <para><emphasis role="bold">ecl getname -wu &lt;WUID&gt;
+        </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl getname -wu W20140516-111213</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl getname</entry>
+
+                  <entry>returns the job name for a given workunit.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-wu</entry>
+
+                  <entry>The WUID (Workunit ID)</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl,--ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
                 </row>
 
                 <row>

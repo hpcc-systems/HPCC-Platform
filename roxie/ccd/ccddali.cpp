@@ -173,6 +173,7 @@ private:
                     try
                     {
                         owner->disconnectSem.wait();
+                        Sleep(5000);   // Don't retry immediately, give Dali a chance to recover.
                     }
                     catch (IException *E)
                     {
@@ -434,12 +435,6 @@ public:
         return ret.getClear();
     }
 
-    static const char *getPackageMapPath(StringBuffer &buf, const char *id)
-    {
-        buf.appendf("PackageMaps/PackageMap[@id='%s']", id);
-        return buf.str();
-    }
-
     static const char *getSuperFilePath(StringBuffer &buf, const char *lfn)
     {
         CDfsLogicalFileName lfnParser;
@@ -676,10 +671,10 @@ public:
         return getSubscription("PackageSets", "PackageSets", notifier);
     }
 
-    virtual IDaliPackageWatcher *getPackageMapSubscription(const char *id, ISDSSubscription *notifier)
+    virtual IDaliPackageWatcher *getPackageMapsSubscription(ISDSSubscription *notifier)
     {
         StringBuffer xpath;
-        return getSubscription(id, getPackageMapPath(xpath, id), notifier);
+        return getSubscription("PackageMaps", "PackageMaps", notifier);
     }
 
     virtual IDaliPackageWatcher *getSuperFileSubscription(const char *lfn, ISDSSubscription *notifier)
@@ -721,14 +716,16 @@ public:
                     serverStatus->queryProperties()->setProp("@cluster", roxieName.str());
                     serverStatus->commitProperties();
                     initCache();
-                    isConnected = true;
                     ForEachItemIn(idx, watchers)
                     {
                         watchers.item(idx).onReconnect();
                     }
+                    isConnected = true;
                 }
                 catch(IException *e)
                 {
+                    delete serverStatus;
+                    serverStatus = NULL;
                     ::closedownClientProcess(); // undo any partial initialization
                     StringBuffer text;
                     e->errorMessage(text);

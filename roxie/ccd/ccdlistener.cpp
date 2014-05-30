@@ -627,7 +627,7 @@ public:
         afor.For(activeChildren.ordinality()+(isMaster ? 0 : 1), 10);
         activeChildren.kill();
         if (mergedReply)
-            toXML(mergedReply, reply, 0, (mergeType == CascadeMergeQueries) ? XML_Format | XML_NewlinesOnly : XML_Format);
+            toXML(mergedReply, reply, 0, (mergeType == CascadeMergeQueries) ? XML_Embed|XML_LineBreak|XML_SortTags : XML_Format);
         if (logctx.queryTraceLevel() > 5)
             logctx.CTXLOG("doControlQuery (%d) finished: %.80s", isMaster, queryText);
     }

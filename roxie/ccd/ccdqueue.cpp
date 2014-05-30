@@ -443,7 +443,7 @@ extern IRoxieQueryPacket *createRoxiePacket(void *_data, unsigned _len)
 extern IRoxieQueryPacket *createRoxiePacket(MemoryBuffer &m)
 {
     unsigned length = m.length(); // don't make assumptions about evaluation order of parameters...
-    return createRoxiePacket(m.detach(), length);
+    return createRoxiePacket(m.detachOwn(), length);
 }
 
 //=================================================================================

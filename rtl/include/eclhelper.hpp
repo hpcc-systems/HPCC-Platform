@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      154
-#define MIN_ACTIVITY_INTERFACE_VERSION  154             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      155
+#define MIN_ACTIVITY_INTERFACE_VERSION  155             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -1666,7 +1666,6 @@ struct IHThorAnyJoinBaseArg : public IHThorArg
     virtual unsigned getKeepLimit() = 0;
 
 //Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) { return 0; }
 //Denormalize
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right, unsigned _count) { return 0; }
 //Denormalize group
@@ -1747,7 +1746,6 @@ struct IHThorKeyedJoinBaseArg : public IHThorArg
 
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * _dummyRight, const void * _origRow, unsigned __int64 keyedFpos, IException * e) { return 0; }
 //Join:
-    virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned __int64 keyedFpos) { return 0; }
 //Denormalize:
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _joinFields, const void * _origRow, unsigned __int64 keyedFpos, unsigned counter) { return 0; }
 //Denormalize group:

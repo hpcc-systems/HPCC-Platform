@@ -2996,7 +2996,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
 #endif
                 break;
             case no_selfjoin:
-                if (isPureActivity(child) && !hasUnknownTransform(child) && !isLimitedJoin(child) && !child->hasAttribute(fullouterAtom) && !child->hasAttribute(fullonlyAtom))
+                if (isPureActivity(child) && !hasUnknownTransform(child) && !isLimitedJoin(child) && !child->hasAttribute(fullouterAtom) && !child->hasAttribute(fullonlyAtom) && !child->hasAttribute(_countProject_Atom))
                 {
                     //Strictly speaking, we could hoist conditions that can be hoisted for left only (or even full) joins etc. if the fields that are filtered
                     //are based on equalities in the join condition.  However, that can wait....  (same for join below...)
@@ -3012,7 +3012,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                 }
                 break;
             case no_join:
-                if (isPureActivity(child) && !hasUnknownTransform(child) && !isLimitedJoin(child) && !child->hasAttribute(fullouterAtom) && !child->hasAttribute(fullonlyAtom))
+                if (isPureActivity(child) && !hasUnknownTransform(child) && !isLimitedJoin(child) && !child->hasAttribute(fullouterAtom) && !child->hasAttribute(fullonlyAtom) && !child->hasAttribute(_countProject_Atom))
                 {
                     bool canHoistLeft = !child->hasAttribute(rightouterAtom) && !child->hasAttribute(rightonlyAtom);
                     bool canMergeLeft = isInnerJoin(child);

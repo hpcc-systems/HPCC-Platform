@@ -8759,19 +8759,18 @@ IHqlExpression * HqlGram::processIfProduction(attribute & condAttr, attribute & 
             right.setown(createNullExpr(left));
     }
 
-    //MORE: Not sure about this!
-    if (parsingTemplateAttribute && cond->isConstant())
-    {
-        OwnedHqlExpr folded = quickFoldExpression(cond);
-        if (folded->queryValue())
-            return folded->queryValue()->getBoolValue() ? left.getClear() : right.getClear();
-    }
-
     if (left->queryRecord() && falseAttr)
         right.setown(checkEnsureRecordsMatch(left, right, *falseAttr, false));
 
     if (isGrouped(left) != isGrouped(right))
         reportError(ERR_GROUPING_MISMATCH, trueAttr, "Branches of the condition have different grouping");
+
+    if (cond->isConstant())
+    {
+        OwnedHqlExpr folded = quickFoldExpression(cond);
+        if (folded->queryValue())
+            return folded->queryValue()->getBoolValue() ? left.getClear() : right.getClear();
+    }
 
     return ::createIf(cond.getClear(), left.getClear(), right.getClear());
 }
