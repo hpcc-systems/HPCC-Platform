@@ -44,13 +44,14 @@ class QueryFilesInUse : public CInterface, implements ISDSSubscription
     mutable CriticalSection dirtyCrit; //if there were an atomic_or I would just use atomic
     unsigned dirty;
     bool aborting;
-
-public:
-    IMPLEMENT_IINTERFACE;
-    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(0)
+private:
+    void loadTarget(IPropertyTree *tree, const char *target, unsigned flags);
+    void loadTargets(IPropertyTree *tree, unsigned flags);
+    void load(unsigned flags)
     {
-        tree.setown(createPTree("QueryFilesInUse"));
-        updateUsers();
+        Owned<IPropertyTree> t = createPTreeFromIPT(tree);
+        loadTargets(t, flags);
+        tree.setown(t.getClear());
     }
 
     void updateUsers()
@@ -69,29 +70,12 @@ public:
         }
     }
 
-    const char *getPackageMap(const char *target)
+public:
+    IMPLEMENT_IINTERFACE;
+    QueryFilesInUse() : aborting(false), qsChange(0), pmChange(0), psChange(0), dirty(0)
     {
-        VStringBuffer xpath("%s/@pmid", target);
-        return tree->queryProp(xpath);
-    }
-
-    void loadTarget(IPropertyTree *tree, const char *target, unsigned flags);
-    void loadTargets(IPropertyTree *tree, unsigned flags);
-    void reload(unsigned flags)
-    {
-        CriticalBlock b(crit);
-        loadTargets(tree, flags);
-    }
-    void checkDirtyReload()
-    {
-        unsigned flags;
-        {
-            CriticalBlock b(dirtyCrit);
-            flags = dirty;
-            dirty = 0;
-        }
-        if (flags)
-            reload(flags);
+        tree.setown(createPTree("QueryFilesInUse"));
+        updateUsers();
     }
 
     virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
@@ -146,14 +130,33 @@ public:
         aborting=true;
         CriticalBlock b(crit);
     }
-    IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn);
-    StringBuffer &toStr(StringBuffer &s)
+
+    void init()
     {
-        checkDirtyReload();
         CriticalBlock b(crit);
-        return toXML(tree, s);
+        load(0);
     }
 
+    IPropertyTree *getTree()
+    {
+        CriticalBlock b(crit);
+        unsigned flags;
+        {
+            CriticalBlock b(dirtyCrit);
+            flags = dirty;
+            dirty = 0;
+        }
+        if (flags)
+            load(flags);
+        return LINK(tree);
+    }
+
+    IPropertyTreeIterator *findQueriesUsingFile(const char *target, const char *lfn, StringAttr &pmid);
+    StringBuffer &toStr(StringBuffer &s)
+    {
+        Owned<IPropertyTree> t = getTree();
+        return toXML(t, s);
+    }
 };
 
 class QueryFilesInUseUpdateThread : public Thread
@@ -165,7 +168,7 @@ public:
 
     virtual int run()
     {
-        filesInUse.reload(0);
+        filesInUse.init();
         return 0;
     }
     virtual void start()

@@ -386,17 +386,16 @@ void QueryFilesInUse::loadTargets(IPropertyTree *t, unsigned flags)
     }
 }
 
-IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target, const char *lfn)
+IPropertyTreeIterator *QueryFilesInUse::findQueriesUsingFile(const char *target, const char *lfn, StringAttr &pmid)
 {
-    checkDirtyReload();
-
-    CriticalBlock b(crit);
-
     if (!target || !*target || !lfn || !*lfn)
         return NULL;
-    IPropertyTree *targetTree = tree->queryPropTree(target);
+
+    Owned<IPropertyTree> t = getTree();
+    IPropertyTree *targetTree = t->queryPropTree(target);
     if (!targetTree)
         return NULL;
+    pmid.set(targetTree->queryProp("@pmid"));
 
     VStringBuffer xpath("Query[File/@lfn='%s']", lfn);
     return targetTree->getElements(xpath);
@@ -1343,11 +1342,11 @@ bool CWsWorkunitsEx::onWUListQueriesUsingFile(IEspContext &context, IEspWUListQu
         target = targets.item(i);
         Owned<IEspTargetQueriesUsingFile> respTarget = createTargetQueriesUsingFile();
         respTarget->setTarget(target);
-        const char *pmid = filesInUse.getPackageMap(target);
-        if (pmid && *pmid)
-            respTarget->setPackageMap(pmid);
 
-        Owned<IPropertyTreeIterator> queries = filesInUse.findQueriesUsingFile(target, lfn);
+        StringAttr pmid;
+        Owned<IPropertyTreeIterator> queries = filesInUse.findQueriesUsingFile(target, lfn, pmid);
+        if (!pmid.isEmpty())
+            respTarget->setPackageMap(pmid);
         if (queries)
         {
             IArrayOf<IEspQueryUsingFile> respQueries;
