@@ -1444,6 +1444,28 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
     string QueryId;
 };
 
+ESPrequest [nil_remove] WUCopyQuerySetRequest
+{
+    string Source;
+    string Target;
+    bool ActiveOnly(true);
+    bool CloneActiveState(true);
+    bool AllowForeignFiles(true);
+
+    string DfsServer;
+    bool DontCopyFiles(false);
+    bool OverwriteDfs(false);
+    string SourceProcess;
+
+    bool NoReload(0);
+};
+
+ESPresponse [exceptions_inline] WUCopyQuerySetResponse
+{
+    ESParray<string, QueryId> CopiedQueries;
+    ESParray<string, QueryId> ExistingQueries;
+};
+
 ESPrequest [nil_remove] WUGetZAPInfoRequest
 {
     string WUID;
@@ -1541,6 +1563,7 @@ ESPservice [
     ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
     ESPmethod WUQuerysetCopyQuery(WUQuerySetCopyQueryRequest, WUQuerySetCopyQueryResponse);
+    ESPmethod WUCopyQuerySet(WUCopyQuerySetRequest, WUCopyQuerySetResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
     ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
