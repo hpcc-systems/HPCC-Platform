@@ -338,7 +338,7 @@ define([
                     QuerySetId:{
                         width: 140,
                         label: this.i18n.Target,
-                        sortable: false
+                        sortable: true
                     },
                     Wuid: {
                         width: 180,
