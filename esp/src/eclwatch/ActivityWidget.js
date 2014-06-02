@@ -296,7 +296,9 @@ define([
                         label: this.i18n.Graph, width: 90, sortable: true,
                         formatter: function (_gid, row) {
                             if (context.activity.isInstanceOfWorkunit(row)) {
-                                return "<a href='#' class='" + context.id + "GraphClick'>" + row.GraphName + "-" + row.GID + "</a>";
+                                if (row.GraphName) {
+                                    return "<a href='#' class='" + context.id + "GraphClick'>" + row.GraphName + "-" + row.GID + "</a>";
+                                }
                             }
                             return "";
                         }

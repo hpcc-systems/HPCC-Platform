@@ -47,10 +47,10 @@ static ISDSManager *SDSManager=NULL;
 
 static CriticalSection SDScrit;
 
-#define CHECK_ORPHANED(XSTR)                                                                                        \
-    if (orphaned)                                                                                                   \
+#define CHECK_CONNECTED(XSTR)                                                                                        \
+    if (!connected)                                                                                                   \
     {                                                                                                               \
-        LOG(MCerror, unknownJob, XSTR": Orphaned connection (xpath=%s, sessionId=%"I64F"d)", xpath.get(), sessionId);       \
+        LOG(MCerror, unknownJob, XSTR": Closed connection (xpath=%s, sessionId=%"I64F"d)", xpath.get(), sessionId);       \
         return;                                                                                                     \
     }
 
@@ -168,7 +168,6 @@ CRemoteConnection::CRemoteConnection(ISDSConnectionManager &manager, ConnectionI
     lazyFetch = true;
     stateChanges = true;
     connected = true;
-    orphaned = false;
     serverIterAvailable = querySDS().queryProperties().getPropBool("Client/@serverIterAvailable");
     serverIter =  querySDS().queryProperties().getPropBool("Client/@serverIter");
     useAppendOpt = querySDS().queryProperties().getPropBool("Client/@useAppendOpt");
@@ -195,20 +194,14 @@ void CRemoteConnection::getDetails(MemoryBuffer &mb)
 // IRemoteConnection impl.
 void CRemoteConnection::changeMode(unsigned mode, unsigned timeout, bool suppressReloads)
 {
-    if (orphaned)
-    {
-        LOG(MCerror, unknownJob, "changeMode: Orphaned connection (xpath=%s, sessionId=%"I64F"d)", xpath.get(), sessionId);
-        throw MakeSDSException(SDSExcpt_OrphanedNode, "%s", queryXPath());
-    }
-    assertex(connected);
+    CHECK_CONNECTED("changeMode");
     manager.changeMode(*this, mode, timeout, suppressReloads);
 }
 
 void CRemoteConnection::rollback()
 {
     CConnectionLock b(*this);
-    CHECK_ORPHANED("rollback");
-    assertex(connected);
+    CHECK_CONNECTED("rollback");
     CDisableFetchChangeBlock block(*this);
     if (root->queryState())
         reload(); // all
@@ -274,8 +267,7 @@ void CRemoteConnection::_rollbackChildren(IPropertyTree *_parent, bool force)
 void CRemoteConnection::rollbackChildren(IPropertyTree *parent, bool force)
 {
     CConnectionLock b(*this);
-    CHECK_ORPHANED("rollbackChildren");
-    assertex(connected);
+    CHECK_CONNECTED("rollbackChildren");
     CDisableFetchChangeBlock block(*this);
 
     _rollbackChildren(parent, force);
@@ -284,8 +276,7 @@ void CRemoteConnection::rollbackChildren(IPropertyTree *parent, bool force)
 void CRemoteConnection::rollbackChildren(const char *_xpath, bool force)
 {
     CConnectionLock b(*this);
-    CHECK_ORPHANED("rollbackChildren");
-    assertex(connected);
+    CHECK_CONNECTED("rollbackChildren");
     CDisableFetchChangeBlock block(*this);
 
     Owned<IPropertyTreeIterator> iter = root->getElements(_xpath);
@@ -296,8 +287,7 @@ void CRemoteConnection::rollbackChildren(const char *_xpath, bool force)
 void CRemoteConnection::reload(const char *_xpath)
 {
     CConnectionLock b(*this);
-    CHECK_ORPHANED("close");
-    assertex(connected);
+    CHECK_CONNECTED("close");
     CDisableFetchChangeBlock block(*this);
     // NB: any linked client trees will still be active.
     if (_xpath == NULL || '\0' == *_xpath)
@@ -350,17 +340,15 @@ void CRemoteConnection::reload(const char *_xpath)
 void CRemoteConnection::commit()
 {
     CConnectionLock b(*this);
-    CHECK_ORPHANED("commit");
-    assertex(connected);
+    CHECK_CONNECTED("commit");
     manager.commit(*this, NULL);
 }
 
 void CRemoteConnection::close(bool deleteRoot)
 {
     CConnectionLock b(*this);
-    CHECK_ORPHANED("close");
-    if (connected)
-        manager.commit(*this, &deleteRoot);
+    CHECK_CONNECTED("close");
+    manager.commit(*this, &deleteRoot);
     connected=false;
 }
 
@@ -1136,7 +1124,7 @@ CClientSDSManager::~CClientSDSManager()
     ForEach(iter)
     {
         CRemoteConnection &conn = (CRemoteConnection &) iter.query();
-        conn.setOrphaned();
+        conn.setConnected(false);
     }
     ::Release(properties);
 }
