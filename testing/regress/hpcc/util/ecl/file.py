@@ -75,9 +75,7 @@ class ECLFile:
                 match = re.match(testSpec,  baseEcl)
                 if match:
                     optXs = ("-X"+val.replace(',',  ',-X')).split(',')
-                    for optX in optXs:
-                        [key,  val] = optX.split('=')
-                        self.optXHash[key] = val
+                    self.processKeyValPairs(optXs,  self.optXHash)
                 pass
         except AttributeError:
             # It seems there is no Params array in the config file
@@ -85,17 +83,46 @@ class ECLFile:
 
         # Process -X CLI parameters
         if args.X != 'None':
+            args.X[0]=self.removeQuote(args.X[0])
             optXs = ("-X"+args.X[0].replace(',',  ',-X')).split(',')
-            for optX in optXs:
-                [key,  val] = optX.split('=')
-                self.optXHash[key] = val
+            self.processKeyValPairs(optXs,  self.optXHash)
             pass
 
-        # Merge all parameters into a string array
-        for key in self.optXHash:
-            self.optX.append(key+'='+self.optXHash[key].replace('\'', ''))
+        self.mergeHashToStrArray(self.optXHash,  self.optX)
         pass
 
+        self.optF =[]
+        self.optFHash={}
+        #process -f CLI parameters
+        if args.f != 'None':
+            args.f[0]=self.removeQuote(args.f[0])
+            optFs = ("-f"+args.f[0].replace(',',  ',-f')).split(',')
+            self.processKeyValPairs(optFs,  self.optFHash)
+            pass
+
+        self.mergeHashToStrArray(self.optFHash,  self.optF)
+        pass
+
+    def processKeyValPairs(self,  optArr,  optHash):
+        for optStr in optArr:
+            [key,  val] = optStr.split('=')
+            key = key.strip().replace(' ', '')  # strip spaces around and inside the key
+            val = val.strip()                               # strip spaces around the val
+            if ' ' in val:
+                val = '"' + val + '"'
+            optHash[key] = val
+
+    def mergeHashToStrArray(self, optHash,  strArray):
+        # Merge all parameters into a string array
+        for key in optHash:
+            strArray.append(key+'='+optHash[key])
+
+    def removeQuote(self, str):
+        if str.startswith('\'') and str.endswith('\''):
+            str=str.strip('\'')
+        elif str.startswith('"') and str.endswith('"'):
+            str=str.strip('"')
+        return str
 
     def getExpected(self):
         path = os.path.join(self.dir_ec, self.cluster)
@@ -298,3 +325,6 @@ class ECLFile:
 
     def getStoredInputParameters(self):
         return self.optX
+
+    def getFParameters(self):
+        return self.optF
