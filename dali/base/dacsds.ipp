@@ -86,8 +86,13 @@ public:
     {
         if (connected)
         {
-            bool deleteRoot = false;
-            manager.commit(*this, &deleteRoot);
+            if (orphaned)
+                WARNLOG("Destroying connection to xpath='%s', after SDS manager has been destroyed", xpath.get());
+            else
+            {
+                bool deleteRoot = false;
+                manager.commit(*this, &deleteRoot);
+            }
         }
         root.clear();
     }
