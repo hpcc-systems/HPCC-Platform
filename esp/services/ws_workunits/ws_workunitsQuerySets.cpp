@@ -67,6 +67,8 @@ IClientWUQuerySetDetailsResponse *fetchQueryDetails(IEspContext &context, IClien
         VStringBuffer url("http://%s:%d/WsWorkunits", host.str(), port);
         ws.setown(createWsWorkunitsClient());
         ws->addServiceUrl(url.str());
+        if (context.queryUserId() && *context.queryUserId())
+            ws->setUsernameToken(context.queryUserId(), context.queryPassword(), NULL);
     }
     //using existing WUQuerysetDetails rather than extending WUQueryDetails, to support copying query meta data from prior releases
     Owned<IClientWUQuerySetDetailsRequest> reqQueryInfo = ws->createWUQuerysetDetailsRequest();
