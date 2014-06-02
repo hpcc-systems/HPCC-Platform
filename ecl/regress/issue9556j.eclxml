@@ -15,15 +15,14 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
- <OnWarning value="2131=error"/>
+ <OnWarning value="2121=error"/>
  <Query>
 //Command line maps it to an error, but #ONWARNING maps it to information
 //but local onwarning maps it back to an error!
-#ONWARNING(2131, LOG);
-idRec := { unsigned id; };
-inRec := { unsigned id, dataset(idRec) ids; };
+#ONWARNING(2121, LOG);
+inRec := { string20 id};
 d := DATASET('in', inRec, thor);
-ids := SORT(d, id).ids : onwarning(2131, error);
-output(ids);
+s := SORT(d, id[18..30]) : onwarning(2121, error);
+output(s);
  </Query>
 </Archive>

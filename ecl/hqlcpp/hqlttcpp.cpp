@@ -9006,47 +9006,6 @@ HqlScopeTagger::HqlScopeTagger(IErrorReceiver & _errors, ErrorSeverityMapper & _
 }
 
 
-bool HqlScopeTagger::isValidNormalizeSelector(IHqlExpression * expr)
-{
-    loop
-    {
-        switch (expr->getOperator())
-        {
-        case no_filter:
-            break;
-        case no_usertable:
-            if (isAggregateDataset(expr))
-                return false;
-            return true;
-        case no_hqlproject:
-            if (isCountProject(expr))
-                return false;
-            return true;
-        case no_select:
-            {
-                IHqlExpression * ds = expr->queryChild(0);
-                if (isDatasetActive(ds))
-                    return true;
-
-                //Not really sure what the following should do.  Avoid a.b.c[1].d.e
-                if (ds->isDatarow() && (ds->getOperator() != no_select))
-                    return false;
-                break;
-            }
-        case no_table:
-            return (queryTableMode(expr) == no_flat);
-        case no_keyindex:
-        case no_newkeyindex:
-        case no_rows:
-            return true;
-        default:
-            return false;
-        }
-        expr = expr->queryChild(0);
-    }
-}
-
-
 static const char * getECL(IHqlExpression * expr, StringBuffer & s)
 {
     toUserECL(s, expr, false);
@@ -9128,16 +9087,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
             VStringBuffer msg("dictionary %s must be explicitly NORMALIZED", getECL(expr, exprText));
             reportError(CategoryError, msg);
         }
-        else if (expr->isDataset())
-        {
-            if (!isValidNormalizeSelector(cursor))
-            {
-                StringBuffer exprText;
-                VStringBuffer msg("dataset %s may not be supported without using NORMALIZE", getECL(expr, exprText));
-                reportError(CategoryUnexpected, msg);
-            }
-        }
-        else
+        else if (!expr->isDataset())
         {
             if (!isDatasetARow(ds))
                 reportSelectorError(ds, expr);
