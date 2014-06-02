@@ -387,14 +387,14 @@ static void throwHeapExhausted(unsigned pages)
 {
     VStringBuffer msg("Memory pool exhausted: pool (%u pages) exhausted, requested %u", heapTotalPages, pages);
     DBGLOG("%s", msg.str());
-    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "%s", msg.str());
+    throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
 
 static void throwHeapExhausted(unsigned newPages, unsigned oldPages)
 {
     VStringBuffer msg("Memory pool exhausted: pool (%u pages) exhausted, requested %u, had %u", heapTotalPages, newPages, oldPages);
     DBGLOG("%s", msg.str());
-    throw MakeStringException(ROXIEMM_MEMORY_POOL_EXHAUSTED, "%s", msg.str());
+    throw MakeStringExceptionDirect(ROXIEMM_MEMORY_POOL_EXHAUSTED, msg.str());
 }
 
 static void *suballoc_aligned(size32_t pages, bool returnNullWhenExhausted)
