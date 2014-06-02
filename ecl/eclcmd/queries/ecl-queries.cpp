@@ -554,7 +554,7 @@ public:
         req->setSourceProcess(optSourceProcess);
         req->setCloneActiveState(optCloneActiveState);
         req->setOverwriteDfs(optOverwrite);
-        req->setDontCopyFiles(optDontCopyFiles);
+        req->setCopyFiles(!optDontCopyFiles);
         req->setAllowForeignFiles(optAllowForeign);
 
         Owned<IClientWUCopyQuerySetResponse> resp = client->WUCopyQuerySet(req);

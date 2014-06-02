@@ -1453,11 +1453,9 @@ ESPrequest [nil_remove] WUCopyQuerySetRequest
     bool AllowForeignFiles(true);
 
     string DfsServer;
-    bool DontCopyFiles(false);
+    bool CopyFiles(true);
     bool OverwriteDfs(false);
     string SourceProcess;
-
-    bool NoReload(0);
 };
 
 ESPresponse [exceptions_inline] WUCopyQuerySetResponse
