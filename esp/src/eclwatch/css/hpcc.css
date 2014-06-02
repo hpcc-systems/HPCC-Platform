@@ -142,6 +142,7 @@ hr.dashedLine {
 
 .claro .glow :hover{
     background-color:rgb(118, 157, 192);
+    border-radius: 4px;
     cursor: pointer;
 }
 
@@ -311,7 +312,7 @@ hr.dashedLine {
 
 .iconLogo{
     background-image: url("../img/hpcc_systems_logo.png");
-    width: 180px;
+    width: 212px;
     height: 32px;
     cursor: pointer;
 }
