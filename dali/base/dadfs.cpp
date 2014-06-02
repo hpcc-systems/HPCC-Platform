@@ -1390,7 +1390,7 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
         {
             HTMapping *match = subFilesByName.find(subFile);
             if (match)
-                return &match->query();
+                return true;
             else if (sub)
             {
                 SuperHashIteratorOf<HTMapping> iter(subFilesByName);
