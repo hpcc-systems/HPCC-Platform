@@ -1266,7 +1266,8 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     if (lfn && *lfn)
     {
         queriesUsingFileMap.setown(new MapStringTo<bool>());
-        Owned<IPropertyTreeIterator> queriesUsingFile = filesInUse.findQueriesUsingFile(clusterReq, lfn);
+        StringAttr dummy;
+        Owned<IPropertyTreeIterator> queriesUsingFile = filesInUse.findQueriesUsingFile(clusterReq, lfn, dummy);
         ForEach (*queriesUsingFile)
         {
             IPropertyTree &queryUsingFile = queriesUsingFile->query();
