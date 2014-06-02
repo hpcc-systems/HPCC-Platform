@@ -12898,7 +12898,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
 
     if (options.optimizeNestedConditional)
     {
-        cycle_t time = msTick();
+        unsigned time = msTick();
         optimizeNestedConditional(curWorkflow.queryExprs());
         updateTimer("workunit;optimize nested conditional", msTick()-time);
         traceExpressions("nested", curWorkflow);
@@ -12931,7 +12931,7 @@ void HqlCppTranslator::transformWorkflowItem(WorkflowItem & curWorkflow)
 
     if (options.optimizeGlobalProjects)
     {
-        cycle_t time = msTick();
+        unsigned time = msTick();
         insertImplicitProjects(*this, curWorkflow.queryExprs());
         updateTimer("workunit;global implicit projects", msTick()-time);
         traceExpressions("implicit", curWorkflow);
