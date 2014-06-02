@@ -1374,6 +1374,27 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
             translator.WARNINGAT(CategoryUnexpected, expr, HQLERR_ScalarOutputWithinApply);
         }
         break;
+    case no_parallel:
+    case no_sequential:
+    case no_orderedactionlist:
+        {
+            HqlExprArray args;
+            ForEachChild(i, expr)
+            {
+                OwnedHqlExpr next = transform(expr->queryChild(i));
+                if (!next->isAction())
+                {
+                    if (!next->isConstant())
+                        next.setown(createValue(no_evaluate_stmt, makeVoidType(), next.getClear()));
+                    else
+                        next.clear();
+                }
+
+                if (next)
+                    args.append(*next.getClear());
+            }
+            return expr->clone(args);
+        }
     }
     Owned<IHqlExpression> transformed = NewHqlTransformer::createTransformed(expr);
     return attachSequenceNumber(transformed.get());
