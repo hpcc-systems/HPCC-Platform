@@ -30,17 +30,11 @@
 bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
 {
     bool useCompression = false;
-    int maxBufferSize = 0;
     try
     {
         Owned<IClientWUCheckFeaturesRequest> req = client->createWUCheckFeaturesRequest();
         Owned<IClientWUCheckFeaturesResponse> resp = client->WUCheckFeatures(req);
         useCompression = resp->getDeployment().getUseCompression();
-        int maxEntity = resp->getMaxRequestEntityLength();
-        if (maxEntity > 1000)
-        {
-            maxBufferSize = ((maxEntity - 999) / 4) * 3; //account for soap, other parameters, and base64 encoding (n / 4 * 3)
-        }
     }
     catch(IException *E) //most likely an older ESP
     {
@@ -87,12 +81,6 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         default:
             fprintf(stderr, "Cannot deploy %s\n", cmd.optObj.queryTypeName());
             return false;
-    }
-
-    if (maxBufferSize && cmd.optObj.mb.length() > maxBufferSize)
-    {
-        fprintf(stderr, "\nError %s is larger than maxRequestEntityLength configured for ESP allows\n", objType.str()); //objType already notes if its compressed
-        return false;
     }
 
     if (name && *name)

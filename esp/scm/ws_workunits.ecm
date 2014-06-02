@@ -1504,7 +1504,7 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
     int BuildVersionMajor;
     int BuildVersionMinor;
     int BuildVersionPoint;
-    int maxRequestEntityLength;
+    unsigned maxRequestEntityLength;
     ESPStruct DeploymentFeatures Deployment;
 };
 
