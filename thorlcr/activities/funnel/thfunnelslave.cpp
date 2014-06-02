@@ -73,6 +73,7 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
 // IThreaded impl.
         virtual void main()
         {
+            bool started = false;
             try
             {
                 { 
@@ -84,36 +85,36 @@ class CParallelFunnel : public CSimpleInterface, implements IRowStream
                     IThorDataLink *_input = QUERYINTERFACE(input.get(), IThorDataLink);
                     _input->start();
                 }
-            }
-            catch (IException *e)
-            {
-                ActPrintLog(&funnel.activity.queryContainer(), e, "Error starting");
-                funnel.fireException(e);
-                e->Release();
-                return;
-            }
-
-            try
-            {
+                started = true;
                 while (!stopping)
                 {
                     OwnedConstThorRow row = input->ungroupedNextRow();
                     if (!row) break;
 
                     {
-                        CriticalBlock b(stopCrit);          
+                        CriticalBlock b(stopCrit);
                         if (stopping) break;
                     }
                     CriticalBlock b(funnel.crit); // will mean first 'push' could block on fullSem, others on this crit.
                     funnel.push(row.getClear());
                     ++readThisInput;
                 }
-                funnel.informEos(inputIndex);
+            }
+            catch (IException *e)
+            {
+                funnel.fireException(e);
+                e->Release();
+            }
+            // Informing EOS before stopping, may allow upstream activities to continue, if input slow to stop
+            funnel.informEos(inputIndex);
+            if (!started)
+                return;
+            try
+            {
                 input->stop();
             }
             catch (IException *e)
             {
-                funnel.informEos(inputIndex);
                 funnel.fireException(e);
                 e->Release();
             }
