@@ -585,8 +585,8 @@ void DllServer::doRegisterDll(const char * name, const char * kind, const char *
         xpath.append("/GeneratedDlls/");
         getMangledTag(xpath, name);
 
-        conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_ADD, CONNECTION_TIMEOUT));
-        assertex(conn); // RTM_CREATE_ADD will create GeneratedDlls parent node if it doesn't exist.
+        conn.setown(querySDS().connect(xpath, myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, CONNECTION_TIMEOUT));
+        assertex(conn); // RTM_CREATE_QUERY will create GeneratedDlls parent node if it doesn't exist.
 
         IPropertyTree * entry = conn->queryRoot();
         entry->setProp("@name", name);
