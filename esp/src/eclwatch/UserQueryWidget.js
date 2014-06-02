@@ -137,6 +137,7 @@ define([
                     request: request
                 }).then(function (response) {
                     context.refreshGroupsGrid(true);
+                    return response;
                 });
             }
         },
@@ -155,7 +156,11 @@ define([
                 WsAccess.GroupAdd({
                     request: request
                 }).then(function (response) {
-                    context.refreshGroupsGrid();
+                    if (lang.exists("GroupAddResponse.retcode", response) && response.GroupAddResponse.retcode === 0) {
+                        context.refreshGroupsGrid();
+                        context._onGroupsRowDblClick(response.GroupAddResponse.groupname);
+                    }
+                    return response;
                 });
                 registry.byId(this.id + "AddGroupsDropDown").closeDropDown();
             }
@@ -222,7 +227,11 @@ define([
                 WsAccess.AddUser({
                     request: request
                 }).then(function (response) {
-                    context.refreshUsersGrid();
+                    if (lang.exists("AddUserResponse.retcode", response) && response.AddUserResponse.retcode === 0) {
+                        context.refreshUsersGrid();
+                        context._onUsersRowDblClick(request.username);
+                    }
+                    return response;
                 });
                 registry.byId(this.id + "AddUsersDropDown").closeDropDown();
             }
@@ -242,6 +251,7 @@ define([
                     request: request
                 }).then(function (response) {
                     context.refreshPermissionsGrid();
+                    return response;
                 });
                 registry.byId(this.id + "AddPermissionsDropDown").closeDropDown();
             }
@@ -304,6 +314,7 @@ define([
                         label: " "
                     }, "checkbox"),
                     name: {
+                        sortable: false,
                         label: this.i18n.GroupName
                     }
                 }
@@ -390,13 +401,16 @@ define([
                     },"checkbox"),
                     username: {
                         width: 180,
+                        sortable: false,
                         label: this.i18n.Username
                     },
                     fullname: {
+                        sortable: false,
                         label: this.i18n.FullName
                     },
                     passwordexpiration: {
                         width: 180,
+                        sortable: false,
                         label: this.i18n.PasswordExpiration
                     }
                 }
@@ -507,9 +521,11 @@ define([
                     }, "checkbox"),
                     DisplayName: tree({
                         width: 360,
+                        sortable: false,
                         label: this.i18n.Name
                     }),
                     basedn: {
+                        sortable: false,
                         label: "basedn"
                     }
                 }

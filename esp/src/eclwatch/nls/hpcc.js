@@ -370,6 +370,7 @@ define({root:
     Scope: "Scope",
     SearchResults: "Search Results",
     SecondsRemaining: "Seconds Remaining",
+    Security: "Security",
     SelectPackageFile: "Select Package File",
     Separators: "Separators",
     SetBanner: "Set Banner",

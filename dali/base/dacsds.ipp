@@ -101,7 +101,6 @@ public:
     inline ISDSConnectionManager &queryManager() { return manager; }
     inline bool queryConnected() { return connected; }
     inline void setConnected(bool _connected) { connected = _connected; }
-    inline void setOrphaned() { orphaned = true; }
     inline bool queryServerIter() const { return serverIter; }
     inline bool queryServerIterAvailable() const { return serverIterAvailable; }
     inline bool queryServerGetIdsAvailable() const { return serverGetIdsAvailable; }
@@ -134,7 +133,7 @@ private:
     unsigned hash;
     bool lazyFetch;
     bool stateChanges;      // =false when client applying server received changes
-    bool connected, orphaned, serverIterAvailable, serverIter, useAppendOpt, serverGetIdsAvailable;
+    bool connected, serverIterAvailable, serverIter, useAppendOpt, serverGetIdsAvailable;
 
 friend class CConnectionLock;
 friend class CSetServerIterBlock;
