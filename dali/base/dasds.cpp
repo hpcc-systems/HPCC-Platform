@@ -2857,7 +2857,7 @@ public:
 
     void _notify(CServerRemoteTree *node, PDState state)
     {
-        MemoryBuffer sendValueNotifyData, simpleNotifyData;
+        MemoryBuffer sendValueNotifyData;
         CNodeSubscriberContainerList *subscriberList = subscriberListByNode.find(node);
         assertex(subscriberList);
         ICopyArrayOf<CNodeSubscriberContainer> &subscribers = subscriberList->querySubscribers();
@@ -2880,10 +2880,10 @@ public:
             {
                 if (0 != lastSendValue) // overkill unless many subscribers to same node
                 {
-                    buildNotifyData(simpleNotifyData.clear(), state, NULL, NULL);
+                    buildNotifyData(sendValueNotifyData.clear(), state, NULL, NULL);
                     lastSendValue = 0;
                 }
-                SDSManager->handleNotify(subscriber, simpleNotifyData);
+                SDSManager->handleNotify(subscriber, sendValueNotifyData);
             }
         }
     }
