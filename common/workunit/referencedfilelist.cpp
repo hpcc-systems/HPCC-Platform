@@ -289,7 +289,9 @@ void ReferencedFile::processRemoteFileTree(IPropertyTree *tree, const char *srcC
 
 void ReferencedFile::resolveLocal(const char *dstCluster, const char *srcCluster, IUserDescriptor *user, StringArray *subfiles)
 {
-    if (noDfsResolution || (flags & RefFileInPackage))
+    if (flags & RefFileInPackage)
+        return;
+    if (noDfsResolution)
     {
         flags |= RefFileNotFound;
         return;
@@ -335,7 +337,9 @@ void ReferencedFile::resolveRemote(IUserDescriptor *user, INode *remote, const c
 {
     if ((flags & RefFileForeign) && !resolveForeign)
         return;
-    if (noDfsResolution || (flags & RefFileInPackage))
+    if (flags & RefFileInPackage)
+        return;
+    if (noDfsResolution)
     {
         flags |= RefFileNotFound;
         return;
