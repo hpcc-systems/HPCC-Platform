@@ -62,12 +62,22 @@ public:
         OwnedRoxieString fname(helper->getFileName());
         dlfn.set(fname);
         isLocal = 0 != (TIWlocal & helper->getFlags());
-        unsigned minSize = helper->queryDiskRecordSize()->getMinRecordSize();
+        IOutputMetaData * diskSize = helper->queryDiskRecordSize();
+        unsigned minSize = diskSize->getMinRecordSize();
         if (minSize > KEYBUILD_MAXLENGTH)
             throw MakeActivityException(this, 0, "Index minimum record length (%d) exceeds %d internal limit", minSize, KEYBUILD_MAXLENGTH);
-        unsigned maxSize = helper->queryDiskRecordSize()->getRecordSize(NULL);
+        unsigned maxSize;
+        if (diskSize->isVariableSize())
+        {
+            if (TIWmaxlength & helper->getFlags())
+                maxSize = helper->getMaxKeySize();
+            else
+                maxSize = KEYBUILD_MAXLENGTH; //Current default behaviour, could be improved in the future
+        }
+        else
+            maxSize = diskSize->getFixedSize();
         if (maxSize > KEYBUILD_MAXLENGTH)
-            throw MakeActivityException(this, 0, "Index maximum record length (%d) exceeds %d internal limit. Minimum size = %d, try setting index MAXLENGTH", maxSize, KEYBUILD_MAXLENGTH, minSize);
+            throw MakeActivityException(this, 0, "Index maximum record length (%d) exceeds %d internal limit. Maximum size = %d, try setting index MAXLENGTH", maxSize, KEYBUILD_MAXLENGTH, minSize);
 
         singlePartKey = 0 != (helper->getFlags() & TIWsmall) || dlfn.isExternal();
         clusters.kill();
