@@ -166,7 +166,7 @@
             <xs:attribute name="systemUser" type="xs:string" use="optional">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>The username under which eclserver should log into ldap (ActiveDirectory).</tooltip>
+                        <tooltip>An LDAP administrator account id to be used by HPCC to create and manage HPCC-specific LDAP branches.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
@@ -181,7 +181,7 @@
             <xs:attribute name="systemCommonName" type="xs:string" use="optional">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>The common name ecl server should use to log into the ldap (ActiveDirectory) server.</tooltip>
+                        <tooltip>Required if systemUser is specified. The LDAP Common Name (cn) for the systemUser account as specified on the LDAP server.</tooltip>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
