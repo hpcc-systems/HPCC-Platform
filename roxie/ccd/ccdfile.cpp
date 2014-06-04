@@ -568,8 +568,6 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
     bool aborting;
     bool closing;
     bool closePending[2];
-    bool needToDeleteFile;
-    StringBuffer currentTodoFile;
     StringAttrMapping fileErrorList;
     Semaphore bctStarted;
     Semaphore hctStarted;
@@ -824,31 +822,23 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                 deleteTempFiles(targetFilename);
                 throw;
             }
-            if (needToDeleteFile)
+            if (!hardLinkCreated && !useTreeCopy)  // for hardlinks / treeCopy - no rename needed
             {
-                DBGLOG("%s of data file %s stopped since query has been deleted", msg, targetFilename);
-                destFile->remove();
-            }
-            else 
-            {
-                if (!hardLinkCreated && !useTreeCopy)  // for hardlinks / treeCopy - no rename needed
+                try
                 {
-                    try
-                    {
-                        destFile->rename(targetFilename);
-                    }
-                    catch(IException *)
-                    {
-                        f->setCopying(false);
-                        deleteTempFiles(targetFilename);
-                        throw;
-                    }
-
-                    DBGLOG("%s to %s complete", msg, targetFilename);
+                    destFile->rename(targetFilename);
                 }
-                
-                f->copyComplete();
+                catch(IException *)
+                {
+                    f->setCopying(false);
+                    deleteTempFiles(targetFilename);
+                    throw;
+                }
+
+                DBGLOG("%s to %s complete", msg, targetFilename);
             }
+
+            f->copyComplete();
         }
         deleteTempFiles(targetFilename);
         return fileCopied;
@@ -892,7 +882,6 @@ public:
         closing = false;
         closePending[false] = false;
         closePending[true] = false;
-        needToDeleteFile = false;
         started = false;
     }
 
@@ -955,11 +944,6 @@ public:
 
             loop
             {
-                {
-                    CriticalBlock b(crit);
-                    needToDeleteFile = false;
-                    currentTodoFile.clear();
-                }
                 fileCopied = false;
                 Linked<ILazyFileIO> next;
                 toCopy.wait();
@@ -973,8 +957,6 @@ public:
                         if (popped->isAlive())
                         {
                             next.set(popped);
-                            if (next)
-                                currentTodoFile.append(next->queryFilename());
                         }
                         atomic_dec(&numFilesToProcess);    // must decrement counter for SNMP accuracy
                     }
@@ -1179,7 +1161,6 @@ public:
                 {
                     if (copyResources) // MORE - should always copy peer files
                     {
-                        needToDeleteFile = false;
                         if (numParts==1 || (partNo==numParts && fileType==ROXIE_KEY))
                         {
                             ret->checkOpen();
@@ -1187,7 +1168,13 @@ public:
                             return ret.getLink();
                         }
 
-                        todo.append(*ret);
+                        // Copies are popped from end of the todo list
+                        // By putting the replicates on the front we ensure they are done after the primaries
+                        // and are therefore likely to result in local rather than remote copies.
+                        if (replicationLevel)
+                            todo.add(*ret, 0);
+                        else
+                            todo.append(*ret);
                         atomic_inc(&numFilesToProcess);  // must increment counter for SNMP accuracy
                         toCopy.signal();
 
