@@ -2617,6 +2617,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     unsigned __int64 cyclesChecked;       // When we last checked timelimit
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
     bool ignoreLeaks;
+    bool outputOOMReports;
     bool trackMemoryByActivity;
     bool minimizeFootprint;
     bool minimizeFootprintCritical;
@@ -2629,7 +2630,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks)
+    CChunkingRowManager(memsize_t _memLimit, ITimeLimiter *_tl, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, bool _ignoreLeaks, bool _outputOOMReports)
         : callbacks(this), logctx(_logctx), allocatorCache(_allocatorCache), hugeHeap(this, _logctx, _allocatorCache)
     {
         logctx.Link();
@@ -2654,6 +2655,7 @@ public:
         activeBuffs = NULL;
         dataBuffPages = 0;
         ignoreLeaks = _ignoreLeaks;
+        outputOOMReports = _outputOOMReports;
         minimizeFootprint = false;
         minimizeFootprintCritical = false;
 #ifdef _DEBUG
@@ -2708,6 +2710,15 @@ public:
             dfinger = next;
         }
         logctx.Release();
+    }
+
+    inline void doOomReport()
+    {
+        if (outputOOMReports)
+        {
+            reportMemoryUsage(false);
+            PrintStackReport();
+        }
     }
 
     virtual void reportLeaks()
@@ -2884,28 +2895,46 @@ public:
 
     virtual void *allocate(memsize_t _size, unsigned activityId)
     {
-        beforeAllocate(_size, activityId);
-        if (_size > FixedSizeHeaplet::maxHeapSize())
-            return hugeHeap.doAllocate(_size, activityId, SpillAllCost);
-        size32_t size32 = (size32_t) _size;
+        try
+        {
+            beforeAllocate(_size, activityId);
+            if (_size > FixedSizeHeaplet::maxHeapSize())
+                return hugeHeap.doAllocate(_size, activityId, SpillAllCost);
+            size32_t size32 = (size32_t) _size;
 
-        size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
-        size32_t whichHeap = ROUNDEDHEAP(rounded);
-        CFixedChunkedHeap & normalHeap = normalHeaps.item(whichHeap);
-        return normalHeap.doAllocate(activityId, SpillAllCost);
+            size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
+            size32_t whichHeap = ROUNDEDHEAP(rounded);
+            CFixedChunkedHeap & normalHeap = normalHeaps.item(whichHeap);
+            return normalHeap.doAllocate(activityId, SpillAllCost);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CChunkingRowManager::allocate(memsize_t _size, unsigned activityId)");
+            doOomReport();
+            throw;
+        }
     }
 
     virtual void *allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost)
     {
-        beforeAllocate(_size, activityId);
-        if (_size > FixedSizeHeaplet::maxHeapSize())
-            return hugeHeap.doAllocate(_size, activityId, maxSpillCost);
-        size32_t size32 = (size32_t) _size;
+        try
+        {
+            beforeAllocate(_size, activityId);
+            if (_size > FixedSizeHeaplet::maxHeapSize())
+                return hugeHeap.doAllocate(_size, activityId, maxSpillCost);
+            size32_t size32 = (size32_t) _size;
 
-        size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
-        size32_t whichHeap = ROUNDEDHEAP(rounded);
-        CFixedChunkedHeap & normalHeap = normalHeaps.item(whichHeap);
-        return normalHeap.doAllocate(activityId, maxSpillCost);
+            size32_t rounded = roundup(size32 + FixedSizeHeaplet::chunkHeaderSize);
+            size32_t whichHeap = ROUNDEDHEAP(rounded);
+            CFixedChunkedHeap & normalHeap = normalHeaps.item(whichHeap);
+            return normalHeap.doAllocate(activityId, maxSpillCost);
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "CChunkingRowManager::allocate(memsize_t _size, unsigned activityId, unsigned maxSpillCost)");
+            doOomReport();
+            throw;
+        }
     }
 
     virtual const char *cloneVString(size32_t len, const char *str)
@@ -2981,7 +3010,16 @@ public:
         if (curCapacity > FixedSizeHeaplet::maxHeapSize())
         {
             CVariableRowResizeCallback callback(capacity, ptr);
-            hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, SpillAllCost, callback);
+            try
+            {
+                hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, SpillAllCost, callback);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "CChunkingRowManager::resizeRow(memsize_t &capacity, void * & ptr, memsize_t copysize, memsize_t newsize, unsigned activityId)");
+                doOomReport();
+                throw;
+            }
             return;
         }
 
@@ -3004,7 +3042,18 @@ public:
             return true;
         }
         if (curCapacity > FixedSizeHeaplet::maxHeapSize())
-            return hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, maxSpillCost, callback);
+        {
+            try
+            {
+                return hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, maxSpillCost, callback);
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "CChunkingRowManager::resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, unsigned maxSpillCost, IRowResizeCallback & callback)");
+                doOomReport();
+                throw;
+            }
+        }
 
         void *ret = allocate(newsize, activityId, maxSpillCost);
         if (!ret)
@@ -3174,8 +3223,7 @@ public:
                             return false;
 
                         logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
-                        reportMemoryUsage(false);
-                        PrintStackReport();
+                        doOomReport();
                         throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
                     }
                 }
@@ -3497,7 +3545,10 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId, 
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
         {
             if (maxSpillCost == SpillAllCost)
+            {
+                rowManager->reportMemoryUsage(false);
                 throwHeapExhausted(numPages);
+            }
             return NULL;
         }
     }
@@ -3627,7 +3678,10 @@ bool CHugeHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcap
         if (!rowManager->releaseCallbackMemory(maxSpillCost, true))
         {
             if (maxSpillCost == SpillAllCost)
+            {
+                rowManager->reportMemoryUsage(false);
                 throwHeapExhausted(numPages);
+            }
             return false;
         }
     }
@@ -4088,9 +4142,9 @@ void DataBufferBottom::_setDestructorFlag(const void *ptr) { throwUnexpected(); 
 #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
-extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks)
+extern IRowManager *createRowManager(memsize_t memLimit, ITimeLimiter *tl, const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache, bool ignoreLeaks, bool outputOOMReports)
 {
-    return new CChunkingRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks);
+    return new CChunkingRowManager(memLimit, tl, logctx, allocatorCache, ignoreLeaks, outputOOMReports);
 }
 
 extern void setMemoryStatsInterval(unsigned secs)
