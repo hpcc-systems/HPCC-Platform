@@ -1883,7 +1883,7 @@ public:
         splitDerivedDfsLocation(dfsServer, srcCluster, dfsIP, srcPrefix, sourceProcess, sourceProcess, NULL, NULL);
         wufiles.setown(createReferencedFileList(context->queryUserId(), context->queryPassword(), allowForeign));
         Owned<IHpccPackageSet> ps = createPackageSet(destProcess);
-        pm.setown(ps->queryActiveMap(target));
+        pm.set(ps->queryActiveMap(target));
         process.set(destProcess);
     }
 
