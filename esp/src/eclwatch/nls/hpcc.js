@@ -483,6 +483,7 @@ define({root:
     undefined: "undefined",
     Unknown: "Unknown",
     Unprotect: "Unprotect",
+    UnsupportedIE9FF: "Unsupported (IE <= 9, FireFox)",
     Unsuspend: "Unsuspend",
     Unsuspended: "Unsuspended",
     Up: "Up",
