@@ -198,6 +198,8 @@ void EclCMDShell::usage()
            "   activate    activate a published query\n"
            "   deactivate  deactivate the given query alias name\n"
            "   queries     show or manipulate queries and querysets\n"
+           "   packagemap  manage HPCC packagemaps\n"
+           "   bundle      manage bundles of ECL\n"
            "   roxie       commands specific to roxie clusters\n"
            "   abort       abort workunit(s) for WUID or job name\n"
            "   status      show workunit(s) current status for WUID or job name\n"
