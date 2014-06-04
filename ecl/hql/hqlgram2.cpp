@@ -933,7 +933,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
                     HqlExprArray args;
                     unwindChildren(args, param);
                     Owned<ITypeInfo> newType = setLinkCountedAttr(param->queryType(), true);
-                    OwnedHqlExpr newParam = createParameter(param->queryId(), param->querySequenceExtra(), newType.getClear(), args);
+                    OwnedHqlExpr newParam = createParameter(param->queryId(), (unsigned)param->querySequenceExtra(), newType.getClear(), args);
                     params.replace(*newParam.getClear(), i);
                 }
             }

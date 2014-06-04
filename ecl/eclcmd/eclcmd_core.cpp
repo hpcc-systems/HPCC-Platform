@@ -19,6 +19,7 @@
 #include "jlog.hpp"
 #include "jfile.hpp"
 #include "jargv.hpp"
+#include "jflz.hpp"
 #include "build-config.h"
 
 #include "workunit.hpp"
@@ -26,26 +27,50 @@
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
 
-
-bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true)
+bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
 {
+    bool useCompression = false;
+    try
+    {
+        Owned<IClientWUCheckFeaturesRequest> req = client->createWUCheckFeaturesRequest();
+        Owned<IClientWUCheckFeaturesResponse> resp = client->WUCheckFeatures(req);
+        useCompression = resp->getDeployment().getUseCompression();
+    }
+    catch(IException *E) //most likely an older ESP
+    {
+        E->Release();
+    }
+    catch(...)
+    {
+    }
+
+    bool compressed = false;
+    if (useCompression)
+    {
+        MemoryBuffer mb;
+        fastLZCompressToBuffer(mb, cmd.optObj.mb.length(), cmd.optObj.mb.bufferBase());
+        cmd.optObj.mb.swapWith(mb);
+        compressed=true;
+    }
+
     StringBuffer s;
     if (cmd.optVerbose)
         fprintf(stdout, "\nDeploying %s\n", cmd.optObj.getDescription(s).str());
 
+    StringBuffer objType(compressed ? "compressed_" : ""); //change compressed type string so old ESPs will fail gracefully
     Owned<IClientWUDeployWorkunitRequest> req = client->createWUDeployWorkunitRequest();
     switch (cmd.optObj.type)
     {
         case eclObjArchive:
-            req->setObjType("archive");
+            req->setObjType(objType.append("archive"));
             break;
         case eclObjSharedObject:
-            req->setObjType("shared_object");
+            req->setObjType(objType.append("shared_object"));
             break;
         case eclObjSource:
         {
             if (noarchive)
-                req->setObjType("ecl_text");
+                req->setObjType(objType.append("ecl_text"));
             else
             {
                 fprintf(stderr, "Failed to create archive from ECL Text\n");
@@ -163,7 +188,7 @@ public:
     }
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         return doDeploy(*this, client, optTargetCluster.get(), optName.get(), NULL, NULL, optNoArchive) ? 0 : 1;
     }
     virtual void usage()
@@ -300,7 +325,7 @@ public:
     }
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         StringBuffer wuid;
         if (optObj.type==eclObjWuid)
             wuid.set(optObj.value.get());
@@ -475,7 +500,7 @@ public:
     }
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWsWorkunits> client = createCmdClientExt(WsWorkunits, *this, "?upload_"); //upload_ disables maxRequestEntityLength
         Owned<IClientWURunRequest> req = client->createWURunRequest();
         req->setCloneWorkunit(true);
         req->setNoRootTag(optNoRoot);

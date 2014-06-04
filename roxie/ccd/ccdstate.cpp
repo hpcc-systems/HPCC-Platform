@@ -1710,7 +1710,10 @@ public:
     CRoxiePackageSetManager(const IQueryDll *_standAloneDll) :
         autoReloadThread(*this), standAloneDll(_standAloneDll)
     {
-        daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
+        if (topology && topology->getPropBool("@lockDali", false))
+            daliHelper.setown(connectToDali());
+        else
+            daliHelper.setown(connectToDali(ROXIE_DALI_CONNECT_TIMEOUT));
         atomic_set(&autoPending, 0);
         autoReloadThread.start();
         pSetsNotifier.setown(daliHelper->getPackageSetsSubscription(this));

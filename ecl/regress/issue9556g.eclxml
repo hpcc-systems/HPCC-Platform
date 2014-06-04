@@ -15,11 +15,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
- <OnWarning value="2131=error"/>
+ <OnWarning value="2121=error"/>
  <Query>
-idRec := { unsigned id; };
-inRec := { unsigned id, dataset(idRec) ids; };
+inRec := { string20 id};
 d := DATASET('in', inRec, thor);
-output(SORT(d, id).ids);
+output(SORT(d, id[18..30]));
  </Query>
 </Archive>

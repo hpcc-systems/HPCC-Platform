@@ -118,7 +118,7 @@ extern unsigned myNodeIndex;
 #define DEBUGREQUEST_TIMEOUT 5000
 #endif
 
-#define ROXIE_DALI_CONNECT_TIMEOUT 5000
+#define ROXIE_DALI_CONNECT_TIMEOUT 30000
 #define ABORT_POLL_PERIOD 5000
 
 class RemoteActivityId
