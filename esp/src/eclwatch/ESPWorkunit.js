@@ -301,7 +301,7 @@ define([
         },
         resubmit: function () {
             var context = this;
-            this._resubmit(false, false).then(function (response) {
+            this._resubmit(false, true).then(function (response) {
                 if (!lang.exists("Exceptions.Source", response)) {
                     dojo.publish("hpcc/brToaster", {
                         Severity: "Message",
@@ -312,13 +312,13 @@ define([
                 return response;
             });
         },
-        restart: function () {
+        recover: function () {
             var context = this;
-            this._resubmit(false, true).then(function (response) {
+            this._resubmit(false, false).then(function (response) {
                 if (!lang.exists("Exceptions.Source", response)) {
                     dojo.publish("hpcc/brToaster", {
                         Severity: "Message",
-                        Source: "ESPWorkunit.resubmit",
+                        Source: "ESPWorkunit.recover",
                         Exceptions: [{ Source: context.Wuid, Message: context.i18n.Restarted }]
                     });
                 }

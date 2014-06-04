@@ -333,6 +333,7 @@ define({root:
     Records: "Records",
     RecordSize: "Record Size",
     RecordStructurePresent: "Record Structure Present",
+    Recover: "Recover",
     Refresh: "Refresh",
     ReleaseNotes: "Release Notes",
     Reload: "Reload",
