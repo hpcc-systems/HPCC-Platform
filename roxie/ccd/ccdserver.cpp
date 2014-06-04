@@ -11371,14 +11371,18 @@ public:
         bool isVariable = helper.queryDiskRecordSize()->isVariableSize();
         size32_t maxDiskRecordSize;
         if (isVariable)
-            maxDiskRecordSize = 0x8000;
-        else
         {
-            maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
-            if (maxDiskRecordSize > 0x8000)
-                throw MakeStringException(99, "Index minimum record length (%d) exceeds 32k internal limit", maxDiskRecordSize);
-
+            if (helper.getFlags() & TIWmaxlength)
+                maxDiskRecordSize = helper.getMaxKeySize();
+            else
+                maxDiskRecordSize = KEYBUILD_MAXLENGTH; // Current default behaviour, could be improved in the future
         }
+        else
+            maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
+
+        if (maxDiskRecordSize > KEYBUILD_MAXLENGTH)
+            throw MakeStringException(99, "Index maximum record length (%d) exceeds 32k internal limit", maxDiskRecordSize);
+
         OwnedMalloc<char> rowBuffer(maxDiskRecordSize, true);
 
         unsigned __int64 fileSize = 0;

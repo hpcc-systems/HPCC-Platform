@@ -1009,13 +1009,18 @@ void CHThorIndexWriteActivity::execute()
 {
     size32_t maxDiskRecordSize;
     if (helper.queryDiskRecordSize()->isVariableSize())
-        maxDiskRecordSize = 0x8000;
-    else
     {
-        maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
-        if (maxDiskRecordSize > 0x8000)
-            throw MakeStringException(99, "Index minimum record length (%d) exceeds 32K internal limit", maxDiskRecordSize);
+        if (helper.getFlags() & TIWmaxlength)
+            maxDiskRecordSize = helper.getMaxKeySize();
+        else
+            maxDiskRecordSize = KEYBUILD_MAXLENGTH; // Current default behaviour, could be improved in the future
     }
+    else
+        maxDiskRecordSize = helper.queryDiskRecordSize()->getFixedSize();
+
+    if (maxDiskRecordSize > KEYBUILD_MAXLENGTH)
+        throw MakeStringException(99, "Index maximum record length (%d) exceeds 32K internal limit", maxDiskRecordSize);
+
     OwnedMalloc<char> rowBuffer(maxDiskRecordSize, true);
 
     // Loop thru the results
