@@ -123,7 +123,8 @@ class ReferencedFile : public CInterface, implements IReferencedFile
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs) : flags(_flags), pkgid(_pkgid), noDfsResolution(noDfs)
+    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs)
+    : flags(_flags), pkgid(_pkgid), noDfsResolution(noDfs)
     {
         logicalName.set(skipForeign(lfn, &daliip)).toLowerCase();
         if (daliip.length())
@@ -520,7 +521,7 @@ void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *
 
 void ReferencedFileList::addFile(const char *ln, const char *daliip, const char *srcCluster, const char *prefix)
 {
-    ensureFile(ln, 0, NULL, daliip, srcCluster, prefix);
+    ensureFile(ln, 0, NULL, false, daliip, srcCluster, prefix);
 }
 
 void ReferencedFileList::addFiles(StringArray &files)
@@ -611,7 +612,7 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
                         {
                             StringBuffer subfile;
                             ssfe->getSubFileName(count, subfile);
-                            ensureFile(subfile, RefSubFile | RefFileInPackage, pkgid, pkg->isCompulsory());
+                            ensureFile(subfile, RefSubFile | RefFileInPackage, pkgid, false);
                         }
                     }
                 }

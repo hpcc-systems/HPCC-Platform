@@ -15,13 +15,12 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
- <OnWarning value="2131=error"/>
+ <OnWarning value="2121=error"/>
  <Query>
 //Command line maps it to an error, but #ONWARNING maps it to just log the information
-#ONWARNING(2131, LOG);
-idRec := { unsigned id; };
-inRec := { unsigned id, dataset(idRec) ids; };
+#ONWARNING(2121, LOG);
+inRec := { string20 id};
 d := DATASET('in', inRec, thor);
-output(SORT(d, id).ids);
+output(SORT(d, id[18..30]));
  </Query>
 </Archive>

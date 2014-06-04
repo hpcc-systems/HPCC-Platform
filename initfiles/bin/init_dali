@@ -25,6 +25,7 @@ echo $$ > $INIT_PID_NAME
 export SENTINEL="daserver.sentinel"
 rm -f ${SENTINEL}
 
+ulimit -c unlimited
 ulimit -n 8192
 
 killed(){

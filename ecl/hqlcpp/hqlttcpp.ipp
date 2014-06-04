@@ -1044,7 +1044,6 @@ protected:
     IHqlExpression * transformSizeof(IHqlExpression * expr);
     IHqlExpression * transformWithin(IHqlExpression * dataset, IHqlExpression * scope);
 
-    bool isValidNormalizeSelector(IHqlExpression * expr);
     void reportError(WarnErrorCategory category, const char * msg);
     void reportSelectorError(IHqlExpression * selector, IHqlExpression * expr);
 

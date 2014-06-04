@@ -299,21 +299,23 @@ void outputMultiExceptions(const IMultiException &me);
 class EclCmdURL : public StringBuffer
 {
 public:
-    EclCmdURL(const char *service, const char *ip, const char *port, bool ssl)
+    EclCmdURL(const char *service, const char *ip, const char *port, bool ssl, const char *tail=NULL)
     {
         set("http");
         if (ssl)
             append('s');
         append("://").append(ip).append(':').append(port).append('/').append(service);
+        if (tail)
+            append(tail);
     }
 };
 
-template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const char *service)
+template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const char *service, const char *urlTail)
 {
     if(cmd.optServer.isEmpty())
         throw MakeStringException(-1, "Server IP not specified");
 
-    EclCmdURL url(service, cmd.optServer, cmd.optPort, cmd.optSSL);
+    EclCmdURL url(service, cmd.optServer, cmd.optPort, cmd.optSSL, urlTail);
     client->addServiceUrl(url.str());
     if (cmd.optUsername.length())
         client->setUsernameToken(cmd.optUsername, cmd.optPassword, NULL);
@@ -321,6 +323,7 @@ template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const 
     return client;
 }
 
-#define createCmdClient(SN, cmd) intClient<IClient##SN>(create##SN##Client(), cmd, #SN);
+#define createCmdClient(SN, cmd) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, NULL);
+#define createCmdClientExt(SN, cmd, urlTail) intClient<IClient##SN>(create##SN##Client(), cmd, #SN, urlTail);
 
 #endif
