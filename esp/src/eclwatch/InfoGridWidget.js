@@ -93,6 +93,7 @@ define([
                 if (this.showToolbar) {
                     if (has("ie") <= 9 || has("ff")) {
                         this.widget.Download.set("disabled", true);
+                        this.widget.Download.set("title", this.i18n.UnsupportedIE9FF);
                     }
                 }
 
