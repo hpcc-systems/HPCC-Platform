@@ -77,7 +77,7 @@ public:
         else
             maxSize = diskSize->getFixedSize();
         if (maxSize > KEYBUILD_MAXLENGTH)
-            throw MakeActivityException(this, 0, "Index maximum record length (%d) exceeds %d internal limit. Maximum size = %d, try setting index MAXLENGTH", maxSize, KEYBUILD_MAXLENGTH, minSize);
+            throw MakeActivityException(this, 0, "Index maximum record length (%d) exceeds %d internal limit. Maximum size = %d, try adjusting index MAXLENGTH", maxSize, KEYBUILD_MAXLENGTH, minSize);
 
         singlePartKey = 0 != (helper->getFlags() & TIWsmall) || dlfn.isExternal();
         clusters.kill();
