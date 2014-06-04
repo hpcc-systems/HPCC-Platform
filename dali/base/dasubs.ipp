@@ -55,6 +55,8 @@ extern da_decl void closeSubscriptionManager();
 #define SDS_PUBLISHER       2
 #define NQS_PUBLISHER       3
 #define SDSCONN_PUBLISHER   4
+#define SDSEXACT_PUBLISHER  5
+#define SDSNODE_PUBLISHER   6
 
 
 #if 0

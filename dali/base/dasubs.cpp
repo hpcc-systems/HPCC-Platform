@@ -466,13 +466,24 @@ public:
         size32_t dlen = data.length();
         mb.append(dlen);
         mb.append(dlen,data.get());
-        try {
+        try
+        {
             queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SUBSCRIPTION_REQUEST);
             if (mb.length())
                 throw deserializeException(mb);
         }
-        catch (IException *e) {
+        catch (IException *e)
+        {
             PrintExceptionLog(e,"Dali CDaliSubscriptionManagerStub::add");
+            {
+                CriticalBlock block(subscriptionsect);
+                unsigned idx = ids.find(id);
+                if (NotFound != idx)
+                {
+                    ids.remove(idx);
+                    subscriptions.remove(idx);
+                }
+            }
             throw;
         }
     }

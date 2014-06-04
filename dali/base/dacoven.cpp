@@ -37,12 +37,12 @@ extern void closedownDFS();
 // base is saved in store whenever block exhausted, so replacement coven servers can restart 
 
 // server side versioning.
-#define ServerVersion    "3.11"
+#define ServerVersion    "3.12"
 #define MinClientVersion "1.5"
 
 
 // client side default versioning.
-static StringAttr ClientVersion("3.5");
+static StringAttr ClientVersion("3.6");
 static StringAttr MinServerVersion("3.1");      // when this upped check initClientProcess instances
 static CDaliVersion _ServerVersion;
 
