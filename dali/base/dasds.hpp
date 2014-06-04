@@ -40,10 +40,14 @@
 #define RTM_MODE(X, M) ((X & M) == M)
 
 enum SDSNotifyFlags { SDSNotify_None=0x00, SDSNotify_Data=0x01, SDSNotify_Structure=0x02, SDSNotify_Added=(SDSNotify_Structure+0x04), SDSNotify_Deleted=(SDSNotify_Structure+0x08), SDSNotify_Renamed=(SDSNotify_Structure+0x10) };
-typedef __int64 SDSNotificationFlags_t;
 interface ISDSSubscription : extends IInterface
 {
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL) = 0;
+};
+
+interface ISDSNodeSubscription : extends IInterface
+{
+    virtual void notify(SubscriptionId id, SDSNotifyFlags flags, unsigned valueLen=0, const void *valueData=NULL) = 0;
 };
 
 interface ISDSConnectionSubscription : extends IInterface
@@ -93,7 +97,9 @@ interface ISDSManager
     virtual IRemoteConnection *connect(const char *xpath, SessionId id, unsigned mode, unsigned timeout) = 0;
     virtual IRemoteConnections *connect(IMultipleConnector *mConnect, SessionId id, unsigned timeout) = 0; // timeout applies to each connection
     virtual SubscriptionId subscribe(const char *xpath, ISDSSubscription &notify, bool sub=true, bool sendValue=false) = 0;
+    virtual SubscriptionId subscribeExact(const char *xpath, ISDSNodeSubscription &notify, bool sendValue=false) = 0;
     virtual void unsubscribe(SubscriptionId id) = 0;
+    virtual void unsubscribeExact(SubscriptionId id) = 0;
     virtual StringBuffer &getLocks(StringBuffer &out) = 0;
     virtual StringBuffer &getUsageStats(StringBuffer &out) = 0;
     virtual StringBuffer &getConnections(StringBuffer &out) = 0;
@@ -143,7 +149,6 @@ interface ISDSManagerServer : extends ISDSManager
     virtual bool setSDSDebug(StringArray &params, StringBuffer &reply)=0;
     virtual unsigned countConnections() = 0;
     virtual unsigned countActiveLocks() = 0;
-    virtual unsigned countSubscribers() const = 0;
     virtual unsigned queryExternalSizeThreshold() const = 0;
     virtual void setExternalSizeThreshold(unsigned _size) = 0;
     virtual bool queryRestartOnError() const = 0;
@@ -196,7 +201,8 @@ enum SDSExceptionCodes
     SDSExcpt_ClientCacheDirty,
     SDSExcpt_InvalidSessionId,
     SDSExcpt_LockHeld,
-    SDSExcpt_SubscriptionParseError
+    SDSExcpt_SubscriptionParseError,
+    SDSExcpt_SubscriptionNoMatch
 };
 
 interface ISDSException : extends IException { };

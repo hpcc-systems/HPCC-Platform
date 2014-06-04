@@ -1,0 +1,78 @@
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile8&apos;) file not found</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::superfile8&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile5&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile6&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile7&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile8&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile8&apos;) action added to transaction</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::superfile8&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile5&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile6&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile7&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile8&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile8&apos;) action added to transaction</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
+<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::superfile8&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile5&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile6&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile7&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile8&apos;) trans</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile8&apos;) action added to transaction</Message></Info>
+<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><Result_5>false</Result_5></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><Result_6>true</Result_6></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><Result_7>true</Result_7></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><Result_8>true</Result_8></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><Result_9>true</Result_9></Row>
+</Dataset>
+<Dataset name='Result 10'>
+ <Row><Result_10>false</Result_10></Row>
+</Dataset>
+<Dataset name='Result 11'>
+ <Row><Result_11>true</Result_11></Row>
+</Dataset>
+<Dataset name='Result 12'>
+ <Row><Result_12>true</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>true</Result_13></Row>
+</Dataset>
+<Dataset name='Result 14'>
+ <Row><Result_14>true</Result_14></Row>
+</Dataset>
+<Dataset name='Result 15'>
+ <Row><Result_15>false</Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>false</Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17>false</Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18>false</Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19>false</Result_19></Row>
+</Dataset>

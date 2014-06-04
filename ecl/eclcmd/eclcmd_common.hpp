@@ -75,6 +75,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_ACTIVATE_S "-A"
 #define ECLOPT_ACTIVATE_INI "activateDefault"
 #define ECLOPT_ACTIVATE_ENV NULL
+#define ECLOPT_CLONE_ACTIVE_STATE "--clone-active-state"
 #define ECLOPT_SUSPEND_PREVIOUS "--suspend-prev"
 #define ECLOPT_SUSPEND_PREVIOUS_S "-sp"
 #define ECLOPT_SUSPEND_PREVIOUS_INI "suspendPrevDefault"

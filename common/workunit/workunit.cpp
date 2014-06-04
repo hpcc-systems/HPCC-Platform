@@ -10197,7 +10197,7 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
     return conn->getRoot();
 }
 
-void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid)
+void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const char *queryName, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid)
 {
     StringBuffer cleanQueryName;
     appendUtf8XmlName(cleanQueryName, strlen(queryName), queryName);
@@ -10210,8 +10210,6 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
 
     SCMStringBuffer wuid;
     workunit->getWuid(wuid);
-
-    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySetName, false);
 
     StringBuffer currentTargetClusterType;
     queryRegistry->getProp("@targetclustertype", currentTargetClusterType); 
@@ -10239,11 +10237,19 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
     workunit->setIsQueryService(true); //will check querysets before delete
     workunit->commit();
 
+    activateQuery(queryRegistry, activateOption, queryName, newQueryId, userid);
+}
+
+void activateQuery(IPropertyTree *queryRegistry, WUQueryActivationOptions activateOption, const char *queryName, const char *queryId, const char *userid)
+{
+    StringBuffer cleanQueryName;
+    appendUtf8XmlName(cleanQueryName, strlen(queryName), queryName);
+
     if (activateOption == ACTIVATE_SUSPEND_PREVIOUS|| activateOption == ACTIVATE_DELETE_PREVIOUS)
     {
         Owned<IPropertyTree> prevQuery = resolveQueryAlias(queryRegistry, cleanQueryName);
-        setQueryAlias(queryRegistry, cleanQueryName, newQueryId);
-        if (prevQuery)
+        setQueryAlias(queryRegistry, cleanQueryName, queryId);
+        if (prevQuery && !streq(queryId, prevQuery->queryProp("@id")))
         {
             if (activateOption == ACTIVATE_SUSPEND_PREVIOUS)
                 setQuerySuspendedState(queryRegistry, prevQuery->queryProp("@id"), true, userid);
@@ -10252,7 +10258,13 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
         }
     }
     else if (activateOption == MAKE_ACTIVATE || activateOption == MAKE_ACTIVATE_LOAD_DATA_ONLY)
-        setQueryAlias(queryRegistry, cleanQueryName, newQueryId.str());
+        setQueryAlias(queryRegistry, cleanQueryName, queryId);
+}
+
+void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid)
+{
+    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySetName, false);
+    addQueryToQuerySet(workunit, queryRegistry, queryName, activateOption, newQueryId, userid);
 }
 
 bool removeQuerySetAlias(const char *querySetName, const char *alias)
@@ -10294,9 +10306,10 @@ void setQueryCommentForNamedQuery(const char *querySetName, const char *id, cons
     setQueryCommentForNamedQuery(queryRegistry, id, queryComment);
 }
 
-const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, IStringVal &id)
+const char *queryIdFromQuerySetWuid(IPropertyTree *queryRegistry, const char *wuid, IStringVal &id)
 {
-    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySetName, false);
+    if (!queryRegistry)
+        return NULL;
     StringBuffer xpath;
     xpath.appendf("Query[@wuid='%s']", wuid);
     IPropertyTree *q = queryRegistry->queryPropTree(xpath.str());
@@ -10305,6 +10318,12 @@ const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, 
         id.set(q->queryProp("@id"));
     }
     return id.str();
+}
+
+const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, IStringVal &id)
+{
+    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySetName, true);
+    return queryIdFromQuerySetWuid(queryRegistry, wuid, id);
 }
 
 extern WORKUNIT_API void gatherLibraryNames(StringArray &names, StringArray &unresolved, IWorkUnitFactory &workunitFactory, IConstWorkUnit &cw, IPropertyTree *queryset)

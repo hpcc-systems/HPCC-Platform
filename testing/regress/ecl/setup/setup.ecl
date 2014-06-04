@@ -18,7 +18,7 @@
 import Std.File AS FileServices;
 import $;
 
-C := $.files(__PLATFORM__);
+C := $.files(__PLATFORM__, false);
 
 C.DG_OutRec norm1(C.DG_OutRec l, integer cc) := transform
   self.DG_firstname := C.DG_Fnames[cc];
@@ -137,16 +137,3 @@ n_bi2 := NORMALIZE(n_i3, 4, t_bi2(left, counter));
 n_bi3 := NORMALIZE(n_bi2, 4, t_bi3(left, counter));
 
 output(n_bi3,,C.DG_MemFileName,overwrite);
-
-
-C.DG_IntegerRecord createIntegerRecord(unsigned8 c) := transform
-    SELF.i6 := c;
-    SELF.nested.i4 := c;
-    SELF.nested.u3 := c;
-    SELF.i5 := c;
-    SELF.i3 := c;
-END;
-
-singleNullRowDs := dataset([transform({unsigned1 i}, self.i := 0;)]);
-output(normalize(singleNullRowDs, 100, createIntegerRecord(counter)),,C.DG_IntegerDatasetName,overwrite);
-build(C.DG_IntegerIndex,overwrite);

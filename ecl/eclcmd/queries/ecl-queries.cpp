@@ -488,6 +488,142 @@ private:
     bool optAllowForeign;
 };
 
+class EclCmdQueriesCopyQueryset : public EclCmdCommon
+{
+public:
+    EclCmdQueriesCopyQueryset() : optCloneActiveState(false), optAllQueries(false), optDontCopyFiles(false), optOverwrite(false), optAllowForeign(false)
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optSourceQuerySet.isEmpty())
+                    optSourceQuerySet.set(arg);
+                else if (optDestQuerySet.isEmpty())
+                    optDestQuerySet.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
+                continue;
+            if (iter.matchFlag(optCloneActiveState, ECLOPT_CLONE_ACTIVE_STATE))
+                continue;
+            if (iter.matchFlag(optDontCopyFiles, ECLOPT_DONT_COPY_FILES))
+                continue;
+            if (iter.matchFlag(optAllQueries, ECLOPT_ALL))
+                continue;
+            if (iter.matchFlag(optAllowForeign, ECLOPT_ALLOW_FOREIGN))
+                continue;
+            if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
+                continue;
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optSourceQuerySet.isEmpty() || optDestQuerySet.isEmpty())
+        {
+            fputs("source and destination querysets must both be specified.\n\n", stderr);
+            return false;
+        }
+        return true;
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
+        Owned<IClientWUCopyQuerySetRequest> req = client->createWUCopyQuerySetRequest();
+        req->setActiveOnly(!optAllQueries);
+        req->setSource(optSourceQuerySet.get());
+        req->setTarget(optDestQuerySet.get());
+        req->setDfsServer(optDaliIP.get());
+        req->setSourceProcess(optSourceProcess);
+        req->setCloneActiveState(optCloneActiveState);
+        req->setOverwriteDfs(optOverwrite);
+        req->setCopyFiles(!optDontCopyFiles);
+        req->setAllowForeignFiles(optAllowForeign);
+
+        Owned<IClientWUCopyQuerySetResponse> resp = client->WUCopyQuerySet(req);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        StringArray &copied = resp->getCopiedQueries();
+        fputs("Queries copied:\n", stdout);
+        if (!copied.length())
+            fputs("  none\n\n", stdout);
+        else
+        {
+            ForEachItemIn(i, copied)
+                fprintf(stdout, "  %s\n", copied.item(i));
+            fputs("\n", stdout);
+        }
+        StringArray &existing = resp->getExistingQueries();
+        fputs("Queries already on destination target:\n", stdout);
+        if (!existing.length())
+            fputs("  none\n\n", stdout);
+        else
+        {
+            ForEachItemIn(i, existing)
+                fprintf(stdout, "  %s\n", existing.item(i));
+            fputs("\n", stdout);
+        }
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'queries copy-set' command copies a set of queries from one target to another.\n"
+            "\n"
+            "By default only active queries will be copied.  Use --all to copy all queries.\n"
+            "\n"
+            "ecl queries copy-set <source_target> <destination_target> [--clone-active-state]\n"
+            "\n"
+            " Options:\n"
+            "   <source_target>        Target cluster to copy queries from\n"
+            "   <destination_target>   Target cluster to copy queries to\n"
+            "   --all                  Copy both active and inactive queries\n"
+            "   --no-files             Do not copy files referenced by query\n"
+            "   --daliip=<ip>          Remote Dali DFS to use for copying files\n"
+            "   --source-process       Process cluster to copy files from\n"
+            "   --clone-active-state   Make copied queries active if active on source\n"
+            "   -O, --overwrite        Overwrite existing DFS file information\n"
+            "   --allow-foreign        Do not fail if foreign files are used in query (roxie)\n"
+            " Common Options:\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optSourceQuerySet;
+    StringAttr optDestQuerySet;
+    StringAttr optDaliIP;
+    StringAttr optSourceProcess;
+    bool optCloneActiveState;
+    bool optOverwrite;
+    bool optDontCopyFiles;
+    bool optAllowForeign;
+    bool optAllQueries;
+};
+
 class EclCmdQueriesConfig : public EclCmdCommon
 {
 public:
@@ -639,6 +775,8 @@ IEclCommand *createEclQueriesCommand(const char *cmdname)
         return new EclCmdQueriesConfig();
     if (strieq(cmdname, "copy"))
         return new EclCmdQueriesCopy();
+    if (strieq(cmdname, "copy-set"))
+        return new EclCmdQueriesCopyQueryset();
     return NULL;
 }
 
@@ -657,9 +795,10 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl queries <command> [command options]\n\n"
             "   Queries Commands:\n"
-            "      list         list queries in queryset(s)\n"
+            "      list         list queries on target cluster(s)\n"
             "      config       update query settings\n"
-            "      copy         copy a query from one queryset to another\n"
+            "      copy         copy a query from one target cluster to another\n"
+            "      copy-set     copy queries from one target cluster to another\n"
         );
     }
 };

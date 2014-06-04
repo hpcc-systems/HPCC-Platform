@@ -170,8 +170,8 @@ define([
         _onAbort: function (event) {
             this.wu.abort();
         },
-        _onRestart: function (event) {
-            this.wu.restart();
+        _onRecover: function (event) {
+            this.wu.recover();
         },
         _onPublish: function (event) {
             var allowForeign = registry.byId(this.id + "AllowForeignFiles");
@@ -451,7 +451,7 @@ define([
             registry.byId(this.id + "Abort").set("disabled", isArchived || this.wu.isComplete());
             registry.byId(this.id + "Clone").set("disabled", isArchived || !this.wu.isComplete());
             registry.byId(this.id + "Resubmit").set("disabled", isArchived || !this.wu.isComplete());
-            registry.byId(this.id + "Restart").set("disabled", isArchived || !this.wu.isComplete());
+            registry.byId(this.id + "Recover").set("disabled", isArchived || !this.wu.isComplete());
             registry.byId(this.id + "Publish").set("disabled", isArchived || !this.wu.isComplete());
 
             registry.byId(this.id + "Jobname").set("readOnly", !this.wu.isComplete());
