@@ -28,52 +28,6 @@
 
 #include "dasds.ipp"
   
-
-class CSubscriberContainerBase : public CInterface, implements IInterface
-{
-    DECL_NAMEDCOUNT;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CSubscriberContainerBase(ISubscription *_subscriber, SubscriptionId _id) : 
-      subscriber(_subscriber), id(_id)
-    {
-        INIT_NAMEDCOUNT;
-        unsubscribed = false;
-    }
-
-    bool notify(MemoryBuffer &mb)
-    {
-        try { 
-            subscriber->notify(mb); 
-            return true;
-        }
-        catch (IException *e)
-        {
-            LOG(MCuserWarning, e, "SDS: Error notifying subscriber");
-            e->Release();
-            
-        }
-        return false; // unsubscribe 
-    }
-
-    const SubscriptionId &queryId() const { return id; }
-    const void *queryFindParam() const
-    {
-        return (const void *) &id;
-    }
-
-    bool isUnsubscribed() { return unsubscribed || subscriber->aborted(); }
-    void setUnsubscribed() { unsubscribed = true; }
-
-protected:
-    Owned<ISubscription> subscriber;
-    SubscriptionId id;
-    bool unsubscribed;
-};
-
-/////////////////
-
 class CClientSDSManager;
 class CClientRemoteTree;
 class CRemoteConnection : public CConnectionBase, public CTrackChanges, implements IRemoteConnection
@@ -158,12 +112,10 @@ public:
     ~CConnectionLock() { conn.lockCrit.leave(); }
 };
 //////////////////
-class CSDSConnectionSubscriberProxy : public CInterface, implements ISubscription
+class CSDSConnectionSubscriberProxy : public CInterfaceOf<ISubscription>
 {
     DECL_NAMEDCOUNT;
 public:
-    IMPLEMENT_IINTERFACE;
-
     CSDSConnectionSubscriberProxy(ISDSConnectionSubscription &_sdsNotify, ConnectionId connId) : sdsNotify(&_sdsNotify)
     {
         INIT_NAMEDCOUNT;
@@ -199,40 +151,46 @@ private:
     Linked<ISDSConnectionSubscription> sdsNotify;
 };
 
+static void checkValidSubscriptionPath(const char *xpath)
+{
+    bool quote=false, sep=false;
+    const char *_xpath = xpath;
+    loop
+    {
+        char next = *_xpath;
+        if ('\0' == next)
+            break;
+        if ('\"' == next)
+        {
+            sep = false;
+            quote = !quote;
+        }
+        else if ('/' == next && !quote)
+        {
+            if (sep)
+                throw MakeStringException(0, "UNSUPPORTED: '//' syntax unsupported in subscriber xpath (path=\"%s\")", xpath); // JCSMORE - TBD?
+            sep = true;
+        }
+        else
+            sep = false;
+        ++_xpath;
+    }
+}
+
 //////////////////
-class CSDSSubscriberProxy : public CInterface, implements ISubscription
+class CSDSSubscriberProxyBase : public CInterfaceOf<ISubscription>
 {
     DECL_NAMEDCOUNT;
+protected:
+    SubscriptionId id;
+    StringAttr xpath;
+    MemoryAttr data;
 public:
-    IMPLEMENT_IINTERFACE;
-
-    CSDSSubscriberProxy(const char *xpath, bool sub, bool sendValue, ISDSSubscription &_sdsNotify) : sdsNotify(&_sdsNotify)
+    CSDSSubscriberProxyBase(const char *_xpath, bool sendValue)
     {
         INIT_NAMEDCOUNT;
-        bool quote=false, sep=false;
-        const char *_xpath = xpath;
-        const char *end = _xpath+strlen(_xpath);
-        while (_xpath != end)
-        {
-            if ('\"' == *_xpath)
-            {
-                sep = false;
-                if (quote) quote = false;
-                else quote = true;
-            }
-            else if ('/' == *_xpath && !quote)
-            {
-                if (sep)
-                    throw MakeStringException(0, "UNSUPPORTED: '//' syntax unsupported in subscriber xpath (path=\"%s\")", xpath); // JCSMORE - TBD?
-                sep = true;
-            }
-            else
-                sep = false;
-            ++_xpath;
-        }
-        MemoryBuffer _data;
-        _data.append(xpath).append(sub).append(sendValue);
-        data.set(_data.length(), _data.toByteArray());
+        checkValidSubscriptionPath(_xpath);
+        xpath.set(_xpath);
         id = queryCoven().getUniqueId();
     }
     SubscriptionId getId() const { return id; }
@@ -242,12 +200,34 @@ public:
     {
         return data;
     }
+    virtual void abort() // called when server closes
+    { 
+        // JCS TBD?
+    }
+    virtual bool aborted() // called when server closes
+    { 
+        return false;
+    }
+};
+
+class CSDSSubscriberProxy : public CSDSSubscriberProxyBase
+{
+    Linked<ISDSSubscription> sdsNotify;
+public:
+    CSDSSubscriberProxy(const char *_xpath, bool sub, bool sendValue, ISDSSubscription &_sdsNotify)
+        : CSDSSubscriberProxyBase(_xpath, sendValue), sdsNotify(&_sdsNotify)
+    {
+        MemoryBuffer _data;
+        _data.append(xpath).append(sub).append(sendValue);
+        data.set(_data.length(), _data.toByteArray());
+    }
+// ISubscription impl.
     virtual void notify(MemoryBuffer &returnData)
     {
         StringAttr xpath;
-        SDSNotifyFlags flags;
+        int flags;
         returnData.read(xpath);
-        returnData.read((int &) flags);
+        returnData.read(flags);
         bool valueData;
         if (returnData.length()-returnData.getPos()) // remaining
         {
@@ -256,29 +236,43 @@ public:
             {
                 unsigned l;
                 returnData.read(l);
-                sdsNotify->notify(id, xpath, flags, l, returnData.readDirect(l));
+                sdsNotify->notify(id, xpath, (SDSNotifyFlags)flags, l, returnData.readDirect(l));
             }
             else
-                sdsNotify->notify(id, xpath, flags);
+                sdsNotify->notify(id, xpath, (SDSNotifyFlags)flags);
         }
         else
-            sdsNotify->notify(id, xpath, flags);
+            sdsNotify->notify(id, xpath, (SDSNotifyFlags)flags);
     }
+};
 
-    virtual void abort() // called when server closes
-    { 
-        // JCS TBD?
+class CSDSNodeSubscriberProxy : public CSDSSubscriberProxyBase
+{
+    Linked<ISDSNodeSubscription> sdsNotify;
+public:
+    CSDSNodeSubscriberProxy(const char *_xpath, bool sendValue, ISDSNodeSubscription &_sdsNotify)
+        : CSDSSubscriberProxyBase(_xpath, sendValue) , sdsNotify(&_sdsNotify)
+    {
+        MemoryBuffer _data;
+        _data.append(xpath).append(sendValue);
+        data.set(_data.length(), _data.toByteArray());
     }
-
-    virtual bool aborted() // called when server closes
-    { 
-        return false;
+// ISubscription impl.
+    virtual void notify(MemoryBuffer &returnData)
+    {
+        int flags;
+        returnData.read(flags);
+        unsigned valueLen = 0;
+        const void *valueData = NULL;
+        bool isValueData;
+        returnData.read(isValueData);
+        if (isValueData)
+        {
+            returnData.read(valueLen);
+            valueData = returnData.readDirect(valueLen);
+        }
+        sdsNotify->notify(id, (SDSNotifyFlags)flags, valueLen, valueData);
     }
-
-private:
-    SubscriptionId id;
-    MemoryAttr data, valueData;
-    Linked<ISDSSubscription> sdsNotify;
 };
 
 ////////////////////
@@ -391,7 +385,9 @@ public:
     virtual IRemoteConnections *connect(IMultipleConnector *mConnect, SessionId id, unsigned timeout);
     virtual IRemoteConnection *connect(const char *xpath, SessionId id, unsigned mode, unsigned timeout);
     virtual SubscriptionId subscribe(const char *xpath, ISDSSubscription &notify, bool sub=true, bool sendValue=false);
+    virtual SubscriptionId subscribeExact(const char *xpath, ISDSNodeSubscription &notify, bool sendValue=false);
     virtual void unsubscribe(SubscriptionId id);
+    virtual void unsubscribeExact(SubscriptionId id);
     virtual StringBuffer &getLocks(StringBuffer &out);
     virtual StringBuffer &getUsageStats(StringBuffer &out);
     virtual StringBuffer &getConnections(StringBuffer &out);

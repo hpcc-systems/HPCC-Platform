@@ -1,0 +1,36 @@
+<Warning><Code>10125</Code><Source></Source><Message>Graph[28], diskwrite[30]: output file = &apos;thor::regress::base.d00&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Warning><Code>10125</Code><Source></Source><Message>Graph[31], diskwrite[38]: output file = &apos;thor::regress::out5.d00&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Warning><Code>10125</Code><Source></Source><Message>Graph[31], diskwrite[44]: output file = &apos;thor::regress::out2.d00&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Warning><Code>10125</Code><Source></Source><Message>Graph[31], diskwrite[42]: output file = &apos;thor::regress::out3.d00&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Warning><Code>10125</Code><Source></Source><Message>Graph[31], diskwrite[40]: output file = &apos;thor::regress::out4.d00&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Warning><Code>10125</Code><Source></Source><Message>Graph[31], diskwrite[46]: output file = &apos;thor::regress::out1.d00&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Warning><Code>10125</Code><Source></Source><Message>Graph[47], diskwrite[56]: output file = &apos;thor::regress::out6.d00&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Warning><Code>10125</Code><Source></Source><Message>Graph[57], diskwrite[66]: output file = &apos;thor::regress::out6.d00&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Warning><Code>10125</Code><Source></Source><Message>Graph[67], indexwrite[70]: output file = &apos;thor::regress::outi1.idx&apos; - is up to date - it will not be rebuilt</Message></Warning>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::base.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::out1.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::out2.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::out3.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::out4.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::out5.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::out6.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::outi1.idx&apos;) done</Message></Info>
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='Result 6'>
+</Dataset>
+<Dataset name='Result 7'>
+</Dataset>
+<Dataset name='Result 8'>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>non-update branch</Result_16></Row>
+</Dataset>

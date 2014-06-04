@@ -1,1 +1,1 @@
-set ( CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-regex1.54.0, libicu52, libxalan-c111, libxerces-c3.1, binutils, libldap-2.4-2, openssl, zlib1g, g++, openssh-client, openssh-server, expect, libarchive13, rsync")
+set ( CPACK_DEBIAN_PACKAGE_DEPENDS "libboost-regex1.54.0, libicu52, libxalan-c111, libxerces-c3.1, binutils, libldap-2.4-2, openssl, zlib1g, g++, openssh-client, openssh-server, expect, libarchive13, rsync, libapr1, libaprutil1")

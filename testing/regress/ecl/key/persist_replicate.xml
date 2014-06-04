@@ -1,0 +1,12 @@
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;REGRESS::PersistReplicate&apos;) done</Message></Info>
+<Info><Source>eclagent</Source><Message>Building PERSIST(&apos;~REGRESS::PersistReplicate&apos;): It hasn&apos;t been calculated before</Message></Info>
+<Dataset name='Result 1'>
+ <Row><name>foo</name><city>london</city><phone>123456</phone></Row>
+ <Row><name>bar</name><city>cambridge</city><phone>321654</phone></Row>
+ <Row><name>baz</name><city>blackburn</city><phone>654321</phone></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><name>foo</name></Row>
+ <Row><name>bar</name></Row>
+ <Row><name>baz</name></Row>
+</Dataset>

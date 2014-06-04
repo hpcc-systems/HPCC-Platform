@@ -20,6 +20,8 @@
 #option ('checkAsserts',false);
 import $.Common.TextSearch;
 import $.Common.TextSearchQueries;
+import $.Setup;
+import $.Setup.TS;
 
 //SingleQuery := 'AND("the":1, "software":2, "source":3)';
 //SingleQuery := 'AND("the", "software", "source")';
@@ -31,7 +33,7 @@ q1 := TextSearchQueries.WordTests;
 #end
 
 boolean useLocal := true;
-Files := Setup.Files('thorlcr');
-wordIndex := index(TS.textSearchIndex, Files.NameWordIndex(useLocal));
+Files := Setup.Files('thorlcr', true);
+wordIndex := index(TS.textSearchIndex, Files.NameWordIndex());
 p := project(nofold(q1), TextSearch.doBatchExecute(wordIndex, LEFT, useLocal, 0x00000200));           // 0x200 forces paranoid order checking on
 output(p);
