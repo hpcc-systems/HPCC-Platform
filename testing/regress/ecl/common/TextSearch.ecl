@@ -1839,13 +1839,20 @@ MaxResults := 10000;
 
 publicExports := MODULE
 
+    EXPORT getWordIndex(string source, boolean useLocal) := FUNCTION
+        Files := Setup.Files(source, useLocal);
+        RETURN Files.getWordIndex();
+    END;
+    
     EXPORT queryInputRecord := { string query{maxlength(2048)}; };
 
     EXPORT processedRecord := record(queryInputRecord)
         dataset(searchRecord) request{maxcount(MaxActions)};
         dataset(simpleUserOutputRecord) result{maxcount(MaxResults)};
     END;
-
+    
+    EXPORT GetSearchExecutor(dataset(TS.wordIndexRecord) wordIndex, unsigned4 internalFlags = 0) := SearchExecutor(wordIndex, internalFlags);
+    
     EXPORT processedRecord doBatchExecute(dataset(TS.wordIndexRecord) wordIndex, queryInputRecord l, boolean useLocal, unsigned4 internalFlags=0) := transform
         processed := queryProcessor(wordIndex, l.query, useLocal, internalFlags);
         self.request := processed.processed;
@@ -1861,8 +1868,7 @@ publicExports := MODULE
     end;
 
     EXPORT executeBatchAgainstWordIndex(DATASET(queryInputRecord) queries, boolean useLocal, string source, unsigned4 internalFlags=0) := FUNCTION
-        Files := Setup.Files(source);
-        wordIndex := index(TS.textSearchIndex, Files.NameWordIndex(useLocal));
+        wordIndex := getWordIndex(source, useLocal);
         p := project(nofold(queries), doBatchExecute(wordIndex, LEFT, useLocal, internalFlags));
         RETURN p;
     END;

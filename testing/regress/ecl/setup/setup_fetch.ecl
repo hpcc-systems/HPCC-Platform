@@ -17,7 +17,7 @@
 
 import Std.File AS FileServices;
 import $;
-C := $.files(__PLATFORM__);
+C := $.files(__PLATFORM__, false);
 
 FetchData   := DATASET([
     {3000,   'FL', 'Boca Raton',  'London',   'Bridge'},

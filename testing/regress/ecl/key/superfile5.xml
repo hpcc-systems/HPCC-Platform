@@ -1,0 +1,83 @@
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::t5_superfile1&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::t5_superfile2&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::t5_superfile3&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::t5_superfile4&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::t5_superfile5&apos;) file not found</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::t5_superfile5&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::t5_superfile5&apos;, &apos;hthor::regress::t5_subfile1&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::t5_superfile5&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::t5_superfile5&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::xyzzy&apos;) done</Message></Info>
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='SF5_RES1'>
+ <Row><name>t5_subfile5</name></Row>
+ <Row><name>t5_subfile1</name></Row>
+</Dataset>
+<Dataset name='SF5_RES2'>
+ <Row><name>t5_subfile4</name></Row>
+</Dataset>
+<Dataset name='SF5_RES3'>
+ <Row><name>t5_subfile3</name></Row>
+</Dataset>
+<Dataset name='SF5_RES4'>
+ <Row><name>t5_subfile2</name></Row>
+</Dataset>
+<Dataset name='Result 10'>
+</Dataset>
+<Dataset name='Result 11'>
+</Dataset>
+<Dataset name='Result 12'>
+</Dataset>
+<Dataset name='Result 13'>
+</Dataset>
+<Dataset name='Result 14'>
+</Dataset>
+<Dataset name='SF5_RES5'>
+ <Row><name>t5_subfile4</name></Row>
+</Dataset>
+<Dataset name='SF5_RES6'>
+ <Row><name>t5_subfile3</name></Row>
+</Dataset>
+<Dataset name='SF5_RES7'>
+ <Row><name>t5_subfile2</name></Row>
+</Dataset>
+<Dataset name='SF5_RES8'>
+</Dataset>
+<Dataset name='SF5_RES9'>
+ <Row><name>t5_subfile2</name></Row>
+</Dataset>
+<Dataset name='SF5_RES10'>
+</Dataset>
+<Dataset name='SF5_RES11'>
+</Dataset>
+<Dataset name='SF5_RES12'>
+</Dataset>
+<Dataset name='SF5_RES13'>
+ <Row><SF5_RES13>1</SF5_RES13></Row>
+</Dataset>
+<Dataset name='SF5_RES14'>
+ <Row><SF5_RES14>0</SF5_RES14></Row>
+</Dataset>
+<Dataset name='SF5_RES15'>
+ <Row><SF5_RES15>t5_subfile2</SF5_RES15></Row>
+</Dataset>
+<Dataset name='SF5_RES16'>
+ <Row><SF5_RES16></SF5_RES16></Row>
+</Dataset>
+<Dataset name='SF5_RES17'>
+</Dataset>
+<Dataset name='SF5_RES18'>
+ <Row><name>t5_superfile1</name></Row>
+</Dataset>
+<Dataset name='Result 29'>
+ <Row><Result_29>Done</Result_29></Row>
+</Dataset>

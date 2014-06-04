@@ -1,0 +1,26 @@
+<Dataset name='Result 1'>
+ <Row><l>&lt;Row&gt;&lt;line&gt;1234&lt;/line&gt;&lt;/Row&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;Hello there&lt;/line&gt;&lt;/Row&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;what a nice day&lt;/line&gt;&lt;/Row&gt;</l></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><l>&lt;Row&gt;&lt;line&gt;1234&lt;/line&gt;&lt;/Row&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;Hello there&lt;/line&gt;&lt;/Row&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;what a nice day&lt;/line&gt;&lt;/Row&gt;</l></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><l>&lt;/Dataset&gt;</l></Row>
+ <Row><l>&lt;Dataset&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;Hello there&lt;/line&gt;&lt;/Row&gt;</l></Row>
+ <Row><l>&lt;/Dataset&gt;</l></Row>
+ <Row><l>&lt;Dataset&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;what a nice day&lt;/line&gt;&lt;/Row&gt;</l></Row>
+ <Row><l>&lt;/Dataset&gt;</l></Row>
+ <Row><l>&lt;Dataset&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;1234&lt;/line&gt;&lt;/Row&gt;</l></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><l>&lt;Row&gt;&lt;line&gt;Hello there&lt;/line&gt;&lt;/Row&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;what a nice day&lt;/line&gt;&lt;/Row&gt;</l></Row>
+ <Row><l>&lt;Row&gt;&lt;line&gt;1234&lt;/line&gt;&lt;/Row&gt;</l></Row>
+</Dataset>

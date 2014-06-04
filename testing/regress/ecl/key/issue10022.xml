@@ -1,0 +1,21 @@
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;regress::persist_gh1&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;regress::persist_gh2__p191248475&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;regress::persist_gh3__p3342818403&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;regress::persist_gh4__p3875155505&apos;) done</Message></Info>
+<Info><Source>eclagent</Source><Message>Rebuilding PERSIST(&apos;~REGRESS::persist_gh1&apos;): Persistent file does not exist</Message></Info>
+<Info><Source>eclagent</Source><Message>Rebuilding PERSIST(&apos;~REGRESS::persist_gh2__p191248475&apos;): Persistent file does not exist</Message></Info>
+<Info><Source>eclagent</Source><Message>Rebuilding PERSIST(&apos;~REGRESS::persist_gh3__p3342818403&apos;): Persistent file does not exist</Message></Info>
+<Info><Source>eclagent</Source><Message>Rebuilding PERSIST(&apos;~REGRESS::persist_gh4__p3875155505&apos;): Persistent file does not exist</Message></Info>
+<Dataset name='Result 2'>
+ <Row><line>!Hello</line></Row>
+ <Row><line> me </line></Row>
+ <Row><line>xx</line></Row>
+ <Row><line>!end</line></Row>
+ <Row><line></line></Row>
+ <Row><line></line></Row>
+ <Row><line>!Hello</line></Row>
+ <Row><line>!end</line></Row>
+ <Row><line></line></Row>
+ <Row><line> me </line></Row>
+ <Row><line></line></Row>
+</Dataset>

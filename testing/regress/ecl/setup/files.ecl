@@ -16,8 +16,10 @@
 ############################################################################## */
 //skip type==setup TBD
 
+import $.TS;
+
 //define constants
-EXPORT files(string platform) := module
+EXPORT files(string platform, boolean useLocal) := module
 SHARED DG_GenFlat           := true;   //TRUE gens FlatFile
 SHARED DG_GenChild          := true;   //TRUE gens ChildFile
 SHARED DG_GenGrandChild     := true;   //TRUE gens GrandChildFile
@@ -198,37 +200,12 @@ EXPORT SET OF STRING2 DG_STATES := ['FL','GA','SC','NC','TX','AL','MS','TN',
 EXPORT SET OF STRING3 DG_MONTHS := ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG',
                              'SEP','OCT','NOV','DEC','ABC','DEF','GHI','JKL'];
 
-EXPORT t_personfile := DATASET('t_personfile', RECORD
-  unsigned integer4 hhid;
-  unsigned integer4 personid;
-  string20 firstname;
-  string20 lastname;
-  string20 middlename;
-  unsigned integer1 age;
-  unsigned integer8 ssn;
-END, THOR);
-
-EXPORT t_tradesfile := DATASET('t_tradesfile', RECORD
-  unsigned integer4 personid;
-  string20 tradeid;
-  real4 amount;
-  string8 date;
-END, THOR);
-
-EXPORT t_hhfile := DATASET('t_hhfile', RECORD
-  unsigned integer4 hhid;
-  string2 State;
-  string5 zip;
-  string20 City;
-  string40 street;
-  unsigned integer4 houseNumber;
-END, THOR);
-
-
 //----------------------------- Text search definitions ----------------------------------
 
-EXPORT NameWordIndex(boolean useLocal) := '~REGRESS::' + filePrefix + '::wordIndex' + IF(useLocal, '_Local', '');
+EXPORT NameWordIndex() := '~REGRESS::' + filePrefix + '::wordIndex' + IF(useLocal, '_Local', '');
 EXPORT NameSearchIndex      := '~REGRESS::' + filePrefix + '::searchIndex';
+EXPORT getWordIndex() := INDEX(TS.textSearchIndex, NameWordIndex());
+EXPORT getSearchIndex() := INDEX(TS.textSearchIndex, NameSearchIndex);
 
 //----------------------------- End of text search definitions --------------------------
 
@@ -246,22 +223,5 @@ EXPORT DG_MemFileRec := RECORD
 END;
 
 EXPORT DG_MemFile := DATASET(DG_MemFileName,DG_MemFileRec,FLAT);
-
-
-//record structures
-EXPORT DG_NestedIntegerRecord := RECORD
-  big_endian UNSIGNED4 i4;
-  big_endian UNSIGNED3 u3;
-END;
-
-EXPORT DG_IntegerRecord := RECORD
-    INTEGER6    i6;
-    DG_NestedIntegerRecord nested;
-    integer5    i5;
-    integer3    i3;
-END;
-
-EXPORT DG_IntegerDataset := DATASET(DG_IntegerDatasetName, DG_IntegerRecord, thor);
-EXPORT DG_IntegerIndex := INDEX(DG_IntegerDataset, { i6, nested }, { DG_IntegerDataset }, DG_IntegerIndexName);
 
 END;

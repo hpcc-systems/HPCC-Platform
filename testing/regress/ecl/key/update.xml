@@ -1,0 +1,27 @@
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::base.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::out1.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::out2.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::out3.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::out4.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::out5.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::out6.d00&apos;) done</Message></Info>
+<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::outi1.idx&apos;) done</Message></Info>
+<Dataset name='Result 1'>
+</Dataset>
+<Dataset name='Result 2'>
+</Dataset>
+<Dataset name='Result 3'>
+</Dataset>
+<Dataset name='Result 4'>
+</Dataset>
+<Dataset name='Result 5'>
+</Dataset>
+<Dataset name='Result 6'>
+</Dataset>
+<Dataset name='Result 7'>
+</Dataset>
+<Dataset name='Result 8'>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16>non-update branch</Result_16></Row>
+</Dataset>
