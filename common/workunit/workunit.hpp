@@ -1263,11 +1263,14 @@ extern WORKUNIT_API IPropertyTree * addNamedPackageSet(IPropertyTree * packageRe
 extern WORKUNIT_API void removeNamedPackage(IPropertyTree * packageRegistry, const char * id);
 extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, bool readonly);
 
-extern WORKUNIT_API void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid);
+extern WORKUNIT_API void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const char *queryName, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid);
+extern WORKUNIT_API void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid);
+extern WORKUNIT_API void activateQuery(IPropertyTree *queryRegistry, WUQueryActivationOptions activateOption, const char *queryName, const char *queryId, const char *userid);
 extern WORKUNIT_API bool removeQuerySetAlias(const char *querySetName, const char *alias);
 extern WORKUNIT_API void addQuerySetAlias(const char *querySetName, const char *alias, const char *id);
 extern WORKUNIT_API void setSuspendQuerySetQuery(const char *querySetName, const char *id, bool suspend, const char *userid);
 extern WORKUNIT_API void deleteQuerySetQuery(const char *querySetName, const char *id);
+extern WORKUNIT_API const char *queryIdFromQuerySetWuid(IPropertyTree *queryRegistry, const char *wuid, IStringVal &id);
 extern WORKUNIT_API const char *queryIdFromQuerySetWuid(const char *querySetName, const char *wuid, IStringVal &id);
 extern WORKUNIT_API void removeQuerySetAliasesFromNamedQuery(const char *querySetName, const char * id);
 extern WORKUNIT_API void setQueryCommentForNamedQuery(const char *querySetName, const char *id, const char *comment);
