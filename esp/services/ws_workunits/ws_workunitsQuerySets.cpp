@@ -1881,6 +1881,8 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
             queryTree->setProp("@comment", req.getComment());
         else if (srcInfo && srcInfo->getComment())
             queryTree->setProp("@comment", srcInfo->getComment());
+        if (srcInfo && srcInfo->getSnapshot())
+            queryTree->setProp("@snapshot", srcInfo->getSnapshot());
     }
     wu.clear();
 
