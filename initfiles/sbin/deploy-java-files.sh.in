@@ -1,0 +1,493 @@
+#!/bin/bash
+################################################################################
+#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+################################################################################
+#
+# Usage: deploy-java-files.sh <from> <to>
+#
+# This is acomplished with a standard scp command with the use of the
+# runtime users id_rsa file.
+
+###<REPLACE>###
+
+
+source  ${INSTALL_DIR}/etc/init.d/hpcc_common
+
+usage() {
+    echo ""
+    echo "usage: deploy-java-files.sh [OPTIONS]"
+    echo "   -c|--classpath:  When specified, this option add the target directory or"
+    echo "        jar file path to classpath in environment.conf."
+    echo "   -e|--delete:   When specified, this denotes the target is to be removed"
+    echo "        from the classpath."
+    echo "        This option will be ignored if used with the reset (-r) option"
+    echo "   -H|--hosts:  Host IP list. When specified, will target the IP addresses"
+    echo "        specified, one IP address per line. If this option is not used will"
+    echo "        run on the IP list generated from the environment.xml"
+    echo "   -n|--concurrent:  When specified, denotes the number of concurrent"
+    echo "        executions threads. The default is 5. You must have python installed,"
+    echo "        otherwise this option will be ignored and the action will run on each"
+    echo "        host sequentially."
+    echo "   -r|--reset:  Reset classpath. When specified, will reset the classpath to"
+    echo "        <install_directory>/classes. If used in conjunction with the -t adds"
+    echo "        the new entries to the classpath after reset."
+    echo "   -s|--source:  Source file or directory."
+    echo "   -t|--target:  target directory. The default is <install_directory>/classes."
+    echo "        If it is only for adding to classpath, the value can be the full path"
+    echo "        of the java jar file."
+    echo "   -u|--user:  The username to ssh to the access remote system. Provide this"
+    echo "        option means the specified user does not use a password to run ssh/scp."
+    echo "        Without specifiying this option you will be prompted to supply a"
+    echo "        username and password. We strongly recommand not using <hpcc user>"
+    echo "        to avoid security issues."
+    echo "   -x:  When specified, this option excludes execution on the current host."
+    echo ""
+    echo "Examples:"
+    echo "    Deploy java files and update classpath in a cluster:"
+    echo "         deploy-java-files.sh -c -s \"/tmp/java/*\" -t /opt/HPCCSystems/classes"
+    echo ""
+    echo "    Deploy java files and update classpath in a cluster with user ubuntu using"
+    echo "    ssh private key file"
+    echo "         deploy-java-files.sh -c -s /home/ubuntu/java/myjavaapp.jar -u ubuntu"
+    echo ""
+    echo "    Deploy java files to a list of hosts:"
+    echo "         deploy-java-files.sh -H <host list file> -s <source> -t <target>"
+    echo ""
+    echo "    Update classpath in a cluster:"
+    echo "         deploy-java-files.sh -c -t /opt/HPCCSystems/classes/myjavaapp.jar"
+    echo ""
+
+    exit 1
+
+}
+
+######################################################################
+#
+# Write script head
+#
+######################################################################
+createScriptFileHead() {
+
+   cat > $SCRIPT_FILE <<SCRIPTHEAD
+#!/bin/bash
+IP=\$1
+
+ping -c 1 -w 5 -n \$IP > /dev/null 2>&1;
+if [ \$? -ne 0 ]
+then
+    echo "\$IP: Cannot Ping host? (Host Alive?)"
+    exit 1
+fi
+
+echo "\$IP: Host is alive."
+
+SCRIPTHEAD
+}
+
+######################################################################
+#
+# Write script foot
+#
+######################################################################
+createScriptFileFoot() {
+chmod +x ${SCRIPT_FILE}
+}
+
+######################################################################
+#
+# Write script copy Java files to targets
+#
+######################################################################
+addScriptDeployFiles() {
+
+   user_home=$(cat /etc/passwd | grep -e "^${file_transfer_user}:" | cut -d':' -f 6)
+   _options="--userhome $user_home"
+  [ $run_as_sudo -eq 1 ] && _options="$_options --sudo"
+
+   cat >> $SCRIPT_FILE <<SCRIPTMARKER
+
+${INSTALL_DIR}/sbin/deploy-java-files.exp --ip \$IP --source "${source}" \
+   --target ${target} --user ${file_transfer_user} ${_options} || exit 1
+
+SCRIPTMARKER
+
+}
+
+######################################################################
+#
+# Reset classpath to ${INSTALL_DIR}/classes
+#
+######################################################################
+resetClasspath() {
+   cat >> $SCRIPT_FILE <<SCRIPTPATH
+NEW_JAVA_CLASSPATH="${INSTALL_DIR}/classes"
+SCRIPTPATH
+}
+
+######################################################################
+#
+# Remove duplicate entries in classpath
+#
+######################################################################
+removeDuplicateFromClasspath() {
+   cat >> $SCRIPT_FILE <<SCRIPTPATH
+
+# get current classpath
+JAVA_CLASSPATH=\$(cat ${HPCC_CONFIG} | sed -n "s/\[${SECTION}\]/,/\[/p" | grep "^classpath *= *" | sed 's/^classpath *= *//')
+
+# make sure current classpath has unique entries
+for path in \$JAVA_CLASSPATH
+do
+   [ -z "\$path" ] && continue
+   echo ":\$NEW_JAVA_CLASSPATH:" | grep -q ":\$path:"
+   [ \$? -ne 0 ] &&  NEW_JAVA_CLASSPATH="\${NEW_JAVA_CLASSPATH:+"\$NEW_JAVA_CLASSPATH:"}\$path"
+done
+
+SCRIPTPATH
+}
+
+######################################################################
+#
+# Add new entries to classpath
+#
+######################################################################
+addToClasspath() {
+
+   cat >> $SCRIPT_FILE <<SCRIPTPATH
+# add new entries to classpath
+entries="$classpath_entries"
+for path in \$entries
+do
+   [ -z "\$path" ] && continue
+   echo ":\$NEW_JAVA_CLASSPATH:" | grep -q ":\$path:"
+   [ \$? -ne 0 ] &&  NEW_JAVA_CLASSPATH="\${NEW_JAVA_CLASSPATH:+"\$NEW_JAVA_CLASSPATH:"}\$path"
+done
+
+SCRIPTPATH
+}
+
+######################################################################
+#
+# Delete entries from classpath
+#
+######################################################################
+deleteFromClasspath() {
+   cat >> $SCRIPT_FILE <<SCRIPTPATH
+
+entries="$classpath_entries"
+JAVA_CLASSPATH=\${NEW_JAVA_CLASSPATH}
+NEW_JAVA_CLASSPATH=
+
+for path in \$JAVA_CLASSPATH
+do
+   [ -z "\$path" ] && continue
+
+   found=0
+   for path_to_delete  in \$entries
+   do
+      if [ "\$path_to_delete" = "\$path" ]
+      then
+          found=1
+          break
+      fi
+   done
+   [ \$found -eq 0 ] &&  NEW_JAVA_CLASSPATH="\${NEW_JAVA_CLASSPATH:+"\$NEW_JAVA_CLASSPATH:"}\$path"
+done
+
+SCRIPTPATH
+}
+
+######################################################################
+#
+# Write script update Java Classpath
+# Following code is embeded in ssh command. Another options
+# is written to a script file and scp to remote and invoke
+# from ssh command, particularly when code is complicated.
+#
+######################################################################
+createScriptFileUpdateClasspath() {
+   [ $update_classpath -ne 1 ]  && return
+
+
+
+   composeClasspath
+   cat >> $SCRIPT_FILE <<SCRIPTPATH
+
+CAN_SSH="\$(ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?)"
+if [ "\$CAN_SSH" -eq 255 ]; then
+   echo "\$IP: Cannot SSH to host as user $user.";
+   exit 1
+fi
+
+ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP  << 'SSHCMD'
+
+NEW_JAVA_CLASSPATH=
+SCRIPTPATH
+
+   # Reset classpath
+   [ $reset_classpath -eq 1 ] &&  resetClasspath
+
+   # if has other update beside reset set IFS=:
+   if [ $delete_from_classpath -eq 1 ] || [ -n "$target" ]
+   then
+       cat >> $SCRIPT_FILE <<SCRIPTPATH
+OIFS=\$IFS
+IFS=:
+SCRIPTPATH
+   fi
+
+   # remove duplicate entries from classpath if not reset
+   [ $reset_classpath -eq 0 ] && removeDuplicateFromClasspath
+
+
+   if [ $delete_from_classpath -eq 1 ] && [ $reset_classpath -eq 0 ]
+   then
+       deleteFromClasspath
+   elif [ -n "$classpath_entries" ]
+   then
+       addToClasspath
+   fi
+
+   # if has other update beside reset restore IFS
+   if [ $delete_from_classpath -eq 1 ] || [ -n "$classpath_entries" ]
+   then
+       cat >> $SCRIPT_FILE <<SCRIPTPATH
+IFS=\$OIFS
+SCRIPTPATH
+   fi
+
+   # Replace classpath in environment.conf
+   cat >> $SCRIPT_FILE <<SCRIPTPATH
+
+echo "CLASSPATH: \$NEW_JAVA_CLASSPATH"
+tmp_conf=/tmp/hpcc_conf_\$\$
+# ecapse '/' before processed by sed
+NEW_JAVA_CLASSPATH=\$(echo \$NEW_JAVA_CLASSPATH | sed "s/\//\\\\\\\\\//g")
+echo "Ecapsed CLASSPATH: \$NEW_JAVA_CLASSPATH"
+
+# Update classpath in environment.conf
+cat ${HPCC_CONFIG} | sed "/\[${SECTION}\]/,/\[/ { s/^classpath *= *.*/classpath=\${NEW_JAVA_CLASSPATH}/ }" > \$tmp_conf
+if [ -s \$tmp_conf ]
+then
+   [ ! -e ${HPCC_CONFIG}.bk ] && cp $HPCC_CONFIG ${HPCC_CONFIG}.bk
+   mv \$tmp_conf  $HPCC_CONFIG
+   chmod 644 $HPCC_CONFIG
+else
+   echo "Failed to update $HPCC_CONFIG. Update file size is 0"
+   exit 1
+fi
+
+SSHCMD
+
+SCRIPTPATH
+}
+
+######################################################################
+#
+# Create classpath entries base on source
+#
+######################################################################
+composeClasspath() {
+
+   [ -z "$target" ] && return
+
+   if [ -z "$source" ]
+   then
+      classpath_entries="$target"
+      return
+   fi
+
+   add_target_dir=0
+   for _file in $(ls -d ${source})
+   do
+       _file=$(basename $_file)
+       if [[ $_file = *.jar ]]
+       then
+           classpath_entries="${classpath_entries:+"$classpath_entries:"}${target}/$_file"
+       else
+           add_target_dir=1
+       fi
+   done
+   [ $add_target_dir -eq 1 ] && classpath_entries="${classpath_entries:+"$classpath_entries:"}${target}"
+}
+
+######################################################################
+#
+# Set ssh user
+#
+######################################################################
+setUser() {
+
+  if [ -z "${file_transfer_user}" ]
+  then
+     trial=0
+     max_trial=3
+     while [ 1 ]
+     do
+        if [ -z "${file_transfer_user}" ]
+        then
+           echo ""
+           read -p "Please enter ssh/scp user name: " file_transfer_user;
+           echo ""
+           echo "Please enter ssh/scp user password. If this is no password required (assume"
+           echo "the user has ssh private key: /home/<user>/.ssh/id_rsa) just press 'Enter':"
+           read -s  password
+           echo ""
+        fi
+
+        echo ""
+        echo "You entered user $file_transfer_user and a password."
+        read -p  "Are these correct? [Y|n] " answer
+        if [ "$answer" = "Y" ] || [ "$answer" = "y" ]
+        then
+           break
+        fi
+        file_transfer_user=
+        trial=$(expr $trial \+ 1)
+        if [ $trial -eq $max_trial ]
+        then
+           echo ""
+           echo "Exceeded maximum attempts. Giving up."
+           echo ""
+           exit 1
+        fi
+      done
+  fi
+
+  if [ "$file_transfer_user" != "root" ]
+  then
+     echo $target | grep -q ${INSTALL_DIR}
+     [ $? -eq 0 ] && run_as_sudo=1
+  fi
+
+  export password
+}
+
+######################################################################
+#
+# MAIN
+#
+######################################################################
+source=
+target=
+update_classpath=0
+OPTION=
+SECTION=${SECTION:-DEFAULT}
+classpath_do_add=
+reset_classpath=0
+delete_from_classpath=0
+classpath_entries=
+file_ransfer_user=
+password=
+run_as_sudo=0
+exclude_local=0
+hosts_list=
+
+TEMP=$(/usr/bin/getopt -o cehH:n:s:t:ru:x --long help,hosts:,classpath,delete,concurrent:,\
+source:,target:,reset,user:,exclude -n 'deploy-java-file' -- "$@")
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+        -c|--classpath) update_classpath=1
+            shift ;;
+        -e|--delete) delete_from_classpath=1
+            shift ;;
+        -H|--hosts) OPTION="${OPTION:+"$OPTION "}-h $2"
+            hosts_list=$2
+            shift 2 ;;
+        -n|--concurrent) OPTION="${OPTION:+"$OPTION "}-n $2"
+            shift 2 ;;
+        -s|--source) source="$2"
+            shift 2 ;;
+        -t|--target) target="$2"
+            shift 2 ;;
+        -r|--reset) reset_classpath=1
+            shift ;;
+        -u|--user) file_transfer_user="$2"
+            shift 2 ;;
+        -x|--exclude) OPTION="${OPTION:+"$OPTION "}-x"
+            exclude_local=1
+            shift ;;
+        -h|--help) usage
+                   shift ;;
+        --) shift ; break ;;
+        *) usage ;;
+    esac
+done
+
+
+if [ "${USER}" != "root" ]; then
+   echo ""
+   echo "The script must run as root or sudo."
+   echo ""
+   exit 1
+fi
+
+if [ -z "$target" ]; then
+   if [ -n "$source" ]; then
+       target=${INSTALL_DIR}/classes
+   elif  [ $reset_classpath -eq 0 ]; then
+       echo ""
+       echo "Missing target"
+       usage
+   fi
+fi
+
+
+if [ $delete_from_classpath -eq 1 ] || [ $reset_classpath -eq 1 ]; then
+    update_classpath=1
+fi
+
+if [ -z "$source" ] && [ $update_classpath -ne 1 ]; then
+   echo ""
+   echo "Missing source or update classpath flag"
+   usage
+fi
+
+[ -n "$source" ] && setUser
+
+set_environmentvars
+HPCC_CONFIG=${CONFIG_DIR}/${ENV_CONF_FILE}
+
+
+if [[ $target = */ ]]
+then
+   target_is_directory=1
+   [ "$target" != "/" ] && target=$(echo $target | sed 's/[\/]*$//')
+fi
+
+SCRIPT_FILE=/tmp/deploy-java-files_$$
+createScriptFileHead
+
+EXPECT_SCRIPT_FILE=
+[ -n "$source" ] && addScriptDeployFiles
+[ ${update_classpath} -eq 1 ]  && createScriptFileUpdateClasspath
+
+createScriptFileFoot
+
+expected_python_version=2.6
+is_python_installed ${expected_python_version}
+if [ $? -eq 0 ]
+then
+   eval ${INSTALL_DIR}/sbin/cluster_script.py -e ${HPCC_CONFIG} -f "${SCRIPT_FILE}" -l DEBUG -s $SECTION $OPTION
+else
+   echo ""
+   echo "Cannot detect python version ${expected_python_version}+. Will run on the cluster hosts sequentially."
+   echo ""
+   run_cluster ${SCRIPT_FILE} ${exclude_local} ${hosts_list}
+fi
+
+rm -rf ${SCRIPT_FILE}
