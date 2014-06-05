@@ -39,6 +39,13 @@
 
 #define RTM_MODE(X, M) ((X & M) == M)
 
+// Minimum versions for various server capabilities
+#define SDS_SVER_MIN_GETXPATHS_CONNECT "3.2"
+#define SDS_SVER_MIN_APPEND_OPT "3.3"
+#define SDS_SVER_MIN_GETIDS "3.5"
+#define SDS_SVER_MIN_NODESUBSCRIBE "3.12"
+
+
 enum SDSNotifyFlags { SDSNotify_None=0x00, SDSNotify_Data=0x01, SDSNotify_Structure=0x02, SDSNotify_Added=(SDSNotify_Structure+0x04), SDSNotify_Deleted=(SDSNotify_Structure+0x08), SDSNotify_Renamed=(SDSNotify_Structure+0x10) };
 interface ISDSSubscription : extends IInterface
 {
