@@ -110,7 +110,7 @@
               <row>
                 <entry>bundle</entry>
 
-                <entry>execute a bundle command</entry>
+                <entry>manage ECL bundles</entry>
               </row>
 
               <row>
@@ -2600,8 +2600,8 @@ ecl packagemap validate roxie --active</programlisting>
       <sect2 role="brk">
         <title>ecl bundle depends</title>
 
-        <para><emphasis role="bold">ecl bundle depends
-        &lt;bundleName&gt;</emphasis></para>
+        <para><emphasis role="bold">ecl bundle depends &lt;bundleName&gt;
+        [--version &lt;versionnumber&gt;]</emphasis></para>
 
         <para>Examples:</para>
 
@@ -2658,8 +2658,8 @@ ecl bundle depends mybundle --version=2</programlisting>
       <sect2 role="brk">
         <title>ecl bundle info</title>
 
-        <para><emphasis role="bold">ecl bundle info
-        &lt;bundleName&gt;</emphasis></para>
+        <para><emphasis role="bold">ecl bundle info &lt;bundleName&gt;
+        [--version &lt;versionnumber&gt;]</emphasis></para>
 
         <para>Examples:</para>
 
@@ -2907,12 +2907,11 @@ ecl bundle list myb*
         <title>ecl bundle use</title>
 
         <para><emphasis role="bold">ecl bundle use &lt;bundleName&gt;
-        &lt;version&gt;</emphasis></para>
+        [--version &lt;version&gt;]</emphasis></para>
 
-        <para>Examples:</para>
+        <para>Example:</para>
 
-        <programlisting>ecl bundle use myBundle
-ecl bundle use myBundle 2
+        <programlisting>ecl bundle use myBundle --version 2
 </programlisting>
 
         <para></para>
