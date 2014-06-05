@@ -1700,6 +1700,7 @@ public:
             reload();
             daliHelper->commitCache();
             controlSem.signal();
+            autoReloadThread.start();   // Don't want to overlap auto-reloads with the initial load
         }
         catch(IException *E)
         {
@@ -1827,14 +1828,21 @@ private:
         if (standAloneDll)
             newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, standAloneDll, numChannels, "roxie"));
         else
-            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, numChannels, allQueryPackages));
+        {
+            Owned<CRoxiePackageSetWatcher> currentPackages;
+            {
+                ReadLockBlock b(packageCrit);
+                currentPackages.setown(allQueryPackages.getLink());
+            }
+            newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, numChannels, currentPackages));
+        }
         // Hold the lock for as little time as we can
         // Note that we must NOT hold the lock during the delete of the old object - or we deadlock.
         // Hence the slightly convoluted code below
         Owned<CRoxiePackageSetWatcher> oldPackages;  // NB Destroyed outside the WriteLockBlock
         {
             WriteLockBlock b(packageCrit);
-            oldPackages.setown(allQueryPackages.getLink());  // To ensure that the setown just below does not delete it
+            oldPackages.setown(allQueryPackages.getLink());  // Ensure we don't delete the old packages until after we have loaded the new
             allQueryPackages.setown(newPackages.getClear());
         }
         daliHelper->commitCache();
