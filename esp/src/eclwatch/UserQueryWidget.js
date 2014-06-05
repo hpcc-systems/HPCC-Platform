@@ -35,6 +35,7 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ws_access",
+    "hpcc/ESPBase",
     "hpcc/ESPUtil",
     "hpcc/UserDetailsWidget",
     "hpcc/GroupDetailsWidget",
@@ -60,7 +61,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
                 registry, Menu, MenuItem, MenuSeparator, Select,
                 tree, selector,
-                _TabContainerWidget, WsAccess, ESPUtil, UserDetailsWidget, GroupDetailsWidget,
+                _TabContainerWidget, WsAccess, ESPBase, ESPUtil, UserDetailsWidget, GroupDetailsWidget,
                 template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -142,6 +143,19 @@ define([
             }
         },
 
+        _onExportGroup: function (params) {
+            var selections = this.groupsGrid.getSelected();
+            var groupnames = "";
+            arrayUtil.forEach(selections, function (item, idx) {
+                if (groupnames.length) {
+                    groupnames += "&";
+                }
+                groupnames += "groupnames_i" + idx + "=" + item.name;
+            }, this);
+            var base = new ESPBase();
+            window.open(base.getBaseURL("ws_access") + "/UserAccountExport?" + groupnames);
+        },
+
         _onGroupsRowDblClick: function (name) {
             var groupTab = this.ensureGroupPane("Group" + name, {
                 Name: name
@@ -205,6 +219,19 @@ define([
                     context.refreshUsersGrid(true);
                 });
             }
+        },
+
+        _onExportUser: function (params) {
+            var selections = this.usersGrid.getSelected();
+            var usernames = "";
+            arrayUtil.forEach(selections, function (item, idx) {
+                if (usernames.length) {
+                    usernames += "&";
+                }
+                usernames += "usernames_i" + idx + "=" + item.username;
+            }, this);
+            var base = new ESPBase();
+            window.open(base.getBaseURL("ws_access") + "/UserAccountExport?" + usernames);
         },
 
         _onUsersRowDblClick: function (username, fullname, passwordexpiration) {
@@ -619,11 +646,13 @@ define([
             var hasUserSelection = userSelection.length;
             registry.byId(this.id + "EditUsers").set("disabled", !hasUserSelection);
             registry.byId(this.id + "DeleteUsers").set("disabled", !hasUserSelection);
+            registry.byId(this.id + "ExportUsers").set("disabled", !hasUserSelection);
 
             var groupSelection = this.groupsGrid.getSelected();
             var hasGroupSelection = groupSelection.length;
             registry.byId(this.id + "EditGroups").set("disabled", !hasGroupSelection);
             registry.byId(this.id + "DeleteGroups").set("disabled", !hasGroupSelection);
+            registry.byId(this.id + "ExportGroups").set("disabled", !hasGroupSelection);
 
             var permissionSelection = this.permissionsGrid.getSelected();
             var hasPermissionSelection = permissionSelection.length;
