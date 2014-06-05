@@ -5,6 +5,7 @@
                 <div id="${id}Toolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}UsersRefresh" data-dojo-attach-event="onClick:_onRefreshUsers" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}EditUsers" data-dojo-attach-event="onClick:_onEditUser" data-dojo-type="dijit.form.Button">${i18n.Open}</div>
                     <div id="${id}AddUsersDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Add}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
@@ -41,7 +42,6 @@
                             </div>
                         </div>
                     </div>
-                    <div id="${id}EditUsers" data-dojo-attach-event="onClick:_onEditUser" data-dojo-type="dijit.form.Button">${i18n.Edit}</div>
                     <div id="${id}DeleteUsers" data-dojo-attach-event="onClick:_onDeleteUser" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
@@ -54,6 +54,7 @@
                 <div id="${id}GroupsToolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}GroupsRefresh" data-dojo-attach-event="onClick:_onRefreshGroups" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}EditGroups" data-dojo-attach-event="onClick:_onEditGroup" data-dojo-type="dijit.form.Button">${i18n.Open}</div>
                     <div id="${id}AddGroupsDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>${i18n.Add}</span>
                         <div data-dojo-type="dijit.TooltipDialog">
@@ -67,7 +68,6 @@
                             </div>
                         </div>
                     </div>
-                    <div id="${id}EditGroups" data-dojo-attach-event="onClick:_onEditGroup" data-dojo-type="dijit.form.Button">${i18n.Edit}</div>
                     <div id="${id}DeleteGroups" data-dojo-attach-event="onClick:_onDeleteGroup" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">${i18n.OpenInNewPage}</div>
