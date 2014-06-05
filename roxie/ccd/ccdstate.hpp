@@ -121,7 +121,7 @@ interface IRoxieDebugSessionManager : extends IInterface
 
 interface IRoxieQueryPackageManagerSet : extends IInterface
 {
-    virtual void requestReload() = 0;
+    virtual void requestReload(bool wait, bool force) = 0;
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
     virtual IQueryFactory *getQuery(const char *id, StringBuffer *querySet, IArrayOf<IQueryFactory> *slaves, const IRoxieContextLogger &logctx) const = 0;
