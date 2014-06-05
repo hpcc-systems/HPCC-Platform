@@ -26,7 +26,10 @@ from ..common.error import Error
 
 class Suite:
     def __init__(self, name, dir_ec, dir_a, dir_ex, dir_r, logDir, args, isSetup=False,  fileList = None):
-        self.name = name
+        if isSetup:
+            self.name = 'setup_'+name
+        else:
+            self.name = name
         self.suite = []
         self.dir_ec = dir_ec
         self.dir_a = dir_a
@@ -40,7 +43,7 @@ class Suite:
 
         if len(self.exclude):
             curTime = time.strftime("%y-%m-%d-%H-%M")
-            logName = name + "-exclusion." + curTime + ".log"
+            logName = self.name + "-exclusion." + curTime + ".log"
             self.logName = os.path.join(self.logDir, logName)
             self.log = open(self.logName, "w");
             for item in self.exclude:
