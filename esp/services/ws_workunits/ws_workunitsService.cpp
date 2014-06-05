@@ -1009,6 +1009,21 @@ bool CWsWorkunitsEx::onWUSubmit(IEspContext &context, IEspWUSubmitRequest &req, 
     return true;
 }
 
+WUExceptionSeverity checkGetExceptionSeverity(CWUExceptionSeverity severity)
+{
+    switch (severity)
+    {
+        case CWUExceptionSeverity_INFO:
+            return ExceptionSeverityInformation;
+        case CWUExceptionSeverity_WARNING:
+            return ExceptionSeverityWarning;
+        case CWUExceptionSeverity_ERROR:
+            return ExceptionSeverityError;
+    }
+
+    throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT,"invalid exception severity");
+}
+
 bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWURunResponse &resp)
 {
     try
@@ -1020,6 +1035,8 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
         StringBuffer wuidStr = req.getWuid();
         const char* runWuid = wuidStr.trim().str();
         StringBuffer wuid;
+
+        WUExceptionSeverity severity = checkGetExceptionSeverity(req.getExceptionSeverity());
 
         if (runWuid && *runWuid)
         {
@@ -1062,7 +1079,7 @@ bool CWsWorkunitsEx::onWURun(IEspContext &context, IEspWURunRequest &req, IEspWU
                 unsigned flags = WorkUnitXML_SeverityTags;
                 if (req.getNoRootTag())
                     flags |= WorkUnitXML_NoRoot;
-                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, flags);
+                getFullWorkUnitResultsXML(context.queryUserId(), context.queryPassword(), cw.get(), result, flags, severity);
                 resp.setResults(result.str());
                 break;
             }

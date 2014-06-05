@@ -512,6 +512,13 @@ ESPresponse [exceptions_inline] WUResubmitResponse
     [min_ver("1.40")] ESParray<ESPstruct ResubmittedWU, WU> WUs;
 };
 
+ESPenum WUExceptionSeverity : string
+{
+    INFO("info"),
+    WARNING("warning"),
+    ERROR("error")
+};
+
 ESPrequest WURunRequest
 {
     string QuerySet;
@@ -524,6 +531,7 @@ ESPrequest WURunRequest
     bool NoRootTag(0);
     ESParray<ESPstruct NamedValue> DebugValues;
     ESParray<ESPstruct NamedValue> Variables;
+    ESPenum WUExceptionSeverity ExceptionSeverity("info");
 };
 
 ESPresponse [exceptions_inline] WURunResponse

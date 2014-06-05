@@ -450,7 +450,7 @@ private:
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
-    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false)
+    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false), optExceptionSeverity("info")
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject | eclObjWuid | eclObjQuery;
     }
@@ -475,6 +475,8 @@ public:
             if (iter.matchOption(optWaitTime, ECLOPT_WAIT))
                 continue;
             if (iter.matchFlag(optNoRoot, ECLOPT_NOROOT))
+                continue;
+            if (iter.matchOption(optExceptionSeverity, ECLOPT_EXCEPTION_LEVEL))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -540,6 +542,7 @@ public:
         req->setWait((int)optWaitTime);
         if (optInput.length())
             req->setInput(optInput.get());
+        req->setExceptionSeverity(optExceptionSeverity); //throws exception if invalid value
 
         if (debugValues.length())
             req->setDebugValues(debugValues);
@@ -581,18 +584,21 @@ public:
             "   <ecl_file|->           ECL text file to publish\n"
             "   <so|dll|->             workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -t, --target=<val>     target cluster to run job on\n"
-            "                          (defaults to cluster defined inside workunit)\n"
-            "   -n, --name=<val>       job name\n"
-            "   -in,--input=<file|xml> file or xml content to use as query input\n"
-            "   -X<name>=<value>       sets the stored input value (stored('name'))\n"
-            "   --wait=<ms>            time to wait for completion\n",
+            "   -t, --target=<val>        target cluster to run job on\n"
+            "                             (defaults to cluster defined inside workunit)\n"
+            "   -n, --name=<val>          job name\n"
+            "   -in,--input=<file|xml>    file or xml content to use as query input\n"
+            "   -X<name>=<value>          sets the stored input value (stored('name'))\n"
+            "   --wait=<ms>               time to wait for completion\n"
+            "   --exception-level=<level> minimum severity level for exceptions\n"
+            "                             values: 'info', 'warning', 'error'\n",
             stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
     StringAttr optName;
     StringAttr optInput;
+    StringAttr optExceptionSeverity;
     IArrayOf<IEspNamedValue> variables;
     unsigned optWaitTime;
     bool optNoRoot;
