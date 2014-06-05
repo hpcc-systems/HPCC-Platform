@@ -1625,6 +1625,7 @@ private:
                             {
                                 if (traceLevel)
                                     DBGLOG("Package map %s, active %s already loaded", packageMapId, isActive ? "true" : "false");
+                                stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, oldPackageManager->getHash());
                                 allQueryPackages.append(*oldPackageManager.getClear());
                             }
                             else
