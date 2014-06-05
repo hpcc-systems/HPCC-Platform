@@ -1687,7 +1687,7 @@ protected:
                 cached = NULL;
             }
         }
-        globalPackageSetManager->requestReload();
+        globalPackageSetManager->requestReload(false, false);
     }
 
     // We cache all the file maps/arrays etc here. 
