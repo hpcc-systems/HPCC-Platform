@@ -88,8 +88,9 @@
 
       <para>This is useful for testing queries. It is also suitable for
       providing real-time access to a users. You can also use proxy mode to
-      bypass WsECl and communicate directly. See <link
-      linkend="proxymode">WsECL and Proxy mode</link></para>
+      bypass bypass WsECL response formatting and get the roxie formatted SOAP
+      response directly. See <link linkend="proxymode">WsECL and Proxy
+      mode</link></para>
     </sect2>
 
     <sect2>
@@ -275,23 +276,17 @@
       can use a load balancer and submit the query to the Virtual IP created
       by the load balancer.</para>
     </sect2>
-  <sect2>
 
+    <sect2>
       <title>Direct Access Via JSONP</title>
 
-
-
       <para>To get a JSONP response, add the <emphasis
-
       role="bold">&amp;jsonp=&lt;myfunction&gt;</emphasis> decoration to the
-
       URL. This returns a javascript wrapped json response:</para>
 
-
-
       <para><programlisting>myfunction("{"data_1": "hello world", "data_2": ["the","sun","is","up"]}");</programlisting></para>
-
     </sect2>
+
     <sect2 id="proxymode">
       <title>WsECL and Proxy mode</title>
 
@@ -334,6 +329,17 @@ Regs.Reg.0.Codes.Code.0=PBI
 Regs.Reg.0.Codes.Code.1=FLL
 Regs.Reg.1.Name=NORTH
 Regs.Reg.1.Codes.Code=MCO</programlisting></para>
+    </sect2>
+
+    <sect2>
+      <title>Expanded Mode in WsECL</title>
+
+      <para>To include the schema in results, add the <emphasis
+      role="bold">expanded</emphasis> decoration to the URL as shown
+      below:<programlisting>Change:
+/WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName
+to
+/WsEcl/<emphasis role="bold">submit</emphasis>/query/RoxieTargetName/QueryName/expanded</programlisting></para>
     </sect2>
   </sect1>
 </chapter>
