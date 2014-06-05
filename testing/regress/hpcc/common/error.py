@@ -27,7 +27,8 @@ ERROR = {
     "3000": "Return is null",
     "3001": "Return diff does not match.",
     "4000": "Unknown cluster!",
-    "4001": "No ECl file!"
+    "4001": "No ECl file!",
+    "5000": "Missing argument of -X parameter!\nIt should be 'name=val[,name2=val2..]'"
 }
 
 
