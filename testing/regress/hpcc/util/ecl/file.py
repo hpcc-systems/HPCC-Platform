@@ -21,8 +21,9 @@ import difflib
 import logging
 import os
 import traceback
+import re
 
-from ...util.util import isPositiveIntNum
+from ...util.util import isPositiveIntNum, getConfig
 
 class ECLFile:
     ecl = None
@@ -42,7 +43,7 @@ class ECLFile:
     taskId = -1
     ignoreResult=False
 
-    def __init__(self, ecl, dir_a, dir_ex, dir_r,  cluster):
+    def __init__(self, ecl, dir_a, dir_ex, dir_r,  cluster, args):
         self.dir_ec = os.path.dirname(ecl)
         self.dir_ex = dir_ex
         self.dir_r = dir_r
