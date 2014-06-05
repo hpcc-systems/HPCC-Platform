@@ -15,54 +15,126 @@
 #    limitations under the License.
 ################################################################################
 #
-# Usage: hpcc-push.sh <from> <to>
+# Uusage: hpcc-push.sh -s <source> -t <target> -n  <number_concurrent> -x
 #
 # This is acomplished with a standard scp command with the use of the
 # runtime users id_rsa file.
 
 ###<REPLACE>###
 
-
-source  ${INSTALL_DIR}/etc/init.d/lock.sh
-source  ${INSTALL_DIR}/etc/init.d/pid.sh
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 source  ${INSTALL_DIR}/etc/init.d/init-functions
 source  ${INSTALL_DIR}/etc/init.d/export-path
 
 
-getIPS(){
-	IPS=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -machines | awk -F, '{print \$1}'  | sort | uniq`
+usage() {
+    echo ""
+    echo "usage: hpcc-push.sh -s <source> -t <target> -n  <concurrent> -x"
+    echo "   -n:  when specified, denotes the number of concurrent executions threads."
+    echo "        The default is 5."
+    echo "   -s:  source file or directory."
+    echo "   -t:  target file or directory."
+    echo "   -x:  when specified, this option excludes execution on the current host."
+    echo ""
+
+    exit 1
+
+}
+createScriptFile() {
+
+   cat > $SCRIPT_FILE <<SCRIPTFILE
+#~/bin/bash
+IP=\$1
+
+if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
+    echo "\$IP: Host is alive."
+    CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
+    if [ "\$CAN_SSH" -eq 255 ]; then
+       echo "\$IP: Cannot SSH to host.";
+    else
+       echo "\$IP: Copying $source to $target on \$IP";
+       SCP=\$(scp -r -i $home/$user/.ssh/id_rsa $source $user@\$IP:$target; echo \$?)
+       if [ "\$SCP" -eq 0 ]; then
+          echo "\$IP: Success";
+       else
+          echo "\$IP: Failure";
+          exit 1
+       fi
+    fi
+else
+    echo "\$IP: Cannot Ping host? (Host Alive?)"
+    exit 1
+fi
+SCRIPTFILE
+
+chmod +x ${SCRIPT_FILE}
 }
 
-copyFile(){
-	echo "$IP: Copying $1 to $2 on $IP";
-	SCP=`scp -i $home/$user/.ssh/id_rsa $1 $user@$IP:$2; echo $?`
-	if [ "$SCP" -eq 0 ]; then
-		echo "$IP: Success";
-	else
-		echo "$IP: Failure";
-	fi
-}
 
-if [ $# -ne 2 ]; then
-	echo "usage: hpcc-push.sh [user@]host1:]file1 [[user@]host2:]file2"
+############################################
+#
+# MAIN
+#
+############################################
+if [ "${USER}" != "root" ]; then
+   echo ""
+   echo "The script must run as root or sudo."
+   echo ""
+   exit 1
 fi
 
 set_environmentvars
-envfile=$configs/$environment
 
-getIPS
+source=
+target=
+exclude=0
+OPTION="-e ${CONFIG_DIR}/${ENV_CONF_FILE} -s ${SECTION:-DEFAULT}"
 
-for IP in $IPS; do
-	if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
-		echo "$IP: Host is alive."
-		CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
-		if [ "$CAN_SSH" -eq 255 ]; then
-			echo "$IP: Cannot SSH to host.";
-		else
-			copyFile $1 $2
-		fi
-	else
-        echo "$IP: Cannot Ping host? (Host Alive?)"
-	fi
+
+TEMP=`/usr/bin/getopt -o n:s:t:hx --long help,conrrent:,source:,target:,exclude -n 'hpcc-push' -- "$@"`
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
+eval set -- "$TEMP"
+while true ; do
+    case "$1" in
+        -n|--concurrent) 
+            if [ -n "$2" ] && [[ $2 =~ ^[0-9]+$ ]]
+            then
+               [ $2 -gt 0 ] &&  $OPTION="${OPTION:+"$OPTION "}-n $2"
+            fi
+            shift 2 ;;
+        -s|--source) source="$2"
+            shift 2 ;;
+        -t|--target) target="$2"
+            shift 2 ;;
+        -x|--exclude) OPTION="${OPTION:+"$OPTION "}-x"
+            exclude=1
+            shift ;;
+        -h|--help) usage
+            shift ;;
+        --) shift ; break ;;
+        *) usage ;;
+    esac
 done
+
+
+if [ -z "$source"  ] || [ -z "$target" ]; then
+   usage
+fi
+
+
+SCRIPT_FILE=/tmp/hpcc-push_$$
+createScriptFile
+
+python_expected_version=2.6
+is_python_installed ${python_expected_version}
+if [ $? -eq 0 ]
+then
+   eval ${INSTALL_DIR}/sbin/cluster_script.py -f ${SCRIPT_FILE} $OPTION
+else
+   echo ""
+   echo "Cannot detect python version ${python_expected_version}+. Will run on the cluster hosts sequentially."
+   echo ""
+   run_cluster ${SCRIPT_FILE} ${exclude}
+fi
+
+rm -rf ${SCRIPT_FILE}
