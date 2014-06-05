@@ -88,7 +88,7 @@
 
       <para>This is useful for testing queries. It is also suitable for
       providing real-time access to a users. You can also use proxy mode to
-      bypass bypass WsECL response formatting and get the roxie formatted SOAP
+      bypass WsECL response formatting and get the roxie formatted SOAP
       response directly. See <link linkend="proxymode">WsECL and Proxy
       mode</link></para>
     </sect2>
