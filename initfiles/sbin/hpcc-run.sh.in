@@ -21,16 +21,24 @@
 # runtime users id_rsa file.
 
 ###<REPLACE>###
+INSTALL_DIR=/opt/HPCCSystems
+CONFIG_DIR=/etc/HPCCSystems
+ENV_XML_FILE=environment.xml
+ENV_CONF_FILE=environment.conf
+PID_DIR=/var/run/HPCCSystems
+LOCK_DIR=/var/lock/HPCCSystems
+LOG_DIR=/var/log/HPCCSystems
 
-source  ${INSTALL_DIR}/etc/init.d/lock.sh
-source  ${INSTALL_DIR}/etc/init.d/pid.sh
+
+#source  ${INSTALL_DIR}/etc/init.d/lock.sh
+#source  ${INSTALL_DIR}/etc/init.d/pid.sh
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 source  ${INSTALL_DIR}/etc/init.d/init-functions
 source  ${INSTALL_DIR}/etc/init.d/export-path
 
 print_usage(){
-        echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] {start|stop|restart|status|setup}"
-        exit 1
+        echo "usage: hpcc-run.sh [-c component] [-a {hpcc-init|dafilesrv}] [-n concurrent]  {start|stop|restart|status|setup}"
+        end 1
 }
 
 getIPS(){
@@ -41,35 +49,214 @@ getDali(){
         DIP=`${INSTALL_DIR}/sbin/configgen -env ${envfile} -listall | grep Dali | awk -F, '{print \$3}'  | sort | uniq`
 }
 
-buildCmd(){
-        if [ -z $3 ]; then
-                CMD="sudo /etc/init.d/$1 $2"
-        else
-                CMD="sudo /etc/init.d/$1 -c $3 $2"
-        fi
+createIPListFileExcludeDIP(){
+  _file=$1
+  echo "$IPS" | grep -v $DIP  > $_file
 }
 
-runCmd(){
-        echo "$IP: Running $@";
-        ssh -i $home/$user/.ssh/id_rsa $user@$IP $@;
+doOnIP(){
+    _ip=$1
+    _action=$2
+    _cmd=$3
+    _comp=$4
+
+   if ping -c 1 -w 5 -n $_ip > /dev/null 2>&1; then
+       #echo "$_ip: Host is alive."
+       CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$_ip exit > /dev/null 2>&1; echo $?`"
+       if [ "$CAN_SSH" -eq 255 ]; then
+          echo "$_ip: Cannot SSH to host.";
+          return 1
+       else
+          if [ -z "${_comp}" ]; then
+              CMD="sudo /etc/init.d/$_action $_cmd"
+          else
+              CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
+          fi
+          echo "$_ip: Running $CMD";
+          ssh -i $home/$user/.ssh/id_rsa $user@$_ip $CMD;
+       fi
+   else
+       echo "$_ip: Cannot Ping host? (Host Alive?)"
+       return 1
+   fi
+
 }
+
+createScrtip(){
+    _scriptFile=$1
+    _action=$2
+    _cmd=$3
+    _comp=$4
+
+    cat > $_scriptFile <<SCRIPTFILE
+#!/bin/bash
+IP=\$1
+if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
+     echo "\$IP: Host is alive."
+     CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
+     if [ "\$CAN_SSH" -eq 255 ]; then
+          echo "\$IP: Cannot SSH to host.";
+          exit 1
+     else
+          if [ -z "${_comp}" ]; then
+              CMD="sudo /etc/init.d/$_action $_cmd"
+          else
+              CMD="sudo /etc/init.d/$_action -c $_comp $_cmd"
+          fi
+          echo "\$IP: Running \$CMD";
+          ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD;
+     fi
+else
+     echo "\$IP: Cannot Ping host? (Host Alive?)"
+     exit 1
+fi
+SCRIPTFILE
+
+     chmod +x $_scriptFile
+
+
+}
+
+runScript() {
+
+   if [ $hasPython -eq 1 ]
+   then
+      eval ${INSTALL_DIR}/sbin/cluster_script.py -f ${scriptFile} $OPTIONS
+      rc=$?
+   else
+      echo ""
+      echo "Cannot detect python version ${expected_python_version}+. Will run on the cluster hosts sequentially."
+      echo ""
+      run_cluster ${scriptFile} 0 $1
+      rc=$?
+   fi
+   rm -rf $scriptFile
+}
+
+doSetup() {
+     scriptFile=/tmp/${action}_setup_$$
+     createScrtip $scriptFile $action "setup" $comp
+     runScript
+}
+
+doStatus() {
+     dateTime=$(date +"%Y%m%d_%H%M%S")
+     statusDir=/var/log/HPCCSystems/cluster/status/${dateTime}
+     mkdir -p $statusDir
+     chown -R ${user}:${user} ${statusDir}/..
+
+     cmd=status
+
+     cmd_option=
+     [ -n "${comp}" ] && cmd_option="-c $comp"
+
+     scriptFile=/tmp/${action}_status_$$
+     hpccStatusFile=/tmp/hpcc_status_${dateTime}_$$
+
+     cat > $scriptFile <<SCRIPTFILE
+#!/bin/bash
+IP=\$1
+if ping -c 1 -w 5 -n \$IP > /dev/null 2>&1; then
+     echo "\$IP: Host is alive."
+     CAN_SSH="\`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@\$IP exit > /dev/null 2>&1; echo \$?\`"
+     if [ "\$CAN_SSH" -eq 255 ]; then
+          echo "\$IP: Cannot SSH to host."
+          exit 1
+     else
+          CMD="sudo /etc/init.d/$action $cmd $cmd_option > $hpccStatusFile"
+          echo "\$IP: Running \$CMD"
+          ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD
+
+          scp -i $home/$user/.ssh/id_rsa $user@\${IP}:${hpccStatusFile} ${statusDir}/\$IP
+
+          CMD="rm -rf  $hpccStatusFile"
+          ssh -i $home/$user/.ssh/id_rsa $user@\$IP \$CMD
+
+     fi
+else
+     echo "\$IP: Cannot Ping host? (Host Alive?)"
+     exit 1
+fi
+SCRIPTFILE
+
+     chmod +x $scriptFile
+     runScript
+     echo ""
+     echo "Cluster status is saved under $statusDir"
+     echo ""
+
+}
+
+
+
+doStop() {
+    scriptFile=/tmp/${action}_stop_$$
+    createScrtip $scriptFile $action "stop" $comp
+    OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsExcludeDIP"
+    runScript $IPsExcludeDIP
+
+    # Ignore stop return code
+    # [ $rc -ne 0 ] && end $rc
+    doOnIP $DIP $action "stop" $comp || end 0
+}
+
+
+doStart() {
+    doOnIP $DIP $action "start" $comp || end 1
+
+    scriptFile=/tmp/${action}_start_$$
+    createScrtip $scriptFile $action "start" $comp
+    OPTIONS="${OPTIONS:+"$OPTIONS "}-h $IPsExcludeDIP"
+    runScript $IPsExcludeDIP
+    [ $rc -ne 0 ] && end $rc
+}
+
+end() {
+   [ -e "${IPsExcludeDIP}" ] &&  rm -rf ${IPsExcludeDIP}
+   exit $1
+}
+
+
+############################################
+#
+# MAIN
+#
+############################################
+if [ "${USER}" != "root" ]; then
+   echo ""
+   echo "The script must run as root or sudo."
+   echo ""
+   exit 1
+fi
+
 
 set_environmentvars
 envfile=$configs/$environment
+configfile=${CONFIG_DIR}/${ENV_CONF_FILE}
+
 
 getIPS
 getDali
+IPsExcludeDIP=/tmp/ip_list_exclude_dip_$$
+createIPListFileExcludeDIP $IPsExcludeDIP
 
+hasPython=0
+expected_python_version=2.6
+is_python_installed $expected_python_version
+[ $? -eq 0 ] && hasPython=1
 
+OPTIONS="-e $configfile -s ${SECTION:-DEFAULT}"
 
-TEMP=`/usr/bin/getopt -o a:c:h --long help,action -n 'hpcc-run' -- "$@"`
-if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
+TEMP=`/usr/bin/getopt -o a:c:n:h --long help,action:,concurrent: -n 'hpcc-run' -- "$@"`
+if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; end 1 ; fi
 eval set -- "$TEMP"
 while true ; do
     case "$1" in
         -c) comp=$2
             shift 2 ;;
         -a|--action) action=$2
+            shift 2 ;;
+        -n|--concurrent) OPTION="${OPTIONS:+"$OPTIONS "}-n $2"
             shift 2 ;;
         -h|--help) print_usage
                    shift ;;
@@ -78,167 +265,38 @@ while true ; do
     esac
 done
 
-cnt=0
-for arg; do 
-    arg=$arg; 
-    case "$arg" in
-        start) 
-            cmd="start"
-            cnt=$(( $cnt + 1 ))
-            ;;
-        stop) 
-            cmd="stop"
-            cnt=$(( $cnt + 1 ))
-            ;;
-        restart) 
-            cmd="restart"
-            cnt=$(( $cnt + 1 ))
-            ;;
-        status) 
-            cmd="status"
-            cnt=$(( $cnt + 1 ))
-            ;;
-        setup) 
-            cmd="setup"
-            cnt=$(( $cnt + 1 ))
-            ;;
-        *) print_usage;;
-    esac
-done
-
-if [ ${cnt} -gt 1 ]; then
-        print_usage
-fi
-
 case "$action" in
     hpcc-init) ;;
     dafilesrv) ;;
     *) if [ -z $action ]; then
             action="hpcc-init"
         else
-            print_usage 
+            print_usage
         fi
         ;;
 esac
 
-if [ "${cmd}" == "restart" ]; then
-    for i in stop start; do
-        cmd=$i
-        echo "Running '${cmd}' on cluster."
-        if [ "${cmd}" == "start" ]; then
-            if ping -c 1 -w 5 -n $DIP > /dev/null 2>&1; then
-                echo "$DIP: Host is alive."
-                CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$DIP exit > /dev/null 2>&1; echo $?`"
-                if [ "$CAN_SSH" -eq 255 ]; then
-                    echo "$DIP: Cannot SSH to host.";
-                else
-                    IP=$DIP
-                    buildCmd $action $cmd $comp
-                    runCmd $CMD
-                fi
-            else
-                echo "$DIP: Cannot Ping host? (Host Alive?)"
-            fi 
-        fi
+for arg; do 
+    arg=$arg; 
+    case "$arg" in
+        start) 
+            doStart
+            ;;
+        stop) 
+            doStop
+            ;;
+        restart) 
+            doStop
+            doStart
+            ;;
+        status) 
+            doStatus
+            ;;
+        setup) 
+            doSetup
+            ;;
+        *) print_usage;;
+    esac
+done
 
-        for IP in $IPS; do
-            if [ "$IP" == "$DIP" ]; then
-                continue
-            fi
-            if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
-                echo "$IP: Host is alive."
-                CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
-                if [ "$CAN_SSH" -eq 255 ]; then
-                    echo "$IP: Cannot SSH to host.";
-                else
-                    buildCmd $action $cmd $comp
-                    runCmd $CMD
-                fi
-            else
-                echo "$IP: Cannot Ping host? (Host Alive?)"
-            fi
-        done
-        
-        if [ "${cmd}" == "stop" ]; then
-            if ping -c 1 -w 5 -n $DIP > /dev/null 2>&1; then
-                echo "$DIP: Host is alive."
-                CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$DIP exit > /dev/null 2>&1; echo $?`"
-                if [ "$CAN_SSH" -eq 255 ]; then
-                    echo "$DIP: Cannot SSH to host.";
-                else
-                    IP=$DIP
-                    buildCmd $action $cmd $comp
-                    runCmd $CMD
-                fi
-            else
-                echo "$DIP: Cannot Ping host? (Host Alive?)"
-            fi
-        fi
-    done
-elif [ "${cmd}" == "stop" ] &&  strstr "${action}" "dafilesrv" ; then
-    for IP in $IPS; do
-        if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
-            echo "$IP: Host is alive."
-            CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
-            if [ "$CAN_SSH" -eq 255 ]; then
-                echo "$IP: Cannot SSH to host.";
-            else
-                CMD="sudo service dafilesrv stop"
-                runCmd $CMD
-            fi
-        else
-            echo "$IP: Cannot Ping host? (Host Alive?)"
-        fi
-
-    done
-else
-    if [ "${cmd}" == "start" ] || [ "${cmd}" == "status" ]; then
-        if ping -c 1 -w 5 -n $DIP > /dev/null 2>&1; then
-            echo "$DIP: Host is alive."
-            CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$DIP exit > /dev/null 2>&1; echo $?`"
-            if [ "$CAN_SSH" -eq 255 ]; then
-                echo "$DIP: Cannot SSH to host.";
-            else
-                IP=$DIP
-                buildCmd $action $cmd $comp
-                runCmd $CMD
-            fi
-        else
-            echo "$DIP: Cannot Ping host? (Host Alive?)"
-        fi 
-    fi
-
-    for IP in $IPS; do
-        if [ "$IP" == "$DIP" ]; then
-            continue
-        fi
-        if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
-            echo "$IP: Host is alive."
-            CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$IP exit > /dev/null 2>&1; echo $?`"
-            if [ "$CAN_SSH" -eq 255 ]; then
-                echo "$IP: Cannot SSH to host.";
-            else
-                buildCmd $action $cmd $comp
-                runCmd $CMD
-            fi
-        else
-            echo "$IP: Cannot Ping host? (Host Alive?)"
-        fi
-    done
-        
-    if [ "${cmd}" == "stop" ]; then
-        if ping -c 1 -w 5 -n $DIP > /dev/null 2>&1; then
-            echo "$DIP: Host is alive."
-            CAN_SSH="`ssh -i $home/$user/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $user@$DIP exit > /dev/null 2>&1; echo $?`"
-            if [ "$CAN_SSH" -eq 255 ]; then
-                echo "$DIP: Cannot SSH to host.";
-            else
-                IP=$DIP
-                buildCmd $action $cmd $comp
-                runCmd $CMD
-            fi
-        else
-             echo "$DIP: Cannot Ping host? (Host Alive?)"
-        fi
-    fi
-fi
+end 0
