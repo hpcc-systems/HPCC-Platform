@@ -90,9 +90,9 @@ class Logger(object):
             if len(self.logBuffer):
                 stream = self.stream
                 for item in self.logBuffer:
-                        for line in self.logBuffer[item]:
-                            stream.write(line)
-                            stream.write(self.terminator)
+                    for line in self.logBuffer[item]:
+                        stream.write(line)
+                        stream.write(self.terminator)
                 self.logBuffer.clear()
                 self.taskIds = {}
                 self.isBuffer = False
