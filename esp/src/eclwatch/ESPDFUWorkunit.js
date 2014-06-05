@@ -306,7 +306,7 @@ define([
 
     return {
         isInstanceOfWorkunit: function (obj) {
-            return obj.isInstanceOf(Workunit);
+            return obj && obj.isInstanceOf && obj.isInstanceOf(Workunit);
         },
 
         Get: function (wuid) {

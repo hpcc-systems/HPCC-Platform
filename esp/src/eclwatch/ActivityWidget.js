@@ -288,8 +288,14 @@ define([
                         },
                         formatter: function (_name, row) {
                             var img = row.getStateImage();
-                            var name = context.activity.isInstanceOfQueue(row) ? _name : row.Wuid;
-                            return "<img src='" + img + "'/>&nbsp;<a href='#' class='" + context.id + "RowClick'>" + name + "</a>";
+                            if (context.activity.isInstanceOfQueue(row)) {
+                                if (row.ClusterType === 3) {
+                                    return "<img src='" + img + "'/>&nbsp;<a href='#' class='" + context.id + "RowClick'>" + _name + "</a>";
+                                } else {
+                                    return "<img src='" + img + "'/>&nbsp;" + _name;
+                                }
+                            }
+                            return "<img src='" + img + "'/>&nbsp;<a href='#' class='" + context.id + "RowClick'>" + row.Wuid + "</a>";
                         }
                     }),
                     GID: {
@@ -355,7 +361,7 @@ define([
         },
 
         createDetail: function (id, row, params) {
-            if (this.activity.isInstanceOfQueue(row)) {
+            if (this.activity.isInstanceOfQueue(row) && row.ClusterType === 3) {
                 return new DelayLoadWidget({
                     id: id,
                     title: row.ClusterName,
@@ -438,6 +444,7 @@ define([
 
         refreshActionState: function (selection) {
             var clusterSelected = false;
+            var thorClusterSelected = false;
             var wuSelected = false;
             var clusterPausedSelected = false;
             var clusterNotPausedSelected = false;
@@ -458,6 +465,9 @@ define([
                     }
                     if (item.getChildCount()) {
                         clusterHasItems = true;
+                    }
+                    if (item.ClusterType === 3) {
+                        thorClusterSelected = true;
                     }
                 } else if (context.activity.isInstanceOfWorkunit(item)) {
                     wuSelected = true;
@@ -485,7 +495,7 @@ define([
             this.clusterPauseButton.set("disabled", !clusterNotPausedSelected);
             this.clusterResumeButton.set("disabled", !clusterPausedSelected);
             this.clusterClearButton.set("disabled", !clusterHasItems);
-            this.openButton.set("disabled", !wuSelected && !clusterSelected);
+            this.openButton.set("disabled", !wuSelected && !thorClusterSelected);
             this.wuAbortButton.set("disabled", !wuSelected);
             this.wuHighPriorityButton.set("disabled", !wuCanHigh);
             this.wuNormalPriorityButton.set("disabled", !wuCanNormal);
