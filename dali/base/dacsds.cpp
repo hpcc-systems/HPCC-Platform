@@ -38,12 +38,6 @@
 static unsigned clientThrottleLimit;
 static unsigned clientThrottleDelay;
 
-#define MIN_GETXPATHS_CONNECT_SVER "3.2"
-#define MIN_APPEND_OPT_SVER "3.3"
-#define MIN_GETIDS_SVER "3.5"
-#define MIN_NODESUBSCRIBE_SVER "3.12"
-
-
 static ISDSManager *SDSManager=NULL;
 
 static CriticalSection SDScrit;
@@ -532,7 +526,7 @@ IPropertyTreeIterator *CRemoteConnection::doGetElements(CClientRemoteTree *tree,
 IPropertyTreeIterator *CRemoteConnection::getElements(const char *xpath, IPTIteratorCodes flags)
 {
     if (!serverIterAvailable)
-        throw MakeSDSException(SDSExcpt_VersionMismatch, "Server-side getElements not supported by server versions prior to "MIN_GETXPATHS_CONNECT_SVER);
+        throw MakeSDSException(SDSExcpt_VersionMismatch, "Server-side getElements not supported by server versions prior to "SDS_SVER_MIN_GETXPATHS_CONNECT);
     flags |= iptiter_remote;
     return root->getElements(xpath, flags);
 }
@@ -1102,7 +1096,7 @@ CClientSDSManager::CClientSDSManager()
     lazyExtFlag = queryDaliServerVersion().compare(serverVersionNeeded2) >= 0 ? DAMP_SDSCMD_LAZYEXT : 0;
     properties = NULL;
     IPropertyTree &props = queryProperties();
-    CDaliVersion serverVersionNeeded3(MIN_GETXPATHS_CONNECT_SVER);
+    CDaliVersion serverVersionNeeded3(SDS_SVER_MIN_GETXPATHS_CONNECT);
     if (queryDaliServerVersion().compare(serverVersionNeeded3) < 0)
         props.removeProp("Client/@serverIter");
     else
@@ -1110,9 +1104,9 @@ CClientSDSManager::CClientSDSManager()
     clientThrottleLimit = props.getPropInt("Client/Throttle/@limit", CLIENT_THROTTLE_LIMIT);
     clientThrottleDelay = props.getPropInt("Client/Throttle/@delay", CLIENT_THROTTLE_DELAY);
 
-    CDaliVersion appendOptVersionNeeded(MIN_APPEND_OPT_SVER); // min version for append optimization
+    CDaliVersion appendOptVersionNeeded(SDS_SVER_MIN_APPEND_OPT); // min version for append optimization
     props.setPropBool("Client/@useAppendOpt", queryDaliServerVersion().compare(appendOptVersionNeeded) >= 0);
-    CDaliVersion serverVersionNeeded4(MIN_GETIDS_SVER); // min version for get xpath with server ids
+    CDaliVersion serverVersionNeeded4(SDS_SVER_MIN_GETIDS); // min version for get xpath with server ids
     if (queryDaliServerVersion().compare(serverVersionNeeded4) >= 0)
         props.setPropBool("Client/@serverGetIdsAvailable", true);
     concurrentRequests.signal(clientThrottleLimit);
@@ -1656,8 +1650,8 @@ SubscriptionId CClientSDSManager::subscribe(const char *xpath, ISDSSubscription 
 
 SubscriptionId CClientSDSManager::subscribeExact(const char *xpath, ISDSNodeSubscription &notify, bool sendValue)
 {
-    if (queryDaliServerVersion().compare(MIN_NODESUBSCRIBE_SVER) < 0)
-        throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " MIN_NODESUBSCRIBE_SVER " for subscribeExact");
+    if (queryDaliServerVersion().compare(SDS_SVER_MIN_NODESUBSCRIBE) < 0)
+        throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " SDS_SVER_MIN_NODESUBSCRIBE " for subscribeExact");
     assertex(xpath);
     StringBuffer s;
     if ('/' != *xpath)
@@ -1677,8 +1671,8 @@ void CClientSDSManager::unsubscribe(SubscriptionId id)
 
 void CClientSDSManager::unsubscribeExact(SubscriptionId id)
 {
-    if (queryDaliServerVersion().compare(MIN_NODESUBSCRIBE_SVER) < 0)
-        throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " MIN_NODESUBSCRIBE_SVER " for unsubscribeExact");
+    if (queryDaliServerVersion().compare(SDS_SVER_MIN_NODESUBSCRIBE) < 0)
+        throw MakeSDSException(SDSExcpt_VersionMismatch, "Requires dali server version >= " SDS_SVER_MIN_NODESUBSCRIBE " for unsubscribeExact");
     querySubscriptionManager(SDSNODE_PUBLISHER)->remove(id);
 }
 
