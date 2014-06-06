@@ -28,10 +28,10 @@ import glob
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import checkPqParam,  getVersionNumbers,  checkXParam
+from hpcc.util.util import checkPqParam,  getVersionNumbers,  checkXParam,  convertPath
 from hpcc.common.error import Error
 
-prog_version = "0.0.21"
+prog_version = "0.0.22"
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -114,6 +114,8 @@ class RegressMain:
 
     def setup(self):
         if self.args.target in self.regress.config.Clusters:
+            self.args.setupExtraX = []
+            self.args.setupExtraX.append('OriginalTextFilesPath='+self.regressionSuiteHpccMainDir)
             if  self.args.pq :
                 self.regress.runSuiteP(self.args.target, self.regress.Setup(self.args))
             else:
@@ -219,6 +221,7 @@ class RegressMain:
             regressionSuiteFullPath = os.path.realpath(regressionSuiteMainDir)
             self.args.config = str(os.path.join(regressionSuiteFullPath, self.args.config))
 
+            self.regressionSuiteHpccMainDir = convertPath(regressionSuiteFullPath)+"::download"
             self.regress = Regression(self.args)
             logging.debug("Suite version:%s",  versionStr)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)

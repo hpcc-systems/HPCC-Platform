@@ -20,6 +20,7 @@
 import argparse
 import platform
 import logging
+import os
 
 from ..common.error import Error
 
@@ -63,6 +64,19 @@ def getVersionNumbers():
     if isPositiveIntNum(version[2]):
         verNum['patch'] = int(version[2])
     return(verNum);
+
+def convertPath(osPath):
+    hpccPath = ''
+    osPath = osPath.lstrip(os.sep)
+    # remove current dir
+    [osPath, sep,  curDir] = osPath.rpartition(os.sep)
+    osPath = osPath.replace(os.sep,  '::')
+    for i in range(0,  len(osPath)):
+        if osPath[i] >= 'A' and osPath[i] <= 'Z':
+            hpccPath = hpccPath +'^'
+        hpccPath = hpccPath +osPath[i]
+
+    return hpccPath
 
 import json
 import urllib2

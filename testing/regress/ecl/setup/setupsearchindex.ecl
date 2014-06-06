@@ -22,7 +22,10 @@ import $.Options;
 import Std.File;
 Files := $.Files(__PLATFORM__, false);
 
-rebuildSearchIndex := Options.OriginalTextFilesIp <> '' AND Options.OriginalTextFilesPath <> '';
+string OriginalTextFilesIp := Options.OriginalTextFilesIp : STORED('OriginalTextFilesIp');
+string OriginalTextFilesPath := Options.OriginalTextFilesPath : STORED('OriginalTextFilesPath');
+
+rebuildSearchIndex := OriginalTextFilesIp <> '' AND OriginalTextFilesPath <> '';
 
 IF(rebuildSearchIndex,
     SetupText.createSearchIndex(),
