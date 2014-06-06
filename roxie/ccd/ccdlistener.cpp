@@ -863,6 +863,7 @@ public:
         {
             DBGLOG("RoxieWorkUnitListener::disconnectQueue");
             queue->cancelAcceptConversation();
+            queue.clear();
         }
     }
 
