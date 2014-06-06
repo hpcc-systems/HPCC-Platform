@@ -283,6 +283,12 @@ class ScriptExecution(object):
             self.usage()
             exit(0)
 
+        if not os.path.isfile(self.script_file):
+            print("\nFile " + self.script_file + " does not exist.\n")
+            exit(0)
+
+
+
 
     def log_input_parameters(self):
         self.logger.info("Current parameters:")
