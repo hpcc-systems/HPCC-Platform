@@ -134,7 +134,7 @@ void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const
         userdesc->getPassword(password);
     }
 
-    Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password, allowForeignFiles);
+    Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password, allowForeignFiles, false);
     wufiles->addFilesFromPackageMap(packageMap);
     SCMStringBuffer processName;
     dstInfo->getRoxieProcess(processName);
@@ -787,7 +787,7 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
 
     if (req.getCheckDFS())
     {
-        Owned<IReferencedFileList> pmfiles = createReferencedFileList(context.queryUserId(), context.queryPassword(), true);
+        Owned<IReferencedFileList> pmfiles = createReferencedFileList(context.queryUserId(), context.queryPassword(), true, false);
         pmfiles->addFilesFromPackageMap(mapTree);
         pmfiles->resolveFiles(process.str(), NULL, NULL, NULL, true, false);
         Owned<IReferencedFileIterator> files = pmfiles->getFiles();
