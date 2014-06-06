@@ -1454,9 +1454,9 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
         <para>Examples:</para>
 
-        <programlisting>ecl queries copy-set thor1 thor2
-ecl queries copy-set thor1 thor2 --all
-ecl queries copy-set thor1 thor2 --clone-active-state</programlisting>
+        <programlisting>ecl queries copy-set roxie1 roxie2
+ecl queries copy-set roxie1 roxie2 --all
+ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
 
         <para></para>
 
@@ -1546,8 +1546,8 @@ ecl queries copy-set thor1 thor2 --clone-active-state</programlisting>
                 <row>
                   <entry>-O, --overwrite</entry>
 
-                  <entry>Whether to overwrite existing information - true if
-                  present</entry>
+                  <entry>Whether to overwrite existing DFS information - true
+                  if present</entry>
                 </row>
 
                 <row>
