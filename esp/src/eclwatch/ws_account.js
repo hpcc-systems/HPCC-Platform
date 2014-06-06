@@ -14,12 +14,37 @@
 #    limitations under the License.
 ############################################################################## */
 define([
+    "dojo/_base/lang",
+    "dojo/topic",
+
     "hpcc/ESPRequest"
-], function (
+], function (lang, topic,
     ESPRequest) {
     return {
+        checkError: function (response, sourceMethod, showOkMsg) {
+            var retCode = lang.getObject(sourceMethod + "Response.retcode", false, response);
+            var retMsg = lang.getObject(sourceMethod + "Response.message", false, response);
+            if (retCode) {
+                topic.publish("hpcc/brToaster", {
+                    Severity: "Error",
+                    Source: "WsAccount." + sourceMethod,
+                    Exceptions: [{ Message: retMsg }]
+                });
+            } else if (showOkMsg && retMsg) {
+                topic.publish("hpcc/brToaster", {
+                    Severity: "Message",
+                    Source: "WsAccount." + sourceMethod,
+                    Exceptions: [{ Message: retMsg }]
+                });
+            }
+        },
+
         UpdateUser: function (params) {
-            return ESPRequest.send("ws_account", "UpdateUser", params);
+            var context = this;
+            return ESPRequest.send("ws_account", "UpdateUser", params).then(function (response) {
+                context.checkError(response, "UpdateUser", params ? params.showOkMsg : false);
+                return response;
+            });
         },
 
         UpdateUserInput: function (params) {
