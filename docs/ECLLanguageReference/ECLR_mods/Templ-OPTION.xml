@@ -416,17 +416,19 @@
             <row>
               <entry><emphasis>defaultSkewError</emphasis></entry>
 
-              <entry>Default: 0.1</entry>
+              <entry>Default: none</entry>
 
               <entry>A value between 0.0 and 1.0 that determines the amount of
-              skew needed to generate a skew error. To disable, set to 1.0
-              (the max skew).</entry>
+              skew needed to generate a skew error if no SKEW(nn) was supplied
+              in ECL. I If a node has greater than an nth % more rows than the
+              others it will generate an error. To disable, set to 1.0 (the
+              max skew).</entry>
             </row>
 
             <row>
               <entry><emphasis>defaultSkewWarning</emphasis></entry>
 
-              <entry>Default: 0.05</entry>
+              <entry>Default: none</entry>
 
               <entry>A value between 0.0 and 1.0 that determines the amount of
               skew needed to generate a skew warning. If set higher than
@@ -436,19 +438,29 @@
             <row>
               <entry><emphasis>overrideSkewError</emphasis></entry>
 
-              <entry>Default: false</entry>
+              <entry>Default: none</entry>
 
-              <entry>If set to true, no skew errors will be generated.</entry>
+              <entry>If set to a value between 0.0 and 1.0, it overrides any
+              ECL SKEW(nn) attribute values in the current job.</entry>
             </row>
 
             <row>
               <entry><emphasis>defaultSkewThreshold</emphasis></entry>
 
-              <entry>Default:1B</entry>
+              <entry>Default: none</entry>
 
-              <entry>Skew errors/warnings are generated if the size of the
-              dataset local to a single node is larger than this
-              value.</entry>
+              <entry>The size of the dataset local to a single node needed
+              before Skew errors/warnings are generated if no THRESHOLD(nn)
+              was supplied in ECL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>overrideSkewThreshold</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>If set to a value between 0.0 and 1.0, it overrides any
+              ECL THRESHOLD(nn) attribute values in the current job.</entry>
             </row>
           </tbody>
         </tgroup>
