@@ -754,7 +754,8 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
         unsigned __int64 freeDiskSpace = getFreeSpace(destPath);
         deleteTempFiles(targetFilename);
-        if ( (sourceFile->size() + minFreeDiskSpace) > freeDiskSpace)
+        offset_t fileSize = sourceFile->size();
+        if ( (fileSize + minFreeDiskSpace) > freeDiskSpace)
         {
             StringBuffer err;
             err.appendf("Insufficient disk space.  File %s needs %"I64F"d bytes, but only %"I64F"d remains, and %"I64F"d is needed as a reserve", targetFilename, sourceFile->size(), freeDiskSpace, minFreeDiskSpace);
@@ -769,6 +770,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             Owned<IFile> destFile = createIFile(useTreeCopy?targetFilename:tempFile);
 
             bool hardLinkCreated = false;
+            unsigned start = msTick();
             try
             {
                 if (useHardLink)
@@ -834,8 +836,10 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                     deleteTempFiles(targetFilename);
                     throw;
                 }
-
-                DBGLOG("%s to %s complete", msg, targetFilename);
+                unsigned elapsed = msTick() - start;
+                offset_t sizeMB = fileSize / (1024*1024);
+                double MBperSec = (((double) sizeMB) / elapsed) * 1000;
+                DBGLOG("%s to %s complete in %d ms (%.1f MB/sec)", msg, targetFilename, elapsed, MBperSec);
             }
 
             f->copyComplete();
