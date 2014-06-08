@@ -129,7 +129,9 @@ define([
                 var domXml = parser.parse(xml);
                 var query = {};
                 arrayUtil.forEach(domXml.firstChild.childNodes, function (item, idx) {
-                    query[item.tagName] = item.textContent;
+                    if (item.tagName) {
+                        query[item.tagName] = item.textContent;
+                    }
                 });
                 var context = this;
                 WsEcl.Submit(this.QuerySetId, this.Id, query).then(function (response) {
