@@ -40,17 +40,17 @@ EXPORT FsLogicalFileNameRecord := lib_fileservices.FsLogicalFileNameRecord;
  * @field size          Number of bytes in the file (before compression)
  * @field rowcount      Number of rows in the file.
  * @modified            Timestamp when the file was last modified;
- * @owner               ??
- * @cluster             ??
-*/
+ * @owner               The username of the owner who ran the job to create this file.
+ * @cluster             The cluster that this file was created on. 
+ */
 
 EXPORT FsLogicalFileInfoRecord := lib_fileservices.FsLogicalFileInfoRecord;
 
 /**
- * A record containing information about a super files and their contents.
+ * A record containing information about a superfile and its contents.
  *
  * @field supername     The name of the superfile
- * @field subname       The name of the subfile
+ * @field subname       The name of the sub-file
  */
 
 EXPORT FsLogicalSuperSubRecord := lib_fileservices.FsLogicalSuperSubRecord;
@@ -103,30 +103,30 @@ EXPORT INTEGER4 PREFIX_VARIABLE_BIGENDIAN_RECSIZE := lib_fileservices.PREFIX_VAR
  * Returns whether the file exists.
  *
  * @param lfn           The logical name of the file.
- * @param physical      Whether to also check for the physical existence on disk.  Defaults to false.
+ * @param physical      Whether to also check for the physical existence on disk.  Defaults to FALSE.
  * @return              Whether the file exists.
  */
 
-EXPORT boolean FileExists(varstring lfn, boolean physical=false) :=
+EXPORT boolean FileExists(varstring lfn, boolean physical=FALSE) :=
     lib_fileservices.FileServices.FileExists(lfn, physical);
 
 /**
  * Removes the logical file from the system, and deletes from the disk.
  *
  * @param lfn           The logical name of the file.
- * @param allowMissing  Whether to suppress an error if the filename does not exist. Defaults to false.
+ * @param allowMissing  Whether to suppress an error if the filename does not exist. Defaults to FALSE.
  */
 
-EXPORT DeleteLogicalFile(varstring lfn, boolean allowMissing=false) :=
+EXPORT DeleteLogicalFile(varstring lfn, boolean allowMissing=FALSE) :=
     lib_fileservices.FileServices.DeleteLogicalFile(lfn, allowMissing);
 
 /**
  * Changes whether access to a file is read only or not.
  *
  * @param lfn           The logical name of the file.
- * @param ro            Whether updates to the file are disallowed.  Defaults to true.
+ * @param ro            Whether updates to the file are disallowed.  Defaults to TRUE.
  */
-EXPORT SetReadOnly(varstring lfn, boolean ro) :=
+EXPORT SetReadOnly(varstring lfn, boolean ro=TRUE) :=
     lib_fileservices.FileServices.SetReadOnly(lfn, ro);
 
 /**
@@ -145,10 +145,10 @@ EXPORT RenameLogicalFile(varstring oldname, varstring newname) :=
  * @param name          The logical name of the file.
  * @param foreigndali   The IP address of the foreign dali used to resolve the file.  If blank then the file is resolved
  *                      locally.  Defaults to blank.
- * @param abspath       Should a tilde (~) be prepended to the resulting logical file name.  Defaults to false.
+ * @param abspath       Should a tilde (~) be prepended to the resulting logical file name.  Defaults to FALSE.
  */
 
-EXPORT varstring ForeignLogicalFileName(varstring name, varstring foreigndali='', boolean abspath=false) :=
+EXPORT varstring ForeignLogicalFileName(varstring name, varstring foreigndali='', boolean abspath=FALSE) :=
     lib_fileservices.FileServices.ForeignLogicalFileName(name, foreigndali, abspath);
 
 /**
@@ -157,11 +157,11 @@ EXPORT varstring ForeignLogicalFileName(varstring name, varstring foreigndali=''
  *
  * @param location      The IP address of the remote machine. '.' can be used for the local machine.
  * @param path          The path/name of the file on the remote machine.
- * @param abspath       Should a tilde (~) be prepended to the resulting logical file name.  Defaults to true.
+ * @param abspath       Should a tilde (~) be prepended to the resulting logical file name.  Defaults to TRUE.
  * @return              The encoded logical filename.
  */
 
-EXPORT varstring ExternalLogicalFileName(varstring location, varstring path, boolean abspath=true) :=
+EXPORT varstring ExternalLogicalFileName(varstring location, varstring path, boolean abspath=TRUE) :=
     lib_fileservices.FileServices.ExternalLogicalFileName(location, path, abspath);
 
 /**
@@ -197,7 +197,7 @@ EXPORT dataset(FsFilenameRecord) RemoteDirectory(varstring machineIP, varstring 
     lib_fileservices.FileServices.RemoteDirectory(machineIP, dir, mask, recurse);
 
 /**
- * Returns a dataset of information about the logical files known to the the system.
+ * Returns a dataset of information about the logical files known to the system.
  *
  * @param namepattern   The mask of the files to list. Defaults to '*' (all files).
  * @param includenormal Whether to include 'normal' files. Defaults to TRUE.
@@ -206,7 +206,7 @@ EXPORT dataset(FsFilenameRecord) RemoteDirectory(varstring machineIP, varstring 
  * @param foreigndali   The IP address of the foreign dali used to resolve the file.  If blank then the file is resolved
  *                      locally.  Defaults to blank.
  */
-EXPORT dataset(FsLogicalFileInfoRecord) LogicalFileList(varstring namepattern='*', boolean includenormal=true, boolean includesuper=false, boolean unknownszero=false, varstring foreigndali='') :=
+EXPORT dataset(FsLogicalFileInfoRecord) LogicalFileList(varstring namepattern='*', boolean includenormal=TRUE, boolean includesuper=FALSE, boolean unknownszero=FALSE, varstring foreigndali='') :=
     lib_fileservices.FileServices.LogicalFileList(namepattern, includenormal, includesuper, unknownszero, foreigndali);
 
 /**
@@ -215,7 +215,7 @@ EXPORT dataset(FsLogicalFileInfoRecord) LogicalFileList(varstring namepattern='*
  * @param file1         The logical name of the first file.
  * @param file2         The logical name of the second file.
  * @param logical_only  Whether to only compare logical information in the system datastore (Dali), and ignore physical
-                        information on disk. [Default true]
+                        information on disk. [Default TRUE]
  * @param use_crcs      Whether to compare physical CRCs of all the parts on disk. This may be slow on large files.
                         Defaults to FALSE.
  * @return              0 if file1 and file2 match exactly
@@ -225,7 +225,7 @@ EXPORT dataset(FsLogicalFileInfoRecord) LogicalFileList(varstring namepattern='*
  *                      -2 if file1 and file2 contents do not match and file2 is newer than file1
  */
 
-EXPORT INTEGER4 CompareFiles(varstring lfn1, varstring lfn2, boolean logical_only=true, boolean use_crcs=false) :=
+EXPORT INTEGER4 CompareFiles(varstring lfn1, varstring lfn2, boolean logical_only=TRUE, boolean use_crcs=FALSE) :=
     lib_fileservices.FileServices.CompareFiles(lfn1, lfn2, logical_only, use_crcs);
 
 /**
@@ -233,7 +233,7 @@ EXPORT INTEGER4 CompareFiles(varstring lfn1, varstring lfn2, boolean logical_onl
  *
  * @param lfn           The name of the file to check.
  * @param use_crcs      Whether to compare physical CRCs of all the parts on disk. This may be slow on large files.
- * @return              'OK' - The file parts match the datastore informaion
+ * @return              'OK' - The file parts match the datastore information
  *                      'Could not find file: <filename>' - The logical filename was not found
  *                      'Could not find part file: <partname>' - The partname was not found
  *                      'Modified time differs for: <partname>' - The partname has a different timestamp
@@ -283,7 +283,7 @@ EXPORT dataset(FsFileRelationshipRecord) FileRelationshipList(varstring primary,
  * Removes a relationship between two files.
  *
  * @param primary       The logical filename of the primary file.
- * @param secondary     The logical filename of the secondary file.</para>
+ * @param secondary     The logical filename of the secondary file.
  * @param primaryfields The name of the primary key field for the primary file.
  * @param secondaryfields The name of the foreign key field relating to the primary file.
  * @param relationship  The type of relationship between the primary and secondary files.
@@ -378,13 +378,13 @@ EXPORT varstring GetLogicalFileAttribute(varstring lfn, varstring attrname) :=
  * Toggles protection on and off for the specified logicalfilename.
  *
  * @param lfn           The name of the logical file.
- * @param value         True to enable protection, false to disable.
+ * @param value         TRUE to enable protection, FALSE to disable.
  */
-EXPORT ProtectLogicalFile(varstring lfn, boolean value=true) :=
+EXPORT ProtectLogicalFile(varstring lfn, boolean value=TRUE) :=
     lib_fileservices.FileServices.ProtectLogicalFile(lfn, value);
 
 /**
- * The DfuPlusExec action executes the specified commandline just as the DfuPLus.exe program would do. This
+ * The DfuPlusExec action executes the specified command line just as the DfuPLus.exe program would do. This
  * allows you to have all the functionality of the DfuPLus.exe program available within your ECL code.
  *
  * param cmdline        The DFUPlus.exe command line to execute. The valid arguments are documented in the Client
@@ -397,7 +397,7 @@ EXPORT DfuPlusExec(varstring cmdline) :=
 
 /**
  * Sprays a file of fixed length records from a single machine and distributes it across the nodes of the
- * destination supercomputer.
+ * destination group.
  *
  * @param sourceIP      The IP address of the file.
  * @param sourcePath    The path and name of the file.
@@ -408,13 +408,13 @@ EXPORT DfuPlusExec(varstring cmdline) :=
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
  * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
- * @param allowOverwrite Is it valid to overwrite an existing file of the same name.  Defaults to FALSE
+ * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
  * @param replicate     Whether to replicate the new file. Defaults to FALSE.
  * @param compress      Whether to compress the new file. Defaults to FALSE.
- * @param failIfNoSourceFile If true causes a missing source file to trigger a failure.  Defaults to FALSE.
+ * @param failIfNoSourceFile If TRUE it causes a missing source file to trigger a failure.  Defaults to FALSE.
  * @return              The DFU workunit id for the job.
  */
-EXPORT varstring fSprayFixed(varstring sourceIP, varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean compress=false, boolean failIfNoSourceFile=false) :=
+EXPORT varstring fSprayFixed(varstring sourceIP, varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE) :=
     lib_fileservices.FileServices.fSprayFixed(sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile);
 
 /**
@@ -423,25 +423,25 @@ EXPORT varstring fSprayFixed(varstring sourceIP, varstring sourcePath, integer4 
  * @see fSprayFixed
  */
 
-EXPORT SprayFixed(varstring sourceIP, varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean compress=false, boolean failIfNoSourceFile=false) :=
+EXPORT SprayFixed(varstring sourceIP, varstring sourcePath, integer4 recordSize, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE) :=
     lib_fileservices.FileServices.SprayFixed(sourceIP, sourcePath, recordSize, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile);
 
 // fSprayVariable is now called fSprayDelimited (but the old name is available for backward compatibility)
-EXPORT varstring fSprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean compress=false, varstring sourceCsvEscape='', boolean failIfNoSourceFile=false, boolean recordStructurePresent=false, boolean quotedTerminator=true) :=
+EXPORT varstring fSprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE) :=
     lib_fileservices.FileServices.fSprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator);
 
 // SprayVariable is now called SprayDelimited (but the old name is available for backward compatibility)
-EXPORT SprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean compress=false, varstring sourceCsvEscape='', boolean failIfNoSourceFile=false, boolean recordStructurePresent=false, boolean quotedTerminator=true) :=
+EXPORT SprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE) :=
     lib_fileservices.FileServices.SprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator);
 
 /**
  * Sprays a file of fixed delimited records from a single machine and distributes it across the nodes of the
- * destination supercomputer.
+ * destination group.
  *
  * @param sourceIP      The IP address of the file.
  * @param sourcePath    The path and name of the file.
- * @param sourceCsvSeparate The character sequence which is used to separate fields in the file.
- * @param sourceCsvTerminate The character sequence which separates record in the file.
+ * @param sourceCsvSeparate The character sequence which separates fields in the file.
+ * @param sourceCsvTerminate The character sequence which separates records in the file.
  * @param sourceCsvQuote A string which can be used to delimit fields in the file.
  * @param sourceMaxRecordSize    The maximum size (in bytes) of the records in the file.
  * @param destinationGroup The name of the group to distribute the file across.
@@ -450,17 +450,17 @@ EXPORT SprayVariable(varstring sourceIP, varstring sourcePath, integer4 sourceMa
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
  * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
- * @param allowOverwrite Is it valid to overwrite an existing file of the same name.  Defaults to FALSE
+ * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
  * @param replicate     Whether to replicate the new file. Defaults to FALSE.
  * @param compress      Whether to compress the new file. Defaults to FALSE.
  * @param sourceCsvEscape A character that is used to escape quote characters.  Defaults to none.
- * @param failIfNoSourceFile If true causes a missing source file to trigger a failure.  Defaults to FALSE.
- * @param recordStructurePresent If true derives the record structure from the header of the file.
- * @param quotedTerminator Can the terminator character be included in a quoted field.  Default true.
-                        If false it allows quicker partitioning of the file (avoiding a complete file scan).
+ * @param failIfNoSourceFile If TRUE it causes a missing source file to trigger a failure.  Defaults to FALSE.
+ * @param recordStructurePresent If TRUE derives the record structure from the header of the file.
+ * @param quotedTerminator Can the terminator character be included in a quoted field.  Defaults to TRUE.
+                        If FALSE it allows quicker partitioning of the file (avoiding a complete file scan).
  * @return              The DFU workunit id for the job.
  */
-EXPORT varstring fSprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean compress=false, varstring sourceCsvEscape='', boolean failIfNoSourceFile=false, boolean recordStructurePresent=false, boolean quotedTerminator=true) :=
+EXPORT varstring fSprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE) :=
     lib_fileservices.FileServices.fSprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator);
 
 /**
@@ -469,12 +469,11 @@ EXPORT varstring fSprayDelimited(varstring sourceIP, varstring sourcePath, integ
  * @see fSprayDelimited
  */
 
-EXPORT SprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean compress=false, varstring sourceCsvEscape='', boolean failIfNoSourceFile=false, boolean recordStructurePresent=false, boolean quotedTerminator=true) :=
+EXPORT SprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceCsvSeparate='\\,', varstring sourceCsvTerminate='\\n,\\r\\n', varstring sourceCsvQuote='\"', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, varstring sourceCsvEscape='', boolean failIfNoSourceFile=FALSE, boolean recordStructurePresent=FALSE, boolean quotedTerminator=TRUE) :=
     lib_fileservices.FileServices.SprayVariable(sourceIP, sourcePath, sourceMaxRecordSize, sourceCsvSeparate, sourceCsvTerminate, sourceCsvQuote, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, sourceCsvEscape, failIfNoSourceFile, recordStructurePresent, quotedTerminator);
 
 /**
- * Sprays an xml file from a single machine and distributes it across the nodes of the
- * destination supercomputer.
+ * Sprays an xml file from a single machine and distributes it across the nodes of the destination group.
  *
  * @param sourceIP      The IP address of the file.
  * @param sourcePath    The path and name of the file.
@@ -487,14 +486,14 @@ EXPORT SprayDelimited(varstring sourceIP, varstring sourcePath, integer4 sourceM
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
  * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
- * @param allowOverwrite Is it valid to overwrite an existing file of the same name.  Defaults to FALSE
+ * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
  * @param replicate     Whether to replicate the new file. Defaults to FALSE.
  * @param compress      Whether to compress the new file. Defaults to FALSE.
- * @param failIfNoSourceFile If true causes a missing source file to trigger a failure.  Defaults to FALSE.
+ * @param failIfNoSourceFile If TRUE it causes a missing source file to trigger a failure.  Defaults to FALSE.
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fSprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean compress=false, boolean failIfNoSourceFile=false) :=
+EXPORT varstring fSprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE) :=
     lib_fileservices.FileServices.fSprayXml(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowTag, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile);
 
 /**
@@ -503,24 +502,24 @@ EXPORT varstring fSprayXml(varstring sourceIP, varstring sourcePath, integer4 so
  * @see fSprayXml
  */
 
-EXPORT SprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean compress=false, boolean failIfNoSourceFile=false) :=
+EXPORT SprayXml(varstring sourceIP, varstring sourcePath, integer4 sourceMaxRecordSize=8192, varstring sourceRowTag, varstring sourceEncoding='utf8', varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean compress=FALSE, boolean failIfNoSourceFile=FALSE) :=
     lib_fileservices.FileServices.SprayXml(sourceIP, sourcePath, sourceMaxRecordSize, sourceRowTag, sourceEncoding, destinationGroup, destinationLogicalName, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, compress, failIfNoSourceFile);
 
 /**
  * Copies a distributed file from multiple machines, and desprays it to a single file on a single machine.
  *
  * @param logicalName   The name of the file to despray.
- * @param destinationIP The ip of the target machine.
+ * @param destinationIP The IP of the target machine.
  * @param destinationPath The path of the file to create on the destination machine.
  * @param timeOut       The time in ms to wait for the operation to complete.  A value of 0 causes the call to return immediately.
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
  * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
- * @param allowOverwrite Is it valid to overwrite an existing file of the same name.  Defaults to FALSE
+ * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fDespray(varstring logicalName, varstring destinationIP, varstring destinationPath, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false) :=
+EXPORT varstring fDespray(varstring logicalName, varstring destinationIP, varstring destinationPath, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE) :=
     lib_fileservices.FileServices.fDespray(logicalName, destinationIP, destinationPath, timeOut, espServerIpPort, maxConnections, allowOverwrite);
 
 /**
@@ -529,7 +528,7 @@ EXPORT varstring fDespray(varstring logicalName, varstring destinationIP, varstr
  * @see fDespray
  */
 
-EXPORT Despray(varstring logicalName, varstring destinationIP, varstring destinationPath, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false) :=
+EXPORT Despray(varstring logicalName, varstring destinationIP, varstring destinationPath, integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE) :=
     lib_fileservices.FileServices.Despray(logicalName, destinationIP, destinationPath, timeOut, espServerIpPort, maxConnections, allowOverwrite);
 
 /**
@@ -543,19 +542,19 @@ EXPORT Despray(varstring logicalName, varstring destinationIP, varstring destina
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
  * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
- * @param allowOverwrite Is it valid to overwrite an existing file of the same name.  Defaults to FALSE
+ * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
  * @param replicate     Should the copied file also be replicated on the destination?  Defaults to FALSE
- * @param asSuperfile   Should the file be copied as a superfile?  If true and source is a superfile, then the
- *                      operation creates a superfile on the target, creating subfiles as needed and only overwriting
- *                      existing subfiles whose content has changed. If false a single file is created.  Defaults to false.
+ * @param asSuperfile   Should the file be copied as a superfile?  If TRUE and source is a superfile, then the
+ *                      operation creates a superfile on the target, creating sub-files as needed and only overwriting
+ *                      existing sub-files whose content has changed. If FALSE, a single file is created.  Defaults to FALSE.
  * @param compress      Whether to compress the new file. Defaults to FALSE.
- * @param forcePush     Should the copy process should be executed on the source nodes (push) or on the destination nodes (pull)?
+ * @param forcePush     Should the copy process be executed on the source nodes (push) or on the destination nodes (pull)?
  *                      Default is to pull.
- * @param transferBufferSize Overrides the size of the internal buffer used to copy the file.  Default is 64k.
+ * @param transferBufferSize Overrides the size (in bytes) of the internal buffer used to copy the file.  Default is 64k.
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean asSuperfile=false, boolean compress=false, boolean forcePush=false, integer4 transferBufferSize=0) :=
+EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0) :=
     lib_fileservices.FileServices.fCopy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize);
 
 /**
@@ -564,7 +563,7 @@ EXPORT varstring fCopy(varstring sourceLogicalName, varstring destinationGroup, 
  * @see fCopy
  */
 
-EXPORT Copy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean asSuperfile=false, boolean compress=false, boolean forcePush=false, integer4 transferBufferSize=0) :=
+EXPORT Copy(varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, varstring sourceDali='', integer4 timeOut=-1, varstring espServerIpPort=GETENV('ws_fs_server'), integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean compress=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0) :=
     lib_fileservices.FileServices.Copy(sourceLogicalName, destinationGroup, destinationLogicalName, sourceDali, timeOut, espServerIpPort, maxConnections, allowOverwrite, replicate, asSuperfile, compress, forcePush, transferBufferSize);
 
 /**
@@ -592,7 +591,7 @@ EXPORT Replicate(varstring logicalName, integer4 timeOut=-1, varstring espServer
 /**
  * Copies a distributed file to a distributed file on remote system.  Similar to fCopy, except the copy executes
  * remotely.  Since the DFU workunit executes on the remote DFU server, the user name authentication must be the same
- * on both systems, and the use must have rights to copy files on both systems.
+ * on both systems, and the user must have rights to copy files on both systems.
  *
  * @param remoteEspFsURL The url of the remote ESP file copying service.
  * @param sourceLogicalName The name of the file to despray.
@@ -601,20 +600,20 @@ EXPORT Replicate(varstring logicalName, integer4 timeOut=-1, varstring espServer
  * @param timeOut       The time in ms to wait for the operation to complete.  A value of 0 causes the call to return immediately.
  *                      Defaults to no timeout (-1).
  * @param maxConnections The maximum number of target nodes to write to concurrently.  Defaults to 1.
- * @param allowOverwrite Is it valid to overwrite an existing file of the same name.  Defaults to FALSE
+ * @param allowOverwrite Is it valid to overwrite an existing file of the same name?  Defaults to FALSE
  * @param replicate     Should the copied file also be replicated on the destination?  Defaults to FALSE
- * @param asSuperfile   Should the file be copied as a superfile?  If true and source is a superfile, then the
- *                      operation creates a superfile on the target, creating subfiles as needed and only overwriting
- *                      existing subfiles whose content has changed. If false a single file is created.  Defaults to false.
+ * @param asSuperfile   Should the file be copied as a superfile?  If TRUE and source is a superfile, then the
+ *                      operation creates a superfile on the target, creating sub-files as needed and only overwriting
+ *                      existing sub-files whose content has changed. If FALSE a single file is created.  Defaults to FALSE.
  * @param compress      Whether to compress the new file. Defaults to FALSE.
  * @param forcePush     Should the copy process should be executed on the source nodes (push) or on the destination nodes (pull)?
  *                      Default is to pull.
- * @param transferBufferSize Overrides the size of the internal buffer used to copy the file.  Default is 64k.
- * @param wrap          Should the filepars be wrapped when copying to a smaller sized cluster.  The default is false.
+ * @param transferBufferSize Overrides the size (in bytes) of the internal buffer used to copy the file.  Default is 64k.
+ * @param wrap          Should the fileparts be wrapped when copying to a smaller sized cluster?  The default is FALSE.
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean asSuperfile=false, boolean forcePush=false, integer4 transferBufferSize=0, boolean wrap=false, boolean compress=false) :=
+EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE) :=
     lib_fileservices.FileServices.fRemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress);
 
 /**
@@ -623,14 +622,14 @@ EXPORT varstring fRemotePull(varstring remoteEspFsURL, varstring sourceLogicalNa
  * @see fRemotePull
  */
 
-EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=false, boolean replicate=false, boolean asSuperfile=false, boolean forcePush=false, integer4 transferBufferSize=0, boolean wrap=false, boolean compress=false) :=
+EXPORT RemotePull(varstring remoteEspFsURL, varstring sourceLogicalName, varstring destinationGroup, varstring destinationLogicalName, integer4 timeOut=-1, integer4 maxConnections=-1, boolean allowOverwrite=FALSE, boolean replicate=FALSE, boolean asSuperfile=FALSE, boolean forcePush=FALSE, integer4 transferBufferSize=0, boolean wrap=FALSE, boolean compress=FALSE) :=
     lib_fileservices.FileServices.RemotePull(remoteEspFsURL, sourceLogicalName, destinationGroup, destinationLogicalName, timeOut, maxConnections, allowOverwrite, replicate, asSuperfile, forcePush, transferBufferSize, wrap, compress);
 
 /*------------------------------------- File monitoring functions -------------------------------------------------------*/
 
 /**
  * Creates a file monitor job in the DFU Server. If an appropriately named file arrives in this interval it will fire
- * he event with the name of the triggering object as the event subtype (see the EVENT function).
+ * the event with the name of the triggering object as the event subtype (see the EVENT function).
  *
  * @param eventName     The user-defined name of the event to fire when the filename appears. This value is used as
  *                      the first parameter to the EVENT function.
@@ -655,11 +654,11 @@ EXPORT MonitorLogicalFileName(varstring eventName, varstring name, integer4 shot
 
 /**
  * Creates a file monitor job in the DFU Server. If an appropriately named file arrives in this interval it will fire
- * he event with the name of the triggering object as the event subtype (see the EVENT function).
+ * the event with the name of the triggering object as the event subtype (see the EVENT function).
  *
  * @param eventName     The user-defined name of the event to fire when the filename appears. This value is used as
  *                      the first parameter to the EVENT function.
- * @param ip            The the ip address for the file to monitor. This may be omitted if the filenameparameter
+ * @param ip            The the IP address for the file to monitor. This may be omitted if the filename parameter
  *                      contains a complete URL.
  * @param filename      The full path of the file(s) to monitor.  This may contain wildcard characters ( * and ?)
  * @param subDirs       Whether to include files in sub-directories (when the filename contains wildcards).  Defaults to FALSE.
@@ -669,7 +668,7 @@ EXPORT MonitorLogicalFileName(varstring eventName, varstring name, integer4 shot
  * @return              The DFU workunit id for the job.
  */
 
-EXPORT varstring fMonitorFile(varstring eventName, varstring ip, varstring filename, boolean subDirs=false, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+EXPORT varstring fMonitorFile(varstring eventName, varstring ip, varstring filename, boolean subDirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
     lib_fileservices.FileServices.fMonitorFile(eventName, ip, filename, subDirs, shotCount, espServerIpPort);
 
 /**
@@ -678,13 +677,13 @@ EXPORT varstring fMonitorFile(varstring eventName, varstring ip, varstring filen
  * @see fMonitorFile
  */
 
-EXPORT MonitorFile(varstring eventName, varstring ip, varstring filename, boolean subdirs=false, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
+EXPORT MonitorFile(varstring eventName, varstring ip, varstring filename, boolean subdirs=FALSE, integer4 shotCount=1, varstring espServerIpPort=GETENV('ws_fs_server')) :=
     lib_fileservices.FileServices.MonitorFile(eventName, ip, filename, subdirs, shotCount, espServerIpPort);
 
 /**
  * Waits for the specified DFU workunit to finish.
  *
- * @param wuid          The dfu wfid tp wait for.
+ * @param wuid          The dfu wfid to wait for.
  * @param timeOut       The time in ms to wait for the operation to complete.  A value of 0 causes the call to return immediately.
  *                      Defaults to no timeout (-1).
  * @param espServerIpPort The url of the ESP file copying service. Defaults to the value of ws_fs_server in the environment.
@@ -715,7 +714,7 @@ EXPORT AbortDfuWorkunit(varstring wuid, varstring espServerIpPort=GETENV('ws_fs_
  *                      posted. Defaults to FALSE.
  */
 
-EXPORT CreateSuperFile(varstring superName, boolean sequentialParts=false, boolean allowExist=false) :=
+EXPORT CreateSuperFile(varstring superName, boolean sequentialParts=FALSE, boolean allowExist=FALSE) :=
     lib_fileservices.FileServices.CreateSuperFile(superName, sequentialParts, allowExist);
 
 /**
@@ -731,14 +730,14 @@ EXPORT boolean SuperFileExists(varstring superName) :=
     lib_fileservices.FileServices.SuperFileExists(superName);
 
 /**
- * Deletes the super file.
+ * Deletes the superfile.
  *
  * @param superName     The logical name of the superfile.
  *
  * @see FileExists
  */
 
-EXPORT DeleteSuperFile(varstring superName, boolean deletesub=false) :=
+EXPORT DeleteSuperFile(varstring superName, boolean deletesub=FALSE) :=
     lib_fileservices.FileServices.DeleteSuperFile(superName, deletesub);
 
 /**
@@ -752,7 +751,7 @@ EXPORT unsigned4 GetSuperFileSubCount(varstring superName) :=
     lib_fileservices.FileServices.GetSuperFileSubCount(superName);
 
 /**
- * Returns the name of the Nth subfile within a superfile.
+ * Returns the name of the Nth sub-file within a superfile.
  *
  * @param superName     The logical name of the superfile.
  * @param fileNum       The 1-based position of the sub-file to return the name of.
@@ -760,7 +759,7 @@ EXPORT unsigned4 GetSuperFileSubCount(varstring superName) :=
  * @return              The logical name of the selected sub-file.
  */
 
-EXPORT varstring GetSuperFileSubName(varstring superName, unsigned4 fileNum, boolean absPath=false) :=
+EXPORT varstring GetSuperFileSubName(varstring superName, unsigned4 fileNum, boolean absPath=FALSE) :=
     lib_fileservices.FileServices.GetSuperFileSubName(superName, fileNum, absPath);
 
 /**
@@ -788,33 +787,33 @@ EXPORT StartSuperFileTransaction() :=
  * @param superName     The logical name of the superfile.
  * @param subName       The name of the logical file to add.
  * @param atPos         The position to add the sub-file, or 0 to append.  Defaults to 0.
- * @param addContents   Controls whether adding a superfile adds the superfile, or its contents.  Defaults to false (don't expand).
- * @param strict        Check addContents only set if subName is a superfile, and ensure superfiles exist.
+ * @param addContents   Controls whether adding a superfile adds the superfile, or its contents.  Defaults to FALSE (do not expand).
+ * @param strict        Check addContents only if subName is a superfile, and ensure superfiles exist.
  */
 
-EXPORT AddSuperFile(varstring superName, varstring subName, unsigned4 atPos=0, boolean addContents=false, boolean strict=false) :=
+EXPORT AddSuperFile(varstring superName, varstring subName, unsigned4 atPos=0, boolean addContents=FALSE, boolean strict=FALSE) :=
     lib_fileservices.FileServices.AddSuperFile(superName, subName, atPos, addContents, strict);
 
 /**
  * Removes a sub-file from a superfile.
  *
  * @param superName     The logical name of the superfile.
- * @param subName       The name of the logical file to add.
- * @param del           Indicates whether the sub-file should also be removed from the disk.  Defaults to false.
- * @param removeContents Controls whether the contents of a subFile which is a superfile should be recursively removed.  Defaults to false.
+ * @param subName       The name of the sub-file to remove.
+ * @param del           Indicates whether the sub-file should also be removed from the disk.  Defaults to FALSE.
+ * @param removeContents Controls whether the contents of a sub-file which is a superfile should be recursively removed.  Defaults to FALSE.
  */
 
-EXPORT RemoveSuperFile(varstring superName, varstring subName, boolean del=false, boolean removeContents=false) :=
+EXPORT RemoveSuperFile(varstring superName, varstring subName, boolean del=FALSE, boolean removeContents=FALSE) :=
     lib_fileservices.FileServices.RemoveSuperFile(superName, subName, del, removeContents);
 
 /**
  * Removes all sub-files from a superfile.
  *
  * @param superName     The logical name of the superfile.
- * @param del           Indicates whether the sub-files should also be removed from the disk.  Defaults to false.
+ * @param del           Indicates whether the sub-files should also be removed from the disk.  Defaults to FALSE.
  */
 
-EXPORT ClearSuperFile(varstring superName, boolean del=false) :=
+EXPORT ClearSuperFile(varstring superName, boolean del=FALSE) :=
     lib_fileservices.FileServices.ClearSuperFile(superName, del);
 
 /**
@@ -824,7 +823,7 @@ EXPORT ClearSuperFile(varstring superName, boolean del=false) :=
  * @param superName     The logical name of the superfile.
  */
 
-EXPORT RemoveOwnedSubFiles(varstring superName, boolean del=false) :=
+EXPORT RemoveOwnedSubFiles(varstring superName, boolean del=FALSE) :=
     lib_fileservices.FileServices.RemoveOwnedSubFiles(superName, del);
 
 /**
@@ -840,7 +839,7 @@ EXPORT DeleteOwnedSubFiles(varstring superName) :=  // Obsolete, use RemoteOwned
  * Swap the contents of two superfiles.
  *
  * @param superName1    The logical name of the first superfile.
- * @param superName2    The logical name of the first superfile.
+ * @param superName2    The logical name of the second superfile.
  */
 
 EXPORT SwapSuperFile(varstring superName1, varstring superName2) :=
@@ -862,18 +861,18 @@ EXPORT ReplaceSuperFile(varstring superName, varstring oldSubFile, varstring new
  * If there are any errors, then all of the operations are rolled back.
  */
 
-EXPORT FinishSuperFileTransaction(boolean rollback=false) :=
+EXPORT FinishSuperFileTransaction(boolean rollback=FALSE) :=
     lib_fileservices.FileServices.FinishSuperFileTransaction(rollback);
 
 /**
  * Returns the list of sub-files contained within a superfile.
  *
  * @param superName     The logical name of the superfile.
- * @param recurse       Should the contents of child-superfiles be expanded.  Default is false.
+ * @param recurse       Should the contents of child-superfiles be expanded.  Default is FALSE.
  * @return              A dataset containing the names of the sub-files.
  */
 
-EXPORT dataset(FsLogicalFileNameRecord) SuperFileContents(varstring superName, boolean recurse=false) :=
+EXPORT dataset(FsLogicalFileNameRecord) SuperFileContents(varstring superName, boolean recurse=FALSE) :=
     lib_fileservices.FileServices.SuperFileContents(superName, recurse);
 
 /**
@@ -896,21 +895,21 @@ EXPORT dataset(FsLogicalSuperSubRecord) LogicalFileSuperSubList() :=
     lib_fileservices.FileServices.LogicalFileSuperSubList();
 
 /**
- * Moves the subfiles from the first entry in the list of superfiles to the next in the list, repeating the process
+ * Moves the sub-files from the first entry in the list of superfiles to the next in the list, repeating the process
  * through the list of superfiles.
  *
- * @param superNames    A set of the names of the superfiles to act on. Any that don't exist will be created.
+ * @param superNames    A set of the names of the superfiles to act on. Any that do not exist will be created.
  *                      The contents of each superfile will be moved to the next in the list.
  * @param addHead       A string containing a comma-delimited list of logical file names to add to the first superfile
  *                      after the promotion process is complete.  Defaults to ''.
- * @param delTail       Indicates whether to physically delete the contents moved out of the last superfile. The default is false.
+ * @param delTail       Indicates whether to physically delete the contents moved out of the last superfile. The default is FALSE.
  * @param createOnlyOne Specifies whether to only create a single superfile (truncate the list at the first
  *                      non-existent superfile). The default is FALSE.
- * @param reverse       Reverse the order of procesing the superfiles list, effectively 'demoting' instead of 'promoting' the sub-files. The default is FALSE.
+ * @param reverse       Reverse the order of processing the superfiles list, effectively 'demoting' instead of 'promoting' the sub-files. The default is FALSE.
  *
- * @return              A string containing a comma separated list of the previous subfile contents of the emptied superfile.
+ * @return              A string containing a comma separated list of the previous sub-file contents of the emptied superfile.
  */
-EXPORT varstring fPromoteSuperFileList(set of varstring superNames, varstring addHead='', boolean delTail=false, boolean createOnlyOne=false, boolean reverse=false) :=
+EXPORT varstring fPromoteSuperFileList(set of varstring superNames, varstring addHead='', boolean delTail=FALSE, boolean createOnlyOne=FALSE, boolean reverse=FALSE) :=
     lib_fileservices.FileServices.fPromoteSuperFileList(superNames, addHead, delTail, createOnlyOne, reverse);
 
 
@@ -919,7 +918,7 @@ EXPORT varstring fPromoteSuperFileList(set of varstring superNames, varstring ad
  *
  * @see fPromoteSuperFileList
  */
-EXPORT PromoteSuperFileList(set of varstring superNames, varstring addhead='', boolean deltail=false, boolean createonlyonesuperfile=false, boolean reverse=false) :=
-    lib_fileservices.FileServices.PromoteSuperFileList(superNames, addhead, deltail, createonlyonesuperfile, reverse);
+EXPORT PromoteSuperFileList(set of varstring superNames, varstring addHead='', boolean delTail=FALSE, boolean createOnlyOne=FALSE, boolean reverse=FALSE) :=
+    lib_fileservices.FileServices.PromoteSuperFileList(superNames, addHead, delTail, createOnlyOne, reverse);
 
 END;
