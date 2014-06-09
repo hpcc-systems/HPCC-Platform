@@ -1130,6 +1130,11 @@ IGraphTempHandler *CJobSlave::createTempHandler(bool errorOnMissing)
     return new CSlaveGraphTempHandler(*this, errorOnMissing);
 }
 
+IThorGraphResults *CJobSlave::createThorGraphResults(graph_id gid)
+{
+    return new CThorSlaveGraphResults(*this, gid);
+}
+
 IThorResult *CJobSlave::getGlobalResult(ILWActivity &activity, graph_id gid, IRowInterfaces *rowIf, activity_id ownerId, unsigned id)
 {
     mptag_t replyTag = createReplyTag();

@@ -1900,160 +1900,191 @@ bool CJobMaster::fireException(IException *e)
 
 ///////////////////
 
-class CCollatedResult : public CSimpleInterface, implements IThorResult
+class CThorMasterGraphResults : public CThorGraphResults
 {
-    ILWActivity &activity;
-    IRowInterfaces *rowIf;
-    unsigned id;
-    graph_id gid;
-    CriticalSection crit;
-    PointerArrayOf<CThorExpandingRowArray> results;
-    Owned<IThorResult> result;
-    unsigned spillPriority;
-    activity_id ownerId;
-
-    void ensure()
+    class CCollatedResult : public CSimpleInterface, implements IThorResult
     {
-        CriticalBlock b(crit);
-        if (result)
-            return;
-        mptag_t replyTag = createReplyTag();
-        CMessageBuffer msg;
-        msg.append(GraphGetResult);
-        msg.append(activity.queryJob().queryKey());
-        msg.append(gid);
-        msg.append(ownerId);
-        msg.append(id);
-        msg.append(replyTag);
-        CJobMaster &job = ((CJobMaster &)activity.queryJob());
-        job.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
+        ILWActivity &activity;
+        IRowInterfaces *rowIf;
+        unsigned id;
+        graph_id gid;
+        CriticalSection crit;
+        PointerArrayOf<CThorExpandingRowArray> results;
+        Owned<IThorResult> result;
+        unsigned spillPriority;
+        activity_id ownerId;
 
-        unsigned numSlaves = job.querySlaves();
-        for (unsigned n=0; n<numSlaves; n++)
-            results.item(n)->kill();
-        rank_t sender;
-        MemoryBuffer mb;
-        Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
-        CThorStreamDeserializerSource rowSource(stream);
-        unsigned todo = numSlaves;
-
-        loop
+        void ensure()
         {
+            CriticalBlock b(crit);
+            if (result)
+                return;
+            mptag_t replyTag = createReplyTag();
+            CMessageBuffer msg;
+            msg.append(GraphGetResult);
+            msg.append(activity.queryJob().queryKey());
+            msg.append(gid);
+            msg.append(ownerId);
+            msg.append(id);
+            msg.append(replyTag);
+            CJobMaster &job = ((CJobMaster &)activity.queryJob());
+            job.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
+
+            unsigned numSlaves = job.querySlaves();
+            for (unsigned n=0; n<numSlaves; n++)
+                results.item(n)->kill();
+            rank_t sender;
+            MemoryBuffer mb;
+            Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+            CThorStreamDeserializerSource rowSource(stream);
+            unsigned todo = numSlaves;
+
             loop
             {
-                if (job.queryAborted())
-                    return;
-                msg.clear();
-                if (job.queryJobComm().recv(msg, RANK_ALL, replyTag, &sender, 60*1000))
-                    break;
-                ActPrintLog(activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
-            }
-            sender = sender - 1; // 0 = master
-            if (!msg.length())
-            {
-                --todo;
-                if (0 == todo)
-                    break; // done
-            }
-            else
-            {
-                bool error;
-                msg.read(error);
-                if (error)
+                loop
                 {
-                    Owned<IThorException> e = deserializeThorException(msg);
-                    e->setSlave(sender);
-                    throw e.getClear();
-                }
-                ThorExpand(msg, mb.clear());
+                    if (job.queryAborted())
+                        return;
+                    msg.clear();
 
-                CThorExpandingRowArray *slaveResults = results.item(sender);
-                while (!rowSource.eos())
+                    if (job.queryJobComm().recv(msg, RANK_ALL, replyTag, &sender, 60*1000))
+                        break;
+                    ActPrintLog(activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
+                }
+                sender = sender - 1; // 0 = master
+                if (!msg.length())
                 {
-                    RtlDynamicRowBuilder rowBuilder(rowIf->queryRowAllocator());
-                    size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
-                    slaveResults->append(rowBuilder.finalizeRowClear(sz));
+                    --todo;
+                    if (0 == todo)
+                        break; // done
+                }
+                else
+                {
+                    bool error;
+                    msg.read(error);
+                    if (error)
+                    {
+                        Owned<IThorException> e = deserializeThorException(msg);
+                        e->setSlave(sender);
+                        throw e.getClear();
+                    }
+                    ThorExpand(msg, mb.clear());
+
+                    CThorExpandingRowArray *slaveResults = results.item(sender);
+                    while (!rowSource.eos())
+                    {
+                        bool isNull;
+                        stream->get(1, &isNull);
+                        if (!isNull)
+                        {
+                            RtlDynamicRowBuilder rowBuilder(rowIf->queryRowAllocator());
+                            size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
+                            slaveResults->append(rowBuilder.finalizeRowClear(sz));
+                        }
+                        else
+                            slaveResults->append(NULL);
+                    }
                 }
             }
-        }
-        Owned<IThorResult> _result = ::createResult(activity, rowIf, false, spillPriority);
-        Owned<IRowWriter> resultWriter = _result->getWriter();
-        for (unsigned s=0; s<numSlaves; s++)
-        {
-            CThorExpandingRowArray *slaveResult = results.item(s);
-            ForEachItemIn(r, *slaveResult)
+            Owned<IThorResult> _result = ::createResult(activity, rowIf, false, spillPriority);
+            Owned<IRowWriter> resultWriter = _result->getWriter();
+            for (unsigned s=0; s<numSlaves; s++)
             {
-                const void *row = slaveResult->query(r);
-                LinkThorRow(row);
-                resultWriter->putRow(row);
+                CThorExpandingRowArray *slaveResult = results.item(s);
+                ForEachItemIn(r, *slaveResult)
+                {
+                    const void *row = slaveResult->query(r);
+                    LinkThorRow(row);
+                    resultWriter->putRow(row);
+                }
+            }
+            result.setown(_result.getClear());
+        }
+
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CCollatedResult(ILWActivity &_activity, IRowInterfaces *_rowIf, graph_id _gid, unsigned _id, activity_id _ownerId, unsigned _spillPriority)
+            : activity(_activity), rowIf(_rowIf), gid(_gid), id(_id), ownerId(_ownerId), spillPriority(_spillPriority)
+        {
+            for (unsigned n=0; n<activity.queryJob().querySlaves(); n++)
+                results.append(new CThorExpandingRowArray(activity, rowIf, true));
+        }
+        ~CCollatedResult()
+        {
+            ForEachItemIn(l, results)
+            {
+                CThorExpandingRowArray *result = results.item(l);
+                delete result;
             }
         }
-        result.setown(_result.getClear());
-    }
+        void setId(unsigned _id)
+        {
+            id = _id;
+        }
+
+    // IThorResult
+        virtual void reset() { }
+        virtual IRowWriter *getWriter() { throwUnexpected(); }
+        virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count)
+        {
+            throwUnexpected();
+        }
+        virtual IRowStream *getRowStream()
+        {
+            ensure();
+            return result->getRowStream();
+        }
+        virtual IRowInterfaces *queryRowInterfaces() const
+        {
+            return rowIf;
+        }
+        virtual ILWActivity &queryActivity() const
+        {
+            return activity;
+        }
+        virtual bool isDistributed() const { return false; }
+        virtual void serialize(MemoryBuffer &mb)
+        {
+            ensure();
+            result->serialize(mb);
+        }
+        virtual void getLinkedResult(unsigned & count, byte * * & ret)
+        {
+            ensure();
+            result->getLinkedResult(count, ret);
+        }
+        virtual const void * getLinkedRowResult()
+        {
+            ensure();
+            return result->getLinkedRowResult();
+        }
+        virtual rowcount_t getResultCount()
+        {
+            ensure();
+            return result->getResultCount();
+        }
+    };
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-    CCollatedResult(ILWActivity &_activity, IRowInterfaces *_rowIf, unsigned _id, activity_id _ownerId, unsigned _spillPriority)
-        : activity(_activity), rowIf(_rowIf), id(_id), ownerId(_ownerId), spillPriority(_spillPriority)
+    CThorMasterGraphResults(graph_id gid) : CThorGraphResults(gid)
     {
-        for (unsigned n=0; n<activity.queryJob().querySlaves(); n++)
-            results.append(new CThorExpandingRowArray(activity, rowIf));
     }
-    ~CCollatedResult()
+    virtual IThorResult *createResult(ILWActivity &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
     {
-        ForEachItemIn(l, results)
-        {
-            CThorExpandingRowArray *result = results.item(l);
-            delete result;
-        }
-    }
-    void setId(unsigned _id)
-    {
-        id = _id;
-    }
-
-// IThorResult
-    virtual IRowWriter *getWriter() { throwUnexpected(); }
-    virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count)
-    {
-        throwUnexpected();
-    }
-    virtual IRowStream *getRowStream()
-    {
-        ensure();
-        return result->getRowStream();
-    }
-    virtual IRowInterfaces *queryRowInterfaces() const
-    {
-        return rowIf;
-    }
-    virtual ILWActivity &queryActivity() const
-    {
-        return activity;
-    }
-    virtual bool isDistributed() const { return false; }
-    virtual void serialize(MemoryBuffer &mb)
-    {
-        ensure();
-        result->serialize(mb);
-    }
-    virtual void getLinkedResult(unsigned & count, byte * * & ret)
-    {
-        ensure();
-        result->getLinkedResult(count, ret);
-    }
-    virtual const void * getLinkedRowResult()
-    {
-        ensure();
-        return result->getLinkedRowResult();
-    }
-    virtual rowcount_t getResultCount()
-    {
-        ensure();
-        return result->getResultCount();
+        Owned<CCollatedResult> result = new CCollatedResult(activity, rowIf, gid, id, ownerId, spillPriority);
+        setResult(id, result);
+        return result;
     }
 };
+
+
+///////////////////////////
+
+IThorGraphResults *CJobMaster::createThorGraphResults(graph_id gid)
+{
+    return new CThorMasterGraphResults(gid);
+}
 
 ///////////////////
 
@@ -2748,26 +2779,14 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
     return true;
 }
 
-IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
-{
-    Owned<CCollatedResult> result = new CCollatedResult(activity, rowIf, id, results->queryOwnerId(), spillPriority);
-    results->setResult(id, result);
-    return result;
-}
-
 IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(activity, rowIf, id, localResults->queryOwnerId(), spillPriority);
-    localResults->setResult(id, result);
-    return result;
+    return localResults->createResult(activity, id, rowIf, distributed, spillPriority);
 }
 
 IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(activity, rowIf, 0, localResults->queryOwnerId(), spillPriority);
-    unsigned id = graphLoopResults->addResult(result);
-    result->setId(id);
-    return result;
+    return graphLoopResults->createResult(activity, rowIf, distributed, spillPriority);
 }
 
 

@@ -163,6 +163,7 @@ public:
         return new CSlaveGraph(*this);
     }
     virtual IBarrier *createBarrier(mptag_t tag);
+    virtual IThorGraphResults *createThorGraphResults(graph_id gid);
     IThorResult *getGlobalResult(ILWActivity &activity, graph_id gid, IRowInterfaces *rowIf, activity_id ownerId, unsigned id);
 
 // IExceptionHandler

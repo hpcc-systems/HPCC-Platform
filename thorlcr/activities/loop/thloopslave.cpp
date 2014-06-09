@@ -379,9 +379,9 @@ public:
                 unsigned condLoopCounter = (flags & IHThorLoopArg::LFcounter) ? loopCounter:0;
                 unsigned loopAgain = (flags & IHThorLoopArg::LFnewloopagain) ? helper->loopAgainResult() : 0;
                 ownedResults.setown(queryJob().createThorGraphResults(queryGraphId()));
-                // ensures remote results are available, via owning activity (i.e. this loop act)
+                // Passing activity id to results container, ensures remote results are available, via owning activity (i.e. this loop act)
                 // so that when aggregate result is fetched from the master, it will retrieve from the act, not the (already cleaned) graph localresults
-                ownedResults->setOwner(container.queryId());
+                ownedResults->setResultsOwner(container.queryId());
 
                 boundGraph->prepareLoopResults(*this, ownedResults);
                 if (condLoopCounter) // cannot be 0
@@ -487,7 +487,7 @@ public:
                 sendLoopingCount(loopCounter, 0);
                 queryContainer().queryLoopGraph()->execute(*this, (flags & IHThorGraphLoopArg::GLFcounter)?loopCounter:0, loopResults, extractBuilder.size(), extractBuilder.getbytes());
             }
-            int iNumResults = loopResults->count();
+            int iNumResults = loopResults->getResultCount();
             Owned<IThorResult> finalResult = loopResults->getResult(iNumResults-1); //Get the last result, which isnt necessarily 'maxIterations'
             finalResultStream.setown(finalResult->getRowStream());
         }
@@ -534,19 +534,24 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
-        assertex(container.queryResultsGraph());
     }
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         curRow = 0;
         abortSoon = false;
-        assertex(container.queryResultsGraph());
+        IThorGraphResults *results;
+        // JCSMORE - Why is this needed?
         graph_id resultGraphId = container.queryXGMML().getPropInt("att[@name=\"_graphId\"]/@value");
-        if (!resultGraphId)
-            resultGraphId = container.queryResultsGraph()->queryGraphId();
-        Owned<CGraphBase> graph = queryJob().getGraph(resultGraphId);
-        Owned<IThorResult> result = graph->getResult(helper->querySequence(), queryGraph().isLocalChild());
+        Owned<CGraphBase> graph;
+        if (resultGraphId)
+        {
+            graph.setown(queryJob().getGraph(resultGraphId));
+            results = graph;
+        }
+        else
+            results = container.queryGraphResults();;
+        Owned<IThorResult> result = results->getResult(helper->querySequence(), queryGraph().isLocalChild());
         resultStream.setown(result->getRowStream());
         dataLinkStart();
     }
@@ -622,9 +627,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         lastNull = eoi = false;
         abortSoon = false;
-        assertex(container.queryResultsGraph());
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());  // NB graph owns result
+        IThorResult *result = container.queryGraphResults()->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());  // NB graph owns result
         resultWriter.setown(result->getWriter());
         startInput(inputs.item(0));
         dataLinkStart();
@@ -722,8 +725,7 @@ public:
     virtual IThorResult *createResult()
     {
         IHThorLocalResultWriteArg *helper = (IHThorLocalResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        return graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
+        return container.queryGraphResults()->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
     }
 };
 
@@ -769,8 +771,7 @@ public:
             }
             builder.appendOwn(row);
         }
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
+        IThorResult *result = container.queryGraphResults()->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
         Owned<IRowWriter> resultWriter = result->getWriter();
         size32_t dictSize = builder.getcount();
         byte ** dictRows = builder.queryrows();
@@ -1184,12 +1185,18 @@ public:
         unsigned sequence = helper->querySequence();
         if ((int)sequence >= 0)
         {
-            assertex(container.queryResultsGraph());
+            IThorGraphResults *results;
+            // JCSMORE - Why is this needed?
             graph_id resultGraphId = container.queryXGMML().getPropInt("att[@name=\"_graphId\"]/@value");
-            if (!resultGraphId)
-                resultGraphId = container.queryResultsGraph()->queryGraphId();
-            Owned<CGraphBase> graph = queryJob().getGraph(resultGraphId);
-            Owned<IThorResult> result = graph->getGraphLoopResult(sequence, queryGraph().isLocalChild());
+            Owned<CGraphBase> graph;
+            if (resultGraphId)
+            {
+                graph.setown(queryJob().getGraph(resultGraphId));
+                results = graph;
+            }
+            else
+                results = container.queryGraphResults();
+            Owned<IThorResult> result = results->getGraphLoopResult(sequence, queryGraph().isLocalChild());
             resultStream.setown(result->getRowStream());
         }
         else
@@ -1312,8 +1319,7 @@ public:
     virtual IThorResult *createResult()
     {
         IHThorGraphLoopResultWriteArg *helper = (IHThorGraphLoopResultWriteArg *)queryHelper();
-        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
-        return graph->createGraphLoopResult(*this, input->queryFromActivity(), !queryGraph().isLocalChild());
+        return container.queryGraphResults()->createGraphLoopResult(*this, input->queryFromActivity(), !queryGraph().isLocalChild());
     }
 };
 

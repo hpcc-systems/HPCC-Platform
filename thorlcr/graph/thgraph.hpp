@@ -112,6 +112,7 @@ graph_decl void setIThorResource(IThorResource &r);
 interface IRowWriterMultiReader;
 interface IThorResult : extends IInterface
 {
+    virtual void reset() = 0;
     virtual IRowWriter *getWriter() = 0;
     virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) = 0;
     virtual IRowStream *getRowStream() = 0;
@@ -128,15 +129,15 @@ class CActivityBase;
 // JCSMORE - based on IHThorGraphResults
 interface IThorGraphResults : extends IEclGraphResults
 {
-    virtual void clear() = 0;
     virtual IThorResult *getResult(unsigned id, bool distributed=false) = 0;
     virtual IThorResult *createResult(ILWActivity &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
     virtual IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
-    virtual unsigned addResult(IThorResult *result) = 0;
-    virtual void setResult(unsigned id, IThorResult *result) = 0;
-    virtual unsigned count() = 0;
-    virtual void setOwner(activity_id id) = 0;
-    virtual activity_id queryOwnerId() const = 0;
+    virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false) = 0;
+    virtual IThorResult *createGraphLoopResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT) = 0;
+    virtual void clearResults() = 0;
+    virtual void setResultsOwner(activity_id _ownerId) = 0;
+    virtual unsigned getResultCount() const = 0;
+    virtual graph_id queryGraphId() const = 0;
 };
 
 class CGraphBase;
@@ -339,7 +340,7 @@ public:
     bool isPrepared() const { return prepared; }
 
     CGraphBase &queryOwner() const { return *owner; }
-    CGraphBase *queryResultsGraph() const { return resultsGraph; }
+    IThorGraphResults *queryGraphResults() const;
     IThorGraphIterator *getAssociatedChildGraphs() const;
     IGraphTempHandler *queryTempHandler() const;
     unsigned getInputs() const { return inputs.ordinality(); }
@@ -473,7 +474,7 @@ interface IGraphCallback
 
 class CJobBase;
 interface IPropertyTree;
-class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, implements IThorChildGraph, implements IExceptionHandler
+class graph_decl CGraphBase : public CInterface, implements IThorGraphResults, implements IThorChildGraph, implements IExceptionHandler
 {
     mutable CriticalSection crit;
     CriticalSection evaluateCrit;
@@ -714,6 +715,7 @@ public:
         return LINK(childGraphsTable.find(gid));
     }
     IThorGraphIterator *getChildGraphs() const;
+    IThorGraphResults *queryGraphResults() const { return localResults; }
 
     void executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract);
     void doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies);
@@ -735,18 +737,19 @@ public:
 // IExceptionHandler
     virtual bool fireException(IException *e);
 
+// IThorGraphResults
+    virtual const void * getLinkedRowResult(unsigned id);
     virtual IThorResult *getResult(unsigned id, bool distributed=false);
     virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false);
-    virtual IThorResult *createResult(ILWActivity &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     virtual IThorResult *createResult(ILWActivity &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
+    virtual IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     virtual IThorResult *createGraphLoopResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
-
-	virtual graph_id queryGraphId() const { return graphId; }
-
-// IEclGraphResults
     virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
-    virtual const void * getLinkedRowResult(unsigned id);
+    virtual void setResultsOwner(activity_id _ownerId) { throwUnexpected(); }
+    virtual void clearResults() { throwUnexpected(); }
+    virtual unsigned getResultCount() const { throwUnexpected(); }
+    virtual graph_id queryGraphId() const { return graphId; }
 
 // IThorChildGraph
 //  virtual void getResult(size32_t & retSize, void * & ret, unsigned id);
@@ -808,6 +811,7 @@ protected:
     unsigned maxActivityCores, globalMemorySize;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
     Owned<IContextLogger> logctx;
+    Owned<IThorGraphResults> globalResults;
 
     class CThorPluginCtx : public SimplePluginCtx
     {
@@ -917,7 +921,8 @@ public:
     unsigned getOptUInt(const char *opt, unsigned dft=0) { return (unsigned)getOptInt(opt, dft); }
     __int64 getOptInt64(const char *opt, __int64 dft=0);
     unsigned __int64 getOptUInt64(const char *opt, unsigned __int64 dft=0) { return (unsigned __int64)getOptInt64(opt, dft); }
-    virtual IThorGraphResults *createThorGraphResults(graph_id gid);
+    IThorGraphResults *queryGlobalResults() const { return globalResults; }
+    virtual IThorGraphResults *createThorGraphResults(graph_id gid) = 0;
 
     virtual void abort(IException *e);
     virtual IBarrier *createBarrier(mptag_t tag) { UNIMPLEMENTED; return NULL; }
@@ -1079,6 +1084,7 @@ protected:
         IMPLEMENT_IINTERFACE
 
         CThorUninitializedGraphResults(unsigned _id) { id = _id; }
+        virtual void reset() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual IRowWriter *getWriter() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void setResultStream(IRowWriterMultiReader *stream, rowcount_t count) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual IRowStream *getRowStream() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
@@ -1101,15 +1107,19 @@ protected:
         while (results.ordinality() < id)
             results.append(*new CThorUninitializedGraphResults(results.ordinality()));
     }
+    void setResult(unsigned id, IThorResult *result)
+    {
+        CriticalBlock procedure(cs);
+        ensureAtLeast(id);
+        if (results.isItem(id))
+            results.replace(*LINK(result), id);
+        else
+            results.append(*LINK(result));
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
     CThorGraphResults(graph_id _gid) : gid(_gid) { ownerId = 0; }
-    virtual void clear()
-    {
-        CriticalBlock procedure(cs);
-        results.kill();
-    }
     virtual IThorResult *getResult(unsigned id, bool distributed)
     {
         CriticalBlock procedure(cs);
@@ -1121,22 +1131,6 @@ public:
     virtual IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)
     {
         return createResult(activity, results.ordinality(), rowIf, distributed, spillPriority);
-    }
-    virtual unsigned addResult(IThorResult *result)
-    {
-        CriticalBlock procedure(cs);
-        unsigned id = results.ordinality();
-        setResult(id, result);
-        return id;
-    }
-    virtual void setResult(unsigned id, IThorResult *result)
-    {
-        CriticalBlock procedure(cs);
-        ensureAtLeast(id);
-        if (results.isItem(id))
-            results.replace(*LINK(result), id);
-        else
-            results.append(*LINK(result));
     }
     virtual unsigned count() { return results.ordinality(); }
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
@@ -1154,10 +1148,16 @@ public:
         Owned<IThorResult> result = getResult(id, true);
         return result->getLinkedRowResult();
     }
-
-    virtual void setOwner(activity_id _ownerId) { ownerId = _ownerId; }
-    virtual activity_id queryOwnerId() const { return ownerId; }
+    virtual IThorResult *getGraphLoopResult(unsigned id, bool distributed=false) { throwUnexpected(); }
+    virtual IThorResult *createGraphLoopResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT)  { throwUnexpected(); }
+    virtual void setResultsOwner(activity_id _ownerId) { ownerId = _ownerId; }
+    virtual void clearResults()
+    {
+        CriticalBlock procedure(cs);
+        results.kill();
+    }
     virtual unsigned getResultCount() const { return results.ordinality(); }
+    virtual graph_id queryGraphId() const { return gid; }
 };
 
 extern graph_decl IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
