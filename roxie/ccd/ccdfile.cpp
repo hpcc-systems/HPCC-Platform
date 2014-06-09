@@ -837,8 +837,8 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                     throw;
                 }
                 unsigned elapsed = msTick() - start;
-                offset_t sizeMB = fileSize / (1024*1024);
-                double MBperSec = (((double) sizeMB) / elapsed) * 1000;
+                double sizeMB = ((double) fileSize) / (1024*1024);
+                double MBperSec = elapsed ? (sizeMB / elapsed) * 1000 : 0;
                 DBGLOG("%s to %s complete in %d ms (%.1f MB/sec)", msg, targetFilename, elapsed, MBperSec);
             }
 
