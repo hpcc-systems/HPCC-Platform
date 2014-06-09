@@ -121,6 +121,7 @@ interface IThorResult : extends IInterface
     virtual void serialize(MemoryBuffer &mb) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
     virtual const void * getLinkedRowResult() = 0;
+    virtual rowcount_t getResultCount() = 0;
 };
 
 class CActivityBase;
@@ -1089,6 +1090,7 @@ protected:
         virtual void getLinkedResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getDictionaryResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual const void * getLinkedRowResult() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual rowcount_t getResultCount() { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
     };
     IArrayOf<IThorResult> results;
     CriticalSection cs;
@@ -1155,6 +1157,7 @@ public:
 
     virtual void setOwner(activity_id _ownerId) { ownerId = _ownerId; }
     virtual activity_id queryOwnerId() const { return ownerId; }
+    virtual unsigned getResultCount() const { return results.ordinality(); }
 };
 
 extern graph_decl IThorResult *createResult(ILWActivity &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);

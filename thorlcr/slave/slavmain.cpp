@@ -425,10 +425,11 @@ public:
                             msg.read(resultId);
                             mptag_t replyTag = job->deserializeMPTag(msg);
                             Owned<IThorResult> result = job->getOwnedResult(gid, ownerId, resultId);
+                            rowcount_t rowCount = result->getResultCount();
                             Owned<IRowStream> resultStream = result->getRowStream();
                             msg.setReplyTag(replyTag);
                             msg.clear();
-                            sendInChunks(job->queryJobComm(), 0, replyTag, resultStream, result->queryRowInterfaces());
+                            sendInChunks(job->queryJobComm(), 0, replyTag, rowCount, resultStream, result->queryRowInterfaces());
                             doReply = false;
                         }
                         break;

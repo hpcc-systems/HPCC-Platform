@@ -316,8 +316,9 @@ void CSlaveMessageHandler::main()
                     msg.read(resultId);
                     mptag_t replyTag = job.deserializeMPTag(msg);
                     Owned<IThorResult> result = job.getOwnedResult(gid, ownerId, resultId);
+                    rowcount_t rowCount = result->getResultCount();
                     Owned<IRowStream> resultStream = result->getRowStream();
-                    sendInChunks(job.queryJobComm(), sender, replyTag, resultStream, result->queryRowInterfaces());
+                    sendInChunks(job.queryJobComm(), sender, replyTag, rowCount, resultStream, result->queryRowInterfaces());
                     break;
                 }
             }
@@ -2046,6 +2047,11 @@ public:
     {
         ensure();
         return result->getLinkedRowResult();
+    }
+    virtual rowcount_t getResultCount()
+    {
+        ensure();
+        return result->getResultCount();
     }
 };
 

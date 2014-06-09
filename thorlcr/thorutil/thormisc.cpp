@@ -1120,24 +1120,25 @@ IRowStream *createUngroupStream(IRowStream *input)
     return new CUngroupStream(input);
 }
 
-void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf)
+void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, rowcount_t rowCount, IRowStream *input, IRowInterfaces *rowIf)
 {
     CMessageBuffer msg;
     MemoryBuffer mb;
     CMemoryRowSerializer mbs(mb);
     IOutputRowSerializer *serializer = rowIf->queryRowSerializer();
-    loop
+    loop // will break out when 0 == rowCount
     {
-        loop
+        while (rowCount)
         {
             OwnedConstThorRow row = input->nextRow();
-            if (!row)
+            if (row)
             {
-                row.setown(input->nextRow());
-                if (!row)
-                    break;
+                mb.append(false);
+                serializer->serialize(mbs, (const byte *)row.get());
             }
-            serializer->serialize(mbs, (const byte *)row.get());
+            else
+                mb.append(true); // is null
+            --rowCount;
             if (mb.length() > 0x80000)
                 break;
         }
@@ -1150,7 +1151,10 @@ void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *in
         }
         comm.send(msg, dst, mpTag, LONGTIMEOUT);
         if (0 == msg.length())
+        {
+            dbgassertex(0 == rowCount);
             break;
+        }
     }
 }
 

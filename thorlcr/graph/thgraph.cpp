@@ -188,6 +188,10 @@ public:
         Owned<IRowStream> stream = getRowStream();
         return stream->nextRow();
     }
+    virtual rowcount_t getResultCount()
+    {
+        return rowStreamCount;
+    }
 };
 
 /////
