@@ -859,6 +859,17 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 </row>
 
                 <row>
+                  <entry>--exception-level</entry>
+
+                  <entry>Sets the minimum severity for reporting exceptions.
+                  Possible severity levels are <emphasis
+                  role="bold">info</emphasis>, <emphasis
+                  role="bold">warning</emphasis>, or <emphasis
+                  role="bold">error</emphasis>. The default is info which
+                  returns all exceptions.</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
