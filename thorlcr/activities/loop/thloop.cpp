@@ -82,7 +82,7 @@ protected:
             container.queryJob().queryJobComm().send(msg, n+1, mpTag, LONGTIMEOUT);
 
         if (!ok)
-            throw MakeActivityException(this, 0, "Executed LOOP with empty input and output %u times", emptyIterations);
+            throw MakeActivityException(*this, 0, "Executed LOOP with empty input and output %u times", emptyIterations);
 
         return final;
     }
@@ -186,7 +186,7 @@ class CLoopActivityMaster : public CLoopActivityMasterBase
             bool overLimit = slaveEmptyIterations > maxEmptyLoopIterations;
             emptyIterations->set(sender-1, overLimit);
             if (emptyIterations->scan(0, 0) >= nodes) // all empty
-                throw MakeActivityException(this, 0, "Executed LOOP with empty input and output > %d maxEmptyLoopIterations times on all nodes", maxEmptyLoopIterations);
+                throw MakeActivityException(*this, 0, "Executed LOOP with empty input and output > %d maxEmptyLoopIterations times on all nodes", maxEmptyLoopIterations);
         }
     }
 public:
@@ -227,7 +227,7 @@ public:
                 IThorBoundLoopGraph *boundGraph = queryContainer().queryLoopGraph();
                 unsigned condLoopCounter = (flags & IHThorLoopArg::LFcounter) ? loopCounter : 0;
                 unsigned loopAgain = (flags & IHThorLoopArg::LFnewloopagain) ? helper->loopAgainResult() : 0;
-                ownedResults.setown(queryGraph().createThorGraphResults(3)); // will not be cleared until next sync
+                ownedResults.setown(queryJob().createThorGraphResults(queryGraphId())); // will not be cleared until next sync
                 // ensures remote results are available, via owning activity (i.e. this loop act)
                 // so that when the master/slave result parts are fetched, it will retreive from the act, not the (already cleaed) graph localresults
                 ownedResults->setOwner(container.queryId());
@@ -277,7 +277,7 @@ public:
         if (!global)
             return;
         IHThorGraphLoopArg *helper = (IHThorGraphLoopArg *) queryHelper();
-        Owned<IThorGraphResults> results = queryGraph().createThorGraphResults(1);
+        Owned<IThorGraphResults> results = queryJob().createThorGraphResults(queryGraphId());
         if (helper->getFlags() & IHThorGraphLoopArg::GLFcounter)
             queryContainer().queryLoopGraph()->prepareCounterResult(*this, results, 1, 0);
         loopGraph->setResults(results);
@@ -294,7 +294,7 @@ public:
             return;
         unsigned maxIterations = helper->numIterations();
         if ((int)maxIterations < 0) maxIterations = 0;
-        Owned<IThorGraphResults> loopResults = queryGraph().createThorGraphResults(maxIterations);
+        Owned<IThorGraphResults> loopResults = queryJob().createThorGraphResults(queryGraphId());
         IThorResult *result = loopResults->createResult(*this, 0, this, true);
 
         helper->createParentExtract(extractBuilder);

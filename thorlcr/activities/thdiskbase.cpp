@@ -85,12 +85,12 @@ void CDiskReadMasterBase::init()
             free(ekey);
             if (!encrypted)
             {
-                Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", fileName.get());
+                Owned<IException> e = MakeActivityWarning(container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", fileName.get());
                 container.queryJob().fireException(e);
             }
         }
         else if (encrypted)
-            throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fileName.get());
+            throw MakeActivityException(*this, 0, "File '%s' was published as encrypted but no encryption key provided", fileName.get());
     }
 }
 
@@ -203,7 +203,7 @@ void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtr
             if (file)
             {
                 if (0 == ((TDWextend+TDWoverwrite) & diskHelperBase->getFlags()))
-                    throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
+                    throw MakeActivityException(*this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
                 checkSuperFileOwnership(*file);
             }
         }

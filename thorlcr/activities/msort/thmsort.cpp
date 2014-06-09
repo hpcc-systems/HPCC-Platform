@@ -46,7 +46,7 @@ public:
         unsigned flags = algo->getAlgorithmFlags();
         if (algoname && (0 != stricmp(algoname, "quicksort")))
         {
-            Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
+            Owned<IException> e = MakeActivityException(*this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
             reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
         }
     }
@@ -83,7 +83,7 @@ protected:
         unsigned flags = algo->getAlgorithmFlags();
         if (algoname && (0 != stricmp(algoname, "quicksort")))
         {
-            Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
+            Owned<IException> e = MakeActivityException(*this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
             reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
         }
         OwnedRoxieString cosortlogname(helper->getSortedFilename());
@@ -172,7 +172,7 @@ protected:
                     if (TE_SkewError == e->errorCode())
                     {
                         StringBuffer s;
-                        Owned<IThorException> e2 = MakeActivityException(this, TE_SortFailedSkewExceeded, "SORT failed. %s", e->errorMessage(s).str());
+                        Owned<IThorException> e2 = MakeActivityException(*this, TE_SortFailedSkewExceeded, "SORT failed. %s", e->errorMessage(s).str());
                         e->Release();
                         fireException(e2);
                     }

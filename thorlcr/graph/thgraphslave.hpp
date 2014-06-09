@@ -105,7 +105,6 @@ public:
     void initWithActData(MemoryBuffer &in, MemoryBuffer &out);
     void getDone(MemoryBuffer &doneInfoMb);
     void serializeDone(MemoryBuffer &mb);
-    IThorResult *getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, activity_id ownerId, unsigned id);
 
     virtual void executeSubGraph(size32_t parentExtractSz, const byte *parentExtract);
     virtual bool serializeStats(MemoryBuffer &mb);
@@ -115,7 +114,6 @@ public:
     virtual void abort(IException *e);
     virtual void done();
     virtual void end();
-    virtual IThorGraphResults *createThorGraphResults(unsigned num);
 
 // IExceptionHandler
     virtual bool fireException(IException *e)
@@ -165,6 +163,7 @@ public:
         return new CSlaveGraph(*this);
     }
     virtual IBarrier *createBarrier(mptag_t tag);
+    IThorResult *getGlobalResult(ILWActivity &activity, graph_id gid, IRowInterfaces *rowIf, activity_id ownerId, unsigned id);
 
 // IExceptionHandler
     virtual bool fireException(IException *e)
@@ -195,7 +194,7 @@ public:
 };
 
 interface IPartDescriptor;
-extern graphslave_decl bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFile & ifile, unsigned &location, StringBuffer &path);
+extern graphslave_decl bool ensurePrimary(CActivityBase &activity, IPartDescriptor &partDesc, OwnedIFile & ifile, unsigned &location, StringBuffer &path);
 extern graphslave_decl IReplicatedFile *createEnsurePrimaryPartFile(CActivityBase &activity, const char *logicalFilename, IPartDescriptor *partDesc);
 extern graphslave_decl IThorFileCache *createFileCache(unsigned limit);
 

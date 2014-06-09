@@ -409,7 +409,7 @@ void CMasterActivity::main()
         if (QUERYINTERFACE(e, ISEH_Exception))
             e2.setown(MakeThorFatal(e, TE_SEH, "(SEH)"));
         else
-            e2.setown(MakeActivityException(this, e, "Master exception"));
+            e2.setown(MakeActivityException(*this, e, "Master exception"));
         e->Release();
         ActPrintLog(e2, "In CMasterActivity::main");
         fireException(e2);
@@ -572,7 +572,7 @@ bool CMasterGraphElement::checkUpdate()
             if ((eclCRC == props.getPropInt("@eclCRC")) && (totalCRC == props.getPropInt64("@totalCRC")))
             {
                 // so this needs pruning
-                Owned<IThorException> e = MakeActivityWarning(this, TE_UpToDate, "output file = '%s' - is up to date - it will not be rebuilt", file->queryLogicalName());
+                Owned<IThorException> e = MakeActivityWarning(*this, TE_UpToDate, "output file = '%s' - is up to date - it will not be rebuilt", file->queryLogicalName());
                 queryOwner().fireException(e);
                 return true;
             }
@@ -1901,10 +1901,10 @@ bool CJobMaster::fireException(IException *e)
 
 class CCollatedResult : public CSimpleInterface, implements IThorResult
 {
-    CMasterGraph &graph;
-    CActivityBase &activity;
+    ILWActivity &activity;
     IRowInterfaces *rowIf;
     unsigned id;
+    graph_id gid;
     CriticalSection crit;
     PointerArrayOf<CThorExpandingRowArray> results;
     Owned<IThorResult> result;
@@ -1920,13 +1920,14 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
         CMessageBuffer msg;
         msg.append(GraphGetResult);
         msg.append(activity.queryJob().queryKey());
-        msg.append(graph.queryGraphId());
+        msg.append(gid);
         msg.append(ownerId);
         msg.append(id);
         msg.append(replyTag);
-        ((CJobMaster &)graph.queryJob()).broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
+        CJobMaster &job = ((CJobMaster &)activity.queryJob());
+        job.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
 
-        unsigned numSlaves = graph.queryJob().querySlaves();
+        unsigned numSlaves = job.querySlaves();
         for (unsigned n=0; n<numSlaves; n++)
             results.item(n)->kill();
         rank_t sender;
@@ -1939,12 +1940,12 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
         {
             loop
             {
-                if (activity.queryAbortSoon())
+                if (job.queryAborted())
                     return;
                 msg.clear();
-                if (activity.receiveMsg(msg, RANK_ALL, replyTag, &sender, 60*1000))
+                if (job.queryJobComm().recv(msg, RANK_ALL, replyTag, &sender, 60*1000))
                     break;
-                ActPrintLog(&activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
+                ActPrintLog(activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
             }
             sender = sender - 1; // 0 = master
             if (!msg.length())
@@ -1992,10 +1993,10 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CCollatedResult(CMasterGraph &_graph, CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _id, activity_id _ownerId, unsigned _spillPriority)
-        : graph(_graph), activity(_activity), rowIf(_rowIf), id(_id), ownerId(_ownerId), spillPriority(_spillPriority)
+    CCollatedResult(ILWActivity &_activity, IRowInterfaces *_rowIf, unsigned _id, activity_id _ownerId, unsigned _spillPriority)
+        : activity(_activity), rowIf(_rowIf), id(_id), ownerId(_ownerId), spillPriority(_spillPriority)
     {
-        for (unsigned n=0; n<graph.queryJob().querySlaves(); n++)
+        for (unsigned n=0; n<activity.queryJob().querySlaves(); n++)
             results.append(new CThorExpandingRowArray(activity, rowIf));
     }
     ~CCollatedResult()
@@ -2022,13 +2023,13 @@ public:
         ensure();
         return result->getRowStream();
     }
-    virtual IRowInterfaces *queryRowInterfaces()
+    virtual IRowInterfaces *queryRowInterfaces() const
     {
         return rowIf;
     }
-    virtual CActivityBase *queryActivity()
+    virtual ILWActivity &queryActivity() const
     {
-        return &activity;
+        return activity;
     }
     virtual bool isDistributed() const { return false; }
     virtual void serialize(MemoryBuffer &mb)
@@ -2743,21 +2744,21 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
 
 IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, results->queryOwnerId(), spillPriority);
+    Owned<CCollatedResult> result = new CCollatedResult(activity, rowIf, id, results->queryOwnerId(), spillPriority);
     results->setResult(id, result);
     return result;
 }
 
 IThorResult *CMasterGraph::createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, id, localResults->queryOwnerId(), spillPriority);
+    Owned<CCollatedResult> result = new CCollatedResult(activity, rowIf, id, localResults->queryOwnerId(), spillPriority);
     localResults->setResult(id, result);
     return result;
 }
 
 IThorResult *CMasterGraph::createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority)
 {
-    Owned<CCollatedResult> result = new CCollatedResult(*this, activity, rowIf, 0, localResults->queryOwnerId(), spillPriority);
+    Owned<CCollatedResult> result = new CCollatedResult(activity, rowIf, 0, localResults->queryOwnerId(), spillPriority);
     unsigned id = graphLoopResults->addResult(result);
     result->setId(id);
     return result;

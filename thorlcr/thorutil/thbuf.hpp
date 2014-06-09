@@ -51,13 +51,13 @@ interface ISmartRowBuffer: extends IRowStream
 };
 
 class CActivityBase;
-extern graph_decl ISmartRowBuffer * createSmartBuffer(CActivityBase *activity, const char * tempname, 
+extern graph_decl ISmartRowBuffer * createSmartBuffer(ILWActivity &activity, const char * tempname,
                                                       size32_t buffsize, 
                                                       IRowInterfaces *rowif
                                                       ); 
 
 
-extern graph_decl ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *activity,
+extern graph_decl ISmartRowBuffer * createSmartInMemoryBuffer(ILWActivity &activity,
                                                       IRowInterfaces *rowIf,
                                                       size32_t buffsize);
 
@@ -69,9 +69,9 @@ interface ISharedSmartBuffer : extends IRowWriter
     virtual void reset() = 0;
 };
 
-extern graph_decl ISharedSmartBuffer *createSharedSmartMemBuffer(CActivityBase *activity, unsigned outputs, IRowInterfaces *rowif, unsigned buffSize=((unsigned)-1));
+extern graph_decl ISharedSmartBuffer *createSharedSmartMemBuffer(ILWActivity &activity, unsigned outputs, IRowInterfaces *rowif, unsigned buffSize=((unsigned)-1));
 interface IDiskUsage;
-extern graph_decl ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase *activity, const char *tempname, unsigned outputs, IRowInterfaces *rowif, IDiskUsage *iDiskUsage=NULL);
+extern graph_decl ISharedSmartBuffer *createSharedSmartDiskBuffer(ILWActivity &ctivity, const char *tempname, unsigned outputs, IRowInterfaces *rowif, IDiskUsage *iDiskUsage=NULL);
 
 
 interface IRowWriterMultiReader : extends IRowWriter
@@ -79,7 +79,7 @@ interface IRowWriterMultiReader : extends IRowWriter
     virtual IRowStream *getReader() = 0;
 };
 
-extern graph_decl IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IRowInterfaces *rowif, bool grouped, bool shared=false, unsigned spillPriority=SPILL_PRIORITY_OVERFLOWABLE_BUFFER);
+extern graph_decl IRowWriterMultiReader *createOverflowableBuffer(ILWActivity &activity, IRowInterfaces *rowif, bool grouped, bool shared=false, unsigned spillPriority=SPILL_PRIORITY_OVERFLOWABLE_BUFFER);
 // NB first write all then read (not interleaved!)
 
 // Multiple writers, one reader
@@ -91,7 +91,7 @@ interface IRowMultiWriterReader : extends IRowStream
 
 #define DEFAULT_WR_READ_GRANULARITY 10000 // Amount reader extracts when empty to avoid contention with writer
 #define DEFAULT_WR_WRITE_GRANULARITY 1000 // Amount writers buffer up before committing to output
-extern graph_decl IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit, unsigned readGranularity=DEFAULT_WR_READ_GRANULARITY, unsigned writeGranularity=DEFAULT_WR_WRITE_GRANULARITY);
+extern graph_decl IRowMultiWriterReader *createSharedWriteBuffer(ILWActivity &activity, IRowInterfaces *rowif, unsigned limit, unsigned readGranularity=DEFAULT_WR_READ_GRANULARITY, unsigned writeGranularity=DEFAULT_WR_WRITE_GRANULARITY);
 
 
 #endif

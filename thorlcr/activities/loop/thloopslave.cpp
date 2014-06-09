@@ -31,7 +31,7 @@
 class CNextRowFeeder : public CSimpleInterface, implements IThreaded, implements IRowStream
 {
     CThreaded threaded;
-    CActivityBase *activity;
+    CActivityBase &activity;
     Owned<ISmartRowBuffer> smartbuf;
     Owned<IRowStream> in;
     bool stopped;
@@ -40,10 +40,10 @@ class CNextRowFeeder : public CSimpleInterface, implements IThreaded, implements
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CNextRowFeeder(CActivityBase *_activity, IRowStream *_in) : in(_in), threaded("CNextRowFeeder"), activity(_activity), rowInterfaces(_activity)
+    CNextRowFeeder(CActivityBase &_activity, IRowStream *_in) : in(_in), threaded("CNextRowFeeder"), activity(_activity), rowInterfaces(&_activity)
     {
         stopped = true;
-        smartbuf.setown(createSmartInMemoryBuffer(activity, activity, SMALL_SMART_BUFFER_SIZE));
+        smartbuf.setown(createSmartInMemoryBuffer(activity, &activity, SMALL_SMART_BUFFER_SIZE));
         threaded.init(this);
     }
     ~CNextRowFeeder()
@@ -287,7 +287,7 @@ public:
         };
         ActPrintLog("maxIterations = %d", maxIterations);
         dataLinkStart();
-        nextRowFeeder.setown(new CNextRowFeeder(this, new CWrapper(*this)));
+        nextRowFeeder.setown(new CNextRowFeeder(*this, new CWrapper(*this)));
     }
     void doStop()
     {
@@ -347,7 +347,7 @@ public:
                     emptyIterations++;
                     // only fire error here, if local
                     if (container.queryLocalOrGrouped() && emptyIterations > maxEmptyLoopIterations)
-                        throw MakeActivityException(this, 0, "Executed LOOP with empty input and output %u times", emptyIterations);
+                        throw MakeActivityException(*this, 0, "Executed LOOP with empty input and output %u times", emptyIterations);
                     unsigned now = msTick();
                     if (now-lastMs > 60000)
                     {
@@ -378,7 +378,7 @@ public:
                 IThorBoundLoopGraph *boundGraph = queryContainer().queryLoopGraph();
                 unsigned condLoopCounter = (flags & IHThorLoopArg::LFcounter) ? loopCounter:0;
                 unsigned loopAgain = (flags & IHThorLoopArg::LFnewloopagain) ? helper->loopAgainResult() : 0;
-                ownedResults.setown(queryGraph().createThorGraphResults(3));
+                ownedResults.setown(queryJob().createThorGraphResults(queryGraphId()));
                 // ensures remote results are available, via owning activity (i.e. this loop act)
                 // so that when aggregate result is fetched from the master, it will retrieve from the act, not the (already cleaned) graph localresults
                 ownedResults->setOwner(container.queryId());
@@ -457,7 +457,7 @@ public:
         executed = false;
         maxIterations = helper->numIterations();
         if ((int)maxIterations < 0) maxIterations = 0;
-        loopResults.setown(queryGraph().createThorGraphResults(0));
+        loopResults.setown(queryJob().createThorGraphResults(queryGraphId()));
         helper->createParentExtract(extractBuilder);
         ActPrintLog("maxIterations = %d", maxIterations);
         dataLinkStart();

@@ -69,7 +69,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             {
                 iFileIO.setown(createCompressedFileReader(iFile, activity.eexp));
                 if (!iFileIO)
-                    throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+                    throw MakeActivityException(activity, 0, "Failed to open block compressed file '%s'", filename.get());
                 checkFileCrc = false;
             }
             else
@@ -129,7 +129,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 if (PTreeRead_syntax != e->errorCode())
                     throw;
                 Owned<IException> _e = e;
-                offset_t localFPos = makeLocalFposOffset(activity.queryContainer().queryJob().queryMyRank()-1, e->queryOffset());
+                offset_t localFPos = makeLocalFposOffset(activity.queryJob().queryMyRank()-1, e->queryOffset());
                 StringBuffer context;
                 context.append("Logical filename = ").append(activity.logicalFilename).newline();
                 context.append("Local fileposition = ");
@@ -145,7 +145,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 StringBuffer s("XMLRead actId(");
                 s.append(activity.queryContainer().queryId()).append(") out of memory.").newline();
                 s.append("INTERNAL ERROR ").append(e->errorCode());
-                Owned<IException> e2 = MakeActivityException(&activity, e, "%s", s.str());
+                Owned<IException> e2 = MakeActivityException(activity, e, "%s", s.str());
                 e->Release();
                 throw e2.getClear();
             }
@@ -154,7 +154,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 StringBuffer s("XMLRead actId(");
                 s.append(activity.queryContainer().queryId());
                 s.append(") INTERNAL ERROR ").append(e->errorCode());
-                Owned<IException> e2 = MakeActivityException(&activity, e, "%s", s.str());
+                Owned<IException> e2 = MakeActivityException(activity, e, "%s", s.str());
                 e->Release();
                 throw e2.getClear();
             }

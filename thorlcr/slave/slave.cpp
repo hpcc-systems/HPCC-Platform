@@ -112,7 +112,7 @@ void ProcessSlaveActivity::main()
         }
         else
         {
-            e = MakeActivityException(this, _e);
+            e = MakeActivityException(*this, _e);
             if (QUERYINTERFACE(_e, ISEH_Exception))
             {
                 IThorException *e2 = MakeThorFatal(e, TE_SEH, "FATAL: (SEH)");
@@ -132,12 +132,12 @@ void ProcessSlaveActivity::main()
         else
             m.append("standard library exception (std::exception ").append(es.what()).append(")");
         m.appendf(" in %"ACTPF"d",container.queryId());
-        ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "%s", m.str());
+        ActPrintLogEx(*this, thorlog_null, MCerror, "%s", m.str());
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "%s", m.str()));
     }
     catch (CATCHALL)
     {
-        ActPrintLogEx(&queryContainer(), thorlog_null, MCerror, "Unknown exception thrown in process()");
+        ActPrintLogEx(*this, thorlog_null, MCerror, "Unknown exception thrown in process()");
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "FATAL: Unknown exception thrown by ProcessThread"));
     }
     try { endProcess(); }

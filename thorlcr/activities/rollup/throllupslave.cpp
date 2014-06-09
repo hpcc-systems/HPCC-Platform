@@ -25,7 +25,7 @@
 
 class CDedupAllHelper : public CSimpleInterface, implements IRowStream
 {
-    CActivityBase *activity;
+    CActivityBase &activity;
 
     unsigned dedupCount;
     const void ** dedupArray;
@@ -82,12 +82,12 @@ class CDedupAllHelper : public CSimpleInterface, implements IRowStream
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CDedupAllHelper(CActivityBase *_activity) : activity(_activity), rows(*_activity, _activity)
+    CDedupAllHelper(CActivityBase &_activity) : activity(_activity), rows(_activity, &_activity)
     {
         in = NULL;
         helper = NULL;
         abort = NULL;
-        rowLoader.setown(createThorRowLoader(*activity, NULL, stableSort_none, rc_allMem));
+        rowLoader.setown(createThorRowLoader(activity, NULL, stableSort_none, rc_allMem));
     }
 
     void init(IThorDataLink * _in, IHThorDedupArg * _helper, bool _keepLeft, bool * _abort, IStopInput *_iStopInput)
@@ -113,7 +113,7 @@ public:
         rows.kill();
 
         // JCSMORE - could do in chunks and merge if > mem
-        Owned<IRowStream> rowStream = groupOp ? rowLoader->loadGroup(in, activity->queryAbortSoon(), &rows) : rowLoader->load(in, activity->queryAbortSoon(), false, &rows);
+        Owned<IRowStream> rowStream = groupOp ? rowLoader->loadGroup(in, activity.queryAbortSoon(), &rows) : rowLoader->load(in, activity.queryAbortSoon(), false, &rows);
         dedupCount = rows.ordinality();
         ActPrintLog(activity, "DEDUP: rows loaded = %d",dedupCount);
 
@@ -180,7 +180,7 @@ public:
     {
         needFirstRow = true;
         input.set(inputs.item(0));
-        rowif.set(queryRowInterfaces(input));
+        rowif.set(::queryRowInterfaces(input));
         eogNext = eos = false;
         numKept = 0;
         if (global)
@@ -421,7 +421,7 @@ public:
 
         lastEog = false;
         assertex(!global);      // dedup(),local,all only supported
-        dedupHelper.setown(new CDedupAllHelper(this));
+        dedupHelper.setown(new CDedupAllHelper(*this));
         dedupHelper->init(input, ddhelper, keepLeft, &abortSoon, groupOp?NULL:this);
         dedupHelper->calcNextDedupAll(groupOp);
     }
@@ -593,7 +593,7 @@ public:
         ActivityTimer t(totalCycles, timeActivities, NULL);
         if (!eoi)
         {
-            CThorExpandingRowArray rows(*this, queryRowInterfaces(input));
+            CThorExpandingRowArray rows(*this, ::queryRowInterfaces(input));
             Owned<IRowStream> rowStream = groupLoader->loadGroup(input, abortSoon, &rows);
             unsigned count = rows.ordinality();
             if (count)

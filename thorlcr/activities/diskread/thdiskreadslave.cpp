@@ -214,14 +214,14 @@ void CDiskRecordPartHandler::open()
             if (!blockCompressed)
                 throw MakeStringException(-1,"Unsupported compressed file format: %s", filename.get());
             else 
-                throw MakeActivityException(&activity, 0, "Failed to open block compressed file '%s'", filename.get());
+                throw MakeActivityException(activity, 0, "Failed to open block compressed file '%s'", filename.get());
         }
     }
     else
         in.setown(createRowStream(iFile, activity.queryDiskRowInterfaces(), rwFlags));
     if (!in)
-        throw MakeActivityException(&activity, 0, "Failed to open file '%s'", filename.get());
-    ActPrintLog(&activity, "%s[part=%d]: %s (%s)", kindStr, which, activity.isFixedDiskWidth ? "fixed" : "variable", filename.get());
+        throw MakeActivityException(activity, 0, "Failed to open file '%s'", filename.get());
+    ActPrintLog(activity, "%s[part=%d]: %s (%s)", kindStr, which, activity.isFixedDiskWidth ? "fixed" : "variable", filename.get());
     if (activity.isFixedDiskWidth) 
     {
         if (!compressed || blockCompressed)
@@ -231,7 +231,7 @@ void CDiskRecordPartHandler::open()
             {
                 offset_t lsize = partDesc->queryProperties().getPropInt64("@size");
                 if (0 != lsize % fixedSize)
-                    throw MakeActivityException(&activity, TE_BadFileLength, "Fixed length file %s [DFS size=%"I64F"d] is not a multiple of fixed record size : %d", filename.get(), lsize, fixedSize);
+                    throw MakeActivityException(activity, TE_BadFileLength, "Fixed length file %s [DFS size=%"I64F"d] is not a multiple of fixed record size : %d", filename.get(), lsize, fixedSize);
             }
         }
     }
@@ -316,7 +316,7 @@ public:
                     StringBuffer s;
                     e->errorMessage(s);
                     s.append(" - handling file: ").append(filename.get());
-                    IException *e2 = MakeActivityException(&activity, e, "%s", s.str());
+                    IException *e2 = MakeActivityException(activity, e, "%s", s.str());
                     e->Release();
                     throw e2;
                 }
@@ -412,7 +412,7 @@ public:
             needTransform = helper->needTransform();
             if (unsorted)
             {
-                Owned<IException> e = MakeActivityWarning(this, 0, "Diskread - ignoring 'unsorted' because marked 'grouped'");
+                Owned<IException> e = MakeActivityWarning(*this, 0, "Diskread - ignoring 'unsorted' because marked 'grouped'");
                 fireException(e);
                 unsorted = false;
             }
@@ -672,7 +672,7 @@ public:
                 StringBuffer s;
                 e->errorMessage(s);
                 s.append(" - handling file: ").append(filename.get());
-                IException *e2 = MakeActivityException(&activity, e, "%s", s.str());
+                IException *e2 = MakeActivityException(activity, e, "%s", s.str());
                 e->Release();
                 eoi = true;
                 throw e2;

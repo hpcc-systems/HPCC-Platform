@@ -140,7 +140,7 @@ public:
         for (c=0; c<offsetCount; c++)
         {
             FPosTableEntry &e = offsetTable[c];
-            ActPrintLog(&owner, "Table[%d] : base=%"I64F"d, top=%"I64F"d, slave=%d", c, e.base, e.top, e.index);
+            ActPrintLog(owner, "Table[%d] : base=%"I64F"d, top=%"I64F"d, slave=%d", c, e.base, e.top, e.index);
         }
         files = parts.ordinality();
         if (files)
@@ -174,7 +174,7 @@ public:
     {
         fposHash = new CFPosHandler(*iFetchHandler, offsetCount, offsetTable);
         keyIn.set(_keyIn);
-        distributor = createHashDistributor(&owner, owner.queryContainer().queryJob().queryJobComm(), tag, false, this);
+        distributor = createHashDistributor(&owner, owner.queryJob().queryJobComm(), tag, false, this);
         keyOutStream.setown(distributor->connect(keyRowIf, keyIn, fposHash, NULL));
     }
     virtual IRowStream *queryOutput() { return this; }
@@ -570,7 +570,7 @@ public:
             if (thisLineLength < minRequired || avail < minRequired)
                 break;
             if (minRequired == maxRowSize)
-                throw MakeActivityException(this, 0, "CSV fetch line of length greater than %d bytes.", minRequired);
+                throw MakeActivityException(*this, 0, "CSV fetch line of length greater than %d bytes.", minRequired);
             if (minRequired >= maxRowSize/2)
                 minRequired = maxRowSize;
             else
@@ -647,7 +647,7 @@ public:
             if (!parser->next())
             {
                 StringBuffer tmpStr;
-                throw MakeActivityException(this, 0, "%s", fetchStream->getPartName(filePartIndex, tmpStr).str());
+                throw MakeActivityException(*this, 0, "%s", fetchStream->getPartName(filePartIndex, tmpStr).str());
             }
         }
         size32_t retSz = ((IHThorXmlFetchArg *)fetchBaseHelper)->transform(rowBuilder, lastMatch->get(), keyRow, fpos);

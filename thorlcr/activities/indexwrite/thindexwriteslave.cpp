@@ -191,7 +191,7 @@ public:
         StringBuffer partFname;
         getPartFilename(partDesc, 0, partFname);
         bool compress=false;
-        OwnedIFileIO iFileIO = createMultipleWrite(this, partDesc, 0, compress, false, NULL, this, false, true, &abortSoon);
+        OwnedIFileIO iFileIO = createMultipleWrite(*this, partDesc, 0, compress, false, NULL, this, false, true, &abortSoon);
         Owned<IFileIOStream> out = createBufferedIOStream(iFileIO);
         ActPrintLog("INDEXWRITE: created fixed output stream %s", partFname.str());
         unsigned flags = COL_PREFIX;
@@ -224,12 +224,12 @@ public:
             if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
             {
                 OwnedRoxieString fname(helper->getFileName());
-                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
+                throw MakeActivityException(*this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
             }
             if(!validateXMLTag(name.str()))
             {
                 OwnedRoxieString fname(helper->getFileName());
-                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
+                throw MakeActivityException(*this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
             }
             if(!metadata) metadata.setown(createPTree("metadata"));
             metadata->setProp(name.str(), value.str());
@@ -276,7 +276,7 @@ public:
         catch (CATCHALL)
         {
             abortSoon = true;
-            e.setown(MakeActivityException(this, 0, "INDEXWRITE: Error closing file: %s - unknown exception", partFname.str()));
+            e.setown(MakeActivityException(*this, 0, "INDEXWRITE: Error closing file: %s - unknown exception", partFname.str()));
         }
         try 
         { 
@@ -568,7 +568,7 @@ public:
                             copyFile(dstIFile, existingTlkIFile);
                         }
                         else
-                            doReplicate(this, *tlkDesc, NULL);
+                            doReplicate(*this, *tlkDesc, NULL);
                     }
                 }
             }
@@ -660,7 +660,7 @@ public:
         }
         if (reportOverflow && totalCount == I64C(0x100000000))
         {
-            Owned<IThorException> e = MakeActivityWarning(this, TE_MoxieIndarOverflow, "Moxie indar sequence number has overflowed");
+            Owned<IThorException> e = MakeActivityWarning(*this, TE_MoxieIndarOverflow, "Moxie indar sequence number has overflowed");
             fireException(e);
             reportOverflow = false;
         }
@@ -670,7 +670,7 @@ public:
         if (singlePartKey && !fewcapwarned && totalCount>(FEWWARNCAP*0x100000))
         {
             fewcapwarned = true;
-            Owned<IThorException> e = MakeActivityWarning(this, TE_BuildIndexFewExcess, "BUILDINDEX: building single part key because marked as 'FEW' but row count in excess of %dM", FEWWARNCAP);
+            Owned<IThorException> e = MakeActivityWarning(*this, TE_BuildIndexFewExcess, "BUILDINDEX: building single part key because marked as 'FEW' but row count in excess of %dM", FEWWARNCAP);
             fireException(e);
         }
     }

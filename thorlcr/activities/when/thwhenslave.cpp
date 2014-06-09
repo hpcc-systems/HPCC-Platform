@@ -29,21 +29,21 @@ protected:
     const byte *savedParentExtract;
     bool global;
     Owned<IBarrier> barrier;
-    CSlaveActivity *activity;
+    CSlaveActivity &activity;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CDependencyExecutorSlaveActivity(CSlaveActivity *_activity) : activity(_activity)
+    CDependencyExecutorSlaveActivity(CSlaveActivity *_activity) : activity(*_activity)
     {
-        global = !activity->queryContainer().queryOwner().queryOwner() || activity->queryContainer().queryOwner().isGlobal();
+        global = !activity.queryContainer().queryOwner().queryOwner() || activity.queryContainer().queryOwner().isGlobal();
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         if (global)
         {
-            mptag_t barrierTag = activity->queryContainer().queryJob().deserializeMPTag(data);
-            barrier.setown(activity->queryContainer().queryJob().createBarrier(barrierTag));
+            mptag_t barrierTag = activity.queryJob().deserializeMPTag(data);
+            barrier.setown(activity.queryJob().createBarrier(barrierTag));
         }
     }
     void preStart(size32_t parentExtractSz, const byte *parentExtract)
@@ -61,7 +61,7 @@ public:
         else
         {
             ActPrintLog(activity, "Executing dependencies");
-            activity->queryContainer().executeDependencies(savedParentExtractSz, savedParentExtract, controlId, true);
+            activity.queryContainer().executeDependencies(savedParentExtractSz, savedParentExtract, controlId, true);
         }
         return true;
     }

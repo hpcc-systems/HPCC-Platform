@@ -262,7 +262,7 @@ class graph_decl CThorExpandingRowArray : public CSimpleInterface
     inline void transferRowsCopy(const void **outRows, bool takeOwnership);
 
 protected:
-    CActivityBase &activity;
+    ILWActivity &activity;
     IRowInterfaces *rowIf;
     IEngineRowAllocator *allocator;
     IOutputRowSerializer *serializer;
@@ -285,9 +285,9 @@ protected:
     void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);
     inline rowidx_t getRowsCapacity() const { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
 public:
-    CThorExpandingRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
+    CThorExpandingRowArray(ILWActivity &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true, rowidx_t initialSize=InitialSortElements);
     ~CThorExpandingRowArray();
-    CActivityBase &queryActivity() { return activity; }
+    ILWActivity &queryActivity() { return activity; }
     // NB: throws error on OOM by default
     void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=true);
     inline void setAllowNulls(bool b) { allowNulls = b; }
@@ -398,7 +398,7 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implem
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
 public:
 
-    CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
+    CThorSpillableRowArray(ILWActivity &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
     ~CThorSpillableRowArray();
     // NB: default throwOnOom to false
     void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=false)
@@ -526,10 +526,10 @@ interface IThorRowCollector : extends IThorRowCollectorCommon
     virtual IRowStream *getStream(bool shared=false, CThorExpandingRowArray *allMemRows=NULL) = 0;
 };
 
-extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
-extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
-extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
-extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
+extern graph_decl IThorRowLoader *createThorRowLoader(ILWActivity &activity, IRowInterfaces *rowIf, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
+extern graph_decl IThorRowLoader *createThorRowLoader(ILWActivity &activity, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
+extern graph_decl IThorRowCollector *createThorRowCollector(ILWActivity &activity, IRowInterfaces *rowIf, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
+extern graph_decl IThorRowCollector *createThorRowCollector(ILWActivity &activity, ICompare *iCompare=NULL, StableSortFlag stableSort=stableSort_none, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
 
 
 

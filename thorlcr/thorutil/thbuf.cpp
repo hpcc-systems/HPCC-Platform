@@ -65,7 +65,7 @@ struct SmartBufReenterCheck
 
 class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, implements IRowWriter
 {
-    CActivityBase *activity;
+    ILWActivity &activity;
     ThorRowQueue *in;
     size32_t insz;
     ThorRowQueue *out;
@@ -248,7 +248,7 @@ class CSmartRowBuffer: public CSimpleInterface, implements ISmartRowBuffer, impl
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSmartRowBuffer(CActivityBase *_activity, IFile *_file,size32_t bufsize,IRowInterfaces *rowif)
+    CSmartRowBuffer(ILWActivity &_activity, IFile *_file,size32_t bufsize,IRowInterfaces *rowif)
         : activity(_activity), file(_file), allocator(rowif->queryRowAllocator()), serializer(rowif->queryRowSerializer()), deserializer(rowif->queryRowDeserializer())
     {
 #ifdef _DEBUG
@@ -316,7 +316,7 @@ public:
 #ifdef _DEBUG
         if (waiting)
         {
-            ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowBuffer::stop while nextRow waiting");
+            ActPrintLogEx(activity, thorlog_null, MCwarning, "CSmartRowBuffer::stop while nextRow waiting");
             PrintStackReport();
         }
 #endif
@@ -411,7 +411,7 @@ public:
             waitflush = true;
             SpinUnblock unblock(lock);
             while (!waitflushsem.wait(1000*60))
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowBuffer::flush stalled");
+                ActPrintLogEx(activity, thorlog_null, MCwarning, "CSmartRowBuffer::flush stalled");
         }
     }
 
@@ -425,7 +425,7 @@ public:
 class CSmartRowInMemoryBuffer: public CSimpleInterface, implements ISmartRowBuffer, implements IRowWriter
 {
     // NB must *not* call LinkThorRow or ReleaseThorRow (or Owned*ThorRow) if deallocator set
-    CActivityBase *activity;
+    ILWActivity &activity;
     IRowInterfaces *rowIf;
     ThorRowQueue *in;
     size32_t insz;
@@ -444,7 +444,7 @@ class CSmartRowInMemoryBuffer: public CSimpleInterface, implements ISmartRowBuff
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSmartRowInMemoryBuffer(CActivityBase *_activity, IRowInterfaces *_rowIf, size32_t bufsize)
+    CSmartRowInMemoryBuffer(ILWActivity &_activity, IRowInterfaces *_rowIf, size32_t bufsize)
         : activity(_activity), rowIf(_rowIf)
     {
 #ifdef _DEBUG
@@ -559,7 +559,7 @@ public:
         SpinBlock block(lock);
 #ifdef _DEBUG
         if (waitingout) {
-            ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowInMemoryBuffer::stop while nextRow waiting");
+            ActPrintLogEx(activity, thorlog_null, MCwarning, "CSmartRowInMemoryBuffer::stop while nextRow waiting");
             PrintStackReport();
         }
 #endif
@@ -597,7 +597,7 @@ public:
             waitingin = true;
             SpinUnblock unblock(lock);
             while (!waitinsem.wait(1000*60))
-                ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "CSmartRowInMemoryBuffer::flush stalled");
+                ActPrintLogEx(activity, thorlog_null, MCwarning, "CSmartRowInMemoryBuffer::flush stalled");
         }
     }
 
@@ -607,20 +607,20 @@ public:
     }
 };
 
-ISmartRowBuffer * createSmartBuffer(CActivityBase *activity, const char * tempname, size32_t buffsize, IRowInterfaces *rowif) 
+ISmartRowBuffer * createSmartBuffer(ILWActivity &activity, const char * tempname, size32_t buffsize, IRowInterfaces *rowif)
 {
     Owned<IFile> file = createIFile(tempname);
     return new CSmartRowBuffer(activity,file,buffsize,rowif);
 }
 
-ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *activity, IRowInterfaces *rowIf, size32_t buffsize)
+ISmartRowBuffer * createSmartInMemoryBuffer(ILWActivity &activity, IRowInterfaces *rowIf, size32_t buffsize)
 {
     return new CSmartRowInMemoryBuffer(activity, rowIf, buffsize);
 }
 
 class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiReader
 {
-    CActivityBase &activity;
+    ILWActivity &activity;
     IRowInterfaces *rowIf;
     Owned<IThorRowCollector> collector;
     Owned<IRowWriter> writer;
@@ -629,7 +629,7 @@ class COverflowableBuffer : public CSimpleInterface, implements IRowWriterMultiR
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    COverflowableBuffer(CActivityBase &_activity, IRowInterfaces *_rowIf, bool grouped, bool _shared, unsigned spillPriority)
+    COverflowableBuffer(ILWActivity &_activity, IRowInterfaces *_rowIf, bool grouped, bool _shared, unsigned spillPriority)
         : activity(_activity), rowIf(_rowIf), shared(_shared)
     {
         collector.setown(createThorRowCollector(activity, rowIf, NULL, stableSort_none, rc_mixed, spillPriority, grouped));
@@ -660,7 +660,7 @@ public:
     }
 };
 
-IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IRowInterfaces *rowIf, bool grouped, bool shared, unsigned spillPriority)
+IRowWriterMultiReader *createOverflowableBuffer(ILWActivity &activity, IRowInterfaces *rowIf, bool grouped, bool shared, unsigned spillPriority)
 {
     return new COverflowableBuffer(activity, rowIf, grouped, shared, spillPriority);
 }
@@ -675,7 +675,7 @@ class CRowSet : public CSimpleInterface
     unsigned chunk;
     CThorExpandingRowArray rows;
 public:
-    CRowSet(CActivityBase &activity, unsigned _chunk) : rows(activity, &activity, true), chunk(_chunk)
+    CRowSet(ILWActivity &activity, unsigned _chunk) : rows(activity, activity.queryRowInterfaces(), true), chunk(_chunk)
     {
     }
     void reset(unsigned _chunk)
@@ -756,7 +756,7 @@ class CSharedWriteAheadBase : public CSimpleInterface, implements ISharedSmartBu
         if (readersWaiting)
         {
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "signalReaders: %d", readersWaiting);
+            ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "signalReaders: %d", readersWaiting);
 #endif
             readersWaiting = 0;
             ForEachItemIn(o, outputs)
@@ -827,7 +827,7 @@ protected:
                     return 0;
                 readerWaiting = true;
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&parent.activity->queryContainer(), thorlog_all, MCdebugProgress, "readerWait(%d)", output);
+                ActPrintLogEx(parent.activity, thorlog_all, MCdebugProgress, "readerWait(%d)", output);
 #endif
                 const rowcount_t &rowsWritten = parent.readerWait(rowsRead);
                 {
@@ -908,7 +908,7 @@ protected:
         }
     friend class CSharedWriteAheadBase;
     };
-    CActivityBase *activity;
+    ILWActivity &activity;
     size32_t minChunkSize;
     unsigned lowestChunk, lowestOutput, outputCount, totalChunksOut;
     bool stopped;
@@ -953,7 +953,7 @@ protected:
                 }
                 ++lowestChunk;
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "aNRP: %d, lowestChunk=%d, totalChunksOut=%d", prevChunkNum, lowestChunk, totalChunksOut);
+                ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "aNRP: %d, lowestChunk=%d, totalChunksOut=%d", prevChunkNum, lowestChunk, totalChunksOut);
 #endif
             }
         }
@@ -974,7 +974,7 @@ protected:
                 return;
             }
 #ifdef TRACE_WRITEAHEAD
-            ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Input %d stopped, forcing catchup to free pages", output);
+            ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "Input %d stopped, forcing catchup to free pages", output);
 #endif
             while (queryCOutput(output).currentChunkNum < queryCOutput(lO).currentChunkNum)
             {
@@ -1007,7 +1007,7 @@ public:
 
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSharedWriteAheadBase(CActivityBase *_activity, unsigned _outputCount, IRowInterfaces *rowIf) : activity(_activity), outputCount(_outputCount), meta(rowIf->queryRowMetaData())
+    CSharedWriteAheadBase(ILWActivity &_activity, unsigned _outputCount, IRowInterfaces *rowIf) : activity(_activity), outputCount(_outputCount), meta(rowIf->queryRowMetaData())
     {
         init();
         minChunkSize = 0x2000;
@@ -1024,7 +1024,7 @@ public:
         {
             outputs.append(* new COutput(*this, c));
         }
-        inMemRows.setown(new CRowSet(*activity, 0));
+        inMemRows.setown(new CRowSet(activity, 0));
     }
     ~CSharedWriteAheadBase()
     {
@@ -1066,7 +1066,7 @@ public:
             unsigned reader=anyReaderBehind();
             if (NotFound != reader)
                 flushRows();
-            inMemRows.setown(new CRowSet(*activity, ++totalChunksOut));
+            inMemRows.setown(new CRowSet(activity, ++totalChunksOut));
 #ifdef TRACE_WRITEAHEAD
             totalOutChunkSize = sizeof(unsigned);
 #else
@@ -1221,12 +1221,12 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
                     Owned<Chunk> chunk = new Chunk(nextChunk->offset, required);
                     decFreeChunk(nextChunk, required);
 #ifdef TRACE_WRITEAHEAD
-                    ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %"I64F"d, size=%d, but took required=%d", nextChunk->offset, nextChunk->size+required, required);
+                    ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %"I64F"d, size=%d, but took required=%d", nextChunk->offset, nextChunk->size+required, required);
 #endif
                     return chunk.getClear();
                 }
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %"I64F"d, size=%d", diskChunk.offset, diskChunk.size);
+                ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "getOutOffset: got [free] offset = %"I64F"d, size=%d", diskChunk.offset, diskChunk.size);
 #endif
                 freeChunksSized.remove(nextPos);
                 freeChunks.zap(*nextChunk);
@@ -1308,7 +1308,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
                 addFreeChunk(freeChunk);
         }
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Added chunk, offset %"I64F"d size=%d to freeChunks", freeChunk->offset, freeChunk->size);
+        ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "Added chunk, offset %"I64F"d size=%d to freeChunks", freeChunk->offset, freeChunk->size);
 #endif
     }
     virtual CRowSet *readRows(unsigned output, unsigned whichChunk)
@@ -1323,7 +1323,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
             if (coutput.queryRowSet() && (coutput.queryRowSet()->queryChunk() == currentChunkNum))
             {
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Output: %d, readRows found other output %d with matching offset: %d", output, o, currentChunkNum);
+                ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "Output: %d, readRows found other output %d with matching offset: %d", output, o, currentChunkNum);
 #endif
                 return LINK(coutput.queryRowSet());
             }
@@ -1336,7 +1336,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         VALIDATEEQ(diskChunkNum, currentChunkNum);
 #endif
         CThorStreamDeserializerSource ds(stream);
-        Owned<CRowSet> rowSet = new CRowSet(*activity, currentChunkNum);
+        Owned<CRowSet> rowSet = new CRowSet(activity, currentChunkNum);
         loop
         {   
             byte b;
@@ -1384,7 +1384,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
 
         savedChunks.enqueue(freeChunk.getClear());
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Flushed chunk = %d (savedChunks pos=%d), writeOffset = %"I64F"d, writeSize = %d", inMemRows->queryChunk(), savedChunks.ordinality()-1, freeChunk->offset, len);
+        ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "Flushed chunk = %d (savedChunks pos=%d), writeOffset = %"I64F"d, writeSize = %d", inMemRows->queryChunk(), savedChunks.ordinality()-1, freeChunk->offset, len);
 #endif
     }
     virtual size32_t rowSize(const void *row)
@@ -1398,7 +1398,7 @@ class CSharedWriteAheadDisk : public CSharedWriteAheadBase
         return ssz.size()+1; // space on disk, +1 = eog marker
     }
 public:
-    CSharedWriteAheadDisk(CActivityBase *activity, const char *spillName, unsigned outputCount, IRowInterfaces *rowIf, IDiskUsage *_iDiskUsage) : CSharedWriteAheadBase(activity, outputCount, rowIf),
+    CSharedWriteAheadDisk(ILWActivity &activity, const char *spillName, unsigned outputCount, IRowInterfaces *rowIf, IDiskUsage *_iDiskUsage) : CSharedWriteAheadBase(activity, outputCount, rowIf),
         allocator(rowIf->queryRowAllocator()), serializer(rowIf->queryRowSerializer()), deserializer(rowIf->queryRowDeserializer()), serializeMeta(meta->querySerializedDiskMeta()), iDiskUsage(_iDiskUsage)
     {
         assertex(spillName);
@@ -1435,7 +1435,7 @@ public:
     }
 };
 
-ISharedSmartBuffer *createSharedSmartDiskBuffer(CActivityBase *activity, const char *spillname, unsigned outputs, IRowInterfaces *rowIf, IDiskUsage *iDiskUsage)
+ISharedSmartBuffer *createSharedSmartDiskBuffer(ILWActivity &activity, const char *spillname, unsigned outputs, IRowInterfaces *rowIf, IDiskUsage *iDiskUsage)
 {
     return new CSharedWriteAheadDisk(activity, spillname, outputs, rowIf, iDiskUsage);
 }
@@ -1462,7 +1462,7 @@ class CSharedWriteAheadMem : public CSharedWriteAheadBase
         Owned<CRowSet> topRowSet = chunkPool.dequeue();
         VALIDATEEQ(chunk, topRowSet->queryChunk());
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "freeOffsetChunk: Dequeue chunkPool chunks: %d, chunkPool.ordinality() = %d", topRowSet->queryChunk(), chunkPool.ordinality());
+        ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "freeOffsetChunk: Dequeue chunkPool chunks: %d, chunkPool.ordinality() = %d", topRowSet->queryChunk(), chunkPool.ordinality());
 #endif
         topRowSet.clear();
         if (writerBlocked)
@@ -1491,14 +1491,14 @@ class CSharedWriteAheadMem : public CSharedWriteAheadBase
             if (NotFound == reader)
             {
 #ifdef TRACE_WRITEAHEAD
-                ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "flushRows: caught up whilst blocked to: %d", inMemRows->queryChunk());
+                ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "flushRows: caught up whilst blocked to: %d", inMemRows->queryChunk());
 #endif
                 return; // caught up whilst blocked
             }
             VALIDATELT(chunkPool.ordinality(), maxPoolChunks);
         }
 #ifdef TRACE_WRITEAHEAD
-        ActPrintLogEx(&activity->queryContainer(), thorlog_all, MCdebugProgress, "Flushed chunk = %d, chunkPool chunks = %d", inMemRows->queryChunk(), 1+chunkPool.ordinality());
+        ActPrintLogEx(activity, thorlog_all, MCdebugProgress, "Flushed chunk = %d, chunkPool chunks = %d", inMemRows->queryChunk(), 1+chunkPool.ordinality());
 #endif
         chunkPool.enqueue(inMemRows.getClear());
     }
@@ -1507,7 +1507,7 @@ class CSharedWriteAheadMem : public CSharedWriteAheadBase
         return meta->getRecordSize(row); // space in mem.
     }
 public:
-    CSharedWriteAheadMem(CActivityBase *activity, unsigned outputCount, IRowInterfaces *rowif, unsigned buffSize) : CSharedWriteAheadBase(activity, outputCount, rowif)
+    CSharedWriteAheadMem(ILWActivity &activity, unsigned outputCount, IRowInterfaces *rowif, unsigned buffSize) : CSharedWriteAheadBase(activity, outputCount, rowif)
     {
         if (((unsigned)-1) == buffSize)
             maxPoolChunks = (unsigned)-1; // no limit
@@ -1541,7 +1541,7 @@ public:
     }
 };
 
-ISharedSmartBuffer *createSharedSmartMemBuffer(CActivityBase *activity, unsigned outputs, IRowInterfaces *rowIf, unsigned buffSize)
+ISharedSmartBuffer *createSharedSmartMemBuffer(ILWActivity &activity, unsigned outputs, IRowInterfaces *rowIf, unsigned buffSize)
 {
     return new CSharedWriteAheadMem(activity, outputs, rowIf, buffSize);
 }
@@ -1552,7 +1552,7 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
     rowidx_t readGranularity, writeGranularity, rowPos, limit, rowsToRead;
     CThorSpillableRowArray rows;
     const void **readRows;
-    CActivityBase &activity;
+    ILWActivity &activity;
     IRowInterfaces *rowIf;
     bool readerBlocked, eos, eow;
     Semaphore emptySem, fullSem;
@@ -1617,14 +1617,14 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowMultiWriterReader(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _limit, unsigned _readGranularity, unsigned _writerGranularity)
+    CRowMultiWriterReader(ILWActivity &_activity, IRowInterfaces *_rowIf, unsigned _limit, unsigned _readGranularity, unsigned _writerGranularity)
         : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf), limit(_limit), readGranularity(_readGranularity), writeGranularity(_writerGranularity)
     {
         if (readGranularity > limit)
             readGranularity = limit; // readGranularity must be <= limit;
         numWriters = 0;
         roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
-        readRows = static_cast<const void * *>(rowManager->allocate(readGranularity * sizeof(void*), activity.queryContainer().queryId()));
+        readRows = static_cast<const void * *>(rowManager->allocate(readGranularity * sizeof(void*), activity.queryId()));
         eos = eow = readerBlocked = false;
         rowPos = rowsToRead = 0;
         writersComplete = writersBlocked = 0;
@@ -1722,9 +1722,9 @@ public:
     }
 };
 
-IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit, unsigned readGranularity, unsigned writeGranularity)
+IRowMultiWriterReader *createSharedWriteBuffer(ILWActivity &activity, IRowInterfaces *rowif, unsigned limit, unsigned readGranularity, unsigned writeGranularity)
 {
-    return new CRowMultiWriterReader(*activity, rowif, limit, readGranularity, writeGranularity);
+    return new CRowMultiWriterReader(activity, rowif, limit, readGranularity, writeGranularity);
 }
 
 

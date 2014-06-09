@@ -65,7 +65,7 @@ public:
         IOutputMetaData * diskSize = helper->queryDiskRecordSize();
         unsigned minSize = diskSize->getMinRecordSize();
         if (minSize > KEYBUILD_MAXLENGTH)
-            throw MakeActivityException(this, 0, "Index minimum record length (%d) exceeds %d internal limit", minSize, KEYBUILD_MAXLENGTH);
+            throw MakeActivityException(*this, 0, "Index minimum record length (%d) exceeds %d internal limit", minSize, KEYBUILD_MAXLENGTH);
         unsigned maxSize;
         if (diskSize->isVariableSize())
         {
@@ -77,7 +77,7 @@ public:
         else
             maxSize = diskSize->getFixedSize();
         if (maxSize > KEYBUILD_MAXLENGTH)
-            throw MakeActivityException(this, 0, "Index maximum record length (%d) exceeds %d internal limit. Maximum size = %d, try adjusting index MAXLENGTH", maxSize, KEYBUILD_MAXLENGTH, minSize);
+            throw MakeActivityException(*this, 0, "Index maximum record length (%d) exceeds %d internal limit. Maximum size = %d, try adjusting index MAXLENGTH", maxSize, KEYBUILD_MAXLENGTH, minSize);
 
         singlePartKey = 0 != (helper->getFlags() & TIWsmall) || dlfn.isExternal();
         clusters.kill();
@@ -105,22 +105,22 @@ public:
         {
             restrictedWidth = helper->getWidth();
             if (restrictedWidth > container.queryJob().querySlaves())
-                throw MakeActivityException(this, 0, "Unsupported, can't refactor to width(%d) larger than host cluster(%d)", restrictedWidth, container.queryJob().querySlaves());
+                throw MakeActivityException(*this, 0, "Unsupported, can't refactor to width(%d) larger than host cluster(%d)", restrictedWidth, container.queryJob().querySlaves());
             else if (restrictedWidth < container.queryJob().querySlaves())
             {
                 if (!isLocal)
-                    throw MakeActivityException(this, 0, "Unsupported, refactoring to few parts only supported for local indexes.");
+                    throw MakeActivityException(*this, 0, "Unsupported, refactoring to few parts only supported for local indexes.");
                 assertex(!singlePartKey);
                 unsigned gwidth = groups.item(0).ordinality();
                 if (0 != container.queryJob().querySlaves() % gwidth)
-                    throw MakeActivityException(this, 0, "Unsupported, refactored target size (%d) must be factor of thor cluster width (%d)", groups.item(0).ordinality(), container.queryJob().querySlaves());
+                    throw MakeActivityException(*this, 0, "Unsupported, refactored target size (%d) must be factor of thor cluster width (%d)", groups.item(0).ordinality(), container.queryJob().querySlaves());
                 if (0 == restrictedWidth)
                     restrictedWidth = gwidth;
                 ForEachItemIn(g, groups)
                 {
                     IGroup &group = groups.item(g);
                     if (gwidth != groups.item(g).ordinality())
-                        throw MakeActivityException(this, 0, "Unsupported, cannot output multiple refactored widths, targeting cluster '%s' and '%s'", clusters.item(0), clusters.item(g));
+                        throw MakeActivityException(*this, 0, "Unsupported, cannot output multiple refactored widths, targeting cluster '%s' and '%s'", clusters.item(0), clusters.item(g));
                     if (gwidth != restrictedWidth)
                         groups.replace(*group.subset((unsigned)0, restrictedWidth), g);
                 }
@@ -144,7 +144,7 @@ public:
             if (!f) f = _f;
             Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);
             if (!existingTlk->queryAttributes().hasProp("@kind") || 0 != stricmp("topLevelKey", existingTlk->queryAttributes().queryProp("@kind")))
-                throw MakeActivityException(this, 0, "Cannot build new key '%s' based on non-distributed key '%s'", fname.get(), diName.get());
+                throw MakeActivityException(*this, 0, "Cannot build new key '%s' based on non-distributed key '%s'", fname.get(), diName.get());
             IPartDescriptor *tlkDesc = fileDesc->queryPart(fileDesc->numParts()-1);
             IPropertyTree &props = tlkDesc->queryProperties();
             if (existingTlk->queryAttributes().hasProp("@size"))
@@ -333,7 +333,7 @@ public:
             if (file)
             {
                 if (0 == (TIWoverwrite & helper->getFlags()))
-                    throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
+                    throw MakeActivityException(*this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
                 checkSuperFileOwnership(*file);
             }
         }

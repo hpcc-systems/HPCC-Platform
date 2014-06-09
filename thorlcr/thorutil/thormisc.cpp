@@ -87,15 +87,15 @@ MODULE_EXIT()
 
 #define EXTRAS 1024
 #define NL 3
-StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *container, const ActLogEnum flags, const char *format, va_list args)
+StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, ILWActivity &activity, const ActLogEnum flags, const char *format, va_list args)
 {
     if (format)
         res.valist_appendf(format, args).append(" - ");
-    res.appendf("activity(%s, %"ACTPF"d)",activityKindStr(container->getKind()), container->queryId());
+    res.appendf("activity(%s, %"ACTPF"d)", activityKindStr(activity.queryKind()), activity.queryId());
     if (0 != (flags & thorlog_ecl))
     {
         StringBuffer ecltext;
-        container->getEclText(ecltext);
+        activity.getEclText(ecltext);
         ecltext.trim();
         if (ecltext.length() > 0)
             res.append(" [ecl=").append(ecltext.str()).append(']');
@@ -110,19 +110,19 @@ StringBuffer &ActPrintLogArgsPrep(StringBuffer &res, const CGraphElementBase *co
     return res;
 }
 
-void ActPrintLogArgs(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
+void ActPrintLogArgs(ILWActivity &activity, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
 {
-    if ((0 == (flags & thorlog_all)) && !container->doLogging())
+    if ((0 == (flags & thorlog_all)) && !activity.doLogging())
         return; // suppress logging child activities unless thorlog_all flag
     StringBuffer res;
-    ActPrintLogArgsPrep(res, container, flags, format, args);
+    ActPrintLogArgsPrep(res, activity, flags, format, args);
     LOG(logCat, thorJob, "%s", res.str());
 }
 
-void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
+void ActPrintLogArgs(ILWActivity &activity, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
 {
     StringBuffer res;
-    ActPrintLogArgsPrep(res, container, flags, format, args);
+    ActPrintLogArgsPrep(res, activity, flags, format, args);
     if (e)
     {
         res.append(" : ");
@@ -131,37 +131,16 @@ void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const Ac
     LOG(logCat, thorJob, "%s", res.str());
 }
 
-void ActPrintLogEx(const CGraphElementBase *container, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...)
+void ActPrintLogEx(ILWActivity &activity, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, ...)
 {
-    if ((0 == (flags & thorlog_all)) && (NULL != container->queryOwner().queryOwner() && !container->queryOwner().isGlobal()))
+    if ((0 == (flags & thorlog_all)) && (activity.isChild() && !activity.inGlobalGraph()))
         return; // suppress logging child activities unless thorlog_all flag
     StringBuffer res;
     va_list args;
     va_start(args, format);
-    ActPrintLogArgsPrep(res, container, flags, format, args);
+    ActPrintLogArgsPrep(res, activity, flags, format, args);
     va_end(args);
     LOG(logCat, thorJob, "%s", res.str());
-}
-
-void ActPrintLog(const CActivityBase *activity, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    ActPrintLogArgs(&activity->queryContainer(), thorlog_null, MCdebugProgress, format, args);
-    va_end(args);
-}
-
-void ActPrintLog(const CActivityBase *activity, IException *e, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    ActPrintLogArgs(&activity->queryContainer(), e, thorlog_null, MCexception(e, MSGCLS_error), format, args);
-    va_end(args);
-}
-
-void ActPrintLog(const CActivityBase *activity, IException *e)
-{
-    ActPrintLog(activity, e, "%s", "");
 }
 
 void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
@@ -352,21 +331,21 @@ IThorException *MakeThorOperatorException(int code, const char *format, ...)
     return e;
 }
 
-void setExceptionActivityInfo(CGraphElementBase &container, IThorException *e)
+void setExceptionActivityInfo(ILWActivity &activity, IThorException *e)
 {
-    e->setActivityKind(container.getKind());
-    e->setActivityId(container.queryId());
-    e->setGraphId(container.queryOwner().queryGraphId());
+    e->setActivityKind(activity.queryKind());
+    e->setActivityId(activity.queryId());
+    e->setGraphId(activity.queryGraphId());
 }
 
-IThorException *_MakeActivityException(CGraphElementBase &container, int code, const char *format, va_list args)
+IThorException *_MakeActivityException(ILWActivity &activity, int code, const char *format, va_list args)
 {
     IThorException *e = _MakeThorException(MSGAUD_user, code, format, args);
-    setExceptionActivityInfo(container, e);
+    setExceptionActivityInfo(activity, e);
     return e;
 }
 
-IThorException *_MakeActivityException(CGraphElementBase &container, IException *e, const char *_format, va_list args)
+IThorException *_MakeActivityException(ILWActivity &activity, IException *e, const char *_format, va_list args)
 {
     StringBuffer format;
     e->errorMessage(format);
@@ -374,94 +353,49 @@ IThorException *_MakeActivityException(CGraphElementBase &container, IException 
         format.append(", ").append(_format);
     _format = format.str();
     IThorException *e2 = _MakeThorException(e->errorAudience(), e->errorCode(), format.str(), args);
-    setExceptionActivityInfo(container, e2);
+    setExceptionActivityInfo(activity, e2);
     return e2;
 }
 
-IThorException *MakeActivityException(CActivityBase *activity, int code, const char *format, ...)
+IThorException *MakeActivityException(ILWActivity &activity, int code, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IThorException *e = _MakeActivityException(activity->queryContainer(), code, format, args);
+    IThorException *e = _MakeActivityException(activity, code, format, args);
     va_end(args);
     return e;
 }
 
-IThorException *MakeActivityException(CActivityBase *activity, IException *e, const char *format, ...)
+IThorException *MakeActivityException(ILWActivity &activity, IException *e, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IThorException *e2 = _MakeActivityException(activity->queryContainer(), e, format, args);
+    IThorException *e2 = _MakeActivityException(activity, e, format, args);
     va_end(args);
     return e2;
 }
 
-IThorException *MakeActivityException(CActivityBase *activity, IException *e)
+IThorException *MakeActivityException(ILWActivity &activity, IException *e)
 {
     return MakeActivityException(activity, e, "%s", "");
 }
 
-IThorException *MakeActivityWarning(CActivityBase *activity, int code, const char *format, ...)
+IThorException *MakeActivityWarning(ILWActivity &activity, int code, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IThorException *e = _MakeActivityException(activity->queryContainer(), code, format, args);
+    IThorException *e = _MakeActivityException(activity, code, format, args);
     e->setAction(tea_warning);
     e->setSeverity(ExceptionSeverityWarning);
     va_end(args);
     return e;
 }
 
-IThorException *MakeActivityWarning(CActivityBase *activity, IException *e, const char *format, ...)
+IThorException *MakeActivityWarning(ILWActivity &activity, IException *e, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    IThorException *e2 = _MakeActivityException(activity->queryContainer(), e, format, args);
-    e2->setAction(tea_warning);
-    e2->setSeverity(ExceptionSeverityWarning);
-    va_end(args);
-    return e2;
-}
-
-IThorException *MakeActivityException(CGraphElementBase *container, int code, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    IThorException *e = _MakeActivityException(*container, code, format, args);
-    va_end(args);
-    return e;
-}
-
-IThorException *MakeActivityException(CGraphElementBase *container, IException *e, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    IThorException *e2 = _MakeActivityException(*container, e, format, args);
-    va_end(args);
-    return e2;
-}
-
-IThorException *MakeActivityException(CGraphElementBase *container, IException *e)
-{
-    return MakeActivityException(container, e, "%s", "");
-}
-
-IThorException *MakeActivityWarning(CGraphElementBase *container, int code, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    IThorException *e = _MakeActivityException(*container, code, format, args);
-    e->setAction(tea_warning);
-    e->setSeverity(ExceptionSeverityWarning);
-    va_end(args);
-    return e;
-}
-
-IThorException *MakeActivityWarning(CGraphElementBase *container, IException *e, const char *format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    IThorException *e2 = _MakeActivityException(*container, e, format, args);
+    IThorException *e2 = _MakeActivityException(activity, e, format, args);
     e2->setAction(tea_warning);
     e2->setSeverity(ExceptionSeverityWarning);
     va_end(args);
@@ -846,7 +780,7 @@ void serializeThorException(IException *e, MemoryBuffer &out)
         out.append(data.length(), data.toByteArray());
 }
 
-bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFile & ifile, unsigned &location, StringBuffer &path, IExceptionHandler *eHandler)
+bool getBestFilePart(CActivityBase &activity, IPartDescriptor &partDesc, OwnedIFile & ifile, unsigned &location, StringBuffer &path, IExceptionHandler *eHandler)
 {
     if (0 == partDesc.numCopies()) // not sure this is poss.
         return false;
@@ -884,7 +818,7 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
             }
             catch (IException *e)
             {
-                ActPrintLog(&activity->queryContainer(), e, "getBestFilePart");
+                ActPrintLog(activity, e, "getBestFilePart");
                 e->Release();
             }
         }
@@ -919,7 +853,7 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
             }
             catch (IException *e)
             {
-                ActPrintLog(&activity->queryContainer(), e, "In getBestFilePart");
+                ActPrintLog(activity, e, "In getBestFilePart");
                 e->Release();
             }
         }
@@ -1066,7 +1000,7 @@ public:
                     break;
                 if (comm.recv(msg, node, replyTag, NULL, 60000))
                     break;
-                ActPrintLog(&activity, "CRowStreamFromNode, request more from node %d, tag %d timedout, retrying", node, mpTag);
+                ActPrintLog(activity, "CRowStreamFromNode, request more from node %d, tag %d timedout, retrying", node, mpTag);
             }
             if (!msg.length())
                 break;
@@ -1147,7 +1081,7 @@ public:
                     activity->queryRowSerializer()->serialize(mbs,(const byte *)row.get());
                 } while (mb.length() < fetchBuffSize); // NB: allows at least 1
                 if (!comm.reply(mb, LONGTIMEOUT))
-                    throw MakeStringException(0, "CRowStreamFromNode: Failed to send data back to node: %d", activity->queryContainer().queryJob().queryMyRank());
+                    throw MakeStringException(0, "CRowStreamFromNode: Failed to send data back to node: %d", activity->queryJob().queryMyRank());
                 mb.clear();
             }
         }

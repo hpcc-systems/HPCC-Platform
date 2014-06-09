@@ -95,7 +95,7 @@ public:
             localKey = indexFile->queryAttributes().getPropBool("@local");
 
             if (container.queryLocalData() && !localKey)
-                throw MakeActivityException(this, 0, "Keyed Join cannot be LOCAL unless supplied index is local");
+                throw MakeActivityException(*this, 0, "Keyed Join cannot be LOCAL unless supplied index is local");
 
             checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), true);
             Owned<IFileDescriptor> indexFileDesc = indexFile->getFileDescriptor();
@@ -126,9 +126,9 @@ public:
                     else
                     {
                         if (hasTlk != keyHasTlk)
-                            throw MakeActivityException(this, 0, "Local/Single part keys cannot be mixed with distributed(tlk) keys in keyedjoin");
+                            throw MakeActivityException(*this, 0, "Local/Single part keys cannot be mixed with distributed(tlk) keys in keyedjoin");
                         if (keyHasTlk && superIndexWidth != f.numParts()-1)
-                            throw MakeActivityException(this, 0, "Super sub keys of different width cannot be mixed with distributed(tlk) keys in keyedjoin");
+                            throw MakeActivityException(*this, 0, "Super sub keys of different width cannot be mixed with distributed(tlk) keys in keyedjoin");
                     }
                 }
                 if (keyHasTlk)
@@ -183,7 +183,7 @@ public:
                         StringBuffer filePath;
                         Owned<IFileDescriptor> fileDesc = f->getFileDescriptor();
                         Owned<IPartDescriptor> tlkDesc = fileDesc->getPart(fileDesc->numParts()-1);
-                        if (!getBestFilePart(this, *tlkDesc, iFile, location, filePath))
+                        if (!getBestFilePart(*this, *tlkDesc, iFile, location, filePath))
                             throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", f->queryLogicalName());
                         OwnedIFileIO iFileIO = iFile->open(IFOread);
                         assertex(iFileIO);
@@ -206,7 +206,7 @@ public:
                         if (dataFile)
                         {
                             if (superIndex)
-                                throw MakeActivityException(this, 0, "Superkeys and full keyed joins are not supported");
+                                throw MakeActivityException(*this, 0, "Superkeys and full keyed joins are not supported");
                             Owned<IFileDescriptor> dataFileDesc = getConfiguredFileDescriptor(*dataFile);
                             void *ekey;
                             size32_t ekeylen;
@@ -218,12 +218,12 @@ public:
                                 free(ekey);
                                 if (!encrypted)
                                 {
-                                    Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", helper->getFileName());
+                                    Owned<IException> e = MakeActivityWarning(container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", helper->getFileName());
                                     container.queryJob().fireException(e);
                                 }
                             }
                             else if (encrypted)
-                                throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fetchFilename.get());
+                                throw MakeActivityException(*this, 0, "File '%s' was published as encrypted but no encryption key provided", fetchFilename.get());
                             unsigned dataReadWidth = (unsigned)container.queryJob().getWorkUnitValueInt("KJDRR", 0);
                             if (!dataReadWidth || dataReadWidth>container.queryJob().querySlaves())
                                 dataReadWidth = container.queryJob().querySlaves();

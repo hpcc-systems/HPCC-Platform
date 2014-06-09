@@ -105,7 +105,7 @@ class CWriteIntercept : public CSimpleInterface
                     StringBuffer err;
                     err.append("Cannot create ").append(idxFile->queryFilename());
                     LOG(MCerror, thorJob, "%s", err.str());
-                    throw MakeActivityException(&activity, -1, "%s", err.str());
+                    throw MakeActivityException(activity, -1, "%s", err.str());
                 }
                 idxFileStream.setown(createBufferedIOStream(idxFileIO,0x100000));
                 offset_t s = 0;
@@ -190,7 +190,7 @@ public:
         Owned<IExtRowWriter> output = createRowWriter(dataFile, rowIf);
 
         bool overflowed = false;
-        ActPrintLog(&activity, "Local Overflow Merge start");
+        ActPrintLog(activity, "Local Overflow Merge start");
         unsigned ret=0;
         loop
         {
@@ -233,7 +233,7 @@ public:
         }
         if (overflowed)
             WARNLOG("Overflowed by %"I64F"d", overflowsize);
-        ActPrintLog(&activity, "Local Overflow Merge done: overflow file '%s', size = %"I64F"d", dataFile->queryFilename(), dataFile->size());
+        ActPrintLog(activity, "Local Overflow Merge done: overflow file '%s', size = %"I64F"d", dataFile->queryFilename(), dataFile->size());
         return end;
     }
     IRowStream *getStream(offset_t startOffset, rowcount_t max)
@@ -321,24 +321,24 @@ class CMiniSort
         //compression TBD
         CMessageBuffer mbin;
 #ifdef  _FULL_TRACE
-        ActPrintLog(&activity, "MiniSort sendToPrimaryNode waiting");
+        ActPrintLog(activity, "MiniSort sendToPrimaryNode waiting");
 #endif
         clusterComm.recv(mbin,1,mpTag);
 #ifdef  _FULL_TRACE
-        ActPrintLog(&activity, "MiniSort sendToPrimaryNode continue %u bytes",mbin.length());
+        ActPrintLog(activity, "MiniSort sendToPrimaryNode continue %u bytes",mbin.length());
 #endif
         if (mbin.length()==0) {
-            ActPrintLog(&activity, "aborting sendToPrimaryNode");
+            ActPrintLog(activity, "aborting sendToPrimaryNode");
             // TBD?
             return;
         }
         byte fn;
         mbin.read(fn);
         if (fn!=255)
-            throw MakeActivityException(&activity, -1, "MiniSort sendToPrimaryNode: Protocol error(1) %d",(int)fn);
+            throw MakeActivityException(activity, -1, "MiniSort sendToPrimaryNode: Protocol error(1) %d",(int)fn);
         mb.init(mbin.getSender(),mpTag,mbin.getReplyTag());
 #ifdef  _FULL_TRACE
-        ActPrintLog(&activity, "MiniSort sendToPrimaryNode %u bytes",mb.length());
+        ActPrintLog(activity, "MiniSort sendToPrimaryNode %u bytes",mb.length());
 #endif
         clusterComm.reply(mb);
     }
@@ -350,48 +350,48 @@ class CMiniSort
         do {
             done = rowArray.serializeBlock(mbout.clear(),from,to-from,blksize,false);
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort serialized %u rows, %u bytes",done,mbout.length());
+            ActPrintLog(activity, "MiniSort serialized %u rows, %u bytes",done,mbout.length());
 #endif
             from += done;
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort sendToSecondaryNode(%d) send %u",(int)node,mbout.length());
+            ActPrintLog(activity, "MiniSort sendToSecondaryNode(%d) send %u",(int)node,mbout.length());
 #endif
             clusterComm.sendRecv(mbout,node,mpTag);
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort sendToSecondaryNode(%d) got %u",(int)node,mbout.length());
+            ActPrintLog(activity, "MiniSort sendToSecondaryNode(%d) got %u",(int)node,mbout.length());
 #endif
             byte fn;
             mbout.read(fn);
             if (fn!=254)
-                throw MakeActivityException(&activity, -1, "MiniSort sendToPrimaryNode: Protocol error(2) %d",(int)fn);
+                throw MakeActivityException(activity, -1, "MiniSort sendToPrimaryNode: Protocol error(2) %d",(int)fn);
         } while (done!=0);
     }
     void appendFromPrimaryNode(IRowWriter &writer)
     {
 #ifdef  _FULL_TRACE
-        ActPrintLog(&activity, "MiniSort appending from primary node");
+        ActPrintLog(activity, "MiniSort appending from primary node");
 #endif
         CMessageBuffer mbin;
         loop
         {
             mbin.clear();
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort appendFromPrimaryNode waiting");
+            ActPrintLog(activity, "MiniSort appendFromPrimaryNode waiting");
 #endif
             clusterComm.recv(mbin,1,mpTag);
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort appendFromPrimaryNode continue %u bytes",mbin.length());
+            ActPrintLog(activity, "MiniSort appendFromPrimaryNode continue %u bytes",mbin.length());
 #endif
             CMessageBuffer mbout;
             mbout.init(mbin.getSender(),mpTag,mbin.getReplyTag());
             byte fn=254;
             mbout.append(fn);
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort appendFromPrimaryNode reply %u bytes",mbout.length());
+            ActPrintLog(activity, "MiniSort appendFromPrimaryNode reply %u bytes",mbout.length());
 #endif
             clusterComm.reply(mbout);
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort got from primary node %d",mbin.length());
+            ActPrintLog(activity, "MiniSort got from primary node %d",mbin.length());
 #endif
             if (mbin.length()==0)
                 break;
@@ -401,7 +401,7 @@ class CMiniSort
     void appendFromSecondaryNode(IRowWriter &writer, rank_t node, Semaphore &sem)
     {
 #ifdef  _FULL_TRACE
-        ActPrintLog(&activity, "MiniSort appending from node %d",(int)node);
+        ActPrintLog(activity, "MiniSort appending from node %d",(int)node);
 #endif
         CMessageBuffer mbin;
         bool first = true;
@@ -412,7 +412,7 @@ class CMiniSort
             mbin.append(fn);
             clusterComm.sendRecv(mbin,node,mpTag);
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort got %u from node %d",mbin.length(),(int)node);
+            ActPrintLog(activity, "MiniSort got %u from node %d",mbin.length(),(int)node);
 #endif
             if (first)
             {
@@ -458,7 +458,7 @@ public:
             {
                 unsigned done = serialize(*spillableStream, mb.clear(), blksize);
 #ifdef  _FULL_TRACE
-                ActPrintLog(&activity, "MiniSort serialized %u rows, %u bytes",done,mb.length());
+                ActPrintLog(activity, "MiniSort serialized %u rows, %u bytes",done,mb.length());
 #endif
                 sendToPrimaryNode(mb);
                 if (!done)
@@ -519,13 +519,13 @@ public:
             collector->transferRowsOut(globalRows); // will sort in process
 
 #ifdef  _FULL_TRACE
-            ActPrintLog(&activity, "MiniSort got %d rows %"I64F"d bytes", globalRows.ordinality(),(unsigned __int64)(globalRows.getMemUsage()));
+            ActPrintLog(activity, "MiniSort got %d rows %"I64F"d bytes", globalRows.ordinality(),(unsigned __int64)(globalRows.getMemUsage()));
 #endif
             UnsignedArray points;
             globalRows.partition(iCompare, numNodes, points);
 #ifdef  _FULL_TRACE
             for (unsigned pi=0;pi<points.ordinality();pi++)
-                ActPrintLog(&activity, "points[%d] = %u",pi, points.item(pi));
+                ActPrintLog(activity, "points[%d] = %u",pi, points.item(pi));
 #endif
             class casyncfor2: public CAsyncFor
             {
@@ -560,7 +560,7 @@ public:
 class CThorSorter : public CSimpleInterface, implements IThorSorter, implements ISortSlaveBase, implements ISortSlaveMP,
     private IThreaded
 {
-    CActivityBase *activity;
+    CActivityBase &activity;
     SocketEndpoint myendpoint;
     IDiskUsage *iDiskUsage;
     Linked<ICommunicator> clusterComm;
@@ -735,9 +735,9 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorSorter(CActivityBase *_activity, SocketEndpoint &ep, IDiskUsage *_iDiskUsage, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
+    CThorSorter(CActivityBase &_activity, SocketEndpoint &ep, IDiskUsage *_iDiskUsage, ICommunicator *_clusterComm, mptag_t _mpTagRPC)
         : activity(_activity), myendpoint(ep), iDiskUsage(_iDiskUsage), clusterComm(_clusterComm), mpTagRPC(_mpTagRPC),
-          rowArray(*_activity, _activity), threaded("CThorSorter", this)
+          rowArray(_activity, &_activity), threaded("CThorSorter", this)
     {
         numnodes = 0;
         partno = 0;
@@ -795,7 +795,7 @@ public:
     }
     virtual rowcount_t GetMinMax(size32_t &keybufsize,void *&keybuf,size32_t &avrecsize)
     {
-        CThorExpandingRowArray ret(*activity, rowif, true);
+        CThorExpandingRowArray ret(activity, rowif, true);
         avrecsize = 0;
         if (rowArray.ordinality()>0) {
             const void *kp = rowArray.get(0);
@@ -861,9 +861,9 @@ public:
     {
         // finds the keys within the ranges specified
         // uses empty keys (0 size) if none found
-        CThorExpandingRowArray low(*activity, rowif, true);
-        CThorExpandingRowArray high(*activity, rowif, true);
-        CThorExpandingRowArray mid(*activity, rowif, true);
+        CThorExpandingRowArray low(activity, rowif, true);
+        CThorExpandingRowArray high(activity, rowif, true);
+        CThorExpandingRowArray mid(activity, rowif, true);
         low.deserializeExpand(lbufsize, lkeybuf);
         high.deserializeExpand(hbufsize, hkeybuf);
         unsigned n=low.ordinality();
@@ -913,13 +913,13 @@ public:
     }
     virtual void MultiBinChop(size32_t keybufsize, const byte * keybuf, unsigned num, rowcount_t * pos, byte cmpfn, bool useaux)
     {
-        CThorExpandingRowArray keys(*activity, useaux?auxrowif:rowif, true);
+        CThorExpandingRowArray keys(activity, useaux?auxrowif:rowif, true);
         keys.deserialize(keybufsize, keybuf);
         doBinChop(keys, pos, num, cmpfn);
     }
     virtual void MultiBinChopStart(size32_t keybufsize, const byte * keybuf, byte cmpfn)
     {
-        CThorExpandingRowArray keys(*activity, rowif, true);
+        CThorExpandingRowArray keys(activity, rowif, true);
         keys.deserializeExpand(keybufsize, keybuf);
         assertex(multibinchoppos==NULL); // check for reentrancy
         multibinchopnum = keys.ordinality();
@@ -948,7 +948,7 @@ public:
         for (i=0;i<mapsize;i++)
             ActPrintLog(activity, "%"RCPF"d ",overflowmap[i]);
 #endif
-        CThorExpandingRowArray keys(*activity, useaux?auxrowif:rowif, true);
+        CThorExpandingRowArray keys(activity, useaux?auxrowif:rowif, true);
         keys.deserialize(keybufsize, keybuf);
         for (i=0;i<mapsize-1;i++)
             AdjustOverflow(overflowmap[i], keys.query(i), cmpfn);
@@ -1026,7 +1026,7 @@ public:
     {
         // actually doesn't get Nth row but numsplits samples distributed evenly through the rows
         assertex(numsplits);
-        CThorExpandingRowArray ret(*activity, rowif, true);
+        CThorExpandingRowArray ret(activity, rowif, true);
         unsigned numrows = rowArray.ordinality();
         if (numrows) {
             for (unsigned i=0;i<numsplits;i++) {
@@ -1045,7 +1045,7 @@ public:
     virtual void StartMiniSort(rowcount_t globalTotal)
     {
         // JCSMORE partno and numnodes should be implicit
-        CMiniSort miniSort(*activity, *rowif, *clusterComm, partno, numnodes, mpTagRPC);
+        CMiniSort miniSort(activity, *rowif, *clusterComm, partno, numnodes, mpTagRPC);
 
         Owned<IRowStream> sortedStream;
         try
@@ -1198,7 +1198,7 @@ public:
         icollate = _icollate?_icollate:_icompare;
         icollateupper = _icollateupper?_icollateupper:icollate;
 
-        Owned<IThorRowLoader> sortedloader = createThorRowLoader(*activity, rowif, nosort?NULL:icompare, isstable ? stableSort_earlyAlloc : stableSort_none, rc_allDiskOrAllMem, SPILL_PRIORITY_SELFJOIN);
+        Owned<IThorRowLoader> sortedloader = createThorRowLoader(activity, rowif, nosort?NULL:icompare, isstable ? stableSort_earlyAlloc : stableSort_none, rc_allDiskOrAllMem, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> overflowstream;
         memsize_t inMemUsage = 0;
         try
@@ -1224,7 +1224,7 @@ public:
             {
                 assertex(!intercept);
                 overflowinterval=sortedloader->overflowScale();
-                intercept.setown(new CWriteIntercept(*activity, rowif, overflowinterval));
+                intercept.setown(new CWriteIntercept(activity, rowif, overflowinterval));
                 grandtotalsize = intercept->write(overflowstream);
                 intercept->transferRows(rowArray); // get sample rows
             }
@@ -1264,6 +1264,6 @@ public:
 
 IThorSorter *CreateThorSorter(CActivityBase *activity, SocketEndpoint &ep,IDiskUsage *iDiskUsage,ICommunicator *clusterComm, mptag_t _mpTagRPC)
 {
-    return new CThorSorter(activity, ep, iDiskUsage, clusterComm, _mpTagRPC);
+    return new CThorSorter(*activity, ep, iDiskUsage, clusterComm, _mpTagRPC);
 }
 

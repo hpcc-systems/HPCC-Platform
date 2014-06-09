@@ -240,7 +240,7 @@ MemoryBuffer &CSlaveActivity::queryInitializationData(unsigned slave) const
     msg.append(slave);
     msg.append(gid);
     msg.append(container.queryId());
-    if (!container.queryJob().queryJobComm().sendRecv(msg, 0, queryContainer().queryJob().querySlaveMpTag(), LONGTIMEOUT))
+    if (!container.queryJob().queryJobComm().sendRecv(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
         throwUnexpected();
     data[slave].swapWith(msg);
     return data[slave];
@@ -360,12 +360,12 @@ void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
         aread = in.getPos()-aread;
         if (aread<sz)
         {
-            Owned<IException> e = MakeActivityException(element, TE_SeriailzationError, "Serialization error - activity did not read all serialized data (%d byte(s) remaining)", sz-aread);
+            Owned<IException> e = MakeActivityException(*element, TE_SeriailzationError, "Serialization error - activity did not read all serialized data (%d byte(s) remaining)", sz-aread);
             in.readDirect(sz-aread);
             throw e.getClear();
         }
         else if (aread>sz)
-            throw MakeActivityException(element, TE_SeriailzationError, "Serialization error - activity read beyond serialized data (%d byte(s))", aread-sz);
+            throw MakeActivityException(*element, TE_SeriailzationError, "Serialization error - activity read beyond serialized data (%d byte(s))", aread-sz);
         size32_t dl = out.length() - l;
         if (dl)
             out.writeDirect(l-sizeof(size32_t), sizeof(size32_t), &dl);
@@ -806,7 +806,7 @@ void CSlaveGraph::getDone(MemoryBuffer &doneInfoMb)
 
 class CThorSlaveGraphResults : public CThorGraphResults
 {
-    CSlaveGraph &graph;
+    CJobSlave &job;
     IArrayOf<IThorResult> globalResults;
     PointerArrayOf<CriticalSection> globalResultCrits;
     void ensureAtLeastGlobals(unsigned id)
@@ -818,7 +818,7 @@ class CThorSlaveGraphResults : public CThorGraphResults
         }
     }
 public:
-    CThorSlaveGraphResults(CSlaveGraph &_graph,unsigned numResults) : CThorGraphResults(numResults), graph(_graph)
+    CThorSlaveGraphResults(CJobSlave &_job, graph_id gid) : CThorGraphResults(gid), job(_job)
     {
     }
     ~CThorSlaveGraphResults()
@@ -850,68 +850,11 @@ public:
         IThorResult *globalResult = &globalResults.item(id);
         if (!QUERYINTERFACE(globalResult, CThorUninitializedGraphResults))
             return LINK(globalResult);
-        Owned<IThorResult> gr = graph.getGlobalResult(*result->queryActivity(), result->queryRowInterfaces(), ownerId, id);
+        Owned<IThorResult> gr = job.getGlobalResult(result->queryActivity(), gid, result->queryRowInterfaces(), ownerId, id);
         globalResults.replace(*gr.getLink(), id);
         return gr.getClear();
     }
 };
-
-IThorGraphResults *CSlaveGraph::createThorGraphResults(unsigned num)
-{
-    return new CThorSlaveGraphResults(*this, num);
-}
-
-IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IRowInterfaces *rowIf, activity_id ownerId, unsigned id)
-{
-    mptag_t replyTag = createReplyTag();
-    CMessageBuffer msg;
-    msg.setReplyTag(replyTag);
-    msg.append(smt_getresult);
-    msg.append(graphId);
-    msg.append(ownerId);
-    msg.append(id);
-    msg.append(replyTag);
-
-    if (!queryJob().queryJobComm().send(msg, 0, queryJob().querySlaveMpTag(), LONGTIMEOUT))
-        throwUnexpected();
-
-    Owned<IThorResult> result = ::createResult(activity, rowIf, false);
-    Owned<IRowWriter> resultWriter = result->getWriter();
-
-    MemoryBuffer mb;
-    Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
-    CThorStreamDeserializerSource rowSource(stream);
-
-    loop
-    {
-        loop
-        {
-            if (activity.queryAbortSoon())
-                return NULL;
-            msg.clear();
-            if (activity.receiveMsg(msg, 0, replyTag, NULL, 60*1000))
-                break;
-            ActPrintLog(&activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
-        }
-        if (!msg.length())
-            break; // done
-        else
-        {
-            bool error;
-            msg.read(error);
-            if (error)
-                throw deserializeThorException(msg);
-            ThorExpand(msg, mb.clear());
-            while (!rowSource.eos())
-            {
-                RtlDynamicRowBuilder rowBuilder(rowIf->queryRowAllocator());
-                size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
-                resultWriter->putRow(rowBuilder.finalizeRowClear(sz));
-            }
-        }
-    }
-    return result.getClear();
-}
 
 
 ///////////////////////////
@@ -1187,6 +1130,65 @@ IGraphTempHandler *CJobSlave::createTempHandler(bool errorOnMissing)
     return new CSlaveGraphTempHandler(*this, errorOnMissing);
 }
 
+IThorResult *CJobSlave::getGlobalResult(ILWActivity &activity, graph_id gid, IRowInterfaces *rowIf, activity_id ownerId, unsigned id)
+{
+    mptag_t replyTag = createReplyTag();
+    CMessageBuffer msg;
+    msg.setReplyTag(replyTag);
+    msg.append(smt_getresult);
+    msg.append(gid);
+    msg.append(ownerId);
+    msg.append(id);
+    msg.append(replyTag);
+
+    if (!queryJobComm().send(msg, 0, querySlaveMpTag(), LONGTIMEOUT))
+        throwUnexpected();
+
+    Owned<IThorResult> result = ::createResult(activity, rowIf, false);
+    Owned<IRowWriter> resultWriter = result->getWriter();
+
+    MemoryBuffer mb;
+    Owned<ISerialStream> stream = createMemoryBufferSerialStream(mb);
+    CThorStreamDeserializerSource rowSource(stream);
+
+    loop
+    {
+        loop
+        {
+            if (queryAborted())
+                return NULL;
+            msg.clear();
+            if (queryJobComm().recv(msg, 0, replyTag, NULL, 60*1000))
+                break;
+            ActPrintLog(activity, "WARNING: tag %d timedout, retrying", (unsigned)replyTag);
+        }
+        if (!msg.length())
+            break; // done
+        else
+        {
+            bool error;
+            msg.read(error);
+            if (error)
+                throw deserializeThorException(msg);
+            ThorExpand(msg, mb.clear());
+            while (!rowSource.eos())
+            {
+                bool isNull;
+                stream->get(1, &isNull);
+                if (!isNull)
+                {
+                    RtlDynamicRowBuilder rowBuilder(rowIf->queryRowAllocator());
+                    size32_t sz = rowIf->queryRowDeserializer()->deserialize(rowBuilder, rowSource);
+                    resultWriter->putRow(rowBuilder.finalizeRowClear(sz));
+                }
+                else
+                    resultWriter->putRow(NULL);
+            }
+        }
+    }
+    return result.getClear();
+}
+
 // IGraphCallback
 void CJobSlave::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const byte *parentExtract)
 {
@@ -1201,7 +1203,7 @@ void CJobSlave::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const b
 
 ///////////////
 
-bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFile & ifile, unsigned &location, StringBuffer &path)
+bool ensurePrimary(CActivityBase &activity, IPartDescriptor &partDesc, OwnedIFile & ifile, unsigned &location, StringBuffer &path)
 {
     StringBuffer locationName, primaryName;
     RemoteFilename primaryRfn;
@@ -1221,7 +1223,7 @@ bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFil
     }
     catch (IException *e)
     {
-        ActPrintLog(&activity->queryContainer(), e, "In ensurePrimary");
+        ActPrintLog(activity, e, "In ensurePrimary");
         e->Release();
     }
     unsigned l;
@@ -1241,7 +1243,7 @@ bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFil
                 {
                     ensureDirectoryForFile(primaryIFile->queryFilename());
                     Owned<IException> e = MakeActivityWarning(activity, 0, "Primary file missing: %s, copying backup %s to primary location", primaryIFile->queryFilename(), locationName.str());
-                    activity->fireException(e);
+                    activity.fireException(e);
                     StringBuffer tmpName(primaryIFile->queryFilename());
                     tmpName.append(".tmp");
                     OwnedIFile tmpFile = createIFile(tmpName.str());
@@ -1256,10 +1258,10 @@ bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFil
                     }
                     catch (IException *e)
                     {
-                        try { tmpFile->remove(); } catch (IException *e) { ActPrintLog(&activity->queryContainer(), "Failed to delete temporary file"); e->Release(); }
+                        try { tmpFile->remove(); } catch (IException *e) { ActPrintLog(activity, "Failed to delete temporary file"); e->Release(); }
                         Owned<IException> e2 = MakeActivityWarning(activity, e, "Failed to restore primary, failed to rename %s to %s", tmpName.str(), primaryIFile->queryFilename());
                         e->Release();
-                        activity->fireException(e2);
+                        activity.fireException(e2);
                         ifile.set(backupIFile);
                         location = l;
                         path.append(locationName);
@@ -1268,7 +1270,7 @@ bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFil
                 else // JCSMORE - should use daliservix perhaps to ensure primary
                 {
                     Owned<IException> e = MakeActivityWarning(activity, 0, "Primary file missing: %s, using remote copy: %s", primaryIFile->queryFilename(), locationName.str());
-                    activity->fireException(e);
+                    activity.fireException(e);
                     ifile.set(backupIFile);
                     location = l;
                     path.append(locationName);
@@ -1304,12 +1306,12 @@ public:
         unsigned location;
         OwnedIFile iFile;
         StringBuffer filePath;
-        if (globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(&activity, *partDesc, iFile, location, filePath):getBestFilePart(&activity, *partDesc, iFile, location, filePath, &activity))
+        if (globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(activity, *partDesc, iFile, location, filePath):getBestFilePart(activity, *partDesc, iFile, location, filePath, &activity))
             return iFile.getClear();
         else
         {
             StringBuffer locations;
-            IException *e = MakeActivityException(&activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
+            IException *e = MakeActivityException(activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
             EXCLOG(e, NULL);
             throw e;
         }

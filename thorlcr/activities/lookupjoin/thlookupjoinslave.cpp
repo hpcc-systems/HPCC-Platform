@@ -196,7 +196,7 @@ class CBroadcaster : public CSimpleInterface
         }
         void wait()
         {
-            ActPrintLog(&broadcaster.activity, "CSend::wait(), messages to send: %d", broadcastQueue.ordinality());
+            ActPrintLog(broadcaster.activity, "CSend::wait(), messages to send: %d", broadcastQueue.ordinality());
             addBlock(NULL);
             threaded.join();
         }
@@ -220,7 +220,7 @@ class CBroadcaster : public CSimpleInterface
                 abort(false);
                 broadcaster.cancel(e);
             }
-            ActPrintLog(&broadcaster.activity, "Sender stopped");
+            ActPrintLog(broadcaster.activity, "Sender stopped");
         }
     } sender;
 
@@ -284,7 +284,7 @@ class CBroadcaster : public CSimpleInterface
                 if (0 == sendRecv) // send
                 {
 #ifdef _TRACEBROADCAST
-                    ActPrintLog(&activity, "Broadcast node %d Sending to node %d, origin %d, size %d, code=%d", myNode, t, origin, sendLen, (unsigned)sendItem->queryCode());
+                    ActPrintLog(activity, "Broadcast node %d Sending to node %d, origin %d, size %d, code=%d", myNode, t, origin, sendLen, (unsigned)sendItem->queryCode());
 #endif
                     CMessageBuffer &msg = sendItem->queryMsg();
                     msg.setReplyTag(rt); // simulate sendRecv
@@ -293,7 +293,7 @@ class CBroadcaster : public CSimpleInterface
                 else // recv reply
                 {
 #ifdef _TRACEBROADCAST
-                    ActPrintLog(&activity, "Broadcast node %d Sent to node %d, origin %d, size %d, code=%d - received ack", myNode, t, origin, sendLen, (unsigned)sendItem->queryCode());
+                    ActPrintLog(activity, "Broadcast node %d Sent to node %d, origin %d, size %d, code=%d - received ack", myNode, t, origin, sendLen, (unsigned)sendItem->queryCode());
 #endif
                     if (!activity.receiveMsg(replyMsg, t, rt))
                         break;
@@ -319,7 +319,7 @@ class CBroadcaster : public CSimpleInterface
             CMessageBuffer ackMsg;
             Owned<CSendItem> sendItem = new CSendItem(msg);
 #ifdef _TRACEBROADCAST
-            ActPrintLog(&activity, "Broadcast node %d received from node %d, origin node %d, size %d, code=%d", myNode, (unsigned)sendRank, sendItem->queryOrigin(), sendItem->length(), (unsigned)sendItem->queryCode());
+            ActPrintLog(activity, "Broadcast node %d received from node %d, origin node %d, size %d, code=%d", myNode, (unsigned)sendRank, sendItem->queryOrigin(), sendItem->length(), (unsigned)sendItem->queryCode());
 #endif
             comm.send(ackMsg, sendRank, replyTag); // send ack
             sender.addBlock(sendItem.getLink());
@@ -332,7 +332,7 @@ class CBroadcaster : public CSimpleInterface
                     if (slaveStop(sendItem->queryOrigin()-1) || allDone)
                     {
                         recvInterface->bCastReceive(NULL); // signal last
-                        ActPrintLog(&activity, "recvLoop, received last slaveStop");
+                        ActPrintLog(activity, "recvLoop, received last slaveStop");
                         // NB: this slave has nothing more to receive.
                         // However the sender will still be re-broadcasting some packets, including these stop packets
                         return;
@@ -1207,7 +1207,7 @@ public:
             rows.flush();
             rhsRows += rows.numCommitted();
             if (rhsRows > RIMAX)
-                throw MakeActivityException(this, 0, "Too many RHS rows: %"RCPF"d", rhsRows);
+                throw MakeActivityException(*this, 0, "Too many RHS rows: %"RCPF"d", rhsRows);
         }
         return (rowidx_t)rhsRows;
     }
@@ -1419,7 +1419,7 @@ protected:
         {
             rowcount_t res = size/3*4; // make HT 1/3 bigger than # rows
             if ((res < size) || (res > RIMAX)) // check for overflow, or result bigger than rowidx_t size
-                throw MakeActivityException(this, 0, "Too many rows on RHS for hash table: %"RCPF"d", res);
+                throw MakeActivityException(*this, 0, "Too many rows on RHS for hash table: %"RCPF"d", res);
             size = (rowidx_t)res;
         }
         rhsTableLen = size;
@@ -1531,7 +1531,7 @@ protected:
 
                 // NB: lhs ordering and grouping lost from here on..
                 if (grouped)
-                    throw MakeActivityException(this, 0, "Degraded to distributed lookup join, LHS order cannot be preserved");
+                    throw MakeActivityException(*this, 0, "Degraded to distributed lookup join, LHS order cannot be preserved");
 
                 // If HT sized already and now spilt, too big clear and size when local size known
                 clearHT();
@@ -1643,7 +1643,7 @@ protected:
 
                 // NB: lhs ordering and grouping lost from here on.. (will have been caught earlier if global)
                 if (grouped)
-                    throw MakeActivityException(this, 0, "Degraded to standard join, LHS order cannot be preserved");
+                    throw MakeActivityException(*this, 0, "Degraded to standard join, LHS order cannot be preserved");
 
                 rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(leftITDL), helper->isLeftAlreadyLocallySorted() ? NULL : compareLeft));
                 left.setown(rowLoader->load(left, abortSoon, false));
@@ -1745,7 +1745,7 @@ public:
                         CommonXmlWriter xmlwrite(0);
                         if (outputMeta && outputMeta->hasXML())
                             outputMeta->toXML((const byte *) leftRow.get(), xmlwrite);
-                        throw MakeActivityException(this, 0, "More than %d match candidates in join for row %s", abortLimit, xmlwrite.str());
+                        throw MakeActivityException(*this, 0, "More than %d match candidates in join for row %s", abortLimit, xmlwrite.str());
                     }
                     catch (IException *_e)
                     {
@@ -2230,7 +2230,7 @@ protected:
             {
                 rhsTotalCount = rightMeta.totalRowsMax;
                 if (rhsTotalCount > RIMAX)
-                    throw MakeActivityException(this, 0, "Too many rows on RHS for ALL join: %"RCPF"d", rhsTotalCount);
+                    throw MakeActivityException(*this, 0, "Too many rows on RHS for ALL join: %"RCPF"d", rhsTotalCount);
                 rhs.ensure((rowidx_t)rhsTotalCount);
             }
             while (!abortSoon)

@@ -115,15 +115,15 @@ void CDiskPartHandlerBase::open()
 {
     unsigned location;
     StringBuffer filePath;
-    if (!(globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(&activity, *partDesc, iFile, location, filePath):getBestFilePart(&activity, *partDesc, iFile, location, filePath, &activity)))
+    if (!(globals->getPropBool("@autoCopyBackup", true)?ensurePrimary(activity, *partDesc, iFile, location, filePath):getBestFilePart(activity, *partDesc, iFile, location, filePath, &activity)))
     {
         StringBuffer locations;
-        IException *e = MakeActivityException(&activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", activity.logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
+        IException *e = MakeActivityException(activity, TE_FileNotFound, "No physical file part for logical file %s, found at given locations: %s (Error = %d)", activity.logicalFilename.get(), getFilePartLocations(*partDesc, locations).str(), GetLastError());
         EXCLOG(e, NULL);
         throw e;
     }
     filename.set(iFile->queryFilename());
-    ActPrintLog(&activity, "%s[part=%d]: reading physical file '%s' (logical file = %s)", kindStr, which, filePath.str(), activity.logicalFilename.get());
+    ActPrintLog(activity, "%s[part=%d]: reading physical file '%s' (logical file = %s)", kindStr, which, filePath.str(), activity.logicalFilename.get());
     if (checkFileCrc)
     {
         CDateTime createTime, modifiedTime, accessedTime;
@@ -134,27 +134,27 @@ void CDiskPartHandlerBase::open()
         if (!descModTime.equals(modifiedTime, false))
         {
             StringBuffer diskTimeStr;
-            ActPrintLog(&activity, "WARNING: file (%s); modified date stamps on disk (%s) are not equal to published modified data (%s)", filePath.str(), modifiedTime.getString(diskTimeStr).str(), descModTimeStr);
+            ActPrintLog(activity, "WARNING: file (%s); modified date stamps on disk (%s) are not equal to published modified data (%s)", filePath.str(), modifiedTime.getString(diskTimeStr).str(), descModTimeStr);
         }
     }
 
-    ActPrintLog(&activity, "%s[part=%d]: Base offset to %"I64F"d", kindStr, which, fileBaseOffset);
+    ActPrintLog(activity, "%s[part=%d]: Base offset to %"I64F"d", kindStr, which, fileBaseOffset);
 
     if (compressed)
     {
-        ActPrintLog(&activity, "Reading %s compressed file: %s", (NULL != activity.eexp.get())?"encrypted":blockCompressed?"block":"row", filename.get());
+        ActPrintLog(activity, "Reading %s compressed file: %s", (NULL != activity.eexp.get())?"encrypted":blockCompressed?"block":"row", filename.get());
         if (checkFileCrc)
         {
             checkFileCrc = false;
             if (activity.crcCheckCompressed) // applies to encrypted too, (optional, default off)
             {
-                ActPrintLog(&activity, "Calculating crc for file: %s", filename.get());
+                ActPrintLog(activity, "Calculating crc for file: %s", filename.get());
                 unsigned calcCrc = iFile->getCRC();
                 // NB: for compressed files should always be ~0
-                ActPrintLog(&activity, "Calculated crc = %x, storedCrc = %x", calcCrc, storedCrc);
+                ActPrintLog(activity, "Calculated crc = %x, storedCrc = %x", calcCrc, storedCrc);
                 if (calcCrc != storedCrc)
                 {
-                    IThorException *e = MakeActivityException(&activity, TE_FileCrc, "CRC Failure validating compressed file: %s", iFile->queryFilename());
+                    IThorException *e = MakeActivityException(activity, TE_FileCrc, "CRC Failure validating compressed file: %s", iFile->queryFilename());
                     e->setAudience(MSGAUD_operator);
                     throw e;
                 }
@@ -171,7 +171,7 @@ void CDiskPartHandlerBase::stop()
     close(fileCRC);
     if (!activity.abortSoon && checkFileCrc)
     {
-        ActPrintLog(&activity, "%s[part=%d]: CRC Stored=%x, calculated=%x file(%s)", kindStr, which, storedCrc, fileCRC.get(), filename.get());
+        ActPrintLog(activity, "%s[part=%d]: CRC Stored=%x, calculated=%x file(%s)", kindStr, which, storedCrc, fileCRC.get(), filename.get());
         if (fileCRC.get() != storedCrc)
             throw MakeThorOperatorException(TE_FileCrc, "CRC Failure having read file: %s", filename.get());
         checkFileCrc = false;
@@ -324,7 +324,7 @@ void CDiskWriteSlaveActivityBase::open()
 
     bool direct = query || (external && !firstNode());
     bool rename = !external || (!query && lastNode());
-    Owned<IFileIO> iFileIO = createMultipleWrite(this, *partDesc, exclsz, compress, extend||(external&&!query), ecomp, this, direct, rename, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
+    Owned<IFileIO> iFileIO = createMultipleWrite(*this, *partDesc, exclsz, compress, extend||(external&&!query), ecomp, this, direct, rename, &abortSoon, (external&&!query) ? &tempExternalName : NULL);
 
     if (compress)
     {
@@ -361,8 +361,8 @@ void CDiskWriteSlaveActivityBase::removeFiles()
         return;
     Owned<IFile> primary = createIFile(fName);
     try { primary->remove(); }
-    catch (IException *e) { ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Failed to remove file: %s", fName.get()); }
-    catch (CATCHALL) { ActPrintLogEx(&queryContainer(), thorlog_null, MCwarning, "Failed to remove: %s", fName.get()); }
+    catch (IException *e) { ActPrintLogEx(*this, e, thorlog_null, MCwarning, "Failed to remove file: %s", fName.get()); }
+    catch (CATCHALL) { ActPrintLogEx(*this, thorlog_null, MCwarning, "Failed to remove: %s", fName.get()); }
 }
 
 void CDiskWriteSlaveActivityBase::close()
@@ -399,7 +399,7 @@ void CDiskWriteSlaveActivityBase::close()
     }
     catch (IException *e)
     { 
-        ActPrintLogEx(&queryContainer(), e, thorlog_null, MCwarning, "Error closing file: %s", fName.get());
+        ActPrintLogEx(*this, e, thorlog_null, MCwarning, "Error closing file: %s", fName.get());
         abortSoon = true;
         removeFiles();
         throw e;
@@ -586,7 +586,7 @@ void sendPartialCount(CSlaveActivity &activity, rowcount_t partialCount)
 {
     CMessageBuffer msg;
     msg.append(partialCount);
-    if (!activity.queryContainer().queryJob().queryJobComm().send(msg, 0, activity.queryMpTag(), 5000))
+    if (!activity.queryJob().queryJobComm().send(msg, 0, activity.queryMpTag(), 5000))
         throw MakeThorException(0, "Failed to give partial result to master");
 }
 
@@ -615,7 +615,7 @@ void CPartialResultAggregator::sendResult(const void *row)
         CMemoryRowSerializer mbs(mb);
         activity.queryRowSerializer()->serialize(mbs,(const byte *)row);
     }
-    if (!activity.queryContainer().queryJob().queryJobComm().send(mb, 0, activity.queryMpTag(), 5000))
+    if (!activity.queryJob().queryJobComm().send(mb, 0, activity.queryMpTag(), 5000))
         throw MakeThorException(0, "Failed to give partial result to master");
 }
 

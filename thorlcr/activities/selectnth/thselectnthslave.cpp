@@ -114,7 +114,7 @@ public:
             meta.appendf("META(totalRowsMin=%"I64F"d,totalRowsMax=%"I64F"d,rowsOutput=%"RCPF"d,spilled=%"I64F"d,byteTotal=%"I64F"d)",
                 info.totalRowsMin,info.totalRowsMax,info.rowsOutput,info.spilled,info.byteTotal);
 #if 0                 
-            Owned<IThorException> e = MakeActivityWarning(this, -1, "%s", meta.str());
+            Owned<IThorException> e = MakeActivityWarning(*this, -1, "%s", meta.str());
             fireException(e);
 #else
             ActPrintLog("%s",meta.str());
