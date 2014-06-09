@@ -77,6 +77,7 @@ define([
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
             this.errWarnPage = registry.byId(this.id + "_ErrWarn");
+            registry.byId(this.id + "SetBanner").set("disabled", true);
 
             this.upgradeBar = new UpgradeBar({
                 notifications: [],
@@ -147,14 +148,12 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            registry.byId(this.id + "SetBanner").set("disabled", true);
-
             var context = this;
             WsAccount.MyAccount({
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
                     context.userName = response.MyAccountResponse.username;
-                    context.checkIfAdmin(context.username);
+                    context.checkIfAdmin(context.userName);
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
                         cookie("PasswordExpiredCheck", "true", { expires: 1 });
@@ -213,15 +212,20 @@ define([
                 registry.byId(context.id + "SetBanner").set("disabled", false);
             }else{
                 WsAccess.UserEdit({
+                    suppressExceptionToaster: true,
                     request: {
                         username: user
                     }
                 }).then(function (response) {
                     if (lang.exists("UserEditResponse.Groups.Group", response)) {
-                        arrayUtil.forEach(response.UserEditResponse.Groups.Group, function (item, idx) {
+                        arrayUtil.some(response.UserEditResponse.Groups.Group, function (item, idx) {
                             if(item.name == "Administrators"){
+                                dojoConfig.isAdmin = true;
                                 registry.byId(context.id + "SetBanner").set("disabled", false);
-                                return true;
+                                if (context.widget._OPS.refresh) {
+                                    context.widget._OPS.refresh();
+                                }
+                                return false;
                             }
                         });
                     }
