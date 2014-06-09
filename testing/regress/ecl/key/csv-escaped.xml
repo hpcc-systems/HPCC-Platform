@@ -47,11 +47,13 @@
 </Dataset>
 <Dataset name='Result 20'>
  <Row><foo>this is a line with new lines 
-
+!
  in it</foo><id>10</id><bar>while this is not</bar></Row>
  <Row><foo>this is a line with new lines 
-
+!
  in it</foo><id>10</id><bar>while this is not</bar></Row>
- <Row><foo>this is a line with &quot;quotes&quot; </foo><id>10</id><bar>while this is not</bar></Row>
+ <Row><foo>this is a line with &quot;quotes&quot; 
+!
+ in it</foo><id>10</id><bar>while this is not</bar></Row>
  <Row><foo></foo><id>0</id><bar></bar></Row>
 </Dataset>

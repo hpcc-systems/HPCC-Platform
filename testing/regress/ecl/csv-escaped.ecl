@@ -70,20 +70,21 @@ OUTPUT(escaped7);
 // Escape with quotes
 orig8 := DATASET([{'\'escaping\'\'the quote\'', 10, 'au naturel'}], rec);
 OUTPUT(orig8, ,'regress::csv-escaped-escaped'+EmptyString, OVERWRITE, CSV);
-escaped8 := DATASET('regress::csv-escaped-escaped'+EmptyString, rec, CSV);
+escaped8 := DATASET('regress::csv-escaped-escaped'+EmptyString, rec, CSV(QUOTE('\'')));
 OUTPUT(escaped8);
 
 // Escape with quotes with ESCAPE()
 orig9 := DATASET([{'\'escaping\'\'the quote\'', 10, 'with user defined escape'}], rec);
 OUTPUT(orig9, ,'regress::csv-escaped-escaped2'+EmptyString, OVERWRITE, CSV);
-escaped9 := DATASET('regress::csv-escaped-escaped2'+EmptyString, rec, CSV(ESCAPE('\\')));
+escaped9 := DATASET('regress::csv-escaped-escaped2'+EmptyString, rec, CSV(ESCAPE('\\'), QUOTE('\'')));
 OUTPUT(escaped9);
 
 // Default is no escape
+//NOTE: Blank lines are stripped by the regression suite code, so ensure each line has a !
 orig10 := DATASET([
-    {'this is a line with new lines \n\n in it', 10, 'while this is not'},
-    {'this is a line with new lines \r\n\r\n in it', 10, 'while this is not'},
-    {'this is a line with "quotes" \n\n in it', 10, 'while this is not'},
+    {'this is a line with new lines \n!\n in it', 10, 'while this is not'},
+    {'this is a line with new lines \r\n!\r\n in it', 10, 'while this is not'},
+    {'this is a line with "quotes" \n!\n in it', 10, 'while this is not'},
     {'',0,''}
     ], rec);
 OUTPUT(orig10, ,'regress::csv-orig10'+EmptyString, OVERWRITE, CSV(QUOTE('"')));
