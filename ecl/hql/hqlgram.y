@@ -11205,8 +11205,11 @@ sortItem
                             parser->normalizeExpression($3, type_numeric, true);
                             $$.setExpr(createAttribute(thresholdAtom, $3.getExpr()));
                         }
-    | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom)); }
-    | RECORD            {   $$.setExpr(createAttribute(recordAtom)); }
+    | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom), $1); }
+    | RECORD            {   
+                            parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "Using RECORD as an attribute may be removed in 6.0 - use WHOLE RECORD instead");
+                            $$.setExpr(createAttribute(recordAtom), $1);
+                        }
     | EXCEPT expression {   
                             parser->normalizeExpression($2);
                             $$.setExpr(createAttribute(exceptAtom, $2.getExpr()));
@@ -11296,8 +11299,11 @@ dedupFlag
                             parser->convertAllToAttribute($1);
                             $$.inherit($1);
                         }
-    | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom)); }
-    | RECORD            {   $$.setExpr(createAttribute(recordAtom)); }
+    | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom), $1); }
+    | RECORD            {   
+                            parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "Using RECORD as an attribute may be removed in 6.0 - use WHOLE RECORD instead");
+                            $$.setExpr(createAttribute(recordAtom), $1);
+                        }
     | EXCEPT expression {   
                             //MORE:SORTLIST  Allow sort list as an exception
                             parser->normalizeExpression($2);
@@ -11325,8 +11331,11 @@ rollupFlag
                             parser->normalizeExpression($1);
                             $$.inherit($1);
                         }
-    | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom)); }
-    | RECORD                {   $$.setExpr(createAttribute(recordAtom)); }
+    | WHOLE RECORD      {   $$.setExpr(createAttribute(recordAtom), $1); }
+    | RECORD            {   
+                            parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "Using RECORD as an attribute may be removed in 6.0 - use WHOLE RECORD instead");
+                            $$.setExpr(createAttribute(recordAtom), $1);
+                        }
     | EXCEPT expression {   
                             //MORE:SORTLIST  Allow sort list as an exception
                             parser->normalizeExpression($2);
