@@ -248,6 +248,16 @@
           </row>
 
           <row>
+            <entry><emphasis role="bold">RESPONSE
+            </emphasis>(<emphasis>NOTRIM</emphasis>) <indexterm>
+                <primary>NOTRIM</primary>
+              </indexterm></entry>
+
+            <entry>Sets flag to prevent space stripping on the response.
+            </entry>
+          </row>
+
+          <row>
             <entry><emphasis role="bold">NAMESPACE<indexterm>
                 <primary>NAMESPACE</primary>
               </indexterm> </emphasis>(<emphasis>namespace</emphasis>)</entry>
@@ -274,6 +284,42 @@
             <emphasis>value</emphasis> is a string expression typically
             containing a URN or URL that is required by the web
             <emphasis>service</emphasis> for proper interoperability.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOG<indexterm>
+                <primary>LOG</primary>
+              </indexterm></emphasis></entry>
+
+            <entry>Specifies to write details to the log file of the engine
+            (hThor, Thor, or Roxie) to which the SOAPCALL is submitted.
+            </entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOG
+            </emphasis>(<emphasis>value</emphasis>)</entry>
+
+            <entry>Specifies to write minimal details of the SOAPCALL to a log
+            file.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">LOG
+            </emphasis>(<emphasis>expression</emphasis>)</entry>
+
+            <entry>Specifies to add the expression to the log when performing
+            a SOAPCALL.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ENCODING</emphasis><indexterm>
+                <primary>ENCODING</primary>
+              </indexterm></entry>
+
+            <entry>Specifies that the Web service being called requires a
+            different message format, where type information is embedded in
+            the XML.</entry>
           </row>
         </tbody>
       </tgroup>
