@@ -268,6 +268,7 @@ define({root:
     NumberofParts: "Number of Parts",
     OK: "OK",
     Oldest: "Oldest",
+    OldPassword: "Old Password",
     OmitSeparator: "Omit Separator",
     Only1PackageFileAllowed: "Only one package file allowed",
     Open: "Open",

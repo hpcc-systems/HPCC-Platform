@@ -163,7 +163,10 @@ define([
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
                         cookie("PasswordExpiredCheck", "true", { expires: 1 });
-                        if (lang.exists("MyAccountResponse.passwordDaysRemaining", response) && response.MyAccountResponse.passwordDaysRemaining !== null && response.MyAccountResponse.passwordDaysRemaining <= 10) {
+                        if (lang.exists("MyAccountResponse.passwordDaysRemaining", response) &&
+                            response.MyAccountResponse.passwordDaysRemaining !== null &&
+                            response.MyAccountResponse.passwordDaysRemaining >= 0 &&
+                            response.MyAccountResponse.passwordDaysRemaining <= 10) {
                             if (confirm(context.i18n.PasswordExpirePrefix + response.MyAccountResponse.passwordDaysRemaining + context.i18n.PasswordExpirePostfix)) {
                                 context._onUserID();
                             }
@@ -243,9 +246,9 @@ define([
         _onUserID: function (evt) {
             var userDialog = registry.byId(this.id + "UserDialog");
             var userInfo = registry.byId(this.id + "UserInfo");
-            userInfo.init({
-                Username: this.userName
-            });
+            if (!userInfo.init({ Username: this.userName })) {
+                userInfo.refresh();
+            }
             userDialog.show();
         },
 
