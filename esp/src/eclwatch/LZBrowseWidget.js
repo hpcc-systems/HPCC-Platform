@@ -168,8 +168,8 @@ define([
                         Path: item.machine.Directory
                     }
                 }).then(function (response) {
+                    var fileName = "";
                     if (lang.exists("FileListResponse.files.PhysicalFileStruct", response)) {
-                        var fileName = "";
                         arrayUtil.forEach(response.FileListResponse.files.PhysicalFileStruct, function (item, index) {
                             arrayUtil.forEach(fileList, function (file,idx){
                                 if (item.name === file.name){
@@ -177,12 +177,12 @@ define([
                                 }
                             });
                         });
-                        if (fileName === ""){
-                            context._onUploadSubmit();
-                            context.fileListDialog.hide();
-                        } else {
-                            alert(context.i18n.OverwriteMessage);
-                        }
+                    }
+                    if (fileName === ""){
+                        context._onUploadSubmit();
+                        context.fileListDialog.hide();
+                    } else {
+                        alert(context.i18n.OverwriteMessage);
                     }
                 });
             }
@@ -227,7 +227,7 @@ define([
                 arrayUtil.forEach(this.landingZonesGrid.getSelected(), function(item, idx) {
                     FileSpray.DeleteDropZoneFile({
                         request:{
-                            NetAddress:	item.DropZone.NetAddress,
+                            NetAddress: item.DropZone.NetAddress,
                             Path: item.DropZone.Path,
                             OS: item.DropZone.OS,
                             Names: item.partialPath
