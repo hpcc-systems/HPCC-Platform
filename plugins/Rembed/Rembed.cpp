@@ -17,6 +17,7 @@
 
 #include "platform.h"
 
+#ifdef RCPP_HEADER_ONLY
 // NOTE - these symbols need to be hidden from being exported from the Rembed .so file as RInside tries to dynamically
 // load them from Rcpp.so
 
@@ -51,6 +52,7 @@
 #define reset_current_error HIDE_RCPP_reset_current_error
 #define error_occured HIDE_RCPP_error_occured
 #define rcpp_get_current_error HIDE_RCPP_rcpp_get_current_error
+#endif
 
 #include "RInside.h"
 
