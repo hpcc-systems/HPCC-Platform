@@ -493,6 +493,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         {
             DBGLOG("Loading topology file %s", topologyFile.str());
             topology = createPTreeFromXMLFile(topologyFile.str());
+            saveTopology();
         }
         else
         {
