@@ -187,6 +187,7 @@ define([
                         }
                     });
                     tableContainer.placeAt(origTableContainer.domNode, "replace");
+                    origTableContainer.destroyRecursive();
                     context.widget.Filter.on("clear", function (evt) {
                         context.refresh();
                     });
