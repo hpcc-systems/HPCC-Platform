@@ -1456,7 +1456,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
           </informaltable></para>
       </sect2>
 
-      <sect2 id="eclqueriescopy" role="brk">
+      <sect2 id="eclqueriescopyset" role="brk">
         <title>ecl queries copy-set</title>
 
         <para><emphasis role="bold">ecl queries copy-set &lt;source_target&gt;
