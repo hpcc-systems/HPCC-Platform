@@ -126,11 +126,15 @@ define([
             //TODO:  Encapsulate this IF into ESPResult.js
             if (params.result && params.result.canShowResults()) {
                 this.initResult(params.result);
-            } else if (params.Wuid && lang.exists("Sequence", params)) {
+            } else if (params.Wuid && (lang.exists("Sequence", params) || params.Name)) {
                 var wu = ESPWorkunit.Get(params.Wuid);
                 var context = this;
                 wu.fetchSequenceResults(function (results) {
-                    context.initResult(results[params.Sequence]);
+                    if (lang.exists("Sequence", params)) {
+                        context.initResult(results[params.Sequence]);
+                    } else {
+                        context.initResult(wu.namedResults[params.Name]);
+                    }
                 });
             } else if (params.LogicalName) {
                 var logicalFile = ESPLogicalFile.Get(params.ClusterName, params.LogicalName);
