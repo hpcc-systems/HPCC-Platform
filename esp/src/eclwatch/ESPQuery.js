@@ -17,6 +17,8 @@ define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/_base/lang",
+    "dojo/i18n",
+    "dojo/i18n!./nls/hpcc",
     "dojo/_base/Deferred",
     "dojo/store/Observable",
     "dojo/Stateful",
@@ -28,13 +30,14 @@ define([
     "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit"
-], function (declare, arrayUtil, lang, Deferred, Observable, Stateful,
+], function (declare, arrayUtil, lang, i18n, nlsHPCC, Deferred, Observable, Stateful,
         parser,
         WsWorkunits, WsEcl, ESPRequest, ESPUtil, ESPWorkunit) {
 
     var _logicalFiles = {};
 
     var Store = declare([ESPRequest.Store], {
+        i18n: nlsHPCC,
         service: "WsWorkunits",
         action: "WUListQueries",
         responseQualifier: "WUListQueriesResponse.QuerysetQueries.QuerySetQuery",
@@ -68,26 +71,30 @@ define([
 
         preProcessRow: function (item, request, query, options) {
             var ErrorCount = 0;
-            var SuspendedReason;
+            var StatusMessage;
+            var MixedNodeStates;
             item[this.idProperty] = item.QuerySetId + ":" + item.Id;
-
             if (lang.exists("Clusters", item)) {
-                arrayUtil.forEach(item.Clusters.ClusterQueryState, function(cqs, idx){
+                arrayUtil.some(item.Clusters.ClusterQueryState, function(cqs, idx){
                     if (lang.exists("Errors", cqs) && cqs.Errors) {
-                        ErrorCount++
-                        if (cqs.State == "Suspended") {
-                            SuspendedReason = "Cluster";
-                        }
+                        ErrorCount++;
+                        StatusMessage = this.i18n.SuspendedByCluster;
+                        return false;
                     }
-                    if (item.Suspended == true) {
-                        SuspendedReason = "User";
+                    if (lang.exists("MixedNodeStates", cqs) && cqs.MixedNodeStates == true) {
+                        StatusMessage =  this.i18n.MixedNodeStates;
+                        MixedNodeStates = true;
                     }
                 });
+            }
+            if (item.Suspended == true){
+                StatusMessage = this.i18n.SuspendedByUser;
             }
 
             lang.mixin(item, {
                 ErrorCount: ErrorCount,
-                SuspendedReason: SuspendedReason
+                Status: StatusMessage,
+                MixedNodeStates: MixedNodeStates
             });
         }
     });
