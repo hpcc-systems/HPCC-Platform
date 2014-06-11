@@ -726,10 +726,10 @@ public:
                 closeDllServer();
                 closeEnvironment();
                 clientShutdownWorkUnit();
+                disconnectRoxieQueues();
                 ::closedownClientProcess(); // dali client closedown
                 isConnected = false;
                 disconnectSem.signal();
-                disconnectRoxieQueues();
             }
         }
     }
