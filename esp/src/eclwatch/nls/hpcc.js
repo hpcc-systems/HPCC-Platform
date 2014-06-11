@@ -511,6 +511,7 @@ define({root:
     VariableBigendian: "Variable Big-endian",
     VariableSourceType: "Source Type",
     Version: "Version",
+    ViewByScope: "View By Scope",
     Views: "Views",
     Visualize: "Visualize",
     Warnings: "Warning(s)",
