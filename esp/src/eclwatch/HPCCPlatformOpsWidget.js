@@ -19,6 +19,8 @@ define([
     "dojo/i18n",
     "dojo/i18n!./nls/hpcc",
 
+    "dijit/registry",
+
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
 
@@ -32,6 +34,7 @@ define([
     "hpcc/DelayLoadWidget"
 
 ], function (declare, lang, i18n, nlsHPCC,
+                registry,
                 _TabContainerWidget, ESPRequest,
                 template) {
     return declare("HPCCPlatformOpsWidget", [_TabContainerWidget], {
@@ -41,6 +44,7 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
+            registry.byId(this.id + "_Permissions").set("disabled", true);
         },
 
         startup: function (args) {
@@ -58,7 +62,14 @@ define([
             if (this.inherited(arguments))
                 return;
 
+            this.refresh();
             this.initTab();
+        },
+
+        refresh: function (params) {
+            if (dojoConfig.isAdmin) {
+                registry.byId(this.id + "_Permissions").set("disabled", false);
+            }
         },
 
         initTab: function () {
