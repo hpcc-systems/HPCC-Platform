@@ -1456,6 +1456,153 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
           </informaltable></para>
       </sect2>
 
+      <sect2 id="eclqueriescopy" role="brk">
+        <title>ecl queries copy-set</title>
+
+        <para><emphasis role="bold">ecl queries copy-set &lt;source_target&gt;
+        &lt;destination_target&gt; [--all] [--clone-active-state]
+        </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl queries copy-set roxie1 roxie2
+ecl queries copy-set roxie1 roxie2 --all
+ecl queries copy-set roxie1 roxie2 --clone-active-state</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>ecl queries copy-set</entry>
+
+                  <entry>Copies a set of queries from one target to
+                  another.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>copy-set</entry>
+
+                  <entry>Copy a set of queries from one target to
+                  another.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>source_target</entry>
+
+                  <entry>Target cluster from which to copy queries.</entry>
+                </row>
+
+                <row>
+                  <entry>destination_target</entry>
+
+                  <entry>Target cluster to copy queries to.</entry>
+                </row>
+
+                <row>
+                  <entry>--all</entry>
+
+                  <entry>Specifies to copy both active and inactive queries.
+                  If omitted, only active are copied.</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Specifies to NOT copy files referenced by the
+                  query.</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>IP address or hostname of the remote Dali to use for
+                  logical file lookups.</entry>
+                </row>
+
+                <row>
+                  <entry>--source-process</entry>
+
+                  <entry>Process cluster from which to copy files.</entry>
+                </row>
+
+                <row>
+                  <entry>--clone-active-state</entry>
+
+                  <entry>Make copied queries active on target if they are
+                  active on the source.</entry>
+                </row>
+
+                <row>
+                  <entry>--allow-foreign</entry>
+
+                  <entry>Specifies to allow the use of foreign files in a
+                  Roxie query. If a Roxie query references foreign files and
+                  this is not enabled, copy will fail.</entry>
+                </row>
+
+                <row>
+                  <entry>-O, --overwrite</entry>
+
+                  <entry>Whether to overwrite existing DFS information - true
+                  if present</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running ECL
+                  Watch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The ECL Watch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl, --ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
       <sect2 id="eclqueriesconfig" role="brk">
         <title>ecl queries config</title>
 
