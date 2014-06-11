@@ -1046,7 +1046,7 @@ IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset)
     try
     {
         Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
-        return sendRoxieControlAllNodes(sock, "<control:queries/>", true, ROXIECONTROLQUERYTIMEOUT);
+        return sendRoxieControlQuery(sock, "<control:queries/>", ROXIECONTROLQUERYTIMEOUT);
     }
     catch(IException* e)
     {
