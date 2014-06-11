@@ -134,6 +134,7 @@ define({root:
     FetchingData: "Fetching Data...",
     fetchingresults: "fetching results",
     ExpandAll: "Expand All",
+    Export: "Export",
     File: "File",
     FileCounts: "File Counts",
     FileName: "File Name",
