@@ -11278,13 +11278,7 @@ dedupFlags
     ;
 
 dedupFlag
-    : LEFT              {
-                            $$.setExpr(createAttribute(leftAtom));
-                        }
-    | RIGHT             {
-                            $$.setExpr(createAttribute(rightAtom));
-                        }
-    | KEEP expression   {
+    : KEEP expression   {
                             parser->normalizeExpression($2, type_int, false);
                             $$.setExpr(createExprAttribute(keepAtom, $2.getExpr()));
                         }
@@ -11305,6 +11299,16 @@ dedupFlag
                         }
     | MANY              {   $$.setExpr(createAttribute(manyAtom)); }
     | HASH              {   $$.setExpr(createAttribute(hashAtom)); }
+    | dataRow
+                        {
+                            //Backward compatibility... special case use of LEFT and RIGHT as modifiers.
+                            OwnedHqlExpr row = $1.getExpr();
+                            if (row->getOperator() == no_left)
+                                row.setown(createAttribute(leftAtom));
+                            else if (row->getOperator() == no_right)
+                                row.setown(createAttribute(rightAtom));
+                            $$.setExpr(row.getClear(), $1);
+                        }
     ;
 
 rollupExtra
@@ -11332,6 +11336,7 @@ rollupFlag
                             parser->normalizeExpression($2);
                             $$.setExpr(createAttribute(exceptAtom, $2.getExpr())); 
                         }
+    | dataRow
     ;
 
 conditions
