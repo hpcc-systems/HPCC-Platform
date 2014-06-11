@@ -237,6 +237,21 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="serverType" use="required" default="ActiveDirectory">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>LDAP Server Implementation Type</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+                    <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                            <xs:enumeration value="ActiveDirectory"/>
+                            <xs:enumeration value="OpenLDAP"/>
+                            <xs:enumeration value="Fedora389"/>
+			    <xs:enumeration value="iPlanet"/>
+                        </xs:restriction>
+                    </xs:simpleType>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

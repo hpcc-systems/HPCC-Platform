@@ -264,6 +264,9 @@
             <xsl:attribute name="filesBasedn">
                 <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@filesBasedn"/>
             </xsl:attribute>
+            <xsl:attribute name="serverType">
+                <xsl:value-of select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]/@serverType"/>
+            </xsl:attribute>
             <xsl:variable name="ldapServerNode" select="/Environment/Software/LDAPServerProcess[@name=$ldapServerName]"/>
             <xsl:if test="not($ldapServerNode)">
               <xsl:message terminate="yes">
@@ -294,7 +297,7 @@
             </xsl:attribute>
 
             <xsl:for-each select="$ldapServerNode">
-              <xsl:copy-of select="@ldapPort | @ldapSecurePort | @cacheTimeout | @workunitsBasedn | @modulesBasedn | @systemBasedn | @systemCommonName | @systemUser | @systemPassword | @usersBasedn | @groupsBasedn"/>
+              <xsl:copy-of select="@ldapPort | @ldapSecurePort | @cacheTimeout | @workunitsBasedn | @modulesBasedn | @systemBasedn | @systemCommonName | @systemUser | @systemPassword | @usersBasedn | @groupsBasedn | @serverType"/>
             </xsl:for-each>
           </xsl:element>
         </xsl:if>
