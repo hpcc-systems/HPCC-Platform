@@ -192,9 +192,28 @@ public:
         int version = LDAP_VERSION3;
         ldap_set_option( NULL, LDAP_OPT_PROTOCOL_VERSION, &version);
 
-        m_serverType = ACTIVE_DIRECTORY;
-
         m_cfg.set(cfg);
+
+        //Check for LDAP Server type in config
+        m_serverType = LDAPSERVER_UNKNOWN;
+        const char* serverType = cfg->queryProp(".//@serverType");
+        if (serverType && *serverType)
+        {
+            if (0 == stricmp(serverType, "ActiveDirectory"))
+                m_serverType = ACTIVE_DIRECTORY;
+            else if (0 == stricmp(serverType, "OpenLDAP"))
+                m_serverType = OPEN_LDAP;
+            else if (0 == stricmp(serverType, "Fedora389"))
+                m_serverType = OPEN_LDAP;
+            else if (0 == stricmp(serverType, "iPlanet"))
+                m_serverType = IPLANET;
+            else
+                throw MakeStringException(-1, "Unknown LDAP serverType '%s' specified",serverType);
+        }
+        else
+        {
+            DBGLOG("LDAP serverType not specified, will try to deduce");
+        }
 
         StringBuffer hostsbuf;
         cfg->getProp(".//@ldapAddress", hostsbuf);
@@ -5204,7 +5223,7 @@ private:
 
 int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)
 {
-    stype = LDAPSERVER_UNKNOWN;
+    LdapServerType deducedSType = LDAPSERVER_UNKNOWN;
     LDAP* ld = LdapInit("ldap", ldapserver, ldapport, 636); 
     if(ld == NULL)
     {
@@ -5263,7 +5282,10 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
                     }
                 }
                 else if(*curdn != '\0' && strcmp(curdn, "o=NetscapeRoot") == 0)
-                    stype = IPLANET;
+                {
+                    PROGLOG("Deduced LDAP Server Type 'iPlanet'");
+                    deducedSType = IPLANET;
+                }
                 i++;
             }
             
@@ -5272,17 +5294,28 @@ int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer&
 
             ldap_value_free(domains);
 
-            if(stype == LDAPSERVER_UNKNOWN)
+            if (deducedSType == LDAPSERVER_UNKNOWN)
             {
                 if(i <= 1)
-                    stype = OPEN_LDAP;
+                {
+                    PROGLOG("Deduced LDAP Server Type 'OpenLDAP'");
+                    deducedSType = OPEN_LDAP;
+                }
                 else
-                    stype = ACTIVE_DIRECTORY;
+                {
+                    PROGLOG("Deduced LDAP Server Type 'Active Directory'");
+                    deducedSType = ACTIVE_DIRECTORY;
+                }
             }
         }
     }
     ldap_msgfree(msg);
     ldap_unbind(ld);
+
+    if (stype == LDAPSERVER_UNKNOWN)
+        stype = deducedSType;
+    else if (deducedSType != stype)
+        WARNLOG("Ignoring deduced LDAP Server Type, does not match config LDAPServerType");
 
     return err;
 }
