@@ -36,9 +36,9 @@ class ECLcmd(Shell):
         args = []
         args.append(cmd)
         args.append('-v')
-        args.append('--cluster=' + cluster)
         args.append('-fpickBestEngine=false')
         args.append('--target=' + cluster)
+        args.append('--cluster=' + cluster)
 
         username = kwargs.pop('username', False)
         if username:
@@ -60,6 +60,7 @@ class ECLcmd(Shell):
             args.append("--name=" + name)
 
         else:
+            args.append('--exception-level=warning')
             args.append('--noroot')
             server = kwargs.pop('server', False)
             if server:

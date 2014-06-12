@@ -1,20 +1,3 @@
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;thor::regress::superfile7&apos;) file not found</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;thor::regress::superfile7&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;thor::regress::superfile7&apos;, &apos;thor::regress::subfile1&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;thor::regress::superfile7&apos;, &apos;thor::regress::subfile2&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;thor::regress::superfile7&apos;, &apos;thor::regress::subfile3&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;thor::regress::superfile7&apos;, &apos;thor::regress::subfile4&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;thor::regress::superfile7&apos;) action added to transaction</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;thor::regress::superfile7&apos;) action added to transaction</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;thor::regress::superfile7&apos;) action added to transaction</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

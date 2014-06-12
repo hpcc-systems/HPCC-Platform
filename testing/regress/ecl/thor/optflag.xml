@@ -1,22 +1,3 @@
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::nor::this&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::nor::this&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::nor::this&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::nor::this&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::nor::this&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::nor::this&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::nor::this&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file::again&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file::again&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file::again&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file::again&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file::either&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file::either&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file::either&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file::either&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::nor::this&apos; was missing but declared optional</Message></Info>
-<Info><Source></Source><Message>Input file &apos;thor::regress::no::such::file&apos; was missing but declared optional</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>
