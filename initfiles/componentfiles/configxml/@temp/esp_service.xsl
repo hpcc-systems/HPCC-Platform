@@ -186,6 +186,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                     <!--if binding has an ldap resourcebasedn specified then copy it out -->
                     <xsl:copy-of select="$bindingNode/@workunitsBasedn"/>
                     <!--if binding has an ldap workunitsbasedn specified then copy it out -->
+                    <xsl:copy-of select="$bindingNode/@serverType"/>
                     <xsl:for-each select="$bindingNode/Authenticate[@path='/']">
                         <Location path="/" resource="{@resource}" required="{@access}" description="{@description}"/>
                     </xsl:for-each>
