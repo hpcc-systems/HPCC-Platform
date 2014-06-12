@@ -115,7 +115,6 @@ define([
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
                 if (!params.suppressExceptionToaster && handleAs == "json") {
-                    var deletedWorkunit = false; //  Deleted WU
                     if (lang.exists("Exceptions.Source", response)) {
                         topic.publish("hpcc/brToaster", {
                             Severity: "Error",

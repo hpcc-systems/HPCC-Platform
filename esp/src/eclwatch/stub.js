@@ -66,7 +66,8 @@ define([
 
                             if ((item.Source === "WsWorkunits.WUInfo" && item.Code === 20080) ||
                                 (item.Source === "WsWorkunits.WUQuery" && item.Code === 20081) ||
-                                (item.Source === "FileSpray.GetDFUWorkunit" && item.Code === 20080)) {
+                                (item.Source === "FileSpray.GetDFUWorkunit" && item.Code === 20080) ||
+                                (item.Source === "WsDfu.DFUInfo" && item.Code === 20038)) {
                             } else {
                                 var message = "<h4>" + entities.encode(item.Source) + "</h4><p>" + entities.encode(item.Message) + "</p>";
                                 myToaster.setContent(message, item.Severity, item.Severity === "Error" ? -1 : null);
