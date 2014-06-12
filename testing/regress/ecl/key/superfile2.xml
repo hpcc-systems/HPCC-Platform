@@ -1,20 +1,3 @@
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;.::superfile3&apos;) file not found</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;.::superfile4&apos;) file not found</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;.::superfile3&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;.::superfile4&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;.::superfile4&apos;, &apos;.::subfile6&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;, del, remcontents) done</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;.::superfile4&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;.::superfile4&apos;, &apos;.::subfile6&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;, del, remcontents) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;.::superfile3&apos;, &apos;.::superfile4&apos;, del, remcontents) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;.::superfile3&apos;) done</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

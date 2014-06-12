@@ -1,15 +1,3 @@
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_Parent.d00&apos;,&apos;REGRESS::hthor::DG_Child.d00&apos;,&apos;DG_ParentID&apos;,&apos;DG_ParentID&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_Child.d00&apos;,&apos;REGRESS::hthor::DG_GrandChild.d00&apos;,&apos;DG_ParentID&apos;,&apos;DG_ParentID&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_Parent.d00&apos;,&apos;REGRESS::hthor::DG_CSV&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_Parent.d00&apos;,&apos;REGRESS::hthor::DG_XML&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_FLAT&apos;,&apos;REGRESS::hthor::DG_INDEX&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_FLAT&apos;,&apos;REGRESS::hthor::DG_INDEX&apos;,&apos;__fileposition__&apos;,&apos;filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_FLAT_EVENS&apos;,&apos;REGRESS::hthor::DG_INDEX_EVENS&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_FLAT_EVENS&apos;,&apos;REGRESS::hthor::DG_INDEX_EVENS&apos;,&apos;__fileposition__&apos;,&apos;filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_VAR&apos;,&apos;REGRESS::hthor::DG_VARINDEX&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_VAR&apos;,&apos;REGRESS::hthor::DG_VARINDEX&apos;,&apos;__fileposition__&apos;,&apos;__filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_VAR&apos;,&apos;REGRESS::hthor::DG_VARVARINDEX&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::DG_VAR&apos;,&apos;REGRESS::hthor::DG_VARVARINDEX&apos;,&apos;__fileposition__&apos;,&apos;__filepos&apos;,&apos;link&apos;) done</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>
