@@ -2034,94 +2034,15 @@ void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor*
             StringBuffer size;
             ForEach(*fi) 
             {
-                StringBuffer pref;
                 IPropertyTree &attr=fi->query();
-                const char* logicalName=attr.queryProp("@name");
-                const char *c=strstr(logicalName, "::");
-                if (c)
-                    pref.append(c-logicalName, logicalName);
-                else
-                    pref.append(logicalName);
 
-                const char* owner=attr.queryProp("@owner");
                 StringArray groups;
-                if (getFileGroups(&attr,groups)==0)
-                {
+                if (!getFileGroups(&attr,groups))
                     groups.append("");
-                }
 
                 ForEachItemIn(i, groups)
                 {
-                    const char* groupName = groups.item(i);
-                    Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
-
-                    File->setPrefix(pref);
-                    if (version < 1.26)
-                        File->setClusterName(groupName);
-                    else
-                        File->setNodeGroup(groupName);
-                    File->setName(logicalName);
-                    File->setOwner(owner);
-                    File->setReplicate(true);
-
-                    ForEachItemIn(j, roxieClusterNames)
-                    {
-                        const char* roxieClusterName = roxieClusterNames.item(j);
-                        if (roxieClusterName && groupName && strieq(roxieClusterName, groupName))
-                        {
-                            File->setFromRoxieCluster(true);
-                            break;
-                        }
-                    }
-
-                    if(!attr.hasProp("@numsubfiles"))
-                    {
-                        File->setDirectory(attr.queryProp("@directory"));
-                        File->setParts(attr.queryProp("@numparts"));
-                        File->setIsSuperfile(false);
-                    }
-                    else
-                    {
-                        File->setIsSuperfile(true);
-                    }
-
-                    int numSubFiles = attr.hasProp("@numsubfiles");
-                    if (numSubFiles > 1) //Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
-                        File->setBrowseData(false); 
-                    else
-                        File->setBrowseData(true); 
-
-                    StringBuffer modf(attr.queryProp("@modified"));
-                    char* t= (char *) strchr(modf.str(),'T');
-                    if(t) *t=' ';
-                    File->setModified(modf.str());
-
-                    __int64 recordSize=attr.getPropInt64("@recordSize",0), size=attr.getPropInt64("@size",-1);
-        
-                    if (version < 1.22)
-                        File->setIsZipfile(isCompressed(attr));
-                    else
-                    {
-                        File->setIsCompressed(isCompressed(attr));
-                        if (attr.hasProp("@compressedSize"))
-                            File->setCompressedFileSize(attr.getPropInt64("@compressedSize"));
-                    }
-
-                    StringBuffer buf;
-                    buf << comma(size);
-                    File->setIntSize(size);
-                    File->setTotalsize(buf.str());
-                    if (attr.hasProp("@recordCount"))
-                    {
-                        File->setRecordCount((buf.clear()<<comma(attr.getPropInt64("@recordCount"))).str());
-                        File->setIntRecordCount(attr.getPropInt64("@recordCount"));
-                    }
-                    else if(recordSize)
-                    {
-                        File->setRecordCount((buf.clear()<<comma(size/recordSize)).str());
-                        File->setIntRecordCount(size/recordSize);
-                    }
-                    LogicalFiles.append(*File.getClear());
+                    addToLogicalFileList(attr, groups.item(i), version, LogicalFiles);
                     numFiles++;
                 }
             }
@@ -3180,7 +3101,7 @@ const char* CWsDfuEx::getShortDescription(const char* description, StringBuffer&
     return shortDesc.str();
 }
 
-bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles)
+bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles)
 {
     const char* logicalName = file.queryProp(getDFUQResultFieldName(DFUQRFname));
     if (!logicalName || !*logicalName)
@@ -3196,9 +3117,9 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, double version, IArrayO
         lFile->setModified(buf.replace('T', ' ').str());
         lFile->setPrefix(getPrefixFromLogicalName(logicalName, buf.clear()));
         lFile->setDescription(getShortDescription(file.queryProp(getDFUQResultFieldName(DFUQRFdescription)), buf.clear()));
-        lFile->setTotalsize((buf.clear()<<comma(file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),-1))).str());
 
-        const char* nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
+        if (!nodeGroup || !*nodeGroup)
+                nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
         if (nodeGroup && *nodeGroup)
         {
             if (version < 1.26)
@@ -3218,9 +3139,27 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, double version, IArrayO
         }
         lFile->setBrowseData(numSubFiles > 1 ? false : true); ////Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
 
-        __int64 records = file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordcount));
+        __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),0);
+        if (size > 0)
+        {
+            lFile->setIntSize(size);
+            lFile->setTotalsize((buf.clear()<<comma(size)).str());
+        }
+
+        __int64 records = file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordcount),0);
+        if (!records)
+            records = file.getPropInt64(getDFUQResultFieldName(DFUQRForigrecordcount),0);
+        if (!records)
+        {
+            __int64 recordSize=file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordsize),0);
+            if(recordSize > 0)
+                records = size/recordSize;
+        }
         if (records > 0)
+        {
+            lFile->setIntRecordCount(records);
             lFile->setRecordCount((buf.clear()<<comma(records)).str());
+        }
 
         bool isKeyFile = false;
         if (version > 1.13)
@@ -3419,7 +3358,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
 
     IArrayOf<IEspDFULogicalFile> logicalFiles;
     ForEach(*it)
-        addToLogicalFileList(it->query(), version, logicalFiles);
+        addToLogicalFileList(it->query(), NULL, version, logicalFiles);
 
     if (version >= 1.24)
         resp.setCacheHint(cacheHint);
