@@ -540,6 +540,7 @@ define({root:
     XML: "XML",
     XRef: "XRef",
     Year: "Year",
+    YourBrowserMayNotSupport: "Your browser may not support file(s) of this size",
     ZAP: "Z.A.P",
     ZeroLogicalFilesCheckFilter: "Zero Logical Files(check filter)",
     Zip: "Zip",

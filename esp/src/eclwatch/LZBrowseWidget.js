@@ -21,6 +21,7 @@ define([
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-form",
+    "dojo/dom-class",
     "dojo/request/iframe",
     "dojo/on",
     "dojo/topic",
@@ -67,7 +68,7 @@ define([
     "dojox/form/uploader/FileList",
 
     "hpcc/TableContainer"
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, iframe, on, topic,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domClass, iframe, on, topic,
                 registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 tree, editor, selector,
                 _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, DelayLoadWidget, TargetSelectWidget, SelectionGridWidget,
@@ -142,8 +143,21 @@ define([
         },
 
         _onUpload: function (event) {
+            var fileList = registry.byId(this.id + "Upload").getFileList();
+            var totalFileSize = 0;
+
             this.uploadFileList.hideProgress();
             this.fileListDialog.show();
+
+            arrayUtil.forEach(fileList, function (file,idx){
+                totalFileSize += file.size;
+            });
+
+            if (totalFileSize >= 2147483648 ) {
+                domClass.remove("BrowserSizeMessage", "hidden");
+            } else {
+                domClass.add("BrowserSizeMessage", "hidden");
+            }
         },
 
         _onUploadBegin: function (dataArray) {
@@ -156,11 +170,12 @@ define([
 
         _onCheckUploadSubmit: function () {
             var context = this;
-            if (this.overwriteCheckbox.checked){
+            var fileList = registry.byId(this.id + "Upload").getFileList();
+
+            if (this.overwriteCheckbox.checked) {
                 this._onUploadSubmit();
                 this.fileListDialog.hide();
             } else {
-                var fileList = registry.byId(this.id + "Upload").getFileList();
                 var item = context.dropZoneSelect.get("row");
                 FileSpray.FileList({
                     request: {
@@ -227,7 +242,7 @@ define([
                 arrayUtil.forEach(this.landingZonesGrid.getSelected(), function(item, idx) {
                     FileSpray.DeleteDropZoneFile({
                         request:{
-                            NetAddress:	item.DropZone.NetAddress,
+                            NetAddress: item.DropZone.NetAddress,
                             Path: item.DropZone.Path,
                             OS: item.DropZone.OS,
                             Names: item.partialPath
@@ -413,6 +428,7 @@ define([
             this.dropZoneSelect.init({
                 DropZones: true
             });
+
         },
 
         initTab: function () {
