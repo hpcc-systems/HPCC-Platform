@@ -1,12 +1,3 @@
-<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::subfile12&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;thor::regress::subfile13&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>RenameLogicalFile (&apos;thor::regress::subfile10, &apos;thor::regress::subfile12&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>RenameLogicalFile (&apos;thor::regress::subfile11, &apos;thor::regress::subfile13&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>RenameLogicalFile (&apos;thor::regress::subfile11, &apos;thor::regress::subfile13&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

@@ -71,8 +71,13 @@
     </div>
     <div id="${id}SetBannerDialog" title="Set Banner" style="width: 480px;" data-dojo-type="dijit.Dialog">
         <div class="dijitDialogPaneContentArea">
-            <div data-dojo-props="cols:2" data-dojo-type="hpcc.TableContainer">
-                <input id="${id}BannerText" title="Banner&nbsp;Message:" name="ServerVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+            <div id="${id}SetBannerForm" onsubmit="return false;" data-dojo-type="dijit.form.Form">
+                <div data-dojo-type="hpcc.TableContainer">
+                    <input id="${id}BannerContent" title="${i18n.BannerMessage}:" name="BannerContent" style="width:100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+                    <input id="${id}BannerColor" title="${i18n.BannerColor}:" name="BannerColor" style="width:100%;" value="red" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+                    <input id="${id}BannerSize" title="${i18n.BannerSize}:" name="BannerSize" style="width:100%;" value="4" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+                    <input id="${id}BannerScroll" title="${i18n.BannerScroll}:" name="BannerScroll" style="width:100%;" value="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+                </div>
             </div>
         </div>
         <div class="dijitDialogPaneActionBar">
@@ -81,7 +86,7 @@
         </div>
     </div>
     <div id="${id}UserDialog" title="${i18n.UserDetails}" data-dojo-type="dijit.Dialog">
-        <div id="${id}UserInfo" style="padding:0px; width:640px; height:480px" data-dojo-props="delayWidget: 'UserDetailsWidget'" data-dojo-type="DelayLoadWidget">
+        <div id="${id}UserInfo" style="padding:0px; width:640px; height:480px" data-dojo-props="delayWidget: 'CurrentUserDetailsWidget'" data-dojo-type="DelayLoadWidget">
         </div>
     </div>
 </div>

@@ -20,6 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
     "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-form",
     "dojo/dom-style",
     "dojo/cookie",
 
@@ -45,6 +46,7 @@ define([
     "dijit/layout/StackContainer",
     "dijit/layout/StackController",
     "dijit/layout/ContentPane",
+    "dijit/form/Form",
     "dijit/form/DropDownButton",
     "dijit/form/TextBox",
     "dijit/form/Textarea",
@@ -56,7 +58,7 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domStyle, cookie,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, cookie,
                 registry, Tooltip,
                 UpgradeBar,
                 _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget, DelayLoadWidget,
@@ -66,7 +68,7 @@ define([
         baseClass: "HPCCPlatformWidget",
         i18n: nlsHPCC,
 
-        banner: "",
+        bannerContent: "",
         upgradeBar: null,
 
         postCreate: function (args) {
@@ -77,6 +79,7 @@ define([
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
             this.errWarnPage = registry.byId(this.id + "_ErrWarn");
+            registry.byId(this.id + "SetBanner").set("disabled", true);
 
             this.upgradeBar = new UpgradeBar({
                 notifications: [],
@@ -115,11 +118,15 @@ define([
             this.build.version = verArray.join("_");
         },
 
-        refreshBanner: function (banner) {
-            if (this.banner !== banner) {
-                this.banner = banner;
-                this.upgradeBar.notify("<div style='text-align:center'><b>" + banner + "</b></div>");
-                this.upgradeBar.show();
+        refreshBanner: function (activity) {
+            if (this.bannerContent !== activity.BannerContent) {
+                this.bannerContent = activity.BannerContent;
+                this.upgradeBar.notify("<marquee width='100%' direction='left' scrollamount='" + activity.BannerScroll + "'><font color='" + activity.BannerColor + "' size='" + activity.BannerSize + "' family='Verdana'>" + activity.BannerContent + "</font></marquee>");
+                if (this.bannerContent !== "") {
+                    this.upgradeBar.show();
+                } else {
+                    this.upgradeBar.hide();
+                }
             }
         },
 
@@ -147,18 +154,19 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            registry.byId(this.id + "SetBanner").set("disabled", true);
-
             var context = this;
             WsAccount.MyAccount({
             }).then(function (response) {
                 if (lang.exists("MyAccountResponse.username", response)) {
                     context.userName = response.MyAccountResponse.username;
-                    context.checkIfAdmin(context.username);
+                    context.checkIfAdmin(context.userName);
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
                         cookie("PasswordExpiredCheck", "true", { expires: 1 });
-                        if (lang.exists("MyAccountResponse.passwordDaysRemaining", response) && response.MyAccountResponse.passwordDaysRemaining !== null && response.MyAccountResponse.passwordDaysRemaining <= 10) {
+                        if (lang.exists("MyAccountResponse.passwordDaysRemaining", response) &&
+                            response.MyAccountResponse.passwordDaysRemaining !== null &&
+                            response.MyAccountResponse.passwordDaysRemaining >= 0 &&
+                            response.MyAccountResponse.passwordDaysRemaining <= 10) {
                             if (confirm(context.i18n.PasswordExpirePrefix + response.MyAccountResponse.passwordDaysRemaining + context.i18n.PasswordExpirePostfix)) {
                                 context._onUserID();
                             }
@@ -182,8 +190,8 @@ define([
             this.activity.watch("Build", function (name, oldValue, newValue) {
                 context.parseBuildString(newValue);
             });
-            this.activity.watch("BannerContent", function (name, oldValue, newValue) {
-                context.refreshBanner(newValue);
+            this.activity.watch("changedCount", function (name, oldValue, newValue) {
+                context.refreshBanner(context.activity);
             });
 
             this.createStackControllerTooltip(this.id + "_Main", this.i18n.Activity);
@@ -213,15 +221,20 @@ define([
                 registry.byId(context.id + "SetBanner").set("disabled", false);
             }else{
                 WsAccess.UserEdit({
+                    suppressExceptionToaster: true,
                     request: {
                         username: user
                     }
                 }).then(function (response) {
                     if (lang.exists("UserEditResponse.Groups.Group", response)) {
-                        arrayUtil.forEach(response.UserEditResponse.Groups.Group, function (item, idx) {
+                        arrayUtil.some(response.UserEditResponse.Groups.Group, function (item, idx) {
                             if(item.name == "Administrators"){
+                                dojoConfig.isAdmin = true;
                                 registry.byId(context.id + "SetBanner").set("disabled", false);
-                                return true;
+                                if (context.widget._OPS.refresh) {
+                                    context.widget._OPS.refresh();
+                                }
+                                return false;
                             }
                         });
                     }
@@ -233,9 +246,9 @@ define([
         _onUserID: function (evt) {
             var userDialog = registry.byId(this.id + "UserDialog");
             var userInfo = registry.byId(this.id + "UserInfo");
-            userInfo.init({
-                Username: this.userName
-            });
+            if (!userInfo.init({ Username: this.userName })) {
+                userInfo.refresh();
+            }
             userDialog.show();
         },
 
@@ -370,12 +383,15 @@ define([
         },
 
         _onSetBanner: function (evt) {
-            dom.byId(this.id + "BannerText").value = this.banner;
+            dom.byId(this.id + "BannerContent").value = this.activity.BannerContent;
+            dom.byId(this.id + "BannerColor").value = this.activity.BannerColor;
+            dom.byId(this.id + "BannerSize").value = this.activity.BannerSize;
+            dom.byId(this.id + "BannerScroll").value = this.activity.BannerScroll;
             this.setBannerDialog.show();
         },
 
         _onSetBannerOk: function (evt) {
-            this.activity.setBanner(dom.byId(this.id + "BannerText").value);
+            this.activity.setBanner(domForm.toObject(this.id + "SetBannerForm"));
             this.setBannerDialog.hide();
         },
 

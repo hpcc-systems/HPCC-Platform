@@ -17,6 +17,10 @@
 
 //Normalize a denormalised dataset...
 
+childId := RECORD
+    unsigned a;
+    unsigned b;
+END;
 householdRecord := RECORD
 unsigned4 house_id;
 string20  address1;
@@ -26,6 +30,7 @@ string10 s_SequenceKey ;
 unsigned2 scoreRank;
 unsigned2 elementsMatched;
 data10    m_l90key;
+childId     child;
     END;
 
 
@@ -40,3 +45,19 @@ queue1 := join(householdDataset, householdDataset, left.zip = right.zip, z(left,
 BestHits:= Dedup(Queue1, whole record, except house_id,except zip);
 
 output(besthits);
+
+BestHits2 := Dedup(Queue1, ROW(Queue1));
+
+output(besthits2);
+
+householdRecord t(houseHoldRecord l, houseHoldRecord r) := TRANSFORM
+    SELF.score := l.score + r.score;
+    SELF := l;
+END; 
+BestHits3 := ROLLUP(Queue1, t(LEFT, RIGHT), ROW(Queue1));
+
+output(besthits3);
+
+BestHits4 := Dedup(Queue1, zip, child);
+
+output(besthits4);

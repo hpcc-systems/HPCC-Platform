@@ -222,9 +222,8 @@ void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned c
             break;
         case WHITESPACE:
         case SEPARATOR:
-            break;
         case TERMINATOR:
-            goto done;
+            break;
         case ESCAPE:
             {
                 const byte * next = cur + matchLen;

@@ -123,6 +123,9 @@ define([
 
         go: function (path, replace, noHash) {
             //console.log(this.id + ".go(" + path + ", " + replace + ", " + noHash + ")");
+            if (!path)
+                return;
+
             if (noHash) {
                 var d = 0;
             } else {

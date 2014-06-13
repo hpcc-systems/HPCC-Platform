@@ -1,10 +1,3 @@
-<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::subfile14&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::subfile15&apos;) added to transaction</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;hthor::regress::subfile15&apos;) added to transaction</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

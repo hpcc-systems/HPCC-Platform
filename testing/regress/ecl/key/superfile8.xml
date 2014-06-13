@@ -1,28 +1,3 @@
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile8&apos;) file not found</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::superfile8&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile5&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile6&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile7&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile8&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile8&apos;) action added to transaction</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::superfile8&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile5&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile6&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile7&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile8&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile8&apos;) action added to transaction</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction rollback</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;hthor::regress::superfile8&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile5&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile6&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile7&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;hthor::regress::superfile8&apos;, &apos;hthor::regress::subfile8&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;hthor::regress::superfile8&apos;) action added to transaction</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

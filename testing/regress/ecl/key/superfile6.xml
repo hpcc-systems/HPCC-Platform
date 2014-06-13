@@ -1,5 +1,1 @@
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;t6::superfile&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;t6::subfile&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;t6::superfile&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;t6::superfile&apos;, &apos;t6::subfile&apos;) done</Message></Info>
 <Exception><Source>eclagent</Source><Message>System error: 0: AddSuperFile: Adding super file t6::superfile to itself!</Message></Exception>

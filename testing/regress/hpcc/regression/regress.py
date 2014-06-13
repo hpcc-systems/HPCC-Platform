@@ -149,23 +149,29 @@ class Regression:
         report = Report(name)
         curTime = time.strftime("%y-%m-%d-%H-%M-%S")
         logName = name + "." + curTime + ".log"
-        log = os.path.join(self.logDir, logName)
-        self.log.addHandler(log, 'DEBUG')
-        return (report, log)
+        logHandler = os.path.join(self.logDir, logName)
+        self.log.addHandler(logHandler, 'DEBUG')
+        return (report, logHandler)
+
+    def closeLogging(self):
+        self.log.removeHandler()
 
     @staticmethod
     def displayReport(report,  elapsTime=0):
         report[0].display(report[1],  elapsTime)
 
     def runSuiteP(self, name, suite):
-        report = self.buildLogging(name)
         if name == "setup":
             cluster = 'hthor'
         else:
             cluster = name
 
+        logName = name
         if 'setup' in suite.getSuiteName():
+            logName ='setup_'+name
             name = name + ' (setup)'
+
+        report = self.buildLogging(logName)
 
         self.taskParam = []
         self.taskParam = [{'taskId':0,  'jobName':'',  'timeoutValue':0,  'retryCount': 0} for i in range(self.maxthreads)]
@@ -210,7 +216,7 @@ class Regression:
                     else:
                         if self.timeouts[threadId] % 10 == 0:
                             self.loggermutex.acquire()
-                            logging.debug("%3d. timeout counter:%d" % (self.taskParam[threadId]['taskId']+1, self.timeouts[threadId]))
+                            logging.debug("%3d. timeout counter:%d" % (self.taskParam[threadId]['taskId']+1, self.timeouts[threadId]),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                             self.loggermutex.release()
                         if self.timeouts[threadId] == 0:
                             # time out occured
@@ -221,7 +227,7 @@ class Regression:
                                 if self.taskParam[threadId]['retryCount'] > 0:
                                     self.timeouts[threadId] =  self.taskParam[threadId]['timeoutValue']
                                     self.loggermutex.acquire()
-                                    logging.warn("%3d. Does not started yet. Reset timeout to %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']))
+                                    logging.warn("%3d. Does not started yet. Reset timeout to %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                     logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s', retry count:%d." % (self.taskParam[threadId]['taskId']+1, threadId,  suiteItems[self.taskParam[threadId]['taskId']].ecl,   wuid['state'],  self.taskParam[threadId]['retryCount'] ),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                     self.loggermutex.release()
                                 else:
@@ -231,7 +237,7 @@ class Regression:
                                         self.loggermutex.acquire()
                                         query = suiteItems[self.taskParam[threadId]['taskId']]
                                         query.setAborReason('Timeout and retry count exhausted!')
-                                        logging.info("%3d. Timeout occured and no more attempt. Force to abort... " % (self.taskParam[threadId]['taskId']))
+                                        logging.info("%3d. Timeout occured and no more attempt. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                         logging.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                         self.loggermutex.release()
                                     else:
@@ -239,7 +245,7 @@ class Regression:
                                         self.loggermutex.acquire()
                                         query = suiteItems[self.taskParam[threadId]['taskId']]
                                         query.setAborReason('Timeout (does not started yet and retry count exhausted)')
-                                        logging.info("%3d. Timeout occured and no more attempt. Force to abort... " % (self.taskParam[threadId]['taskId']))
+                                        logging.info("%3d. Timeout occured and no more attempt. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                         logging.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                         self.loggermutex.release()
 
@@ -250,7 +256,7 @@ class Regression:
                                 # It is done in HPCC System but need some more time to complete
                                 self.timeouts[threadId] =  5 # sec extra time to finish
                                 self.loggermutex.acquire()
-                                logging.info("%3d. It is completed in HPCC Sytem, but not finised yet. Give it %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']))
+                                logging.info("%3d. It is completed in HPCC Sytem, but not finised yet. Give it %d sec." % (self.taskParam[threadId]['taskId']+1, self.taskParam[threadId]['timeoutValue']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                 logging.debug("%3d. Task parameters: thread id: %d, ecl:'%s',state:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId,  suiteItems[self.taskParam[threadId]['taskId']].ecl, wuid['state']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                 self.loggermutex.release()
                             else:
@@ -259,7 +265,7 @@ class Regression:
                                 self.loggermutex.acquire()
                                 query = suiteItems[self.taskParam[threadId]['taskId']]
                                 query.setAborReason('Timeout')
-                                logging.info("%3d. Timeout occured. Force to abort... " % (self.taskParam[threadId]['taskId']))
+                                logging.info("%3d. Timeout occured. Force to abort... " % (self.taskParam[threadId]['taskId']),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                 logging.debug("%3d. Task parameters: thread id:%d, wuid:'%s', state:'%s', ecl:'%s'." % (self.taskParam[threadId]['taskId']+1, threadId, wuid['wuid'], wuid['state'],  query.ecl),  extra={'taskId':self.taskParam[threadId]['taskId']+1})
                                 self.loggermutex.release()
                                 self.timeouts[threadId] = -1
@@ -274,6 +280,7 @@ class Regression:
             logging.warn('%s','' , extra={'filebuffer':True,  'filesort':True})
             suite.setEndTime(time.time())
             Regression.displayReport(report, suite.getElapsTime())
+            self.closeLogging()
 
         except Exception as e:
             self.StopTimeoutThread()
@@ -291,7 +298,7 @@ class Regression:
             sleepTime = 1.0
             if self.timeouts[thread] >= 0:
                 self.loggermutex.acquire()
-                logging.debug("%3d. timeout counter:%d" % (cnt, self.timeouts[thread]))
+                logging.debug("%3d. timeout counter:%d" % (cnt, self.timeouts[thread]),  extra={'taskId':cnt})
                 self.loggermutex.release()
                 sleepTime = 1.0
             if self.timeouts[thread] == 0:
@@ -300,7 +307,7 @@ class Regression:
                 abortWorkunit(wuid['wuid'])
                 query.setAborReason('Timeout')
                 self.loggermutex.acquire()
-                logging.debug("%3d. Waiting for abort..." % (cnt))
+                logging.debug("%3d. Waiting for abort..." % (cnt),  extra={'taskId':cnt})
                 self.loggermutex.release()
                 self.timeouts[thread] = -1
                 sleepTime = 1.0
@@ -312,14 +319,17 @@ class Regression:
         time.sleep(2)
 
     def runSuite(self, name, suite):
-        report = self.buildLogging(name)
         if name == "setup":
             cluster = 'hthor'
         else:
             cluster = name
 
+        logName = name
         if 'setup' in suite.getSuiteName():
+            logName ='setup_'+name
             name = name + ' (setup)'
+
+        report = self.buildLogging(logName)
 
         logging.warn("Suite: %s" % name)
         logging.warn("Queries: %s" % repr(len(suite.getSuite())))
@@ -348,6 +358,7 @@ class Regression:
 
             suite.setEndTime(time.time())
             Regression.displayReport(report, suite.getElapsTime())
+            self.closeLogging()
 
         except Exception as e:
             self.StopTimeoutThread()
@@ -385,6 +396,8 @@ class Regression:
 
             self.StopTimeoutThread()
             Regression.displayReport(report,  time.time()-start)
+            self.closeLogging()
+
         except Exception as e:
             self.StopTimeoutThread()
             raise(e)
@@ -395,7 +408,7 @@ class Regression:
         self.exitmutexes[th].acquire()
 
         logging.debug("runQuery(cluster: '%s', query: '%s', cnt: %d, publish: %s, thread id: %d" % ( cluster, query.ecl, cnt, publish,  th))
-        logging.warn("%3d. Test: %s" % (cnt, query.ecl))
+        logging.warn("%3d. Test: %s" % (cnt, query.ecl),  extra={'taskId':cnt})
 
         self.loggermutex.release()
         res = 0
@@ -414,7 +427,7 @@ class Regression:
                                   username=self.config.username,
                                   password=self.config.password)
             wuid = query.getWuid()
-            logging.debug("res: '%s', wuid:'%s'"  % ( res,  wuid))
+            logging.debug("res: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
             if wuid == 'Not found':
                 res = False
         else:
@@ -433,14 +446,14 @@ class Regression:
         self.loggermutex.acquire()
         elapsTime = time.time()-startTime
         if res:
-            logging.info("%3d. Pass %s (%d sec)" % (cnt, wuid,  elapsTime))
+            logging.info("%3d. Pass %s (%d sec)" % (cnt, wuid,  elapsTime),  extra={'taskId':cnt})
             logging.info("%3d. URL %s" % (cnt,url))
         else:
             if not wuid or not wuid.startswith("W"):
-                logging.error("%3d. Fail No WUID (%d sec)" % (cnt,  elapsTime))
+                logging.error("%3d. Fail No WUID (%d sec)" % (cnt,  elapsTime),  extra={'taskId':cnt})
             else:
-                logging.error("%3d. Fail %s (%d sec)" % (cnt, wuid,  elapsTime))
-                logging.error("%3d. URL %s" %  (cnt,url))
+                logging.error("%3d. Fail %s (%d sec)" % (cnt, wuid,  elapsTime),  extra={'taskId':cnt})
+                logging.error("%3d. URL %s" %  (cnt,url),  extra={'taskId':cnt})
         self.loggermutex.release()
         query.setElapsTime(elapsTime)
         self.exitmutexes[th].release()

@@ -91,7 +91,7 @@ define([
         //  Implementation  ---
         init: function (params) {
             if (this.__hpcc_initalized)
-                return;
+                return false;
 
             this.childWidgetID = this.id + "-DL";
             this.__hpcc_initalized = true;
@@ -104,6 +104,7 @@ define([
                     context.__hpcc_hash = null;
                 }
             });
+            return true;
         },
         restoreFromHash: function (hash) {
             if (this.widget && this.widget[this.childWidgetID]) {

@@ -535,16 +535,26 @@ void addUsedFilesFromActivePackageMaps(MapStringTo<bool> &usedFileMap, const cha
     Owned<IPropertyTree> packageSet = resolvePackageSetRegistry(process, true);
     if (!packageSet)
         throw MakeStringException(ECLWATCH_PACKAGEMAP_NOTRESOLVED, "Unable to retrieve package information from dali /PackageMaps");
-    Owned<IPropertyTreeIterator> activeMaps = packageSet->getElements("PackageMap[@active='1']");
-    //Add files referenced in all active maps, for all targets configured for this process cluster
-    ForEach(*activeMaps)
+    StringArray pmids;
+    Owned<IStringIterator> targets = getTargetClusters("RoxieCluster", process);
+    ForEach(*targets)
     {
-        Owned<IPropertyTree> packageMap = getPackageMapById(activeMaps->query().queryProp("@id"), true);
-        if (packageMap)
+        SCMStringBuffer target;
+        VStringBuffer xpath("PackageMap[@querySet='%s'][@active='1']", targets->str(target).str());
+        Owned<IPropertyTreeIterator> activeMaps = packageSet->getElements(xpath);
+        //Add files referenced in all active maps, for all targets configured for this process cluster
+        ForEach(*activeMaps)
         {
-            Owned<IPropertyTreeIterator> subFiles = packageMap->getElements("//SubFile");
-            ForEach(*subFiles)
-                addLfnToUsedFileMap(usedFileMap, subFiles->query().queryProp("@value"));
+            const char *pmid = activeMaps->query().queryProp("@id");
+            if (!pmids.appendUniq(pmid))
+                continue;
+            Owned<IPropertyTree> packageMap = getPackageMapById(pmid, true);
+            if (packageMap)
+            {
+                Owned<IPropertyTreeIterator> subFiles = packageMap->getElements("//SubFile");
+                ForEach(*subFiles)
+                    addLfnToUsedFileMap(usedFileMap, subFiles->query().queryProp("@value"));
+            }
         }
     }
 }

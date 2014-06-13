@@ -1,9 +1,3 @@
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::C.DG_FetchFile&apos;,&apos;REGRESS::hthor::C.DG_FetchFilePreload&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::C.DG_FetchFile&apos;,&apos;REGRESS::hthor::C.DG_FetchFilePreloadIndexed&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::C.DG_FetchFile&apos;,&apos;REGRESS::hthor::DG_FetchIndex1&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::C.DG_FetchFile&apos;,&apos;REGRESS::hthor::DG_FetchIndex1&apos;,&apos;__fileposition__&apos;,&apos;__filepos&apos;,&apos;link&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::C.DG_FetchFile&apos;,&apos;REGRESS::hthor::DG_FetchIndex2&apos;,&apos;&apos;,&apos;&apos;,&apos;view&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>AddFileRelationship(&apos;REGRESS::hthor::C.DG_FetchFile&apos;,&apos;REGRESS::hthor::DG_FetchIndex2&apos;,&apos;__fileposition__&apos;,&apos;__filepos&apos;,&apos;link&apos;) done</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

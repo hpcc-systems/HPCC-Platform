@@ -759,14 +759,14 @@ public:
     bool querySub() const { return sub; }
     bool querySendValue() const { return sendValue; }
     unsigned queryDepth() const { return depth; }
-    bool qualify(CPTStack &stack)
+    bool qualify(CPTStack &stack, bool matchIfPartial)
     {
         ForEachItemIn(q, qualifierStack)
         {
             if (stack.ordinality() <= q+1)
             {
                 // No more stack available (e.g. because deleted below this point)
-                return true;
+                return matchIfPartial; // NB: return true if matchIfPartial=true (meaning head of subscriber path matched commit stack)
             }
             PTree &item = stack.item(q+1); // stack +1, top is root unqualified.
             CQualifiers *qualifiers = qualifierStack.item(q);
@@ -859,7 +859,7 @@ public:
         ForEachItemIn(s, *list)
         {
             CSubscriberContainer &subscriber = list->item(s);
-            if (subscriber.qualify(stack))
+            if (subscriber.qualify(stack, false))
             {
                 if (!results) results = new CSubscriberContainerList(xpath);
                 subscriber.Link();
@@ -7702,7 +7702,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                 if (!queryConnection(connectionId)) // aborted
                 {
                     connectionId = 0;
-                    return;
+                    throw MakeSDSException(SDSExcpt_AbortDuringConnection, " during connect");
                 }
             }
             freeExistingLocks.setConnectionId(connectionId);
@@ -7732,7 +7732,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                                 if (!queryConnection(connectionId)) // aborted
                                 {
                                     connectionId = 0;
-                                    return;
+                                    throw MakeSDSException(SDSExcpt_AbortDuringConnection, " during connect");
                                 }
                                 iter.setown(root->getElements(xpath+1));
                                 iter->first();
@@ -7846,7 +7846,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
             if (!queryConnection(connectionId))
             {
                 connectionId = 0;
-                return;
+                throw MakeSDSException(SDSExcpt_AbortDuringConnection, " during connect");
             }
         }
     }
@@ -7863,7 +7863,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
     {
         unlock(_tree->queryServerId(), connectionId);
         connectionId = 0;
-        return;
+        throw MakeSDSException(SDSExcpt_AbortDuringConnection, " during connect");
     }
     connection->setEstablished();
 
@@ -8398,7 +8398,7 @@ public:
                     CSubscriberContainer &subscriber = subs.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
-                        if (subscriber.qualify(stack))
+                        if (subscriber.qualify(stack, true))
                         {
                             if (0 == notifyData.length())
                                 buildNotifyData(notifyData, state, &stack, NULL);
@@ -8419,7 +8419,7 @@ public:
                         CSubscriberContainer &subscriber = subs.item(s);
                         if (!subscriber.isUnsubscribed())
                         {
-                            if (subscriber.qualify(stack))
+                            if (subscriber.qualify(stack, true))
                             {
                                 if (0 == notifyData.length())
                                     buildNotifyData(notifyData, state, &stack, NULL);
@@ -8468,8 +8468,9 @@ public:
         else if (sub) // xpath matched some subscribers, and/or below some, need to check for sub subscribers
         {
             bool ret = false;
+            // avoid notifying on PDS_Structure only, which signifies changes deeper down only
             MemoryBuffer notifyData;
-            if (changes.state && changes.local)
+            if (changes.state && changes.local && (changes.local != PDS_Structure))
             {
                 int lastSendValue = -1;
                 ForEachItemInRev(s, subs)
@@ -8477,7 +8478,7 @@ public:
                     CSubscriberContainer &subscriber = subs.item(s);
                     if (!subscriber.isUnsubscribed())
                     {
-                        if (subscriber.qualify(stack))
+                        if (subscriber.qualify(stack, false))
                         {
                             if (subscriber.querySendValue())
                             {

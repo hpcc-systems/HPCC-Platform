@@ -24,9 +24,12 @@ import $;
 import $.Options;
 import $.TS;
 
+string OriginalTextFilesIp := Options.OriginalTextFilesIp : STORED('OriginalTextFilesIp');
+string OriginalTextFilesPath := Options.OriginalTextFilesPath : STORED('OriginalTextFilesPath');
+
 EXPORT SetupText := FUNCTION
 
-DirectoryPath := '~file::' + Options.OriginalTextFilesIp + '::' + Options.OriginalTextFilesPath + '::';          // path of the documents that are used to build the search index
+DirectoryPath := '~file::' + OriginalTextFilesIp + '::' + OriginalTextFilesPath + '::';          // path of the documents that are used to build the search index
 
 MaxDocumentLineLength := 50000;
 

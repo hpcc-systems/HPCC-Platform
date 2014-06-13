@@ -1,4 +1,4 @@
-Overview of Regression Suite usage (v:0.0.21)
+Overview of Regression Suite usage (v:0.0.22)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
@@ -211,7 +211,7 @@ The result:
 |            -------------------------------------------------
 |
 
-
+To setup the proper environment for text search test cases there is a new component called setuptext.ecl. It uses data files from other location and the default location stored into the options.ecl. RS generates location from the run-time environment and passes it to the setup via stored variable called 'OriginalTextFilesPath'.
 
 4. To run Regression Suite on a selected cluster (e.g. Thor):
 -------------------------------------------------------------

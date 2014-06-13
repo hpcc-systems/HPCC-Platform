@@ -43,8 +43,7 @@
   <para>The <emphasis role="bold">HAVING</emphasis> function returns a GROUPed
   record set containing just those groups for which the
   <emphasis>expression</emphasis> is true. This is similar to the HAVING
-  clause in SQL. <emphasis role="bold">Available for use only in hthor and
-  Roxie.</emphasis></para>
+  clause in SQL. <emphasis role="bold"></emphasis></para>
 
   <para>Example:</para>
 
