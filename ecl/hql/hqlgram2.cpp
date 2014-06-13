@@ -8689,19 +8689,18 @@ IHqlExpression * HqlGram::processIfProduction(attribute & condAttr, attribute & 
             right.setown(createNullExpr(left));
     }
 
-    //MORE: Not sure about this!
-    if (parsingTemplateAttribute && cond->isConstant())
-    {
-        OwnedHqlExpr folded = quickFoldExpression(cond);
-        if (folded->queryValue())
-            return folded->queryValue()->getBoolValue() ? left.getClear() : right.getClear();
-    }
-
     if (left->queryRecord() && falseAttr)
         right.setown(checkEnsureRecordsMatch(left, right, *falseAttr, false));
 
     if (isGrouped(left) != isGrouped(right))
         reportError(ERR_GROUPING_MISMATCH, trueAttr, "Branches of the condition have different grouping");
+
+    if (cond->isConstant())
+    {
+        OwnedHqlExpr folded = quickFoldExpression(cond);
+        if (folded->queryValue())
+            return folded->queryValue()->getBoolValue() ? left.getClear() : right.getClear();
+    }
 
     return ::createIf(cond.getClear(), left.getClear(), right.getClear());
 }
@@ -9067,9 +9066,14 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     ITypeInfo *etype = expr->queryType();
     if (isSaved(failure) && !type)
     {
-        if ((etype->getSize() == 0) && (etype->isScalar()))
-            reportError(ERR_ZEROLENSTORED, nameattr, "Saved definition has zero length - missing type?");
-        else if ((etype->getTypeCode() == type_set) && etype->queryChildType() == NULL) 
+        size32_t exprTypeSize = etype->getSize();
+        if (queryOperatorInList(no_stored, failure) && (exprTypeSize != UNKNOWN_LENGTH))
+        {
+            if (isStringType(etype) || isUnicodeType(etype))
+                type.setown(getStretchedType(UNKNOWN_LENGTH, etype));
+        }
+
+        if ((etype->getTypeCode() == type_set) && etype->queryChildType() == NULL)
             reportError(ERR_ZEROLENSTORED, nameattr, "Type must be specified for this stored list");
     }
 
