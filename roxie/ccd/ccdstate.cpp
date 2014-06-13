@@ -409,7 +409,7 @@ protected:
     }
 
     // Use dali to resolve subfile into physical file info
-    static IResolvedFile *resolveLFNusingDaliOrLocal(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate)
+    static IResolvedFile *resolveLFNusingDaliOrLocal(const char *fileName, bool useCache, bool cacheResult, bool writeAccess, bool alwaysCreate, bool resolveLocal)
     {
         // MORE - look at alwaysCreate... This may be useful to implement earlier locking semantics.
         if (traceLevel > 9)
@@ -449,7 +449,7 @@ protected:
                     }
                 }
             }
-            if (!result)
+            if (!result && resolveLocal)
             {
                 StringBuffer useName;
                 if (strstr(fileName,"::"))
@@ -486,7 +486,7 @@ protected:
     {
         IResolvedFile *result = lookupFile(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
         if (!result && (!checkCompulsory || !isCompulsory()))
-            result = resolveLFNusingDaliOrLocal(fileName, useCache, cacheResult, writeAccess, alwaysCreate);
+            result = resolveLFNusingDaliOrLocal(fileName, useCache, cacheResult, writeAccess, alwaysCreate, resolveLocally());
         return result;
     }
 
@@ -611,7 +611,7 @@ public:
         expandLogicalFilename(fileName, _fileName, wu, false);
         Owned<IResolvedFile> resolved = lookupFile(fileName, false, false, true, true);
         if (!resolved)
-            resolved.setown(resolveLFNusingDaliOrLocal(fileName, false, false, true, true));
+            resolved.setown(resolveLFNusingDaliOrLocal(fileName, false, false, true, true, resolveLocally()));
         if (resolved)
         {
             if (resolved->exists())
@@ -665,6 +665,10 @@ public:
     virtual bool isCompulsory() const
     {
         return CPackageNode::isCompulsory();
+    }
+    virtual bool resolveLocally() const
+    {
+        return CPackageNode::resolveLocally();
     }
 };
 
@@ -1867,7 +1871,7 @@ private:
     void getQueryInfo(IPropertyTree *control, StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
     {
         Owned<IPropertyTreeIterator> ids = control->getElements("Query");
-        reply.append("<Queries>\n");
+        reply.append("<Queries reporting='1'>\n");
         if (ids->first())
         {
             ForEach(*ids)
@@ -2910,6 +2914,35 @@ void mergeStats(IPropertyTree *s1, IPropertyTree *s2)
         s1->addPropTree("Exception", LINK(&elems->query()));
     }
     mergeStats(s1, s2, 0);
+}
+
+void mergeQueries(IPropertyTree *dest, IPropertyTree *src)
+{
+    IPropertyTree *destQueries = ensurePTree(dest, "Queries");
+    IPropertyTree *srcQueries = src->queryPropTree("Queries");
+    if (!srcQueries)
+        return;
+    destQueries->setPropInt("@reporting", destQueries->getPropInt("@reporting") + srcQueries->getPropInt("@reporting"));
+
+    Owned<IPropertyTreeIterator> it = srcQueries->getElements("Query");
+    ForEach(*it)
+    {
+        IPropertyTree *srcQuery = &it->query();
+        const char *id = srcQuery->queryProp("@id");
+        if (!id || !*id)
+            continue;
+        VStringBuffer xpath("Query[@id='%s']", id);
+        IPropertyTree *destQuery = destQueries->queryPropTree(xpath);
+        if (!destQuery)
+        {
+            destQueries->addPropTree("Query", LINK(srcQuery));
+            continue;
+        }
+        int suspended = destQuery->getPropInt("@suspended") + srcQuery->getPropInt("@suspended"); //keep count to recognize "partially suspended" queries
+        mergePTree(destQuery, srcQuery);
+        if (suspended)
+            destQuery->setPropInt("@suspended", suspended);
+    }
 }
 
 #ifdef _USE_CPPUNIT

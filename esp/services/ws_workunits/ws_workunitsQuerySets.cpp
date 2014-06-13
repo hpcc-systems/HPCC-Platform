@@ -812,42 +812,31 @@ bool CWsWorkunitsEx::onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest 
 
 void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, const char *id, IArrayOf<IEspClusterQueryState>& clusterStates, double version)
 {
+    queriesOnCluster = queriesOnCluster->queryPropTree("Endpoint[1]/Queries[1]");
+    if (!queriesOnCluster)
+        return;
+
+    int reporting = queriesOnCluster->getPropInt("@reporting");
+
     Owned<IEspClusterQueryState> clusterState = createClusterQueryState();
     clusterState->setCluster(target);
 
-    VStringBuffer xpath("Endpoint/Queries/Query[@id='%s']", id);
-    Owned<IPropertyTreeIterator> iter = queriesOnCluster->getElements(xpath.str());
-    bool found = false;
-    bool suspended = false;
-    bool available = false;
-    StringBuffer errors;
-    ForEach (*iter)
-    {
-        found = true;
-        if (iter->query().getPropBool("@suspended", false))
-            suspended = true;
-        else
-            available = true;
-        const char* error = iter->query().queryProp("@error");
-        if (error && *error && (version >=1.46))
-        {
-            if (errors.length())
-                errors.append(";");
-            errors.append(error);
-        }
-    }
-    if (!found)
+    VStringBuffer xpath("Query[@id='%s']", id);
+    IPropertyTree *query = queriesOnCluster->getPropTree(xpath.str());
+    int suspended = query->getPropInt("@suspended");
+    const char* error = query->queryProp("@error");
+    if (!query)
         clusterState->setState("Not Found");
     else if (suspended)
     {
         clusterState->setState("Suspended");
-        if (available)
+        if (suspended<reporting)
             clusterState->setMixedNodeStates(true);
     }
     else
         clusterState->setState("Available");
-    if ((version >=1.46) && errors.length())
-        clusterState->setErrors(errors.str());
+    if ((version >=1.46) && error && *error)
+        clusterState->setErrors(error);
 
     clusterStates.append(*clusterState.getClear());
 }
@@ -1465,6 +1454,28 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     return true;
 }
 
+int StringArrayCompareFunc(const char **s1, const char **s2)
+{
+    if (!s1 || !*s1 || !s2 || !*s2)
+        return 0;
+    return strcmp(*s1, *s2);
+}
+
+int EspQuerySuperFileCompareFunc(IInterface **i1, IInterface **i2)
+{
+    if (!i1 || !*i1 || !i2 || !*i2)
+        return 0;
+    IEspQuerySuperFile *sf1 = QUERYINTERFACE(*i1, IEspQuerySuperFile);
+    IEspQuerySuperFile *sf2 = QUERYINTERFACE(*i2, IEspQuerySuperFile);
+    if (!sf1 || !sf2)
+        return 0;
+    const char *name1 = sf1->getName();
+    const char *name2 = sf2->getName();
+    if (!name1 || !name2)
+        return 0;
+    return strcmp(name1, name2);
+}
+
 bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *respSuperFiles)
 {
     try
@@ -1496,6 +1507,7 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
             if (fileName && *fileName)
                 logicalFiles.append(fileName);
         }
+        logicalFiles.sort(StringArrayCompareFunc);
 
         if (respSuperFiles)
         {
@@ -1514,9 +1526,12 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
                     if (fileName && *fileName)
                         respSubFiles.append(fileName);
                 }
+                respSubFiles.sort(StringArrayCompareFunc);
+
                 respSuperFile->setSubFiles(respSubFiles);
                 respSuperFiles->append(*respSuperFile.getClear());
             }
+            respSuperFiles->sort(EspQuerySuperFileCompareFunc);
         }
         return true;
     }
