@@ -898,6 +898,7 @@ public:
     virtual void CTXLOGl(LogItem *logItem) const
     {
         // NOTE - we don't actually print anything to logfile here - was already printed on slave
+        CriticalBlock b(crit);
         log.append(*logItem);
         flush(false, false);
     }

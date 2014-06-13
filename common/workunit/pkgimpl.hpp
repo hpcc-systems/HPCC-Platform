@@ -106,6 +106,13 @@ protected:
         return (node) ? node->getPropBool("@compulsory", false) : false;
     }
 
+    virtual bool resolveLocally() const
+    {
+        if (isCompulsory())
+            return false;
+        return (node) ? node->getPropBool("@resolveLocally", false) : true;  // default is false for explicit package files, but true for the default empty package
+    }
+
     virtual bool getSysFieldTranslationEnabled() const {return false;}
     virtual bool getEnableFieldTranslation() const
     {

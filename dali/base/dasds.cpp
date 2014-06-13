@@ -7702,7 +7702,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                 if (!queryConnection(connectionId)) // aborted
                 {
                     connectionId = 0;
-                    return;
+                    throw MakeSDSException(SDSExcpt_AbortDuringConnection, " during connect");
                 }
             }
             freeExistingLocks.setConnectionId(connectionId);
@@ -7732,7 +7732,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
                                 if (!queryConnection(connectionId)) // aborted
                                 {
                                     connectionId = 0;
-                                    return;
+                                    throw MakeSDSException(SDSExcpt_AbortDuringConnection, " during connect");
                                 }
                                 iter.setown(root->getElements(xpath+1));
                                 iter->first();
@@ -7846,7 +7846,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
             if (!queryConnection(connectionId))
             {
                 connectionId = 0;
-                return;
+                throw MakeSDSException(SDSExcpt_AbortDuringConnection, " during connect");
             }
         }
     }
@@ -7863,7 +7863,7 @@ void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsi
     {
         unlock(_tree->queryServerId(), connectionId);
         connectionId = 0;
-        return;
+        throw MakeSDSException(SDSExcpt_AbortDuringConnection, " during connect");
     }
     connection->setEstablished();
 

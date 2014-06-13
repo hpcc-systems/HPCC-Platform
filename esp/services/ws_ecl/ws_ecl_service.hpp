@@ -94,6 +94,8 @@ public:
     MapStringToMyClass<ISmartSocketFactory> connMap;
     StringAttr auth_method;
     StringAttr portal_URL;
+    unsigned roxieTimeout;
+    unsigned workunitTimeout;
 
 public:
     IMPLEMENT_IINTERFACE;

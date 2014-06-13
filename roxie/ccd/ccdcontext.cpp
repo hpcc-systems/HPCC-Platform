@@ -1431,7 +1431,7 @@ public:
     }
 
     Owned<IWUGraphProgress> graphProgress; // could make local to endGraph and pass to reset - might be cleaner
-    void endGraph(cycle_t startCycles, bool aborting)
+    virtual void endGraph(cycle_t startCycles, bool aborting)
     {
         if (graph)
         {
@@ -2555,6 +2555,7 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
 
 protected:
     Owned<CRoxieWorkflowMachine> workflow;
+    mutable MapStringToMyClass<IResolvedFile> fileCache;
     SafeSocket *client;
     bool isBlocked;
     bool isHttp;
@@ -3533,14 +3534,33 @@ public:
         }
     }
 
-    virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
+    virtual const IResolvedFile *resolveLFN(const char *fileName, bool isOpt)
     {
-        return factory->queryPackage().lookupFileName(filename, isOpt, false, true, workUnit);
+        CriticalBlock b(contextCrit);
+        StringBuffer expandedName;
+        expandLogicalFilename(expandedName, fileName, workUnit, false);
+        Linked<const IResolvedFile> ret = fileCache.getValue(expandedName);
+        if (!ret)
+        {
+            ret.setown(factory->queryPackage().lookupFileName(fileName, isOpt, false, false, workUnit));
+            if (ret)
+            {
+                IResolvedFile *add = const_cast<IResolvedFile *>(ret.get());
+                fileCache.setValue(expandedName, add);
+            }
+        }
+        return ret.getClear();
     }
 
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
     {
         return factory->queryPackage().createFileName(filename, overwrite, extend, clusters, workUnit);
+    }
+
+    virtual void endGraph(cycle_t startCycles, bool aborting)
+    {
+        fileCache.kill();
+        CSlaveContext::endGraph(startCycles, aborting);
     }
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
