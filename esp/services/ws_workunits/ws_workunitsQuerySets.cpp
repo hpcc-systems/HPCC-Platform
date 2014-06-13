@@ -1227,7 +1227,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
     MemoryBuffer filterBuf;
     const char* clusterReq = req.getClusterName();
     addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQuerySetName(), WUQSFQuerySet);
-    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getLibraryName(), WUQSFLibrary);
+    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getLibraryName(), (WUQuerySortField) (WUQSFLibrary | WUQSFnocase));
     if (!req.getMemoryLimitLow_isNull())
         addWUQSQueryFilterInt64(filters, filterCount, filterBuf, req.getMemoryLimitLow(), (WUQuerySortField) (WUQSFmemoryLimit | WUQSFnumeric));
     if (!req.getMemoryLimitHigh_isNull())
