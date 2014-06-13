@@ -89,10 +89,32 @@ public:
     virtual ~CWsSMCTargetCluster(){};
 };
 
+struct ActivityInfo : public CInterface, implements IInterface
+{
+    IMPLEMENT_IINTERFACE;
+
+    ActivityInfo() {};
+
+    CDateTime timeCached;
+
+    IArrayOf<IEspTargetCluster> thorClusters;
+    IArrayOf<IEspTargetCluster> hthorClusters;
+    IArrayOf<IEspTargetCluster> roxieClusters;
+    IArrayOf<IEspThorCluster> ThorClusters; //for backward compatible
+    IArrayOf<IEspHThorCluster> HThorClusters; //for backward compatible
+    IArrayOf<IEspRoxieCluster> RoxieClusters; //for backward compatible
+
+    IArrayOf<IEspActiveWorkunit> aws;
+    IArrayOf<IEspServerJobQueue> serverJobQueues;
+    IArrayOf<IEspDFUJob> DFURecoveryJobs;
+};
+
 class CWsSMCEx : public CWsSMC
 {
     long m_counter;
     CTpWrapper m_ClusterStatus;
+    CriticalSection getActivityCrit;
+    Owned<ActivityInfo> activityInfoCache;
 
     StringBuffer m_ChatURL;
     StringBuffer m_Banner;
@@ -185,9 +207,7 @@ private:
     void readWUsAndStateFromJobQueue(IEspContext& context, CWsSMCTargetCluster& targetCluster, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void readWUsAndStateFromJobQueue(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void setESPTargetClusters(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetCluster>& respTargetClusters);
-    void updateActivityResponse(IEspContext &context,  IEspActivityRequest &req, IEspActivityResponse& resp,
-            CIArrayOf<CWsSMCTargetCluster>& thorTargetClusters, CIArrayOf<CWsSMCTargetCluster>& roxieTargetClusters, CIArrayOf<CWsSMCTargetCluster>& hthorTargetClusters,
-            IArrayOf<IEspActiveWorkunit>& aws, IArrayOf<IEspServerJobQueue>& serverJobQueues, IArrayOf<IEspDFUJob>& DFURecoveryJobs);
+    void setActivityResponse(IEspContext &context,  IEspActivityRequest &req, IEspActivityResponse& resp);
     const char *getStatusServerTypeName(WsSMCStatusServerType type);
     void getStatusServerInfo(IEspContext &context, const char *serverType, const char *server, const char *networkAddress, unsigned port,
         IEspStatusServerInfo& statusServerInfo);
