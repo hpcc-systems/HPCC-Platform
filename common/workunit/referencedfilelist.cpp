@@ -123,8 +123,8 @@ class ReferencedFile : public CInterface, implements IReferencedFile
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs)
-    : flags(_flags), pkgid(_pkgid), noDfsResolution(noDfs)
+    ReferencedFile(const char *lfn, const char *sourceIP, const char *srcCluster, const char *prefix, bool isSubFile, unsigned _flags, const char *_pkgid, bool noDfs, bool calcSize)
+    : flags(_flags), pkgid(_pkgid), noDfsResolution(noDfs), calcFileSize(calcSize), fileSize(0), numParts(0)
     {
         logicalName.set(skipForeign(lfn, &daliip)).toLowerCase();
         if (daliip.length())
@@ -165,6 +165,14 @@ public:
     virtual void cloneInfo(IDFUhelper *helper, IUserDescriptor *user, const char *dstCluster, const char *srcCluster, bool overwrite=false, bool cloneForeign=false);
     void cloneSuperInfo(ReferencedFileList *list, IUserDescriptor *user, INode *remote, bool overwrite);
     virtual const char *queryPackageId() const {return pkgid.get();}
+    virtual __int64 getFileSize()
+    {
+        return fileSize;
+    }
+    virtual unsigned getNumParts()
+    {
+        return numParts;
+    }
 
 public:
     StringBuffer logicalName;
@@ -172,15 +180,19 @@ public:
     StringBuffer daliip;
     StringBuffer filePrefix;
     StringAttr fileSrcCluster;
+    __int64 fileSize;
+    unsigned numParts;
     unsigned flags;
     bool noDfsResolution;
+    bool calcFileSize;
 };
 
 class ReferencedFileList : public CInterface, implements IReferencedFileList
 {
 public:
     IMPLEMENT_IINTERFACE;
-    ReferencedFileList(const char *username, const char *pw, bool allowForeignFiles) : allowForeign(allowForeignFiles)
+    ReferencedFileList(const char *username, const char *pw, bool allowForeignFiles, bool allowFileSizeCalc)
+        : allowForeign(allowForeignFiles), allowSizeCalc(allowFileSizeCalc)
     {
         if (username && pw)
         {
@@ -189,7 +201,8 @@ public:
         }
     }
 
-    ReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles) : allowForeign(allowForeignFiles)
+    ReferencedFileList(IUserDescriptor *userDesc, bool allowForeignFiles, bool allowFileSizeCalc)
+        : allowForeign(allowForeignFiles), allowSizeCalc(allowFileSizeCalc)
     {
         if (userDesc)
             user.set(userDesc);
@@ -227,6 +240,7 @@ public:
     StringAttr srcCluster;
     StringAttr remotePrefix;
     bool allowForeign;
+    bool allowSizeCalc;
 };
 
 void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *dstCluster, const char *srcCluster, StringArray *subfiles)
@@ -259,6 +273,8 @@ void ReferencedFile::processLocalFileInfo(IDistributedFile *df, const char *dstC
         if (srcCluster && *srcCluster)
             if (NotFound == df->findCluster(srcCluster))
                 flags |= RefFileNotOnSource;
+        fileSize = df->getFileSize(calcFileSize, false);
+        numParts = df->numParts();
     }
 }
 
@@ -283,6 +299,8 @@ void ReferencedFile::processRemoteFileTree(IPropertyTree *tree, const char *srcC
         VStringBuffer xpath("Cluster[@name='%s']", srcCluster);
         if (!tree->hasProp(xpath))
             flags |= RefFileNotOnSource;
+        numParts = tree->getPropInt("@numparts", 0);
+        fileSize = tree->getPropInt64("Attr/@size", 0);
     }
 
 }
@@ -506,7 +524,7 @@ void ReferencedFileList::ensureFile(const char *ln, unsigned flags, const char *
     if (!allowForeign && checkForeign(ln))
         throw MakeStringException(-1, "Foreign file not allowed%s: %s", (flags & RefFileInPackage) ? " (declared in package)" : "", ln);
 
-    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid, noDfsResolution);
+    Owned<ReferencedFile> file = new ReferencedFile(ln, daliip, srcCluster, prefix, false, flags, pkgid, noDfsResolution, allowSizeCalc);
     if (!file->logicalName.length())
         return;
     ReferencedFile *existing = map.getValue(file->getLogicalName());
@@ -646,7 +664,7 @@ void ReferencedFileList::resolveSubFiles(StringArray &subfiles, bool checkLocalF
         if (!allowForeign && checkForeign(lfn))
             throw MakeStringException(-1, "Foreign sub file not allowed: %s", lfn);
 
-        Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL, false);
+        Owned<ReferencedFile> file = new ReferencedFile(lfn, NULL, NULL, NULL, true, 0, NULL, false, allowSizeCalc);
         if (file->logicalName.length() && !map.getValue(file->getLogicalName()))
         {
             file->resolve(process.get(), srcCluster, user, remote, remotePrefix, checkLocalFirst, &childSubFiles, resolveForeign);
@@ -725,12 +743,12 @@ IReferencedFileIterator *ReferencedFileList::getFiles()
     return new ReferencedFileIterator(this);
 }
 
-IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles)
+IReferencedFileList *createReferencedFileList(const char *user, const char *pw, bool allowForeignFiles, bool allowFileSizeCalc)
 {
-    return new ReferencedFileList(user, pw, allowForeignFiles);
+    return new ReferencedFileList(user, pw, allowForeignFiles, allowFileSizeCalc);
 }
 
-IReferencedFileList *createReferencedFileList(IUserDescriptor *user, bool allowForeignFiles)
+IReferencedFileList *createReferencedFileList(IUserDescriptor *user, bool allowForeignFiles, bool allowFileSizeCalc)
 {
-    return new ReferencedFileList(user, allowForeignFiles);
+    return new ReferencedFileList(user, allowForeignFiles, allowFileSizeCalc);
 }
