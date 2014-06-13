@@ -14,5 +14,5 @@
 #    limitations under the License.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} HPCCSystemAdministratorsGuide.xml "HPCC_System_Administrators_Guide" "SA-Mods")
+DOCBOOK_TO_PDF( ${FO_XSL} HPCCSystemAdministratorsGuide.xml "HPCCSystemAdministratorsGuide" "SA-Mods")
 
