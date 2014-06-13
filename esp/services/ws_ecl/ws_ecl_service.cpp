@@ -286,9 +286,21 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
-    xpath.clear().appendf("EspService[@name='%s']/VIPS", name);
-    IPropertyTree *vips = prc->queryPropTree(xpath.str());
+    xpath.clear().appendf("EspService[@name='%s']", name);
+    IPropertyTree *serviceTree = prc->queryPropTree(xpath);
+    if (!serviceTree)
+        throw MakeStringException(-1, "ESP Service %s not configured", name);
 
+    roxieTimeout = serviceTree->getPropInt("RoxieTimeout", 10 * 60);
+    if (!roxieTimeout)
+        roxieTimeout = WAIT_FOREVER;
+    workunitTimeout = serviceTree->getPropInt("WorkunitTimeout", 10 * 60);
+    if (workunitTimeout)
+        workunitTimeout *= 1000;
+    else
+        workunitTimeout = WAIT_FOREVER;
+
+    IPropertyTree *vips = serviceTree->queryPropTree(xpath.str());
     Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
     ForEach(*roxieTargets)
     {
@@ -2180,8 +2192,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     bool async = context.queryRequestParameters()->hasProp("_async");
 
     //don't wait indefinately, in case submitted to an inactive queue wait max + 5 mins
-    int wutimeout = 300000;
-    if (!async && waitForWorkUnitToComplete(wuid.str(), wutimeout))
+    if (!async && waitForWorkUnitToComplete(wuid.str(), wsecl->workunitTimeout))
     {
         Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
         if (!web)
@@ -2309,6 +2320,7 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
         ep.getIpText(url).append(':').append(ep.port);
 
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
+        httpclient->setTimeOut(wsecl->roxieTimeout);
         if (0 > httpclient->sendRequest("POST", contentType, req, resp, status))
             throw MakeStringException(-1, "Roxie cluster communication error: %s", target);
     }
