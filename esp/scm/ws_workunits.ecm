@@ -1230,6 +1230,7 @@ ESPrequest [nil_remove] WUListQueriesRequest
 {
     string  QuerySetName;
     string  ClusterName;
+    string  LibraryName;
     int64 MemoryLimitLow;
     int64 MemoryLimitHigh;
     nonNegativeInteger TimeLimitLow;

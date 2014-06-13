@@ -1104,6 +1104,7 @@ enum WUQuerySortField
     WUQSFpriority = 11,
     WUQSFpriorityHi = 12,
     WUQSFQuerySet = 13,
+    WUQSFLibrary = 14,
     WUQSFterm = 0,
     WUQSFreverse = 256,
     WUQSFnocase = 512,
@@ -1254,6 +1255,9 @@ extern WORKUNIT_API IPropertyTree * resolveQueryAlias(IPropertyTree * queryRegis
 extern WORKUNIT_API IPropertyTree * resolveQueryAlias(const char *queryset, const char *alias, bool readonly);
 extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool readonly);
 extern WORKUNIT_API IPropertyTree * getQueryRegistryRoot();
+
+extern WORKUNIT_API void addLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWULibraryIterator *libraries);
+extern WORKUNIT_API void addLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWorkUnit *cw);
 
 extern WORKUNIT_API void setQueryCommentForNamedQuery(IPropertyTree * queryRegistry, const char *id, const char *queryComment);
 
