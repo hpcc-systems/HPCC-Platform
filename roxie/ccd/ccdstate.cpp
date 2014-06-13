@@ -1871,7 +1871,7 @@ private:
     void getQueryInfo(IPropertyTree *control, StringBuffer &reply, bool full, const IRoxieContextLogger &logctx) const
     {
         Owned<IPropertyTreeIterator> ids = control->getElements("Query");
-        reply.append("<Queries>\n");
+        reply.append("<Queries reporting='1'>\n");
         if (ids->first())
         {
             ForEach(*ids)
@@ -2914,6 +2914,35 @@ void mergeStats(IPropertyTree *s1, IPropertyTree *s2)
         s1->addPropTree("Exception", LINK(&elems->query()));
     }
     mergeStats(s1, s2, 0);
+}
+
+void mergeQueries(IPropertyTree *dest, IPropertyTree *src)
+{
+    IPropertyTree *destQueries = ensurePTree(dest, "Queries");
+    IPropertyTree *srcQueries = src->queryPropTree("Queries");
+    if (!srcQueries)
+        return;
+    destQueries->setPropInt("@reporting", destQueries->getPropInt("@reporting") + srcQueries->getPropInt("@reporting"));
+
+    Owned<IPropertyTreeIterator> it = srcQueries->getElements("Query");
+    ForEach(*it)
+    {
+        IPropertyTree *srcQuery = &it->query();
+        const char *id = srcQuery->queryProp("@id");
+        if (!id || !*id)
+            continue;
+        VStringBuffer xpath("Query[@id='%s']", id);
+        IPropertyTree *destQuery = destQueries->queryPropTree(xpath);
+        if (!destQuery)
+        {
+            destQueries->addPropTree("Query", LINK(srcQuery));
+            continue;
+        }
+        int suspended = destQuery->getPropInt("@suspended") + srcQuery->getPropInt("@suspended"); //keep count to recognize "partially suspended" queries
+        mergePTree(destQuery, srcQuery);
+        if (suspended)
+            destQuery->setPropInt("@suspended", suspended);
+    }
 }
 
 #ifdef _USE_CPPUNIT
