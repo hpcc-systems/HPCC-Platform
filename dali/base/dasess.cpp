@@ -1320,12 +1320,13 @@ public:
         {
             /* There's existing ip:port match (client) in process table..
              * Old may be in process of closing or about to, but new has beaten the onClose() to it..
-             * Track old sessions in new CProcessSessionState instance, so that upcoming onClose() can find them
+             * Track old sessions in new CProcessSessionState instance, so that in-process or upcoming onClose()/stopSession() can find them
              */
             CProcessSessionState *previousState = processlookup.query(client);
             dbgassertex(previousState); // Must be there, it's reason add() failed
+            SessionId oldSessionId = previousState->getId();
             s->addSessionIds(*previousState, false); // merges sessions from previous process state into new one that replaces it
-            WARNLOG("Dali session manager: registerClient process session already registered, old replaced");
+            WARNLOG("Dali session manager: registerClient process session already registered, old (%"I64F"x) replaced", oldSessionId);
             processlookup.remove(previousState, this);
         }
     }
@@ -1697,28 +1698,37 @@ protected:
                     SessionId prevId = cState->dequeuePreviousSessionId();
                     if (prevId)
                     {
+                        PROGLOG("Session (%"I64F"x) in stopSession, detected %d pending previous states, reinstating session (%"I64F"x) as current", id, cState->previousSessionIdCount(), prevId);
                         CSessionState *prevSessionState = sessionstates.query(prevId);
                         dbgassertex(prevSessionState); // must be there
                         CProcessSessionState *prevProcessState = QUERYINTERFACE(prevSessionState, CProcessSessionState);
-                        dbgassertex(prevSessionState);
+                        dbgassertex(prevProcessState);
                         /* NB: prevProcessState's have 0 entries in their previousSessionIds, since they were merged at replacement time
                          * in addProcessSession()
                          */
-                        prevProcessState->addSessionIds(*cState, true); // add in any remaining
+
+                        /* add in any remaining to-be-stopped process sessions from current that's stopping into this previous state
+                         * that's being reinstated, so will be picked up on next onClose()/stopSession()
+                         */
+                        prevProcessState->addSessionIds(*cState, true);
                         processlookup.replace(prevProcessState);
                     }
                     else
                         processlookup.remove(pState, this);
                 }
-                else
+                else // Here because in stopSession for an previous process state, that has been replaced (in addProcessSession)
                 {
-                    if (processlookup.remove(pState, this)) // old may have been removed when replaced
+                    if (processlookup.remove(pState, this))
                     {
-                        if (cState)
-                        {
-                            PROGLOG("Session (%"I64F"x) was replaced, ensuring removed from new process state", id);
-                            cState->removeOldSessionId(id); // If already replaced, then must ensure no longer tracked by new
-                        }
+                        // Don't think possible to be here, if not current must have replaced afaics
+                        PROGLOG("Session (%"I64F"x) in stopSession, old process session removed", id);
+                    }
+                    else
+                        PROGLOG("Session (%"I64F"x) in stopSession, old process session was already removed", id); // because replaced
+                    if (cState)
+                    {
+                        PROGLOG("Session (%"I64F"x) was replaced, ensuring removed from new process state", id);
+                        cState->removeOldSessionId(id); // If already replaced, then must ensure no longer tracked by new
                     }
                 }
             }
