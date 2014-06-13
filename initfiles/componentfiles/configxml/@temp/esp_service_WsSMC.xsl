@@ -137,7 +137,11 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:with-param name="plugin" select="'ws_smc'"/>
             </xsl:call-template>
         </xsl:variable>
-        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}"/>
+        <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
+            <xsl:if test="string(@ActivityInfoCacheSeconds) != ''">
+                <ActivityInfoCacheSeconds><xsl:value-of select="@ActivityInfoCacheSeconds"/></ActivityInfoCacheSeconds>
+            </xsl:if>
+        </EspService>
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" 
              plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}" defaultBinding="true">
             <xsl:call-template name="bindAuthentication">

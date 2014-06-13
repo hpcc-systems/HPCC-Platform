@@ -83,6 +83,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="ActivityInfoCacheSeconds" type="xs:nonNegativeInteger" use="optional" default="10">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>timeout for activity info cache (in seconds).</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="serverForArchivedECLWU" type="sashaServerType" use="optional">
                 <xs:annotation>
                     <xs:appinfo>
