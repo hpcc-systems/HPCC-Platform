@@ -420,7 +420,7 @@
 
               <entry>A value between 0.0 and 1.0 that determines the amount of
               skew needed to generate a skew error. This value is ignored if
-              the ECL has provided a SKEW attribute. </entry>
+              the ECL has provided a SKEW attribute.</entry>
             </row>
 
             <row>
@@ -445,7 +445,7 @@
             <row>
               <entry><emphasis>defaultSkewThreshold</emphasis></entry>
 
-              <entry>Default: 1B</entry>
+              <entry>Default: 1GB</entry>
 
               <entry>The size of the dataset (in bytes) local to a single node
               needed before Skew errors/warnings are generated if no
