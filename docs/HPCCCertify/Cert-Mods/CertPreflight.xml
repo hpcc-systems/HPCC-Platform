@@ -8,7 +8,7 @@
   configured properly is to run a preflight check on the components. This
   ensures that all machines are operating and have the proper executables
   running. This also confirms there is adequate disk space, available memory,
-  and acceptable available CPU % values.</para>
+  and acceptable available CPU % values. </para>
 
   <itemizedlist mark="bullet">
     <listitem>
@@ -50,8 +50,9 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Click on the <emphasis role="bold">System Servers</emphasis>
-        link under Topology.</para>
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon
+        then click on the <emphasis role="bold">System Servers</emphasis>
+        link. </para>
 
         <para><figure>
             <title>System Servers link</title>
@@ -143,8 +144,9 @@
 
     <orderedlist>
       <listitem>
-        <para>Click on the <emphasis role="bold">Cluster Processes</emphasis>
-        link under Topology.</para>
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon
+        then click on the <emphasis role="bold">Cluster Processes</emphasis>
+        link.</para>
 
         <para><figure>
             <title>Cluster Processes Link</title>
@@ -258,8 +260,9 @@
 
     <orderedlist>
       <listitem>
-        <para>Click on the <emphasis role="bold">Cluster Processes</emphasis>
-        link under Topology.</para>
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon
+        then click on the <emphasis role="bold">Cluster Processes</emphasis>
+        link.</para>
 
         <para><figure>
             <title>Cluster Processes Link</title>
