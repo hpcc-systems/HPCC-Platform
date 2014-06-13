@@ -1,7 +1,3 @@
-<Info><Source>fileservices</Source><Message>RenameLogicalFile (&apos;regress::renametest.d00, &apos;regress::afterrename1.d00&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>RenameLogicalFile (&apos;regress::afterrename1.d00, &apos;regress::scope1::scope2::afterrename2.d00&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>RenameLogicalFile (&apos;regress::scope1::scope2::afterrename2.d00, &apos;regress::scope1::afterrename3.d00&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteLogicalFile (&apos;regress::scope1::afterrename3.d00&apos;) done</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

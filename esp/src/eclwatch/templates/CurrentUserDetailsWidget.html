@@ -1,0 +1,46 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+            <div id="${id}SaveUsers" data-dojo-attach-event="onClick:_onSave" data-dojo-type="dijit.form.Button">${i18n.Save}</div>
+        </div>
+        <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+            <h2>
+                <span id="${id}User" class="bold">${i18n.UserName}</span>
+            </h2>
+            <form id="${id}UserForm" data-dojo-type="dijit.form.Form">
+                <ul>
+                    <li>
+                        <label class="Prompt" for="${id}Username">${i18n.Username}:</label>
+                        <div id="${id}Username"></div>
+                    </li>
+                    <li>
+                        <label class="Prompt" for="${id}FirstName">${i18n.FirstName}:</label>
+                        <input id="${id}FirstName" name="firstname" data-dojo-props="trim: true, placeHolder:'${i18n.PlaceholderFirstName}'" data-dojo-type="dijit.form.TextBox" />
+                    </li>
+                    <li>
+                        <label class="Prompt" for="${id}LastName">${i18n.LastName}:</label>
+                        <input id="${id}LastName" name="lastname" data-dojo-props="trim: true, placeHolder:'${i18n.PlaceholderLastName}'" data-dojo-type="dijit.form.TextBox" />
+                    </li>
+                    <li>
+                        <label class="Prompt" for="${id}OldPassword">${i18n.OldPassword}:</label>
+                        <input name="oldPassword" type="password" data-dojo-type="dijit.form.ValidationTextBox" />
+                    </li>
+                    <div name="newPassword" data-dojo-props="required: false" data-dojo-type="dojox.form.PasswordValidator">
+                        <li>
+                            <label class="Prompt" for="${id}NewPassword">${i18n.NewPassword}:</label>
+                            <input name="newPassword" type="password" pwtype="new" data-dojo-props="invalidMessage:'${i18n.PasswordsDoNotMatch}', placeHolder:'${i18n.MustContainUppercaseAndSymbol}'" data-dojo-type="dijit.form.ValidationTextBox" />
+                        </li>
+                        <li>
+                            <label class="Prompt" for="${id}VerifyPassword">${i18n.ConfirmPassword}:</label>
+                            <input name="newPasswordRetype" type="password" pwtype="verify" data-dojo-props="invalidMessage:'${i18n.PasswordsDoNotMatch}', placeHolder:'${i18n.MustContainUppercaseAndSymbol}'" data-dojo-type="dijit.form.ValidationTextBox" />
+                        </li>
+                    </div>
+                    <li>
+                        <label class="Prompt" for="${id}PasswordExpiration">${i18n.PasswordExpiration}:</label>
+                        <div id="${id}PasswordExpiration"></div>
+                    </li>
+                </ul>
+            </form>
+        </div>
+    </div>
+</div>

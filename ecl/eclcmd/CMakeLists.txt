@@ -54,6 +54,7 @@ include_directories (
          ./../../common/workunit
          ./../../common/environment
          ./../../esp/bindings/SOAP/xpp
+         ./../../esp/bindings/http/client
          ./../../system/include
          ./../../esp/bindings
          ./../../ecl/hql

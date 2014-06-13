@@ -2388,7 +2388,6 @@ void EclAgent::logException(std::exception & e)
 static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
 {
     CDateTime dt;
-    StringBuffer dtstr;
     file->getModificationTime(dt);
     unsigned __int64 modifiedTime = dt.getSimple();
     PrintLog("getDatasetHash adding crc %"I64F"u for file %s", modifiedTime, filename);

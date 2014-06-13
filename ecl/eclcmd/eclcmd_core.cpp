@@ -21,11 +21,35 @@
 #include "jargv.hpp"
 #include "jflz.hpp"
 #include "build-config.h"
+#include "httpclient.hpp"
 
 #include "workunit.hpp"
 #include "ws_workunits.hpp"
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
+
+size32_t getMaxRequestEntityLength(EclCmdCommon &cmd)
+{
+    if(cmd.optServer.isEmpty())
+        throw MakeStringException(-1, "Server IP not specified");
+
+    EclCmdURL url("?config_", cmd.optServer, cmd.optPort, cmd.optSSL);
+    Owned<IHttpClientContext> httpCtx = getHttpClientContext();
+
+    StringBuffer request; //empty
+    StringBuffer response;
+    StringBuffer status;
+    Owned<IHttpClient> httpclient = httpCtx->createHttpClient(NULL, url);
+    if (cmd.optUsername.length())
+        httpclient->setUserID(cmd.optUsername);
+    if (cmd.optPassword.length())
+         httpclient->setPassword(cmd.optPassword);
+     if (0 > httpclient->sendRequest("GET", NULL, request, response, status) || !response.length() || strncmp("200", status, 3))
+         throw MakeStringException(-1, "Error checking ESP configuration: %s:%s %s", cmd.optServer.sget(), cmd.optPort.sget(), status.str());
+
+    Owned<IPropertyTree> config = createPTreeFromXMLString(response);
+    return config->getPropInt("Software[1]/EspProcess[1]/EspProtocol[@type='http_protocol'][1]/@maxRequestEntityLength");
+}
 
 bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *cluster, const char *name, StringBuffer *wuid, StringBuffer *wucluster, bool noarchive, bool displayWuid=true, bool compress=true)
 {
@@ -101,7 +125,30 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         cmd.debugValues.kill();
     }
 
-    Owned<IClientWUDeployWorkunitResponse> resp = client->WUDeployWorkunit(req);
+    Owned<IClientWUDeployWorkunitResponse> resp;
+    try
+    {
+         resp.setown(client->WUDeployWorkunit(req));
+    }
+    catch (IException *E)
+    {
+        //ESP doesn't want to process requests that are too large, and so disconnects before reading
+        //  this causes issues capturing the error returned... check if that may have been the issue
+        if (useCompression) //newer build, not a maxRequestEntityLength issue
+            throw;
+        size32_t maxEntity = getMaxRequestEntityLength(cmd); //only do the work to grab max buffersize if we've failed
+        if (maxEntity > 1000)
+        {
+            size32_t maxBufferSize = ((maxEntity - 999) / 4) * 3; //account for soap, other parameters, and base64 encoding (n / 4 * 3)
+            if (maxBufferSize && cmd.optObj.mb.length() > maxBufferSize)
+            {
+                fprintf(stderr, "\nError: %s is larger than maxRequestEntityLength configured for ESP allows.\n", objType.str());
+                E->Release();
+                return false;
+            }
+        }
+        throw;
+    }
     if (resp->getExceptions().ordinality())
         outputMultiExceptions(resp->getExceptions());
     const char *w = resp->getWorkunit().getWuid();
@@ -450,7 +497,7 @@ private:
 class EclCmdRun : public EclCmdWithEclTarget
 {
 public:
-    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false)
+    EclCmdRun() : optWaitTime((unsigned)-1), optNoRoot(false), optExceptionSeverity("info")
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject | eclObjWuid | eclObjQuery;
     }
@@ -475,6 +522,8 @@ public:
             if (iter.matchOption(optWaitTime, ECLOPT_WAIT))
                 continue;
             if (iter.matchFlag(optNoRoot, ECLOPT_NOROOT))
+                continue;
+            if (iter.matchOption(optExceptionSeverity, ECLOPT_EXCEPTION_LEVEL))
                 continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
@@ -540,6 +589,7 @@ public:
         req->setWait((int)optWaitTime);
         if (optInput.length())
             req->setInput(optInput.get());
+        req->setExceptionSeverity(optExceptionSeverity); //throws exception if invalid value
 
         if (debugValues.length())
             req->setDebugValues(debugValues);
@@ -581,18 +631,21 @@ public:
             "   <ecl_file|->           ECL text file to publish\n"
             "   <so|dll|->             workunit dll or shared object to publish\n"
             " Options:\n"
-            "   -t, --target=<val>     target cluster to run job on\n"
-            "                          (defaults to cluster defined inside workunit)\n"
-            "   -n, --name=<val>       job name\n"
-            "   -in,--input=<file|xml> file or xml content to use as query input\n"
-            "   -X<name>=<value>       sets the stored input value (stored('name'))\n"
-            "   --wait=<ms>            time to wait for completion\n",
+            "   -t, --target=<val>        target cluster to run job on\n"
+            "                             (defaults to cluster defined inside workunit)\n"
+            "   -n, --name=<val>          job name\n"
+            "   -in,--input=<file|xml>    file or xml content to use as query input\n"
+            "   -X<name>=<value>          sets the stored input value (stored('name'))\n"
+            "   --wait=<ms>               time to wait for completion\n"
+            "   --exception-level=<level> minimum severity level for exceptions\n"
+            "                             values: 'info', 'warning', 'error'\n",
             stdout);
         EclCmdWithEclTarget::usage();
     }
 private:
     StringAttr optName;
     StringAttr optInput;
+    StringAttr optExceptionSeverity;
     IArrayOf<IEspNamedValue> variables;
     unsigned optWaitTime;
     bool optNoRoot;

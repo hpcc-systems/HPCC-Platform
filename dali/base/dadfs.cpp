@@ -670,7 +670,7 @@ class CClustersLockedSection
 {
     Owned<IRemoteConnection> conn;
 public:
-    CClustersLockedSection(CDfsLogicalFileName &dlfn)
+    CClustersLockedSection(CDfsLogicalFileName &dlfn, bool exclusive)
     {
         StringBuffer xpath;
         dlfn.makeFullnameQuery(xpath,DXB_File,true).append("/ClusterLock");
@@ -678,9 +678,14 @@ public:
         /* Avoid RTM_CREATE_QUERY connect() if possible by making 1st call without. This is to avoid write contention caused by RTM_CREATE*
          * NB: RTM_CREATE_QUERY should probably only gain exclusive access in Dali if node is missing.
          */
-        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_CONNECT_TIMEOUT));
+        conn.setown(querySDS().connect(xpath.str(), myProcessSession(), exclusive ? RTM_LOCK_WRITE : RTM_LOCK_READ, SDS_CONNECT_TIMEOUT));
         if (!conn.get()) // NB: ClusterLock is now created at File create time, so this can only be true for pre-existing File's
+        {
             conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_CREATE_QUERY | RTM_LOCK_WRITE, SDS_CONNECT_TIMEOUT));
+            assertex(conn.get());
+            if (!exclusive)
+                conn->changeMode(RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
+        }
     }
 };
 
@@ -3284,7 +3289,7 @@ public:
         logicalName.set(lname);
         parent = _parent;
         conn.setown(_conn);
-        CClustersLockedSection sect(logicalName);
+        CClustersLockedSection sect(logicalName, false);
         root.setown(conn->getRoot());
         root->queryBranch(".");     // load branch
 #ifdef EXTRA_LOGGING
@@ -3536,7 +3541,7 @@ public:
     {
         if (!clustername&&!*clustername)
             return;
-        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
         reloadClusters();
         if (findCluster(clustername)!=NotFound) {
             IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterAlreadyExists,clustername);
@@ -3555,7 +3560,7 @@ public:
 
     bool removeCluster(const char *clustername)
     {
-        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
         reloadClusters();
         unsigned i = findCluster(clustername);
         if (i!=NotFound) {
@@ -3641,7 +3646,7 @@ public:
 
     void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec)
     {
-        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName);
+        CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName, true);
         reloadClusters();
         unsigned i = findCluster(clustername);
         if (i!=NotFound) {

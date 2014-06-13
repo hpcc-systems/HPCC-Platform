@@ -71,16 +71,14 @@ define([
             return ESPWorkunit.isInstanceOfWorkunit(obj) || ESPDFUWorkunit.isInstanceOfWorkunit(obj);
         },
 
-        setBanner: function (bannerText) {
-            this.getActivity({
+        setBanner: function (request) {
+            lang.mixin(request, {
                 FromSubmitBtn: true,
-                BannerAction: bannerText != "",
+                BannerAction: request.BannerContent !== "",
                 EnableChatURL: 0,
-                BannerContent: bannerText,
-                BannerColor: "red",
-                BannerSize: 4,
                 BannerScroll: 2
             });
+            this.getActivity(request);
         },
 
         resolve: function (id) {

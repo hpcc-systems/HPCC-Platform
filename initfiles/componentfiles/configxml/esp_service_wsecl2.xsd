@@ -85,6 +85,20 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="roxieTimeout" type="xs:unsignedInt" use="optional" default="300">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Timeout (in seconds) for WsEcl connections to roxie (0 == wait forever)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="workunitTimeout" type="xs:unsignedInt" use="optional" default="600">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Timeout (in seconds), for WsEcl to wait for workunit to complete (0 == wait forever)</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>

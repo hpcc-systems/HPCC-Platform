@@ -749,7 +749,9 @@ void CGraphElementBase::preStart(size32_t parentExtractSz, const byte *parentExt
 void CGraphElementBase::initActivity()
 {
     CriticalBlock b(crit);
-    if (activity)
+    if (isSink())
+        owner->addActiveSink(*this);
+    if (activity) // no need to recreate
         return;
     activity.setown(factory());
     if (isLoopActivity(*this))
@@ -1118,7 +1120,7 @@ void CGraphBase::clean()
     disconnectActivities();
     containers.kill();
     sinks.kill();
-    connectedSinks.kill();
+    activeSinks.kill();
 }
 
 void CGraphBase::serializeCreateContexts(MemoryBuffer &mb)
@@ -1421,17 +1423,11 @@ void CGraphBase::create(size32_t parentExtractSz, const byte *parentExtract)
         CGraphElementBase &element = iter->query();
         element.clearConnections();
     }
+    activeSinks.kill(); // NB: activeSinks are added to during activity creation
     ForEachItemIn(s, sinks)
     {
         CGraphElementBase &sink = sinks.item(s);
         sink.createActivity(parentExtractSz, parentExtract);
-    }
-    connectedSinks.kill();
-    ForEach(*iter)
-    {
-        CGraphElementBase &element = iter->query();
-        if (element.queryActivity() && 0 == element.connectedOutputs.ordinality())
-            connectedSinks.append(*LINK(&element));
     }
     created = true;
 }
@@ -1575,34 +1571,6 @@ public:
     virtual bool isValid() { return NULL != cur.get(); }
     virtual CGraphElementBase & query() { return *cur; }
             CGraphElementBase & get() { return *LINK(cur); }
-};
-
-class CGraphTraverseIterator : public CGraphTraverseIteratorBase
-{
-public:
-    CGraphTraverseIterator(CGraphBase &graph) : CGraphTraverseIteratorBase(graph) { }
-    virtual bool next()
-    {
-        if (cur)
-        {
-            switch (cur->getKind())
-            {
-                case TAKif:
-                case TAKifaction:
-                case TAKchildif:
-                case TAKchildcase:
-                case TAKcase:
-                    setNext(cur->inputs, cur->whichBranch);
-                    break;
-                default:
-                    setNext(cur->inputs);
-                    break;
-            }
-            if (!cur)
-                return false;
-        }
-        return true;
-    }
 };
 
 class CGraphTraverseConnectedIterator : public CGraphTraverseIteratorBase

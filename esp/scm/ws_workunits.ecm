@@ -512,6 +512,13 @@ ESPresponse [exceptions_inline] WUResubmitResponse
     [min_ver("1.40")] ESParray<ESPstruct ResubmittedWU, WU> WUs;
 };
 
+ESPenum WUExceptionSeverity : string
+{
+    INFO("info"),
+    WARNING("warning"),
+    ERROR("error")
+};
+
 ESPrequest WURunRequest
 {
     string QuerySet;
@@ -524,6 +531,7 @@ ESPrequest WURunRequest
     bool NoRootTag(0);
     ESParray<ESPstruct NamedValue> DebugValues;
     ESParray<ESPstruct NamedValue> Variables;
+    ESPenum WUExceptionSeverity ExceptionSeverity("info");
 };
 
 ESPresponse [exceptions_inline] WURunResponse
@@ -1295,6 +1303,24 @@ ESPresponse [exceptions_inline] WUListQueriesUsingFileResponse
     ESParray<ESPstruct TargetQueriesUsingFile> Targets;
 };
 
+ESPrequest [nil_remove] WUQueryFilesRequest
+{
+    string Target;
+    string QueryId;
+};
+
+ESPStruct [nil_remove] FileUsedByQuery
+{
+    string FileName;
+    int64 FileSize;
+    unsigned NumberOfParts;
+};
+
+ESPresponse [exceptions_inline] WUQueryFilesResponse
+{
+    ESParray<ESPstruct FileUsedByQuery, File> Files;
+};
+
 ESPrequest WUQueryDetailsRequest
 {
     string QueryId;
@@ -1599,6 +1625,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUCopyLogicalFiles.xslt")] WUCopyLogicalFiles(WUCopyLogicalFilesRequest, WUCopyLogicalFilesResponse);
     ESPmethod WUQueryConfig(WUQueryConfigRequest, WUQueryConfigResponse);
     ESPmethod WUListQueries(WUListQueriesRequest, WUListQueriesResponse);
+    ESPmethod WUQueryFiles(WUQueryFilesRequest, WUQueryFilesResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/QueriesUsingFile.xslt")] WUListQueriesUsingFile(WUListQueriesUsingFileRequest, WUListQueriesUsingFileResponse);
     ESPmethod WUCreateZAPInfo(WUCreateZAPInfoRequest, WUCreateZAPInfoResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUZAPInfoForm.xslt")] WUGetZAPInfo(WUGetZAPInfoRequest, WUGetZAPInfoResponse);

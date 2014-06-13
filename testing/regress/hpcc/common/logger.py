@@ -82,21 +82,20 @@ class Logger(object):
     class ProgressFileHandler(logging.FileHandler):
         terminator = '\n'
         isBuffer = False
-        logBuffer=[]
-        toSort = False
+        logBuffer=dict()
         taskId = 0
         taskIds = {}
 
         def close(self):
             if len(self.logBuffer):
-                if self.toSort:
-                    self.logBuffer.sort()
                 stream = self.stream
                 for item in self.logBuffer:
-                    stream.write(item)
-                    stream.write(self.terminator)
-                self.logBuffer = []
-                self.toSort = False
+                    for line in self.logBuffer[item]:
+                        stream.write(line)
+                        stream.write(self.terminator)
+                self.logBuffer.clear()
+                self.taskIds = {}
+                self.isBuffer = False
             self.flush()
             self.stream.close()
 
@@ -133,29 +132,23 @@ class Logger(object):
                 if record.levelname == 'CRITICAL':
                     msg += " [level: "+record.levelname+" ]"
                     msg = "{0:3d}".format(taskId) +". " + msg
-                if toSort:
-                    self.toSort = True
                 if isBuffer:
                     #toggle buffer switch
                     self.isBuffer = not self.isBuffer
                     isBuffer = False
                 if self.isBuffer or isBuffer:
                     if len(msg):
-                        msg = msg.replace(". Test:",". Case:")
-                        msg = msg[0:4]+'-'+record.asctime+'-'+msg[4:]
-                        self.logBuffer.append(msg)
+                        self.logBuffer.setdefault(taskId,  []).append(msg)
                 else:
                     if len(self.logBuffer):
-                        if self.toSort:
-                            self.logBuffer.sort()
                         for item in self.logBuffer:
-                            item = item[0:4] +item[23:]
-                            item = item.replace(". Case:",". Test:")
-                            item = item.replace(". Debug-", ".  ")
-                            stream.write(item)
-                            stream.write(self.terminator)
-                        self.logBuffer = []
-                        self.toSort = False
+                            for line in self.logBuffer[item]:
+                                line = line.replace(". Debug-", ".  ")
+                                stream.write(line)
+                                stream.write(self.terminator)
+                        self.logBuffer.clear()
+                        self.taskIds = {}
+                        self.isBuffer = False
                     if  len(msg):
                         stream.write(msg)
                         stream.write(self.terminator)
@@ -167,9 +160,15 @@ class Logger(object):
 
     def addHandler(self, fd, level='info'):
         root_logger = logging.getLogger()
-        channel = self.ProgressFileHandler(fd)
-        channel.setLevel(getattr(logging, level.upper()))
-        root_logger.addHandler(channel)
+        self.channel = self.ProgressFileHandler(fd)
+        self.channel.setLevel(getattr(logging, level.upper()))
+        root_logger.addHandler(self.channel)
+
+    def removeHandler(self):
+        root_logger = logging.getLogger()
+        root_logger.removeHandler(self.channel)
+        self.channel.flush()
+        self.channel.close()
 
     def enable_pretty_logging(self):
         root_logger = logging.getLogger()

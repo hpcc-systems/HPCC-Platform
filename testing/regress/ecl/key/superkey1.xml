@@ -1,18 +1,3 @@
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;REGRESS::superalbums.key&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>DeleteSuperFile (&apos;REGRESS::superalbums&apos;) file not found</Message></Info>
-<Info><Source>fileservices</Source><Message>CreateSuperFile (&apos;REGRESS::superalbums.key&apos;) done</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;REGRESS::superalbums.key&apos;, &apos;REGRESS::albums1.key&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;REGRESS::superalbums.key&apos;, &apos;REGRESS::albums2.key&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;REGRESS::superalbums.key&apos;, &apos;REGRESS::albums3.key&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;REGRESS::superalbums.key&apos;, &apos;REGRESS::albums4.key&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>AddSuperFile (&apos;REGRESS::superalbums.key&apos;, &apos;REGRESS::albums5.key&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
-<Info><Source>fileservices</Source><Message>StartSuperFileTransaction</Message></Info>
-<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;REGRESS::superalbums.key&apos;, &apos;REGRESS::albums2.key&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;REGRESS::superalbums.key&apos;, &apos;REGRESS::albums4.key&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>RemoveSuperFile (&apos;REGRESS::superalbums.key&apos;, &apos;REGRESS::albums3.key&apos;) trans</Message></Info>
-<Info><Source>fileservices</Source><Message>FinishSuperFileTransaction commit</Message></Info>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>

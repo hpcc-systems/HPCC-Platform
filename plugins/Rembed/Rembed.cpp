@@ -16,6 +16,44 @@
  ############################################################################## */
 
 #include "platform.h"
+
+#ifdef RCPP_HEADER_ONLY
+// NOTE - these symbols need to be hidden from being exported from the Rembed .so file as RInside tries to dynamically
+// load them from Rcpp.so
+
+// If future versions of Rcpp add any (in Rcpp/routines.h) they may need to be added here too.
+
+#define type2name HIDE_RCPP_type2name
+#define enterRNGScope HIDE_RCPP_enterRNGScope
+#define exitRNGScope HIDE_RCPP_exitRNGScope
+#define get_string_buffer HIDE_RCPP_get_string_buffer
+#define get_Rcpp_namespace HIDE_RCPP_get_Rcpp_namespace
+#define mktime00 HIDE_RCPP_mktime00_
+#define gmtime_ HIDE_RCPP_gmtime_
+
+#define rcpp_get_stack_trace HIDE_RCPP_rcpp_get_stack_trace
+#define rcpp_set_stack_trace HIDE_RCPP_rcpp_set_stack_trace
+#define demangle HIDE_RCPP_demangle
+#define short_file_name HIDE_RCPP_short_file_name
+#define stack_trace HIDE_RCPP_stack_trace
+#define get_string_elt HIDE_RCPP_get_string_elt
+#define char_get_string_elt HIDE_RCPP_char_get_string_elt
+#define set_string_elt HIDE_RCPP_set_string_elt
+#define char_set_string_elt HIDE_RCPP_char_set_string_elt
+#define get_string_ptr HIDE_RCPP_get_string_ptr
+#define get_vector_elt HIDE_RCPP_get_vector_elt
+#define set_vector_elt HIDE_RCPP_set_vector_elt
+#define get_vector_ptr HIDE_RCPP_get_vector_ptr
+#define char_nocheck HIDE_RCPP_char_nocheck
+#define dataptr HIDE_RCPP_dataptr
+#define getCurrentScope HIDE_RCPP_getCurrentScope
+#define setCurrentScope HIDE_RCPP_setCurrentScope
+#define get_cache HIDE_RCPP_get_cache
+#define reset_current_error HIDE_RCPP_reset_current_error
+#define error_occured HIDE_RCPP_error_occured
+#define rcpp_get_current_error HIDE_RCPP_rcpp_get_current_error
+#endif
+
 #include "RInside.h"
 
 #include "jexcept.hpp"

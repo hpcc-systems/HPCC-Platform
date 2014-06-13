@@ -90,6 +90,9 @@ define([
                 }).then(function (response) {
                     var results = response[method + "Response"] && response[method + "Response"].Results ? response[method + "Response"].Results : {};
                     results = context._flattenResults(results);
+                    if (lang.exists("Exceptions.Exception", response)) {
+                        results.Exception = response.Exceptions.Exception;
+                    };
                     deferred.resolve(results);
                 });
             });

@@ -71,6 +71,7 @@ public:
 
     void deserialize(MemoryBuffer & src);
     void serialize(MemoryBuffer & dst) const;
+    hash64_t getHash(hash64_t init) const;
 
     CDateTime & operator=(CDateTime const & other) { set(other); return *this; }
     void clear();
