@@ -154,6 +154,7 @@ class CLdapConfig : public CInterface, implements ILdapConfig
 {
 private:
     LdapServerType       m_serverType; 
+    StringAttr           m_cfgServerType;//LDAP Server type name (ActiveDirectory, Fedora389, etc)
 
     Owned<IPropertyTree> m_cfg;
 
@@ -196,19 +197,21 @@ public:
 
         //Check for LDAP Server type in config
         m_serverType = LDAPSERVER_UNKNOWN;
-        const char* serverType = cfg->queryProp(".//@serverType");
-        if (serverType && *serverType)
+        m_cfgServerType.set(cfg->queryProp(".//@serverType"));
+        if (m_cfgServerType.length())
         {
-            if (0 == stricmp(serverType, "ActiveDirectory"))
+            if (0 == stricmp(m_cfgServerType, "ActiveDirectory"))
                 m_serverType = ACTIVE_DIRECTORY;
-            else if (0 == stricmp(serverType, "OpenLDAP"))
+            else if (0 == stricmp(m_cfgServerType, "389DirectoryServer"))//uses iPlanet style ACI
                 m_serverType = OPEN_LDAP;
-            else if (0 == stricmp(serverType, "Fedora389"))
+            else if (0 == stricmp(m_cfgServerType, "OpenLDAP"))
                 m_serverType = OPEN_LDAP;
-            else if (0 == stricmp(serverType, "iPlanet"))
+            else if (0 == stricmp(m_cfgServerType, "Fedora389"))
+                m_serverType = OPEN_LDAP;
+            else if (0 == stricmp(m_cfgServerType, "iPlanet"))
                 m_serverType = IPLANET;
             else
-                throw MakeStringException(-1, "Unknown LDAP serverType '%s' specified",serverType);
+                throw MakeStringException(-1, "Unknown LDAP serverType '%s' specified",m_cfgServerType.get());
         }
         else
         {
@@ -395,6 +398,11 @@ public:
     virtual LdapServerType getServerType()
     {
         return m_serverType;
+    }
+
+    virtual const char * getCfgServerType() const
+    {
+        return m_cfgServerType.get();
     }
 
     virtual const char* getSdFieldName()
