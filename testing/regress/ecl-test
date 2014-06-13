@@ -28,10 +28,10 @@ import glob
 from hpcc.util import argparse
 from hpcc.regression.regress import Regression
 from hpcc.util.ecl.file import ECLFile
-from hpcc.util.util import checkPqParam,  getVersionNumbers,  checkXParam,  convertPath
+from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress
 from hpcc.common.error import Error
 
-prog_version = "0.0.23"
+prog_version = "0.0.24"
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -86,6 +86,7 @@ class RegressMain:
         # Go through the cluster list
         for cluster in targetClusters:
             try:
+                self.regress.config.ip = self.regress.config.IpAddress[cluster]
                 if len(eclfiles) > 1:
                     #Execute multiple ECL files like RUN to generates summary results and diff report.
                     self.regress.bootstrap(cluster, self.args,  eclfiles)
@@ -116,6 +117,8 @@ class RegressMain:
         if self.args.target in self.regress.config.Clusters:
             self.args.setupExtraX = []
             self.args.setupExtraX.append('OriginalTextFilesPath='+self.regressionSuiteHpccMainDir)
+            self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
+            self.regress.config.ip = self.regress.config.IpAddress[self.args.target]
             if  self.args.pq :
                 self.regress.runSuiteP(self.args.target, self.regress.Setup(self.args))
             else:
@@ -126,6 +129,7 @@ class RegressMain:
 
     def run(self):
         if self.args.target in self.regress.config.Clusters:
+            self.regress.config.ip = self.regress.config.IpAddress[self.args.target]
             self.regress.bootstrap(self.args.target, self.args)
             if  self.args.pq :
                 self.regress.runSuiteP(self.args.target, self.regress.suites[self.args.target])

@@ -1,4 +1,4 @@
-Overview of Regression Suite usage (v:0.0.22)
+Overview of Regression Suite usage (v:0.0.24)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
@@ -561,11 +561,15 @@ So if you have a new test case and it works well on all clusters (or some of the
 9. Configuration setting in ecl-test.json file:
 -------------------------------------------------------------
 
-        "ip": "127.0.0.1",                              - ECl server address
+        "IpAddress":{
+            "hthor":"127.0.0.1",
+            "thor":"127.0.0.1",
+            "roxie": "127.0.0.1"
+        },
+        "roxieTestSocket": ":9876",                      - Roxie test socket addres (not used)
+        "epsSocket": ":8010",                          - ECl server socket
         "username": "regress",                          - Regression Suite dedicated username and pasword
         "password": "regress",
-        "roxie": "127.0.0.1:9876",                      - Roxie server addres (not used)
-        "server": "127.0.0.1:8010",                     - EclWatch service server address
         "suiteDir": "",                                 - default suite directory location - ""-> current directory
         "eclDir": "ecl",                                - ECL test cases directory source
         "setupDir": "ecl/setup",                        - ECL setup source directory
@@ -579,7 +583,7 @@ So if you have a new test case and it works well on all clusters (or some of the
             "thor",
             "roxie"
         ],
-        "timeout":"600",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
+        "timeout":"720",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
         "maxAttemptCount":"3"                           - Max retry count to reset timeout if a testcase in any early stage (compiled, blocked) of execution pipeline.
 
 Optionally the config file can contain a section of default values for stored parameters like this:
