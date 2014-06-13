@@ -87,7 +87,16 @@ public:
         if (connected)
         {
             bool deleteRoot = false;
-            manager.commit(*this, &deleteRoot);
+            try
+            {
+                manager.commit(*this, &deleteRoot);
+            }
+            catch (IException *e)
+            {
+                VStringBuffer errMsg("beforeDispose commit connectionid=%"I64F"x, xpath=%s", connectionId, xpath.get());
+                EXCLOG(e, errMsg.str());
+                e->Release();
+            }
         }
         root.clear();
     }

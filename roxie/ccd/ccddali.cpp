@@ -721,15 +721,15 @@ public:
             CriticalBlock b(daliConnectionCrit);
             if (isConnected)
             {
+                isConnected = false;
                 delete serverStatus;
                 serverStatus = NULL;
                 closeDllServer();
                 closeEnvironment();
                 clientShutdownWorkUnit();
-                ::closedownClientProcess(); // dali client closedown
-                isConnected = false;
-                disconnectSem.signal();
                 disconnectRoxieQueues();
+                ::closedownClientProcess(); // dali client closedown
+                disconnectSem.signal();
             }
         }
     }
