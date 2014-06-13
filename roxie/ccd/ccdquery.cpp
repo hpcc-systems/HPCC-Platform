@@ -901,9 +901,13 @@ public:
     static hash64_t getQueryHash(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo, IArrayOf<IResolvedFile> &files, bool isDynamic)
     {
         hash64_t hashValue = package.queryHash();
+        if (traceLevel > 8)
+            DBGLOG("getQueryHash: %s %"I64F"u from package", id, hashValue);
         if (dll)
         {
             hashValue = rtlHash64VStr(dll->queryDll()->queryName(), hashValue);
+            if (traceLevel > 8)
+                DBGLOG("getQueryHash: %s %"I64F"u from dll", id, hashValue);
             if (!allFilesDynamic && !isDynamic && !package.isCompulsory())
             {
                 IConstWorkUnit *wu = dll->queryWorkUnit();
@@ -934,6 +938,8 @@ public:
                                         if (indexFile)
                                         {
                                             hashValue = indexFile->addHash64(hashValue);
+                                            if (traceLevel > 8)
+                                                DBGLOG("getQueryHash: %s %"I64F"u from index %s", id, hashValue, indexName);
                                             files.append(*const_cast<IResolvedFile *>(indexFile));
                                         }
                                     }
@@ -946,6 +952,8 @@ public:
                                             if (dataFile)
                                             {
                                                 hashValue = dataFile->addHash64(hashValue);
+                                                if (traceLevel > 8)
+                                                    DBGLOG("getQueryHash: %s %"I64F"u from index %s", id, hashValue, fileName);
                                                 files.append(*const_cast<IResolvedFile *>(dataFile));
                                             }
                                         }
@@ -959,12 +967,18 @@ public:
         }
         if (id)
             hashValue = rtlHash64VStr(id, hashValue);
+        if (traceLevel > 8)
+            DBGLOG("getQueryHash: %s %"I64F"u from id", id, hashValue);
         if (stateInfo)
         {
             StringBuffer xml;
             toXML(stateInfo, xml);
             hashValue = rtlHash64Data(xml.length(), xml.str(), hashValue);
+            if (traceLevel > 8)
+                DBGLOG("getQueryHash: %s %"I64F"u from stateInfo", id, hashValue);
         }
+        if (traceLevel > 8)
+            DBGLOG("getQueryHash: %s %"I64F"u", id, hashValue);
         return hashValue;
     }
     

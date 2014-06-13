@@ -2094,7 +2094,7 @@ public:
 
     virtual hash64_t addHash64(hash64_t hashValue) const
     {
-        hashValue = rtlHash64Data(sizeof(fileTimeStamp), &fileTimeStamp, hashValue);
+        hashValue = fileTimeStamp.getHash(hashValue);
         if (fileCheckSum)
             hashValue = rtlHash64Data(sizeof(fileCheckSum), &fileCheckSum, hashValue);
         return hashValue;

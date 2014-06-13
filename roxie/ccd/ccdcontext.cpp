@@ -3688,7 +3688,6 @@ public:
     static unsigned __int64 crcLogicalFileTime(IDistributedFile * file, unsigned __int64 crc, const char * filename)
     {
         CDateTime dt;
-        StringBuffer dtstr;
         file->getModificationTime(dt);
         unsigned __int64 modifiedTime = dt.getSimple();
         return rtlHash64Data(sizeof(modifiedTime), &modifiedTime, crc);
