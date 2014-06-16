@@ -566,8 +566,8 @@ So if you have a new test case and it works well on all clusters (or some of the
             "thor":"127.0.0.1",
             "roxie": "127.0.0.1"
         },
-        "roxieTestSocket": ":9876",                      - Roxie test socket addres (not used)
-        "epsSocket": ":8010",                          - ECl server socket
+        "roxieTestSocket": ":9876",                     - Roxie test socket address (not used)
+        "espSocket": ":8010",                           - ESP service address
         "username": "regress",                          - Regression Suite dedicated username and pasword
         "password": "regress",
         "suiteDir": "",                                 - default suite directory location - ""-> current directory

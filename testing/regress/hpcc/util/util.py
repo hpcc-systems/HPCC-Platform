@@ -108,14 +108,16 @@ def queryWuid(jobname,  taskId):
     state = 'N/A'
     result = 'Fail'
     if len(res):
-        results = res.split(',')
-        for result in results:
-            result = result.strip()
-            [key, val] = result.split(':')
-            if key == 'ID':
-                wuid = val
-            if key == 'state':
-                state = val
+        resultItems = res.split(',')
+        if len(resultItems) == 3:
+            result = 'OK'
+            for resultItem in resultItems:
+                resultItem = resultItem.strip()
+                [key, val] = resultItem.split(':')
+                if key == 'ID':
+                    wuid = val
+                if key == 'state':
+                    state = val
     return {'wuid':wuid, 'state':state,  'result':result}
 
 def abortWorkunit(wuid):

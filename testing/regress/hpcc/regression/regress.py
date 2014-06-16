@@ -436,7 +436,7 @@ class Regression:
             wuid="N/A"
 
         if wuid and wuid.startswith("W"):
-            url = "http://" + self.config.ip+self.config.epsSocket
+            url = "http://" + self.config.ip+self.config.espSocket
             url += "/WsWorkunits/WUInfo?Wuid="
             url += wuid
         else:

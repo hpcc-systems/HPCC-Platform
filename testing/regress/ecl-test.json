@@ -6,7 +6,7 @@
             "roxie": "127.0.0.1"
         },
         "roxieTestSocket": ":9876",
-        "epsSocket": ":8010",
+        "espSocket": ":8010",
         "username": "regress",
         "password": "regress",
         "suiteDir": "",
