@@ -134,6 +134,8 @@ private:
         const char* beforeSubFile, bool existingSuperfile, bool autocreatesuper, bool deleteFile, bool removeSuperfile =  true);
     void getFilePartsOnClusters(IEspContext &context, const char* clusterReq, StringArray& clusters, IDistributedFile* df, IEspDFUFileDetail& FileDetails,
         offset_t& mn, offset_t& mx, offset_t& sum, offset_t& count);
+    void setDeleteFileResults(const char* fileName, const char* nodeGroup, bool failed, const char* message, StringBuffer& resultString,
+        IArrayOf<IEspDFUActionInfo>& actionResults);
 private:
     bool         m_disableUppercaseTranslation;
     StringBuffer m_clusterName;

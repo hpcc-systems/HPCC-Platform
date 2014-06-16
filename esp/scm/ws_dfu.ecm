@@ -133,6 +133,14 @@ ESPStruct DFUSpaceItem
     string SmallestSize;
 };
 
+ESPStruct DFUActionInfo
+{
+    string FileName;
+    string NodeGroup;
+    string ActionResult;
+    bool   Failed;
+};
+
 ESPrequest [nil_remove] DFUQueryRequest
 {
     string Prefix;
@@ -236,7 +244,8 @@ DFUArrayActionResponse
 {
     [min_ver("1.04")] string BackToPage;
     [min_ver("1.18")] string RedirectTo;
-    string DFUArrayActionResult;
+    string DFUArrayActionResult; //used by legacy eclwatch
+    [min_ver("1.27")] ESParray<ESPstruct DFUActionInfo> ActionResults;
 };
 
 ESPrequest 
@@ -641,7 +650,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.26"), default_client_version("1.26"),
+    version("1.27"), default_client_version("1.27"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
