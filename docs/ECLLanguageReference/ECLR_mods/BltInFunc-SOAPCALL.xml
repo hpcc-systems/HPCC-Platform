@@ -253,8 +253,8 @@
                 <primary>NOTRIM</primary>
               </indexterm></entry>
 
-            <entry>Sets flag to prevent space stripping on the response.
-            </entry>
+            <entry>Sets flag to prevent space stripping on the
+            response.</entry>
           </row>
 
           <row>
@@ -291,14 +291,14 @@
                 <primary>LOG</primary>
               </indexterm></emphasis></entry>
 
-            <entry>Specifies to write details to the log file of the engine
-            (hThor, Thor, or Roxie) to which the SOAPCALL is submitted.
-            </entry>
+            <entry>If specified, writes details to the log file of the engine
+            (hThor, Thor, or Roxie) to which the SOAPCALL is
+            submitted.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">LOG
-            </emphasis>(<emphasis>value</emphasis>)</entry>
+            </emphasis>(<emphasis>MIN</emphasis>)</entry>
 
             <entry>Specifies to write minimal details of the SOAPCALL to a log
             file.</entry>
