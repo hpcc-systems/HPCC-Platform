@@ -23,7 +23,6 @@ define([
     "dojo/topic",
     "dijit/registry",
 
-    "hpcc/_Widget",
     "hpcc/_TabContainerWidget",
     "hpcc/DelayLoadWidget",
     "hpcc/ECLSourceWidget",
@@ -34,10 +33,10 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
-    "dijit/form/Button"
+    "dijit/form/Button",
+    "dijit/form/Select"
 ], function (declare, lang, i18n, nlsHPCC, dom, query, topic, registry,
-                _Widget, _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps,
-                template) {
+    _TabContainerWidget, DelayLoadWidget, EclSourceWidget, WsPackageMaps, template) {
     return declare("PackageMapValidateWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapValidateWidget",
@@ -57,6 +56,7 @@ define([
 
         constructor: function() {
             this.processes = new Array();
+            this.targets = new Array();
         },
 
         buildRendering: function (args) {
@@ -83,14 +83,38 @@ define([
             this.validatePackageMapContentWidget = registry.byId(this.id + "_ValidatePackageMapContent");
         },
 
+        getSelections: function () {
+            var context = this;
+            WsPackageMaps.GetPackageMapSelectOptions({
+                    includeTargets: true,
+                    IncludeProcesses: true,
+                    IncludeProcessFilters: true
+                }, {
+                load: function (response) {
+                    if (lang.exists("Targets.TargetData", response)) {
+                        context.targets = response.Targets.TargetData;
+                        context.initSelections(context.targets);
+                    }
+                },
+                error: function (errMsg, errStack) {
+                    context.showErrors(errMsg, errStack);
+                }
+            });
+        },
+
         //  init this page
         init: function (params) {
             if (this.initalized)
                 return;
 
+	    if (this.inherited(arguments))
+                return;
+
             this.initalized = true;
             if (params.params.targets !== undefined)
                 this.initSelections(params.params.targets);
+            else
+                this.getSelections();
 
             this.editorControl = registry.byId(this.id + "Source");
             this.editorControl.init(params);

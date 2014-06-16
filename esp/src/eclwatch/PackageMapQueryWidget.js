@@ -61,7 +61,7 @@ define([
     _TabContainerWidget, DelayLoadWidget, PackageMapDetailsWidget, PackageMapValidateWidget,
     WsPackageMaps, ESPPackageProcess, SFDetailsWidget,
     template) {
-    return declare("PackageMapQueryWidget", [_TabContainerWidget, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("PackageMapQueryWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapQueryWidget",
         i18n: nlsHPCC,
@@ -403,6 +403,9 @@ define([
 
         init: function (params) {
             if (this.initalized)
+                return;
+
+            if (this.inherited(arguments))
                 return;
 
             this.initalized = true;

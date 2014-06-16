@@ -22,28 +22,24 @@ define([
     "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/topic",
-
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
-    "hpcc/WsPackageMaps",
+    "hpcc/_TabContainerWidget",
+    "hpcc/DelayLoadWidget",
     "hpcc/PackageSourceWidget",
+    "hpcc/WsPackageMaps",
 
     "dojo/text!../templates/PackageMapDetailsWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
+    "dijit/form/TextBox",
     "dijit/form/Button",
-    "dijit/Toolbar",
-    "dijit/TooltipDialog",
-    "dijit/TitlePane"
-], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic,
-    _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-    WsPackageMaps, PackageSourceWidget, template) {
-    return declare("PackageMapDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    "dijit/Toolbar"
+], function (declare, lang, i18n, nlsHPCC, dom, domAttr, domClass, topic, registry,
+    _TabContainerWidget, DelayLoadWidget, PackageSourceWidget, WsPackageMaps, template) {
+    return declare("PackageMapDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "PackageMapDetailsWidget",
         i18n: nlsHPCC,
@@ -108,6 +104,9 @@ define([
         init: function (params) {
             if (this.initalized)
                 return;
+	    if (this.inherited(arguments))
+                return;
+
             this.initalized = true;
             this.tabId = params.tabId;
             this.packageMap = params.packageMap;
