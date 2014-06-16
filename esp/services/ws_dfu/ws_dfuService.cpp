@@ -1134,8 +1134,31 @@ bool CWsDfuEx::onAddtoSuperfile(IEspContext &context, IEspAddtoSuperfileRequest 
     return true;
 }
 
+void CWsDfuEx::setDeleteFileResults(const char* fileName, const char* nodeGroup, bool failed, const char* actionResult, StringBuffer& resultString,
+    IArrayOf<IEspDFUActionInfo>& successActions, IArrayOf<IEspDFUActionInfo>& failedActions)
+{
+    if (!fileName || !*fileName)
+        return;
+    Owned<IEspDFUActionInfo> resultObj = createDFUActionInfo("", "");
+    resultObj->setFileName(fileName);
+    resultObj->setFailed(failed);
+    if (nodeGroup && *nodeGroup)
+        resultObj->setNodeGroup(nodeGroup);
+    if (actionResult && *actionResult)
+    {
+        resultObj->setActionResult(actionResult);
+        resultString.appendf("<Message><Value>%s</Value></Message>", actionResult);
+    }
+    if (!failed)
+        successActions.append(*resultObj.getClear());
+    else
+        failedActions.append(*resultObj.getClear());
+    return;
+}
+
 bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
 {
+    double version = context.getClientVersion();
     StringBuffer username;
     context.getUserID(username);
 
@@ -1149,17 +1172,29 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
     StringBuffer returnStr;
 
     StringArray superFileNames, filesCannotBeDeleted;
+    IArrayOf<IEspDFUActionInfo> successActions, failedActions;
     for(int j = 0; j < 2; j++) //j=0: delete superfiles first
     {
         for(unsigned i = 0; i < req.getLogicalFiles().length(); i++)
         {
-            const char* filename = req.getLogicalFiles().item(i);
-            if(!filename || !*filename)
+            const char* fileNameAndNodeGroup = req.getLogicalFiles().item(i);
+            if(!fileNameAndNodeGroup || !*fileNameAndNodeGroup)
                 continue;
 
+            const char* fileName = NULL;
+            const char* nodeGroup = NULL;
+            StringArray fileNameOrNodeGroup;
+            fileNameOrNodeGroup.appendListUniq(fileNameAndNodeGroup, "@");
+            fileName = fileNameOrNodeGroup.item(0);
+            if (fileNameOrNodeGroup.length() > 1)
+            {
+                nodeGroup = fileNameOrNodeGroup.item(1);
+                if (!*nodeGroup || strieq(nodeGroup, "null")) //null is used by new ECLWatch for a superfile
+                    nodeGroup = NULL;
+            }
             if (j>0)
             { // 2nd pass, now we want to skip superfiles and the files which cannot do the lookup.
-                if (superFileNames.contains(filename) || filesCannotBeDeleted.contains(filename))
+                if (superFileNames.contains(fileNameAndNodeGroup) || filesCannotBeDeleted.contains(fileNameAndNodeGroup))
                     continue;
             }
 
@@ -1167,11 +1202,17 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
             {
                 IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
                 {
-                    Owned<IDistributedFile> df = fdir.lookup(filename, userdesc, true);
+                    Owned<IDistributedFile> df = fdir.lookup(fileNameAndNodeGroup, userdesc, true);
                     if(!df)
                     {
-                        returnStr.appendf("<Message><Value>Cannot delete %s: file not found</Value></Message>", filename);
-                        filesCannotBeDeleted.append(filename);
+                        StringBuffer message;
+                        if (!nodeGroup || !*nodeGroup)
+                            message.appendf("Cannot delete %s: file not found", fileName);
+                        else
+                            message.appendf("Cannot delete %s on %s: file not found", fileName, nodeGroup);
+                        setDeleteFileResults(fileName, nodeGroup, true, message, returnStr, successActions, failedActions);
+                        PROGLOG("Deleted Logical File: %s by: %s\n",fileNameAndNodeGroup, username.str());
+                        filesCannotBeDeleted.append(fileNameAndNodeGroup);
                         continue;
                     }
                     if (0==j) // skip non-super files on 1st pass
@@ -1179,33 +1220,52 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                         if(!df->querySuperFile())
                             continue;
 
-                        superFileNames.append(filename);
+                        superFileNames.append(fileNameAndNodeGroup);
                     }
                 }
-                fdir.removeEntry(filename, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
-                PROGLOG("Deleted Logical File: %s by: %s\n",filename, username.str());
-                returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", filename);
+                fdir.removeEntry(fileNameAndNodeGroup, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
+                StringBuffer message;
+                if (!nodeGroup || !*nodeGroup)
+                    message.appendf("File %s deleted", fileName);
+                else
+                    message.appendf("File %s deleted on %s", fileName, nodeGroup);
+                setDeleteFileResults(fileName, nodeGroup, false, message, returnStr, successActions, failedActions);
             }
             catch(IException* e)
             {
-                filesCannotBeDeleted.append(filename);
+                filesCannotBeDeleted.append(fileNameAndNodeGroup);
 
                 StringBuffer emsg;
                 e->errorMessage(emsg);
                 if((e->errorCode() == DFSERR_CreateAccessDenied) && (req.getType() != NULL))
                     emsg.replaceString("Create ", "Delete ");
 
-                returnStr.appendf("<Message><Value>Cannot delete %s: %s</Value></Message>", filename, emsg.str());
+                StringBuffer message;
+                if (!nodeGroup || !*nodeGroup)
+                    message.appendf("Cannot delete %s: %s", fileName, emsg.str());
+                else
+                    message.appendf("Cannot delete %s on %s: %s", fileName, nodeGroup, emsg.str());
+                setDeleteFileResults(fileName, nodeGroup, true, message, returnStr, successActions, failedActions);
                 e->Release();
             }
             catch(...)
             {
-                returnStr.appendf("<Message><Value>Cannot delete %s: unknown exception.</Value></Message>", filename);
+                StringBuffer message;
+                if (!nodeGroup || !*nodeGroup)
+                    message.appendf("Cannot delete %s: unknown exception.", fileName);
+                else
+                    message.appendf("Cannot delete %s on %s: unknown exception.", fileName, nodeGroup);
+                setDeleteFileResults(fileName, nodeGroup, true, message, returnStr, successActions, failedActions);
             }
         }
     }
 
-    resp.setDFUArrayActionResult(returnStr.str());
+    if (version >= 1.27)
+    {
+        resp.setSuccessActions(successActions);
+        resp.setFailedActions(failedActions);
+    }
+    resp.setDFUArrayActionResult(returnStr.str());//Used by legacy
     return true;
 }
 
