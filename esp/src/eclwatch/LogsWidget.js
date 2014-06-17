@@ -96,15 +96,6 @@ define([
                     }
                 }
             },
-            _onDownload: function (args) {
-                this._doDownload(1);
-            },
-            _onDownloadZip: function (args) {
-                this._doDownload(2);
-            },
-            _onDownloadGZip: function (args) {
-                this._doDownload(3);
-            },
             //  Plugin wrapper  ---
             init: function (params) {
                 if (this.inherited(arguments))
@@ -135,6 +126,12 @@ define([
                     label: this.i18n.Zip,
                     onClick: function (event) {
                         context._doDownload(2);
+                    }
+                }).placeAt(this.openButton.domNode, "after");
+                this.downloadFile = new Button({
+                    label: this.i18n.File,
+                    onClick: function (event) {
+                        context._doDownload(1);
                     }
                 }).placeAt(this.openButton.domNode, "after");
                 var label = document.createTextNode("");
@@ -275,6 +272,7 @@ define([
                 registry.byId(this.id + "Open").set("disabled", !canShowContent);
                 this.downloadGZip.set("disabled", !canDownload);
                 this.downloadZip.set("disabled", !canDownload);
+                this.downloadFile.set("disabled", !canDownload);
             },
 
             loadLogs: function (logs) {

@@ -226,10 +226,8 @@ define([
         },
         doDelete: function (params) {
             var context = this;
-            WsDfu.DFUArrayAction([this], "Delete", {
-                load: function (response) {
-                    context.refresh();
-                }
+            WsDfu.DFUArrayAction([this], "Delete").then(function (response) {
+                context.refresh();
             });
         },
         despray: function (params) {
@@ -325,6 +323,39 @@ define([
         },
         fetchXML: function (onFetchXML) {
             this.fetchStructure("xml", onFetchXML);
+        },
+        getStateIconClass: function () {
+            if (this.isSuperfile) {
+                switch (this.StateID) {
+                    case 999:
+                        return "iconSuperFileDeleted";
+                }
+                return "iconSuperFile";
+            } else {
+                switch (this.StateID) {
+                    case 999:
+                        return "iconLogicalFileDeleted";
+                }
+                return "iconLogicalFile";
+            }
+        },
+        getStateImageName: function () {
+            if (this.isSuperfile) {
+                switch (this.StateID) {
+                    case 999:
+                        return "superfile_deleted.png"
+                }
+                return "superfile.png";
+            } else {
+                switch (this.StateID) {
+                    case 999:
+                        return "logicalfile_deleted.png";
+                }
+                return "logicalfile.png";
+            }
+        },
+        getStateImageHTML: function () {
+            return dojoConfig.getImageHTML(this.getStateImageName());
         }
     });
 

@@ -277,18 +277,20 @@ define([
                     this.removeChild(this.dfuWorkunitWidget);
                     this.dfuWorkunitWidget = null;
                 }
-            }
-            if (name === "Name") {
+            } else if (name === "Name") {
                 this.updateInput("RenameSourceName", oldValue, newValue);
                 this.updateInput("RenameTargetName", oldValue, newValue);
                 this.updateInput("DespraySourceName", oldValue, newValue);
                 this.updateInput("CopySourceName", oldValue, newValue);
                 this.updateInput("CopyTargetName", oldValue, newValue);
-            }
-            if (name === "Ecl" && newValue) {
+            } else if (name === "Ecl" && newValue) {
                 this.setDisabled(this.id + "_Source", false);
                 this.setDisabled(this.id + "_DEF", false);
                 this.setDisabled(this.id + "_XML", false);
+            } else if (name === "StateID") {
+                this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
+                domClass.remove(this.id + "StateIdImage");
+                domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
             }
         },
 

@@ -93,7 +93,7 @@ define([
             return Observable(store);
         },
 
-        DFUArrayAction: function (logicalFiles, actionType, callback) {
+        DFUArrayAction: function (logicalFiles, actionType) {
             arrayUtil.forEach(logicalFiles, function (item, idx) {
                 item.qualifiedName = item.Name + "@" + item.NodeGroup;
             });
@@ -104,29 +104,11 @@ define([
             ESPRequest.flattenArray(request, "LogicalFiles", "qualifiedName");
 
             return ESPRequest.send("WsDfu", "DFUArrayAction", {
-                request: request,
-                load: function (response) {
-                    if (lang.exists("DFUArrayActionResponse.DFUArrayActionResult", response)) {
-                        topic.publish("hpcc/brToaster", {
-                            Severity: "Error",
-                            Source: "WsDfu.DFUArrayAction",
-                            Exceptions: [{ Message: response.DFUArrayActionResponse.DFUArrayActionResult }]
-                        });
-                    }
-
-                    if (callback && callback.load) {
-                        callback.load(response);
-                    }
-                },
-                error: function (err) {
-                    if (callback && callback.error) {
-                        callback.error(err);
-                    }
-                }
+                request: request
             });
         },
 
-        SuperfileAction: function (action, superfile, subfiles, removeSuperfile, callback) {
+        SuperfileAction: function (action, superfile, subfiles, removeSuperfile) {
             var request = {
                 action: action,
                 superfile: superfile,
@@ -136,29 +118,11 @@ define([
             ESPRequest.flattenArray(request, "subfiles", "Name");
 
             return ESPRequest.send("WsDfu", "SuperfileAction", {
-                request: request,
-                load: function (response) {
-                    if (lang.exists("SuperfileActionResponse", response) && response.SuperfileActionResponse.retcode) {
-                        topic.publish("hpcc/brToaster", {
-                            Severity: "Error",
-                            Source: "WsDfu.SuperfileAction",
-                            Exceptions: [{ Message: dojo.toJson(response.SuperfileActionResponse) }]
-                        });
-                    }
-
-                    if (callback && callback.load) {
-                        callback.load(response);
-                    }
-                },
-                error: function (err) {
-                    if (callback && callback.error) {
-                        callback.error(err);
-                    }
-                }
+                request: request
             });
         },
 
-        AddtoSuperfile: function (logicalFiles, superfile, existingFile, callback) {
+        AddtoSuperfile: function (logicalFiles, superfile, existingFile) {
             var request = {
                 names: logicalFiles,
                 Superfile: superfile,
@@ -167,25 +131,7 @@ define([
             ESPRequest.flattenArray(request, "names", "Name");
 
             return ESPRequest.send("WsDfu", "AddtoSuperfile", {
-                request: request,
-                load: function (response) {
-                    if (lang.exists("AddtoSuperfileResponse.Subfiles", response)) {
-                        topic.publish("hpcc/brToaster", {
-                            Severity: "Error",
-                            Source: "WsDfu.AddtoSuperfile",
-                            Exceptions: [{ Message: response.AddtoSuperfileResponse.Subfiles }]
-                        });
-                    }
-
-                    if (callback && callback.load) {
-                        callback.load(response);
-                    }
-                },
-                error: function (err) {
-                    if (callback && callback.error) {
-                        callback.error(err);
-                    }
-                }
+                request: request
             });
         },
 
@@ -202,7 +148,24 @@ define([
         },
 
         DFUInfo: function (params) {
-            return ESPRequest.send("WsDfu", "DFUInfo", params);
+            return ESPRequest.send("WsDfu", "DFUInfo", params).then(function (response) {
+                if (lang.exists("Exceptions.Exception", response)) {
+                    arrayUtil.forEach(response.Exceptions.Exception, function (item, idx) {
+                        if (item.Code === 20038) {
+                            lang.mixin(response, {
+                                DFUInfoResponse: {
+                                    FileDetail: {
+                                        Name: params.request.Name,
+                                        StateID: 999,
+                                        State: "deleted"
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+                return response;
+            });
         },
 
         DFUDefFile: function (params) {
