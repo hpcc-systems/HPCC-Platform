@@ -142,10 +142,8 @@ define([
         _onDelete: function (event) {
             if (confirm(this.i18n.DeleteSelectedFiles)) {
                 var context = this;
-                WsDfu.DFUArrayAction(this.workunitsGrid.getSelected(), this.i18n.Delete, {
-                    load: function (response) {
-                        context.refreshGrid(true);
-                    }
+                WsDfu.DFUArrayAction(this.workunitsGrid.getSelected(), this.i18n.Delete).then(function(response) {
+                    context.refreshGrid(true);
                 });
             }
         },
@@ -217,10 +215,8 @@ define([
             if (this.addToSuperFileForm.validate()) {
                 var context = this;
                 var formData = domForm.toObject(this.id + "AddToSuperfileForm");
-                WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
-                    load: function (response) {
-                        context.refreshGrid();
-                    }
+                WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile).then(function(response) {
+                    context.refreshGrid();
                 });
                 registry.byId(this.id + "AddtoDropDown").closeDropDown();
             }
@@ -429,25 +425,13 @@ define([
                             return "";
                         }
                     },
-                    isSuperfile: {
-                        width: 25, sortable: false,
-                        renderHeaderCell: function (node) {
-                            node.innerHTML = dojoConfig.getImageHTML("superfile.png", context.i18n.Superfile);
-                        },
-                        formatter: function (superfile) {
-                            if (superfile == true) {
-                                return dojoConfig.getImageHTML("superfile.png");
-                            }
-                            return "";
-                        }
-                    },
                     __hpcc_displayName: tree({
                         label: this.i18n.LogicalName,
                         formatter: function (name, row) {
                             if (row.__hpcc_isDir) {
                                 return name;
                             }
-                            return "<a href='#' rowIndex=" + row + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
+                            return (row.getStateImageHTML ? row.getStateImageHTML() + "&nbsp;" : "") + "<a href='#' rowIndex=" + row + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
                         },
                         renderExpando: function (level, hasChildren, expanded, object) {
                             var dir = this.grid.isRTL ? "right" : "left";
@@ -580,9 +564,14 @@ define([
                 var context = this;
                 var data = [];
                 var matchedPrefix = [];
+                var filenames = {};
                 arrayUtil.forEach(selection, function (item, idx) {
                     if (item.Name) {
                         var nameParts = item.Name.split("::");
+                        if (nameParts.length) {
+                            var filename = nameParts[nameParts.length - 1];
+                            filenames[filename] = true;
+                        }
                         if (idx === 0) {
                             matchedPrefix = nameParts.slice(0, nameParts.length - 1);
                         } else {
@@ -602,7 +591,12 @@ define([
                         data.push(item);
                     }
                 });
-                registry.byId(this.id + "AddToSuperfileTargetName").set("value", matchedPrefix.join("::") + "::superfile");
+                var superfileName = "superfile";
+                var i = 1;
+                while (filenames[superfileName]) {
+                    superfileName = "superfile_" + i++;
+                }
+                registry.byId(this.id + "AddToSuperfileTargetName").set("value", matchedPrefix.join("::") + "::" + superfileName);
                 this.copyGrid.setData(data);
                 this.renameGrid.setData(data);
                 this.addToSuperfileGrid.setData(data);

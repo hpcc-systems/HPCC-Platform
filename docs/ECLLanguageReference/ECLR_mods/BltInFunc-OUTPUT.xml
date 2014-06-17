@@ -312,7 +312,9 @@
       </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
     role="bold">OVERWRITE<indexterm>
         <primary>OVERWRITE</primary>
-      </indexterm>]</emphasis><emphasis role="bold">
+      </indexterm>]<emphasis role="bold">[, UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]</emphasis></emphasis><emphasis role="bold">
     [</emphasis><emphasis>,</emphasis><emphasis role="bold">EXPIRE<indexterm>
         <primary>EXPIRE</primary>
       </indexterm>( [</emphasis><emphasis> days </emphasis><emphasis
@@ -375,6 +377,13 @@
 
               <entry>Optional. Specifies overwriting the file if it already
               exists.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Specifies that the file should be rewritten only if the
+              code or input data has changed.</entry>
             </row>
 
             <row>
@@ -459,8 +468,11 @@ OUTPUT(People(Attr1=FALSE));
     <para><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
     role="bold"> OVERWRITE<indexterm>
         <primary>OVERWRITE</primary>
-      </indexterm> ]</emphasis><emphasis role="bold">
-    [</emphasis><emphasis>,</emphasis><emphasis role="bold"> EXPIRE<indexterm>
+      </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
+    UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> EXPIRE<indexterm>
         <primary>EXPIRE</primary>
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
     role="bold">] ) ] )</emphasis></para>
@@ -515,6 +527,13 @@ OUTPUT(People(Attr1=FALSE));
 
               <entry>Optional. Specifies overwriting the file if it already
               exists.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Specifies that the file should be rewritten only if the
+              code or input data has changed.</entry>
             </row>
 
             <row>
@@ -704,8 +723,11 @@ OUTPUT(XMLds,,'~thor::outdata.xml',CSV(HEADING('&lt;XML&gt;','&lt;/XML&gt;')));
     role="bold">) ] [</emphasis><emphasis>,</emphasis><emphasis role="bold">
     OVERWRITE<indexterm>
         <primary>OVERWRITE</primary>
-      </indexterm> ]</emphasis><emphasis role="bold">
-    [</emphasis><emphasis>,</emphasis><emphasis role="bold"> EXPIRE<indexterm>
+      </indexterm> ]</emphasis><emphasis role="bold"><emphasis role="bold">[,
+    UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]</emphasis> [</emphasis><emphasis>,</emphasis><emphasis
+    role="bold"> EXPIRE<indexterm>
         <primary>EXPIRE</primary>
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
     role="bold">] ) ] )</emphasis></para>
@@ -760,6 +782,13 @@ OUTPUT(XMLds,,'~thor::outdata.xml',CSV(HEADING('&lt;XML&gt;','&lt;/XML&gt;')));
 
               <entry>Optional. Specifies overwriting the file if it already
               exists.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Specifies that the file should be rewritten only if the
+              code or input data has changed.</entry>
             </row>
 
             <row>

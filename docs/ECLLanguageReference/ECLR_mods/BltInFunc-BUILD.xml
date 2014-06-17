@@ -158,7 +158,9 @@
       </indexterm>( </emphasis><emphasis>basedataset</emphasis><emphasis
     role="bold"> )] [, OVERWRITE<indexterm>
         <primary>OVERWRITE</primary>
-      </indexterm>]</emphasis><emphasis role="bold"> <emphasis
+      </indexterm>]</emphasis><emphasis role="bold"> [, UPDATE<indexterm>
+        <primary>UPDATE</primary>
+      </indexterm>]<emphasis
     role="bold">[</emphasis><emphasis>,</emphasis><emphasis
     role="bold">EXPIRE<indexterm>
         <primary>EXPIRE</primary>
@@ -275,6 +277,13 @@
 
               <entry>Specifies overwriting the <emphasis>indexfile</emphasis>
               if it already exists.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">UPDATE</emphasis></entry>
+
+              <entry>Specifies that the file should be rewritten only if the
+              code or input data has changed.</entry>
             </row>
 
             <row>

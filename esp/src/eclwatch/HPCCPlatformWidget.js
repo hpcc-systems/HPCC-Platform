@@ -163,12 +163,21 @@ define([
                     context.refreshUserName();
                     if (!cookie("PasswordExpiredCheck")) {
                         cookie("PasswordExpiredCheck", "true", { expires: 1 });
-                        if (lang.exists("MyAccountResponse.passwordDaysRemaining", response) &&
-                            response.MyAccountResponse.passwordDaysRemaining !== null &&
-                            response.MyAccountResponse.passwordDaysRemaining >= 0 &&
-                            response.MyAccountResponse.passwordDaysRemaining <= 10) {
-                            if (confirm(context.i18n.PasswordExpirePrefix + response.MyAccountResponse.passwordDaysRemaining + context.i18n.PasswordExpirePostfix)) {
-                                context._onUserID();
+                        if (lang.exists("MyAccountResponse.passwordDaysRemaining", response)) {
+                            switch (response.MyAccountResponse.passwordDaysRemaining) {
+                                case -1:
+                                    alert(context.i18n.PasswordExpired);
+                                    context._onUserID();
+                                    break;
+                                case -2:
+                                    break;
+                                default:
+                                    if (response.MyAccountResponse.passwordDaysRemaining <= 10) {
+                                        if (confirm(context.i18n.PasswordExpirePrefix + response.MyAccountResponse.passwordDaysRemaining + context.i18n.PasswordExpirePostfix)) {
+                                            context._onUserID();
+                                        }
+                                    }
+                                    break;
                             }
                         }
                     }
