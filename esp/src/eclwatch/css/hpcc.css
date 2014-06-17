@@ -783,7 +783,25 @@ margin-left:-20px;
 }
 
 .iconLogicalFile {
-    background-image: url("../img/folder_table.png"); 
+    background-image: url("../img/logicalfile.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconLogicalFileDeleted {
+    background-image: url("../img/logicalfile_deleted.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconSuperFile {
+    background-image: url("../img/superfile.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+.iconSuperFileDeleted {
+    background-image: url("../img/superfile_deleted.png"); 
     width: 16px;
     height: 16px;
 }
