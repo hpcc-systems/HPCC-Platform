@@ -47,7 +47,7 @@ const char* THORQUEUE_FEATURE = "ThorQueueAccess";
 static const char* ROXIE_CONTROL_URL = "RoxieControlAccess";
 
 const char* PERMISSIONS_FILENAME = "espsmc_permissions.xml";
-const unsigned ACTIVITYINFOCACHETIMEOUTSECOND = 3;
+const unsigned DEFAULTACTIVITYINFOCACHETIMEOUTSECOND = 10;
 
 void AccessSuccess(IEspContext& context, char const * msg,...) __attribute__((format(printf, 2, 3)));
 void AccessSuccess(IEspContext& context, char const * msg,...)
@@ -152,6 +152,9 @@ void CWsSMCEx::init(IPropertyTree *cfg, const char *process, const char *service
     const char* portalURL = cfg->queryProp(xpath.str());
     if (portalURL && *portalURL)
         m_PortalURL.append(portalURL);
+
+    xpath.setf("Software/EspProcess[@name=\"%s\"]/EspService[@name=\"%s\"]/ActivityInfoCacheSeconds", process, service);
+    activityInfoCacheSeconds = cfg->getPropInt(xpath.str(), DEFAULTACTIVITYINFOCACHETIMEOUTSECOND);
 }
 
 static void countProgress(IPropertyTree *t,unsigned &done,unsigned &total)
@@ -553,8 +556,9 @@ void CWsSMCEx::setBannerAndChatData(double version, IEspActivityResponse& resp)
         resp.setBannerScroll(m_BannerScroll.str());
 }
 
-void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp, double version,
-        IPropertyTree* envRoot, CConstWUClusterInfoArray& clusters)
+void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, IPropertyTree* envRoot, CConstWUClusterInfoArray& clusters,
+    IArrayOf<IEspThorCluster>& thorClusters, IArrayOf<IEspHThorCluster>& hThorClusters, IArrayOf<IEspRoxieCluster>& roxieClusters,
+    IArrayOf<IEspActiveWorkunit>& aws, IArrayOf<IEspServerJobQueue>& serverJobQueues, IArrayOf<IEspDFUJob>& DFURecoveryJobs)
 {
     BoolHash uniqueWUIDs;
 
@@ -569,13 +573,14 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
     {
         Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server[@name!=\"ECLagent\"]"));
         ForEach(*it)
-            addRunningWUs(context, it->query(), clusters, activityInfoCache->aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
+            addRunningWUs(context, it->query(), clusters, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
 
         Owned<IPropertyTreeIterator> it1(conn->queryRoot()->getElements("Server[@name=\"ECLagent\"]"));
         ForEach(*it1)
-            addRunningWUs(context, it1->query(), clusters, activityInfoCache->aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
+            addRunningWUs(context, it1->query(), clusters, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
     }
 
+    double version = context.getClientVersion();
     ForEachItemIn(c, clusters)
     {
         IConstWUClusterInfo &cluster = clusters.item(c);
@@ -594,7 +599,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
             CJobQueueContents contents;
             Owned<IJobQueue> queue = createJobQueue(queueName);
             queue->copyItemsAndState(contents, queueState, queueStateDetails);
-            addQueuedWorkUnits(queueName, contents, activityInfoCache->aws, context, "ThorMaster", NULL);
+            addQueuedWorkUnits(queueName, contents, aws, context, "ThorMaster", NULL);
 
             BulletType bulletType = bulletGreen;
             int serverID = runningQueueNames.find(queueName);
@@ -608,7 +613,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
             Owned<IJobQueue> agentQueue = createJobQueue(agentQueueName);
             agentQueue->copyItemsAndState(agentContents, agentQueueState, agentQueueStateDetails);
             //Use the same 'queueName' because the job belongs to the same cluster
-            addQueuedWorkUnits(queueName, agentContents, activityInfoCache->aws, context, "ThorMaster", NULL);
+            addQueuedWorkUnits(queueName, agentContents, aws, context, "ThorMaster", NULL);
             if (bulletType == bulletGreen)
             {//If ThorQueue is normal, check the AgentQueue
                 serverID = runningQueueNames.find(agentQueueName);
@@ -622,7 +627,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
             if (version > 1.10)
                 returnCluster->setClusterSize(cluster.getSize());
 
-            addToThorClusterList(activityInfoCache->ThorClusters, returnCluster, req.getSortBy(), req.getDescending());
+            addToThorClusterList(thorClusters, returnCluster, req.getSortBy(), req.getDescending());
         }
         if (version > 1.06)
         {
@@ -640,7 +645,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
                 CJobQueueContents contents;
                 Owned<IJobQueue> queue = createJobQueue(queueName);
                 queue->copyItemsAndState(contents, queueState, queueStateDetails);
-                addQueuedWorkUnits(queueName, contents, activityInfoCache->aws, context, "RoxieServer", NULL);
+                addQueuedWorkUnits(queueName, contents, aws, context, "RoxieServer", NULL);
 
                 BulletType bulletType = bulletGreen;
                 int serverID = runningQueueNames.find(queueName);
@@ -651,7 +656,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
                 if (version > 1.10)
                     returnCluster->setClusterSize(cluster.getSize());
 
-                addToRoxieClusterList(activityInfoCache->RoxieClusters, returnCluster, req.getSortBy(), req.getDescending());
+                addToRoxieClusterList(roxieClusters, returnCluster, req.getSortBy(), req.getDescending());
             }
         }
         if (version > 1.11 && (cluster.getPlatform() == HThorCluster))
@@ -667,7 +672,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
             CJobQueueContents contents;
             Owned<IJobQueue> queue = createJobQueue(queueName);
             queue->copyItemsAndState(contents, queueState, queueStateDetails);
-            addQueuedWorkUnits(queueName, contents, activityInfoCache->aws, context, "HThorServer", NULL);
+            addQueuedWorkUnits(queueName, contents, aws, context, "HThorServer", NULL);
 
             BulletType bulletType = bulletGreen;
             int serverID = runningQueueNames.find(queueName);
@@ -675,7 +680,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
             getQueueState(numRunningJobsInQueue, queueState, bulletType);
             returnCluster->setQueueStatus(queueState.str());
             returnCluster->setQueueStatus2(bulletType);
-            activityInfoCache->HThorClusters.append(*returnCluster);
+            hThorClusters.append(*returnCluster);
         }
     }
 
@@ -708,7 +713,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
             Owned<IJobQueueIterator> iter = contents.getIterator();
             ForEach(*iter)
             {
-                if (isInWuList(activityInfoCache->aws, iter->query().queryWUID()))
+                if (isInWuList(aws, iter->query().queryWUID()))
                     continue;
 
                 Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(context, iter->query().queryWUID(),NULL, ++count));
@@ -716,10 +721,10 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
                 wu->setInstance(serverName);
                 wu->setQueueName(queueName);
 
-                activityInfoCache->aws.append(*wu.getLink());
+                aws.append(*wu.getLink());
             }
 
-            addServerJobQueue(version, activityInfoCache->serverJobQueues, queueName, serverName, "ECLCCserver", NULL, 0, queueState.str(), queueStateDetails.str());
+            addServerJobQueue(version, serverJobQueues, queueName, serverName, "ECLCCserver", NULL, 0, queueState.str(), queueStateDetails.str());
         }
     }
 
@@ -782,7 +787,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
                                 wu1->setServer("DFUserver");
                                 wu1->setInstance(serverName);
                                 wu1->setQueueName(queueName);
-                                activityInfoCache->aws.append(*wu1.getLink());
+                                aws.append(*wu1.getLink());
                             }
                         }
                         catch (IException *e)
@@ -792,11 +797,11 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
                             wu1->setServer("DFUserver");
                             wu1->setInstance(serverName);
                             wu1->setQueueName(queueName);
-                            activityInfoCache->aws.append(*wu1.getLink());
+                            aws.append(*wu1.getLink());
                             e->Release();
                         }
                     }
-                    addServerJobQueue(version, activityInfoCache->serverJobQueues, queueName, serverName, "DFUserver", NULL, 0);
+                    addServerJobQueue(version, serverJobQueues, queueName, serverName, "DFUserver", NULL, 0);
                 }
             }
         } while (services->next());
@@ -823,7 +828,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
                 StringBuffer cmd;
                 cmd.append(e.queryProp("@command")).append(" ").append(e.queryProp("@command_parameters"));
                 job->setCommand(cmd.str());
-                activityInfoCache->DFURecoveryJobs.append(*job.getLink());
+                DFURecoveryJobs.append(*job.getLink());
             }
         }
     }
@@ -1200,6 +1205,50 @@ bool isCachedActivityInfoValid(ActivityInfo* cachedActivityInfo, unsigned timeOu
     return timeNow.getSimple() <= cachedActivityInfo->timeCached.getSimple() + timeOutSeconds;;
 }
 
+ActivityInfo* CWsSMCEx::getActivityInfo(IEspContext &context, IEspActivityRequest &req)
+{
+    CriticalBlock b(getActivityCrit);
+
+    if (isCachedActivityInfoValid(activityInfoCache, activityInfoCacheSeconds))
+        return activityInfoCache.getLink();
+
+    Owned<IRemoteConnection> connEnv = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    IPropertyTree* envRoot = connEnv->queryRoot();
+    if (!envRoot)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
+
+    CConstWUClusterInfoArray clusters;
+    getEnvironmentClusterInfo(envRoot, clusters);
+
+    activityInfoCache.setown(new ActivityInfo());
+
+    double version = context.getClientVersion();
+    if (version >= 1.16)
+    {
+        CIArrayOf<CWsSMCTargetCluster> thorTargetClusters;
+        CIArrayOf<CWsSMCTargetCluster> roxieTargetClusters;
+        CIArrayOf<CWsSMCTargetCluster> hthorTargetClusters;
+
+        Owned<IRemoteConnection> connStatusServers = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
+        IPropertyTree* serverStatusRoot = connStatusServers->queryRoot();
+        if (!serverStatusRoot)
+            throw MakeStringException(ECLWATCH_CANNOT_GET_STATUS_INFO, "Failed to get status server information.");
+        readTargetClusterInfo(context, clusters, serverStatusRoot, thorTargetClusters, roxieTargetClusters, hthorTargetClusters);
+        readRunningWUsAndQueuedWUs(context, envRoot, serverStatusRoot, thorTargetClusters, roxieTargetClusters, hthorTargetClusters,
+            activityInfoCache->aws, activityInfoCache->serverJobQueues, activityInfoCache->DFURecoveryJobs);
+        setESPTargetClusters(context, thorTargetClusters, activityInfoCache->thorClusters);
+        setESPTargetClusters(context, roxieTargetClusters, activityInfoCache->roxieClusters);
+        setESPTargetClusters(context, hthorTargetClusters, activityInfoCache->hthorClusters);
+    }
+    else
+    {//for backward compatible -- old esp clients need old data/format; the getServersAndWUs() has the old code.
+        getServersAndWUs(context, req, envRoot, clusters, activityInfoCache->ThorClusters, activityInfoCache->HThorClusters,
+            activityInfoCache->RoxieClusters, activityInfoCache->aws, activityInfoCache->serverJobQueues, activityInfoCache->DFURecoveryJobs);
+    }
+
+    return activityInfoCache.getLink();
+}
+
 // This method reads job information from both /Status/Servers and IJobQueue.
 //
 // Each server component (a thor cluster, a dfuserver, or an eclagent) is one 'Server' branch under
@@ -1244,50 +1293,8 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         if (version >= 1.06)
             setBannerAndChatData(version, resp);
 
-        CriticalBlock b(getActivityCrit);
-
-
-        if (!isCachedActivityInfoValid(activityInfoCache, ACTIVITYINFOCACHETIMEOUTSECOND))
-        {
-
-            Owned<IRemoteConnection> connEnv = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-            IPropertyTree* envRoot = connEnv->queryRoot();
-            if (!envRoot)
-                throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
-
-            if (activityInfoCache)
-                activityInfoCache.clear();
-            activityInfoCache.setown(new ActivityInfo());
-
-            CConstWUClusterInfoArray clusters;
-            getEnvironmentClusterInfo(envRoot, clusters);
-
-            if (version >= 1.16)
-            {
-                CIArrayOf<CWsSMCTargetCluster> thorTargetClusters;
-                CIArrayOf<CWsSMCTargetCluster> roxieTargetClusters;
-                CIArrayOf<CWsSMCTargetCluster> hthorTargetClusters;
-
-                Owned<IRemoteConnection> connStatusServers = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
-                IPropertyTree* serverStatusRoot = connStatusServers->queryRoot();
-                if (!serverStatusRoot)
-                    throw MakeStringException(ECLWATCH_CANNOT_GET_STATUS_INFO, "Failed to get status server information.");
-                readTargetClusterInfo(context, clusters, serverStatusRoot, thorTargetClusters, roxieTargetClusters, hthorTargetClusters);
-                readRunningWUsAndQueuedWUs(context, envRoot, serverStatusRoot, thorTargetClusters, roxieTargetClusters, hthorTargetClusters,
-                    activityInfoCache->aws, activityInfoCache->serverJobQueues, activityInfoCache->DFURecoveryJobs);
-                setESPTargetClusters(context, thorTargetClusters, activityInfoCache->thorClusters);
-                setESPTargetClusters(context, roxieTargetClusters, activityInfoCache->roxieClusters);
-                setESPTargetClusters(context, hthorTargetClusters, activityInfoCache->hthorClusters);
-            }
-            else
-            {//for backward compatible
-                getServersAndWUs(context, req, resp, version, envRoot, clusters);
-            }
-
-            activityInfoCache->timeCached.setNow();
-        }
-
-        setActivityResponse(context, req, resp);
+        Owned<ActivityInfo> activityInfo = getActivityInfo(context, req);
+        setActivityResponse(context, activityInfo, req, resp);
     }
     catch(IException* e)
     {
@@ -1556,15 +1563,15 @@ CWsSMCTargetCluster* CWsSMCEx::findWUClusterInfo(IEspContext& context, const cha
     return findTargetCluster(cluster, targetClusters2);
 }
 
-void CWsSMCEx::setActivityResponse(IEspContext &context,  IEspActivityRequest &req, IEspActivityResponse& resp)
+void CWsSMCEx::setActivityResponse(IEspContext &context, ActivityInfo* activityInfo, IEspActivityRequest &req, IEspActivityResponse& resp)
 {
     double version = context.getClientVersion();
     const char* sortBy = req.getSortBy();
     bool descending = req.getDescending();
     if (version >= 1.16)
     {
-        sortTargetClusters(activityInfoCache->thorClusters, sortBy, descending);
-        sortTargetClusters(activityInfoCache->roxieClusters, sortBy, descending);
+        sortTargetClusters(activityInfo->thorClusters, sortBy, descending);
+        sortTargetClusters(activityInfo->roxieClusters, sortBy, descending);
 
         SecAccessFlags access;
         if (context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full)
@@ -1572,18 +1579,18 @@ void CWsSMCEx::setActivityResponse(IEspContext &context,  IEspActivityRequest &r
 
         resp.setSortBy(sortBy);
         resp.setDescending(descending);
-        resp.setThorClusterList(activityInfoCache->thorClusters);
-        resp.setRoxieClusterList(activityInfoCache->roxieClusters);
-        resp.setHThorClusterList(activityInfoCache->hthorClusters);
-        resp.setServerJobQueues(activityInfoCache->serverJobQueues);
-        resp.setRunning(activityInfoCache->aws);
-        resp.setDFUJobs(activityInfoCache->DFURecoveryJobs);
+        resp.setThorClusterList(activityInfo->thorClusters);
+        resp.setRoxieClusterList(activityInfo->roxieClusters);
+        resp.setHThorClusterList(activityInfo->hthorClusters);
+        resp.setServerJobQueues(activityInfo->serverJobQueues);
+        resp.setRunning(activityInfo->aws);
+        resp.setDFUJobs(activityInfo->DFURecoveryJobs);
     }
     else
     {//for backward compatible
-        resp.setThorClusters(activityInfoCache->ThorClusters);
+        resp.setThorClusters(activityInfo->ThorClusters);
         if (version > 1.06)
-            resp.setRoxieClusters(activityInfoCache->RoxieClusters);
+            resp.setRoxieClusters(activityInfo->RoxieClusters);
         if (version > 1.10)
         {
             resp.setSortBy(req.getSortBy());
@@ -1591,16 +1598,16 @@ void CWsSMCEx::setActivityResponse(IEspContext &context,  IEspActivityRequest &r
         }
         if (version > 1.11)
         {
-            resp.setHThorClusters(activityInfoCache->HThorClusters);
+            resp.setHThorClusters(activityInfo->HThorClusters);
 
             SecAccessFlags access;
             if (context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full)
                 resp.setAccessRight("Access_Full");
         }
-        resp.setRunning(activityInfoCache->aws);
+        resp.setRunning(activityInfo->aws);
         if (version > 1.03)
-            resp.setServerJobQueues(activityInfoCache->serverJobQueues);
-        resp.setDFUJobs(activityInfoCache->DFURecoveryJobs);
+            resp.setServerJobQueues(activityInfo->serverJobQueues);
+        resp.setDFUJobs(activityInfo->DFURecoveryJobs);
     }
 }
 

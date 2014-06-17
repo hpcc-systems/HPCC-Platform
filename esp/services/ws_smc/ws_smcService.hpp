@@ -93,7 +93,7 @@ struct ActivityInfo : public CInterface, implements IInterface
 {
     IMPLEMENT_IINTERFACE;
 
-    ActivityInfo() {};
+    ActivityInfo() { timeCached.setNow(); };
 
     CDateTime timeCached;
 
@@ -115,6 +115,7 @@ class CWsSMCEx : public CWsSMC
     CTpWrapper m_ClusterStatus;
     CriticalSection getActivityCrit;
     Owned<ActivityInfo> activityInfoCache;
+    unsigned activityInfoCacheSeconds;
 
     StringBuffer m_ChatURL;
     StringBuffer m_Banner;
@@ -167,8 +168,9 @@ private:
                    StringArray& runningQueueNames, int* runningJobsInQueue);
     void readBannerAndChatRequest(IEspContext& context, IEspActivityRequest &req, IEspActivityResponse& resp);
     void setBannerAndChatData(double version, IEspActivityResponse& resp);
-    void getServersAndWUs(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp, double version,
-        IPropertyTree* envRoot, CConstWUClusterInfoArray& clusters);
+    void getServersAndWUs(IEspContext &context, IEspActivityRequest &req, IPropertyTree* envRoot, CConstWUClusterInfoArray& clusters,
+        IArrayOf<IEspThorCluster>& thorClusters, IArrayOf<IEspHThorCluster>& hThorClusters, IArrayOf<IEspRoxieCluster>& roxieClusters,
+        IArrayOf<IEspActiveWorkunit>& aws, IArrayOf<IEspServerJobQueue>& serverJobQueues, IArrayOf<IEspDFUJob>& DFURecoveryJobs);
 
     void sortTargetClusters(IArrayOf<IEspTargetCluster>& clusters, const char* sortBy, bool descending);
     void createActiveWorkUnit(Owned<IEspActiveWorkunit>& ownedWU, IEspContext &context, const char* wuid, const char* location,
@@ -207,7 +209,8 @@ private:
     void readWUsAndStateFromJobQueue(IEspContext& context, CWsSMCTargetCluster& targetCluster, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void readWUsAndStateFromJobQueue(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void setESPTargetClusters(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetCluster>& respTargetClusters);
-    void setActivityResponse(IEspContext &context,  IEspActivityRequest &req, IEspActivityResponse& resp);
+    ActivityInfo* getActivityInfo(IEspContext &context, IEspActivityRequest &req);
+    void setActivityResponse(IEspContext &context, ActivityInfo* activityInfo, IEspActivityRequest &req, IEspActivityResponse& resp);
     const char *getStatusServerTypeName(WsSMCStatusServerType type);
     void getStatusServerInfo(IEspContext &context, const char *serverType, const char *server, const char *networkAddress, unsigned port,
         IEspStatusServerInfo& statusServerInfo);
