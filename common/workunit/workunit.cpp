@@ -4536,11 +4536,16 @@ extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, con
 
 extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster)
 {
-    StringBuffer path;
-    Owned<IRemoteConnection> conn = querySDS().connect(path.append("Environment/Software/ThorCluster[@name=\"").append(cluster).append("\"]").str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env)
     {
-        getClusterGroupName(*conn->queryRoot(), ret);
+        Owned<IPropertyTree> root = &env->getPTree();
+        StringBuffer path;
+        path.append("Software/ThorCluster[@name=\"").append(cluster).append("\"]");
+        IPropertyTree * child = root->queryPropTree(path);
+        if (child)
+            getClusterGroupName(*child, ret);
     }
 
     return ret;
@@ -4615,7 +4620,7 @@ extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *pr
     if (!remote)
         return false;
 
-    //MORE: What should this become?
+    //Cannot use getEnvironmentFactory() since it is using a remotedali
     VStringBuffer xpath("Environment/Software/*Cluster[@name=\"%s\"]/@name", process);
     try
     {

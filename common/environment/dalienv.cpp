@@ -379,6 +379,8 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
     // first get machine by IP
     StringBuffer ips;
     ip.getIpText(ips);
+
+    //Cannot use getEnvironmentFactory() since it is using a remotedali
     StringBuffer xpath;
     xpath.appendf("Environment/Hardware/Computer[@netAddress=\"%s\"]", ips.str());
     Owned<IPropertyTreeIterator> iter = querySDS().getElementsRaw(xpath,remotedali,timeout);
@@ -393,6 +395,7 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
         ERRLOG("Unable to find domain for %s on dali %s", ips.str(),dalis.str());
         return false;
     }
+
     xpath.clear().appendf("Environment/Software/%s",keyName);
     if (version)
         xpath.appendf("[@version='%s']",version);
