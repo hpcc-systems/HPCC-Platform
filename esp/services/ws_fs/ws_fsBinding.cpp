@@ -202,11 +202,7 @@ int CFileSpraySoapBindingEx::onGetInstantQuery(IEspContext &context, CHttpReques
 IPropertyTree* CFileSpraySoapBindingEx::createPTreeForXslt(const char* method, const char* dfuwuid)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-#if 0
     Owned<IConstEnvironment> m_constEnv = factory->openEnvironment();
-#else
-    Owned<IConstEnvironment> m_constEnv = factory->openEnvironmentByFile();
-#endif
     Owned<IPropertyTree> pEnvRoot = &m_constEnv->getPTree();
     IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
 

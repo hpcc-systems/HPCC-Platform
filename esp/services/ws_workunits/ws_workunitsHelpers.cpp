@@ -1053,7 +1053,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
 
         StringBuffer logDir;
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> logTree = &constEnv->getPTree();
         if (logTree)
              logTree->getProp("EnvSettings/log", logDir);

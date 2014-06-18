@@ -2056,7 +2056,7 @@ bool CWsSMCEx::onBrowseResources(IEspContext &context, IEspBrowseResourcesReques
         double version = context.getClientVersion();
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = factory->openEnvironment();
 
         //The resource files will be downloaded from the same box of ESP (not dali)
         StringBuffer ipStr;

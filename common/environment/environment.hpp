@@ -130,9 +130,6 @@ interface IEnvironment : extends IConstEnvironment
 interface IEnvironmentFactory : extends IInterface
 {
     virtual IConstEnvironment * openEnvironment() = 0;
-    virtual IConstEnvironment * createEnvironmentByFile(const char * environmentConfFile, const char * environmentXMLFile) = 0;
-    virtual IConstEnvironment * openEnvironmentByFile() = 0;
-    virtual const char * getEnvironmentConf() = 0;
     virtual IEnvironment * updateEnvironment() = 0;
     virtual IEnvironment * loadLocalEnvironmentFile(const char * filename) = 0;
     virtual IEnvironment * loadLocalEnvironment(const char * xml) = 0;

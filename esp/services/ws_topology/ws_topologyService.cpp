@@ -1112,7 +1112,7 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = factory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
         if (!root)
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
@@ -1421,7 +1421,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
         {
             //another client (like configenv) may have updated the constant environment so reload it
             m_envFactory->validateCache();
-            Owned<IConstEnvironment> constEnv = m_envFactory->openEnvironmentByFile();
+            Owned<IConstEnvironment> constEnv = m_envFactory->openEnvironment();
             Owned<IPropertyTree> pRoot = &constEnv->getPTree();
 
             StringBuffer xpath;

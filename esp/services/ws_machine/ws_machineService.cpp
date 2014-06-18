@@ -2023,7 +2023,7 @@ const char* Cws_machineEx::getProcessTypeFromMachineType(const char* machineType
 IConstEnvironment* Cws_machineEx::getConstEnvironment()
 {
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     return constEnv.getLink();
 }
 
