@@ -40,11 +40,14 @@ bool isRoxieProcess(const char *process)
 {
     if (!process)
         return false;
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         return false;
+
+    Owned<IPropertyTree> root = &env->getPTree();
     VStringBuffer xpath("Software/RoxieCluster[@name=\"%s\"]", process);
-    return conn->queryRoot()->hasProp(xpath.str());
+    return root->hasProp(xpath.str());
 }
 
 void checkUseEspOrDaliIP(SocketEndpoint &ep, const char *ip, const char *esp)

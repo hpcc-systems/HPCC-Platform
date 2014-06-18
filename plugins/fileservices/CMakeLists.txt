@@ -35,6 +35,7 @@ set ( SRCS
 
 include_directories ( 
          .
+         ./../../common/environment
          ./../../common/remote 
          ./../../system/jhtree 
          ./../../system/mp 

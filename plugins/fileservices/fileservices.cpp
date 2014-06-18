@@ -35,6 +35,7 @@
 #include "daclient.hpp"
 #include "dasds.hpp"
 #include "enginecontext.hpp"
+#include "environment.hpp"
 
 #define USE_DALIDFS
 #define SDS_LOCK_TIMEOUT  10000
@@ -171,15 +172,20 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
 
 static IPropertyTree *getEnvironment()
 {
-    Owned<IPropertyTree> env;
+    Owned<IPropertyTree> envTree;
     if (daliClientActive()) {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-        if (conn)
-            env.setown(createPTreeFromIPT(conn->queryRoot())); // we don't really need to copy here
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (env)
+        {
+            Owned<IPropertyTree> root = &env->getPTree();
+            //GH->JCS is this necessary?
+            envTree.setown(createPTreeFromIPT(root)); // we don't really need to copy here
+        }
     }
-    if (!env.get())
-        env.setown(getHPCCEnvironment());
-    return env.getClear();
+    if (!envTree.get())
+        envTree.setown(getHPCCEnvironment());
+    return envTree.getClear();
 }
 
 static const char *getEspServerURL(const char *param)

@@ -1404,10 +1404,11 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         if (version >= 1.06)
             setBannerAndChatData(version, resp);
 
-        Owned<IRemoteConnection> connEnv = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-        IPropertyTree* envRoot = connEnv->queryRoot();
-        if (!envRoot)
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (!env)
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
+        Owned<IPropertyTree> envRoot= &env->getPTree();
 
         CConstWUClusterInfoArray clusters;
         getEnvironmentClusterInfo(envRoot, clusters);
