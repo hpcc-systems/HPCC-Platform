@@ -447,9 +447,16 @@ bool envGetConfigurationDirectory(const char *category, const char *component,co
     SessionId sessid = myProcessSession();
     if (!sessid)
         return false;
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories",sessid, 0, SDS_CONNECT_TIMEOUT);
-    if (conn) 
-        return getConfigurationDirectory(conn->queryRoot(),category,component,instance,dirout);
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env)
+    {
+        Owned<IPropertyTree> root = &env->getPTree();
+        IPropertyTree * child = root->queryPropTree("Software/Directories");
+        if (child)
+            return getConfigurationDirectory(child,category,component,instance,dirout);
+    }
     return false;
 }
 
@@ -483,10 +490,17 @@ IPropertyTree *envGetNASConfiguration()
     SessionId sessid = myProcessSession();
     if (!sessid)
         return NULL;
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware", sessid, 0, SDS_CONNECT_TIMEOUT);
-    if (!conn)
-        return NULL;
-    return envGetNASConfiguration(conn->queryRoot());
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env)
+    {
+        Owned<IPropertyTree> root = &env->getPTree();
+        IPropertyTree * hardware = root->queryPropTree("Hardware");
+        if (hardware)
+            return envGetNASConfiguration(hardware);
+    }
+    return NULL;
 }
 
 IPropertyTree *envGetInstallNASHooks(SocketEndpoint *myEp)
