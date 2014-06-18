@@ -17,7 +17,7 @@
 
 export CleanFields(inputFile,outputFile) := macro
 
-
+loadxml('<xml/>');
 
 #EXPORTXML(doCleanFieldMetaInfo, recordof(inputFile))
 

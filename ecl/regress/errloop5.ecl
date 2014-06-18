@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-
+loadxml('<xml></xml>');
 #LOOP
   #LOOP
     #BREAK

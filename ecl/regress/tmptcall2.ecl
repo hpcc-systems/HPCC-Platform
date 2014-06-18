@@ -21,7 +21,7 @@
 
 import jfgao;
 
-
+LOADXML('<xml></xml>');
 
 s1 := 'ECL call external func: ' + jfgao.MyStringLib.TestExternalFunc(3);
 s2 := 'ECL call ECL func: ' + jfgao.myfunc(3);

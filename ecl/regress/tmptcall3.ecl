@@ -56,7 +56,7 @@ s1x;
 s2x;
 s3x;
 
-
+LOADXML('<xml></xml>');
 
 #DECLARE(s1,s2,s3,s1x,s2x,s3x)
 
