@@ -69,7 +69,6 @@ public:
     virtual bool querySuccess() const = 0;
     virtual Failure const & queryFailure() const = 0;
     virtual size32_t queryActivityKeySize() const = 0;
-    virtual size32_t queryDiskKeySize() const = 0;
     virtual void checkSizes(char const * filename, size32_t activitySize, size32_t diskSize) const = 0;
     virtual bool queryKeysTransformed() const = 0;
     virtual SegmentMonitorContext * getSegmentMonitorContext() = 0;
