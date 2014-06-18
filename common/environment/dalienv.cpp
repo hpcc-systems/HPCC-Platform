@@ -444,7 +444,6 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
     return false;
 }
 
-#define SDS_CONNECT_TIMEOUT 30000
 bool envGetConfigurationDirectory(const char *category, const char *component,const char *instance, StringBuffer &dirout)
 {
     SessionId sessid = myProcessSession();
