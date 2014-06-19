@@ -215,7 +215,6 @@ private:
 
     Linked<IDefRecordMeta> diskMeta;
     Linked<IDefRecordMeta> activityMeta;
-    size32_t diskMetaSize;
     bool success;
     Owned<Failure> failure;
     FieldMapping::List mappings;

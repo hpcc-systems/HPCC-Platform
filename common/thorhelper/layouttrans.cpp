@@ -500,25 +500,10 @@ IRecordLayoutTranslator::RowTransformContext::~RowTransformContext()
     delete [] ptrs;
 }
 
-size32_t calcMetaSize(IDefRecordMeta const * meta)
-{
-    IDefRecordElement * record = meta->queryRecord();
-    size32_t size = record->getMaxSize();
-    unsigned numFields = record->numChildren();
-    if(meta->numKeyedFields() < numFields)
-    {
-        ITypeInfo * lastFieldType = record->queryChild(numFields-1)->queryType();
-        if(lastFieldType->isInteger())
-            size -= lastFieldType->getSize();
-    }
-    return size;
-}
-
 CRecordLayoutTranslator::CRecordLayoutTranslator(IDefRecordMeta const * _diskMeta, IDefRecordMeta const * _activityMeta) : diskMeta(const_cast<IDefRecordMeta *>(_diskMeta)), activityMeta(const_cast<IDefRecordMeta *>(_activityMeta)), activityKeySizes(NULL)
 {
     numKeyedDisk = diskMeta->numKeyedFields();
     numKeyedActivity = activityMeta->numKeyedFields();
-    diskMetaSize = calcMetaSize(diskMeta);
     MappingLevel topMappingLevel(mappings);
     numTransformers = 0;
     try
@@ -620,8 +605,6 @@ void CRecordLayoutTranslator::createDiskSegmentMonitors(SegmentMonitorContext co
 
 void CRecordLayoutTranslator::checkSizes(char const * filename, size32_t activitySize, size32_t diskSize) const
 {
-    if(diskMetaSize != diskSize)
-        WARNLOG("Key size mismatch during translation of index %s: index indicates size %u, index record meta has size %u", filename, diskSize, diskMetaSize);
 }
 
 IRecordLayoutTranslator::RowTransformContext * CRecordLayoutTranslator::getRowTransformContext()
