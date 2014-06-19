@@ -985,6 +985,7 @@ ESPrequest [nil_remove] WUShowScheduledRequest
     string EventName("");
     string PushEventName("");
     string PushEventText("");
+    [min_ver("1.51")] string State("");
 };
 
 ESPStruct [nil_remove] ScheduledWU
@@ -994,6 +995,9 @@ ESPStruct [nil_remove] ScheduledWU
     string EventName("");
     string EventText("");
     string JobName("");
+    [min_ver("1.51")] int StateID;
+    [min_ver("1.51")] string State("");
+    [min_ver("1.51")] string Owner("");
 };
 
 ESPStruct [nil_remove] ServerInfo
@@ -1555,7 +1559,7 @@ ESPresponse [exceptions_inline] WUCheckFeaturesResponse
 };
 
 ESPservice [
-    version("1.50"), default_client_version("1.50"),
+    version("1.51"), default_client_version("1.51"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
