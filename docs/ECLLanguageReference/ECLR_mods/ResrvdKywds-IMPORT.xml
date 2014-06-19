@@ -34,7 +34,7 @@
           <entry>A comma-delimited list of folder or file names in the
           repository. The dollar sign ($) makes all definitions in the current
           folder available. The caret symbol (^) can be used as shorthand for
-          the container of the current folder. </entry>
+          the container of the current folder.</entry>
         </row>
 
         <row>
@@ -105,7 +105,7 @@ IMPORT $, Std;                          //makes the standard library functions a
 IMPORT MyModule;                        //makes available the definitions from MyModule folder
 
 IMPORT ^.MyOtherModule                  //makes available the definitions from MyOtherModule folder,
-                                        //which is located in the same container as the current folderle
+                                        //which is located in the same container as the current folder
 
 IMPORT SomeFolder.SomeFile;             //make the specific file available
 
