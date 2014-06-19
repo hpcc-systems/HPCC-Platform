@@ -1096,7 +1096,7 @@ class HqlLex
         void setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *value, bool append);
         IIterator *getSubScopes(const YYSTYPE & errpos, const char *name, bool doAll);
         IXmlScope *queryTopXmlScope();
-        IXmlScope *ensureTopXmlScope(const YYSTYPE & errpos);
+        IXmlScope *ensureTopXmlScope();
 
         IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
         void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
