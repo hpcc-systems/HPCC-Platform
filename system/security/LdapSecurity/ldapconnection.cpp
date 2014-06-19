@@ -1076,6 +1076,8 @@ public:
                 {
                     user.setFullName(m_ldapconfig->getSysUserCommonName());
                     user.setAuthenticateStatus(AS_AUTHENTICATED);
+                    if (m_ldapconfig->getServerType() != ACTIVE_DIRECTORY)
+                        return true;
                     sysUser = true;
                 }
                 else
