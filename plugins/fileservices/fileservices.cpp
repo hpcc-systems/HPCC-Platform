@@ -170,31 +170,33 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
     return factory->openWorkUnit(wuid, false);
 }
 
-static IPropertyTree *getEnvironment()
+static IConstEnvironment * openDaliEnvironment()
 {
-    Owned<IPropertyTree> envTree;
-    if (daliClientActive()) {
+    if (daliClientActive())
+    {
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> env = factory->openEnvironment();
-        if (env)
-        {
-            Owned<IPropertyTree> root = &env->getPTree();
-            //GH->JCS is this necessary?
-            envTree.setown(createPTreeFromIPT(root)); // we don't really need to copy here
-        }
+        return factory->openEnvironment();
     }
-    if (!envTree.get())
-        envTree.setown(getHPCCEnvironment());
-    return envTree.getClear();
+    return NULL;
+}
+
+static IPropertyTree *getEnvironmentTree(IConstEnvironment * daliEnv)
+{
+    if (daliEnv)
+        return &daliEnv->getPTree(); // No need to clone since daliEnv ensures connection stays alive.
+    return getHPCCEnvironment();
 }
 
 static const char *getEspServerURL(const char *param)
 {
     if (param&&*param)
         return param;
+
+    //MORE: Not thread safe, although not very likely to cause problems.
     static StringAttr espurl;
     if (espurl.isEmpty()) {
-        Owned<IPropertyTree> env = getEnvironment();
+        Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
+        Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
         StringBuffer tmp;
         if (env.get()) {
             Owned<IPropertyTreeIterator> iter1 = env->getElements("Software/EspProcess");

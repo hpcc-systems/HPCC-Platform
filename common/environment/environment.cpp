@@ -30,7 +30,7 @@
 #include "dasds.hpp"
 #include "dalienv.hpp"
 
-#define SDS_LOCK_TIMEOUT  10000
+#define SDS_LOCK_TIMEOUT  30000
 
 
 static int environmentTraceLevel = 1;
