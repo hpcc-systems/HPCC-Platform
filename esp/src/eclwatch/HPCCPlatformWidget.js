@@ -22,6 +22,7 @@ define([
     "dojo/dom",
     "dojo/dom-form",
     "dojo/dom-style",
+    "dojo/dom-geometry",
     "dojo/cookie",
 
     "dijit/registry",
@@ -50,6 +51,7 @@ define([
     "dijit/form/DropDownButton",
     "dijit/form/TextBox",
     "dijit/form/Textarea",
+    "dijit/form/CheckBox",
     "dijit/Dialog",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
@@ -58,7 +60,7 @@ define([
     "hpcc/TableContainer",
     "hpcc/InfoGridWidget"
 
-], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, cookie,
+], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, domStyle, domGeo, cookie,
                 registry, Tooltip,
                 UpgradeBar,
                 _TabContainerWidget, ESPRequest, ESPActivity, WsAccount, WsAccess, WsDfu, WsSMC, GraphWidget, DelayLoadWidget,
@@ -119,13 +121,27 @@ define([
         },
 
         refreshBanner: function (activity) {
-            if (this.bannerContent !== activity.BannerContent) {
+            if (this.showBanner !== activity.ShowBanner ||
+                this.bannerContent !== activity.BannerContent ||
+                this.bannerScroll !== activity.BannerScroll ||
+                this.bannerColor !== activity.BannerColor ||
+                this.bannerSize !== activity.BannerSize) {
+
+                this.showBanner = activity.ShowBanner;
                 this.bannerContent = activity.BannerContent;
-                this.upgradeBar.notify("<marquee width='100%' direction='left' scrollamount='" + activity.BannerScroll + "'><font color='" + activity.BannerColor + "' size='" + activity.BannerSize + "' family='Verdana'>" + activity.BannerContent + "</font></marquee>");
-                if (this.bannerContent !== "") {
-                    this.upgradeBar.show();
+                this.bannerScroll = activity.BannerScroll;
+                this.bannerColor = activity.BannerColor;
+                this.bannerSize = activity.BannerSize;
+                if (this.showBanner) {
+                    var msg = "<marquee id='" + this.id + "Marquee' width='100%' direction='left' scrollamount='" + activity.BannerScroll + "' style='color:" + activity.BannerColor + ";font-size:" + ((activity.BannerSize / 2) * 100) + "%'>" + activity.BannerContent + "</marquee>";
+                    this.upgradeBar.notify(msg);
+                    var marquee = dom.byId(this.id + "Marquee");
+                    var height = domGeo.getContentBox(marquee).h;
+                    domStyle.set(this.upgradeBar.domNode, "height", height + "px");
+                    domStyle.set(marquee.parentNode, { top: "auto", "margin-top": "auto" });
                 } else {
-                    this.upgradeBar.hide();
+                    this.upgradeBar.notify("");
+                    domStyle.set(this.upgradeBar.domNode, "height", "0px");
                 }
             }
         },
@@ -392,6 +408,7 @@ define([
         },
 
         _onSetBanner: function (evt) {
+            registry.byId(this.id + "ShowBanner").set("value", this.activity.ShowBanner);
             dom.byId(this.id + "BannerContent").value = this.activity.BannerContent;
             dom.byId(this.id + "BannerColor").value = this.activity.BannerColor;
             dom.byId(this.id + "BannerSize").value = this.activity.BannerSize;

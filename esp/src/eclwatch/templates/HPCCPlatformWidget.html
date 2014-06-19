@@ -73,6 +73,7 @@
         <div class="dijitDialogPaneContentArea">
             <div id="${id}SetBannerForm" onsubmit="return false;" data-dojo-type="dijit.form.Form">
                 <div data-dojo-type="hpcc.TableContainer">
+                    <input id="${id}ShowBanner" title="${i18n.Enable}:" name="BannerAction" data-dojo-type="dijit.form.CheckBox" />
                     <input id="${id}BannerContent" title="${i18n.BannerMessage}:" name="BannerContent" style="width:100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
                     <input id="${id}BannerColor" title="${i18n.BannerColor}:" name="BannerColor" style="width:100%;" value="red" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
                     <input id="${id}BannerSize" title="${i18n.BannerSize}:" name="BannerSize" style="width:100%;" value="4" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
