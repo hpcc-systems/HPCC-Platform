@@ -165,6 +165,8 @@ define([
                         cookie("PasswordExpiredCheck", "true", { expires: 1 });
                         if (lang.exists("MyAccountResponse.passwordDaysRemaining", response)) {
                             switch (response.MyAccountResponse.passwordDaysRemaining) {
+                                case null:
+                                    break;
                                 case -1:
                                     alert(context.i18n.PasswordExpired);
                                     context._onUserID();
