@@ -176,66 +176,14 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
 {
     CActiveWorkunitWrapper(IEspContext &context, const char* wuid,const char* location = NULL,unsigned index=0): CActiveWorkunit("","")
     {
-        double version = context.getClientVersion();
-
         CWUWrapper wu(wuid, context);
-        StringBuffer stateStr;
-        SCMStringBuffer state, stateEx, owner, jobname;
-        setWuid(wuid);
-        wu->getStateDesc(state);
-        setStateID(wu->getState());
-        if (wu->getState() == WUStateBlocked)
-        {
-        	wu->getStateEx(stateEx);
-            if (version > 1.00)
-                setExtra(stateEx.str());
-        }
-        setState(setStateStr(state.str(), stateEx.str(), location, index, stateStr));
-        if ((version > 1.09) && (wu->getState() == WUStateFailed))
-            setWarning("The job will ultimately not complete. Please check ECLAgent.");
-
-        setOwner(wu->getUser(owner).str());
-        setJobname(wu->getJobName(jobname).str());
-        setPriorityStr(wu->getPriority());
-
-        if (version > 1.08 && wu->isPausing())
-        {
-            setIsPausing(true);
-        }
-        if (version > 1.14)
-        {
-            SCMStringBuffer clusterName;
-            setClusterName(wu->getClusterName(clusterName).str());
-        }
+        setActiveWorkunit(wu, wuid, location, index, context.getClientVersion(), false);
     }
 
     CActiveWorkunitWrapper(const char* wuid, const char* location = NULL, unsigned index=0): CActiveWorkunit("","")
     {
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        Owned<IConstWorkUnit> wu = factory->openWorkUnit(wuid, false);
-        if (!wu)
-            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s", wuid);
-
-        StringBuffer stateStr;
-        SCMStringBuffer state, stateEx, owner, jobname;
-        setWuid(wuid);
-        wu->getStateDesc(state);
-        setStateID(wu->getState());
-        if (wu->getState() == WUStateBlocked)
-            setExtra(wu->getStateEx(stateEx).str());
-
-        setState(setStateStr(state.str(), stateEx.str(), location, index, stateStr));
-        if (wu->getState() == WUStateFailed)
-            setWarning("The job will ultimately not complete. Please check ECLAgent.");
-
-        setOwner(wu->getUser(owner).str());
-        setJobname(wu->getJobName(jobname).str());
-        setPriorityStr(wu->getPriority());
-        if (wu->isPausing())
-            setIsPausing(true);
-
-        SCMStringBuffer clusterName;
-        setClusterName(wu->getClusterName(clusterName).str());
+        CWUWrapper wu(wuid);
+        setActiveWorkunit(wu, wuid, location, index, 0.0, true);
     }
 
     CActiveWorkunitWrapper(const char* wuid,const char* owner, const char* jobname, const char* state, const char* priority): CActiveWorkunit("","")
@@ -247,10 +195,43 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
         setPriority(priority);
     }
 
-    const char* setStateStr(const char* state, const char* stateEx, const char* location, unsigned index, StringBuffer& stateStr)
+    void setActiveWorkunit(CWUWrapper& wu, const char* wuid, const char* location, unsigned index, double version, bool notCheckVersion)
+    {
+        StringBuffer stateStr;
+        SCMStringBuffer state, stateEx, owner, jobname;
+        setWuid(wuid);
+        wu->getStateDesc(state);
+        setStateID(wu->getState());
+        if (wu->getState() == WUStateBlocked)
+        {
+        	wu->getStateEx(stateEx);
+            if (notCheckVersion || (version > 1.00))
+                setExtra(stateEx.str());
+        }
+        buildAndSetState(state.str(), stateEx.str(), location, index);
+        if ((notCheckVersion || (version > 1.09)) && (wu->getState() == WUStateFailed))
+            setWarning("The job will ultimately not complete. Please check ECLAgent.");
+
+        setOwner(wu->getUser(owner).str());
+        setJobname(wu->getJobName(jobname).str());
+        setPriorityStr(wu->getPriority());
+
+        if ((notCheckVersion || (version > 1.08)) && wu->isPausing())
+        {
+            setIsPausing(true);
+        }
+        if (notCheckVersion || (version > 1.14))
+        {
+            SCMStringBuffer clusterName;
+            setClusterName(wu->getClusterName(clusterName).str());
+        }
+    }
+
+    void buildAndSetState(const char* state, const char* stateEx, const char* location, unsigned index)
     {
         if (!state || !*state)
-            return NULL;
+            return;
+        StringBuffer stateStr;
         if(index && location && *location)
             stateStr.setf("queued(%d) [%s on %s]", index, state, location);
         else if(index)
@@ -261,7 +242,7 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
             stateStr.set(state);
         if (stateEx && *stateEx)
             stateStr.appendf(" %s", stateEx);
-        return stateStr.str();
+        setState(stateStr.str());
     }
 
     void setPriorityStr(unsigned priorityType)
@@ -674,11 +655,10 @@ bool ActivityInfo::isCachedActivityInfoValid(unsigned timeOutSeconds)
     return timeNow.getSimple() <= timeCached.getSimple() + timeOutSeconds;;
 }
 
-void CWsSMCEx::clearActivityInfo()
+void CWsSMCEx::clearActivityInfoCache()
 {
     CriticalBlock b(getActivityCrit);
     activityInfoCache.clear();
-    return;
 }
 
 ActivityInfo* CWsSMCEx::getActivityInfo(IEspContext &context, IEspActivityRequest &req)
@@ -688,11 +668,11 @@ ActivityInfo* CWsSMCEx::getActivityInfo(IEspContext &context, IEspActivityReques
     if (activityInfoCache && activityInfoCache->isCachedActivityInfoValid(activityInfoCacheSeconds))
         return activityInfoCache.getLink();
 
-    createActivityInfo(context, req);
+    activityInfoCache.setown(createActivityInfo(context, req));
     return activityInfoCache.getLink();
 }
 
-void CWsSMCEx::createActivityInfo(IEspContext &context, IEspActivityRequest &req)
+ActivityInfo* CWsSMCEx::createActivityInfo(IEspContext &context, IEspActivityRequest &req)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
     Owned<IConstEnvironment> env = factory->openEnvironment();
@@ -713,11 +693,10 @@ void CWsSMCEx::createActivityInfo(IEspContext &context, IEspActivityRequest &req
     if (connDFURecovery)
     	dfuRecoveryRoot = connDFURecovery->queryRoot();
 
-    activityInfoCache.setown(new ActivityInfo());
-    readTargetClusterInfo(context, clusters, serverStatusRoot, activityInfoCache);
-    readRunningWUsAndQueuedWUs(context, envRoot, serverStatusRoot, dfuRecoveryRoot, activityInfoCache);
-
-    return;
+    Owned<ActivityInfo> activityInfo = new ActivityInfo();
+    readTargetClusterInfo(context, clusters, serverStatusRoot, activityInfo);
+    readRunningWUsAndQueuedWUs(context, envRoot, serverStatusRoot, dfuRecoveryRoot, activityInfo);
+    return activityInfo.getClear();
 }
 
 // This method reads job information from both /Status/Servers and IJobQueue.
@@ -1306,7 +1285,7 @@ bool CWsSMCEx::onMoveJobDown(IEspContext &context, IEspSMCJobRequest &req, IEspS
         }
 
         AccessSuccess(context, "Changed job priority %s",req.getWuid());
-        clearActivityInfo();
+        clearActivityInfoCache();
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
@@ -1334,7 +1313,7 @@ bool CWsSMCEx::onMoveJobUp(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
         }
 
         AccessSuccess(context, "Changed job priority %s",req.getWuid());
-        clearActivityInfo();
+        clearActivityInfoCache();
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
@@ -1378,7 +1357,7 @@ bool CWsSMCEx::onMoveJobBack(IEspContext &context, IEspSMCJobRequest &req, IEspS
         }
 
         AccessSuccess(context, "Changed job priority %s",req.getWuid());
-        clearActivityInfo();
+        clearActivityInfoCache();
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
@@ -1422,7 +1401,7 @@ bool CWsSMCEx::onMoveJobFront(IEspContext &context, IEspSMCJobRequest &req, IEsp
         }
 
         AccessSuccess(context, "Changed job priority %s",req.getWuid());
-        clearActivityInfo();
+        clearActivityInfoCache();
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
@@ -1451,7 +1430,7 @@ bool CWsSMCEx::onRemoveJob(IEspContext &context, IEspSMCJobRequest &req, IEspSMC
         }
 
         AccessSuccess(context, "Removed job %s",req.getWuid());
-        clearActivityInfo();
+        clearActivityInfoCache();
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
@@ -1471,7 +1450,7 @@ bool CWsSMCEx::onStopQueue(IEspContext &context, IEspSMCQueueRequest &req, IEspS
         Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         queue->stop(createQueueActionInfo(context, "stopped", req, info));
         AccessSuccess(context, "Stopped queue %s",req.getCluster());
-        clearActivityInfo();
+        clearActivityInfoCache();
         double version = context.getClientVersion();
         if (version >= 1.19)
             getStatusServerInfo(context, req.getServerType(), req.getCluster(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
@@ -1495,7 +1474,7 @@ bool CWsSMCEx::onResumeQueue(IEspContext &context, IEspSMCQueueRequest &req, IEs
         Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         queue->resume(createQueueActionInfo(context, "resumed", req, info));
         AccessSuccess(context, "Resumed queue %s",req.getCluster());
-        clearActivityInfo();
+        clearActivityInfoCache();
         double version = context.getClientVersion();
         if (version >= 1.19)
             getStatusServerInfo(context, req.getServerType(), req.getCluster(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
@@ -1536,7 +1515,7 @@ bool CWsSMCEx::onPauseQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
         Owned<IJobQueue> queue = createJobQueue(req.getQueueName());
         queue->pause(createQueueActionInfo(context, "paused", req, info));
         AccessSuccess(context, "Paused queue %s",req.getCluster());
-        clearActivityInfo();
+        clearActivityInfoCache();
         double version = context.getClientVersion();
         if (version >= 1.19)
             getStatusServerInfo(context, req.getServerType(), req.getCluster(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
@@ -1563,7 +1542,7 @@ bool CWsSMCEx::onClearQueue(IEspContext &context, IEspSMCQueueRequest &req, IEsp
             queue->clear();
         }
         AccessSuccess(context, "Cleared queue %s",req.getCluster());
-        clearActivityInfo();
+        clearActivityInfoCache();
         double version = context.getClientVersion();
         if (version >= 1.19)
             getStatusServerInfo(context, req.getServerType(), req.getCluster(), req.getNetworkAddress(), req.getPort(), resp.updateStatusServerInfo());
@@ -1629,7 +1608,7 @@ bool CWsSMCEx::onSetJobPriority(IEspContext &context, IEspSMCPriorityRequest &re
             }
         }
 
-        clearActivityInfo();
+        clearActivityInfoCache();
         resp.setRedirectUrl("/WsSMC/");
     }
     catch(IException* e)
@@ -2149,7 +2128,7 @@ void CWsSMCEx::getStatusServerInfo(IEspContext &context, const char* type, const
             continue;
 
         Owned<IEspActiveWorkunit> wu;
-        createActiveWorkUnit(wu, context, wuid, NULL, 0, type, queueName.str(), instance, NULL);
+        createActiveWorkUnit(wu, context, wuid, NULL, 0, type, queueName.str(), instance, NULL, true);
         aws.append(*wu.getLink());
     }
     statusServerInfo.setWorkunits(aws);
@@ -2270,7 +2249,8 @@ void CWsSMCEx::readRunningWUsOnCluster(IEspContext& context, const char* serverN
             continue;
 
         Owned<IEspActiveWorkunit> wu;
-        createActiveWorkUnit(wu, context, wuid, !strieq(targetClusterName, instance.str()) ? instance.str() : NULL, 0, serverName, queueName, instance.str(), targetClusterName);
+        createActiveWorkUnit(wu, context, wuid, !strieq(targetClusterName, instance.str()) ? instance.str() : NULL, 0, serverName,
+            queueName, instance.str(), targetClusterName, true);
         if (wu->getStateID() == WUStateRunning) //'aborting' may be another possible status
         {
             StringBuffer durationStr, subgraphStr;
