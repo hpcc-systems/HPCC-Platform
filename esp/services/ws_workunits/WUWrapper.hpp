@@ -39,6 +39,12 @@ public:
             throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Could not open workunit %s",wuid);
     }
 
+    CWUWrapper(const char* wuid): factory(getWorkUnitFactory()), wu(factory->openWorkUnit(wuid, false))
+    {
+        if(!wu)
+            throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Could not open workunit %s",wuid);
+    }
+
     CWUWrapper(const char * parentWuid, const char * app, const char * user, IEspContext &context): 
         factory(getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser())), wu(factory->createWorkUnit(parentWuid, app, user))
     {
