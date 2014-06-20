@@ -45,6 +45,7 @@
 
 #include "wuerror.hpp"
 #include "wujobq.hpp"
+#include "environment.hpp"
 
 #define GLOBAL_WORKUNIT "global"
 
@@ -4313,10 +4314,12 @@ void getRoxieProcessServers(IPropertyTree *roxie, SocketEndpointArray &endpoints
 
 void getRoxieProcessServers(const char *process, SocketEndpointArray &servers)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         return;
-    getRoxieProcessServers(queryRoxieProcessTree(conn->queryRoot(), process), servers);
+    Owned<IPropertyTree> root = &env->getPTree();
+    getRoxieProcessServers(queryRoxieProcessTree(root, process), servers);
 }
 
 class CEnvironmentClusterInfo: public CInterface, implements IConstWUClusterInfo
@@ -4464,13 +4467,15 @@ IStringVal &getProcessQueueNames(IStringVal &ret, const char *process, const cha
 {
     if (process)
     {
-        Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-        if (conn)
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (env)
         {
+            Owned<IPropertyTree> root = &env->getPTree();
             StringBuffer queueNames;
             StringBuffer xpath;
             xpath.appendf("%s[@process=\"%s\"]", type, process);
-            Owned<IPropertyTreeIterator> targets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+            Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
             ForEach(*targets)
             {
                 IPropertyTree &target = targets->query();
@@ -4531,11 +4536,16 @@ extern WORKUNIT_API StringBuffer &getClusterThorQueueName(StringBuffer &ret, con
 
 extern WORKUNIT_API StringBuffer &getClusterThorGroupName(StringBuffer &ret, const char *cluster)
 {
-    StringBuffer path;
-    Owned<IRemoteConnection> conn = querySDS().connect(path.append("Environment/Software/ThorCluster[@name=\"").append(cluster).append("\"]").str(), myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env)
     {
-        getClusterGroupName(*conn->queryRoot(), ret);
+        Owned<IPropertyTree> root = &env->getPTree();
+        StringBuffer path;
+        path.append("Software/ThorCluster[@name=\"").append(cluster).append("\"]");
+        IPropertyTree * child = root->queryPropTree(path);
+        if (child)
+            getClusterGroupName(*child, ret);
     }
 
     return ret;
@@ -4563,15 +4573,17 @@ extern WORKUNIT_API StringBuffer &getClusterEclAgentQueueName(StringBuffer &ret,
 
 extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, const char *processName)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     Owned<CStringArrayIterator> ret = new CStringArrayIterator;
-    if (conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env)
     {
+        Owned<IPropertyTree> root = &env->getPTree();
         StringBuffer xpath;
         xpath.appendf("%s", processType ? processType : "*");
         if (processName && *processName)
             xpath.appendf("[@process=\"%s\"]", processName);
-        Owned<IPropertyTreeIterator> targets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+        Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
         ForEach(*targets)
         {
             IPropertyTree &target = targets->query();
@@ -4588,11 +4600,14 @@ extern WORKUNIT_API bool isProcessCluster(const char *process)
 {
     if (!process || !*process)
         return false;
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         return false;
+
+    Owned<IPropertyTree> root = &env->getPTree();
     VStringBuffer xpath("Software/*Cluster[@name=\"%s\"]", process);
-    return conn->queryRoot()->hasProp(xpath.str());
+    return root->hasProp(xpath.str());
 }
 
 extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *process)
@@ -4605,6 +4620,7 @@ extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *pr
     if (!remote)
         return false;
 
+    //Cannot use getEnvironmentFactory() since it is using a remotedali
     VStringBuffer xpath("Environment/Software/*Cluster[@name=\"%s\"]/@name", process);
     try
     {
@@ -4661,12 +4677,15 @@ IPropertyTree* getTopologyCluster(Owned<IRemoteConnection> &conn, const char *cl
 {
     if (!clustname || !*clustname)
         return NULL;
-    conn.setown(querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT));
-    if (!conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         return NULL;
+
+    Owned<IPropertyTree> root = &env->getPTree();
     StringBuffer xpath;
     xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
-    return conn->queryRoot()->getPropTree(xpath.str());
+    return root->getPropTree(xpath.str());
 }
 
 bool validateTargetClusterName(const char *clustname)
@@ -4687,11 +4706,13 @@ IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
 
 unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         return 0;
 
-    return getEnvironmentClusterInfo(conn->queryRoot(), clusters);
+    Owned<IPropertyTree> root = &env->getPTree();
+    return getEnvironmentClusterInfo(root, clusters);
 }
 
 unsigned getEnvironmentClusterInfo(IPropertyTree* environmentRoot, CConstWUClusterInfoArray &clusters)
@@ -4713,13 +4734,17 @@ const char *getTargetClusterComponentName(const char *clustname, const char *pro
 {
     if (!clustname)
         return NULL;
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         return NULL;
+
+    Owned<IPropertyTree> root = &env->getPTree();
     StringBuffer xpath;
 
     xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
-    Owned<IPropertyTree> cluster = conn->queryRoot()->getPropTree(xpath.str());
+    Owned<IPropertyTree> cluster = root->getPropTree(xpath.str());
     if (!cluster) 
         return NULL;
 
@@ -4731,10 +4756,13 @@ const char *getTargetClusterComponentName(const char *clustname, const char *pro
 
 unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &groupNames, StringArray &targetNames, StringArray &queueNames)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         return 0;
-    Owned<IPropertyTreeIterator> allTargets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+
+    Owned<IPropertyTree> root = &env->getPTree();
+    Owned<IPropertyTreeIterator> allTargets = root->getElements("Software/Topology/Cluster");
     ForEach(*allTargets)
     {
         IPropertyTree &target = allTargets->query();
@@ -4746,7 +4774,7 @@ unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &gro
             {
                 const char *thorName = thorClusters->query().queryProp("@process");
                 VStringBuffer query("Software/ThorCluster[@name=\"%s\"]",thorName);
-                IPropertyTree *thorCluster = conn->queryRoot()->queryPropTree(query.str());
+                IPropertyTree *thorCluster = root->queryPropTree(query.str());
                 if (thorCluster)
                 {
                     const char *groupName = thorCluster->queryProp("@nodeGroup");
@@ -4767,17 +4795,20 @@ unsigned getEnvironmentThorClusterNames(StringArray &thorNames, StringArray &gro
 
 unsigned getEnvironmentHThorClusterNames(StringArray &eclAgentNames, StringArray &groupNames, StringArray &targetNames)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         return 0;
-    Owned<IPropertyTreeIterator> allEclAgents = conn->queryRoot()->getElements("Software/EclAgentProcess");
+
+    Owned<IPropertyTree> root = &env->getPTree();
+    Owned<IPropertyTreeIterator> allEclAgents = root->getElements("Software/EclAgentProcess");
     ForEach(*allEclAgents)
     {
         IPropertyTree &eclAgent = allEclAgents->query();
         const char *eclAgentName = eclAgent.queryProp("@name");
         if (eclAgentName && *eclAgentName)
         {
-            Owned<IPropertyTreeIterator> allTargets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+            Owned<IPropertyTreeIterator> allTargets = root->getElements("Software/Topology/Cluster");
             ForEach(*allTargets)
             {
                 IPropertyTree &target = allTargets->query();

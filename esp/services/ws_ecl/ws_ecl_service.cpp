@@ -283,7 +283,7 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     }
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+    Owned<IConstEnvironment> environment = factory->openEnvironment();
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
     xpath.clear().appendf("EspService[@name='%s']", name);
