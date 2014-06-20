@@ -4697,11 +4697,19 @@ bool validateTargetClusterName(const char *clustname)
 
 IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
 {
-    Owned<IRemoteConnection> conn;
-    Owned<IPropertyTree> cluster = getTopologyCluster(conn, clustname);
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+        return NULL;
+
+    Owned<IPropertyTree> root = &env->getPTree();
+    StringBuffer xpath;
+    xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
+    Owned<IPropertyTree> cluster = root->getPropTree(xpath.str());
     if (!cluster)
         return NULL;
-    return getTargetClusterInfo(conn->queryRoot(), cluster);
+
+    return getTargetClusterInfo(root, cluster);
 }
 
 unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters)

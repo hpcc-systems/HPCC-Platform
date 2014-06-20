@@ -599,6 +599,7 @@
   </EspProcess>
   <EspService allowNewRoxieOnDemandQuery="false"
               AWUsCacheTimeout="15"
+              ActivityInfoCacheSeconds="10"
               build="${projname}_${version}-${stagever}"
               buildSet="espsmc"
               description="ESP services for SMC"
