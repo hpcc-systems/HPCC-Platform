@@ -117,6 +117,7 @@ define({root:
     EditGraphAttributes: "Edit Graph Attributes",
     EditXGMML: "Edit XGMML",
     Empty: "(Empty)",
+    Enable: "Enable",
     EnableScopeScans: "Enable Scope Scans",
     EnableScopeScansConfirm: "Are you sure you want to enable Scope Scans? Changes will revert to configuration settings on DALI reboot.",
     EnglishQ: "English?",

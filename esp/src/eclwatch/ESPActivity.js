@@ -74,9 +74,8 @@ define([
         setBanner: function (request) {
             lang.mixin(request, {
                 FromSubmitBtn: true,
-                BannerAction: request.BannerContent !== "",
-                EnableChatURL: 0,
-                BannerScroll: 2
+                BannerAction: request.BannerAction ? 1 : 0,
+                EnableChatURL: 0
             });
             this.getActivity(request);
         },
