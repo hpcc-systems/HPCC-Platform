@@ -81,7 +81,7 @@ private:
     void setFileNameFilter(const char* fname, const char* prefix, StringBuffer &buff);
     void setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf);
     void setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sortBy, bool& descending, DFUQResultField* sortOrder);
-    bool addToLogicalFileList(IPropertyTree& file, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles);
+    bool addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles);
     void setDFUQueryResponse(IEspContext &context, unsigned totalFiles, StringBuffer& sortBy, bool descending, unsigned pageStart,
         unsigned pageSize, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
