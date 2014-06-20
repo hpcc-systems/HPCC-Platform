@@ -575,6 +575,16 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
     RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed)
     {
+        // Ensure that SockFile does not keep these sockets open (or we will run out)
+        class AutoDisconnector
+        {
+        public:
+            AutoDisconnector(IFile *_f) : f(_f) {}
+            ~AutoDisconnector() { disconnectRemoteFile(f); }
+        private:
+            IFile *f;
+        } autoDisconnector(f);
+
         cacheFileConnect(f, dafilesrvLookupTimeout);  // set timeout to 10 seconds
         if (f->exists())
         {
