@@ -87,10 +87,7 @@
          {
           if (!fromTargetClusterPage)
           {
-             if ((name=='Start') || (name=='Stop'))
-                method = name;
-             else
-                document.forms['listitems'].action = '/ws_machine/' + name;
+             document.forms['listitems'].action = '/ws_machine/' + name;
 
              if (name != 'GetMachineInfo')
                 document.getElementById('GetMachineInfo').style.display="none";
@@ -98,17 +95,8 @@
              if (name != 'GetMetrics' && document.getElementById('GetMetrics') != undefined)
                 document.getElementById('GetMetrics').style.display="none";
 
-             if (name != 'RemoteExec')
-                document.getElementById('RemoteExec').style.display="none";
-                  
-             if (name != 'Start' && name != 'Stop')
-                document.getElementById('StartStop').style.display="none";
-
              document.getElementById('AutoRefreshSection').style.display= name == "GetMachineInfo" ? "block" : "none";
-             if (name!='Start' && name!='Stop')
-                document.getElementById(name).style.display='block';
-             else
-                document.getElementById('StartStop').style.display='block';
+             document.getElementById(name).style.display='block';
 
              method = name;
           }
