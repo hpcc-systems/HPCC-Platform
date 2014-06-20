@@ -498,6 +498,7 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
     unsigned numCopies = pdesc->numCopies();
     unsigned lastClusterNo = (unsigned) -1;
     unsigned numThisCluster = 0;
+    unsigned initialSize = locations.length();
     int priority = 0;
     IntArray priorities;
     for (unsigned copy = 0; copy < numCopies; copy++)
@@ -547,7 +548,7 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
                     break;
             }
             priorities.add(priority, idx);
-            locations.add(path.str(), idx);
+            locations.add(path.str(), idx+initialSize);
         }
     }
 }
