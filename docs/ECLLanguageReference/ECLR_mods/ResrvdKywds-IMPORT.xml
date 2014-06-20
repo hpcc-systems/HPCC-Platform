@@ -104,8 +104,11 @@ IMPORT $, Std;                          //makes the standard library functions a
 
 IMPORT MyModule;                        //makes available the definitions from MyModule folder
 
-IMPORT ^.MyOtherModule                  //makes available the definitions from MyOtherModule folder,
+IMPORT $.^.MyOtherModule                  //makes available the definitions from MyOtherModule folder,
                                         //which is located in the same container as the current folder
+
+IMPORT $.^.^.SomeOtherModule            //makes available the definitions from SomeOtherModule folder,
+                                        //which is located in the grandparent folder of current folder
 
 IMPORT SomeFolder.SomeFile;             //make the specific file available
 
