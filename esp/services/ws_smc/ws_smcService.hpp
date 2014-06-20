@@ -41,6 +41,17 @@ enum ClusterStatusType
     QueueRunningNotFound = 4
 };
 
+enum WsSMCStatusServerType
+{
+    WsSMCSSTThorLCRCluster = 0,
+    WsSMCSSTRoxieCluster = 1,
+    WsSMCSSTHThorCluster = 2,
+    WsSMCSSTECLagent = 3,
+    WsSMCSSTterm = 4
+};
+
+static const char *WsSMCStatusServerTypeNames[] = { "ThorMaster", "RoxieServer", "HThorServer", "ECLagent" };
+
 class CWsSMCQueue
 {
 public:
@@ -58,15 +69,18 @@ public:
     virtual ~CWsSMCQueue(){};
 };
 
-class CWsSMCTargetCluster
+class CWsSMCTargetCluster : public CInterface
 {
 public:
     ClusterType clusterType;
-    SCMStringBuffer clusterName;
+    StringAttr clusterName;
+    StringAttr queueName;
+    StringAttr queueStatus;
+    StringAttr warning;
+    int clusterSize;
     SCMStringBuffer statusServerName;
     StringBuffer clusterStatus;
     StringBuffer clusterStatusDetails;
-    StringBuffer queueStatus;
     CWsSMCQueue clusterQueue;
     CWsSMCQueue agentQueue;
     CWsSMCQueue serverQueue;
@@ -75,11 +89,31 @@ public:
     virtual ~CWsSMCTargetCluster(){};
 };
 
+struct ActivityInfo : public CInterface, implements IInterface
+{
+    IMPLEMENT_IINTERFACE;
+
+    ActivityInfo() { timeCached.setNow(); };
+    bool isCachedActivityInfoValid(unsigned timeOutSeconds);
+
+    CDateTime timeCached;
+
+    CIArrayOf<CWsSMCTargetCluster> thorTargetClusters;
+    CIArrayOf<CWsSMCTargetCluster> roxieTargetClusters;
+    CIArrayOf<CWsSMCTargetCluster> hthorTargetClusters;
+
+    IArrayOf<IEspActiveWorkunit> aws;
+    IArrayOf<IEspServerJobQueue> serverJobQueues;
+    IArrayOf<IEspDFUJob> DFURecoveryJobs;
+};
+
 class CWsSMCEx : public CWsSMC
 {
     long m_counter;
     CTpWrapper m_ClusterStatus;
-    CWUXMLInfo m_WuidInfo;
+    CriticalSection getActivityCrit;
+    Owned<ActivityInfo> activityInfoCache;
+    unsigned activityInfoCacheSeconds;
 
     StringBuffer m_ChatURL;
     StringBuffer m_Banner;
@@ -117,42 +151,57 @@ public:
 private:
     void addCapabilities( IPropertyTree* pFeatureNode, const char* access, 
                                  IArrayOf<IEspCapability>& capabilities);
-    void addToThorClusterList(IArrayOf<IEspThorCluster>& clusters, IEspThorCluster* cluster, const char* sortBy, bool descending);
-    void addToRoxieClusterList(IArrayOf<IEspRoxieCluster>& clusters, IEspRoxieCluster* cluster, const char* sortBy, bool descending);
-    void addServerJobQueue(double version, IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName, const char* serverType);
-    void addServerJobQueue(double version, IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName, const char* serverType, const char* queueState, const char* queueStateDetails);
-    void getQueueState(int runningJobsInQueue, StringBuffer& queueState, BulletType& colorType);
-    void readClusterTypeAndQueueName(CConstWUClusterInfoArray& clusters, const char* clusterName, StringBuffer& clusterType, SCMStringBuffer& clusterQueue);
-    void addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWUClusterInfoArray& clusters,
-                   IArrayOf<IEspActiveWorkunit>& aws, BoolHash& uniqueWUIDs,
-                   StringArray& runningQueueNames, int* runningJobsInQueue);
+    void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName,
+        const char* serverType, const char* networkAddress, unsigned port);
+    void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName,
+        const char* serverType, const char* networkAddress, unsigned port, const char* queueState, const char* queueStateDetails);
     void readBannerAndChatRequest(IEspContext& context, IEspActivityRequest &req, IEspActivityResponse& resp);
     void setBannerAndChatData(double version, IEspActivityResponse& resp);
-    void getServersAndWUs(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp, double version,
-        IPropertyTree* envRoot, CConstWUClusterInfoArray& clusters);
+    void getServersAndWUs(IEspContext &context, IEspActivityRequest &req, IPropertyTree* envRoot, CConstWUClusterInfoArray& clusters,
+        ActivityInfo* activityInfo);
 
     void sortTargetClusters(IArrayOf<IEspTargetCluster>& clusters, const char* sortBy, bool descending);
     void createActiveWorkUnit(Owned<IEspActiveWorkunit>& ownedWU, IEspContext &context, const char* wuid, const char* location,
-    unsigned index, const char* serverName, const char* queueName, const char* instanceName, const char* targetClusterName);
+        unsigned index, const char* serverName, const char* queueName, const char* instanceName, const char* targetClusterName, bool useContext);
     void readDFUWUs(IEspContext &context, const char* queueName, const char* serverName, IArrayOf<IEspActiveWorkunit>& aws);
-    void readRunningWUsOnServerNode(IEspContext& context, IPropertyTree& serverStatusNode, const char* targetClusterName,
-         unsigned& runningJobsInQueue, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void readRunningWUsOnECLAgent(IEspContext& context, IPropertyTreeIterator* itStatusECLagent, CConstWUClusterInfoArray& clusters,
          CWsSMCTargetCluster& targetCluster, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
-    void readWUsAndStateFromJobQueue(IEspContext& context, CWsSMCTargetCluster& targetCluster, CWsSMCQueue& queue, const char* listQueue, IArrayOf<IEspActiveWorkunit>& aws);
+    void readWUsAndStateFromJobQueue(IEspContext& context, CWsSMCTargetCluster& targetCluster, CWsSMCQueue& queue, const char* listQueue, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
     void addToTargetClusterList(IArrayOf<IEspTargetCluster>& clusters, IEspTargetCluster* cluster, const char* sortBy, bool descending);
-    bool foundQueueInStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, const char* serverName, const char* processName, const char* processExt);
+    bool findQueueInStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, const char* serverName, const char* queueName);
     void setClusterQueueStatus(CWsSMCTargetCluster& targetCluster);
     void setClusterStatus(IEspContext& context, CWsSMCTargetCluster& targetCluster, IEspTargetCluster* returnCluster);
     void getTargetClusterAndWUs(IEspContext& context, CConstWUClusterInfoArray& clusters, IConstWUClusterInfo& cluster,
          IPropertyTree* serverStatusRoot, IPropertyTreeIterator* itStatusECLagent, IEspTargetCluster* returnCluster, IArrayOf<IEspActiveWorkunit>& aws);
     void getWUsNotOnTargetCluster(IEspContext &context, IPropertyTree* serverStatusRoot, IArrayOf<IEspServerJobQueue>& serverJobQueues, IArrayOf<IEspActiveWorkunit>& aws);
     void getDFUServersAndWUs(IEspContext &context, IPropertyTree* envRoot, IArrayOf<IEspServerJobQueue>& serverJobQueues, IArrayOf<IEspActiveWorkunit>& aws);
-    void getDFURecoveryJobs(IEspContext &context, IArrayOf<IEspDFUJob>& jobs);
+    void getDFURecoveryJobs(IEspContext &context, const IPropertyTree* dfuRecoveryRoot, IArrayOf<IEspDFUJob>& jobs);
     const char* createQueueActionInfo(IEspContext &context, const char* action, IEspSMCQueueRequest &req, StringBuffer& info);
     void setServerJobQueueStatus(double version, IEspServerJobQueue* jobQueue, const char* status, const char* details);
-};
+    void setServerJobQueueStatus(IEspServerJobQueue* jobQueue, const char* status, const char* details);
+    void setServerJobQueueStatusDetails(IEspServerJobQueue* jobQueue, const char* status, const char* details);
 
+    void readTargetClusterInfo(IEspContext &context, CConstWUClusterInfoArray& clusters, IPropertyTree* serverStatusRoot,
+        ActivityInfo* activityInfo);
+    void readTargetClusterInfo(IEspContext& context, IConstWUClusterInfo& cluster, IPropertyTree* serverStatusRoot, CWsSMCTargetCluster* targetCluster);
+    void readRunningWUsAndQueuedWUs(IEspContext &context, IPropertyTree* envRoot, IPropertyTree* serverStatusRoot,
+        IPropertyTree* dfuRecoveryRoot, ActivityInfo* activityInfo);
+    CWsSMCTargetCluster* findWUClusterInfo(IEspContext& context, const char* wuid, bool isOnECLAgent,
+            CIArrayOf<CWsSMCTargetCluster>& targetClusters, CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2);
+    CWsSMCTargetCluster* findTargetCluster(const char* clusterName, CIArrayOf<CWsSMCTargetCluster>& targetClusters);
+    void readRunningWUsOnStatusServer(IEspContext& context, IPropertyTree* serverStatusRoot, WsSMCStatusServerType statusServerType,
+            CIArrayOf<CWsSMCTargetCluster>& targetClusters, CIArrayOf<CWsSMCTargetCluster>& targetClusters1, CIArrayOf<CWsSMCTargetCluster>& targetClusters2,
+            BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
+    void readWUsAndStateFromJobQueue(IEspContext& context, CWsSMCTargetCluster& targetCluster, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
+    void readWUsAndStateFromJobQueue(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, BoolHash& uniqueWUIDs, IArrayOf<IEspActiveWorkunit>& aws);
+    void setESPTargetClusters(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetCluster>& respTargetClusters);
+    ActivityInfo* createActivityInfo(IEspContext &context, IEspActivityRequest &req);
+    void clearActivityInfoCache();
+    ActivityInfo* getActivityInfo(IEspContext &context, IEspActivityRequest &req);
+    void setActivityResponse(IEspContext &context, ActivityInfo* activityInfo, IEspActivityRequest &req, IEspActivityResponse& resp);
+    void addWUsToResponse(IEspContext &context, const IArrayOf<IEspActiveWorkunit>& aws, IEspActivityResponse& resp);
+    const char *getStatusServerTypeName(WsSMCStatusServerType type);
+};
 
 class CWsSMCSoapBindingEx : public CWsSMCSoapBinding
 {
