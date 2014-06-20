@@ -70,6 +70,7 @@ define([
         },
 
         preProcessRow: function (item, request, query, options) {
+            var context = this;
             var ErrorCount = 0;
             var StatusMessage;
             var MixedNodeStates;
@@ -78,11 +79,11 @@ define([
                 arrayUtil.some(item.Clusters.ClusterQueryState, function(cqs, idx){
                     if (lang.exists("Errors", cqs) && cqs.Errors) {
                         ErrorCount++;
-                        StatusMessage = this.i18n.SuspendedByCluster;
+                        StatusMessage = context.i18n.SuspendedByCluster;
                         return false;
                     }
                     if (lang.exists("MixedNodeStates", cqs) && cqs.MixedNodeStates == true) {
-                        StatusMessage =  this.i18n.MixedNodeStates;
+                        StatusMessage =  context.i18n.MixedNodeStates;
                         MixedNodeStates = true;
                     }
                 });
