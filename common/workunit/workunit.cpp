@@ -4673,7 +4673,7 @@ IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyT
     return new CEnvironmentClusterInfo(clustname, prefix, agent, thors, queryRoxieProcessTree(environment, roxieName));
 }
 
-IPropertyTree* getTopologyCluster(Owned<IRemoteConnection> &conn, const char *clustname)
+IPropertyTree* getTopologyCluster(Owned<IPropertyTree> &envRoot, const char *clustname)
 {
     if (!clustname || !*clustname)
         return NULL;
@@ -4682,26 +4682,26 @@ IPropertyTree* getTopologyCluster(Owned<IRemoteConnection> &conn, const char *cl
     if (!env)
         return NULL;
 
-    Owned<IPropertyTree> root = &env->getPTree();
+    envRoot.setown(&env->getPTree());
     StringBuffer xpath;
     xpath.appendf("Software/Topology/Cluster[@name=\"%s\"]", clustname);
-    return root->getPropTree(xpath.str());
+    return envRoot->getPropTree(xpath.str());
 }
 
 bool validateTargetClusterName(const char *clustname)
 {
-    Owned<IRemoteConnection> conn;
-    Owned<IPropertyTree> cluster = getTopologyCluster(conn, clustname);
+    Owned<IPropertyTree> envRoot;
+    Owned<IPropertyTree> cluster = getTopologyCluster(envRoot, clustname);
     return (cluster.get()!=NULL);
 }
 
 IConstWUClusterInfo* getTargetClusterInfo(const char *clustname)
 {
-    Owned<IRemoteConnection> conn;
-    Owned<IPropertyTree> cluster = getTopologyCluster(conn, clustname);
+    Owned<IPropertyTree> envRoot;
+    Owned<IPropertyTree> cluster = getTopologyCluster(envRoot, clustname);
     if (!cluster)
         return NULL;
-    return getTargetClusterInfo(conn->queryRoot(), cluster);
+    return getTargetClusterInfo(envRoot, cluster);
 }
 
 unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters)
