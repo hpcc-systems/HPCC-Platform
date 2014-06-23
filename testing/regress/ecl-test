@@ -31,7 +31,7 @@ from hpcc.util.ecl.file import ECLFile
 from hpcc.util.util import checkPqParam, getVersionNumbers, checkXParam, convertPath, getRealIPAddress
 from hpcc.common.error import Error
 
-prog_version = "0.0.25"
+prog_version = "0.0.26"
 
 # For coverage
 if ('coverage' in os.environ) and (os.environ['coverage'] == '1'):
@@ -73,18 +73,8 @@ class RegressMain:
             # Sort ECL filenames to ensure correct execution order
             eclfiles.sort()
 
-        targetClusters = []
-        if 'all' == self.args.target:
-            for cluster in self.regress.config.Clusters:
-                targetClusters.append(str(cluster))
-        else:
-            if self.args.target in self.regress.config.Clusters:
-                targetClusters.append(self.args.target)
-            else:
-                logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
-                raise Error("4000")
         # Go through the cluster list
-        for cluster in targetClusters:
+        for cluster in self.targetClusters:
             try:
                 self.regress.config.ip = self.regress.config.IpAddress[cluster]
                 if len(eclfiles) > 1:
@@ -114,30 +104,28 @@ class RegressMain:
                 exit()
 
     def setup(self):
-        if self.args.target in self.regress.config.Clusters:
+        # Go through the cluster list
+        for cluster in self.targetClusters:
             self.args.setupExtraX = []
             self.args.setupExtraX.append('OriginalTextFilesPath='+self.regressionSuiteHpccMainDir)
             self.args.setupExtraX.append('OriginalTextFilesIp='+getRealIPAddress())
-            self.regress.config.ip = self.regress.config.IpAddress[self.args.target]
+            self.args.target = cluster
+            self.regress.config.ip = self.regress.config.IpAddress[cluster]
             if  self.args.pq :
-                self.regress.runSuiteP(self.args.target, self.regress.Setup(self.args))
+                self.regress.runSuiteP(cluster, self.regress.Setup(self.args))
             else:
-                self.regress.runSuite(self.args.target, self.regress.Setup(self.args))
-        else:
-            logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
-            raise Error("4000")
+                self.regress.runSuite(cluster, self.regress.Setup(self.args))
 
     def run(self):
-        if self.args.target in self.regress.config.Clusters:
-            self.regress.config.ip = self.regress.config.IpAddress[self.args.target]
-            self.regress.bootstrap(self.args.target, self.args)
+        # Go through the cluster list
+        for cluster in self.targetClusters:
+            self.regress.bootstrap(cluster, self.args)
+            self.args.target = cluster
+            self.regress.config.ip = self.regress.config.IpAddress[cluster]
             if  self.args.pq :
-                self.regress.runSuiteP(self.args.target, self.regress.suites[self.args.target])
+                self.regress.runSuiteP(cluster, self.regress.suites[cluster])
             else:
-                self.regress.runSuite(self.args.target, self.regress.suites[self.args.target])
-        else:
-            logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
-            raise Error("4000")
+                self.regress.runSuite(cluster, self.regress.suites[cluster])
 
     def main(self):
         prog = "ecl-test"
@@ -190,15 +178,15 @@ class RegressMain:
 
         parser_setup = subparsers.add_parser('setup', help='setup help')
         parser_setup.set_defaults(func='setup')
-        parser_setup.add_argument('--target', '-t', help="Run the setup on target cluster. Default value is thor.",
-                                nargs='?', type=str,  default='thor')
+        parser_setup.add_argument('--target', '-t', help="Run the setup on target cluster. If target = 'all' then run setup on all clusters. Default value is thor.",
+                                nargs='?', type=str,  default='thor', metavar="target_cluster | all")
         parser_setup.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )",
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
 
         parser_run = subparsers.add_parser('run', help='run help')
         parser_run.set_defaults(func='run')
-        parser_run.add_argument('--target', '-t', help="Run the cluster suite. Default value is thor.",
-                                nargs='?', type=str,  default='thor')
+        parser_run.add_argument('--target', '-t', help="Run the cluster suite. If target = 'all' then run suite on all clusters. Default value is thor.",
+                                nargs='?', type=str,  default='thor', metavar="target_cluster | all")
         parser_run.add_argument('--pq', help="Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2 )",
                                 type=checkPqParam,  default = 0,   metavar="threadNumber")
 
@@ -229,6 +217,17 @@ class RegressMain:
             self.regress = Regression(self.args)
             logging.debug("Suite version:%s",  versionStr)
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
+
+            self.targetClusters = []
+            if 'all' == self.args.target:
+                for cluster in self.regress.config.Clusters:
+                    self.targetClusters.append(str(cluster))
+            else:
+                if self.args.target in self.regress.config.Clusters:
+                    self.targetClusters.append(self.args.target)
+                else:
+                    logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
+                    raise Error("4000")
 
             if self.args.func == 'list':
                 self.listClusters()
