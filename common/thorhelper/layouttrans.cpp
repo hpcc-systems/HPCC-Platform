@@ -623,7 +623,7 @@ void CRecordLayoutTranslator::checkSizes(char const * filename, size32_t activit
     if(activityMetaSize != activitySize)
         throw MakeStringException(0, "Key size mismatch during translation of index %s: ECL indicates size %u, ECL record meta has size %u", filename, activitySize, activityMetaSize);
     if(diskMetaSize != diskSize)
-        throw MakeStringException(0, "Key size mismatch during translation of index %s: index indicates size %u, index record meta has size %u", filename, diskSize, diskMetaSize);
+        WARNLOG("Key size mismatch during translation of index %s: index indicates size %u, index record meta has size %u", filename, diskSize, diskMetaSize);
 }
 
 IRecordLayoutTranslator::RowTransformContext * CRecordLayoutTranslator::getRowTransformContext()

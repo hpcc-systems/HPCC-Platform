@@ -197,7 +197,6 @@ public:
     virtual bool querySuccess() const { return !failure; }
     virtual Failure const & queryFailure() const { return *failure; }
     virtual size32_t queryActivityKeySize() const { return activityMetaSize; }
-    virtual size32_t queryDiskKeySize() const { return diskMetaSize; }
     virtual void checkSizes(char const * filename, size32_t activitySize, size32_t diskSize) const;
     virtual bool queryKeysTransformed() const { return keysTransformed; }
     virtual SegmentMonitorContext * getSegmentMonitorContext() { return new ExpandedSegmentMonitorList(this); }
