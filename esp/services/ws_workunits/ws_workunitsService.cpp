@@ -3106,7 +3106,7 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
             resp.setPushEventText(req.getPushEventText());
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+        Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
         if (!root)
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
@@ -3374,7 +3374,7 @@ bool CWsWorkunitsEx::onWUAddLocalFileToWorkunit(IEspContext& context, IEspWUAddL
 void getClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+    Owned<IConstEnvironment> environment = factory->openEnvironment();
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
     VStringBuffer xpath("Software/%s[@name='%s']", clusterType, clusterName);
@@ -3651,7 +3651,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         if(strieq(method,"WUQuery") || strieq(method,"WUJobList"))
         {
             Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-            Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+            Owned<IConstEnvironment> environment = factory->openEnvironment();
             Owned<IPropertyTree> root = &environment->getPTree();
             if (!root)
                 throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");

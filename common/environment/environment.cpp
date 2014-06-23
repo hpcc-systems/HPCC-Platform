@@ -30,16 +30,11 @@
 #include "dasds.hpp"
 #include "dalienv.hpp"
 
-#define SDS_LOCK_TIMEOUT  10000
+#define SDS_LOCK_TIMEOUT  30000
 
 
 static int environmentTraceLevel = 1;
-static char sEnvironmentConfFile[1024];
-static char sEnvironmentXMLFile[1024];
-static StringBuffer sEnvironmentConf;
 static Owned <IConstEnvironment> cache;
-static CDateTime confFileCacheTime;
-static CDateTime xmlFileCacheTime;
 
 class CConstInstanceInfo;
 
@@ -334,10 +329,10 @@ class CEnvironmentFactory : public CInterface,
 {
 public:
     IMPLEMENT_IINTERFACE;
-   MAKEValueArray(SubscriptionId, SubscriptionIDs);
-   SubscriptionIDs subIDs;
+    MAKEValueArray(SubscriptionId, SubscriptionIDs);
+    SubscriptionIDs subIDs;
     Mutex mutex;
-   Owned<CSdsSubscription> subscription;
+    Owned<CSdsSubscription> subscription;
     
     CEnvironmentFactory()
     {
@@ -348,119 +343,6 @@ public:
     virtual ~CEnvironmentFactory()
     {
         close(); //just in case it was not explicitly closed
-    }
-
-    //Create the first environment cache from a file
-    virtual IConstEnvironment* createEnvironmentByFile(const char* environmentConfFile, const char* environmentXMLFile)
-    {
-        sEnvironmentConfFile[0] = 0;
-        sEnvironmentXMLFile[0] = 0;
-        sEnvironmentConf.clear();
-
-        if (environmentConfFile && *environmentConfFile)
-        {  
-            strcpy(sEnvironmentConfFile, environmentConfFile);
-
-            IFile * pFile = createIFile(sEnvironmentConfFile);
-            if (pFile->exists( ))
-            {       
-                CDateTime fcreated, fmodified, faccessed;
-                if (pFile->getTime(&fcreated, &fmodified, &faccessed)) 
-                {
-                    xmlFileCacheTime = fmodified;
-                    Owned<IFileIO> pFileIO = pFile->openShared(IFOread, IFSHfull);
-                    if (pFileIO)
-                    {
-                        StringBuffer tmpBuf;
-                        offset_t fileSize = pFile->size();
-                        tmpBuf.ensureCapacity((unsigned)fileSize);
-                        tmpBuf.setLength((unsigned)fileSize);
-
-                        size32_t nRead = pFileIO->read(0, (size32_t) fileSize, (char*)tmpBuf.str());
-                        if (nRead == fileSize)
-                        {
-                            sEnvironmentConf = tmpBuf;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!environmentXMLFile || !*environmentXMLFile)
-            return NULL;
-
-        strcpy(sEnvironmentXMLFile, environmentXMLFile);
-
-        IFile * ifile = createIFile(sEnvironmentXMLFile);
-        if (!ifile->exists( ))
-            return NULL;
-    
-        CDateTime fcreated, fmodified, faccessed;
-        if (!ifile->getTime(&fcreated, &fmodified, &faccessed)) 
-            return NULL;
-
-        xmlFileCacheTime = fmodified;
-        cache.setown(new CLocalEnvironment(sEnvironmentXMLFile));
-
-        return cache.getLink();
-    }
-
-    virtual const char* getEnvironmentConf()
-    {
-        if (!sEnvironmentConfFile || !*sEnvironmentConfFile)
-            return NULL;
-
-        IFile * pFile = createIFile(sEnvironmentConfFile);
-        if (pFile->exists( ))
-        {       
-            CDateTime fcreated, fmodified, faccessed;
-            if (pFile->getTime(&fcreated, &fmodified, &faccessed)) 
-            {
-                if ((sEnvironmentConf.length() < 1) || (xmlFileCacheTime != fmodified))
-                {
-                    xmlFileCacheTime = fmodified;
-                    Owned<IFileIO> pFileIO = pFile->openShared(IFOread, IFSHfull);
-                    if (pFileIO)
-                    {
-                        StringBuffer tmpBuf;
-                        offset_t fileSize = pFile->size();
-                        tmpBuf.ensureCapacity((unsigned)fileSize);
-                        tmpBuf.setLength((unsigned)fileSize);
-
-                        size32_t nRead = pFileIO->read(0, (size32_t) fileSize, (char*)tmpBuf.str());
-                        if (nRead == fileSize)
-                        {
-                            sEnvironmentConf = tmpBuf;
-                        }
-                    }
-                }
-            }
-        }
-        return sEnvironmentConf.str();
-    }
-
-    virtual IConstEnvironment* openEnvironmentByFile()
-    {
-        //For cackward compatible
-        if (!sEnvironmentXMLFile || !*sEnvironmentXMLFile)
-            return openEnvironment();
-        
-        synchronized procedure(mutex);
-
-        IFile * ifile = createIFile(sEnvironmentXMLFile);
-        if (!ifile->exists( ))
-            return openEnvironment();
-    
-        CDateTime fcreated, fmodified, faccessed;
-        if (!ifile->getTime(&fcreated, &fmodified, &faccessed)) 
-            return openEnvironment();
-
-        if (!cache || (xmlFileCacheTime != fmodified))
-        {
-            xmlFileCacheTime = fmodified;
-            cache.setown(new CLocalEnvironment(sEnvironmentXMLFile));
-        }
-        return cache.getLink();
     }
 
     virtual IConstEnvironment* openEnvironment()
@@ -476,9 +358,9 @@ public:
         return cache.getLink();
     }
 
-   virtual IEnvironment* updateEnvironment()
+    virtual IEnvironment* updateEnvironment()
     {
-      Owned<IConstEnvironment> pConstEnv = openEnvironment();
+        Owned<IConstEnvironment> pConstEnv = openEnvironment();
 
         synchronized procedure(mutex);
         return &pConstEnv->lock();
@@ -530,7 +412,7 @@ public:
 
         synchronized procedure(mutex);
         subIDs.append(sub_id);
-      return sub_id;
+        return sub_id;
    }
          
    virtual void unsubscribe(SubscriptionId sub_id)
@@ -547,10 +429,10 @@ public:
 
    virtual void validateCache()
    {
-      if (!subscription)
-         subscription.setown( new CSdsSubscription() );
+        if (!subscription)
+            subscription.setown( new CSdsSubscription() );
       
-      subscription->handleEnvironmentChange();
+        subscription->handleEnvironmentChange();
    }
 
 private:

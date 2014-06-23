@@ -85,23 +85,6 @@ bool getCluster(const char *clustername,SocketEndpointArray &eps)
     return eps.ordinality()!=0;
 }
 
-bool getAllClusters(SocketEndpointArray &eps)
-{
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
-    if (!conn) 
-        return false;
-    IPropertyTree* root = conn->queryRoot();
-    Owned<IPropertyTreeIterator> clusters= root->getElements("ThorCluster");
-    if (clusters->first()) {
-        do {
-            IPropertyTree &cluster = clusters->query();
-            if (!getCluster(cluster.queryProp("@name"),eps))
-                ERRLOG("Cluster %s not found",cluster.queryProp("@name"));
-        } while (clusters->next());
-    }
-    return eps.ordinality()!=0;
-}
-
 unsigned applyNodes(const char *grpip, ApplyMode mode, unsigned ver, bool isdali, bool quiet)
 {
     SocketEndpointArray eps;

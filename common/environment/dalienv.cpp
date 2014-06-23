@@ -379,6 +379,8 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
     // first get machine by IP
     StringBuffer ips;
     ip.getIpText(ips);
+
+    //Cannot use getEnvironmentFactory() since it is using a remotedali
     StringBuffer xpath;
     xpath.appendf("Environment/Hardware/Computer[@netAddress=\"%s\"]", ips.str());
     Owned<IPropertyTreeIterator> iter = querySDS().getElementsRaw(xpath,remotedali,timeout);
@@ -393,6 +395,7 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
         ERRLOG("Unable to find domain for %s on dali %s", ips.str(),dalis.str());
         return false;
     }
+
     xpath.clear().appendf("Environment/Software/%s",keyName);
     if (version)
         xpath.appendf("[@version='%s']",version);
@@ -441,15 +444,21 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
     return false;
 }
 
-#define SDS_CONNECT_TIMEOUT 30000
 bool envGetConfigurationDirectory(const char *category, const char *component,const char *instance, StringBuffer &dirout)
 {
     SessionId sessid = myProcessSession();
     if (!sessid)
         return false;
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories",sessid, 0, SDS_CONNECT_TIMEOUT);
-    if (conn) 
-        return getConfigurationDirectory(conn->queryRoot(),category,component,instance,dirout);
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env)
+    {
+        Owned<IPropertyTree> root = &env->getPTree();
+        IPropertyTree * child = root->queryPropTree("Software/Directories");
+        if (child)
+            return getConfigurationDirectory(child,category,component,instance,dirout);
+    }
     return false;
 }
 
@@ -483,10 +492,17 @@ IPropertyTree *envGetNASConfiguration()
     SessionId sessid = myProcessSession();
     if (!sessid)
         return NULL;
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware", sessid, 0, SDS_CONNECT_TIMEOUT);
-    if (!conn)
-        return NULL;
-    return envGetNASConfiguration(conn->queryRoot());
+
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (env)
+    {
+        Owned<IPropertyTree> root = &env->getPTree();
+        IPropertyTree * hardware = root->queryPropTree("Hardware");
+        if (hardware)
+            return envGetNASConfiguration(hardware);
+    }
+    return NULL;
 }
 
 IPropertyTree *envGetInstallNASHooks(SocketEndpoint *myEp)

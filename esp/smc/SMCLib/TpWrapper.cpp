@@ -36,7 +36,7 @@ IPropertyTree* CTpWrapper::getEnvironment(const char* xpath)
     DBGLOG("CTpWrapper::getEnvironment()");
 
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> root = &constEnv->getPTree();
     if (root)
     {
@@ -65,7 +65,7 @@ bool CTpWrapper::getClusterLCR(const char* clusterType, const char* clusterName)
     if (!envFactory)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
     
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     if (!constEnv)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -188,15 +188,7 @@ void CTpWrapper::fetchInstances(const char* ServiceType, IPropertyTree& service,
 void CTpWrapper::getTpDaliServers(IArrayOf<IConstTpDali>& list)
 {
     DBGLOG("CTpWrapper::getTpDaliServers()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -331,15 +323,7 @@ void CTpWrapper::getTpEclCCServers(IPropertyTree* environmentSoftware, IArrayOf<
 void CTpWrapper::getTpEclAgents(IArrayOf<IConstTpEclAgent>& list, const char* agentName)
 {
     DBGLOG("CTpWrapper::getTpEclAgents()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -424,15 +408,7 @@ void CTpWrapper::getTpEclSchedulers(IArrayOf<IConstTpEclScheduler>& list, const 
 void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
 {
     DBGLOG("CTpWrapper::getEspServers()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -496,15 +472,7 @@ void CTpWrapper::getTpEspServers(IArrayOf<IConstTpEspServer>& list)
 void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 {
     DBGLOG("CTpWrapper::getTpDfuServers()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -543,15 +511,7 @@ void CTpWrapper::getTpDfuServers(IArrayOf<IConstTpDfuServer>& list)
 void CTpWrapper::getTpSashaServers(IArrayOf<IConstTpSashaServer>& list)
 {
     DBGLOG("CTpWrapper::getSashaServers()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -587,15 +547,7 @@ void CTpWrapper::getTpSashaServers(IArrayOf<IConstTpSashaServer>& list)
 void CTpWrapper::getTpLdapServers(IArrayOf<IConstTpLdapServer>& list)
 {
     DBGLOG("CTpWrapper::getTpLdapServers()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -647,24 +599,12 @@ void CTpWrapper::getTpLdapServers(IArrayOf<IConstTpLdapServer>& list)
 void CTpWrapper::getTpDropZones(IArrayOf<IConstTpDropZone>& list)
 {
     DBGLOG("CTpWrapper::getTpDropZones()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-#if 0
     Owned<IConstEnvironment> m_pConstEnvironment = factory->openEnvironment();
-#else
-    Owned<IConstEnvironment> m_pConstEnvironment = factory->openEnvironmentByFile();
-#endif
 
     Owned<IPropertyTreeIterator> services= root->getElements(eqDropZone);
     ForEach(*services)
@@ -713,15 +653,7 @@ void CTpWrapper::getTpDropZones(IArrayOf<IConstTpDropZone>& list)
 void CTpWrapper::getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list)
 {
     DBGLOG("CTpWrapper::getTpFTSlaves()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -746,15 +678,7 @@ void CTpWrapper::getTpFTSlaves(IArrayOf<IConstTpFTSlave>& list)
 void CTpWrapper::getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list)
 {
     DBGLOG("CTpWrapper::getTpDkcSlaves()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -779,15 +703,7 @@ void CTpWrapper::getTpDkcSlaves(IArrayOf<IConstTpDkcSlave>& list)
 void CTpWrapper::getTpGenesisServers(IArrayOf<IConstTpGenesisServer>& list)
 {
     DBGLOG("CTpWrapper::getTpGenesisServers()");
-#if 0
-    Owned<IRemoteConnection> conn = querySDS().connect( "/Environment/Software", myProcessSession(), 
-                                                        RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        throw MakeStringException(0,"Failed to get environment information.");
-    IPropertyTree* root = conn->queryRoot();
-#else
     Owned<IPropertyTree> root = getEnvironment("Software");
-#endif
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -880,7 +796,7 @@ void CTpWrapper::getTargetClusterList(IArrayOf<IEspTpLogicalCluster>& clusters, 
 void CTpWrapper::queryTargetClusterProcess(double version, const char* processName, const char* clusterType, IArrayOf<IConstTpCluster>& clusterList)
 {
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> root = &constEnv->getPTree();
     if (!root)
         throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -1010,7 +926,7 @@ void CTpWrapper::queryTargetClusters(double version, const char* clusterType, co
     try
     {
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
         if (!root)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -1146,22 +1062,12 @@ void CTpWrapper::getClusterProcessList(const char* ClusterType, IArrayOf<IEspTpC
 {
     try
     {
-#if 0
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-        if (conn)
-        {
-            IPropertyTree* root = conn->queryRoot();
-            IPropertyTree* pSoftware = root->queryPropTree("Software");
-            if (!pSoftware)
-                return;
-#else
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
         if (root)
         {
             IPropertyTree* pSoftware = root->queryPropTree("Software");
-#endif
             if (!pSoftware)
                 throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -1317,22 +1223,12 @@ void CTpWrapper::getHthorClusterList(IArrayOf<IEspTpCluster>& clusterList)
 {
     try
     {
-#if 0
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-        if (conn)
-        {
-            IPropertyTree* root = conn->queryRoot();
-            IPropertyTree* pSoftware = root->queryPropTree("Software");
-            if (!pSoftware)
-                return;
-#else
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
         if (root)
         {
             IPropertyTree* pSoftware = root->queryPropTree("Software");
-#endif
 
             const char * ClusterType = "EclAgentProcess";
             Owned<IPropertyTreeIterator> clusters(pSoftware->getElements(ClusterType));
@@ -1461,23 +1357,6 @@ void CTpWrapper::resolveGroupInfo(const char* groupName,StringBuffer& Cluster, S
     // if this changes then this code may be invalidated....
     try
     {
-#if 0
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Topology", myProcessSession(), RTM_LOCK_READ|RTM_SUB, SDS_LOCK_TIMEOUT);
-        Owned<IPropertyTreeIterator> nodes=  conn->queryRoot()->getElements("//Cluster");
-        if (nodes->first()) {
-            do {
-
-                IPropertyTree &node = nodes->query();
-                if (ContainsProcessDefinition(node,groupName)==true)
-                {
-                    //the prefix info is contained within the parent
-                    ClusterPrefix.append(node.queryProp("@prefix"));
-                    Cluster.append(node.queryProp("@name"));
-                    break;
-                }
-            } while (nodes->next());
-        }
-#else
         Owned<IPropertyTree> pTopology = getEnvironment("Software/Topology");
         if (!pTopology)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -1498,7 +1377,6 @@ void CTpWrapper::resolveGroupInfo(const char* groupName,StringBuffer& Cluster, S
                 }
             } while (nodes->next());
         }
-#endif
     }
     catch(IException* e){   
       StringBuffer msg;
@@ -1548,7 +1426,7 @@ void CTpWrapper::getMachineList(double clientVersion,
     try
     {
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
         if (!root)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -1659,15 +1537,8 @@ void CTpWrapper::getMachineList(const char* MachineType,
     try
     {
         //ParentPath=Path to parent node... normally a cluster
-#if 0
-        Owned<IRemoteConnection> conn = querySDS().connect(ParentPath, myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-      if (!conn)
-         throw MakeStringException(-1, "Specified path '%s' is invalid!", ParentPath);
-
-        IPropertyTree* root = conn->queryRoot();
-#else
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root0 = &constEnv->getPTree();
         if (!root0)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -1679,7 +1550,7 @@ void CTpWrapper::getMachineList(const char* MachineType,
         IPropertyTree* root = root0->queryPropTree( xpath );
         if (!root)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
-#endif
+
         Owned<IPropertyTreeIterator> machines= root->getElements(MachineType);
         const char* nodenametag = getNodeNameTag(MachineType);
         if (machines->first()) {
@@ -1738,12 +1609,8 @@ void CTpWrapper::getDropZoneList(const char* MachineType,
 {
     try
     {
-#if 0
-        Owned<IRemoteConnection> conn = querySDS().connect(ParentPath, myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-        Owned<IPropertyTreeIterator> nodes=  conn->queryRoot()->getElements(eqDropZone);
-#else
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root0 = &constEnv->getPTree();
         if (!root0)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
@@ -1757,7 +1624,6 @@ void CTpWrapper::getDropZoneList(const char* MachineType,
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
         Owned<IPropertyTreeIterator> nodes=  root->getElements(eqDropZone);
-#endif
         if (nodes->first()) {
             do {
 
@@ -1792,11 +1658,7 @@ void CTpWrapper::setMachineInfo(const char* name,const char* type,IEspTpMachine&
 {
     try{
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-#if 0
         Owned<IConstEnvironment> m_pConstEnvironment = factory->openEnvironment();
-#else
-        Owned<IConstEnvironment> m_pConstEnvironment = factory->openEnvironmentByFile();
-#endif
         Owned<IConstMachineInfo> pMachineInfo =  m_pConstEnvironment->getMachine(name);
         if (pMachineInfo.get())
         {

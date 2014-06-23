@@ -498,6 +498,7 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
     unsigned numCopies = pdesc->numCopies();
     unsigned lastClusterNo = (unsigned) -1;
     unsigned numThisCluster = 0;
+    unsigned initialSize = locations.length();
     int priority = 0;
     IntArray priorities;
     for (unsigned copy = 0; copy < numCopies; copy++)
@@ -547,7 +548,7 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
                     break;
             }
             priorities.add(priority, idx);
-            locations.add(path.str(), idx);
+            locations.add(path.str(), idx+initialSize);
         }
     }
 }
@@ -574,6 +575,16 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
     RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed)
     {
+        // Ensure that SockFile does not keep these sockets open (or we will run out)
+        class AutoDisconnector
+        {
+        public:
+            AutoDisconnector(IFile *_f) : f(_f) {}
+            ~AutoDisconnector() { disconnectRemoteFile(f); }
+        private:
+            IFile *f;
+        } autoDisconnector(f);
+
         cacheFileConnect(f, dafilesrvLookupTimeout);  // set timeout to 10 seconds
         if (f->exists())
         {
