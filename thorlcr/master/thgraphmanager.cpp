@@ -643,6 +643,7 @@ void CJobManager::reply(IConstWorkUnit *workunit, const char *wuid, IException *
     conversation.clear();
     handlingConversation = false;
 
+    //GH->JCS Should this be using getEnvironmentFactory()->openEnvironment()?
     Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), RTM_LOCK_READ, MEDIUMTIMEOUT);
     if (checkThorNodeSwap(globals->queryProp("@name"),e?wuid:NULL,(unsigned)-1))
         abortThor(e,false);
