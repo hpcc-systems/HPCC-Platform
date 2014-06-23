@@ -1,4 +1,4 @@
-Overview of Regression Suite usage (v:0.0.25)
+Overview of Regression Suite usage (v:0.0.26)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
@@ -92,13 +92,12 @@ Command:
 Result:
 
 |
-|       usage: usage: ecl-test setup [-h] [--target [TARGET]] [--pq threadNumber]
+|       usage: usage: ecl-test setup [-h] [--target [target_cluster | all]] [--pq threadNumber]
 |
 |       optional arguments:
 |         -h, --help            show this help message and exit
-|         --target [TARGET], -t [TARGET]
-|                               Run the setup on target cluster. Default value is
-|                               thor.
+|          --target [target_cluster | all], -t [target_cluster | all]
+|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
 |         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
@@ -112,12 +111,12 @@ Command:
 Result:
 
 |
-|       usage: ecl-test run [-h] [--target [TARGET]] [--pq threadNumber]
+|       usage: ecl-test run [-h] [--target [target_cluster | all]] [--pq threadNumber]
 |
 |       optional arguments:
 |         -h, --help         show this help message and exit
-|         --target [TARGET], -t [TARGET]
-|                            Run the cluster suite. Default value is thor.
+|         --target [target_cluster | all], -t [target_cluster | all]
+|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
 |         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
@@ -178,11 +177,11 @@ Command:
 to run setup on the default (thor) cluster
 
 or
-        ./ecl-test setup -t <target cluster>
+        ./ecl-test setup -t <target cluster> | all
 
-to run setup on a selected cluster
+to run setup on a selected or all clusters
 
-The result:
+The result for thor:
 
 |
 |        [Action] Suite: thor (setup)
@@ -217,12 +216,12 @@ To setup the proper environment for text search test cases there is a new compon
 -------------------------------------------------------------
 Command:
 
-        ./ecl-test run [-t <target cluster>] [-h] [--pq threadNumber]
+        ./ecl-test run [-t <target cluster>|all] [-h] [--pq threadNumber]
 
 Optional arguments:
   -h, --help         show help message and exit
-  --target [TARGET], -t [TARGET]
-                     Run the cluster suite. Default value is thor.
+   --target [target_cluster | all], -t [target_cluster | all]
+|                        Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
   --pq threadNumber  Parallel query execution with threadNumber threads.
                     ('-1' can be use to calculate usable thread count on a single node system)
 
