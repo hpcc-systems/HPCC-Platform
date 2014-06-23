@@ -5001,17 +5001,6 @@ private:
             DBGLOG("Error updating password for %s",username);
             throw MakeStringException(-1, "Error updating password for %s",username);
         }
-
-        //Add tempfile scope for this user (spill, paused and checkpoint
-        //will be created under this user specific scope)
-        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
-        resName.append("::").append(tmpuser->getName());
-        Owned<ISecResource> resource = new CLdapSecResource(resName.str());
-        if (!addResource(RT_FILE_SCOPE, *tmpuser, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE)))
-        {
-            DBGLOG("Error adding temp file scope %s",resName.str());
-            throw MakeStringException(-1, "Error adding temp file scope %s",resName.str());
-        }
     }
 
 
@@ -5189,6 +5178,16 @@ private:
                 deleteUser(&user);
                 throw;
             }
+        }
+
+        //Add tempfile scope for this user (spill, paused and checkpoint
+        //will be created under this user specific scope)
+        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
+        resName.append("::").append(username);
+        Owned<ISecResource> resource = new CLdapSecResource(resName.str());
+        if (!addResource(RT_FILE_SCOPE, user, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE)))
+        {
+            throw MakeStringException(-1, "Error adding temp file scope %s",resName.str());
         }
 
         return true;
