@@ -204,7 +204,7 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
         setStateID(wu->getState());
         if (wu->getState() == WUStateBlocked)
         {
-        	wu->getStateEx(stateEx);
+            wu->getStateEx(stateEx);
             if (notCheckVersion || (version > 1.00))
                 setExtra(stateEx.str());
         }
@@ -691,7 +691,7 @@ ActivityInfo* CWsSMCEx::createActivityInfo(IEspContext &context, IEspActivityReq
     IPropertyTree* dfuRecoveryRoot = NULL;
     Owned<IRemoteConnection> connDFURecovery = querySDS().connect("DFU/RECOVERY",myProcessSession(), RTM_LOCK_READ, 30000);
     if (connDFURecovery)
-    	dfuRecoveryRoot = connDFURecovery->queryRoot();
+        dfuRecoveryRoot = connDFURecovery->queryRoot();
 
     Owned<ActivityInfo> activityInfo = new ActivityInfo();
     readTargetClusterInfo(context, clusters, serverStatusRoot, activityInfo);
@@ -1220,7 +1220,7 @@ void CWsSMCEx::setServerJobQueueStatus(double version, IEspServerJobQueue* jobQu
 
     jobQueue->setQueueStatus(status);
     if (version >= 1.17)
-    	setServerJobQueueStatusDetails(jobQueue, status, details);
+        setServerJobQueueStatusDetails(jobQueue, status, details);
 }
 
 void CWsSMCEx::setServerJobQueueStatus(IEspServerJobQueue* jobQueue, const char* status, const char* details)

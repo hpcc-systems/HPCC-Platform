@@ -108,7 +108,7 @@ ESPStruct ServerJobQueue
     string QueueStatus;
     [min_ver("1.17")] string StatusDetails;
     [min_ver("1.19")] string NetworkAddress;
-    [min_ver("1.19")] int port;
+    [min_ver("1.19")] int Port;
 };
 
 ESPstruct [nil_remove] StatusServerInfo
