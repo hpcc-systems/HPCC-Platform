@@ -7831,9 +7831,9 @@ void CHThorDiskReadBaseActivity::resolve()
         if (!ldFile)
         {
             StringBuffer buff;
-            buff.append("Skipping OPT disk read of nonexistent file ").append(mangledHelperFileName.str());
+            buff.appendf("Input file '%s' was missing but declared optional", mangledHelperFileName.str());
             WARNLOG("%s", buff.str());
-            agent.addWuException(buff.str(), 0, ExceptionSeverityWarning, "hthor");
+            agent.addWuException(buff.str(), 0, ExceptionSeverityInformation, "hthor");
         }
     }
 }
