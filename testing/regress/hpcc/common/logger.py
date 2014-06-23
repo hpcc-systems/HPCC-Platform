@@ -97,7 +97,6 @@ class Logger(object):
                 self.taskIds = {}
                 self.isBuffer = False
             self.flush()
-            self.stream.close()
 
         def addTaskId(self,  taskId,  threadId,  timestamp):
             if not self.taskIds.has_key(threadId):
