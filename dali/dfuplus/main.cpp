@@ -34,9 +34,10 @@ void handleSyntax()
     StringBuffer out;
 
     out.append("Usage:\n");
-    out.append("    dfuplus action=[spray|replicate|despray|copy|remove|rename|list|\n");
+    out.append("    dfuplus [-v|--version] | action=[spray|replicate|despray|copy|remove|rename|list|\n");
     out.append("                    addsuper|removesuper|listsuper|copysuper|dafilesrv|\n");
-    out.append("                    savexml|add|status|abort|resubmit|monitor] {<options>}\n");
+    out.append("                    savexml|add|status|abort|resubmit|monitor] {<options>}\n\n");
+    out.append("        -v | --version -- display version info\n\n");
     out.append("    general options:\n");
     out.append("        server=<esp-server-url> \n");
     out.append("        username=<user-name>\n");
@@ -265,7 +266,8 @@ int main(int argc, const char* argv[])
 {
     InitModuleObjects();
 
-    if ((argc >= 2) && ((stricmp(argv[1], "/version") == 0) || (stricmp(argv[1], "-version") == 0))) 
+    if ((argc >= 2) && ((stricmp(argv[1], "/version") == 0) || (stricmp(argv[1], "-v") == 0)
+        || (stricmp(argv[1], "--version") == 0)))
     {
         printVersion();
         return 0;
