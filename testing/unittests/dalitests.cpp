@@ -2047,6 +2047,8 @@ public:
                                "~file::192.168.16.1::>some query or another",
                                "~file::192.168.16.1::wild?card1",
                                "~file::192.168.16.1::wild*card2",
+                               "~file::192.168.16.1::^C^a^S^e^d",
+                               "~file::192.168.16.1::file@cluster1",
                                "~prefix::{multi1*,multi2*}",
                                "{~foreign::192.168.16.1::multi1, ~foreign::192.168.16.2::multi2}",
 
@@ -2061,6 +2063,8 @@ public:
                                ". :: scope1 :: file nine",
                                ". :: scope1 :: file ten",
                                ". :: sc~ope1::file",
+                               "~~scope1::file",
+                               "~sc~ope1::file2",
                                ".:: scope1::file*",
                                NULL                                             // terminator
                              };
