@@ -50,42 +50,40 @@ define([
         },
 
         ensureWidget: function () {
-            var deferred = new Deferred();
-            if (this.__hpcc_resolved) {
-                deferred.resolve(this.widget[this.childWidgetID]);
-            } else {
-                this.__hpcc_resolved = true;
-                this.startLoading();
-                var context = this;
-                require(["hpcc/" + this.delayWidget], function (widget) {
-                    if (widget.fixCircularDependency) {
-                        widget = widget.fixCircularDependency;
-                    }
-                    var widgetInstance = new widget(lang.mixin({
-                        id: context.childWidgetID,
-                        style: {
-                            margin: "0px",
-                            padding: "0px",
-                            width: "100%",
-                            height: "100%"
-                        }
-                    }, context.delayProps ? context.delayProps : {}));
-                    context.widget = {};
-                    context.widget[widgetInstance.id] = widgetInstance;
-                    context.containerNode.appendChild(widgetInstance.domNode);
-                    widgetInstance.startup();
-                    widgetInstance.resize();
-                    if (widgetInstance.refresh) {
-                        context.refresh = function (params) {
-                            widgetInstance.refresh(params);
-                        }
-                    }
-                    context.stopLoading();
-                    deferred.resolve(widgetInstance);
-                });
-            }
+            if (this.deferred) {
+                return this.deferred.promise;
+            } 
 
-            return deferred.promise;
+            this.deferred = new Deferred();
+            this.startLoading();
+            var context = this;
+            require(["hpcc/" + this.delayWidget], function (widget) {
+                if (widget.fixCircularDependency) {
+                    widget = widget.fixCircularDependency;
+                }
+                var widgetInstance = new widget(lang.mixin({
+                    id: context.childWidgetID,
+                    style: {
+                        margin: "0px",
+                        padding: "0px",
+                        width: "100%",
+                        height: "100%"
+                    }
+                }, context.delayProps ? context.delayProps : {}));
+                context.widget = {};
+                context.widget[widgetInstance.id] = widgetInstance;
+                context.containerNode.appendChild(widgetInstance.domNode);
+                widgetInstance.startup();
+                widgetInstance.resize();
+                if (widgetInstance.refresh) {
+                    context.refresh = function (params) {
+                        widgetInstance.refresh(params);
+                    }
+                }
+                context.stopLoading();
+                context.deferred.resolve(widgetInstance);
+            });
+            return this.deferred.promise;
         },
 
         //  Implementation  ---

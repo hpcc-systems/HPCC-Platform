@@ -5,7 +5,7 @@
             <div class="right">
                 <div class="seperator grey"></div>
                 <form id="search-form" onsubmit="return false;">
-                    <input id="${id}FindText" class="roundForm" data-dojo-props="placeHolder: '${i18n.PlaceholderFindText}'" data-dojo-type="dijit.form.TextBox" />
+                    <input id="${id}FindText" class="roundForm" data-dojo-props="placeHolder: '${i18n.PlaceholderFindText}', trim: true" data-dojo-type="dijit.form.TextBox" />
                     <button id="${id}Find" type="submit" data-dojo-props="iconClass:'iconFind', showLabel: false" data-dojo-attach-event="onClick:_onFind" data-dojo-type="dijit.form.Button">${i18n.Find}</button>
                 </form>
                 <div class="seperator grey"></div>
