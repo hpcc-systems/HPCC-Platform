@@ -1910,6 +1910,19 @@ void WsWuInfo::getWorkunitArchiveQuery(MemoryBuffer& buf)
     buf.append(queryText.length(), queryText.str());
 }
 
+void WsWuInfo::getWorkunitQueryShortText(MemoryBuffer& buf)
+{
+    Owned<IConstWUQuery> query = cw->getQuery();
+    if(!query)
+        throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU,"No query for workunit %s.",wuid.str());
+
+    SCMStringBuffer queryText;
+    query->getQueryShortText(queryText);
+    if (queryText.length() < 1)
+        throw MakeStringException(ECLWATCH_QUERY_NOT_FOUND_FOR_WU, "No query for workunit %s.",wuid.str());
+    buf.append(queryText.length(), queryText.str());
+}
+
 void WsWuInfo::getWorkunitDll(StringBuffer &dllname, MemoryBuffer& buf)
 {
     Owned<IConstWUQuery> query = cw->getQuery();
