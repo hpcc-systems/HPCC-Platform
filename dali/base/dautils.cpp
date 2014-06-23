@@ -115,6 +115,7 @@ public:
                 s = lfn.str();
             }
             CDfsLogicalFileName lfn;
+            lfn.setAllowWild(true);
             lfn.set(s);
             dlfns.push_back(lfn);
             if (expanded && (strchr(s,'*') || strchr(s,'?')))
@@ -229,6 +230,7 @@ public:
 CDfsLogicalFileName::CDfsLogicalFileName()
 {
     allowospath = false;
+    allowWild = false;
     multi = NULL;
     clear();
 }
@@ -311,7 +313,7 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
                     full.append(',');
                 const CDfsLogicalFileName &item = multi->item(i1);
                 StringAttr norm;
-                normalizeName(item.get(), norm);
+                normalizeName(item.get(), norm, false);
                 full.append(norm);
                 if (item.isExternal())
                     external = external || item.isExternal();
@@ -330,46 +332,81 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
     }
 }
 
-void CDfsLogicalFileName::normalizeName(const char * name, StringAttr &res)
+inline void normalizeScope(const char *name, const char *scope, unsigned len, StringBuffer &res, bool strict)
 {
+    bool scopeStarted=false;
+    bool scopeEnded=false;
+    const char *s2=scope;
+    while (len--)
+    {
+        if (isspace(*s2))
+        {
+            if (strict)
+               throw MakeStringException(-1, "Scope contains spaces in file name '%s'", name);
+            if (scopeStarted) // ignore leading spaces if !strict
+                scopeEnded = true;
+        }
+        else
+        {
+            if (scopeEnded)
+               throw MakeStringException(-1, "Scope contains spaces in file name '%s'", name);
+            scopeStarted = true;
+            res.append(*s2);
+        }
+        ++s2;
+    }
+}
+
+void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool strict)
+{
+    // NB: If !strict(default) allows spaces to exist either side of scopes (no idea why would want to permit that, but preserving for bwrd compat.)
     StringBuffer str;
     StringBuffer nametmp;
-    const char *s = name;
-    const char *ct = NULL;
+    const char *ct = NULL;    
     bool wilddetected = false;
-    while (*s) {
-        switch (*s) {
-        case '@': ct = s; break;
-        case ':': ct = NULL; break;
-        case '?':
-        case '*': wilddetected = true; break;
-        case '~':
-            if (s==name) { // leading ~ not allowed
-                name++;
-                skipSp(name);
-                s = name;
-                continue;
-            }
-            break;
-        }
-        s++;
-    }
-    if (wilddetected)
+    if ('~' == *name) // allowed 1 leading ~
     {
-        res.set(name);
-        return;
+        name++;
+        if (!strict)
+            skipSp(name);
     }
-
+    const char *s = name;
+    char c = *s;
+    while (c)
+    {
+        switch (c)
+        {
+            case '@': ct = s; break;
+            case ':': ct = NULL; break;
+            case '?':
+            case '*': wilddetected = true; break;
+            case '~':
+                throw MakeStringException(-1, "Unexpected character '%c' in logical name '%s' detected", *s, name);
+            case '>':
+            {
+                c = '\0'; // will cause break out of loop
+                continue; // can't validate query syntax
+            }
+            default:
+            {
+                if (!validFNameChar(c))
+                    throw MakeStringException(-1, "Unexpected character '%c' in logical name '%s' detected", *s, name);
+            }
+        }
+        c = *s++;
+    }
     bool isext = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
-    if (!isext&&wilddetected)
-        throw MakeStringException(-1,"Wildcards not allowed in filename (%s)",name);
+    if (!isext && !allowWild && wilddetected)
+        throw MakeStringException(-1, "Wildcards not allowed in filename (%s)", name);
     if (!isext&&ct&&(ct-name>=1)) // trailing @
     {
-        if ((ct[1]=='@')||(ct[1]=='^')) { // escape
+        if ((ct[1]=='@')||(ct[1]=='^')) // escape
+        {
             nametmp.append(ct-name,name).append(ct+1);
             name = nametmp.str();
         }
-        else {
+        else
+        {
             nametmp.append(ct+1);
             nametmp.trim().toLowerCase();
             if (nametmp.length())
@@ -381,95 +418,108 @@ void CDfsLogicalFileName::normalizeName(const char * name, StringAttr &res)
     if (!*name)
         name = ".::_blank_";
     s=strstr(name,"::");
-    if (s) {
-        if (s==name)
+    if (s)
+    {
+        if (s==name) // JCS: meaning name leads with "::", would have thought should be treated as invalid
             str.append('.');
-        else {
-            str.append(s-name,name).clip();
-            if (isext) {    // normalize node
+        else
+        {
+            normalizeScope(name, name, s-name, str, strict);
+            bool isForeign = 0 == stricmp(str.str(),FOREIGN_SCOPE);
+            if (isext || isForeign) // normalize node
+            {
                 const char *s1 = s+2;
                 const char *ns1 = strstr(s1,"::");
-                if (ns1) {                                          // TBD accept groupname here
-                    skipSp(s1);
+                if (ns1) // TBD accept groupname here (in the case of isext)
+                {
+                    if (!strict)
+                        skipSp(s1);
                     StringBuffer nodename;
-                    nodename.append(ns1-s1,s1).clip();
+                    nodename.append(ns1-s1,s1);
+                    if (!strict)
+                        nodename.clip();
                     SocketEndpoint ep(nodename.str());
-                    if (!ep.isNull()) {
+                    if (!ep.isNull())
+                    {
                         ep.getUrlStr(str.append("::"));
                         s = ns1;
-                        external = true;
-                        if (s[2]=='>') {
-                            str.append("::");
-                            tailpos = str.length();
-                            str.append(s+2);
-                            res.set(str);
-                            return;
+                        if (isext)
+                        {
+                            external = true;
+                            if (s[2]=='>')
+                            {
+                                str.append("::");
+                                tailpos = str.length();
+                                str.append(s+2);
+                                res.set(str);
+                                return;
+                            }
                         }
-
-                    }
-                }
-            }
-            else if (stricmp(str.str(),FOREIGN_SCOPE)==0) { // normalize node
-                const char *s1 = s+2;
-                const char *ns1 = strstr(s1,"::");
-                if (ns1) {
-                    skipSp(s1);
-                    StringBuffer nodename;
-                    nodename.append(ns1-s1,s1).clip();
-                    SocketEndpoint ep(nodename.str());
-                    if (!ep.isNull()) {
-                        ep.getUrlStr(str.append("::"));
-                        s = ns1;
-                        localpos = str.length()+2;
+                        else
+                        {
+                            dbgassertex(isForeign);
+                            localpos = str.length()+2;
+                        }
                     }
                 }
             }
         }
-        loop {
+        loop
+        {
             s+=2;
             const char *ns = strstr(s,"::");
             if (!ns)
                 break;
-            skipSp(s);
-            str.append("::").append(ns-s,s).clip();
+            str.append("::");
+            normalizeScope(name, s, ns-s, str, strict);
             s = ns;
         }
     }
-    else {
+    else
+    {
         s = name;
         str.append(".");
     }
     str.append("::");
     tailpos = str.length();
-    if (strstr(s,"::")!=NULL) {
+    if (strstr(s,"::")!=NULL)
         ERRLOG("Tail contains '::'!");
-    }
-    skipSp(s);
-    str.append(s).clip().toLowerCase();
+    normalizeScope(name, s, strlen(name)-(s-name), str, strict);
+    str.toLowerCase();
     res.set(str);
 }
 
 
-void CDfsLogicalFileName::set(const char *name)
+void CDfsLogicalFileName::set(const char *name, bool removeForeign)
 {
     clear();
-    StringBuffer str;
     if (!name)
         return;
     skipSp(name);
-    try {
+    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==NULL)))
+    {
+        RemoteFilename rfn;
+        rfn.setRemotePath(name);
+        setExternal(rfn);
+        return;
+    }
+    try
+    {
         multi = CMultiDLFN::create(name);
     }
-    catch (IException *e) {
+    catch (IException *e)
+    {
         StringBuffer err;
         e->errorMessage(err);
         WARNLOG("CDfsLogicalFileName::set %s",err.str());
         e->Release();
     }
-    if (multi) {
+    if (multi)
+    {
         StringBuffer full;
         full.append('{');
-        ForEachItemIn(i1,*multi) {
+        ForEachItemIn(i1,*multi)
+        {
             if (i1)
                 full.append(',');
             const CDfsLogicalFileName &item = multi->item(i1);
@@ -481,86 +531,27 @@ void CDfsLogicalFileName::set(const char *name)
         lfn.set(full);
         return;
     }
-    if (allowospath&&(isAbsolutePath(name)||(stdIoHandle(name)>=0)||(strstr(name,"::")==NULL))) {
-        RemoteFilename rfn;
-        rfn.setRemotePath(name);
-        setExternal(rfn);
-        return;
+    normalizeName(name, lfn, false);
+    if (removeForeign)
+    {
+        const char *_lfn = get(true);
+        lfn.clear();
+        lfn.set(_lfn);
     }
-    normalizeName(name, lfn);
 }
-bool CDfsLogicalFileName::setValidate(const char *lfn,bool removeforeign)
+
+bool CDfsLogicalFileName::setValidate(const char *lfn, bool removeForeign)
 {
-    // NB will allows multi
-    const char *s = lfn;
-    if (!s)
-        return false;
-    skipSp(s);
-    if (*s=='~') {  // allowed 1 leading ~
-        s++;
-        skipSp(s);
-    }
-    if (*s=='~')
-        return false;
-    if (allowospath&&(isAbsolutePath(s)||(stdIoHandle(s)>=0)||(strstr(lfn,"::")==NULL))) {
-        set(lfn);
+    try
+    {
+        set(lfn, removeForeign);
         return true;
     }
-
-    const char *ns = skipScope(s,FOREIGN_SCOPE);
-    if (ns) {
-        while (*ns&&((*ns!=':')||(ns[1]!=':'))) // remove IP
-            ns++;
-        if (*ns) {
-            s = ns+2;
-            if (removeforeign) {
-                lfn = s;
-                skipSp(s);
-            }
-        }
+    catch (IException *e)
+    {
+        e->Release();
+        return false;
     }
-    const char *es = ns?NULL:skipScope(s,EXTERNAL_SCOPE);
-    if (es) { 
-        while (*es&&((*es!=':')||(es[1]!=':'))) // remove IP
-            es++;
-        if (*es) {
-            if (es[2]=='>') { // query
-                set(lfn);
-                return true;
-            }
-            s = es+2;
-        }
-    }
-    unsigned sc=0;
-    int inmulti = 0;
-    loop {
-        while(*s!=':') {
-            if (!*s) {
-                if (sc==0)
-                    return false;
-                set(lfn);
-                return true;
-            }
-            if (!validFNameChar(*s)) {
-                if (!inmulti||((*s!='?')&&(*s!='*')))
-                    return false;
-            }
-            if (*s=='{')
-                inmulti++;
-            else if (inmulti&&(*s=='}'))
-                inmulti--;
-            if (*s!=' ')
-                sc++;
-            s++;
-        }
-        if (sc==0)
-            break;
-        if (s[1]!=':')
-            break;
-        s += 2;
-        sc = 0;
-    }
-    return false;
 }
 
 
@@ -3087,3 +3078,4 @@ bool traceAllTransactions(bool on)
     transactionLoggingOn = on;
     return ret;
 }
+

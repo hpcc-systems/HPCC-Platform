@@ -59,15 +59,16 @@ class da_decl CDfsLogicalFileName
     CMultiDLFN *multi;   // for temp superfile
     bool external;
     bool allowospath;
+    bool allowWild;
 
 public:
     CDfsLogicalFileName();
     ~CDfsLogicalFileName();
 
     CDfsLogicalFileName & operator = (CDfsLogicalFileName const &from);
-    void set(const char *lfn);
+    void set(const char *lfn, bool removeForeign=false); // throws an exception on invalid filenames
+    bool setValidate(const char *lfn, bool removeForeign=false); // returns false for invalid filenames
     void set(const CDfsLogicalFileName &lfn);
-    bool setValidate(const char *lfn,bool removeforeign=false); // checks for invalid chars
     void set(const char *scopes,const char *tail);
     bool setFromMask(const char *partmask,const char *rootdir=NULL);
     void clear();
@@ -134,9 +135,10 @@ public:
     const void resolveWild();  // only for multi
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
+    void setAllowWild(bool b=true) { allowWild = b; } // allow wildcards
     bool isExpanded() const;
     void expand(IUserDescriptor *user);
-    void normalizeName(const char * name, StringAttr &res);
+    void normalizeName(const char * name, StringAttr &res, bool strict);
 };
 
 // abstract class, define getCmdText to return tracing text of commands

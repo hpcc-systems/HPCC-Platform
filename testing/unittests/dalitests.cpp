@@ -439,9 +439,9 @@ void dispFDesc(IFileDescriptor *fdesc)
 
 // ================================================================================== UNIT TESTS
 
-class DaliTests : public CppUnit::TestFixture
+class CDaliTests : public CppUnit::TestFixture
 {
-    CPPUNIT_TEST_SUITE( DaliTests );
+    CPPUNIT_TEST_SUITE( CDaliTests );
         CPPUNIT_TEST(testDFS);
 //        CPPUNIT_TEST(testReadAllSDS); // Ignoring this test; See comments below
         CPPUNIT_TEST(testSDSRW);
@@ -690,11 +690,11 @@ class DaliTests : public CppUnit::TestFixture
     const IContextLogger &logctx;
 
 public:
-    DaliTests() : logctx(queryDummyContextLogger()) {
+    CDaliTests() : logctx(queryDummyContextLogger()) {
         init();
     }
 
-    ~DaliTests() {
+    ~CDaliTests() {
         destroy();
     }
 
@@ -2249,7 +2249,91 @@ public:
     }
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION( DaliTests );
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( DaliTests, "Dali" );
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliTests, "Dali" );
+
+class CDaliUtils : public CppUnit::TestFixture
+{
+    CPPUNIT_TEST_SUITE(CDaliUtils);
+      CPPUNIT_TEST(testDFSLfn);
+    CPPUNIT_TEST_SUITE_END();
+public:
+    void testDFSLfn()
+    {
+        const char *lfns[] = { "~foreign::192.168.16.1::scope1::file1",
+                               "~file::192.168.16.1::dir1::file1",
+                               "~file::192.168.16.1::>some query or another",
+                               "~file::192.168.16.1::wild?card1",
+                               "~file::192.168.16.1::wild*card2",
+                               "~file::192.168.16.1::^C^a^S^e^d",
+                               "~file::192.168.16.1::file@cluster1",
+                               "~prefix::{multi1*,multi2*}",
+                               "{~foreign::192.168.16.1::multi1, ~foreign::192.168.16.2::multi2}",
+
+                               // NB: CDfsLogicalFileName allows these with strict=false (the default)
+                               ". :: scope1 :: file",
+                               ":: scope1 :: file",
+                               "~ scope1 :: scope2 :: file  ",
+                               ". :: scope1 :: file",
+                               NULL                                             // terminator
+                             };
+        const char *invalidLfns[] = {
+                               ". :: scope1 :: file nine",
+                               ". :: scope1 :: file ten",
+                               ". :: sc~ope1::file",
+                               "~~scope1::file",
+                               "~sc~ope1::file2",
+                               ".:: scope1::file*",
+                               NULL                                             // terminator
+                             };
+        PROGLOG("Checking valid logical filenames");
+        unsigned nlfn=0;
+        loop
+        {
+            const char *lfn = lfns[nlfn++];
+            if (NULL == lfn)
+                break;
+            PROGLOG("lfn = %s", lfn);
+            CDfsLogicalFileName dlfn;
+            try
+            {
+                dlfn.set(lfn);
+            }
+            catch (IException *e)
+            {
+                VStringBuffer err("Logical filename '%s' failed.", lfn);
+                EXCLOG(e, err.str());
+                CPPUNIT_FAIL(err.str());
+                e->Release();
+            }
+        }
+        PROGLOG("Checking invalid logical filenames");
+        nlfn = 0;
+        loop
+        {
+            const char *lfn = invalidLfns[nlfn++];
+            if (NULL == lfn)
+                break;
+            PROGLOG("lfn = %s", lfn);
+            CDfsLogicalFileName dlfn;
+            try
+            {
+                dlfn.set(lfn);
+                VStringBuffer err("Logical filename '%s' passed and should have failed.", lfn);
+                ERRLOG("%s", err.str());
+                CPPUNIT_FAIL(err.str());
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e, "Expected error:");
+                e->Release();
+            }
+        }
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( CDaliUtils );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( CDaliUtils, "DaliUtils" );
+
 
 #endif // _USE_CPPUNIT
