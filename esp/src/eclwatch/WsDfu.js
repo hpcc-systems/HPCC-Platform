@@ -105,6 +105,26 @@ define([
 
             return ESPRequest.send("WsDfu", "DFUArrayAction", {
                 request: request
+            }).then(function (response) {
+                if (lang.exists("DFUArrayActionResponse.ActionResults.DFUActionInfo", response)) {
+                    var exceptions = [];
+                    arrayUtil.forEach(response.DFUArrayActionResponse.ActionResults.DFUActionInfo, function (item, idx) {
+                        if (item.Failed) {
+                            exceptions.push({
+                                Source: item.FileName,
+                                Message: item.ActionResult
+                            });
+                        }
+                    });
+                    if (exceptions.length) {
+                        topic.publish("hpcc/brToaster", {
+                            Severity: "Error",
+                            Source: "WsDfu.DFUArrayAction",
+                            Exceptions: exceptions
+                        });
+                    }
+                }
+                return response;
             });
         },
 
