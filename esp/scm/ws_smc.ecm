@@ -107,8 +107,8 @@ ESPStruct ServerJobQueue
     string ServerType;
     string QueueStatus;
     [min_ver("1.17")] string StatusDetails;
-    [min_ver("1.18")] string NetworkAddress;
-    [min_ver("1.18")] int port;
+    [min_ver("1.19")] string NetworkAddress;
+    [min_ver("1.19")] int port;
 };
 
 ESPstruct [nil_remove] StatusServerInfo
@@ -194,9 +194,9 @@ ESPrequest SMCQueueRequest
     string Cluster;
     string QueueName;
     string Comment;
-    [min_ver("1.18")] string ServerType;
-    [min_ver("1.18")] string NetworkAddress;
-    [min_ver("1.18")] int Port;
+    [min_ver("1.19")] string ServerType;
+    [min_ver("1.19")] string NetworkAddress;
+    [min_ver("1.19")] int Port;
 };
 
 
@@ -333,7 +333,7 @@ RoxieControlCmdResponse
     ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
 };
 
-ESPservice [noforms, version("1.18"), default_client_version("1.18"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.19"), default_client_version("1.19"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
