@@ -14,12 +14,6 @@ TOOLSDIR="$SRCDIR/util/buildscripts"
 # Destination directory for built code
 DISTDIR=$1
 
-# Module ID of the main application package loader configuration
-LOADERMID="eclwatch/run"
-
-# Main application package loader configuration
-LOADERCONF="$SRCDIR/$LOADERMID.js"
-
 # Main application package build configuration
 PROFILE="$BASEDIR/profiles/eclwatch.profile.js"
 
@@ -43,16 +37,14 @@ cp -r "$SRCDIR/CodeMirror2" "$DISTDIR/CodeMirror2"
 cat "$SRCDIR/stub.htm" | tr '\n' ' ' | \
 perl -pe "
   s/<\!--.*?-->//g;                          # Strip comments
-#  s/isDebug: *1/deps:['$LOADERMID']/;        # Remove isDebug, add deps
-#  s/<script src=\"$LOADERMID.*?\/script>//;  # Remove script eclwatch/run
   s/\s+/ /g;                                 # Collapse white-space" > "$DISTDIR/stub.htm"
 
 cd "$TOOLSDIR"
 
 if which node >/dev/null; then
-    node ../../dojo/dojo.js load=build --require "$LOADERCONF" --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
+    node ../../dojo/dojo.js load=build --require "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
 elif which java >/dev/null; then
-    java -Xms256m -Xmx256m  -cp ../shrinksafe/js.jar:../closureCompiler/compiler.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main  ../../dojo/dojo.js baseUrl=../../dojo load=build --require "$LOADERCONF" --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
+    java -Xms256m -Xmx256m  -cp ../shrinksafe/js.jar:../closureCompiler/compiler.jar:../shrinksafe/shrinksafe.jar org.mozilla.javascript.tools.shell.Main  ../../dojo/dojo.js baseUrl=../../dojo load=build --profile "$PROFILE" --releaseDir "$DISTDIR" ${*:2}
 else
     echo "Need node.js or Java to build!"
     exit 1
@@ -61,8 +53,6 @@ fi
 echo "Build complete"
 
 cd "$BASEDIR"
-
-LOADERMID=${LOADERMID//\//\\\/}
 
 for dojodir in dojo dojox dijit
 do

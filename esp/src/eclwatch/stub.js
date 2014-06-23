@@ -18,23 +18,23 @@ define([
     "dojo/dom",
     "dojo/dom-style",
     "dojo/io-query",
-    "dojo/ready"
-], function (fx, dom, domStyle, ioQuery, ready) {
+    "dojo/ready",
+    "dojo/_base/lang",
+    "dojo/_base/array",
+    "dojo/topic",
+
+    "dojox/html/entities",
+    "dojox/widget/Toaster"
+], function (fx, dom, domStyle, ioQuery, ready, lang, arrayUtil, topic,
+            entities, Toaster) {
 
     var initUi = function () {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
         var hpccWidget = params.Widget ? params.Widget : "HPCCPlatformWidget";
 
         require([
-                "dojo/_base/lang",
-                "dojo/_base/array",
-                "dojo/topic",
-                "dojox/html/entities",
-                "dojox/widget/Toaster",
                 "hpcc/" + hpccWidget
-        ], function (lang, arrayUtil, topic,
-            entities, Toaster,
-            WidgetClass) {
+        ], function (WidgetClass) {
                 var webParams = {
                     id: "stub",
                     "class": "hpccApp"
