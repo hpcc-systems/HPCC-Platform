@@ -120,7 +120,7 @@ public:
     RowTransformer() {}
     RowTransformer(unsigned & seq, FieldMapping::List const & mappings) { build(seq, mappings); }
     void build(unsigned & seq, FieldMapping::List const & mappings);
-    void transform(IRecordLayoutTranslator::RowTransformContext * ctx, byte const * in, size32_t inSize, size32_t & inOffset, byte * out, size32_t outBuffSize, size32_t & outOffset) const;
+    void transform(IRecordLayoutTranslator::RowTransformContext * ctx, byte const * in, size32_t inSize, size32_t & inOffset, IMemoryBlock & out, size32_t & outOffset) const;
     void getFposOut(IRecordLayoutTranslator::RowTransformContext const * ctx, offset_t & fpos) const;
     void createRowTransformContext(IRecordLayoutTranslator::RowTransformContext * ctx) const;
 
@@ -178,7 +178,7 @@ public:
     void addVarField(unsigned base) { varFields.append(base); }
     void setChildTransformer(RowTransformer * _transformer) { assertex(!childTransformer); childTransformer.setown(_transformer); }
     RowTransformer const * queryChildTransformer() const { return childTransformer; }
-    void copy(IRecordLayoutTranslator::RowTransformContext * ctx, byte * out, size32_t outBuffSize, size32_t & outOffset) const;
+    void copy(IRecordLayoutTranslator::RowTransformContext * ctx, IMemoryBlock & out, size32_t & outOffset) const;
 private:
     unsigned sequence;
     size32_t relOffset;
@@ -196,13 +196,12 @@ public:
     IMPLEMENT_IINTERFACE;
     virtual bool querySuccess() const { return !failure; }
     virtual Failure const & queryFailure() const { return *failure; }
-    virtual size32_t queryActivityKeySize() const { return activityMetaSize; }
     virtual void checkSizes(char const * filename, size32_t activitySize, size32_t diskSize) const;
     virtual bool queryKeysTransformed() const { return keysTransformed; }
     virtual SegmentMonitorContext * getSegmentMonitorContext() { return new ExpandedSegmentMonitorList(this); }
     virtual void createDiskSegmentMonitors(SegmentMonitorContext const & in, IIndexReadContext & out);
     virtual RowTransformContext * getRowTransformContext();
-    virtual size32_t transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, byte * out, size32_t outBuffSize, offset_t & fpos) const;
+    virtual size32_t transformRow(RowTransformContext * ctx, byte const * in, size32_t inSize, IMemoryBlock & out, offset_t & fpos) const;
 #ifdef DEBUG_HELPERS_REQUIRED
     virtual StringBuffer & getMappingsAsString(StringBuffer & out) const;
 #endif
@@ -216,8 +215,6 @@ private:
 
     Linked<IDefRecordMeta> diskMeta;
     Linked<IDefRecordMeta> activityMeta;
-    size32_t activityMetaSize;
-    size32_t diskMetaSize;
     bool success;
     Owned<Failure> failure;
     FieldMapping::List mappings;
