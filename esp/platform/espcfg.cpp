@@ -138,36 +138,6 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
     m_options.frameTitle.set(m_cfg->queryProp("@name"));
     m_options.slowProcessingTime = m_cfg->getPropInt("@slowProcessingTime", 30) * 1000; //in msec
 
-#ifdef USE_ENV_CONF_FILE
-    // load environment parameters
-    StringBuffer envConfFile, envXMLFile;
-    const char* configFile = m_cfg->queryProp("EnvironmentConfFile");
-    if (configFile && *configFile)
-    {
-        envConfFile.append(configFile);
-    }
-    else
-    {
-        envConfFile.append("/etc/LexisNexis/environment.conf");
-    }
-    const char* envFromDali = m_cfg->queryProp("@environmentNotFromDali");
-    if (envFromDali && !stricmp(envFromDali, "true"))
-    {
-        const char* envXML = m_cfg->queryProp("EnvironmentXMLFile");
-        if (envXML && *envXML)
-        {
-            envXMLFile.append(envXML);
-        }
-        else
-        {
-            envXMLFile.append("environment.xml");
-        }
-    }
-
-    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    factory->createEnvironmentByFile(envConfFile.str(), envXMLFile.str());
-#endif
-
     if (!m_cfg->getProp("@name", m_process))
     {
         ERRLOG("EspProcess name not found");

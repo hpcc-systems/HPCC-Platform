@@ -823,13 +823,15 @@ bool CWsPackageProcessEx::onGetPackageMapSelectOptions(IEspContext &context, IEs
         bool includeProcesses = req.getIncludeProcesses();
         if (includeTargets || includeProcesses)
         {
-            Owned<IRemoteConnection> connEnv = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-            if (!connEnv)
+            Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+            Owned<IConstEnvironment> env = factory->openEnvironment();
+            if (!env)
                 throw MakeStringException(PKG_DALI_LOOKUP_ERROR,"Failed to get environment information.");
+            Owned<IPropertyTree> root = &env->getPTree();
 
             IArrayOf<IConstTargetData> targets;
             CConstWUClusterInfoArray clusters;
-            getEnvironmentClusterInfo(connEnv->queryRoot(), clusters);
+            getEnvironmentClusterInfo(root, clusters);
             ForEachItemIn(c, clusters)
             {
                 SCMStringBuffer str;

@@ -39,11 +39,7 @@ bool CWsFileIOEx::CheckServerAccess(const char* server, const char* relPath, Str
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
 
     Owned<IConstEnvironment> env;
-#if 0
     env.setown(factory->openEnvironment());
-#else
-    env.setown(factory->openEnvironmentByFile());
-#endif
 
     Owned<IPropertyTree> pEnvRoot = &env->getPTree();
     IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");

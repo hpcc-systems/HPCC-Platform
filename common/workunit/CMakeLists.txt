@@ -41,6 +41,7 @@ set (    SRCS
     )
 
 include_directories ( 
+         ./../../common/environment
          ./../../common/workunit
          ./../../system/mp 
          ./../../dali/ft 
@@ -68,7 +69,8 @@ target_link_libraries ( workunit
          dllserver 
          nbcd 
          eclrtl 
-         deftype 
+         deftype
+         environment
     )
 
 

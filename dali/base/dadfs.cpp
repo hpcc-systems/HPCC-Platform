@@ -8541,6 +8541,7 @@ class CInitGroups
 
     bool loadMachineMap()
     {
+        //GH->JCS This can't be changed to use getEnvironmentFactory() unless that moved inside dalibase;
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn) {
             WARNLOG("Cannot connect to /Environment/Hardware");
