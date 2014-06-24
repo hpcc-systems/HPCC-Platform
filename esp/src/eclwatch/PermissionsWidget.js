@@ -20,6 +20,7 @@ define([
     "dojo/i18n!./nls/hpcc",
 
     "dijit/registry",
+    "dijit/form/CheckBox",
 
     "dgrid/tree",
     "dgrid/editor",
@@ -29,7 +30,7 @@ define([
     "hpcc/ESPUtil"
 
 ], function (declare, lang, i18n, nlsHPCC,
-                registry,
+                registry, CheckBox,
                 tree, editor,
                 GridDetailsWidget, WsAccess, ESPUtil) {
     return declare("PermissionsWidget", [GridDetailsWidget], {
@@ -67,39 +68,47 @@ define([
                     allow_access: editor({
                         width: 54,
                         editor: "checkbox",
+                        editorArgs: { value: true },
+                        className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.AllowAccess;
                         }
-                    }),
+                    }, CheckBox),
                     allow_read: editor({
                         width: 54,
                         editor: "checkbox",
+                        editorArgs: { value: true },
+                        className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.AllowRead;
                         }
-                    }),
+                    }, CheckBox),
                     allow_write: editor({
                         width: 54,
                         editor: "checkbox",
+                        editorArgs: { value: true },
+                        className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.AllowWrite;
                         }
-                    }),
+                    }, CheckBox),
                     allow_full: editor({
                         width: 54,
                         editor: "checkbox",
+                        editorArgs: { value: true },
+                        className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.AllowFull;
                         }
-                    }),
+                    }, CheckBox),
                     padding: {
                         width:20,
                         label: " "
@@ -107,39 +116,47 @@ define([
                     deny_access: editor({
                         width: 54,
                         editor: "checkbox",
+                        editorArgs: { value: true },
+                        className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyAccess
                         }
-                    }),
+                    }, CheckBox),
                     deny_read: editor({
                         width: 54,
                         editor: "checkbox",
+                        editorArgs: { value: true },
+                        className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyRead
                         }
-                    }),
+                    }, CheckBox),
                     deny_write: editor({
                         width: 54,
                         editor: "checkbox",
+                        editorArgs: { value: true },
+                        className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyWrite
                         }
-                    }),
+                    }, CheckBox),
                     deny_full: editor({
                         width: 54,
                         editor: "checkbox",
+                        editorArgs: { value: true },
+                        className: "hpccCentered",
                         autoSave: true,
                         canEdit: function (object, value) { return object.__hpcc_type != "Permission"; },
                         renderHeaderCell: function (node) {
                             node.innerHTML = context.i18n.DenyFull
                         }
-                    })
+                    }, CheckBox)
                 }
             }, domID);
 
