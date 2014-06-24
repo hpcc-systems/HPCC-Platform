@@ -668,6 +668,8 @@ ActivityInfo* CWsSMCEx::getActivityInfo(IEspContext &context, IEspActivityReques
     if (activityInfoCache && activityInfoCache->isCachedActivityInfoValid(activityInfoCacheSeconds))
         return activityInfoCache.getLink();
 
+    DBGLOG("CWsSMCEx::getActivityInfo - rebuild cached information");
+
     activityInfoCache.setown(createActivityInfo(context, req));
     return activityInfoCache.getLink();
 }
