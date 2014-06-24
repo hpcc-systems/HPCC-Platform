@@ -211,12 +211,3 @@ n_bi2 := NORMALIZE(n_i3, 4, t_bi2(left, counter));
 n_bi3 := NORMALIZE(n_bi2, 4, t_bi3(left, counter));
 
 output(n_bi3,,DG_MemFileName,overwrite);
-
-
-DG_IntegerRecord createIntegerRecord(unsigned8 c) := transform
-    SELF.i6 := c;
-    SELF.nested.i4 := c;
-    SELF.nested.u3 := c;
-    SELF.i5 := c;
-    SELF.i3 := c;
-END;

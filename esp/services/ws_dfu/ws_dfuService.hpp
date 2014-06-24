@@ -81,7 +81,7 @@ private:
     void setFileNameFilter(const char* fname, const char* prefix, StringBuffer &buff);
     void setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf);
     void setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sortBy, bool& descending, DFUQResultField* sortOrder);
-    bool addToLogicalFileList(IPropertyTree& file, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles);
+    bool addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles);
     void setDFUQueryResponse(IEspContext &context, unsigned totalFiles, StringBuffer& sortBy, bool descending, unsigned pageStart,
         unsigned pageSize, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
@@ -134,6 +134,8 @@ private:
         const char* beforeSubFile, bool existingSuperfile, bool autocreatesuper, bool deleteFile, bool removeSuperfile =  true);
     void getFilePartsOnClusters(IEspContext &context, const char* clusterReq, StringArray& clusters, IDistributedFile* df, IEspDFUFileDetail& FileDetails,
         offset_t& mn, offset_t& mx, offset_t& sum, offset_t& count);
+    void setDeleteFileResults(const char* fileName, const char* nodeGroup, bool failed, const char* message, StringBuffer& resultString,
+        IArrayOf<IEspDFUActionInfo>& actionResults);
 private:
     bool         m_disableUppercaseTranslation;
     StringBuffer m_clusterName;

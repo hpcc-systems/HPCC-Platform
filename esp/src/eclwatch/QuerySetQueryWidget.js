@@ -372,7 +372,7 @@ define([
                     Status: {
                         width: 100,
                         label: this.i18n.Status,
-                        sortable: false,
+                        sortable: false
                     }
                 }
             }, this.id + "QuerySetGrid");

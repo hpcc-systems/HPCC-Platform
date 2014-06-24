@@ -90,9 +90,10 @@ class ECLFile:
 
         # Process setupExtraX parameters if any
         if 'setupExtraX' in args:
-            args.setupExtraX[0]=self.removeQuote(args.setupExtraX[0])
-            optXs = ("-X"+args.setupExtraX[0].replace(',',  ',-X')).split(',')
-            self.processKeyValPairs(optXs,  self.optXHash)
+            for extraX in args.setupExtraX:
+                extraX=self.removeQuote(extraX)
+                optXs = ("-X"+extraX.replace(',',  ',-X')).split(',')
+                self.processKeyValPairs(optXs,  self.optXHash)
             pass
 
         self.mergeHashToStrArray(self.optXHash,  self.optX)

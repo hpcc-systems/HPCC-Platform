@@ -997,17 +997,19 @@ bool CWsTopologyEx::onTpListTargetClusters(IEspContext &context, IEspTpListTarge
         //another client (like configenv) may have updated the constant environment so reload it
         m_envFactory->validateCache();
 
-        Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-        if (!conn)
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        Owned<IConstEnvironment> env = factory->openEnvironment();
+        if (!env)
             return false;
 
+        Owned<IPropertyTree> root = &env->getPTree();
         bool foundDefault = false;
         bool hasHThor = false;
         bool hasThor = false;
         const char* defaultClusterName = defaultTargetClusterName.get();
         const char* defaultClusterPrefix = defaultTargetClusterPrefix.get();
         IArrayOf<IEspTpClusterNameType> clusters;
-        Owned<IPropertyTreeIterator> targets = conn->queryRoot()->getElements("Software/Topology/Cluster");
+        Owned<IPropertyTreeIterator> targets = root->getElements("Software/Topology/Cluster");
         ForEach(*targets)
         {
             IPropertyTree &target = targets->query();
@@ -1143,7 +1145,7 @@ bool CWsTopologyEx::onTpLogicalClusterQuery(IEspContext &context, IEspTpLogicalC
             throw MakeStringException(ECLWATCH_TOPOLOGY_ACCESS_DENIED, "Failed to do Cluster Query. Permission denied.");
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = factory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = factory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
         if (!root)
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
@@ -1466,7 +1468,7 @@ bool CWsTopologyEx::onTpGetComponentFile(IEspContext &context,
         {
             //another client (like configenv) may have updated the constant environment so reload it
             m_envFactory->validateCache();
-            Owned<IConstEnvironment> constEnv = m_envFactory->openEnvironmentByFile();
+            Owned<IConstEnvironment> constEnv = m_envFactory->openEnvironment();
             Owned<IPropertyTree> pRoot = &constEnv->getPTree();
 
             StringBuffer xpath;

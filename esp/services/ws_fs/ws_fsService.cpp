@@ -183,7 +183,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "'Destination DFU workunit' not valid.");
 
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> root = &constEnv->getPTree();
     if (!root)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
@@ -549,7 +549,7 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
 
     StringBuffer dirxpath;
     dirxpath.appendf("Software/RoxieCluster[@name=\"%s\"]",clusterName);
-    Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+    Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
     Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
     Owned<IPropertyTreeIterator> processes = pEnvRoot->getElements(dirxpath);
     if (!processes->first())
@@ -635,7 +635,7 @@ bool CFileSprayEx::onDFUWUSearch(IEspContext &context, IEspDFUWUSearchRequest & 
 
         StringArray dfuclusters;
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+        Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
         if (!root)
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
@@ -869,7 +869,7 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
         }
 
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> root = &constEnv->getPTree();
         if (!root)
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
@@ -2625,7 +2625,7 @@ int CFileSprayEx::doFileCheck(const char* mask, const char* netaddr, const char*
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
         factory->validateCache();
-        Owned<IConstEnvironment> env = factory->openEnvironmentByFile();
+        Owned<IConstEnvironment> env = factory->openEnvironment();
         Owned<IPropertyTree> pEnvRoot = &env->getPTree();
         IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
         Owned<IPropertyTree> pRoot = createPTreeFromXMLString("<Environment/>");
@@ -2965,7 +2965,7 @@ bool CFileSprayEx::onDropZoneFiles(IEspContext &context, IEspDropZoneFilesReques
         IArrayOf<IEspDropZone> dropZoneList;
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> m_constEnv = factory->openEnvironmentByFile();
+        Owned<IConstEnvironment> m_constEnv = factory->openEnvironment();
         Owned<IPropertyTree> pEnvRoot = &m_constEnv->getPTree();
         IPropertyTree* pEnvSoftware = pEnvRoot->queryPropTree("Software");
         if (pEnvSoftware)

@@ -15,7 +15,7 @@
     limitations under the License.
 ############################################################################## */
 
-
+LOADXML('<xml/>');
 
 #DECLARE (mstg)
 #DECLARE (dmstg)

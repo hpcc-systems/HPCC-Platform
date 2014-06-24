@@ -1134,8 +1134,28 @@ bool CWsDfuEx::onAddtoSuperfile(IEspContext &context, IEspAddtoSuperfileRequest 
     return true;
 }
 
+void CWsDfuEx::setDeleteFileResults(const char* fileName, const char* nodeGroup, bool failed, const char* actionResult, StringBuffer& resultString,
+    IArrayOf<IEspDFUActionInfo>& actionResults)
+{
+    if (!fileName || !*fileName)
+        return;
+    Owned<IEspDFUActionInfo> resultObj = createDFUActionInfo("", "");
+    resultObj->setFileName(fileName);
+    resultObj->setFailed(failed);
+    if (nodeGroup && *nodeGroup)
+        resultObj->setNodeGroup(nodeGroup);
+    if (actionResult && *actionResult)
+    {
+        resultObj->setActionResult(actionResult);
+        resultString.appendf("<Message><Value>%s</Value></Message>", actionResult);
+    }
+    actionResults.append(*resultObj.getClear());
+    return;
+}
+
 bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &req, IEspDFUArrayActionResponse &resp)
 {
+    double version = context.getClientVersion();
     StringBuffer username;
     context.getUserID(username);
 
@@ -1149,17 +1169,29 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
     StringBuffer returnStr;
 
     StringArray superFileNames, filesCannotBeDeleted;
+    IArrayOf<IEspDFUActionInfo> actionResults;
     for(int j = 0; j < 2; j++) //j=0: delete superfiles first
     {
         for(unsigned i = 0; i < req.getLogicalFiles().length(); i++)
         {
-            const char* filename = req.getLogicalFiles().item(i);
-            if(!filename || !*filename)
+            const char* fileNameAndNodeGroup = req.getLogicalFiles().item(i);
+            if(!fileNameAndNodeGroup || !*fileNameAndNodeGroup)
                 continue;
 
+            const char* fileName = NULL;
+            const char* nodeGroup = NULL;
+            StringArray fileNameOrNodeGroup;
+            fileNameOrNodeGroup.appendListUniq(fileNameAndNodeGroup, "@");
+            fileName = fileNameOrNodeGroup.item(0);
+            if (fileNameOrNodeGroup.length() > 1)
+            {
+                nodeGroup = fileNameOrNodeGroup.item(1);
+                if (!*nodeGroup || strieq(nodeGroup, "null")) //null is used by new ECLWatch for a superfile
+                    nodeGroup = NULL;
+            }
             if (j>0)
             { // 2nd pass, now we want to skip superfiles and the files which cannot do the lookup.
-                if (superFileNames.contains(filename) || filesCannotBeDeleted.contains(filename))
+                if (superFileNames.contains(fileNameAndNodeGroup) || filesCannotBeDeleted.contains(fileNameAndNodeGroup))
                     continue;
             }
 
@@ -1167,11 +1199,17 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
             {
                 IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
                 {
-                    Owned<IDistributedFile> df = fdir.lookup(filename, userdesc, true);
+                    Owned<IDistributedFile> df = fdir.lookup(fileNameAndNodeGroup, userdesc, true);
                     if(!df)
                     {
-                        returnStr.appendf("<Message><Value>Cannot delete %s: file not found</Value></Message>", filename);
-                        filesCannotBeDeleted.append(filename);
+                        StringBuffer message;
+                        if (!nodeGroup || !*nodeGroup)
+                            message.appendf("Cannot delete %s: file not found", fileName);
+                        else
+                            message.appendf("Cannot delete %s on %s: file not found", fileName, nodeGroup);
+                        setDeleteFileResults(fileName, nodeGroup, true, message, returnStr, actionResults);
+                        PROGLOG("Deleted Logical File: %s by: %s\n",fileNameAndNodeGroup, username.str());
+                        filesCannotBeDeleted.append(fileNameAndNodeGroup);
                         continue;
                     }
                     if (0==j) // skip non-super files on 1st pass
@@ -1179,33 +1217,49 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                         if(!df->querySuperFile())
                             continue;
 
-                        superFileNames.append(filename);
+                        superFileNames.append(fileNameAndNodeGroup);
                     }
                 }
-                fdir.removeEntry(filename, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
-                PROGLOG("Deleted Logical File: %s by: %s\n",filename, username.str());
-                returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", filename);
+                fdir.removeEntry(fileNameAndNodeGroup, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT, true);
+                StringBuffer message;
+                if (!nodeGroup || !*nodeGroup)
+                    message.appendf("File %s deleted", fileName);
+                else
+                    message.appendf("File %s deleted on %s", fileName, nodeGroup);
+                setDeleteFileResults(fileName, nodeGroup, false, message, returnStr, actionResults);
             }
             catch(IException* e)
             {
-                filesCannotBeDeleted.append(filename);
+                filesCannotBeDeleted.append(fileNameAndNodeGroup);
 
                 StringBuffer emsg;
                 e->errorMessage(emsg);
                 if((e->errorCode() == DFSERR_CreateAccessDenied) && (req.getType() != NULL))
                     emsg.replaceString("Create ", "Delete ");
 
-                returnStr.appendf("<Message><Value>Cannot delete %s: %s</Value></Message>", filename, emsg.str());
+                StringBuffer message;
+                if (!nodeGroup || !*nodeGroup)
+                    message.appendf("Cannot delete %s: %s", fileName, emsg.str());
+                else
+                    message.appendf("Cannot delete %s on %s: %s", fileName, nodeGroup, emsg.str());
+                setDeleteFileResults(fileName, nodeGroup, true, message, returnStr, actionResults);
                 e->Release();
             }
             catch(...)
             {
-                returnStr.appendf("<Message><Value>Cannot delete %s: unknown exception.</Value></Message>", filename);
+                StringBuffer message;
+                if (!nodeGroup || !*nodeGroup)
+                    message.appendf("Cannot delete %s: unknown exception.", fileName);
+                else
+                    message.appendf("Cannot delete %s on %s: unknown exception.", fileName, nodeGroup);
+                setDeleteFileResults(fileName, nodeGroup, true, message, returnStr, actionResults);
             }
         }
     }
 
-    resp.setDFUArrayActionResult(returnStr.str());
+    if (version >= 1.27)
+        resp.setActionResults(actionResults);
+    resp.setDFUArrayActionResult(returnStr.str());//Used by legacy
     return true;
 }
 
@@ -2034,94 +2088,15 @@ void CWsDfuEx::getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor*
             StringBuffer size;
             ForEach(*fi) 
             {
-                StringBuffer pref;
                 IPropertyTree &attr=fi->query();
-                const char* logicalName=attr.queryProp("@name");
-                const char *c=strstr(logicalName, "::");
-                if (c)
-                    pref.append(c-logicalName, logicalName);
-                else
-                    pref.append(logicalName);
 
-                const char* owner=attr.queryProp("@owner");
                 StringArray groups;
-                if (getFileGroups(&attr,groups)==0)
-                {
+                if (!getFileGroups(&attr,groups))
                     groups.append("");
-                }
 
                 ForEachItemIn(i, groups)
                 {
-                    const char* groupName = groups.item(i);
-                    Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
-
-                    File->setPrefix(pref);
-                    if (version < 1.26)
-                        File->setClusterName(groupName);
-                    else
-                        File->setNodeGroup(groupName);
-                    File->setName(logicalName);
-                    File->setOwner(owner);
-                    File->setReplicate(true);
-
-                    ForEachItemIn(j, roxieClusterNames)
-                    {
-                        const char* roxieClusterName = roxieClusterNames.item(j);
-                        if (roxieClusterName && groupName && strieq(roxieClusterName, groupName))
-                        {
-                            File->setFromRoxieCluster(true);
-                            break;
-                        }
-                    }
-
-                    if(!attr.hasProp("@numsubfiles"))
-                    {
-                        File->setDirectory(attr.queryProp("@directory"));
-                        File->setParts(attr.queryProp("@numparts"));
-                        File->setIsSuperfile(false);
-                    }
-                    else
-                    {
-                        File->setIsSuperfile(true);
-                    }
-
-                    int numSubFiles = attr.hasProp("@numsubfiles");
-                    if (numSubFiles > 1) //Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
-                        File->setBrowseData(false); 
-                    else
-                        File->setBrowseData(true); 
-
-                    StringBuffer modf(attr.queryProp("@modified"));
-                    char* t= (char *) strchr(modf.str(),'T');
-                    if(t) *t=' ';
-                    File->setModified(modf.str());
-
-                    __int64 recordSize=attr.getPropInt64("@recordSize",0), size=attr.getPropInt64("@size",-1);
-        
-                    if (version < 1.22)
-                        File->setIsZipfile(isCompressed(attr));
-                    else
-                    {
-                        File->setIsCompressed(isCompressed(attr));
-                        if (attr.hasProp("@compressedSize"))
-                            File->setCompressedFileSize(attr.getPropInt64("@compressedSize"));
-                    }
-
-                    StringBuffer buf;
-                    buf << comma(size);
-                    File->setIntSize(size);
-                    File->setTotalsize(buf.str());
-                    if (attr.hasProp("@recordCount"))
-                    {
-                        File->setRecordCount((buf.clear()<<comma(attr.getPropInt64("@recordCount"))).str());
-                        File->setIntRecordCount(attr.getPropInt64("@recordCount"));
-                    }
-                    else if(recordSize)
-                    {
-                        File->setRecordCount((buf.clear()<<comma(size/recordSize)).str());
-                        File->setIntRecordCount(size/recordSize);
-                    }
-                    LogicalFiles.append(*File.getClear());
+                    addToLogicalFileList(attr, groups.item(i), version, LogicalFiles);
                     numFiles++;
                 }
             }
@@ -3180,7 +3155,7 @@ const char* CWsDfuEx::getShortDescription(const char* description, StringBuffer&
     return shortDesc.str();
 }
 
-bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles)
+bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, const char* nodeGroup, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles)
 {
     const char* logicalName = file.queryProp(getDFUQResultFieldName(DFUQRFname));
     if (!logicalName || !*logicalName)
@@ -3196,9 +3171,9 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, double version, IArrayO
         lFile->setModified(buf.replace('T', ' ').str());
         lFile->setPrefix(getPrefixFromLogicalName(logicalName, buf.clear()));
         lFile->setDescription(getShortDescription(file.queryProp(getDFUQResultFieldName(DFUQRFdescription)), buf.clear()));
-        lFile->setTotalsize((buf.clear()<<comma(file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),-1))).str());
 
-        const char* nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
+        if (!nodeGroup || !*nodeGroup)
+                nodeGroup = file.queryProp(getDFUQResultFieldName(DFUQRFnodegroup));
         if (nodeGroup && *nodeGroup)
         {
             if (version < 1.26)
@@ -3218,9 +3193,27 @@ bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, double version, IArrayO
         }
         lFile->setBrowseData(numSubFiles > 1 ? false : true); ////Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
 
-        __int64 records = file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordcount));
+        __int64 size = file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),0);
+        if (size > 0)
+        {
+            lFile->setIntSize(size);
+            lFile->setTotalsize((buf.clear()<<comma(size)).str());
+        }
+
+        __int64 records = file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordcount),0);
+        if (!records)
+            records = file.getPropInt64(getDFUQResultFieldName(DFUQRForigrecordcount),0);
+        if (!records)
+        {
+            __int64 recordSize=file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordsize),0);
+            if(recordSize > 0)
+                records = size/recordSize;
+        }
         if (records > 0)
+        {
+            lFile->setIntRecordCount(records);
             lFile->setRecordCount((buf.clear()<<comma(records)).str());
+        }
 
         bool isKeyFile = false;
         if (version > 1.13)
@@ -3419,7 +3412,7 @@ bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc,
 
     IArrayOf<IEspDFULogicalFile> logicalFiles;
     ForEach(*it)
-        addToLogicalFileList(it->query(), version, logicalFiles);
+        addToLogicalFileList(it->query(), NULL, version, logicalFiles);
 
     if (version >= 1.24)
         resp.setCacheHint(cacheHint);

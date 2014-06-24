@@ -251,6 +251,10 @@ define([
                     context.subfilesStore.setData(data);
                     context.subfilesGrid.refresh();
                 })
+            } else if (name === "StateID") {
+                this.summaryWidget.set("iconClass", this.logicalFile.getStateIconClass());
+                domClass.remove(this.id + "StateIdImage");
+                domClass.add(this.id + "StateIdImage", this.logicalFile.getStateIconClass());
             }
         }
     });

@@ -2393,7 +2393,7 @@ public:
         else
             return htRows->clear();
     }
-    bool spillHashTable(); // returns true if freed mem
+    bool spillHashTable(bool critical); // returns true if freed mem
     bool flush(bool critical);
     bool rehash();
     void close()
@@ -2507,9 +2507,7 @@ public:
                 // spill whole bucket unless last
                 // The one left, will be last bucket standing and grown to fill mem
                 // it is still useful to use as much as poss. of remaining bucket HT as filter
-                if (bucket->spillHashTable())
-                    return true;
-                else if (critical && bucket->clearHashTable(true))
+                if (bucket->spillHashTable(critical))
                     return true;
             }
         }
@@ -2878,12 +2876,17 @@ void CBucket::doSpillHashTable()
     }
 }
 
-bool CBucket::spillHashTable()
+bool CBucket::spillHashTable(bool critical)
 {
     CriticalBlock b(lock);
     rowidx_t removeN = htRows->queryHtElements();
-    if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
+    if (spilt) // NB: if split, will be handled by CBucket on different priority
         return false; // signal nothing to spill
+    else if (0 == removeN)
+    {
+        if (!critical || !clearHashTable(true))
+            return false; // signal nothing to spill
+    }
     doSpillHashTable();
     ActPrintLog(&owner, "Spilt bucket %d - %d elements of hash table", bucketN, removeN);
     return true;
@@ -2900,7 +2903,7 @@ bool CBucket::flush(bool critical)
         {
             if (clearHashTable(critical))
             {
-                PROGLOG("Flushed(%s) bucket %d - %d elements", critical?"(critical)":"", queryBucketNumber(), count);
+                PROGLOG("Flushed%s bucket %d - %d elements", critical?"(critical)":"", queryBucketNumber(), count);
                 return true;
             }
         }

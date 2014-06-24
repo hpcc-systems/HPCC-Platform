@@ -2000,7 +2000,12 @@ IXmlScope *HqlLex::ensureTopXmlScope(const YYSTYPE & errpos)
 {
     IXmlScope *top = queryTopXmlScope();
     if (!top)
-        top = xmlScope = ::loadXML("<xml></xml>");
+    {
+    	reportError(errpos, ERR_XML_NOSCOPE, "No XML scope active");
+
+    	// recovery: create a default XML scope
+    	top = xmlScope = ::loadXML("<xml></xml>");
+    }
 
     return top;
 }
@@ -2057,7 +2062,7 @@ void HqlLex::loadXML(const YYSTYPE & errpos, const char *name, const char * chil
         return;
     }
 
-    if (inmacro)
+    if (false && inmacro)
     {
         inmacro->loadXML(errpos, name);
         return;

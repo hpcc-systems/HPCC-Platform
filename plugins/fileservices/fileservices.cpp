@@ -35,6 +35,7 @@
 #include "daclient.hpp"
 #include "dasds.hpp"
 #include "enginecontext.hpp"
+#include "environment.hpp"
 
 #define USE_DALIDFS
 #define SDS_LOCK_TIMEOUT  10000
@@ -169,26 +170,33 @@ static IConstWorkUnit * getWorkunit(ICodeContext * ctx)
     return factory->openWorkUnit(wuid, false);
 }
 
-static IPropertyTree *getEnvironment()
+static IConstEnvironment * openDaliEnvironment()
 {
-    Owned<IPropertyTree> env;
-    if (daliClientActive()) {
-        Owned<IRemoteConnection> conn = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-        if (conn)
-            env.setown(createPTreeFromIPT(conn->queryRoot())); // we don't really need to copy here
+    if (daliClientActive())
+    {
+        Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+        return factory->openEnvironment();
     }
-    if (!env.get())
-        env.setown(getHPCCEnvironment());
-    return env.getClear();
+    return NULL;
+}
+
+static IPropertyTree *getEnvironmentTree(IConstEnvironment * daliEnv)
+{
+    if (daliEnv)
+        return &daliEnv->getPTree(); // No need to clone since daliEnv ensures connection stays alive.
+    return getHPCCEnvironment();
 }
 
 static const char *getEspServerURL(const char *param)
 {
     if (param&&*param)
         return param;
+
+    //MORE: Not thread safe, although not very likely to cause problems.
     static StringAttr espurl;
     if (espurl.isEmpty()) {
-        Owned<IPropertyTree> env = getEnvironment();
+        Owned<IConstEnvironment> daliEnv = openDaliEnvironment();
+        Owned<IPropertyTree> env = getEnvironmentTree(daliEnv);
         StringBuffer tmp;
         if (env.get()) {
             Owned<IPropertyTreeIterator> iter1 = env->getElements("Software/EspProcess");

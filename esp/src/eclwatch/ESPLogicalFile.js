@@ -36,6 +36,17 @@ define([
         return (Cluster ? Cluster : "") + "--" + Name;
     };
 
+    var create = function (id) {
+        if (!lang.exists(id, _logicalFiles)) {
+            var idParts = id.split("--");
+            _logicalFiles[id] = new LogicalFile({
+                Cluster: idParts[0] ? idParts[0] : "",
+                Name: idParts[1]
+            });
+        }
+        return _logicalFiles[id];
+    };
+
     var Store = declare([ESPRequest.Store], {
         service: "WsDfu",
         action: "DFUQuery",
@@ -47,11 +58,7 @@ define([
 
         _watched: [],
         create: function (id) {
-            var idParts = id.split("--");
-            return new LogicalFile({
-                Cluster: idParts[0] ? idParts[0] : "",
-                Name: idParts[1]
-            });
+            return create(id);
         },
         preRequest: function (request) {
             switch (request.Sortby) {
@@ -90,6 +97,7 @@ define([
     var TreeStore = declare(null, {
         idProperty: "__hpcc_id",
         cache: null,
+        _watched: [],
 
         constructor: function (options) {
             this.cache = {};
@@ -122,13 +130,28 @@ define([
                         }
 
                         lang.mixin(item, {
-                            __hpcc_id: isDir ? childScope : item.Name,
+                            __hpcc_id: isDir ? childScope : createID(item.NodeGroup, item.Name),
                             __hpcc_isDir: isDir,
                             __hpcc_childScope: childScope,
                             __hpcc_displayName: isDir ? item.Directory : leafName
                         });
-                        retVal.push(item);
-                        context.cache[context.getIdentity(item)] = item;
+
+                        var storeItem = null;
+                        if (isDir) {
+                            storeItem = item;
+                        } else {
+                            storeItem = create(item.__hpcc_id);
+                            if (!context._watched[item.__hpcc_id]) {
+                                context._watched[item.__hpcc_id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                                    if (oldValue !== newValue) {
+                                        context.notify(storeItem, storeItem.__hpcc_id);
+                                    }
+                                });
+                            }
+                            storeItem.updateData(item);
+                        }
+                        retVal.push(storeItem);
+                        context.cache[context.getIdentity(storeItem)] = storeItem;
                     });
                 }
                 retVal.sort(function (l, r) {
@@ -226,10 +249,8 @@ define([
         },
         doDelete: function (params) {
             var context = this;
-            WsDfu.DFUArrayAction([this], "Delete", {
-                load: function (response) {
-                    context.refresh();
-                }
+            WsDfu.DFUArrayAction([this], "Delete").then(function (response) {
+                context.refresh();
             });
         },
         despray: function (params) {
@@ -325,6 +346,39 @@ define([
         },
         fetchXML: function (onFetchXML) {
             this.fetchStructure("xml", onFetchXML);
+        },
+        getStateIconClass: function () {
+            if (this.isSuperfile) {
+                switch (this.StateID) {
+                    case 999:
+                        return "iconSuperFileDeleted";
+                }
+                return "iconSuperFile";
+            } else {
+                switch (this.StateID) {
+                    case 999:
+                        return "iconLogicalFileDeleted";
+                }
+                return "iconLogicalFile";
+            }
+        },
+        getStateImageName: function () {
+            if (this.isSuperfile) {
+                switch (this.StateID) {
+                    case 999:
+                        return "superfile_deleted.png"
+                }
+                return "superfile.png";
+            } else {
+                switch (this.StateID) {
+                    case 999:
+                        return "logicalfile_deleted.png";
+                }
+                return "logicalfile.png";
+            }
+        },
+        getStateImageHTML: function () {
+            return dojoConfig.getImageHTML(this.getStateImageName());
         }
     });
 

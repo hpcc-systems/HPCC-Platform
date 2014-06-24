@@ -504,7 +504,7 @@ DG_MemFile := DATASET(DG_MemFileName,DG_MemFileRec,FLAT);
 
 INCLUDE_DEBUG_INFO := false;
 
-
+LOADXML('<xml/>');
 #option ('checkAsserts',false);
 import lib_stringLib;
 

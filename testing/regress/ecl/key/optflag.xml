@@ -1,27 +1,3 @@
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file::either</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file::either</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file::either</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file::either</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file::again</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file::again</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file::again</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file::again</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT index read of nonexistent file regress::nor::this</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT index count of nonexistent file regress::nor::this</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT index read of nonexistent file regress::nor::this</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT index count of nonexistent file regress::nor::this</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT index aggregate of nonexistent file regress::nor::this</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT keyed join against nonexistent file regress::nor::this</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT disk read of nonexistent file regress::no::such::file</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT keyed join against nonexistent file regress::nor::this</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT fetch of nonexistent file regress::no::such::file</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT index read of nonexistent file regress::nor::this</Message></Warning>
-<Warning><Source>hthor</Source><Message>Skipping OPT fetch of nonexistent file regress::no::such::file</Message></Warning>
 <Dataset name='Result 1'>
 </Dataset>
 <Dataset name='Result 2'>
