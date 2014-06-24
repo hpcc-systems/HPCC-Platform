@@ -25,7 +25,15 @@
       <primary>KEYED</primary>
     </indexterm> ]</emphasis> <emphasis role="bold"> [, MERGE<indexterm>
       <primary>MERGE</primary>
-    </indexterm> ] )</emphasis></para>
+    </indexterm> ] <emphasis role="bold">[</emphasis>,<emphasis
+  role="bold">SKEW<indexterm>
+      <primary>SKEW</primary>
+    </indexterm>(</emphasis><emphasis>limit</emphasis><emphasis
+  role="bold">[</emphasis><emphasis>, target</emphasis><emphasis role="bold">]
+  ) [, THRESHOLD<indexterm>
+      <primary>THRESHOLD</primary>
+    </indexterm>(</emphasis><emphasis>size</emphasis><emphasis role="bold">) ]
+  ]</emphasis>)</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -115,6 +123,45 @@
           </row>
 
           <row>
+            <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+            <entry>Indicates that you know the data will not be spread evenly
+            across nodes (will be skewed and you choose to override the
+            default by specifying your own limit value to allow the job to
+            continue despite the skewing.)</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>limit</emphasis></entry>
+
+            <entry>A value between zero (0) and one (1.0 = 100%) indicating
+            the maximum percentage of skew to allow before the job fails (the
+            default is 0.1 = 10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>target</emphasis></entry>
+
+            <entry>Optional. A value between zero (0) and one (1.0 = 100%)
+            indicating the desired maximum percentage of skew to allow (the
+            default is 0.1 = 10%).</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+
+            <entry>Indicates the minimum size for a single part before the
+            SKEW limit is enforced.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>size</emphasis></entry>
+
+            <entry>An integer value indicating the minimum number of bytes for
+            a single part.</entry>
+          </row>
+
+          <row>
             <entry>Return:</entry>
 
             <entry>TABLE returns a new table.</entry>
@@ -173,5 +220,7 @@ Mytable := TABLE(Person,rec,per_st,FEW);
         crosstab
 </programlisting>
 
-  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link linkend="GROUP">GROUP</link>, <link linkend="DATASET">DATASET</link>, <link linkend="RECORD_Structure">RECORD Structure</link></para>
+  <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link
+  linkend="GROUP">GROUP</link>, <link linkend="DATASET">DATASET</link>, <link
+  linkend="RECORD_Structure">RECORD Structure</link></para>
 </sect1>
