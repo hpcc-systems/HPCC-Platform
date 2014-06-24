@@ -219,15 +219,16 @@ class RegressMain:
             logging.debug("Suite full path:%s",  regressionSuiteFullPath)
 
             self.targetClusters = []
-            if 'all' == self.args.target:
-                for cluster in self.regress.config.Clusters:
-                    self.targetClusters.append(str(cluster))
-            else:
-                if self.args.target in self.regress.config.Clusters:
-                    self.targetClusters.append(self.args.target)
+            if 'target' in self.args:
+                if 'all' == self.args.target:
+                    for cluster in self.regress.config.Clusters:
+                        self.targetClusters.append(str(cluster))
                 else:
-                    logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
-                    raise Error("4000")
+                    if self.args.target in self.regress.config.Clusters:
+                        self.targetClusters.append(self.args.target)
+                    else:
+                        logging.error("%s. Unknown target cluster:'%s'!" % (1,  self.args.target))
+                        raise Error("4000")
 
             if self.args.func == 'list':
                 self.listClusters()
