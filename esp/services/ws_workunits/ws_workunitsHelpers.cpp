@@ -174,12 +174,11 @@ WsWUExceptions::WsWUExceptions(IConstWorkUnit& wu): numerr(0), numwrn(0), numinf
 
 void getSashaNode(SocketEndpoint &ep)
 {
-    Owned<IRemoteConnection> econn = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-    if (!econn)
-        throw MakeStringException(ECLWATCH_CANNOT_CONNECT_DALI,"Cannot connect to DALI server.");
-    IPropertyTree *root = econn->queryRoot();
-    if (!root)
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Cannot get environment information.");
+    Owned<IPropertyTree> root = &env->getPTree();
     IPropertyTree *pt = root->queryPropTree("Software/SashaServerProcess[1]/Instance[1]");
     if (!pt)
         throw MakeStringException(ECLWATCH_ARCHIVE_SERVER_NOT_FOUND, "Archive Server not found.");
@@ -1023,7 +1022,7 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
 
         StringBuffer logDir;
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-        Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
+        Owned<IConstEnvironment> constEnv = envFactory->openEnvironment();
         Owned<IPropertyTree> logTree = &constEnv->getPTree();
         if (logTree)
              logTree->getProp("EnvSettings/log", logDir);

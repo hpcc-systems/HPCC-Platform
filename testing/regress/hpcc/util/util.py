@@ -23,6 +23,7 @@ import logging
 import os
 
 from ..common.error import Error
+from ..common.shell import Shell
 
 def isPositiveIntNum(string):
     for i in range(0,  len(string)):
@@ -91,50 +92,66 @@ def getConfig():
     return gConfig
 
 def queryWuid(jobname,  taskId):
-    server = gConfig.server
-    host = "http://"+server+"/WsWorkunits/WUQuery.json?Jobname="+jobname
-    wuid="Not found"
-    auth_handler = urllib2.HTTPBasicAuthHandler()
-    auth_handler.add_password(realm='ESP (Authentication: LDAP server process)',
-                              uri=server,
-                              user=gConfig.username,
-                              passwd=gConfig.password)
-#    opener = urllib2.build_opener(auth_handler,  urllib2.HTTPHandler(debuglevel=1))
-    opener = urllib2.build_opener(auth_handler)
-    opener.add_handler(auth_handler)
-    urllib2.install_opener(opener)
-
-    result = "OK"
-    try:
-        response_stream = urllib2.urlopen(host)
-        json_response = response_stream.read()
-        resp = json.loads(json_response)
-        if resp['WUQueryResponse']['NumWUs'] > 0:
-            wuid= resp['WUQueryResponse']['Workunits']['ECLWorkunit'][0]['Wuid']
-            state =resp['WUQueryResponse']['Workunits']['ECLWorkunit'][0]['State']
-        else:
-            state = jobname+' not found'
-            result = "NotFound"
-    except KeyError as ke:
-        state = "Key error:"+ke.str()
-        result = "KeyError"
-        logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
-    except urllib2.HTTPError as ex:
-        state = "HTTP Error: "+ str(ex.reason)
-        result = "HTTPError"
-        logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
-    except urllib2.URLError as ex:
-        state = "URL Error: "+ str(ex.reason)
-        result = "URLError"
-        logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
-    except Exception as ex:
-        state = "Unable to query "+ str(ex.reason)
-        result = "Exception"
-        logging.debug("%3d. %s in queryWuid(%s)",  taskId,  state,  jobname)
+    shell = Shell()
+    cmd = shell.which('ecl')
+    defaults = []
+    args = []
+    args.append('status')
+    args.append('-v')
+    args.append('-n=' + jobname)
+    args.append('--server=' + gConfig.ip)
+    args.append('--username=' + gConfig.username)
+    args.append('--password=' + gConfig.password)
+    res = shell.command(cmd, *defaults)(*args)
+    logging.debug("%3d. queryWuid(%s, cmd :'%s') result is: '%s'",  taskId,  jobname, cmd,  res)
+    wuid = "Not found"
+    state = 'N/A'
+    result = 'Fail'
+    if len(res):
+        resultItems = res.split(',')
+        if len(resultItems) == 3:
+            result = 'OK'
+            for resultItem in resultItems:
+                resultItem = resultItem.strip()
+                [key, val] = resultItem.split(':')
+                if key == 'ID':
+                    wuid = val
+                if key == 'state':
+                    state = val
     return {'wuid':wuid, 'state':state,  'result':result}
 
 def abortWorkunit(wuid):
-    host = "http://"+gConfig.server+"/WsWorkunits/WUAbort?Wuids="+wuid
-    response_stream = urllib2.urlopen(host)
-    json_response = response_stream.read()
-    #print(json_response)
+    shell = Shell()
+    cmd = shell.which('ecl')
+    defaults=[]
+    args = []
+    args.append('abort')
+    args.append('-wu=' + wuid)
+    args.append('--server=' + gConfig.ip)
+    args.append('--username=' + gConfig.username)
+    args.append('--password=' + gConfig.password)
+    state=shell.command(cmd, *defaults)(*args)
+    return state
+
+import subprocess
+
+def getRealIPAddress():
+    ipAddress = '127.0.0.1'
+    try:
+        result = subprocess.Popen("ifconfig",  shell=False,  bufsize=8192,  stdout=subprocess.PIPE).stdout.read()
+        ethernetFound=False
+        results = result.split('\n')
+        for line in results:
+            if 'Ethernet' in line:
+                ethernetFound=True
+
+            if ethernetFound and 'inet addr' in line:
+                items = line.split()
+                ipAddress = items[1].split(':')[1]
+                break;
+    except  OSError:
+        pass
+    finally:
+        pass
+
+    return ipAddress

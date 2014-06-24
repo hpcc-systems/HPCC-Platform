@@ -30,6 +30,7 @@ set (    SRCS
     )
 
 include_directories ( 
+         ./../../common/environment 
          ./../../common/remote 
          ./../../system/mp 
          ./../../common/workunit 

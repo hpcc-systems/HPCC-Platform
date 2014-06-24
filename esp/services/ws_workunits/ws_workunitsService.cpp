@@ -2861,8 +2861,9 @@ bool CWsWorkunitsEx::onWUResult(IEspContext &context, IEspWUResultRequest &req, 
    return true;
 }
 
-void getScheduledWUs(IEspContext &context, const char *serverName, const char *eventName, IArrayOf<IEspScheduledWU> & results)
+void getScheduledWUs(IEspContext &context, const char *stateReq, const char *serverName, const char *eventName, IArrayOf<IEspScheduledWU> & results)
 {
+    double version = context.getClientVersion();
     if (notEmpty(serverName))
     {
         Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
@@ -2882,6 +2883,46 @@ void getScheduledWUs(IEspContext &context, const char *serverName, const char *e
                     it->getWuid(wuid);
                     if (wuid.length())
                     {
+                        bool match = false;
+                        unsigned stateID = WUStateUnknown;
+                        SCMStringBuffer jobName, owner, state;
+                        try
+                        {
+                            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
+                            if (!cw && (!stateReq || !*stateReq))
+                            	match = true;
+                            else if (cw)
+                            {
+                                if ((cw->getState() == WUStateScheduled) && cw->aborting())
+                                {
+                                    stateID = WUStateAborting;
+                                    state.set("aborting");
+                                }
+                                else
+                                {
+                                    stateID = cw->getState();
+                                    cw->getStateDesc(state);
+                                }
+
+                                if (!stateReq || !*stateReq || strieq(stateReq, state.str()))
+                                {
+                                    match = true;
+                                    cw->getJobName(jobName);
+                                    cw->getUser(owner);
+                                }
+                            }
+                        }
+                        catch (IException *e)
+                        {
+                            EXCLOG(e, "Get scheduled WUs");
+                            e->Release();
+                        }
+                        if (!match)
+                        {
+                            it->nextWuid();
+                            continue;
+                        }
+
                         Owned<IEspScheduledWU> scheduledWU = createScheduledWU("");
                         scheduledWU->setWuid(wuid.str());
                         scheduledWU->setCluster(serverName);
@@ -2889,17 +2930,17 @@ void getScheduledWUs(IEspContext &context, const char *serverName, const char *e
                             scheduledWU->setEventName(ieventName.str());
                         if (ieventText.str())
                             scheduledWU->setEventText(ieventText.str());
-
-                        try
+                        if (jobName.length())
+                            scheduledWU->setJobName(jobName.str());
+                        if (version >= 1.51)
                         {
-                            SCMStringBuffer s;
-                            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid.str(), false);
-                            if (cw)
-                                scheduledWU->setJobName(cw->getJobName(s).str());
-                        }
-                        catch (IException *e)
-                        {
-                            e->Release();
+                            if (owner.length())
+                                scheduledWU->setOwner(owner.str());
+                            if (state.length())
+                            {
+                                scheduledWU->setStateID(stateID);
+                                scheduledWU->setState(state.str());
+                            }
                         }
                         results.append(*scheduledWU.getLink());
                     }
@@ -2923,6 +2964,7 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
 
         const char *clusterName = req.getCluster();
         const char *eventName = req.getEventName();
+        const char *state = req.getState();
 
         IArrayOf<IEspScheduledWU> results;
         if(notEmpty(req.getPushEventName()))
@@ -2931,7 +2973,7 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
             resp.setPushEventText(req.getPushEventText());
 
         Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-        Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+        Owned<IConstEnvironment> environment = factory->openEnvironment();
         Owned<IPropertyTree> root = &environment->getPTree();
         if (!root)
             throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
@@ -2947,10 +2989,10 @@ bool CWsWorkunitsEx::onWUShowScheduled(IEspContext &context, IEspWUShowScheduled
                 continue;
 
             if(isEmpty(clusterName))
-                getScheduledWUs(context, iclusterName, eventName, results);
+                getScheduledWUs(context, state, iclusterName, eventName, results);
             else if (strieq(clusterName, iclusterName))
             {
-                getScheduledWUs(context, clusterName, eventName, results);
+                getScheduledWUs(context, state, clusterName, eventName, results);
                 resp.setClusterSelected(i+1);
             }
 
@@ -3199,7 +3241,7 @@ bool CWsWorkunitsEx::onWUAddLocalFileToWorkunit(IEspContext& context, IEspWUAddL
 void getClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress)
 {
     Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-    Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+    Owned<IConstEnvironment> environment = factory->openEnvironment();
     Owned<IPropertyTree> pRoot = &environment->getPTree();
 
     VStringBuffer xpath("Software/%s[@name='%s']", clusterType, clusterName);
@@ -3476,7 +3518,7 @@ int CWsWorkunitsSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* req
         if(strieq(method,"WUQuery") || strieq(method,"WUJobList"))
         {
             Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
-            Owned<IConstEnvironment> environment = factory->openEnvironmentByFile();
+            Owned<IConstEnvironment> environment = factory->openEnvironment();
             Owned<IPropertyTree> root = &environment->getPTree();
             if (!root)
                 throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");

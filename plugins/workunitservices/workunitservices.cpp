@@ -50,6 +50,7 @@ Persists changed?
 
 #include "workunitservices.hpp"
 #include "workunitservices.ipp"
+#include "environment.hpp"
 
 #define WORKUNITSERVICES_VERSION "WORKUNITSERVICES 1.0.1"
 
@@ -175,13 +176,17 @@ IPluginContext * parentCtx = NULL;
 
 static void getSashaNodes(SocketEndpointArray &epa)
 {
-    Owned<IRemoteConnection> econn = querySDS().connect("/Environment", myProcessSession(), 0, SDS_LOCK_TIMEOUT);
-    if (!econn) {
+    Owned<IEnvironmentFactory> factory = getEnvironmentFactory();
+    Owned<IConstEnvironment> env = factory->openEnvironment();
+    if (!env)
+    {
         ERRLOG("getSashaNodes: cannot connect to /Environment!");
         return;
     }
+
+    Owned<IPropertyTree> root = &env->getPTree();
     StringBuffer tmp;
-    Owned<IPropertyTreeIterator> siter = econn->getElements("Software/SashaServerProcess/Instance");
+    Owned<IPropertyTreeIterator> siter = root->getElements("Software/SashaServerProcess/Instance");
     ForEach(*siter) {
         if (siter->query().getProp("@netAddress",tmp.clear())) {
             SocketEndpoint sashaep(tmp.str(),siter->query().getPropInt("@port",DEFAULT_SASHA_PORT));

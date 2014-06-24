@@ -412,6 +412,55 @@
               programmer as suggestions for the use of the INDEPENDENT
               Workflow Service.</entry>
             </row>
+
+            <row>
+              <entry><emphasis>defaultSkewError</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>A value between 0.0 and 1.0 that determines the amount of
+              skew needed to generate a skew error. This value is ignored if
+              the ECL has provided a SKEW attribute.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultSkewWarning</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>A value between 0.0 and 1.0 that determines the amount of
+              skew needed to generate a skew warning. If set higher than
+              defaultSkewError, then the value is ignored.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>overrideSkewError</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>If set to a value between 0.0 and 1.0, it overrides any
+              ECL SKEW(nn) attribute values in the current job.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defaultSkewThreshold</emphasis></entry>
+
+              <entry>Default: 1GB</entry>
+
+              <entry>The size of the dataset (in bytes) local to a single node
+              needed before Skew errors/warnings are generated if no
+              THRESHOLD(nn) was supplied in ECL.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>overrideSkewThreshold</emphasis></entry>
+
+              <entry>Default: none</entry>
+
+              <entry>The size of the dataset (in bytes) local to a single node
+              needed before Skew errors/warnings are generated. Overrides any
+              ECL THRESHOLD(nn) attribute values in the current job.</entry>
+            </row>
           </tbody>
         </tgroup>
       </informaltable></para>

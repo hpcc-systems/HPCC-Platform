@@ -226,7 +226,7 @@ define([
             for (var id in this.selection) {
                 if (this.selection[id]) {
                     var storeItem = store.get(id);
-                    if (storeItem) {
+                    if (storeItem && storeItem.StateID !== 999) {
                         retVal.push(storeItem);
                     }
                 }

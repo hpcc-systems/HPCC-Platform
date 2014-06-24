@@ -1,4 +1,4 @@
-Overview of Regression Suite usage (v:0.0.22)
+Overview of Regression Suite usage (v:0.0.26)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
@@ -92,13 +92,12 @@ Command:
 Result:
 
 |
-|       usage: usage: ecl-test setup [-h] [--target [TARGET]] [--pq threadNumber]
+|       usage: usage: ecl-test setup [-h] [--target [target_cluster | all]] [--pq threadNumber]
 |
 |       optional arguments:
 |         -h, --help            show this help message and exit
-|         --target [TARGET], -t [TARGET]
-|                               Run the setup on target cluster. Default value is
-|                               thor.
+|          --target [target_cluster | all], -t [target_cluster | all]
+|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
 |         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
@@ -112,12 +111,12 @@ Command:
 Result:
 
 |
-|       usage: ecl-test run [-h] [--target [TARGET]] [--pq threadNumber]
+|       usage: ecl-test run [-h] [--target [target_cluster | all]] [--pq threadNumber]
 |
 |       optional arguments:
 |         -h, --help         show this help message and exit
-|         --target [TARGET], -t [TARGET]
-|                            Run the cluster suite. Default value is thor.
+|         --target [target_cluster | all], -t [target_cluster | all]
+|                                     Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
 |         --pq threadNumber  Parallel query execution with threadNumber threads. (If threadNumber is '-1' on a single node system then threadNumber = numberOfLocalCore * 2)
 |
 
@@ -178,11 +177,11 @@ Command:
 to run setup on the default (thor) cluster
 
 or
-        ./ecl-test setup -t <target cluster>
+        ./ecl-test setup -t <target cluster> | all
 
-to run setup on a selected cluster
+to run setup on a selected or all clusters
 
-The result:
+The result for thor:
 
 |
 |        [Action] Suite: thor (setup)
@@ -217,12 +216,12 @@ To setup the proper environment for text search test cases there is a new compon
 -------------------------------------------------------------
 Command:
 
-        ./ecl-test run [-t <target cluster>] [-h] [--pq threadNumber]
+        ./ecl-test run [-t <target cluster>|all] [-h] [--pq threadNumber]
 
 Optional arguments:
   -h, --help         show help message and exit
-  --target [TARGET], -t [TARGET]
-                     Run the cluster suite. Default value is thor.
+   --target [target_cluster | all], -t [target_cluster | all]
+|                        Target cluster for single query run. If target = 'all' then run query on all clusters. Default value is thor.
   --pq threadNumber  Parallel query execution with threadNumber threads.
                     ('-1' can be use to calculate usable thread count on a single node system)
 
@@ -561,11 +560,15 @@ So if you have a new test case and it works well on all clusters (or some of the
 9. Configuration setting in ecl-test.json file:
 -------------------------------------------------------------
 
-        "ip": "127.0.0.1",                              - ECl server address
+        "IpAddress":{
+            "hthor":"127.0.0.1",
+            "thor":"127.0.0.1",
+            "roxie": "127.0.0.1"
+        },
+        "roxieTestSocket": ":9876",                     - Roxie test socket address (not used)
+        "espSocket": ":8010",                           - ESP service address
         "username": "regress",                          - Regression Suite dedicated username and pasword
         "password": "regress",
-        "roxie": "127.0.0.1:9876",                      - Roxie server addres (not used)
-        "server": "127.0.0.1:8010",                     - EclWatch service server address
         "suiteDir": "",                                 - default suite directory location - ""-> current directory
         "eclDir": "ecl",                                - ECL test cases directory source
         "setupDir": "ecl/setup",                        - ECL setup source directory
@@ -579,7 +582,7 @@ So if you have a new test case and it works well on all clusters (or some of the
             "thor",
             "roxie"
         ],
-        "timeout":"600",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
+        "timeout":"720",                                - Default test case timeout in sec. Can be override by command line parameter or //timeout tag in ECL file
         "maxAttemptCount":"3"                           - Max retry count to reset timeout if a testcase in any early stage (compiled, blocked) of execution pipeline.
 
 Optionally the config file can contain a section of default values for stored parameters like this:

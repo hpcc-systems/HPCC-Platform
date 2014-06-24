@@ -30,23 +30,24 @@ class StringBuffer;
 class jlib_decl MemoryAttr
 {
 public:
-    inline MemoryAttr(void) { len = 0; ptr = NULL; }
+    inline MemoryAttr() { len = 0; ptr = NULL; }
     MemoryAttr(size32_t _len);                      
     MemoryAttr(size32_t _len, const void * _ptr);
     MemoryAttr(const MemoryAttr & src);
-    inline ~MemoryAttr(void) { free(ptr); }
+    inline ~MemoryAttr() { free(ptr); }
 
     void *              allocate(size32_t _len);
+    void                clear();
+    void *              detach();
+    void *              ensure(size32_t _len);
     void *              reallocate(size32_t _len);
-    inline const void * get(void) const         { return ptr; }
-    inline size32_t     length() const          { return len; }
+    inline const void * get() const         { return ptr; }
+    inline size32_t     length() const      { return len; }
+    inline void *       mem() const         { return ptr; }
     void                set(size32_t _len, const void * _ptr);
     void                setOwn(size32_t _len, void * _ptr);
     
     static int          compare(const MemoryAttr & m1, const MemoryAttr & m2);
-
-    void                clear();
-    inline void *       detach()                { void *ret=ptr; ptr = NULL; len = 0; return ret; }
 
     inline void *       bufferBase() const { return ptr; } // like get except non-const
 
@@ -55,6 +56,38 @@ private:
     void *      ptr;
 };
 
+
+//--------------------------------------------------------------------------------------------------------------------
+
+interface IMemoryBlock
+{
+public:
+    virtual const byte * get() const = 0;
+    virtual byte * getMem() const = 0;
+    virtual byte * ensure(size32_t len) = 0;
+};
+
+class jlib_decl CMemoryBlock : public IMemoryBlock
+{
+public:
+    virtual const byte * get() const
+    {
+        return reinterpret_cast<const byte *>(memory.get());
+    }
+    virtual byte * getMem() const
+    {
+        return reinterpret_cast<byte *>(memory.mem());
+    }
+    virtual byte * ensure(size32_t len)
+    {
+        return reinterpret_cast<byte *>(memory.ensure(len));
+    }
+
+protected:
+    MemoryAttr memory;
+};
+
+//--------------------------------------------------------------------------------------------------------------------
 
 template <class CLASS> class OwnedMalloc
 {

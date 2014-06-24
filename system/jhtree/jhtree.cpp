@@ -381,7 +381,7 @@ protected:
     Owned<IRecordLayoutTranslator> layoutTrans;
     bool transformSegs;
     IIndexReadContext * activitySegs;
-    byte * layoutTransBuff;
+    CMemoryBlock layoutTransBuff;
     Owned<IRecordLayoutTranslator::SegmentMonitorContext> layoutTransSegCtx;
     Owned<IRecordLayoutTranslator::RowTransformContext> layoutTransRowCtx;
 
@@ -407,8 +407,8 @@ protected:
 
     byte const * doRowLayoutTransform(offset_t & fpos)
     {
-        layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff, layoutTrans->queryActivityKeySize(), fpos);
-        return layoutTransBuff;
+        layoutTrans->transformRow(layoutTransRowCtx, reinterpret_cast<byte const *>(keyBuffer), keySize, layoutTransBuff, fpos);
+        return layoutTransBuff.get();
     }
 
     bool skipTo(const void *_seek, size32_t seekOffset, size32_t seeklen)
@@ -541,13 +541,11 @@ public:
         wildseeks = 0;
         transformSegs = false;
         activitySegs = &segs;
-        layoutTransBuff = NULL;
     }
 
     ~CKeyLevelManager()
     {
         free (keyBuffer);
-        free(layoutTransBuff);
         ::Release(keyCursor);
     }
 
@@ -913,15 +911,12 @@ public:
             layoutTransSegCtx.clear();
             activitySegs = &segs;
         }
-        free(layoutTransBuff);
         if(layoutTrans)
         {
-            layoutTransBuff = (byte *)malloc(layoutTrans->queryActivityKeySize());
             layoutTransRowCtx.setown(layoutTrans->getRowTransformContext());
         }
         else
         {
-            layoutTransBuff = NULL;
             layoutTransRowCtx.clear();
         }
     }

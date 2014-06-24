@@ -427,7 +427,7 @@ class Regression:
                                   username=self.config.username,
                                   password=self.config.password)
             wuid = query.getWuid()
-            logging.debug("res: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
+            logging.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
             if wuid == 'Not found':
                 res = False
         else:
@@ -436,7 +436,7 @@ class Regression:
             wuid="N/A"
 
         if wuid and wuid.startswith("W"):
-            url = "http://" + self.config.server
+            url = "http://" + self.config.ip+self.config.espSocket
             url += "/WsWorkunits/WUInfo?Wuid="
             url += wuid
         else:

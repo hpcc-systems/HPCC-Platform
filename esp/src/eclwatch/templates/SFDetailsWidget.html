@@ -1,16 +1,16 @@
 <div class="${baseClass}">
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
-            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.Summary}', iconClass:'iconLogicalFile'" data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props="title:'${i18n.Summary}', iconClass:'iconSuperFile'" data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">${i18n.Refresh}</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Save" data-dojo-attach-event="onClick:_onSave" data-dojo-type="dijit.form.Button">${i18n.Save}</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">${i18n.Delete}</div>
-                 </div>
+                </div>
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <h2>
-                        <img class="iconAlign" src="${dojoConfig.urlInfo.resourcePath}/img/folder_table.png" />&nbsp;<span id="${id}Name" class="bold"></span>
+                        <img id="${id}StateIdImage" class="iconSuperFile" />&nbsp;<span id="${id}Name" class="bold"></span>
                     </h2>
                     <form id="${id}SummaryForm">
                         <ul>
