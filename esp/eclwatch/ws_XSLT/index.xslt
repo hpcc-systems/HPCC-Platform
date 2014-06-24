@@ -110,32 +110,35 @@
                                 document.location.href = "/WsSmc/Activity?SortBy=Name";
                         }
 
-                        function commandQueue(action,cluster,clusterType,queue,wuid)
+                        function commandQueue(action,cluster,clusterType,queue,wuid,serverType,ip,port)
                         {
                             document.getElementById("ClusterType").value=clusterType;
                             document.getElementById("Cluster").value=cluster;
                             document.getElementById("QueueName").value=queue;
                             document.getElementById("Wuid").value=wuid || '';
+                            document.getElementById("ServerType").value=serverType;
+                            document.getElementById("NetworkAddress").value=ip;
+                            document.getElementById("Port").value=port;
                             document.forms["queue"].action='/WsSMC/'+action;
                             document.forms["queue"].submit();
                         }
 
                         var oMenu;
 
-                        function queuePopup(cluster,clusterType,queue,paused,stopped,q_rowid)
+                        function queuePopup(cluster,clusterType,queue,serverType,ip,port,paused,stopped,q_rowid)
                         {
                             function clearQueue()
                             {
                                 if(confirm('Do you want to clear the queue for cluster: '+cluster+'?'))
-                                    commandQueue("ClearQueue",cluster,clusterType,queue);
+                                    commandQueue("ClearQueue",cluster,clusterType,queue,'',serverType,ip,port);
                             }
                             function pauseQueue()
                             {
-                                commandQueue("PauseQueue",cluster,clusterType,queue);
+                                commandQueue("PauseQueue",cluster,clusterType,queue,'',serverType,ip,port);
                             }
                             function resumeQueue()
                             {
-                                commandQueue("ResumeQueue",cluster,clusterType,queue);
+                                commandQueue("ResumeQueue",cluster,clusterType,queue,'',serverType,ip,port);
                             }
                             function showUsage()
                             {
@@ -566,6 +569,9 @@
                     <input type="hidden" name="Cluster" id="Cluster" value=""/>
                     <input type="hidden" name="QueueName" id="QueueName" value=""/>
                     <input type="hidden" name="Wuid" id="Wuid" value=""/>
+                    <input type="hidden" name="ServerType" id="ServerType" value=""/>
+                    <input type="hidden" name="NetworkAddress" id="NetworkAddress" value=""/>
+                    <input type="hidden" name="Port" id="Port" value=""/>
                     <xsl:for-each select="ThorClusterList/TargetCluster">
                         <xsl:call-template name="show-queue">
                             <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='ThorMaster' and TargetClusterName=current()/ClusterName) or (ClusterType='Thor' and ClusterQueueName=current()/QueueName)]"/>
@@ -577,6 +583,7 @@
                             <xsl:with-param name="statusDetails" select="StatusDetails"/>
                             <xsl:with-param name="warning" select="Warning"/>
                             <xsl:with-param name="thorlcr" select="ThorLCR"/>
+                            <xsl:with-param name="serverType" select="'ThorMaster'"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -590,6 +597,7 @@
                             <xsl:with-param name="clusterStatus" select="ClusterStatus"/>
                             <xsl:with-param name="statusDetails" select="StatusDetails"/>
                             <xsl:with-param name="warning" select="Warning"/>
+                            <xsl:with-param name="serverType" select="'RoxieServer'"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -603,6 +611,7 @@
                             <xsl:with-param name="clusterStatus" select="ClusterStatus"/>
                             <xsl:with-param name="statusDetails" select="StatusDetails"/>
                             <xsl:with-param name="warning" select="Warning"/>
+                            <xsl:with-param name="serverType" select="'HThorServer'"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -614,6 +623,9 @@
                             <xsl:with-param name="queue" select="QueueName"/>
                             <xsl:with-param name="queueStatus" select="QueueStatus"/>
                             <xsl:with-param name="statusDetails" select="StatusDetails"/>
+                            <xsl:with-param name="ip" select="NetworkAddress"/>
+                            <xsl:with-param name="port" select="Port"/>
+                            <xsl:with-param name="serverType" select="ServerType"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -625,6 +637,9 @@
                             <xsl:with-param name="queue" select="QueueName"/>
                             <xsl:with-param name="queueStatus" select="QueueStatus"/>
                             <xsl:with-param name="statusDetails" select="StatusDetails"/>
+                            <xsl:with-param name="ip" select="NetworkAddress"/>
+                            <xsl:with-param name="port" select="Port"/>
+                            <xsl:with-param name="serverType" select="ServerType"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -636,6 +651,9 @@
                             <xsl:with-param name="queue" select="QueueName"/>
                             <xsl:with-param name="queueStatus" select="QueueStatus"/>
                             <xsl:with-param name="statusDetails" select="StatusDetails"/>
+                            <xsl:with-param name="ip" select="NetworkAddress"/>
+                            <xsl:with-param name="port" select="Port"/>
+                            <xsl:with-param name="serverType" select="ServerType"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -647,6 +665,7 @@
                             <xsl:with-param name="queue" select="QueueName"/>
                             <xsl:with-param name="queueStatus" select="QueueStatus"/>
                             <xsl:with-param name="statusDetails" select="StatusDetails"/>
+                            <xsl:with-param name="serverType" select="ServerType"/>
                         </xsl:call-template>
                     </xsl:for-each>
                     <xsl:apply-templates select="DFUJobs"/>
@@ -710,6 +729,9 @@
         <xsl:param name="statusDetails" select="''"/>
         <xsl:param name="warning" select="''"/>
         <xsl:param name="thorlcr" select="'0'"/>
+        <xsl:param name="serverType" select="''"/>
+        <xsl:param name="ip" select="''"/>
+        <xsl:param name="port" select="'0'"/>
         <xsl:variable name="showTitle">
             <xsl:choose>
                 <xsl:when test="$clusterType = 'THOR'">1</xsl:when>
@@ -761,8 +783,8 @@
                 <td valign="top">
                     <xsl:if test="$accessRight = 'Access_Full'">
                         <xsl:variable name="popup">return queuePopup('<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>',
-                            '<xsl:value-of select="$queue"/>',<xsl:value-of select="$queueStatus='paused'"/>,
-                            <xsl:value-of select="$queueStatus='stopped'"/>, '<xsl:value-of select="$q_rowid"/>');
+                            '<xsl:value-of select="$queue"/>','<xsl:value-of select="$serverType"/>','<xsl:value-of select="$ip"/>','<xsl:value-of select="$port"/>',
+                            <xsl:value-of select="$queueStatus='paused'"/>,<xsl:value-of select="$queueStatus='stopped'"/>, '<xsl:value-of select="$q_rowid"/>');
                         </xsl:variable>
                         <a id="{$q_rowid}" class="configurecontextmenu" title="Option" onclick="{$popup}">&#160;</a>
                     </xsl:if>
@@ -811,6 +833,7 @@
                             <xsl:when test="$clusterType = 'ROXIE'">RoxieCluster - <xsl:value-of select="$cluster"/></xsl:when>
                             <xsl:when test="$clusterType = 'THOR'">ThorCluster - <xsl:value-of select="$cluster"/></xsl:when>
                             <xsl:when test="$clusterType = 'HTHOR'">HThorCluster - <xsl:value-of select="$cluster"/></xsl:when>
+                            <xsl:when test="$clusterType = 'ECLCCserver' or $clusterType = 'ECLserver'"><xsl:value-of select="$clusterType"/> - <xsl:value-of select="$cluster"/></xsl:when>
                             <xsl:otherwise>
                                 <xsl:value-of select="$clusterType"/> - <xsl:value-of select="$queue"/>
                             </xsl:otherwise>
