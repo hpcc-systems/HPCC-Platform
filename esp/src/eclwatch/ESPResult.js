@@ -87,10 +87,10 @@ define([
                     sequence: this.Sequence,
                     isComplete: this.isComplete()
                 });
-            } else if (lang.exists("Name", this) && lang.exists("ClusterName", this)) {
+            } else if (lang.exists("Name", this) && lang.exists("NodeGroup", this)) {
                 this.store = new Store({
                     wuid: this.Wuid,
-                    cluster: this.ClusterName,
+                    cluster: this.NodeGroup,
                     name: this.Name,
                     isComplete: true
                 });
@@ -355,9 +355,9 @@ define([
                 if (this.Wuid && lang.exists("Sequence", this)) {
                     request['Wuid'] = this.Wuid;
                     request['Sequence'] = this.Sequence;
-                } else if (this.Name && this.ClusterName) {
+                } else if (this.Name && this.NodeGroup) {
                     request['LogicalName'] = this.Name;
-                    request['Cluster'] = this.ClusterName;
+                    request['Cluster'] = this.NodeGroup;
                 } else if (this.Name) {
                     request['LogicalName'] = this.Name;
                 }

@@ -97,7 +97,9 @@ define([
                     delayWidget: "SFDetailsWidget",
                     hpcc: {
                         type: "SFDetailsWidget",
-                        params: row
+                        params: {
+                            Name: row.Name
+                        }
                     }
                 });
             } else {
@@ -109,6 +111,7 @@ define([
                     hpcc: {
                         type: "LFDetailsWidget",
                         params: {
+                            NodeGroup: row.FileCluster,
                             Name: row.Name
                         }
                     }

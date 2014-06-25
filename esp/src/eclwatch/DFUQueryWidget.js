@@ -631,7 +631,9 @@ define([
                         title: params.Name,
                         closable: true,
                         delayWidget: "SFDetailsWidget",
-                        _hpccParams: params
+                        _hpccParams: {
+                            Name: params.Name
+                        }
                     });
                 } else {
                     retVal = new DelayLoadWidget({

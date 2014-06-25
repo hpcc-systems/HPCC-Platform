@@ -197,7 +197,7 @@ define([
                 if (currSel.id == this.summaryWidget.id) {
                 } else if (currSel.id == this.contentWidget.id) {
                     this.contentWidget.init({
-                        ClusterName: this.logicalFile.NodeGroup,
+                        NodeGroup: this.logicalFile.NodeGroup,
                         LogicalName: this.logicalFile.Name
                     });
                 } else if (currSel.id == this.sourceWidget.id) {
