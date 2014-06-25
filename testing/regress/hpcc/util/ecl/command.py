@@ -40,6 +40,10 @@ class ECLcmd(Shell):
         args.append('--target=' + cluster)
         args.append('--cluster=' + cluster)
 
+        server = kwargs.pop('server', False)
+        if server:
+            args.append('--server=' + server)
+
         username = kwargs.pop('username', False)
         if username:
                 args.append("--username=" + username)
@@ -62,9 +66,6 @@ class ECLcmd(Shell):
         else:
             args.append('--exception-level=warning')
             args.append('--noroot')
-            server = kwargs.pop('server', False)
-            if server:
-                args.append('--server=' + server)
 
             name = kwargs.pop('name', False)
             if not name:
