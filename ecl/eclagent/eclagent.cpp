@@ -2203,6 +2203,16 @@ void EclAgentWorkflowMachine::checkForAbort(unsigned wfid, IException * handling
     }
 }
 
+bool EclAgentWorkflowMachine::checkPersistExists(IRuntimeWorkflowItem & item)
+{
+    if (!item.hasFileResult())
+        return true;
+    SCMStringBuffer name;
+    const char *logicalName = item.getPersistName(name).str();
+    return agent.fileExists(logicalName);
+}
+
+
 void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
 {
     if (agent.isStandAloneExe)

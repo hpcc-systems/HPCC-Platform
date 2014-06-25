@@ -273,6 +273,7 @@ protected:
     virtual void reportContingencyFailure(char const * type, IException * e);
     virtual void checkForAbort(unsigned wfid, IException * handling);
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item);
+    virtual bool checkPersistExists(IRuntimeWorkflowItem & item);
 
 private:
     void prelockPersists();

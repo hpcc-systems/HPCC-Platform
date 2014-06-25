@@ -90,6 +90,7 @@ protected:
     virtual void checkForAbort(unsigned wfid, IException * handling) = 0;
     // Persistence styles varies from machine to machine
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) = 0;
+    virtual bool checkPersistExists(IRuntimeWorkflowItem & item) = 0;
 
     // Check conditions, item type and call operations below based on type
     bool executeItem(unsigned wfid, unsigned scheduledWfid);
@@ -110,6 +111,7 @@ protected:
 
     bool attemptRetry(IRuntimeWorkflowItem & item, unsigned dep, unsigned scheduledWfid);
     void handleFailure(IRuntimeWorkflowItem & item, WorkflowException const * e, bool isDep);
+    bool resultStillExists(IRuntimeWorkflowItem & item);
 
 protected:
     const IContextLogger &logctx;

@@ -146,6 +146,7 @@ public:
     IMPLEMENT_IINTERFACE;
     //info set at compile time
     virtual unsigned     queryWfid() const { return tree->getPropInt("@wfid"); }
+    virtual bool         hasFileResult() const { return !tree->getPropBool("@persistDaliResult"); }
     virtual bool         isScheduled() const { return tree->hasProp("Schedule"); }
     virtual bool         isScheduledNow() const { return (tree->hasProp("Schedule") && !tree->hasProp("Schedule/Event")); }
     virtual IWorkflowEvent * getScheduleEvent() const { if(tree->hasProp("Schedule/Event")) return new CWorkflowEvent(tree->queryProp("Schedule/Event/@name"), tree->queryProp("Schedule/Event/@text")); else return NULL; }
@@ -169,12 +170,14 @@ public:
     virtual void         setSchedulePriority(unsigned priority) { assertex(tree->hasProp("Schedule")); tree->setPropInt("Schedule/@priority", priority); }
     virtual void         setScheduleCount(unsigned count) { assertex(tree->hasProp("Schedule")); tree->setPropInt("Schedule/@count", count); tree->setPropInt("Schedule/@countRemaining", count); }
     virtual void         addDependency(unsigned wfid) { tree->addPropTree("Dependency", createPTree())->setPropInt("@wfid", wfid); }
-    virtual void         setPersistInfo(char const * name, unsigned wfid, int numPersistInstances)
+    virtual void         setPersistInfo(char const * name, unsigned wfid, int numPersistInstances, bool isFileResult)
     {
         tree->setProp("@persistName", name);
         tree->setPropInt("@persistWfid", wfid);
         if (numPersistInstances != 0)
             tree->setPropInt("@persistCopies", (int)numPersistInstances);
+        if (!isFileResult)
+            tree->setPropInt("@persistDaliResult", true);
     }
     virtual void         setCluster(const char * cluster) { tree->setProp("@cluster", cluster); }
     //info set at run time
@@ -353,6 +356,7 @@ private:
     int persistCopies;
     StringAttr eventName;
     StringAttr eventExtra;
+    bool resultIsFile;
 
 public:
     CCloneWorkflowItem() {}
@@ -386,9 +390,11 @@ public:
         scheduledWfid = other->queryScheduledWfid();
         persistCopies = other->queryPersistCopies();
         other->queryCluster(clusterName);
+        resultIsFile = other->hasFileResult();
     }
     //info set at compile time
     virtual unsigned     queryWfid() const { return wfid; }
+    virtual bool         hasFileResult() const { return resultIsFile; }
     virtual bool         isScheduled() const { return schedule.get() != 0; }
     virtual bool         isScheduledNow() const { return schedule && schedule->isNow(); }
     virtual IWorkflowEvent * getScheduleEvent() const { if(schedule) return schedule->getEvent(); else return NULL; }
@@ -664,6 +670,16 @@ void WorkflowMachine::perform(IGlobalCodeContext *_ctx, IEclProcess *_process)
         throw error.getLink();
 }
 
+
+bool WorkflowMachine::resultStillExists(IRuntimeWorkflowItem & item)
+{
+    if (item.queryMode() != WFModePersist)
+        return true;
+    if (checkPersistExists(item))
+        return true;
+    return false;
+}
+
 bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
 {
 #ifdef TRACE_WORKFLOW
@@ -673,6 +689,18 @@ bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
     switch(item.queryState())
     {
     case WFStateDone:
+        if (!resultStillExists(item))
+        {
+#ifdef TRACE_WORKFLOW
+            LOG(MCworkflow, "Persist file has been deleted for workflow item %u", wfid);
+#endif
+            item.setState(WFStateNull);
+            break;
+        }
+#ifdef TRACE_WORKFLOW
+        LOG(MCworkflow, "Nothing to be done for workflow item %u", wfid);
+#endif
+        return true;
     case WFStateSkip:
 #ifdef TRACE_WORKFLOW
         LOG(MCworkflow, "Nothing to be done for workflow item %u", wfid);
@@ -683,7 +711,8 @@ bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
     case WFStateBlocked:
         throw new WorkflowException(0, "INTERNAL ERROR: attempting to execute workflow item in blocked state", wfid, WorkflowException::SYSTEM, MSGAUD_user);
     case WFStateFail:
-        item.reset(); //fall through
+        item.reset();
+        break;
     }
 
     switch(item.queryMode())

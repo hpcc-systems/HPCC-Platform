@@ -144,6 +144,7 @@ public:
     void extractGlobal(IHqlExpression * global, ClusterType platform);
     void extractStoredInfo(IHqlExpression * expr, IHqlExpression * codehash, bool isRoxie, int multiplePersistInstances);
     void checkFew(HqlCppTranslator & translator);
+    bool isFileResult() const;
     void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * getStoredKey();
     void preventDiskSpill() { few = true; }
@@ -5262,6 +5263,17 @@ void GlobalAttributeInfo::createSmallOutput(IHqlExpression * value, SharedHqlExp
     }
 }
 
+bool GlobalAttributeInfo::isFileResult() const
+{
+    if (value->isDataset() || value->isDictionary())
+    {
+        if (few)
+            return false;
+        return true;
+    }
+    return false;
+}
+
 void GlobalAttributeInfo::checkFew(HqlCppTranslator & translator)
 {
 //  if (few && isGrouped(value))
@@ -5492,9 +5504,9 @@ void WorkflowTransformer::setWorkflowSchedule(IWorkflowItem * wf, const Schedule
     wf->setSchedulePriority(priority);
 }
 
-void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int numPersistInstances)
+void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int numPersistInstances, bool isFile)
 {
-    wf->setPersistInfo(persistName, persistWfid, numPersistInstances);
+    wf->setPersistInfo(persistName, persistWfid, numPersistInstances, isFile);
 }
 
 WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp)
@@ -5876,7 +5888,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             info.storedName->queryValue()->getStringValue(persistName);
             unsigned persistWfid = ++wfidCount;
             Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModePersist, queryDirectDependencies(setValue), conts, info.queryCluster());
-            setWorkflowPersist(wf, persistName.str(), persistWfid, info.queryMaxPersistCopies());
+            setWorkflowPersist(wf, persistName.str(), persistWfid, info.queryMaxPersistCopies(), info.isFileResult());
 
             DependenciesUsed dependencies(false);
             UnsignedArray visited;

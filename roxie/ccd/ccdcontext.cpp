@@ -245,6 +245,14 @@ protected:
     virtual bool schedulingPullStop() { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Scheduling not supported in roxie"); }
     virtual void reportContingencyFailure(char const * type, IException * e) {}
     virtual void checkForAbort(unsigned wfid, IException * handling) {}
+    virtual bool checkPersistExists(IRuntimeWorkflowItem & item)
+    {
+        if (!item.hasFileResult())
+            return true;
+        SCMStringBuffer name;
+        const char *logicalName = item.getPersistName(name).str();
+        return fileExists(logicalName);
+    }
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item)
     {
         if (!workunit)

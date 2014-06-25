@@ -639,6 +639,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual bool isScheduledNow() const = 0;
     virtual IWorkflowEvent * getScheduleEvent() const = 0;
     virtual unsigned querySchedulePriority() const = 0;
+    virtual bool hasFileResult() const = 0;
     virtual bool hasScheduleCount() const = 0;
     virtual unsigned queryScheduleCount() const = 0;
     virtual IWorkflowDependencyIterator * getDependencies() const = 0;
@@ -683,7 +684,7 @@ interface IWorkflowItem : extends IRuntimeWorkflowItem
     virtual void setSchedulePriority(unsigned priority) = 0;
     virtual void setScheduleCount(unsigned count) = 0;
     virtual void addDependency(unsigned wfid) = 0;
-    virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies) = 0;
+    virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies, bool isFileResult) = 0;
     virtual void syncRuntimeData(const IConstWorkflowItem & other) = 0;
     virtual void setScheduledWfid(unsigned wfid) = 0;
     virtual void setCluster(const char * cluster) = 0;
