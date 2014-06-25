@@ -44,7 +44,7 @@ define([
         responseTotalQualifier: "WUListQueriesResponse.NumberOfQueries",
         idProperty: "__hpcc_id",
         startProperty: "PageStartFrom",
-        countProperty: "NumberOfQueries",
+        countProperty: "PageSize",
 
         _watched: [],
 
