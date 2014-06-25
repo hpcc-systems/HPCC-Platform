@@ -330,6 +330,7 @@ extern MapStringTo<int> *preferredClusters;
 extern StringArray allQuerySetNames;
 
 extern bool allFilesDynamic;
+extern bool lockSuperFiles;
 extern bool crcResources;
 extern bool logFullQueries;
 extern bool blindLogging;

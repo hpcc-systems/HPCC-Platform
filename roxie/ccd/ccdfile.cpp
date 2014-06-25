@@ -1744,7 +1744,7 @@ public:
                 }
                 // We have to clone the properties since we don't want to keep the superfile locked
                 properties.setown(createPTreeFromIPT(&dFile->queryAttributes()));
-                if (!isDynamic)
+                if (!isDynamic && !lockSuperFiles)
                 {
                     notifier.setown(daliHelper->getSuperFileSubscription(lfn, this));
                     dFile.clear();  // We don't lock superfiles, except dynamic ones
