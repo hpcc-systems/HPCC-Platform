@@ -609,6 +609,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="lockSuperFiles" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>If enabled, superfiles will be locked while queries that use them are loaded</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="lowTimeout" type="xs:nonNegativeInteger" use="optional" default="10000">
       <xs:annotation>
         <xs:appinfo>
