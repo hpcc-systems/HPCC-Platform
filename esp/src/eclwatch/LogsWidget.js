@@ -74,6 +74,9 @@ define([
                     case "Archive Query":
                         params = "/WUFile/ArchiveQuery?Wuid=" + this.wu.Wuid + "&Name=ArchiveQuery&Type=ArchiveQuery";
                         break;
+                    case "ECL":
+                        params = "/WUFile?Wuid=" + this.wu.Wuid + "&Type=WUECL";
+                        break;
                     case "Workunit XML":
                         params = "/WUFile?Wuid=" + this.wu.Wuid + "&Type=XML";
                         break;
@@ -91,9 +94,7 @@ define([
                 var urls = [];
 
                 for (var i = 0; i < selection.length; ++i) {
-                    if (this.canDownload(selection[i].Type)) {
-                        window.open(this._getURL(selection[i], option));
-                    }
+                    window.open(this._getURL(selection[i], option));
                 }
             },
             //  Plugin wrapper  ---
@@ -251,14 +252,6 @@ define([
                 return true;
             },
 
-            canDownload: function (type) {
-                switch(type) {
-                    case "ECL":
-                        return false;
-                }
-                return true;
-            },
-
             refreshActionState: function (selection) {
                 var canShowContent = false;
                 var canDownload = false;
@@ -267,7 +260,7 @@ define([
                         isNotDll = true;
                     }
                     canShowContent = canShowContent ? canShowContent : this.canShowContent(item.Type);
-                    canDownload = canDownload ? canDownload : this.canDownload(item.Type);
+                    canDownload = true;
                 }, this);
                 registry.byId(this.id + "Open").set("disabled", !canShowContent);
                 this.downloadGZip.set("disabled", !canDownload);
