@@ -415,17 +415,25 @@ class Regression:
         wuid = None
         if ECLCC().makeArchive(query):
             eclCmd = ECLcmd()
+            try:
+                if publish:
+                    res = eclCmd.runCmd("publish", cluster, query, report[0],
+                                      server=self.config.ip,
+                                      username=self.config.username,
+                                      password=self.config.password)
+                else:
+                    res = eclCmd.runCmd("run", cluster, query, report[0],
+                                      server=self.config.ip,
+                                      username=self.config.username,
+                                      password=self.config.password)
+            except Error as e:
+                res = False
+                wuid = 'Not found'
+                query.setWuid(wuid)
+                query.diff = query.getBaseEcl()+"\n\t"+str(e)
+                report[0].addResult(query)
+                pass
 
-            if publish:
-                res = eclCmd.runCmd("publish", cluster, query, report[0],
-                                  server=self.config.ip,
-                                  username=self.config.username,
-                                  password=self.config.password)
-            else:
-                res = eclCmd.runCmd("run", cluster, query, report[0],
-                                  server=self.config.ip,
-                                  username=self.config.username,
-                                  password=self.config.password)
             wuid = query.getWuid()
             logging.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})
             if wuid == 'Not found':
