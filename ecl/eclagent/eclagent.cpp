@@ -2209,13 +2209,19 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     {
         throw MakeStringException(0, "PERSIST not supported when running standalone");
     }
+
+    SCMStringBuffer name;
+    const char *logicalName = item.getPersistName(name).str();
+    //Persists are re-executed to ensure they are locked when workunits are restarted, and to ensure expired persists
+    //are rebuilt, but check if we have already processed and locked this persist
+    if (agent.alreadyLockedPersist(logicalName))
+        return;
+
     unsigned wfid = item.queryWfid();
     // Old persist model requires dependencies to be executed BEFORE checking if the persist is up to date
     // Defaults to old model, in case executing a WU that is created by earlier eclcc
     if (!agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
         doExecuteItemDependencies(item, wfid);
-    SCMStringBuffer name;
-    const char *logicalName = item.getPersistName(name).str();
     int maxPersistCopies = item.queryPersistCopies();
     if (maxPersistCopies < 0)
         maxPersistCopies = DEFAULT_PERSIST_COPIES;
@@ -2256,7 +2262,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
         doExecuteItem(item, wfid);
         agent.updatePersist(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC);
     }
-    agent.finishPersist(persistLock.getClear());
+    agent.finishPersist(logicalName, persistLock.getClear());
 }
 
 //----------------------------------------------------------------
@@ -2620,9 +2626,15 @@ IRemoteConnection *EclAgent::startPersist(const char * logicalName)
     return persistLock;
 }
 
-void EclAgent::finishPersist(IRemoteConnection *persistLock)
+bool EclAgent::alreadyLockedPersist(const char * persistName)
+{
+    return processedPersists.contains(persistName);
+}
+
+void EclAgent::finishPersist(const char * persistName, IRemoteConnection *persistLock)
 {
     LOG(MCrunlock, unknownJob, "Finished persists - add to read lock list");
+    processedPersists.append(persistName);
     persistReadLocks.append(*persistLock);
 }
 

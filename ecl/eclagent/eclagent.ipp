@@ -355,6 +355,7 @@ private:
     StringArray tempFiles;
     CriticalSection tfsect;
     Array persistReadLocks;
+    StringArray processedPersists;
 
     Owned<ILoadedDllEntry> dll;
     CIArrayOf<EclAgentQueryLibrary> queryLibraries;
@@ -488,7 +489,8 @@ public:
     virtual void restoreCluster();
 
     IRemoteConnection *startPersist(const char * name);
-    void finishPersist(IRemoteConnection *persistLock);
+    bool alreadyLockedPersist(const char * persistName);
+    void finishPersist(const char * persistName, IRemoteConnection *persistLock);
     void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
     void checkPersistMatches(const char * logicalName, unsigned eclCRC);
     virtual void deleteLRUPersists(const char * logicalName, int keep);
