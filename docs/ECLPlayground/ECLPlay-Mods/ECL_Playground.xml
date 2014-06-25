@@ -69,9 +69,10 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>From ECL Watch page, click on the <emphasis
-              role="bold">ECL Playground </emphasis> link in the menu on the
-              left side.</para>
+              <para>From ECL Watch, click on the<emphasis
+              role="bold">ECL</emphasis> icon, then click the <emphasis
+              role="bold">Playground</emphasis> link from the navigation
+              sub-menu.</para>
 
               <para><figure>
                   <title>ECL Playground link</title>
@@ -104,7 +105,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLP_002d.jpg" />
+                <imagedata fileref="../../images/ECLPl002.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -113,6 +114,7 @@
         contains the <emphasis>Editor</emphasis> area and the <emphasis>Graph
         Viewer</emphasis>. The Sample code drop list is at the top right. The
         bottom portion of the page displays the results.</para>
+        <!--***NEW INTERFACE DESCR***-->
 
         <para>The ECL Playground comes with a set of ready to run sample ECL
         code. The drop list contains code samples. Select any one of these
@@ -169,7 +171,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLP_004a.jpg" />
+                <imagedata fileref="../../images/ECLP_004.jpg" />
               </imageobject>
             </mediaobject>
           </figure>The status area displays the job status. If a job fails,
@@ -205,15 +207,16 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Select <emphasis role="bold">Browse Workunits</emphasis>
-              from the ECL Watch menu.</para>
+              <para>Select <emphasis role="bold">Workunits</emphasis> from the
+              ECL Watch <inlinegraphic fileref="../../images/ECLWA001.jpg" />
+              menu.</para>
 
               <para><figure>
                   <title>Browse Workunits</title>
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="../../images/ECLP_007.jpg"
+                      <imagedata fileref="../../images/ECLWA00A.jpg"
                                  vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
@@ -228,8 +231,8 @@
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Click on the <emphasis role="bold">ECL Playground
-              </emphasis>hyperlink to open it in the ECL Playground.<figure>
+              <para>Click on the<emphasis role="bold"> Playground
+              </emphasis>tab to open the workunit in the Playground.<figure>
                   <title>ECL Playground link</title>
 
                   <mediaobject>
