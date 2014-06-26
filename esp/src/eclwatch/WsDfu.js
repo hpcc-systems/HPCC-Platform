@@ -95,7 +95,11 @@ define([
 
         DFUArrayAction: function (logicalFiles, actionType) {
             arrayUtil.forEach(logicalFiles, function (item, idx) {
-                item.qualifiedName = item.Name + "@" + item.NodeGroup;
+                if (item.isSuperfile) {
+                    item.qualifiedName = item.Name;
+                } else {
+                    item.qualifiedName = item.Name + "@" + item.NodeGroup;
+                }
             });
             var request = {
                 LogicalFiles: logicalFiles,

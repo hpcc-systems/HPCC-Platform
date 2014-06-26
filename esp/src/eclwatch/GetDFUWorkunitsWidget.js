@@ -112,9 +112,11 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm(this.i18n.DeleteSelectedWorkunits)) {
+            var selection = this.workunitsGrid.getSelected();
+            var list = this.arrayToList(selection, "ID");
+            if (confirm(this.i18n.DeleteSelectedWorkunits + "\n" + list)) {
                 var context = this;
-                FileSpray.DFUWorkunitsAction(this.workunitsGrid.getSelected(), this.i18n.Delete, {
+                FileSpray.DFUWorkunitsAction(selection, this.i18n.Delete, {
                     load: function (response) {
                         context.refreshGrid(true);
                     }

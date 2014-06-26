@@ -237,9 +237,11 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm(this.i18n.DeleteSelectedFiles)) {
+            var selection = this.landingZonesGrid.getSelected();
+            var list = this.arrayToList(selection, "displayName");
+            if (confirm(this.i18n.DeleteSelectedFiles + "\n" + list)) {
                 var context = this;
-                arrayUtil.forEach(this.landingZonesGrid.getSelected(), function(item, idx) {
+                arrayUtil.forEach(selection, function (item, idx) {
                     FileSpray.DeleteDropZoneFile({
                         request:{
                             NetAddress: item.DropZone.NetAddress,

@@ -140,9 +140,11 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm(this.i18n.DeleteSelectedFiles)) {
+            var selection = this.workunitsGrid.getSelected();
+            var list = this.arrayToList(selection, "Name");
+            if (confirm(this.i18n.DeleteSelectedFiles + "\n" + list)) {
                 var context = this;
-                WsDfu.DFUArrayAction(this.workunitsGrid.getSelected(), this.i18n.Delete).then(function(response) {
+                WsDfu.DFUArrayAction(selection, this.i18n.Delete).then(function (response) {
                     context.refreshGrid(true);
                 });
             }
