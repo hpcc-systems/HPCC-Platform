@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect2 id="get_hpcc">
+  <title>Get the latest HPCC Virtual Image File</title>
+
+  <para>The complete details for installing and running HPCC in a virtual
+  machine are available in the document: <emphasis role="bold">Running HPCC in
+  a Virtual Machine</emphasis>, available from <ulink
+  url="hpccsystems.com/download/docs">hpccsystems.com/download/docs</ulink>
+  .</para>
+
+  <para>The following steps are a quick summary, assuming you have some
+  familiarity with running virtual machines.</para>
+
+  <para><orderedlist>
+      <listitem>
+        <para>Download the latest HPCC Virtual Machine image file from:</para>
+
+        <para><ulink
+        url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
+      </listitem>
+
+      <listitem>
+        <para>Save the file to a folder on your machine.</para>
+      </listitem>
+
+      <listitem>
+        <para>Open your virtualization software, import the virtual machine
+        and start it.</para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Once the VM initialization completes, you will see a window
+        similar to the following:</para>
+
+        <figure id="welcometovm">
+          <title>VM Welcome Screen</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/GA-vm01.jpg"
+                         vendor="VM_welcome" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para><informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic
+                  fileref="../../images/caution.png" /></entry>
+
+                  <entry>Your virtual IP address could be different from the
+                  ones provided in the example images. Please use the IP
+                  address provided by <emphasis role="bold">your</emphasis>
+                  installation.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>Note the IP Address of your VM Instance.</para>
+      </listitem>
+
+      <listitem>
+        <para>In your browser, enter the URL displayed (circled in red above)
+        in the previous image (without the :8010)</para>
+
+        <para>For Ganglia enter the <emphasis>IP Address</emphasis>/ganglia.
+        For Nagios enter the <emphasis>IP Address</emphasis>/nagios3.</para>
+
+        <para>For example,
+        <emphasis>http://nnn.nnn.nnn.nnn/nagios3</emphasis>, where
+        nnn.nnn.nnn.nnn is your Virtual Machine's IP address displayed at the
+        VM welcome screen.</para>
+      </listitem>
+    </orderedlist></para>
+
+  <para>We encourage experienced users to use SSH and log into the VM and
+  further examine the configuration of a 1-node monitoring solution.</para>
+
+  <sect3 id="ViewTheMetrics" role="brk">
+    <title>Viewing the Metrics</title>
+
+    <para>To view the metrics page, go to the following page(s) in your
+    browser.</para>
+
+    <para><emphasis role="bold">Ganglia:</emphasis></para>
+
+    <para><programlisting> 
+<emphasis>http://nnn.nnn.nnn.nnn/ganglia</emphasis></programlisting></para>
+
+    <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your ESP server
+    running ECL Watch.</para>
+
+    <para><emphasis role="bold">Nagios:</emphasis></para>
+
+    <para><programlisting> 
+<emphasis>http://nnn.nnn.nnn.nnn/nagios3</emphasis></programlisting></para>
+
+    <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your ESP server
+    running ECL Watch.</para>
+  </sect3>
+</sect2>

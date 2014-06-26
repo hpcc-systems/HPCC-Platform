@@ -908,7 +908,7 @@ public:
             hashValue = rtlHash64VStr(dll->queryDll()->queryName(), hashValue);
             if (traceLevel > 8)
                 DBGLOG("getQueryHash: %s %"I64F"u from dll", id, hashValue);
-            if (!allFilesDynamic && !isDynamic && !package.isCompulsory())
+            if (!lockSuperFiles && !allFilesDynamic && !isDynamic && !package.isCompulsory())
             {
                 IConstWorkUnit *wu = dll->queryWorkUnit();
                 if (wu) // wu may be null in some unit test cases

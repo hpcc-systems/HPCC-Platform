@@ -167,6 +167,9 @@ class ECLFile:
     def getWuid(self):
         return self.wuid
 
+    def setWuid(self,  wuid):
+        self.wuid = wuid
+
     def addResults(self, results, wuid):
         filename = self.getResults()
         self.wuid = wuid

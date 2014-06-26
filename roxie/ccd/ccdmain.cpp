@@ -94,6 +94,7 @@ IPropertyTree* ccdChannels;
 StringArray allQuerySetNames;
 
 bool allFilesDynamic;
+bool lockSuperFiles;
 bool crcResources;
 bool useRemoteResources;
 bool checkFileDate;
@@ -669,6 +670,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
         allFilesDynamic = topology->getPropBool("@allFilesDynamic", false);
+        lockSuperFiles = topology->getPropBool("@lockSuperFiles", false);
         crcResources = topology->getPropBool("@crcResources", false);
         ignoreOrphans = topology->getPropBool("@ignoreOrphans", true);
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
