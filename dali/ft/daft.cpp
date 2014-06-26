@@ -57,6 +57,26 @@ void CDistributedFileSystem::copy(IDistributedFile * from, IDistributedFile * to
     sprayer->setPartFilter(filter);
     sprayer->setSource(from);
     sprayer->setTarget(to);
+
+    bool compressInput = from->isCompressed();
+    bool compressOutput = options->getPropBool("@compress");
+    /*
+        * compressOutput default value is false. It comes from "@compress" properties
+        *
+        * sourceCompression=false and compressOutput=false -> compressOutput=false copy uncompressed to uncompressed
+        * sourceCompression=false and compressOutput=true  -> compressOutput=true  copy uncompressed to compressed
+        *
+        * to prevent accidentally uncompressing based the default value
+        * sourceCompression=true  and compressOutput=false -> compressOutput=true  copy compressed   to compressed
+        *
+        * actually there is no way to decompress compressed file based on default value of "@compress" properties
+        * sourceCompression=true  and compressOutput=true  -> compressOutput=true  copy compressed   to compressed
+        *
+        */
+
+    if (compressInput && !compressOutput)
+        sprayer->setTargetCompression(compressInput);
+
     sprayer->spray();
 }
 

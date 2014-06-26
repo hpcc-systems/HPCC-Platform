@@ -89,6 +89,7 @@ public:
     virtual void setSource(IDistributedFilePart * part) = 0;
     virtual void setSourceTarget(IFileDescriptor * fd, DaftReplicateMode mode) = 0;
     virtual void setTarget(IDistributedFile * target) = 0;
+    virtual void setTargetCompression(bool compress) = 0;
     virtual void setTarget(IFileDescriptor * target, unsigned copy=0) = 0;
     virtual void setTarget(IGroup * target) = 0;
     virtual void setTarget(INode * target) = 0;

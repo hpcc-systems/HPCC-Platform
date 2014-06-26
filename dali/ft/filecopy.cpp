@@ -2461,6 +2461,11 @@ void FileSprayer::setSourceTarget(IFileDescriptor * fd, DaftReplicateMode mode)
         setCopyCompressedRaw();
 }
 
+void FileSprayer::setTargetCompression(bool compress)
+{
+    compressOutput = compress;
+}
+
 void FileSprayer::setTarget(IDistributedFile * target)
 {
     distributedTarget.set(target);
@@ -2695,8 +2700,6 @@ void FileSprayer::spray()
         throwError(DFTERR_NoFilesMatchWildcard);
 
     LOG(MCdebugInfo, job, "compressedInput:%d, compressOutput:%d", compressedInput, compressOutput);
-    if (compressedInput && !compressOutput)
-        compressOutput = true;
 
     LocalAbortHandler localHandler(daftAbortHandler);
 
@@ -2926,7 +2929,10 @@ void FileSprayer::updateTargetProperties()
                      (stricmp(aname,"@eclCRC")==0)||
                      (stricmp(aname,"@formatCrc")==0)||
                      (stricmp(aname,"@owner")==0)||
-                     ((stricmp(aname,FArecordCount)==0)&&!gotrc))
+                     ((stricmp(aname,FArecordCount)==0)&&!gotrc) ||
+                     (stricmp(aname,"@blockCompressed")==0) ||
+                     (stricmp(aname,"@rowCompressed")==0)
+                     )
                     )
                     curProps.setProp(aname,aiter->queryValue());
             }
