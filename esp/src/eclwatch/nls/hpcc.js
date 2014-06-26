@@ -492,6 +492,7 @@ define({root:
     ToSizes: "To Sizes",
     TotalSize: "Total Size",
     TotalThorTime: "Total Thor Time",
+    TransitionGuide: "Transition Guide",
     Tree: "Tree",
     Type: "Type",
     undefined: "undefined",

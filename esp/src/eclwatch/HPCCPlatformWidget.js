@@ -290,25 +290,27 @@ define([
             });
         },
 
-        _onOpenLegacy: function (evt) {
-            var win = window.open("/?legacy", "_blank");
+        _openNewTab: function(url) {
+            var win = window.open(url, "_blank");
             if (win && win.focus) {
                 win.focus();
             }
+        },
+
+        _onOpenLegacy: function (evt) {
+            this._openNewTab("/?legacy");
         },
 
         _onOpenResources: function (evt) {
-            var win = window.open("http://hpccsystems.com/download", "_blank");
-            if (win && win.focus) {
-                win.focus();
-            }
+            this._openNewTab("http://hpccsystems.com/download");
         },
 
         _onOpenReleaseNotes: function (evt) {
-            var win = window.open("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.build.version, "_blank");
-            if (win && win.focus) {
-                win.focus();
-            }
+            this._openNewTab("http://hpccsystems.com/download/free-community-edition-known-limitations#" + this.build.version);
+        },
+
+        _onOpenTransitionGuide: function(evt) {
+            this._openNewTab("https://wiki.hpccsystems.com/display/hpcc/HPCC+ECL+Watch+5.0+Transition+Guide");
         },
 
         _onOpenConfiguration: function (evt) {
