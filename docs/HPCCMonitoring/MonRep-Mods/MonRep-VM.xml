@@ -36,7 +36,7 @@
         <para>Once the VM initialization completes, you will see a window
         similar to the following:</para>
 
-        <figure id="welcometovm">
+        <figure>
           <title>VM Welcome Screen</title>
 
           <mediaobject>
@@ -89,7 +89,7 @@
   <para>We encourage experienced users to use SSH and log into the VM and
   further examine the configuration of a 1-node monitoring solution.</para>
 
-  <sect3 id="ViewTheMetrics" role="brk">
+  <sect3 role="brk">
     <title>Viewing the Metrics</title>
 
     <para>To view the metrics page, go to the following page(s) in your
