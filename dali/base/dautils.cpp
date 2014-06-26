@@ -393,7 +393,7 @@ void CDfsLogicalFileName::normalizeName(const char *name, StringAttr &res, bool 
                     throw MakeStringException(-1, "Unexpected character '%c' in logical name '%s' detected", *s, name);
             }
         }
-        c = *s++;
+        c = *++s;
     }
     bool isext = memicmp(name,EXTERNAL_SCOPE "::",sizeof(EXTERNAL_SCOPE "::")-1)==0;
     if (!isext && !allowWild && wilddetected)
