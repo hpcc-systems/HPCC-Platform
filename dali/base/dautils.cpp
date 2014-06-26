@@ -901,20 +901,33 @@ StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) con
     loop
     {
         const char *e=strstr(s,"::");
-        if (!e)
+        if ((e && 0 != strncmp(".", s, e-s)) || (!e && !streq(".", s))) // skip '.' scopes
         {
-            if (!streq(".", s))
-                lfnNodeName.append(s);
-            break;
-        }
-        if (0 != strncmp(".", s, e-s))
-        {
-            if (!first)
-                lfnNodeName.append('_');
-            else
+            if (first)
                 first = false;
-            lfnNodeName.append(e-s,s);
+            else
+                lfnNodeName.append('_');
+            while (s != e)
+            {
+                char c = *s;
+                switch (c)
+                {
+                case '\0':
+                    return lfnNodeName; // done
+                case '^':
+                    ++s;
+                    if ('\0' == *s)
+                        return lfnNodeName; // probably an error really to end in '^'
+                    c = toupper(*s);
+                    // fall through
+                default:
+                    lfnNodeName.append(c);
+                }
+                ++s;
+            }
         }
+        if (!e)
+            break;
         s = e+2;
     }
     return lfnNodeName;
