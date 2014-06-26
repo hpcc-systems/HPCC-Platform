@@ -42,6 +42,7 @@ namespace ws_workunits {
 #define    File_XML "XML"
 #define    File_Res "res"
 #define    File_DLL "dll"
+#define    File_WUECL "WUECL"
 #define    File_ArchiveQuery "ArchiveQuery"
 
 #define    TOTALTHORTIME    "Total thor time"
@@ -178,6 +179,7 @@ public:
     void getWorkunitArchiveQuery(MemoryBuffer& buf);
     void getWorkunitDll(StringBuffer &name, MemoryBuffer& buf);
     void getWorkunitXml(const char* plainText, MemoryBuffer& buf);
+    void getWorkunitQueryShortText(MemoryBuffer& buf);
     void getWorkunitAssociatedXml(const char* name, const char* IPAddress, const char* plainText, const char* description, bool forDownload, MemoryBuffer& buf);
     void getWorkunitCpp(const char* cppname, const char* description, const char* ipAddress, MemoryBuffer& buf, bool forDownload);
     void getEventScheduleFlag(IEspECLWorkunit &info);
