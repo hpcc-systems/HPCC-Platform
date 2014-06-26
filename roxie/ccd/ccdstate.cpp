@@ -187,6 +187,7 @@ public:
             }
             if (nextTimeout != INFINITE)
                 nextTimeout = nextTimeout * 1000;
+            clearKeyStoreCache(false);   // Allows us to fully release files we no longer need because of unloaded queries
         }
         if (traceLevel)
             DBGLOG("DelayedReleaserThread %p exiting", this);

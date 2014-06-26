@@ -673,6 +673,17 @@ bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
     switch(item.queryState())
     {
     case WFStateDone:
+        if (item.queryMode() == WFModePersist)
+        {
+#ifdef TRACE_WORKFLOW
+            LOG(MCworkflow, "Recheck persist %u", wfid);
+#endif
+            break;
+        }
+#ifdef TRACE_WORKFLOW
+        LOG(MCworkflow, "Nothing to be done for workflow item %u", wfid);
+#endif
+        return true;
     case WFStateSkip:
 #ifdef TRACE_WORKFLOW
         LOG(MCworkflow, "Nothing to be done for workflow item %u", wfid);
@@ -683,7 +694,8 @@ bool WorkflowMachine::executeItem(unsigned wfid, unsigned scheduledWfid)
     case WFStateBlocked:
         throw new WorkflowException(0, "INTERNAL ERROR: attempting to execute workflow item in blocked state", wfid, WorkflowException::SYSTEM, MSGAUD_user);
     case WFStateFail:
-        item.reset(); //fall through
+        item.reset();
+        break;
     }
 
     switch(item.queryMode())
