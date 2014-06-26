@@ -23,7 +23,7 @@
         <row>
           <entry><emphasis>source</emphasis></entry>
 
-          <entry>The binary data array to process.</entry>
+          <entry>The string containing the hex pairs to process.</entry>
         </row>
 
         <row>
@@ -37,9 +37,9 @@
   </informaltable>
 
   <para>The <emphasis role="bold">FromHexPairs </emphasis>function returns a
-  data value with each byte created from a pair of hex digits. </para>
+  data value with each byte created from a pair of hex digits.</para>
 
   <para>Example:</para>
 
-  <programlisting format="linespecific">A := STD.Str.FromHexPairs('   00  01  FF 80   ');</programlisting>
+  <programlisting format="linespecific">A := STD.Str.FromHexPairs('0001FF80');</programlisting>
 </sect1>
