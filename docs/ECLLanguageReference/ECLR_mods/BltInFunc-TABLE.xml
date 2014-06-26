@@ -136,7 +136,8 @@
 
             <entry>A value between zero (0) and one (1.0 = 100%) indicating
             the maximum percentage of skew to allow before the job fails (the
-            default skew is 1.0 / &lt;number of nodes&gt;).</entry>
+            default skew is 1.0 / &lt;number of slaves on
+            cluster&gt;).</entry>
           </row>
 
           <row>
@@ -144,7 +145,8 @@
 
             <entry>Optional. A value between zero (0) and one (1.0 = 100%)
             indicating the desired maximum percentage of skew to allow (the
-            default skew is 1.0 / &lt;number of nodes&gt;).</entry>
+            default skew is 1.0 / &lt;number of slaves on
+            cluster&gt;).</entry>
           </row>
 
           <row>
