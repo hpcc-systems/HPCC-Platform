@@ -419,7 +419,7 @@
 
               <entry>A value between zero (0) and one (1.0 = 100%) indicating
               the maximum percentage of skew to allow before the job fails
-              (the default is 0.1 = 10%).</entry>
+              (the default skew is 1.0 / &lt;number of nodes&gt;).</entry>
             </row>
 
             <row>
@@ -427,21 +427,21 @@
 
               <entry>Optional. A value between zero (0) and one (1.0 = 100%)
               indicating the desired maximum percentage of skew to allow (the
-              default is 0.1 = 10%).</entry>
+              default skew is 1.0 / &lt;number of nodes&gt;).</entry>
             </row>
 
             <row>
               <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
 
               <entry>Indicates the minimum size for a single part before the
-              SKEW limit is enforced. </entry>
+              SKEW limit is enforced.</entry>
             </row>
 
             <row>
               <entry><emphasis>size</emphasis></entry>
 
               <entry>An integer value indicating the minimum number of bytes
-              for a single part.</entry>
+              for a single part. Default is 1GB.</entry>
             </row>
           </tbody>
         </tgroup>
