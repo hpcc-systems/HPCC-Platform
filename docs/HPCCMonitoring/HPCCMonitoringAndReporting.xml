@@ -318,9 +318,9 @@
       measurement are relevant to your needs.</para>
 
       <!--INCLUDE-VM_STEPS-as-Sect2-->
+      <!--H11780-->
 
       <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
-                  xpointer="get_hpcc"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
@@ -474,9 +474,12 @@
 
       <!--INCLUDE-VM_STEPS-as-Sect2-->
 
-      <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
-                  xpointer="get_hpcc"
-                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+                  
+        <sect2 id="hpcc-2id">
+    <xi:include  href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
+                 xpointer="xpointer(/sect2/node())"  
+                 xmlns:xi="http://www.w3.org/2001/XInclude"/>
+         </sect2>            
 
       <sect2>
         <title>Nagios Interface</title>
