@@ -105,7 +105,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
     StringBuffer after;
     StringBuffer tmppath;
     mkDateCompare(dfu,afterdt,after,'0');
-    mkDateCompare(dfu,beforedt,before,'9');     
+    mkDateCompare(dfu,beforedt,before,'9');
     bool haswusoutput = cmd->getAction()==SCA_WORKUNIT_SERVICES_GET;
     bool hasdtoutput = cmd->getAction()==SCA_LISTDT;
     MemoryBuffer WUSbuf;
@@ -133,8 +133,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 lo++;
                 hi++;
             }
-            if (*lo||*hi)
-                masktmp.append("*");
+            masktmp.append("*");
             mask = masktmp.str();
         }
         StringBuffer head, tmask;
