@@ -292,8 +292,8 @@ EXPORT SET OF STRING SplitWords(STRING src, STRING separator, BOOLEAN allow_blan
  * Returns the list of words extracted from the string.  Words are separated by one or more separator strings. No
  * spaces are stripped from either string before matching.
  *
- * @param words         The set of strings to be combined
- * @param separator     The string used to separate words
+ * @param words         The set of strings to be combined.
+ * @param separator     The string used to separate words.
  */
 
 EXPORT STRING CombineWords(SET OF STRING words, STRING separator) := lib_stringlib.StringLib.CombineWords(words, separator);
@@ -391,7 +391,7 @@ EXPORT STRING Repeat(STRING text, UNSIGNED4 n) := lib_stringlib.Stringlib.String
  * Converts the data value to a sequence of hex pairs.
  *
  * @param value         The data value that should be expanded as a sequence of hex pairs.
- * @return              A string containg a sequence of hex pairs.
+ * @return              A string containing a sequence of hex pairs.
  */
 
 EXPORT STRING ToHexPairs(DATA value) := lib_stringlib.StringLib.Data2String(value);
