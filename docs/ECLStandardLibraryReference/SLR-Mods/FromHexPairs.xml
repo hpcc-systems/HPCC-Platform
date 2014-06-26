@@ -30,16 +30,14 @@
           <entry>Return:<emphasis> </emphasis></entry>
 
           <entry>FromHexPairs returns a data value with each byte created from
-          a pair of hex digits. </entry>
+          a pair of hex digits.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">FromHexPairs </emphasis>function encodes
-  binary data to base64 string. Every 3 data bytes are encoded to 4 base64
-  characters. If the length of the input is not divisible by 3, up to 2 '='
-  characters are appended to the output. </para>
+  <para>The <emphasis role="bold">FromHexPairs </emphasis>function returns a
+  data value with each byte created from a pair of hex digits. </para>
 
   <para>Example:</para>
 

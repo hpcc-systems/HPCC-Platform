@@ -23,21 +23,22 @@
         <row>
           <entry><emphasis>source</emphasis></entry>
 
-          <entry>A string containing the hex pairs to convert.</entry>
+          <entry>The data value that should be expanded as a sequence of hex
+          pairs.</entry>
         </row>
 
         <row>
           <entry>Return:<emphasis> </emphasis></entry>
 
-          <entry>ToHexPairs returns a data value with each byte created from a
-          pair of hex digits.</entry>
+          <entry>ToHexPairs returns a string containing a sequence of hex
+          pairs.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">ToHexPairs </emphasis>function converts a
-  string containing sequences of hex pairs to a data value.</para>
+  <para>The <emphasis role="bold">ToHexPairs </emphasis>function Converts the
+  data value to a sequence of hex pairs.</para>
 
   <para>Example:</para>
 
