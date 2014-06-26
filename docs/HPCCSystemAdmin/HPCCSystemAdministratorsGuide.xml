@@ -743,8 +743,7 @@
         </mediaobject>
       </figure></para>
 
-   
-      <!--/*Including special SysAdmin Config Module -paras- */-->  
+    <!--/*Including special SysAdmin Config Module -paras- */-->
 
     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="cfgmgr_introP0"
@@ -762,12 +761,13 @@
                 xpointer="cfgmgr_introP2"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="cfgmgr_introP3"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-      <!--/*Including special SysAdmin Config Module -Sect1- */--> 
-     <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
+    <!--/*Including special SysAdmin Config Module -Sect1- */-->
+
+    <xi:include href="HPCCSystemAdmin/SA-Mods/SysAdminConfigMod.xml"
                 xpointer="configuring-a-multi-node-system"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -1129,7 +1129,7 @@ lock=/var/lock/HPCCSystems</programlisting>
 
         <para>Sasha should be run in an active/passive configuration.
         Active/passive meaning you would have two Sashas configured, one
-        primary (active), and the other standing by. </para>
+        primary (active), and the other standing by.</para>
       </sect2>
 
       <sect2>
@@ -1272,7 +1272,7 @@ lock=/var/lock/HPCCSystems</programlisting>
       </sect2>
 
       <sect2 id="HA_Middlewear">
-        <title>Middlewear</title>
+        <title>Middleware</title>
 
         <para>Replication of some components (ECL Agent, ESP/Eclwatch, DFU
         Server, etc.) are pretty straight forward as they really don’t have

@@ -52,6 +52,8 @@ public:
     }
     ~CDaliPackageWatcher()
     {
+        if (change)
+            unsubscribe();
     }
     virtual void subscribe(bool exact)
     {

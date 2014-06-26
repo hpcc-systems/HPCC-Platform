@@ -486,7 +486,7 @@ protected:
                     }
                 }
             }
-            if (!result && resolveLocal)
+            if (!result && (resolveLocal || alwaysCreate))
             {
                 StringBuffer useName;
                 bool wasDFS = false;
@@ -2969,10 +2969,10 @@ void mergeQueries(IPropertyTree *dest, IPropertyTree *src)
         return;
     destQueries->setPropInt("@reporting", destQueries->getPropInt("@reporting") + srcQueries->getPropInt("@reporting"));
 
-    Owned<IPropertyTreeIterator> it = srcQueries->getElements("Query");
-    ForEach(*it)
+    Owned<IPropertyTreeIterator> queries = srcQueries->getElements("Query");
+    ForEach(*queries)
     {
-        IPropertyTree *srcQuery = &it->query();
+        IPropertyTree *srcQuery = &queries->query();
         const char *id = srcQuery->queryProp("@id");
         if (!id || !*id)
             continue;
@@ -2987,6 +2987,22 @@ void mergeQueries(IPropertyTree *dest, IPropertyTree *src)
         mergePTree(destQuery, srcQuery);
         if (suspended)
             destQuery->setPropInt("@suspended", suspended);
+    }
+    Owned<IPropertyTreeIterator> aliases = srcQueries->getElements("Alias");
+    ForEach(*aliases)
+    {
+        IPropertyTree *srcQuery = &aliases->query();
+        const char *id = srcQuery->queryProp("@id");
+        if (!id || !*id)
+            continue;
+        VStringBuffer xpath("Alias[@id='%s']", id);
+        IPropertyTree *destQuery = destQueries->queryPropTree(xpath);
+        if (!destQuery)
+        {
+            destQueries->addPropTree("Alias", LINK(srcQuery));
+            continue;
+        }
+        mergePTree(destQuery, srcQuery);
     }
 }
 

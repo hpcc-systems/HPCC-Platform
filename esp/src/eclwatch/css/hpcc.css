@@ -217,6 +217,10 @@ hr.dashedLine {
 
 .claro .dgrid-cell { text-overflow: ellipsis; white-space: nowrap; }
 
+.claro .hpccCentered { 
+    text-align: center; 
+}
+
 #stubTitlebar :focus {
     outline: none;
 }

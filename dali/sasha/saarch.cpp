@@ -105,15 +105,18 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
     StringBuffer after;
     StringBuffer tmppath;
     mkDateCompare(dfu,afterdt,after,'0');
-    mkDateCompare(dfu,beforedt,before,'9');     
+    mkDateCompare(dfu,beforedt,before,'9');
     bool haswusoutput = cmd->getAction()==SCA_WORKUNIT_SERVICES_GET;
     bool hasdtoutput = cmd->getAction()==SCA_LISTDT;
     MemoryBuffer WUSbuf;
     if (haswusoutput)
         cmd->setWUSresult(WUSbuf);  // swap in/out (in case ever do multiple)
-    if (cmd->getArchived()) {
 
-        Owned<IRemoteConnection> conn = querySDS().connect(dfu?"/DFU/WorkUnits":"/WorkUnits", myProcessSession(), 0, 5*60*1000);  
+    StringBuffer baseXPath = dfu ? "DFU/WorkUnits" : "WorkUnits";
+    Owned<IRemoteConnection> conn;
+    bool isWild = !mask || !*mask || isWildString(mask);
+    bool unfiltered = !mask || !*mask || (0==strcmp(mask,"*"));
+    if (cmd->getArchived()) {
         // used to check not online
         StringBuffer path;
         if (dfu)
@@ -122,7 +125,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             getLdsPath("Archive/WorkUnits",path);
         Owned<IFile> dir = createIFile(path.str());
         StringBuffer masktmp;
-        if (((mask==NULL)||(strcmp(mask,"*")==0))&&after.length()&&before.length()) {
+        if (unfiltered&&after.length()&&before.length()) {
             const char *lo = after.str();
             const char *hi = before.str();
             while (*lo&&(toupper(*lo)==toupper(*hi))) {
@@ -130,17 +133,20 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 lo++;
                 hi++;
             }
-            if (*lo||*hi)
-                masktmp.append("*");
+            masktmp.append("*");
             mask = masktmp.str();
         }
-        StringBuffer head;
+        StringBuffer head, tmask;
         const char *hmask = NULL;
         if (mask&&*mask) {
             splitWUID(mask,head);
             if (head.length())
                 hmask = head.str();
+            tmask.clear().append(mask).toUpperCase();
         }
+        else
+            tmask.append("*");
+        tmask.append(".xml");
         Owned<IDirectoryIterator> di = dir->directoryFiles(hmask,false,true);
         StringBuffer name;
         unsigned index = 0;
@@ -150,10 +156,6 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
             if (overflowed||(index>start+num))
                 break;
             if (di->isDir()) {
-                StringBuffer tmask("*");
-                if (mask)
-                    tmask.clear().append(mask).toUpperCase();
-                tmask.append(".xml");
                 Owned<IDirectoryIterator> di2 = di->query().directoryFiles(tmask.str(),false);
                 StringBuffer val;
                 ForEach(*di2) {
@@ -164,108 +166,117 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                         const char *wuid = name.str();
                         if ((name.length()>6)&&(stricmp(wuid+name.length()-6,"_HINTS")==0))
                             continue;
-                        if (!conn->queryRoot()->hasProp(wuid) &&
-                            (!mask||!*mask||WildMatch(wuid,mask,true)) &&
+                        if ((!mask||!*mask||WildMatch(wuid,mask,true)) &&
                             ((before.length()==0)||(stricmp(wuid,before.str())<=0)) &&
                             ((after.length()==0)||(stricmp(wuid,after.str())>=0))) {
-                            Owned<IPropertyTree> t;
-                            bool hasowner = owner&&*owner;
-                            bool hascluster = cluster&&*cluster;
-                            bool hasstate = state&&*state;
-                            bool hasjobname = jobname&&*jobname;
-                            bool hasoutput = outputformat&&*outputformat;
-                            bool inrange = (index>=start)&&(index<start+num);
-                            bool hascommand = cmdname&&*cmdname;
-                            bool haspriority = priority&&*priority;
-                            bool hasfileread = fileread&&*fileread;
-                            bool hasfilewritten = filewritten&&*filewritten;
-                            bool hasroxiecluster = roxiecluster&&*roxiecluster;
-                            bool haseclcontains = eclcontains&&*eclcontains;
-                            if ((cmd->getAction()==SCA_GET)||haswusoutput||hasowner||hasstate||hascluster||hasjobname||hascommand||(hasoutput&&inrange)||haspriority||hasfileread||hasfilewritten||hasroxiecluster||haseclcontains) {
-                                try {
-                                    t.setown(createPTree(di2->query()));
-                                    if (!t)
-                                        continue;
-                                    if (hasowner&&(!t->getProp("@submitID",val.clear())||!WildMatch(val.str(),owner,true))) 
-                                        continue;
-                                    if (hasstate&&(!t->getProp(dfu?"Progress/@state":"@state",val.clear())||!WildMatch(val.str(),state,true))) 
-                                        continue;
-                                    if (hascluster&&(!t->getProp("@clusterName",val.clear())||!WildMatch(val.str(),cluster,true))) 
-                                        continue;
-                                    if (hasjobname&&(!t->getProp("@jobName",val.clear())||!WildMatch(val.str(),jobname,true))) 
-                                        continue;
-                                    if (hascommand&&(!t->getProp("@command",val.clear())||!WildMatch(val.str(),cmdname,true))) 
-                                        continue;
-                                    if (haspriority&&(!t->getProp("@priorityClass",val.clear())||!WildMatch(val.str(),priority,true))) 
-                                        continue;
-                                    if (hasfileread&&!t->hasProp(tmppath.clear().appendf("FilesRead/File[@name=~?\"%s\"]",fileread).str()))
-                                        continue;
-                                    if (hasfilewritten&&!t->hasProp(tmppath.clear().appendf("Files/File[@name=~?\"%s\"]",filewritten).str()))
-                                        continue;
-                                    if (hasroxiecluster&&!t->hasProp(tmppath.clear().appendf("RoxieQueryInfo[@roxieClusterName=~?\"%s\"]",roxiecluster).str()))
-                                        continue;
-                                    if (haseclcontains&&!t->hasProp(tmppath.clear().appendf("Query[Text=~?\"*%s*\"]",eclcontains).str()))
-                                        continue;
-                                }
-                                catch (IException *e) {
-                                    StringBuffer msg;
-                                    msg.appendf("WUiterate: Workunit %s failed to load", wuid);
-                                    EXCLOG(e,msg.str());
-                                    e->Release();
-                                    continue;
-                                }
-                            }
-                            index++;
-                            if (!inrange)
-                                continue;
-                            if (hasoutput) { 
-                                char *saveptr;
-                                char *parse = strdup(outputformat);
-                                char *tok = strtok_r(parse, "|,",&saveptr);
-                                while (tok) {
-                                    val.clear();
-                                    bool found = true;
-                                    if (stricmp(tok,"owner")==0)
-                                        t->getProp("@submitID",val);
-                                    else if (stricmp(tok,"cluster")==0)
-                                        t->getProp("@clusterName",val);
-                                    else if (stricmp(tok,"jobname")==0)
-                                        t->getProp("@jobName",val);
-                                    else if (stricmp(tok,"state")==0)
-                                        t->getProp(dfu?"Progress/@state":"@state",val);
-                                    else if (stricmp(tok,"command")==0)
-                                        t->getProp("@command",val);
-                                    else if (stricmp(tok,"wuid")==0)
-                                        t->getName(val);
-                                    else 
-                                        found = false;
-                                    if (found) {
-                                        // remove commas TBD
-                                        name.append(',').append(val);
-                                    }
-                                    tok = strtok_r(NULL, "|,",&saveptr);
-                                }
-                                free(parse);
-                            }
-                            if (haswusoutput) { 
-                                if (!serializeWUSrow(*t,WUSbuf,false)) {
-                                    overflowed = true;
-                                    break; 
-                                }
+                            if (isWild) {
+                                if (!conn)
+                                    conn.setown(querySDS().connect(baseXPath.str(), myProcessSession(), 0, 5*60*1000)); // connection to all
                             }
                             else {
-                                cmd->addId(name.str());
-                                if (hasdtoutput) {
-                                    CDateTime dt;
-                                    di2->getModifiedTime(dt);
-                                    cmd->addDT(dt);
-                                }
+                                VStringBuffer xpath("%s/%s", baseXPath.str(), mask);
+                                conn.setown(querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000));
                             }
-                            if (cmd->getAction()==SCA_GET) {
-                                StringBuffer xml;
-                                toXML(t,xml);
-                                if (!cmd->addResult(xml.str()))
-                                    break;
+                            if ((isWild && !conn->queryRoot()->hasProp(wuid)) || (!isWild && !conn)) { // check not online
+                                Owned<IPropertyTree> t;
+                                bool hasowner = owner&&*owner;
+                                bool hascluster = cluster&&*cluster;
+                                bool hasstate = state&&*state;
+                                bool hasjobname = jobname&&*jobname;
+                                bool hasoutput = outputformat&&*outputformat;
+                                bool inrange = (index>=start)&&(index<start+num);
+                                bool hascommand = cmdname&&*cmdname;
+                                bool haspriority = priority&&*priority;
+                                bool hasfileread = fileread&&*fileread;
+                                bool hasfilewritten = filewritten&&*filewritten;
+                                bool hasroxiecluster = roxiecluster&&*roxiecluster;
+                                bool haseclcontains = eclcontains&&*eclcontains;
+                                if ((cmd->getAction()==SCA_GET)||haswusoutput||hasowner||hasstate||hascluster||hasjobname||hascommand||(hasoutput&&inrange)||haspriority||hasfileread||hasfilewritten||hasroxiecluster||haseclcontains) {
+                                    try {
+                                        t.setown(createPTree(di2->query()));
+                                        if (!t)
+                                            continue;
+                                        if (hasowner&&(!t->getProp("@submitID",val.clear())||!WildMatch(val.str(),owner,true)))
+                                            continue;
+                                        if (hasstate&&(!t->getProp(dfu?"Progress/@state":"@state",val.clear())||!WildMatch(val.str(),state,true)))
+                                            continue;
+                                        if (hascluster&&(!t->getProp("@clusterName",val.clear())||!WildMatch(val.str(),cluster,true)))
+                                            continue;
+                                        if (hasjobname&&(!t->getProp("@jobName",val.clear())||!WildMatch(val.str(),jobname,true)))
+                                            continue;
+                                        if (hascommand&&(!t->getProp("@command",val.clear())||!WildMatch(val.str(),cmdname,true)))
+                                            continue;
+                                        if (haspriority&&(!t->getProp("@priorityClass",val.clear())||!WildMatch(val.str(),priority,true)))
+                                            continue;
+                                        if (hasfileread&&!t->hasProp(tmppath.clear().appendf("FilesRead/File[@name=~?\"%s\"]",fileread).str()))
+                                            continue;
+                                        if (hasfilewritten&&!t->hasProp(tmppath.clear().appendf("Files/File[@name=~?\"%s\"]",filewritten).str()))
+                                            continue;
+                                        if (hasroxiecluster&&!t->hasProp(tmppath.clear().appendf("RoxieQueryInfo[@roxieClusterName=~?\"%s\"]",roxiecluster).str()))
+                                            continue;
+                                        if (haseclcontains&&!t->hasProp(tmppath.clear().appendf("Query[Text=~?\"*%s*\"]",eclcontains).str()))
+                                            continue;
+                                    }
+                                    catch (IException *e) {
+                                        StringBuffer msg;
+                                        msg.appendf("WUiterate: Workunit %s failed to load", wuid);
+                                        EXCLOG(e,msg.str());
+                                        e->Release();
+                                        continue;
+                                    }
+                                }
+                                index++;
+                                if (!inrange)
+                                    continue;
+                                if (hasoutput) {
+                                    char *saveptr;
+                                    char *parse = strdup(outputformat);
+                                    char *tok = strtok_r(parse, "|,",&saveptr);
+                                    while (tok) {
+                                        val.clear();
+                                        bool found = true;
+                                        if (stricmp(tok,"owner")==0)
+                                            t->getProp("@submitID",val);
+                                        else if (stricmp(tok,"cluster")==0)
+                                            t->getProp("@clusterName",val);
+                                        else if (stricmp(tok,"jobname")==0)
+                                            t->getProp("@jobName",val);
+                                        else if (stricmp(tok,"state")==0)
+                                            t->getProp(dfu?"Progress/@state":"@state",val);
+                                        else if (stricmp(tok,"command")==0)
+                                            t->getProp("@command",val);
+                                        else if (stricmp(tok,"wuid")==0)
+                                            t->getName(val);
+                                        else
+                                            found = false;
+                                        if (found) {
+                                            // remove commas TBD
+                                            name.append(',').append(val);
+                                        }
+                                        tok = strtok_r(NULL, "|,",&saveptr);
+                                    }
+                                    free(parse);
+                                }
+                                if (haswusoutput) {
+                                    if (!serializeWUSrow(*t,WUSbuf,false)) {
+                                        overflowed = true;
+                                        break;
+                                    }
+                                }
+                                else {
+                                    cmd->addId(name.str());
+                                    if (hasdtoutput) {
+                                        CDateTime dt;
+                                        di2->getModifiedTime(dt);
+                                        cmd->addDT(dt);
+                                    }
+                                }
+                                if (cmd->getAction()==SCA_GET) {
+                                    StringBuffer xml;
+                                    toXML(t,xml);
+                                    if (!cmd->addResult(xml.str()))
+                                        break;
+                                }
                             }
                         }
                     }
@@ -278,82 +289,91 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
     if (cmd->getOnline()) {
         if (haswusoutput)
             throw MakeStringException(-1,"SCA_WORKUNIT_SERVICES_GET not implemented for online workunits!");
-        Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), 0, 5*60*1000);  
-        Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(dfu?"DFU/WorkUnits/*":"WorkUnits/*");
-        unsigned index = 0;
-        StringBuffer val;
-        ForEach(*iter) {
-            IPropertyTree &pt=iter->query();
-            const char *wuid = pt.queryName();
-            if (index>start+num)
-                break;
-    //      PROGLOG("match before=%s after=%s wuid=%s",before.str(),after.str(),wuid);
-            if ((!mask||!*mask||WildMatch(wuid,mask,true)) &&
-                ((before.length()==0)||(stricmp(wuid,before)<0)) &&
-                ((after.length()==0)||(stricmp(wuid,after)>=0))) {
-    //          PROGLOG("matched before=%s after=%s wuid=%s",before.str(),after.str(),wuid);
-                bool hasowner = owner&&*owner;
-                bool hascluster = cluster&&*cluster;
-                bool hasstate = state&&*state;
-                bool hasjobname = jobname&&*jobname;
-                bool hasoutput = outputformat&&*outputformat;
-                bool inrange = (index>=start)&&(index<start+num);
-                if (hasowner||hasstate||hascluster||hasjobname||(hasoutput&&inrange)) {
-                    try {
-                        if (hasowner&&(!pt.getProp("@submitID",val.clear())||!WildMatch(val.str(),owner,true))) 
+        StringBuffer xpath(baseXPath);
+        if (!conn)
+        {
+            if (!isWild)
+                xpath.append("/").append(mask);
+            conn.setown(querySDS().connect(xpath.str(), myProcessSession(), 0, 5*60*1000));
+        }
+        if (conn)
+        {
+            Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(isWild ? "*" : NULL);
+            unsigned index = 0;
+            StringBuffer val;
+            ForEach(*iter) {
+                IPropertyTree &pt=iter->query();
+                const char *wuid = pt.queryName();
+                if (index>start+num)
+                    break;
+        //      PROGLOG("match before=%s after=%s wuid=%s",before.str(),after.str(),wuid);
+                if ((!mask||!*mask||!isWild||WildMatch(wuid,mask,true)) &&
+                    ((before.length()==0)||(stricmp(wuid,before)<0)) &&
+                    ((after.length()==0)||(stricmp(wuid,after)>=0))) {
+        //          PROGLOG("matched before=%s after=%s wuid=%s",before.str(),after.str(),wuid);
+                    bool hasowner = owner&&*owner;
+                    bool hascluster = cluster&&*cluster;
+                    bool hasstate = state&&*state;
+                    bool hasjobname = jobname&&*jobname;
+                    bool hasoutput = outputformat&&*outputformat;
+                    bool inrange = (index>=start)&&(index<start+num);
+                    if (hasowner||hasstate||hascluster||hasjobname||(hasoutput&&inrange)) {
+                        try {
+                            if (hasowner&&(!pt.getProp("@submitID",val.clear())||!WildMatch(val.str(),owner,true)))
+                                continue;
+                            if (hasstate&&(!pt.getProp("@state",val.clear())||!WildMatch(val.str(),state,true)))
+                                continue;
+                            if (hascluster&&(!pt.getProp("@clusterName",val.clear())||!WildMatch(val.str(),cluster,true)))
+                                continue;
+                            if (hasjobname&&(!pt.getProp("@jobName",val.clear())||!WildMatch(val.str(),jobname,true)))
+                                continue;
+                        }
+                        catch (IException *e) {
+                            StringBuffer msg;
+                            msg.appendf("WUiterate: Workunit %s failed", wuid);
+                            EXCLOG(e,msg.str());
+                            e->Release();
                             continue;
-                        if (hasstate&&(!pt.getProp("@state",val.clear())||!WildMatch(val.str(),state,true))) 
-                            continue;
-                        if (hascluster&&(!pt.getProp("@clusterName",val.clear())||!WildMatch(val.str(),cluster,true))) 
-                            continue;
-                        if (hasjobname&&(!pt.getProp("@jobName",val.clear())||!WildMatch(val.str(),jobname,true))) 
-                            continue;
+                        }
                     }
-                    catch (IException *e) {
-                        StringBuffer msg;
-                        msg.appendf("WUiterate: Workunit %s failed", wuid);
-                        EXCLOG(e,msg.str());
-                        e->Release();
+                    index++;
+                    if (!inrange)
                         continue;
+                    StringBuffer name(wuid);
+                    if (hasoutput) {
+                        char *saveptr;
+                        char *parse = strdup(outputformat);
+                        char *tok = strtok_r(parse, "|,",&saveptr);
+                        while (tok) {
+                            val.clear();
+                            bool found = true;
+                            if (stricmp(tok,"owner")==0)
+                                pt.getProp("@submitID",val);
+                            else if (stricmp(tok,"cluster")==0)
+                                pt.getProp("@clusterName",val);
+                            else if (stricmp(tok,"jobname")==0)
+                                pt.getProp("@jobName",val);
+                            else if (stricmp(tok,"state")==0)
+                                pt.getProp("@state",val);
+                            else
+                                found = false;
+                            if (found)
+                                name.append(',').append(val);
+                            tok = strtok_r(NULL, "|,",&saveptr);
+                        }
+                        free(parse);
+                    }
+                    cmd->addId(name.str());
+                    if (cmd->getAction()==SCA_GET) {
+                        StringBuffer xml;
+                        toXML(&pt,xml);
+                        if (!cmd->addResult(xml.str()))
+                            break;
                     }
                 }
-                index++;
-                if (!inrange)
-                    continue;
-                StringBuffer name(wuid);
-                if (hasoutput) {
-                    char *saveptr;
-                    char *parse = strdup(outputformat);
-                    char *tok = strtok_r(parse, "|,",&saveptr);
-                    while (tok) {
-                        val.clear();
-                        bool found = true;
-                        if (stricmp(tok,"owner")==0)
-                            pt.getProp("@submitID",val);
-                        else if (stricmp(tok,"cluster")==0)
-                            pt.getProp("@clusterName",val);
-                        else if (stricmp(tok,"jobname")==0)
-                            pt.getProp("@jobName",val);
-                        else if (stricmp(tok,"state")==0)
-                            pt.getProp("@state",val);
-                        else
-                            found = false;
-                        if (found)
-                            name.append(',').append(val);
-                        tok = strtok_r(NULL, "|,",&saveptr);
-                    }
-                    free(parse);
-                }
-                cmd->addId(name.str());
-                if (cmd->getAction()==SCA_GET) {
-                    StringBuffer xml;
-                    toXML(&pt,xml);
-                    if (!cmd->addResult(xml.str()))
-                        break;
-                }
+                if (index>start+num)
+                    break;
             }
-            if (index>start+num)
-                break;
         }
     }
     if (haswusoutput)

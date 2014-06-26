@@ -22,51 +22,70 @@
 # Flow:
 #
 # 1. SSH Keys Generated.
-# 2. Script copied to node.
-# 3. Install package copied to node.
-# 4. SSH Keys copied to node.
-# 5. Run CheckInstall to determine if  package is installed.
-# 6. Install/Upgrade if needed.
-# 7. Run CheckKeys to determine if sshkeys are installed.
-# 8. Install keys if different then installed or no keys installed.
-# 9. Return.
+# 2. Run install-hpcc.sh through cluster-script.py to perform HPCC install and 
+#        configuration on remote hosts
+# 3. Return.
 #
 
 ###<REPLACE>###
 
-source  ${INSTALL_DIR}/etc/init.d/lock.sh
-source  ${INSTALL_DIR}/etc/init.d/pid.sh
 source  ${INSTALL_DIR}/etc/init.d/hpcc_common
 source  ${INSTALL_DIR}/etc/init.d/init-functions
 source  ${INSTALL_DIR}/etc/init.d/export-path
 
-REMOTE_INSTALL="/tmp/remote_install"
-NEW="${REMOTE_INSTALL}/new_keys"
-CMDPREFIX="sudo"
+export REMOTE_INSTALL="/tmp/remote_install"
+export NEW="${REMOTE_INSTALL}/new_keys"
+export CMDPREFIX="sudo"
 
 print_usage(){
-    echo "usage: install-cluster.sh [-h|--help] [-k|--newkey] <Platform Package>"
+    echo ""
+    echo "usage: install-cluster.sh [-h|--help] [-k|--newkey] [-n|--concurrent <number>] <Platform Package>"
+    echo "   -k:  generate a new ssh key pair."
+    echo "   -n:  how many concurrent execution allowd. The default is 5"
+    echo "   <Platform Package>: HPCCSystems package file."
+    echo ""
     exit 1
 }
 
-getUser(){
-    read -p "Input admin username:" USER;
-    echo;
-    if [ "${USER}" == "root" ]; then
-        CMDPREFIX=""
-    fi
-}
+getUserAndPasswd(){
 
-getPW(){
-    stty -echo;
-    read -p "Input admin password:" PASS;
-    stty echo;
-    echo;
-}
+    trial=0
+    max_trial=3
+    while [ 1 ]
+    do
+       echo ""
+       read -p "Please enter admin username: " ADMIN_USER;
+       echo ""
+       echo "Please enter ssh/scp user password. If this is no password required (assume"
+       echo "the user has ssh private key: <user home>/.ssh/id_rsa) just press 'Enter':"
+       read -s PASS
+       echo ""
 
+       echo "You entered user $ADMIN_USER and a password ($(echo $PASS | sed 's/./\./g'))."
+       read -p  "Are these correct? [Y|n] " answer
+       if [ "$answer" = "Y" ] || [ "$answer" = "y" ]
+       then
+          break
+       fi
 
-getIPS(){
-    IPS=`${INSTALL_DIR}/sbin/configgen -env ${CONFIG_DIR}/${ENV_XML_FILE} -machines | awk -F, '{print $1}'  | sort | uniq`
+       trial=$(expr $trial \+ 1)
+       if [ $trial -eq $max_trial ]
+       then
+          echo ""
+          echo "Exceeded maximum attempts. Giving up."
+          echo ""
+          exit 1
+       fi
+    done
+
+  if [ "$file_transfer_user" == "root" ]
+  then
+     CMDPREFIX=""
+  fi
+
+  export ADMIN_USER
+  export PASS
+
 }
 
 
@@ -92,7 +111,10 @@ createPayload(){
     cp -r ${CONFIG_DIR}/${ENV_XML_FILE} ${REMOTE_INSTALL}
     cp -r ${CONFIG_DIR}/${ENV_CONF_FILE} ${REMOTE_INSTALL}
     cp -r ${INSTALL_DIR}/sbin/remote-install-engine.sh ${REMOTE_INSTALL}
+
+    echo "tar -zcvf /tmp/remote_install.tgz ${REMOTE_INSTALL}/*"
     tar -zcvf /tmp/remote_install.tgz ${REMOTE_INSTALL}/*
+    ls -l /tmp/remote_install.tgz 
     rm -rf ${REMOTE_INSTALL}
 }
 
@@ -100,89 +122,30 @@ removePayload(){
     rm /tmp/remote_install.tgz
 }
 
-copyPayload(){
-    expect -c "set timeout -1;
-        spawn scp /tmp/remote_install.tgz $USER@$1:~;
-        expect {
-            *?assword:* {
-                    send \"$PASS\r\";
-            } yes/no)? {
-                    send \"yes\r\";
-                    set timeout -1;
-            } timeout {
-                    exit;
-            } eof {
-                    exit;
-            }
-        }
-        interact;";
-}
+if [ "${USER}" != "root" ]; then
+   echo ""
+   echo "The script must run as root or sudo."
+   echo ""
+   exit 1
+fi
 
-expandPayload(){
-    expect -c "set timeout -1;
-        spawn ssh $USER@$1 \"cd /; tar -zxf ~/remote_install.tgz\";
-        expect {
-            *?assword:* {
-                    send \"$PASS\r\";
-            } yes/no)? {
-                    send \"yes\r\";
-                    set timeout -1;
-            } timeout {
-                    exit;
-            } eof {
-                    exit;
-            }
-        }
-        interact;";
-}
-
-runPayload(){
-    basepkg=`basename ${PKG}`
-    expect -c "set timeout 3;
-        spawn ssh $USER@$1;
-        expect {
-            *?assword:* {
-                    send \"$PASS\r\";
-            } yes/no)? {
-                    send \"yes\r\";
-                    set timeout -1;
-            } timeout {
-                    exit;
-            } eof {
-                    exit;
-            } "${USER}@" { 
-                  # Allow non-password connection go through without changing following code.
-                  # This is will be replaced when HPCC-11156 is fixed.
-                  send \"hostname\r\" 
-            }
-        }
-        expect "${USER}@" {
-            send \"${CMDPREFIX} ${REMOTE_INSTALL}/remote-install-engine.sh ${REMOTE_INSTALL}/${basepkg}\r\";
-            expect *?assword* {
-                send \"${PASS}\r\";
-            }
-        }
-        expect "${USER}@" {
-            send \"exit\r\";
-        }
-        interact;"
-}
-
-
-
-getUser
-getPW
-getIPS
 
 NEW_KEY=0
+OPTIONS="-l DEBUG -e ${CONFIG_DIR}/${ENV_CONF_FILE} -s ${SECTION:-DEFAULT}"
 
-TEMP=`/usr/bin/getopt -o kh --long help,newkey -n 'install-cluster' -- "$@"`
+TEMP=`/usr/bin/getopt -o n:s:kh --long help,newkey,concurrent: -n 'install-cluster' -- "$@"`
 if [ $? != 0 ] ; then echo "Failure to parse commandline." >&2 ; exit 1 ; fi
 eval set -- "$TEMP"
 while true ; do
     case "$1" in
         -k|--newkey) NEW_KEY=1
             shift ;;
+        -n|--concurrent) 
+            if [ -n "$2" ] && [[ $2 =~ ^[0-9]+$ ]]
+            then
+               [ $2 -gt 0 ] && OPTOINS="${OPTIONS:+"$OPTIONS "}-n $2"
+            fi
+            shift 2 ;;
         -h|--help) print_usage
                    shift ;;
         --) shift ; break ;;
@@ -191,6 +154,12 @@ while true ; do
 done
 for arg do arg=$arg; done
 PKG=${arg}
+[ -z "$PKG" ] && print_usage
+
+export PKG
+
+getUserAndPasswd
+
 
 pkgtype=`echo "${PKG}" | grep -i rpm`
 if [ -z $pkgtype ]; then
@@ -202,19 +171,22 @@ fi
 if [ ${NEW_KEY} -eq 1 ]; then
     generateKey
 fi
+export NEW_KEY
 
 createPayload;
 
-for IP in $IPS; do
-    if ping -c 1 -w 5 -n $IP > /dev/null 2>&1; then
-        echo "$IP: Host is alive."
-        copyPayload $IP;
-        expandPayload $IP;
-        runPayload $IP;
-        echo "$IP: Done.";
-    else
-        echo "$IP: Cannot Ping host? (Host Alive?)"
-    fi
-done
+expected_python_version=2.6
+is_python_installed ${expected_python_version}
+
+if [ $? -eq 0 ]
+then
+   chksum=$(md5sum ${INSTALL_DIR}/sbin/install-hpcc.exp | cut -d' ' -f1)
+   eval ${INSTALL_DIR}/sbin/cluster_script.py -f ${INSTALL_DIR}/sbin/install-hpcc.exp -c $chksum $OPTIONS
+else
+   echo ""
+   echo "Cannot detect python version ${expected_python_version}+. Will run on the cluster hosts sequentially."
+   echo ""
+   run_cluster ${INSTALL_DIR}/sbin/install-hpcc.exp 0
+fi
 
 removePayload;

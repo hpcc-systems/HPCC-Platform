@@ -846,6 +846,7 @@
                 linuxYield="false"
                 localFilesExpire="-1"
                 localSlave="true"
+                lockSuperFiles="false"
                 logFullQueries="false"
                 logQueueDrop="32"
                 logQueueLen="512"

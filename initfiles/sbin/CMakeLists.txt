@@ -41,6 +41,7 @@ FOREACH( oFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/alter_confs.sh
     ${CMAKE_CURRENT_SOURCE_DIR}/cluster_script.py
     ${CMAKE_CURRENT_SOURCE_DIR}/deploy-java-files.exp
+    ${CMAKE_CURRENT_SOURCE_DIR}/install-hpcc.exp
 )
     install ( PROGRAMS ${oFILES} DESTINATION sbin COMPONENT Runtime )
 ENDFOREACH ( oFILES )

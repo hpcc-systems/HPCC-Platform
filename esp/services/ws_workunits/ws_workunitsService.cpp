@@ -2508,23 +2508,33 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
                 winfo.getWorkunitAssociatedXml(name, req.getIPAddress(), req.getPlainText(), req.getDescription(), opt > 0, mb);
                 openSaveFile(context, opt, ptr, HTTP_TYPE_APPLICATION_XML, mb, resp);
             }
-            else if (strieq(File_XML,req.getType()))
+            else if (strieq(File_XML,req.getType()) || strieq(File_WUECL,req.getType()))
             {
-                winfo.getWorkunitXml(req.getPlainText(), mb);
-                if (opt < 2)
+                StringBuffer mimeType, fileName;
+                if (strieq(File_WUECL,req.getType()))
                 {
-                    resp.setThefile(mb);
-                    const char* plainText = req.getPlainText();
-                    if (plainText && (!stricmp(plainText, "yes")))
-                        resp.setThefile_mimetype(HTTP_TYPE_TEXT_PLAIN);
-                    else
-                        resp.setThefile_mimetype(HTTP_TYPE_APPLICATION_XML);
+                    fileName.setf("%s.ecl", wuid.get());
+                    winfo.getWorkunitQueryShortText(mb);
+                    mimeType.set(HTTP_TYPE_TEXT_PLAIN);
                 }
                 else
                 {
-                    VStringBuffer xmlName("%s.xml", wuid.get());
-                    openSaveFile(context, 2, xmlName.str(), HTTP_TYPE_APPLICATION_XML, mb, resp);
+                    fileName.setf("%s.xml", wuid.get());
+                    winfo.getWorkunitXml(req.getPlainText(), mb);
+                    if (opt < 2)
+                    {
+                        const char* plainText = req.getPlainText();
+                        if (plainText && (!stricmp(plainText, "yes")))
+                            mimeType.set(HTTP_TYPE_TEXT_PLAIN);
+                        else
+                            mimeType.set(HTTP_TYPE_APPLICATION_XML);
+                    }
+                    else
+                    {
+                        mimeType.set(HTTP_TYPE_APPLICATION_XML);
+                    }
                 }
+                openSaveFile(context, opt, fileName.str(), mimeType.str(), mb, resp);
             }
         }
     }

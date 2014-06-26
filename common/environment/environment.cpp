@@ -888,6 +888,7 @@ IEnvironment& CLocalEnvironment::lock() const
 
 IStringVal & CLocalEnvironment::getName(IStringVal & str) const
 {
+    synchronized procedure(safeCache);
     str.set(p->queryProp("@name"));
     return str;
 }
@@ -895,13 +896,17 @@ IStringVal & CLocalEnvironment::getName(IStringVal & str) const
 IStringVal & CLocalEnvironment::getXML(IStringVal & str) const
 {
     StringBuffer xml;
-    toXML(p->queryBranch("."), xml);
+    {
+        synchronized procedure(safeCache);
+        toXML(p->queryBranch("."), xml);
+    }
     str.set(xml.str());
     return str;
 }
 
 IPropertyTree & CLocalEnvironment::getPTree() const
 {
+    synchronized procedure(safeCache);
     return *LINK(p);
 }
 
@@ -1059,6 +1064,7 @@ IConstInstanceInfo * CLocalEnvironment::getInstance(const char *type, const char
         xpath.append("[@version='").append(version).append("']");
     xpath.append("/Instance");
 
+    synchronized procedure(safeCache);
     Owned<IPropertyTreeIterator> _it = p->getElements(xpath);
     for (_it->first(); _it->isValid(); _it->next())
     {
@@ -1090,6 +1096,7 @@ CConstInstanceInfo * CLocalEnvironment::getInstanceByIP(const char *type, const 
         xpath.append("[@version='").append(version).append("']");
     xpath.append("/Instance");
 
+    synchronized procedure(safeCache);
     assertex(p);
     Owned<IPropertyTreeIterator> _it = p->getElements(xpath);
     assertex(_it);
@@ -1120,6 +1127,7 @@ void CLocalEnvironment::unlockRemote()
 #else
    if (conn)
    {
+       synchronized procedure(safeCache);
        p.clear();
        conn.setown(querySDS().connect(xPath.str(), myProcessSession(), 0, SDS_LOCK_TIMEOUT));
        p.setown(conn->getRoot());
@@ -1129,12 +1137,14 @@ void CLocalEnvironment::unlockRemote()
 
 void CLocalEnvironment::preload()
 {
+    synchronized procedure(safeCache);
     p->queryBranch(".");
 }
 
 void CLocalEnvironment::setXML(const char *xml)
 {
     Owned<IPropertyTree> newRoot = createPTreeFromXMLString(xml);
+    synchronized procedure(safeCache);
     Owned<IPropertyTreeIterator> it = p->getElements("*");
     ForEach(*it)
     {

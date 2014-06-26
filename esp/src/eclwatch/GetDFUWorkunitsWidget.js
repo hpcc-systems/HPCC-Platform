@@ -341,7 +341,7 @@ define([
                             return "Unknown";
                         }
                     },
-                    Owner: { label: this.i18n.Owner, width: 90 },
+                    User: { label: this.i18n.Owner, width: 90 },
                     JobName: { label: this.i18n.JobName },
                     ClusterName: { label: this.i18n.Cluster, width: 126 },
                     StateMessage: { label: this.i18n.State, width: 72 },

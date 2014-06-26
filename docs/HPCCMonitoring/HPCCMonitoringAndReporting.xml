@@ -55,9 +55,16 @@
   <chapter id="GangliaIntroduction">
     <title>Introduction</title>
 
-    <para>The HPCC Systems platform supports a graphical monitoring and
-    reporting component. With the the graphical monitoring component you can:
-    <itemizedlist>
+    <para>The HPCC systems platform supports graphical monitoring and
+    reporting components.</para>
+
+    <para><emphasis role="bold">Ganglia:</emphasis></para>
+
+    <para>The HPCC monitoring component leverages Ganglia, an open source,
+    scalable, distributed monitoring system to display system information in a
+    graphical manner.</para>
+
+    <para>With the the graphical monitoring component you can: <itemizedlist>
         <listitem>
           <para>See system information at a glance</para>
         </listitem>
@@ -88,11 +95,55 @@
         </listitem>
       </itemizedlist></para>
 
-    <para>The HPCC monitoring component leverages Ganglia, an open-source,
-    scalable, distributed monitoring system to display system information in a
-    graphical manner.</para>
+    <para><emphasis role="bold">Nagios</emphasis></para>
 
-    <!--***NOTE: At some point this next bit will need to get moved into the next chapter/section-->
+    <para>The HPCC reporting and alerting component leverages Nagios, a
+    powerful monitoring and notification system, which can help you identify
+    and resolve infrastructure problems before they affect critical
+    processes.</para>
+
+    <para>With the HPCC reporting and alerting component you can set up alerts
+    to inform of any changes to:</para>
+
+    <para><itemizedlist>
+        <listitem>
+          <para>SSH connectivity</para>
+        </listitem>
+
+        <listitem>
+          <para>Users on system</para>
+        </listitem>
+
+        <listitem>
+          <para>System Load</para>
+        </listitem>
+
+        <listitem>
+          <para>Disk Usage</para>
+        </listitem>
+
+        <listitem>
+          <para>Roxie</para>
+        </listitem>
+
+        <listitem>
+          <para>Dali</para>
+        </listitem>
+
+        <listitem>
+          <para>Dafilesrv</para>
+        </listitem>
+
+        <listitem>
+          <para>Sasha</para>
+        </listitem>
+
+        <listitem>
+          <para>Bound services on each ESP</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <!--***NOTE: At some point this next bit will need to get moved into the next chapter/section***-->
 
     <sect1 id="HPCC_Viewer">
       <title>The HPCC Ganglia Viewer</title>
@@ -119,7 +170,7 @@
   <chapter id="Ganglya_Overview">
     <title>Ganglia</title>
 
-    <para>The HPCC Monitoring component leverages Ganglia, an open-source,
+    <para>The HPCC Monitoring component leverages Ganglia, an open source,
     scalable, distributed monitoring system, to produce a graphical view of a
     Roxie cluster's servers. Ganglia leverages widely accepted technologies
     for data representation. It provides near real-time monitoring and
@@ -266,105 +317,11 @@
       <para>Evaluate the value of the content and decide what aspects of
       measurement are relevant to your needs.</para>
 
-      <sect2>
-        <title id="get_hpcc">Get the latest HPCC Virtual Image File</title>
+      <!--INCLUDE-VM_STEPS-as-Sect2-->
 
-        <para>The complete details for installing and running HPCC in a
-        virtual machine are available in the document: <emphasis
-        role="bold">Running HPCC in a Virtual Machine</emphasis>, available
-        from <ulink
-        url="hpccsystems.com/download/docs">hpccsystems.com/download/docs</ulink>
-        .</para>
-
-        <para>The following steps are a quick summary, assuming you have some
-        familiarity with running virtual machines.</para>
-
-        <para><orderedlist>
-            <listitem>
-              <para>Download the latest HPCC Virtual Machine image file
-              from:</para>
-
-              <para><ulink
-              url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
-            </listitem>
-
-            <listitem>
-              <para>Save the file to a folder on your machine.</para>
-            </listitem>
-
-            <listitem>
-              <para>Open your virtualization software, import the virtual
-              machine and start it.</para>
-            </listitem>
-
-            <listitem>
-              <?dbfo keep-together="always"?>
-
-              <para>Once the VM initialization completes, you will see a
-              window similar to the following:</para>
-
-              <figure id="welcometovm">
-                <title xreflabel="welc">VM Welcome Screen</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/GA-vm01.jpg"
-                               vendor="VM_welcome" />
-                  </imageobject>
-                </mediaobject>
-              </figure>
-
-              <para><informaltable colsep="1" frame="all" rowsep="1">
-                  <?dbfo keep-together="always"?>
-
-                  <tgroup cols="2">
-                    <colspec colwidth="49.50pt" />
-
-                    <colspec />
-
-                    <tbody>
-                      <row>
-                        <entry><inlinegraphic
-                        fileref="images/caution.png" /></entry>
-
-                        <entry>Your virtual IP address could be different from
-                        the ones provided in the example images. Please use
-                        the IP address provided by <emphasis
-                        role="bold">your</emphasis> installation.</entry>
-                      </row>
-                    </tbody>
-                  </tgroup>
-                </informaltable></para>
-
-              <para>Note the IP Address of your VM Instance.</para>
-            </listitem>
-
-            <listitem>
-              <para>In your browser, enter the URL displayed (circled in red
-              above) in the previous image (without the :8010) instead enter
-              the <emphasis>IP Address</emphasis>/ganglia.</para>
-
-              <para>For example,
-              <emphasis>http://nnn.nnn.nnn.nnn/ganglia</emphasis>, where
-              nnn.nnn.nnn.nnn is your Virtual Machine's IP address displayed
-              at the VM welcome screen.</para>
-            </listitem>
-          </orderedlist></para>
-
-        <para>We encourage experienced users to use SSH and log into the VM
-        and further examine the configuration of a 1-node monitoring
-        solution.</para>
-
-        <sect3 id="ViewTheMetrics">
-          <title>Viewing the Metrics</title>
-
-          <para>To view the metrics page, go to the following page in your
-          browser.<programlisting> <emphasis>http://nnn.nnn.nnn.nnn/ganglia</emphasis></programlisting></para>
-
-          <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your ESP
-          server running ECL Watch.</para>
-        </sect3>
-      </sect2>
+      <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
+                  xpointer="get_hpcc"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
 
     <sect1 id="GangliaIntegration">
@@ -391,8 +348,8 @@
         </listitem>
 
         <listitem>
-          <para>Install the HPCC Systems monitoring component on every node.
-          </para>
+          <para>Install the HPCC Systems monitoring component on every
+          node.</para>
         </listitem>
 
         <listitem>
@@ -424,6 +381,285 @@
             </listitem>
           </varlistentry>
         </variablelist></para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Nagios</title>
+
+    <para>The HPCC Reporting component leverages Nagios, an open source,
+    system and network infrastructure monitoring application to monitor and
+    alert HPCC administrators. Nagios leverages established and accepted open
+    source technologies to alert users to changes or potential issues. It
+    provides near real-time system monitoring and reporting.</para>
+
+    <para>With the HPCC integration, you can generate Nagios configuration
+    files to monitor HPCC server health. Once the Nagios is configured, you
+    can monitor:<itemizedlist>
+        <listitem>
+          <para>SSH connectivity</para>
+        </listitem>
+
+        <listitem>
+          <para>Users on system</para>
+        </listitem>
+
+        <listitem>
+          <para>System Load</para>
+        </listitem>
+
+        <listitem>
+          <para>Disk Usage</para>
+        </listitem>
+
+        <listitem>
+          <para>Roxie</para>
+        </listitem>
+
+        <listitem>
+          <para>Dali</para>
+        </listitem>
+
+        <listitem>
+          <para>Dafilesrv</para>
+        </listitem>
+
+        <listitem>
+          <para>Sasha</para>
+        </listitem>
+
+        <listitem>
+          <para>Bound services on each ESP</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>Nagios is a powerful monitoring and notification system, which can
+    be used with HPCC to help identify and resolve infrastructure problems
+    before they affect critical processes. Nagios hardware notifications can
+    help keep your system highly available and alerts can assist in
+    pre-emptive maintenance for processes which are down or behaving outside
+    expected parameters to ensure system stability, reliability, and uptime.
+    Scripts and tools are provided to extract HPCC Platform system metrics and
+    easily integrate that data into Nagios.</para>
+
+    <sect1 id="NagiosVM">
+      <title>Nagios in the Virtual Machine</title>
+
+      <para>An easy way to understand how the Nagios works and how to
+      implement it on a larger system, is to examine an established session in
+      action.</para>
+
+      <para>Nagios integration is built into the current HPCC Virtual Machine
+      images. Download and start up a virtual image and look at how the
+      monitoring component works.</para>
+
+      <para>The Nagios component for HPCC on the VM allows you:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A preview of the alerts</para>
+        </listitem>
+
+        <listitem>
+          <para>A quickstart</para>
+        </listitem>
+
+        <listitem>
+          <para>A guide for set up</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Evaluate the value of the content and decide what aspects are
+      relevant to your needs.</para>
+
+      <!--INCLUDE-VM_STEPS-as-Sect2-->
+
+      <xi:include href="HPCCMonitoring/MonRep-Mods/MonRep-VM.xml"
+                  xpointer="get_hpcc"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <sect2>
+        <title>Nagios Interface</title>
+
+        <para>There are a number of Nagios configurations available. To get a
+        better understanding of Nagios configuration, look at the
+        configuration delivered with the VM. To login to the Nagios admin
+        page:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Go to
+            <emphasis>http://nnn.nnn.nnn.nnn/</emphasis>nagios3</para>
+
+            <para>Where the <emphasis>nnn.nnn.nnn.nnn</emphasis> is your ESP
+            server running ECL Watch.</para>
+          </listitem>
+
+          <listitem>
+            <para>Login with username : nagiosadmin</para>
+          </listitem>
+
+          <listitem>
+            <para>Enter the password : nagiosadmin</para>
+          </listitem>
+        </orderedlist>
+
+        <para>Once logged in the Nagios landing page displays. This page
+        displays information about Nagios and contains links to the various
+        components, items, and documentation.</para>
+
+        <para>To view the configuration, click on the <emphasis
+        role="bold">Host Groups</emphasis> link from the Nagios navigation
+        menu on the left side of the page.</para>
+
+        <para><figure>
+            <title>Nagios Host Groups</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/NAG001.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>This displays the Host Groups being monitored.</para>
+
+        <figure>
+          <title>Nagios Host Groups</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/NAG002.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <sect3>
+          <title>Nagios Services</title>
+
+          <para>Click on the <emphasis role="bold">Services</emphasis> link
+          from the Nagios navigation menu on the left side of the page.
+          <figure>
+              <title>Nagios Services</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/NAG003.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>The services link displays the Service Status details for the
+          systems being monitored. <figure>
+              <title>Nagios Service status</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/NAG004.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>You can see the service status for the systems being
+          monitored.</para>
+        </sect3>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>Installation of Nagios</title>
+
+      <para>The HPCC Nagios package provides tools and utilities for
+      generating Nagios configurations. These configurations check HPCC and
+      perform some of the HPCC specific checks. HPCC Nagios installation is
+      provided on the HPCC Systems portal. </para>
+
+      <sect2 id="HPCC_Nagios_Installation">
+        <title>HPCC Nagios Installation Package</title>
+
+        <para>To get the HPCC Nagios monitoring on your system you need the
+        Installation package. Download the installation package from the HPCC
+        Systems portal. </para>
+
+        <para>The HPCC Systems web portal is where you can find HPCC
+        resources, downloads, plug-ins, as well as helpful information.
+        </para>
+
+        <para><ulink
+        url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/</ulink></para>
+
+        <para>You can find the HPCC Monitoring and Reporting Installation
+        packages at: </para>
+
+        <para><ulink
+        url="http://hpccsystems.com/download/free-community-edition/monitoring">http://hpccsystems.com/download/free-community-edition/monitoring</ulink></para>
+
+        <para>Download the appropriate installation package for your operating
+        system. </para>
+      </sect2>
+
+      <sect2>
+        <title>Install Nagios</title>
+
+        <para>To Install Nagios for HPCC, you must have HPCC System platform
+        installed and also have the open-source Nagios package installed.
+        </para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Install the <emphasis
+              role="bold">hpcc-nagios-monitoring</emphasis> on the node that
+              will be doing the monitoring. The node where you install the
+              Nagios monitoring must have network connectivity to all the
+              monitored nodes.</para>
+
+              <para>With the hpcc-nagios tools installed, you have HPCC check
+              utilities in:</para>
+
+              <para><programlisting> /usr/lib/nagios/plugins/ </programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Generate Nagios configuration files.</para>
+            </listitem>
+          </orderedlist>Generate a host groups configuration for
+        Nagios.</para>
+
+        <programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
+ /etc/HPCCSystems/environment.xml -h -out /etc/nagios3/config.d/hpcc_hostgroups.cfg 
+</programlisting>
+
+        <para>Generate a services configuration file.</para>
+
+        <programlisting> /opt/HPCCSystem/bin/hpcc-nagios-tools -env   \
+ /etc/HPCCSystems/environment.xml -g -out /etc/nagios3/config.d/hpcc_services.cfg
+</programlisting>
+
+        <para>You can use some or all of the configurations. You can use the
+        generated configurations, or you could merge them into any existing
+        Nagios configuration as needed. </para>
+
+        <para><orderedlist continuation="continues">
+            <listitem>
+              <para>Integrate the host and services configuration files into
+              the Nagios configuration folders.</para>
+
+              <para>You must restart Nagios for the new configuration to take
+              effect. </para>
+            </listitem>
+          </orderedlist> </para>
+
+        <sect3>
+          <title>Help</title>
+
+          <para>For help with HPCC Nagios enter:</para>
+
+          <programlisting> /opt/HPCCSystems/bin/hpcc-nagios-tools</programlisting>
+
+          <para>Entering the command without any parameters or options
+          specified displays all the available options.</para>
+        </sect3>
+      </sect2>
     </sect1>
   </chapter>
 </book>
