@@ -1830,7 +1830,7 @@ public:
 
     void loadStore(const char *store=NULL, const bool *abort=NULL);
     void saveStore(const char *store=NULL, bool currentEdition=false);
-    bool unlock(__int64 treeId, ConnectionId connectionId);
+    bool unlock(__int64 treeId, ConnectionId connectionId, bool delayDelete=false);
     void unlockAll(__int64 treeId);
     void changeLockMode(CServerConnection &connection, unsigned newMode, unsigned timeout);
     void clearSDSLocks();
@@ -3361,7 +3361,7 @@ public:
         return true;
     }
 
-    bool unlock(ConnectionId id)
+    bool unlock(ConnectionId id, bool delayDelete=false)
     {
         bool ret = false;
         CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destroyed last
@@ -3399,7 +3399,13 @@ public:
                 connectionInfo.remove(id);
                 if (parent && 0 == connectionInfo.count())
                 {
-                    clearLastRef();
+                    if (delayDelete)
+                    {
+                        parent.clear();
+                        child.clear();
+                    }
+                    else
+                        clearLastRef();
                     ret = true;
                 }
             }
@@ -4231,12 +4237,12 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 if (queryTransactionLogging())
                 {
                     CServerConnection *conn = manager.queryConnection(connectionId);
-                    transactionLog.log("disconnect=%s, data=%s", disconnect?"true":"false", data?"true":"false");
+                    transactionLog.log("disconnect=%s, data=%s, deleteRoot=%s", disconnect?"true":"false", data?"true":"false", deleteRoot?"true":"false");
                 }
                 Owned<CLCLockBlock> lockBlock;
                 { 
                     CheckTime block1("DAMP_SDSCMD_DATA.1");
-                    if (data || disconnect)
+                    if (data || deleteRoot)
                         lockBlock.setown(new CLCWriteLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
                     else
                         lockBlock.setown(new CLCReadLockBlock(manager.dataRWLock, readWriteTimeout, __FILE__, __LINE__));
@@ -4285,11 +4291,11 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 catch (IException *)
                 {
                     if (disconnect)
-                        manager.disconnect(connectionId, deleteRoot, (data || disconnect)?NULL:&lockBlock);
+                        manager.disconnect(connectionId, deleteRoot, (data || deleteRoot)?NULL:&lockBlock);
                     throw;
                 }
                 if (disconnect)
-                    manager.disconnect(connectionId, deleteRoot, (data || disconnect)?NULL:&lockBlock);
+                    manager.disconnect(connectionId, deleteRoot, (data || deleteRoot)?NULL:&lockBlock);
 
                 break;
             }
@@ -7210,12 +7216,12 @@ bool CCovenSDSManager::unlock(__int64 connectionId, bool close, StringBuffer &co
     return true;
 }
 
-bool CCovenSDSManager::unlock(__int64 treeId, ConnectionId connectionId)
+bool CCovenSDSManager::unlock(__int64 treeId, ConnectionId connectionId, bool delayDelete)
 {
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
     CLockInfo *lockInfo = queryLockInfo(treeId);
     if (lockInfo)
-        return lockInfo->unlock(connectionId);
+        return lockInfo->unlock(connectionId, delayDelete);
     return false;
 }
 
@@ -7575,7 +7581,6 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
     unsigned index = (unsigned)-1;
     StringBuffer path;
     connection->queryPTreePath().getAbsolutePath(path);
-    bool noLockDelete = false;
     if (connection->queryParent())
     {
         if (deleteRoot || RTM_MODE(connection->queryMode(), RTM_DELETE_ON_DISCONNECT))
@@ -7588,12 +7593,7 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
                 lockInfo->setDROLR((CServerRemoteTree *)connection->queryParent(), tree);
             }
             else
-                noLockDelete = deleteRoot = true;
-        }
-        if (lockBlock)
-        {
-            lockBlock->clear();
-            lockBlock->setown(new CLCWriteLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
+                deleteRoot = true;
         }
         if ((unsigned)-1 == index)
             index = connection->queryParent()->queryChildIndex(connection->queryRootUnvalidated());
@@ -7603,41 +7603,47 @@ void CCovenSDSManager::disconnect(ConnectionId id, bool deleteRoot, Owned<CLCLoc
 
     bool orphaned = ((CServerRemoteTree*)connection->queryRootUnvalidated())->isOrphaned();
     // Still want disconnection to be performed & recorded, if orphaned
-    if (noLockDelete)
-        connection->queryParent()->removeTree(tree);
-    else
-        deleteRoot |= unlock(tree->queryServerId(), id);
+    if (!deleteRoot && unlock(tree->queryServerId(), id, true)) // unlock returns true if last unlock and there was a setDROLR on it
+        deleteRoot = true;
     if (deleteRoot)
-        writeTransactions++;
-    if (!orphaned && deleteRoot)
     {
-        Owned<IPropertyTree> changeTree = createPTree(RESERVED_CHANGE_NODE);
-        IPropertyTree *d = changeTree->setPropTree(DELETE_TAG, createPTree());
-        d->setProp("@name", tree->queryName());
-        d->setPropInt("@pos", index+1);
-
-        Owned<CBranchChange> branchChange = new CBranchChange(*tree);
-        branchChange->noteChange(PDS_Deleted, PDS_Deleted);
-        CPTStack stack = connection->queryPTreePath();
-        stack.pop();
-        if (connection->queryRootUnvalidated() == SDSManager->queryRoot())
-            stack.pop();
-
-        if (!RTM_MODE(connection->queryMode(), RTM_INTERNAL))
+        if (lockBlock)
         {
-            connection->notify();
-            SDSManager->startNotification(*changeTree, stack, *branchChange);
+            lockBlock->clear();
+            lockBlock->setown(new CLCWriteLockBlock(dataRWLock, readWriteTimeout, __FILE__, __LINE__));
         }
+        connection->queryParent()->removeTree(tree);
+        writeTransactions++;
+        if (!orphaned)
+        {
+            Owned<IPropertyTree> changeTree = createPTree(RESERVED_CHANGE_NODE);
+            IPropertyTree *d = changeTree->setPropTree(DELETE_TAG, createPTree());
+            d->setProp("@name", tree->queryName());
+            d->setPropInt("@pos", index+1);
 
-        StringBuffer head;
-        const char *tail = splitXPath(path.str(), head);
-        CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
-        if (NotFound != index)
-            saveDelta(head.str(), *changeTree);
-        else
-        { // NB: don't believe this can happen, but last thing want to do is save duff delete delta.
-            WARNLOG("** CCovenSDSManager::disconnect - index position lost ** : noLockDelete=%d", noLockDelete);
-            PrintStackReport();
+            Owned<CBranchChange> branchChange = new CBranchChange(*tree);
+            branchChange->noteChange(PDS_Deleted, PDS_Deleted);
+            CPTStack stack = connection->queryPTreePath();
+            stack.pop();
+            if (connection->queryRootUnvalidated() == SDSManager->queryRoot())
+                stack.pop();
+
+            if (!RTM_MODE(connection->queryMode(), RTM_INTERNAL))
+            {
+                connection->notify();
+                SDSManager->startNotification(*changeTree, stack, *branchChange);
+            }
+
+            StringBuffer head;
+            const char *tail = splitXPath(path.str(), head);
+            CHECKEDCRITICALBLOCK(blockedSaveCrit, fakeCritTimeout);
+            if (NotFound != index)
+                saveDelta(head.str(), *changeTree);
+            else
+            { // NB: don't believe this can happen, but last thing want to do is save duff delete delta.
+                WARNLOG("** CCovenSDSManager::disconnect - index position lost **");
+                PrintStackReport();
+            }
         }
     }
     tree.clear();
