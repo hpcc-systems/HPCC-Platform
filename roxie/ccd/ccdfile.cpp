@@ -1659,6 +1659,7 @@ protected:
     IArrayOf<IResolvedFile> subRFiles;  // To make sure subfiles get locked too
 
     Owned <IPropertyTree> properties;
+    Linked<IRoxieDaliHelper> daliHelper;
     Owned<IDaliPackageWatcher> notifier;
 
     void addFile(const char *subName, IFileDescriptor *fdesc, IFileDescriptor *remoteFDesc)
@@ -1714,8 +1715,8 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* daliHelper, bool isDynamic, bool cacheIt, bool writeAccess, bool _isSuperFile)
-    : lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile)
+    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* _daliHelper, bool isDynamic, bool cacheIt, bool writeAccess, bool _isSuperFile)
+    : daliHelper(_daliHelper), lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile)
     {
         cached = NULL;
         fileSize = 0;
@@ -1764,6 +1765,8 @@ public:
     }
     virtual void beforeDispose()
     {
+        if (notifier)
+            daliHelper->releaseSubscription(notifier);
         notifier.clear();
         if (cached)
         {
