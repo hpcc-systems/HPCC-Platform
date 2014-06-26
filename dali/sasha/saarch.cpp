@@ -167,7 +167,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                         const char *wuid = name.str();
                         if ((name.length()>6)&&(stricmp(wuid+name.length()-6,"_HINTS")==0))
                             continue;
-                        if ((unfiltered||WildMatch(wuid,mask,true)) &&
+                        if ((!mask||!*mask||WildMatch(wuid,mask,true)) &&
                             ((before.length()==0)||(stricmp(wuid,before.str())<=0)) &&
                             ((after.length()==0)||(stricmp(wuid,after.str())>=0))) {
                             if (isWild) {
