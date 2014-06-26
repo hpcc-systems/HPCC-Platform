@@ -50,7 +50,7 @@ define([
 
         query: function (query, options) {
             var results = all([
-                this.refreshUsers(),
+                this.refreshUsers(query),
                 this.refreshGroupUsers()
             ]).then(lang.hitch(this, function (response) {
                 var groupUsers = {};
@@ -74,8 +74,15 @@ define([
             return QueryResults(results);
         },
 
-        refreshUsers: function () {
-            return self.Users().then(function (response) {
+        refreshUsers: function (query) {
+            var context = this;
+            return self.Users({
+                request: query
+            }).then(function (response) {
+                context.ldapTooMany = false;
+                if (lang.exists("UserResponse.toomany", response)) {
+                    context.ldapTooMany = response.UserResponse.toomany;
+                }
                 if (lang.exists("UserResponse.Users.User", response)) {
                     return response.UserResponse.Users.User;
                 }

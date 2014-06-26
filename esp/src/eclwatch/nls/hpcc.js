@@ -204,6 +204,7 @@ define({root:
     LastName: "Last Name",
     LastNDays: "Last N Days",
     LegacyForm: "Legacy Form",
+    LDAPWarning: "<b>LDAP Services Error:</b>  'Too Many Users' - Please use a Filter.",
     LibrariesUsed: "Libraries Used",
     LibraryName: "Library Name",
     Line: "Line",
