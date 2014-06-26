@@ -2950,7 +2950,7 @@ void mergeQueries(IPropertyTree *dest, IPropertyTree *src)
         const char *id = srcQuery->queryProp("@id");
         if (!id || !*id)
             continue;
-        VStringBuffer xpath("Query[@id='%s']", id);
+        VStringBuffer xpath("Alias[@id='%s']", id);
         IPropertyTree *destQuery = destQueries->queryPropTree(xpath);
         if (!destQuery)
         {
