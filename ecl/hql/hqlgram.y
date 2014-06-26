@@ -2868,6 +2868,10 @@ buildFlag
                         {
                             $$.setExpr(createAttribute(dedupAtom), $1);
                         }
+    | MAXLENGTH
+                        {
+                            $$.setExpr(createExprAttribute(maxLengthAtom), $1);
+                        }
     ;
 
 localAttribute
@@ -3066,6 +3070,10 @@ indexFlag
                             $$.setPosition($1);
                         }
     | UNORDERED         {   $$.setExpr(createAttribute(unorderedAtom)); $$.setPosition($1); }
+    | MAXLENGTH
+                        {
+                            $$.setExpr(createExprAttribute(maxLengthAtom), $1);
+                        }
     | commonAttribute
     ;
 
