@@ -137,16 +137,14 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                 masktmp.append("*");
             mask = masktmp.str();
         }
-        StringBuffer head;
+        StringBuffer head, tmask;
         const char *hmask = NULL;
         if (mask&&*mask) {
             splitWUID(mask,head);
             if (head.length())
                 hmask = head.str();
-        }
-        StringBuffer tmask;
-        if (mask)
             tmask.clear().append(mask).toUpperCase();
+        }
         else
             tmask.append("*");
         tmask.append(".xml");
@@ -169,7 +167,7 @@ void WUiterate(ISashaCommand *cmd, const char *mask)
                         const char *wuid = name.str();
                         if ((name.length()>6)&&(stricmp(wuid+name.length()-6,"_HINTS")==0))
                             continue;
-                        if ((!mask||!*mask||!isWild||WildMatch(wuid,mask,true)) &&
+                        if ((unfiltered||WildMatch(wuid,mask,true)) &&
                             ((before.length()==0)||(stricmp(wuid,before.str())<=0)) &&
                             ((after.length()==0)||(stricmp(wuid,after.str())>=0))) {
                             if (isWild) {
