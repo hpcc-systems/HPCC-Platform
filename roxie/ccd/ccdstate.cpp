@@ -486,7 +486,7 @@ protected:
                     }
                 }
             }
-            if (!result && resolveLocal)
+            if (!result && (resolveLocal || alwaysCreate))
             {
                 StringBuffer useName;
                 bool wasDFS = false;
