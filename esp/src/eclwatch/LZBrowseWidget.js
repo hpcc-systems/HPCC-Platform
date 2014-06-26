@@ -450,9 +450,9 @@ define([
         },
 
         initLandingZonesGrid: function () {
-            var store = new FileSpray.CreateLandingZonesStore();
+            this.landingZoneStore = new FileSpray.CreateLandingZonesStore();
             this.landingZonesGrid = new declare([ESPUtil.Grid(false, true)])({
-                store: store,
+                store: this.landingZoneStore,
                 columns: {
                     col1: selector({
                         width: 27,
