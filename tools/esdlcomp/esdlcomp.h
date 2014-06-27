@@ -23,7 +23,7 @@
 
 #include "esdl_utils.hpp"
 #include "../../system/include/platform.h"
-
+#include "jmutex.hpp"
 
 #undef YYSTYPE
 #define YYSTYPE attribute
@@ -1036,7 +1036,6 @@ public:
         outs("/>\n");
     }
 
-
     MetaTagInfo     *tags;
     EspMethodInfo   *next;
 };
@@ -1228,33 +1227,44 @@ public:
 class ESDLcompiler
 {
 public:
-    ESDLcompiler(const char * SourceFile,const char *OutDir);
+    ESDLcompiler(const char * sourceFile, const char * outDir);
     ~ESDLcompiler();
 
     void Process();
     void write_esxdl();
 
-    const char *getPackageName(){return packagename;}
-    char *       filename;
+    const char * getSrcDir() const
+    {
+        return srcDir.str();
+    }
+
+    const char* getPackageName()
+    {
+        return packagename;
+    }
+
+    char* filename;
     StrBuffer name;
 
 private:
     int esxdlo;
-    char *       packagename;
+    char* packagename;
+    StrBuffer srcDir;
+    StrBuffer outBuffer;
 
 public:
-    ModuleInfo * modules;
-    EnumInfo * enums;
-    ApiInfo *apis;
-    EspMessageInfo *msgs;
-    EspServInfo *servs;
-    EspMethodInfo *methods;
-    IncludeInfo *includes;
-    VersionInfo *versions;
+    static CriticalSection m_critSect;
+    ModuleInfo* modules;
+    EnumInfo* enums;
+    ApiInfo* apis;
+    EspMessageInfo* msgs;
+    EspServInfo* servs;
+    EspMethodInfo* methods;
+    IncludeInfo* includes;
+    VersionInfo* versions;
 };
 
 
-//extern char * clarion;
 extern int nCommentStartLine;
 extern void yyerror(const char *s);
 inline char upperchar(char val){return ((val<97 || val>122) ? val : (val-32));}

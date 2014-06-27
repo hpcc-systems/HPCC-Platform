@@ -35,14 +35,26 @@ inline bool es_strieq(const char* s,const char* t) { return stricmp(s,t)==0; }
 
 extern FILE *yyin;
 extern int yyparse();
+//extern int yydebug;
+
+//#ifndef YY_TYPEDEF_YY_BUFFER_STATE
+//#define YY_TYPEDEF_YY_BUFFER_STATE
+//typedef struct yy_buffer_state *YY_BUFFER_STATE;
+//#endif
+
+//extern YY_BUFFER_STATE getCurrentBuffer();
+
+extern void yyrestart  (FILE * input_file );
+extern int yylex_destroy  (void);
+extern void yyInitESDLGlobals(ESDLcompiler * esdlcompiler);
 
 extern ESDLcompiler * hcp;
 extern char *esp_def_export_tag;
+
 // --- globals -----
-
-
 int gOutfile = -1;
 
+CriticalSection ESDLcompiler::m_critSect;
 //-------------------------------------------------------------------------------------------------------------
 // Utility struct and function
 
@@ -465,8 +477,6 @@ bool ParamInfo::simpleneedsswap()
     }
 }
 
-
-
 void ParamInfo::cat_type(char *s,int deref,int var)
 {
     if ((flags&PF_CONST)&&!var)
@@ -787,7 +797,6 @@ void ParamInfo::setXsdType(const char *value)
     xsdtype = (newValue!=NULL) ? strdup(newValue) : NULL;
 }
 
-
 const char *ParamInfo::getXsdType()
 {
     if (xsdtype==NULL)
@@ -855,10 +864,6 @@ const char* ParamInfo::getArrayItemXsdType()
     }
 }
 
-
-
-
-
 //-------------------------------------------------------------------------------------------------------------
 // class ProcInfo
 
@@ -890,10 +895,6 @@ ProcInfo::~ProcInfo()
     }
 }
 
-
-
-
-
 //-------------------------------------------------------------------------------------------------------------
 // class ApiInfo
 
@@ -914,8 +915,6 @@ ApiInfo::~ApiInfo()
     if (group)
         free(group);
 }
-
-
 
 //-------------------------------------------------------------------------------------------------------------
 // class ModuleInfo
@@ -941,12 +940,8 @@ ModuleInfo::~ModuleInfo()
     }
 }
 
-
-
-
 //-------------------------------------------------------------------------------------------------------------
 // class EspMessageInfo
-
 
 bool EspMessageInfo::hasMapInfo()
 {
@@ -970,7 +965,6 @@ EspMessageInfo *EspMessageInfo::find_parent()
     return NULL;
 }
 
-
 char* makeXsdType(const char* s)
 {
     if (!s)
@@ -992,9 +986,6 @@ char* makeXsdType(const char* s)
     else
         return NULL;
 }
-
-
-
 
 EspMessageInfo *EspMethodInfo::getRequestInfo()
 {
@@ -1095,6 +1086,7 @@ char* getTargetBase(const char* outDir, const char* src)
 
 ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
 {
+    //yydebug = 1;
     modules = NULL;
     enums = NULL;
     apis=NULL;
@@ -1104,18 +1096,23 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
     methods=NULL;
     versions = NULL;
 
-    splitFilename(sourceFile, NULL, NULL, &name, NULL);
+    splitFilename(sourceFile, NULL, &srcDir, &name, NULL);
 
 
     filename = strdup(sourceFile);
     size_t l = strlen(filename);
-    //sourceFile = es_changeext(sourceFile, "scm");
+
     yyin = fopen(sourceFile, "rt");
-    if (!yyin) {
-        printf("Fatal Error: Cannot read %s\n",sourceFile);
+    if (!yyin)
+    {
+        fprintf(stderr, "Fatal Error: Cannot read %s\n",sourceFile);
         exit(1);
     }
+
     packagename = es_gettail(sourceFile);
+
+    if (!outDir || !*outDir)
+        outDir = srcDir.str();
 
     char* targetBase = getTargetBase(outDir, sourceFile);
 
@@ -1126,18 +1123,18 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
 
 ESDLcompiler::~ESDLcompiler()
 {
-    fclose(yyin);
-    close(esxdlo);
     free(packagename);
     free(filename);
 }
 
 void ESDLcompiler::Process()
 {
-    hcp = this;
+    CriticalBlock block(m_critSect);
 
-    nCommentStartLine = -1;
+    yyInitESDLGlobals(this);
+    yyrestart (yyin);
     yyparse();
+
     if (nCommentStartLine > -1)
     {
         char tempBuf[256];
@@ -1145,6 +1142,11 @@ void ESDLcompiler::Process()
         yyerror(tempBuf);
     }
     write_esxdl();
+
+    fclose(yyin);
+    close(esxdlo);
+
+    yylex_destroy();
 }
 
 void ESDLcompiler::write_esxdl()
@@ -1161,7 +1163,7 @@ void ESDLcompiler::write_esxdl()
     }
 
     IncludeInfo * ii;
-    for (ii=includes;ii;ii=ii->next)
+    for (ii=hcp->includes;ii;ii=ii->next)
     {
         ii->write_esxdl();
     }
@@ -1188,11 +1190,8 @@ void ESDLcompiler::write_esxdl()
     }
 
     outs("</esxdl>");
-
-
+    gOutfile = -1;
 }
-
-
 
 //-------------------------------------------------------------------------------------------------------------
 // class EnumInfo

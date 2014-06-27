@@ -10,6 +10,12 @@
 extern YYSTYPE yylval;
 extern unsigned linenum;
 
+extern void yy_flush_buffer (YY_BUFFER_STATE b  );
+//#define YY_CURRENT_BUFFER void()
+//extern YY_CURRENT_BUFFER;
+//extern YY_FLUSH_BUFFER;
+//extern void * getCurrentBuffer();
+
 static enum { LSskip,LSclarion,LSsectionheader,LSsectionbody,LSsectionfooter} state=LSskip;
 static int   opencurly=0;
 
@@ -281,6 +287,11 @@ int yywrap()
     return -1;
 }
 #endif
+
+YY_BUFFER_STATE getCurrentBuffer()
+{
+    return YY_CURRENT_BUFFER;
+}
 
 void output_text()
 {
