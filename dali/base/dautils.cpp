@@ -2362,7 +2362,6 @@ void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
         }
     }
 
-
     HashIterator siter(supermap);
     ForEach(siter) {
         const char *supername = (const char *)siter.query().getKey();
@@ -2371,23 +2370,23 @@ void getLogicalFileSuperSubList(MemoryBuffer &mb, IUserDescriptor *user)
         StringBuffer query;
         lname.makeFullnameQuery(query, DXB_SuperFile, true);
         Owned<IRemoteConnection> conn = querySDS().connect(query.str(),myProcessSession(),0, INFINITE);
-        if (!conn)
-            throw MakeStringException(-1,"Could not connect to %s",lname.get());
-        Owned<IPropertyTree> root = conn->getRoot();
-        unsigned n=root->getPropInt("@numsubfiles");
-        StringBuffer path;
-        StringBuffer subname;
-        unsigned subnum = 0;
-        for (unsigned si=0;si<n;si++) {
-            IPropertyTree *sub = root->queryPropTree(path.clear().appendf("SubFile[@num=\"%d\"]",si+1).str());
-            if (sub) {
-                const char *subname = sub->queryProp("@name");
-                if (subname&&*subname) {
-                    if (!supermap.getValue(subname)) {
-                        size32_t sz = strlen(supername);
-                        mb.append(sz).append(sz,supername);
-                        sz = strlen(subname);
-                        mb.append(sz).append(sz,subname);
+        if (conn) { // Superfile may have disappeared by this stage, ignore.
+            Owned<IPropertyTree> root = conn->getRoot();
+            unsigned n=root->getPropInt("@numsubfiles");
+            StringBuffer path;
+            StringBuffer subname;
+            unsigned subnum = 0;
+            for (unsigned si=0;si<n;si++) {
+                IPropertyTree *sub = root->queryPropTree(path.clear().appendf("SubFile[@num=\"%d\"]",si+1).str());
+                if (sub) {
+                    const char *subname = sub->queryProp("@name");
+                    if (subname&&*subname) {
+                        if (!supermap.getValue(subname)) {
+                            size32_t sz = strlen(supername);
+                            mb.append(sz).append(sz,supername);
+                            sz = strlen(subname);
+                            mb.append(sz).append(sz,subname);
+                        }
                     }
                 }
             }
