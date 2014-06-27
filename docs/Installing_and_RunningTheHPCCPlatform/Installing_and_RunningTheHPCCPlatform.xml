@@ -537,19 +537,35 @@
       <sect2 id="Operating-System-Requirements">
         <title>Operating System Requirements</title>
 
-        <para>You will need one of the following:</para>
+        <para>Binary packages are available for the following: </para>
 
         <para><itemizedlist mark="square" spacing="compact">
             <listitem>
-              <para>64-bit LINUX CentOS 5.x / Red Hat Enterprise Linux</para>
+              <para>CentOS 5 </para>
             </listitem>
 
             <listitem>
-              <para>64-bit Ubuntu 10.04 LTS, 11.04, or 11.10</para>
+              <para>CentOS 6 </para>
             </listitem>
 
             <listitem>
-              <para>64-bit Debian 6.x (Squeeze)</para>
+              <para>RedHat Enterprise 5 </para>
+            </listitem>
+
+            <listitem>
+              <para>RedHat Enterprise 6 </para>
+            </listitem>
+
+            <listitem>
+              <para>Ubuntu 12.04 (LTS)</para>
+            </listitem>
+
+            <listitem>
+              <para>Ubuntu 13.10 (LTS)</para>
+            </listitem>
+
+            <listitem>
+              <para>Ubuntu 14.04 (LTS)</para>
             </listitem>
           </itemizedlist></para>
       </sect2>
