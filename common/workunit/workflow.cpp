@@ -882,6 +882,45 @@ void WorkflowMachine::doExecuteEndWaitItem(IRuntimeWorkflowItem & item)
 }
 
 
+bool WorkflowMachine::isOlderThanPersist(time_t when, IRuntimeWorkflowItem & item)
+{
+    time_t thisTime;
+    if (!getPersistTime(thisTime, item))
+        return false;  // if no time must be older than the persist
+    return when < thisTime;
+}
+
+bool WorkflowMachine::isOlderThanInputPersists(time_t when, IRuntimeWorkflowItem & item)
+{
+    Owned<IWorkflowDependencyIterator> iter = item.getDependencies();
+    ForEach(*iter)
+    {
+        unsigned cur = iter->query();
+
+        IRuntimeWorkflowItem & other = workflow->queryWfid(cur);
+        if (isPersist(other))
+        {
+            if (isOlderThanPersist(when, other))
+                return true;
+        }
+        else
+        {
+            if (isOlderThanInputPersists(when, other))
+                return true;
+        }
+    }
+    return false;
+}
+
+bool WorkflowMachine::isItemOlderThanInputPersists(IRuntimeWorkflowItem & item)
+{
+    time_t curWhen;
+    if (!getPersistTime(curWhen, item))
+        return false; // if no time then old and can't tell
+
+    return isOlderThanInputPersists(curWhen, item);
+}
+
 void WorkflowMachine::performItem(unsigned wfid, unsigned scheduledWfid)
 {
 #ifdef TRACE_WORKFLOW

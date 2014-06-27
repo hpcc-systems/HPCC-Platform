@@ -76,6 +76,7 @@ public:
     const char * queryEventExtra() const;
     bool hasItemsWaiting() const { return (itemsWaiting > 0); }
     void setCondition(bool value) { condition = value; }
+    bool isItemOlderThanInputPersists(IRuntimeWorkflowItem & item);
 
 protected:
     // Machine specific prologue/epilogue
@@ -90,6 +91,7 @@ protected:
     virtual void checkForAbort(unsigned wfid, IException * handling) = 0;
     // Persistence styles varies from machine to machine
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) = 0;
+    virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item) = 0;
 
     // Check conditions, item type and call operations below based on type
     bool executeItem(unsigned wfid, unsigned scheduledWfid);
@@ -107,6 +109,10 @@ protected:
     void doExecuteBeginWaitItem(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
     // Unblock the scheduled workflow item, which should mean execution continues.
     void doExecuteEndWaitItem(IRuntimeWorkflowItem & item);
+
+    //Used for checking if a persist is older than its inputs
+    bool isOlderThanPersist(time_t when, IRuntimeWorkflowItem & item);
+    bool isOlderThanInputPersists(time_t when, IRuntimeWorkflowItem & item);
 
     bool attemptRetry(IRuntimeWorkflowItem & item, unsigned dep, unsigned scheduledWfid);
     void handleFailure(IRuntimeWorkflowItem & item, WorkflowException const * e, bool isDep);

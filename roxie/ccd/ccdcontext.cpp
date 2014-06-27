@@ -224,6 +224,8 @@ protected:
     virtual void reportContingencyFailure(char const * type, IException * e) {}
     virtual void checkForAbort(unsigned wfid, IException * handling) {}
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item) { throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "Persists not supported in roxie"); }
+    virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item) { return false; }
+
 private:
     IPropertyTree *workflowInfo;
     bool doOnce;
