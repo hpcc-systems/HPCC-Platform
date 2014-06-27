@@ -335,17 +335,16 @@
               </figure></para>
 
             <para>Once you press the Upload button, a dialog opens where you
-            can choose to <emphasis role="bold">Browse</emphasis> for a file
-            to upload. </para>
+            can choose a file to upload.</para>
           </listitem>
 
           <listitem>
             <para>Browse the files on your local machine, select the file to
-            upload and then press the <emphasis role="bold">Open</emphasis>
+            upload, and then press the <emphasis role="bold">Open</emphasis>
             button.</para>
 
-            <para>The file you selected should appear in the <emphasis
-            role="bold">File Uploader</emphasis> dialog. </para>
+            <para>The file you selected displays in the <emphasis
+            role="bold">File Uploader</emphasis> dialog.</para>
 
             <para><figure>
                 <title>File Uploader</title>
@@ -361,7 +360,16 @@
 
           <listitem>
             <para>Press the <emphasis role="bold">Start</emphasis> button to
-            complete the file upload.</para>
+            complete the file upload.<figure>
+                <title>Upload Progress</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg06.jpg"
+                               vendor="eclwatchSS" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -407,7 +415,7 @@
             sub-menu.</para>
 
             <para>On the Landing Zones tab, click on the arrow next to your
-            mydropzone container to see a list of uploaded files. <figure>
+            mydropzone container to expand the list of uploaded files. <figure>
                 <title>mydropzone</title>
 
                 <mediaobject>
@@ -420,16 +428,16 @@
 
             <para>Find the file you want to spray in the list
             (OriginalPerson), check the box next to that file name to select
-            that file. </para>
+            that file.</para>
 
             <para>Once you select the file from the list, the <emphasis
-            role="bold">Spray</emphasis> action buttons become enabled.
-            </para>
+            role="bold">Spray</emphasis> action buttons become enabled.</para>
           </listitem>
 
           <listitem>
             <para>Press the <emphasis role="bold">Fixed</emphasis> action
-            button. <figure>
+            button. This indicates that you are spraying a fixed width file.
+            <figure>
                 <title>Spray: Fixed action button</title>
 
                 <mediaobject>
@@ -460,7 +468,7 @@
 
           <listitem>
             <para>Choose the mythor cluster from the <emphasis
-            role="bold">Group</emphasis> drop list. </para>
+            role="bold">Group</emphasis> drop list.</para>
           </listitem>
 
           <listitem>
@@ -496,7 +504,7 @@
             <?dbfo keep-together="always"?>
 
             <para>The workunit details page displays. You can view the
-            progress of the spray. </para>
+            progress of the spray.</para>
 
             <para><figure>
                 <title>View Progress</title>
@@ -509,7 +517,7 @@
                 </mediaobject>
               </figure></para>
 
-            <para> Once the spray is complete, we can proceed.</para>
+            <para>Once the spray is complete, we can proceed.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -530,11 +538,6 @@
 
         <listitem>
           <para>Log in to your environment</para>
-
-          <para>For purposes of this tutorial, let’s create a folder called
-          <emphasis role="bold">Tutorial</emphasis><emphasis
-          role="bold">YourName</emphasis><emphasis> </emphasis>(where
-          <emphasis>YourName</emphasis> is your name).</para>
         </listitem>
 
         <listitem>
@@ -553,6 +556,11 @@
                 </imageobject>
               </mediaobject>
             </figure></para>
+
+          <para>For purposes of this tutorial, let’s create a folder called
+          <emphasis role="bold">Tutorial</emphasis><emphasis
+          role="bold">YourName</emphasis><emphasis> </emphasis>(where
+          <emphasis>YourName</emphasis> is your name).</para>
         </listitem>
 
         <listitem>
@@ -695,7 +703,7 @@ END;    </programlisting> <figure>
           </listitem>
 
           <listitem>
-            <para> Write the following code (remember to replace
+            <para>Write the following code (remember to replace
             <emphasis>YN</emphasis> with your initials):</para>
 
             <para><programlisting>IMPORT TutorialYourName;
@@ -1023,7 +1031,8 @@ OUTPUT(FetchPeopleByZip);
           </listitem>
 
           <listitem>
-            <para>Examine the result, then close the Builder window.</para>
+            <para>Examine the result, then close the Builder window and
+            resubmit the code. </para>
 
             <para><emphasis role="bold">Note</emphasis>: You can change the
             value of the <emphasis role="bold">ZipValue</emphasis> field to
@@ -1095,7 +1104,7 @@ OUTPUT(resultset);
           <para>The Publish dialog displays, with the Job Name field
           automatically filled in. You can add a comment in the Comment field
           if you wish, then press Submit. <figure>
-              <title>Submit </title>
+              <title>Publish Dialog</title>
 
               <mediaobject>
                 <imageobject>
@@ -1106,8 +1115,8 @@ OUTPUT(resultset);
         </listitem>
 
         <listitem>
-          <para>If there are no error messages, the workunit is
-          published.</para>
+          <para>If there are no error messages, the workunit is published.
+          Leave the builder window open, you will need it again later. </para>
         </listitem>
       </orderedlist>
 
@@ -1259,7 +1268,7 @@ OUTPUT(resultset);
         <orderedlist>
           <listitem>
             <para>Select the workunit tab for the FetchPeopleByZipService that
-            you just compiled. </para>
+            you just compiled.</para>
 
             <para>This opens the workunit in an ECL Watch tab.</para>
           </listitem>
@@ -1269,7 +1278,7 @@ OUTPUT(resultset);
 
             <para>Press the <emphasis role="bold">Publish</emphasis> action
             button, then verify the information in the dialog and press
-            <emphasis role="bold">Submit</emphasis>. </para>
+            <emphasis role="bold">Submit</emphasis>.</para>
 
             <para><figure>
                 <title>Publish Query</title>
@@ -1304,7 +1313,7 @@ OUTPUT(resultset);
             <?dbfo keep-together="always"?>
 
             <para>Click on the <emphasis
-            role="bold">fetchpeoplebyzipservice.1</emphasis> hyperlink.</para>
+            role="bold">fetchpeoplebyzipservice</emphasis> hyperlink.</para>
 
             <para>The form for the service displays.</para>
 
