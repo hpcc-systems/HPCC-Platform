@@ -25,7 +25,7 @@ To install the prerequisites for building R support, use the following (Ubuntu 1
 or the equivalent for your distro.
 
 sudo apt-get install r-base r-cran-rcpp
-wget http://cran.r-project.org/src/contrib/RInside_0.2.10.tar.gz
+wget http://cran.r-project.org/src/contrib/00Archive/RInside/RInside_0.2.10.tar.gz
 sudo R CMD INSTALL RInside_0.2.10.tar.gz
 
 Then you can enable building the Rembed plugin using
