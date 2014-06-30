@@ -310,6 +310,11 @@ define([
                             }
                         });
                     });
+                    this.wu.watch(function (name, oldValue, newValue) {
+                        if (name === "Exceptions") {
+                            context.loadExceptions(newValue.ECLException);
+                        }
+                    });
                 }
             },
 
