@@ -377,6 +377,8 @@ define([
                         deferredResults.total.resolve(lang.getObject(context.responseTotalQualifier, false, response));
                     } else if (context._hasResponseContent(response)) {
                         deferredResults.total.resolve(items.length);
+                    } else {
+                        deferredResults.total.resolve(0);
                     }
                     deferredResults.resolve(items);
                     return response;
