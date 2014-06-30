@@ -41,6 +41,7 @@ define([
             var idParts = id.split("--");
             _logicalFiles[id] = new LogicalFile({
                 Cluster: idParts[0] ? idParts[0] : "",
+                NodeGroup: idParts[0] ? idParts[0] : "",
                 Name: idParts[1]
             });
         }

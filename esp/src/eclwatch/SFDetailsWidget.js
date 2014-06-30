@@ -33,6 +33,7 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
+    "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
     "dijit/form/Form",
     "dijit/form/SimpleTextarea",
@@ -52,7 +53,7 @@ define([
 
     "dijit/TooltipDialog"
 ], function (exports, declare, lang, i18n, nlsHPCC, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable, all,
-                BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
+                BorderContainer, TabContainer, ContentPane, Toolbar, ToolbarSeparator, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 selector,
                 _TabContainerWidget,
                 ESPUtil, ESPLogicalFile,
@@ -131,7 +132,7 @@ define([
 
             var context = this;
             if (params.Name) {
-                this.logicalFile = ESPLogicalFile.Get(params.ClusterName, params.Name);
+                this.logicalFile = ESPLogicalFile.Get("", params.Name);
                 var data = this.logicalFile.getData();
                 for (var key in data) {
                     this.updateInput(key, null, data[key]);
@@ -196,7 +197,6 @@ define([
                     Name: { label: this.i18n.LogicalName },
                     Owner: { label: this.i18n.Owner, width: 72 },
                     Description: { label: this.i18n.Description, width: 153 },
-                    ClusterName: { label: this.i18n.Cluster, width: 108 },
                     RecordCount: { label: this.i18n.Records, width: 72, sortable: false },
                     Totalsize: { label: this.i18n.Size, width: 72, sortable: false },
                     Parts: { label: this.i18n.Parts, width: 45, sortable: false },
