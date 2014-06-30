@@ -617,7 +617,7 @@
 
                     <xsl:for-each select="ServerJobQueues/ServerJobQueue[ServerType='ECLCCserver']">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLCCserver' and QueueName=current()/QueueName]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLCCserver' and Instance=current()/ServerName]"/>
                             <xsl:with-param name="cluster" select="ServerName"/>
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
@@ -631,7 +631,7 @@
 
                     <xsl:for-each select="ServerJobQueues/ServerJobQueue[ServerType='ECLserver']">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLserver' and QueueName=current()/QueueName]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLserver' and Instance=current()/ServerName]"/>
                             <xsl:with-param name="cluster" select="ServerName"/>
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
@@ -645,7 +645,7 @@
 
                     <xsl:for-each select="ServerJobQueues/ServerJobQueue[ServerType='ECLAgent']">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLAgent' and QueueName=current()/QueueName]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLAgent' and Instance=current()/ServerName]"/>
                             <xsl:with-param name="cluster" select="ServerName"/>
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
