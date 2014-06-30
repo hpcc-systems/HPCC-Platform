@@ -157,7 +157,7 @@ define([
 
             this.__hpcc_tooltip = new Tooltip({
                 connectId: [this.id],
-                selector: "td",
+                selector: "td,.dgrid-resize-header-container",
                 showDelay: 800,
                 getContent: function (node) {
                     if (node.offsetWidth < node.scrollWidth) {
