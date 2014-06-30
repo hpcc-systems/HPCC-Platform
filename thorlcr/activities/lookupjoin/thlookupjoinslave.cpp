@@ -1494,11 +1494,33 @@ protected:
             if (!hasBroadcastSpilt()) // check again after processing above
             {
                 // NB: This sizing could cause spilling callback to be triggered
-                setupHT(uniqueKeys);
-                /* JCSMORE - failure to size should not be failure condition
-                 * It will mark spiltBroadcastingRHS and try to degrade
-                 * JCS->GH: However, need to catch OOM somehow..
-                 */
+                try
+                {
+                    setupHT(uniqueKeys);
+                }
+                catch (IException *e)
+                {
+                    /* JCS->GH - it would really be best I think, to avoid this alloc from causing memory to be evicted
+                     *           i.e. return fail to allocate without calling callbacks, then I can handle inability
+                     *           to perform full lookup join and failover to distributed local lookupjoin without
+                     *           necessarily having caused spillage by others.
+                     */
+                    switch (e->errorCode())
+                    {
+                    case ROXIEMM_MEMORY_POOL_EXHAUSTED:
+                    case ROXIEMM_MEMORY_LIMIT_EXCEEDED:
+                    case ROXIEMM_LARGE_MEMORY_EXHAUSTED:
+                        if (!isSmart())
+                            throw;
+                        ActPrintLog("Out of memory trying to allocate hash table for a SMART join, will now attempt a distributed local lookup join");
+                        if (!hasBroadcastSpilt())
+                            throwUnexpected(); // OOM event *should* have triggered freeBufferedRows and set spiltBroadcastingRHS by now.
+                        /* Continue, now that spiltBroadcastingRHS is set, the code to follow
+                         * will handle via the hasBroadcastSpilt() branches.
+                         */
+                        break;
+                    }
+                }
             }
             if (failoverToLocalLookupJoin)
             {
