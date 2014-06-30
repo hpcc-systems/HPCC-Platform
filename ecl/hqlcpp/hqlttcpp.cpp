@@ -12423,12 +12423,12 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                     OwnedHqlExpr mappedFilter = replaceSelector(filter, left, dataset);
                     initialLoopDataset.setown(createDataset(no_filter, initialLoopDataset.getClear(), LINK(mappedFilter)));
                 }
-                OwnedHqlExpr firstCond = replaceExpression(loopCond, rowsExpr, initialLoopDataset);
+                OwnedHqlExpr firstCond = quickFullReplaceExpression(loopCond, rowsExpr, initialLoopDataset);
                 if (counter)
                 {
                     //Whether to evaluate the 1st time round the loop requires COUNTER=1
                     OwnedHqlExpr one = createConstant(createIntValue(1, counter->getType()));
-                    firstCond.setown(replaceExpression(firstCond, counter, one));
+                    firstCond.setown(quickFullReplaceExpression(firstCond, counter, one));
                 }
                 return appendOwnedOperand(transformed, createExprAttribute(_loopFirst_Atom, firstCond.getClear()));
             }

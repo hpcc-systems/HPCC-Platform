@@ -50,7 +50,7 @@ define([
 
         query: function (query, options) {
             var results = all([
-                this.refreshUsers(),
+                this.refreshUsers(query),
                 this.refreshGroupUsers()
             ]).then(lang.hitch(this, function (response) {
                 var groupUsers = {};
@@ -74,8 +74,15 @@ define([
             return QueryResults(results);
         },
 
-        refreshUsers: function () {
-            return self.Users().then(function (response) {
+        refreshUsers: function (query) {
+            var context = this;
+            return self.Users({
+                request: query
+            }).then(function (response) {
+                context.ldapTooMany = false;
+                if (lang.exists("UserResponse.toomany", response)) {
+                    context.ldapTooMany = response.UserResponse.toomany;
+                }
                 if (lang.exists("UserResponse.Users.User", response)) {
                     return response.UserResponse.Users.User;
                 }
@@ -185,6 +192,8 @@ define([
                 account_name: this.groupname ? this.groupname : this.username,
                 account_type: this.groupname ? 1 : 0,
                 basedn: row.__hpcc_parent.basedn,
+                rtitle: row.__hpcc_parent.rtitle,
+                rtype: row.__hpcc_parent.rtype,
                 rname: row.name,
                 action: "update"
             };

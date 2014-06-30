@@ -308,6 +308,8 @@ define([
                         Source: "ESPWorkunit.resubmit",
                         Exceptions: [{ Source: context.Wuid, Message: context.i18n.Resubmitted }]
                     });
+                    context.hasCompleted = false;
+                    context.startMonitor(true);
                 }
                 return response;
             });
@@ -321,6 +323,8 @@ define([
                         Source: "ESPWorkunit.recover",
                         Exceptions: [{ Source: context.Wuid, Message: context.i18n.Restarted }]
                     });
+                    context.hasCompleted = false;
+                    context.startMonitor(true);
                 }
                 return response;
             });
@@ -429,6 +433,13 @@ define([
                         lang.mixin(response.WUInfoResponse.Workunit.Results, {
                             ResultViews: response.WUInfoResponse.ResultViews
                         });
+                    }
+                    if (args.onGetWUExceptions && !lang.exists("WUInfoResponse.Workunit.Exceptions.ECLException", response)) {
+                        lang.mixin(response.WUInfoResponse.Workunit, {
+                            Exceptions: {
+                                ECLException: []
+                            }
+                        })
                     }
                     context.updateData(response.WUInfoResponse.Workunit);
 

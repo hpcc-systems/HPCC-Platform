@@ -1197,6 +1197,10 @@ protected:
         return LINK(expr);
     }
 
+//Try and prevent this being called by accident - need to call quickFullReplaceExpression() instead
+//because the tree isn't normalized at this point
+    void replaceExpression(IHqlExpression * expr, IHqlExpression * original, IHqlExpression * replacement);
+
 protected:
     HqlCppTranslator & translator;
     IErrorReceiver * errorProcessor;

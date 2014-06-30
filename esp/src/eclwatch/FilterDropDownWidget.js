@@ -109,6 +109,14 @@ define([
                 return;
         },
 
+        open: function (event) {
+            this.filterDropDown.openDropDown();
+        },
+
+        close: function (event) {
+            this.filterDropDown.closeDropDown();
+        },
+
         refreshState: function () {
             this.iconFilter.src = this.exists() ? dojoConfig.getImageURL("filter.png") : dojoConfig.getImageURL("noFilter.png");
         }

@@ -39,6 +39,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/UserDetailsWidget",
     "hpcc/GroupDetailsWidget",
+    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/UserQueryWidget.html",
 
@@ -61,7 +62,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
                 registry, Menu, MenuItem, MenuSeparator, Select,
                 tree, selector,
-                _TabContainerWidget, WsAccess, ESPBase, ESPUtil, UserDetailsWidget, GroupDetailsWidget,
+                _TabContainerWidget, WsAccess, ESPBase, ESPUtil, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget,
                 template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -80,6 +81,7 @@ define([
             this.addPermissionForm = registry.byId(this.id + "AddPermissionForm");
             this.addPermissionType = registry.byId(this.id + "AddPermissionType");
             this.permissionsTab = registry.byId(this.id + "_Permissions");
+            this.filter = registry.byId(this.id + "Filter");
         },
 
         //  Hitched actions  ---
@@ -124,12 +126,13 @@ define([
         },
 
         _onDeleteGroup: function (params) {
-            if (confirm(this.i18n.DeleteSelectedGroups)) {
-                var selections = this.groupsGrid.getSelected();
+            var selection = this.groupsGrid.getSelected();
+            var list = this.arrayToList(selection, "name");
+            if (confirm(this.i18n.DeleteSelectedGroups + "\n" + list)) {
                 var request = {
                     ActionType: "delete"
                 };
-                arrayUtil.forEach(selections, function (item, idx) {
+                arrayUtil.forEach(selection, function (item, idx) {
                     request["groupnames_i" + idx] = item.name;
                 }, this);
 
@@ -204,12 +207,13 @@ define([
         },
 
         _onDeleteUser: function (params) {
-            var selections = this.usersGrid.getSelected();
-            if (confirm(this.i18n.DeleteSelectedUsers)) {
+            var selection = this.usersGrid.getSelected();
+            var list = this.arrayToList(selection, "username");
+            if (confirm(this.i18n.DeleteSelectedUsers + "\n" + list)) {
                 request = {
                     ActionType: "delete"
                 };
-                arrayUtil.forEach(selections, function (item, idx) {
+                arrayUtil.forEach(selection, function (item, idx) {
                     request["usernames_i" + idx] = item.username;
                 }, this);
                 var context = this;
@@ -285,10 +289,11 @@ define([
         },
 
         _onDeletePermission: function (params) {
-            if (confirm(this.i18n.DeleteSelectedPermissions)) {
-                var selections = this.permissionsGrid.getSelected();
+            var selection = this.permissionsGrid.getSelected();
+            var list = this.arrayToList(selection, "DisplayName");
+            if (confirm(this.i18n.DeleteSelectedPermissions + "\n" + list)) {
                 var deleteRequests = {};
-                arrayUtil.forEach(selections, function (item, idx) {
+                arrayUtil.forEach(selection, function (item, idx) {
                     if (!deleteRequests[item.__hpcc_id]) {
                         deleteRequests[item.__hpcc_id] = {
                             action: "Delete",
@@ -326,6 +331,23 @@ define([
             this.initGroupsGrid();
             this.initUsersGrid();
             this.initPermissionsGrid();
+
+            var context = this;
+            this.usersGrid.on("dgrid-refresh-complete", function (evt) {
+                if (context.usersStore.ldapTooMany) {
+                    context.setVisible(context.id + "LDAPWarning", true);
+                    context.filter.open();
+                } else {
+                    context.setVisible(context.id + "LDAPWarning", false);
+                }
+            });
+            this.filter.on("clear", function (evt) {
+                context.refreshUsersGrid();
+            });
+            this.filter.on("apply", function (evt) {
+                context.refreshUsersGrid();
+            });
+
             this.refreshActionState();
         },
 
@@ -419,9 +441,10 @@ define([
         //  Users  ---
         initUsersGrid: function () {
             this.initUsersContextMenu();
-            var store = WsAccess.CreateUsersStore();
+            this.usersStore = WsAccess.CreateUsersStore();
             this.usersGrid = declare([ESPUtil.Grid(false, true)])({
-                store: store,
+                store: this.usersStore,
+                query: this.filter.toObject(),
                 columns: {
                     check: selector({
                         width: 27,
@@ -505,9 +528,7 @@ define([
         },
 
         refreshUsersGrid: function (clearSelection) {
-            this.usersGrid.set("query",{
-               id: "*"
-            });
+            this.usersGrid.set("query", this.filter.toObject());
             if (clearSelection) {
                 this.usersGrid.clearSelection();
             }

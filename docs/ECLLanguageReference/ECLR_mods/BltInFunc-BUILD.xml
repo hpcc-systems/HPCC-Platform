@@ -188,7 +188,15 @@
       </indexterm>(</emphasis><emphasis> nodes </emphasis><emphasis
     role="bold">) ] [, DEDUP<indexterm>
         <primary>DEDUP</primary>
-      </indexterm>]</emphasis></para>
+      </indexterm>]<emphasis role="bold">[</emphasis>,<emphasis
+    role="bold">SKEW<indexterm>
+        <primary>SKEW</primary>
+      </indexterm>(</emphasis><emphasis>limit</emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, target</emphasis><emphasis
+    role="bold">] ) [, THRESHOLD<indexterm>
+        <primary>THRESHOLD</primary>
+      </indexterm>(</emphasis><emphasis>size</emphasis><emphasis role="bold">)
+    ] ]</emphasis></emphasis></para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -395,6 +403,47 @@
 
               <entry>Specifies that duplicate entries are eliminated from the
               INDEX.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">SKEW</emphasis></entry>
+
+              <entry>Indicates that you know the data will not be spread
+              evenly across nodes (will be skewed and you choose to override
+              the default by specifying your own limit value to allow the job
+              to continue despite the skewing.)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>limit</emphasis></entry>
+
+              <entry>A value between zero (0) and one (1.0 = 100%) indicating
+              the maximum percentage of skew to allow before the job fails
+              (the default skew is 1.0 / &lt;number of slaves on
+              cluster&gt;).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>target</emphasis></entry>
+
+              <entry>Optional. A value between zero (0) and one (1.0 = 100%)
+              indicating the desired maximum percentage of skew to allow (the
+              default skew is 1.0 / &lt;number of slaves on
+              cluster&gt;).</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="bold">THRESHOLD</emphasis></entry>
+
+              <entry>Indicates the minimum size for a single part before the
+              SKEW limit is enforced.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>size</emphasis></entry>
+
+              <entry>An integer value indicating the minimum number of bytes
+              for a single part. Default is 1GB.</entry>
             </row>
           </tbody>
         </tgroup>
