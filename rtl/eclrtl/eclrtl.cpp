@@ -3305,9 +3305,10 @@ bool rtlCodepageToCodepageX(unsigned & outlen, char * & out, unsigned maxoutlen,
 
 int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char const * outcodepage)
 {
-    if(!U8_IS_LEAD(*in))
+    const byte head = *in; // Macros require unsigned argument on some versions of ICU
+    if(!U8_IS_LEAD(head))
         return -1;
-    uint8_t trailbytes = U8_COUNT_TRAIL_BYTES(*in);
+    uint8_t trailbytes = U8_COUNT_TRAIL_BYTES(head);
     if(inlen < (unsigned)(trailbytes+1))
         return -1;
     if(!rtlCodepageToCodepage(1, out, trailbytes+1, in, outcodepage, UTF8_CODEPAGE))
