@@ -22,13 +22,13 @@
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div id="${id}Legacy" data-dojo-attach-event="onClick:_onOpenLegacy" data-dojo-type="dijit.MenuItem">${i18n.OpenLegacyECLWatch}</div>
                         <span data-dojo-type="dijit.MenuSeparator"></span>
-                        <div id="${id}Resources" data-dojo-attach-event="onClick:_onOpenResources" data-dojo-type="dijit.MenuItem">${i18n.AdditionalResources}</div>
-                        <div id="${id}ReleaseNotes" data-dojo-attach-event="onClick:_onOpenReleaseNotes" data-dojo-type="dijit.MenuItem">${i18n.ReleaseNotes}</div>
+                        <div data-dojo-attach-event="onClick:_onOpenReleaseNotes" data-dojo-type="dijit.MenuItem">${i18n.ReleaseNotes}</div>
+                        <div data-dojo-attach-event="onClick:_onOpenTransitionGuide" data-dojo-type="dijit.MenuItem">${i18n.TransitionGuide}</div>
+                        <div data-dojo-attach-event="onClick:_onOpenResources" data-dojo-type="dijit.MenuItem">${i18n.AdditionalResources}</div>
                         <span data-dojo-type="dijit.MenuSeparator"></span>
                         <div id="${id}Configuration" data-dojo-attach-event="onClick:_onOpenConfiguration" data-dojo-type="dijit.MenuItem">${i18n.Configuration}</div>
                         <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">${i18n.About}</div>
-                        <span data-dojo-type="dijit.MenuSeparator"></span>
-                        <div data-dojo-type="dijit.PopupMenuItem">
+                        <div data-dojo-props="hidden:true" data-dojo-type="dijit.PopupMenuItem">
                             <span>${i18n.Debug}</span>
                             <div data-dojo-type="dijit.DropDownMenu">
                                 <div data-dojo-attach-event="onClick:_ondebugLanguageFiles" data-dojo-type="dijit.MenuItem">${i18n.LanguageFiles}</div>
