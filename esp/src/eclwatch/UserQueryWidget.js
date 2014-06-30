@@ -39,6 +39,7 @@ define([
     "hpcc/ESPUtil",
     "hpcc/UserDetailsWidget",
     "hpcc/GroupDetailsWidget",
+    "hpcc/FilterDropDownWidget",
 
     "dojo/text!../templates/UserQueryWidget.html",
 
@@ -61,7 +62,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
                 registry, Menu, MenuItem, MenuSeparator, Select,
                 tree, selector,
-                _TabContainerWidget, WsAccess, ESPBase, ESPUtil, UserDetailsWidget, GroupDetailsWidget,
+                _TabContainerWidget, WsAccess, ESPBase, ESPUtil, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget,
                 template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -80,6 +81,7 @@ define([
             this.addPermissionForm = registry.byId(this.id + "AddPermissionForm");
             this.addPermissionType = registry.byId(this.id + "AddPermissionType");
             this.permissionsTab = registry.byId(this.id + "_Permissions");
+            this.filter = registry.byId(this.id + "Filter");
         },
 
         //  Hitched actions  ---
@@ -329,6 +331,23 @@ define([
             this.initGroupsGrid();
             this.initUsersGrid();
             this.initPermissionsGrid();
+
+            var context = this;
+            this.usersGrid.on("dgrid-refresh-complete", function (evt) {
+                if (context.usersStore.ldapTooMany) {
+                    context.setVisible(context.id + "LDAPWarning", true);
+                    context.filter.open();
+                } else {
+                    context.setVisible(context.id + "LDAPWarning", false);
+                }
+            });
+            this.filter.on("clear", function (evt) {
+                context.refreshUsersGrid();
+            });
+            this.filter.on("apply", function (evt) {
+                context.refreshUsersGrid();
+            });
+
             this.refreshActionState();
         },
 
@@ -422,9 +441,10 @@ define([
         //  Users  ---
         initUsersGrid: function () {
             this.initUsersContextMenu();
-            var store = WsAccess.CreateUsersStore();
+            this.usersStore = WsAccess.CreateUsersStore();
             this.usersGrid = declare([ESPUtil.Grid(false, true)])({
-                store: store,
+                store: this.usersStore,
+                query: this.filter.toObject(),
                 columns: {
                     check: selector({
                         width: 27,
@@ -508,9 +528,7 @@ define([
         },
 
         refreshUsersGrid: function (clearSelection) {
-            this.usersGrid.set("query",{
-               id: "*"
-            });
+            this.usersGrid.set("query", this.filter.toObject());
             if (clearSelection) {
                 this.usersGrid.clearSelection();
             }
