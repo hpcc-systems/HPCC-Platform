@@ -2335,7 +2335,11 @@ public:
         assertex(NULL == writer); // should have been closed
         Owned<CFileOwner> fileOwner = spillFile.getClear();
         if (!fileOwner)
+        {
+            if (_count)
+                *_count = 0;
             return NULL;
+        }
         Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, rwFlags);
         Owned<CStreamFileOwner> fileStream = new CStreamFileOwner(fileOwner, strm);
         if (_count)
@@ -3168,9 +3172,11 @@ CBucketHandler *CBucketHandler::getNextBucketHandler(Owned<IRowStream> &nextInpu
             // JCSMORE ideally, each key and row stream, would use a unique allocator per destination bucket
             // thereby keeping rows/keys together in pages, making it easier to free pages on spill requests
             Owned<IRowStream> keyStream = bucket->getKeyStream(&keyCount);
+            dbgassertex(keyStream);
             Owned<CBucketHandler> newBucketHandler = new CBucketHandler(owner, rowIf, keyIf, iRowHash, iKeyHash, iCompare, extractKey, depth+1, div*numBuckets);
             ActPrintLog(&owner, "Created bucket handler %d, depth %d", currentBucket, depth+1);
             nextInput.setown(bucket->getRowStream(&count));
+            dbgassertex(nextInput);
             // Use peak in mem keys as estimate for next round of buckets.
             unsigned nextNumBuckets = getBucketEstimateWithPrev(count, (rowidx_t)getPeakCount(), (rowidx_t)keyCount);
             owner.ensureNumHashTables(nextNumBuckets);

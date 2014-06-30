@@ -237,9 +237,11 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm(this.i18n.DeleteSelectedFiles)) {
+            var selection = this.landingZonesGrid.getSelected();
+            var list = this.arrayToList(selection, "displayName");
+            if (confirm(this.i18n.DeleteSelectedFiles + "\n" + list)) {
                 var context = this;
-                arrayUtil.forEach(this.landingZonesGrid.getSelected(), function(item, idx) {
+                arrayUtil.forEach(selection, function (item, idx) {
                     FileSpray.DeleteDropZoneFile({
                         request:{
                             NetAddress: item.DropZone.NetAddress,
@@ -450,9 +452,9 @@ define([
         },
 
         initLandingZonesGrid: function () {
-            var store = new FileSpray.CreateLandingZonesStore();
+            this.landingZoneStore = new FileSpray.CreateLandingZonesStore();
             this.landingZonesGrid = new declare([ESPUtil.Grid(false, true)])({
-                store: store,
+                store: this.landingZoneStore,
                 columns: {
                     col1: selector({
                         width: 27,

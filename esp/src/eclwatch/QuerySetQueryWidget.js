@@ -450,9 +450,11 @@ define([
         },
 
         _onDelete:function(){
-            if (confirm(this.i18n.DeleteSelectedQueries)) {
+            var selection = this.querySetGrid.getSelected();
+            var list = this.arrayToList(selection, "Id");
+            if (confirm(this.i18n.DeleteSelectedQueries + "\n" + list)) {
                 var context = this;
-                WsWorkunits.WUQuerysetQueryAction(this.querySetGrid.getSelected(), "Delete").then(function (response) {
+                WsWorkunits.WUQuerysetQueryAction(selection, "Delete").then(function (response) {
                     context.refreshGrid(true);
                 });
             }

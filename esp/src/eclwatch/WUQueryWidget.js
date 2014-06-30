@@ -113,9 +113,10 @@ define([
         },
 
         _onDelete: function (event) {
-            if (confirm(this.i18n.DeleteSelectedWorkunits)) {
+            var selection = this.workunitsGrid.getSelected();
+            var list = this.arrayToList(selection, "Wuid");
+            if (confirm(this.i18n.DeleteSelectedWorkunits + "\n" + list)) {
                 var context = this;
-                var selection = this.workunitsGrid.getSelected();
                 WsWorkunits.WUAction(selection, "Delete", {
                     load: function (response) {
                         context.refreshGrid(true);

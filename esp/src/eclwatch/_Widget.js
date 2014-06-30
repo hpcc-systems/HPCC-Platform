@@ -1,5 +1,6 @@
 define([
-    "dojo/_base/declare", // declare
+    "dojo/_base/declare",
+    "dojo/_base/array",
     "dojo/io-query",
     "dojo/dom",
     "dojo/dom-construct",
@@ -11,7 +12,7 @@ define([
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry"
 
-], function (declare, ioQuery, dom, domConstruct, domAttr, domStyle,
+], function (declare, arrayUtil, ioQuery, dom, domConstruct, domAttr, domStyle,
     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry) {
 
     return declare("_Widget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -223,6 +224,17 @@ define([
             }
 
             return formatted;
+        },
+
+        arrayToList: function (arr, field) {
+            var retVal = "";
+            arrayUtil.forEach(arr, function (item, idx) {
+                if (retVal.length) {
+                    retVal += "\n";
+                }
+                retVal += item[field];
+            });
+            return retVal;
         },
 
         //  Util functions  ---

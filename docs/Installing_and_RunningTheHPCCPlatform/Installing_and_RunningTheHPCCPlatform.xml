@@ -537,19 +537,35 @@
       <sect2 id="Operating-System-Requirements">
         <title>Operating System Requirements</title>
 
-        <para>You will need one of the following:</para>
+        <para>Binary packages are available for the following:</para>
 
         <para><itemizedlist mark="square" spacing="compact">
             <listitem>
-              <para>64-bit LINUX CentOS 5.x / Red Hat Enterprise Linux</para>
+              <para>64-bit CentOS 5</para>
             </listitem>
 
             <listitem>
-              <para>64-bit Ubuntu 10.04 LTS, 11.04, or 11.10</para>
+              <para>64-bit CentOS 6</para>
             </listitem>
 
             <listitem>
-              <para>64-bit Debian 6.x (Squeeze)</para>
+              <para>64-bit RedHat Enterprise 5</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit RedHat Enterprise 6</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Ubuntu 12.04 (LTS)</para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Ubuntu 13.10 </para>
+            </listitem>
+
+            <listitem>
+              <para>64-bit Ubuntu 14.04 (LTS)</para>
             </listitem>
           </itemizedlist></para>
       </sect2>
@@ -3403,27 +3419,36 @@ split_words('Once upon a time');
           </listitem>
 
           <listitem>
-            <para>Install the <emphasis role="bold">Rcpp</emphasis> and the
-            <emphasis role="bold">RInside</emphasis> libraries.</para>
+            <para>Install the <emphasis role="bold">Rcpp</emphasis>
+            library.</para>
 
-            <para>You will need both Rcpp and RInside libraries in order for
-            the R-embedding to work properly. The library installation
-            packages are named with the version number appended so you should
-            search for Rcpp_ and RInside_ to obtain the latest version for
-            your system.</para>
+            <para>You need the Rcpp library in order for the R-embedding to
+            work properly. The library installation packages are named with
+            the version number appended so you should search for Rcpp_ to
+            obtain the latest version for your system.</para>
 
-            <para>For Example:</para>
+            <para><emphasis role="bold">For all distros except Ubuntu
+            14.04:</emphasis></para>
 
             <programlisting>wget http://cran.r-project.org/src/contrib/<emphasis
                 role="bold">Rcpp_0.10.4.</emphasis>tar.gz
-wget http://cran.r-project.org/src/contrib/<emphasis role="bold">RInside</emphasis><emphasis
-                role="bold">_0.2.10.tar.gz</emphasis>
 </programlisting>
 
             <para>To Install:</para>
 
             <programlisting>sudo R CMD INSTALL <emphasis role="bold">Rcpp_0.10.4.</emphasis>tar.gz
-sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</programlisting>
+</programlisting>
+
+            <para><emphasis role="bold">For Ubuntu 14.04:</emphasis></para>
+
+            <programlisting>wget http://cran.r-project.org/src/contrib/<emphasis
+                role="bold">Rcpp_0.11.0.</emphasis>tar.gz
+</programlisting>
+
+            <para>To Install:</para>
+
+            <programlisting>sudo R CMD INSTALL <emphasis role="bold">Rcpp_0.11.0.</emphasis>tar.gz
+</programlisting>
 
             <para><variablelist>
                 <varlistentry>
@@ -3431,10 +3456,8 @@ sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</progr
 
                   <listitem>
                     <para>The version of library files to install on your
-                    system should be a version supported by the distribution
-                    of R installed on your system. The above files are for
-                    demonstration purposes only, these may not be the
-                    appropriate files to install on your system.</para>
+                    system must be 0.2.10 for all distros except Ubuntu 14.04.
+                    For Ubuntu 14.04, use 0.2.11.x. </para>
                   </listitem>
                 </varlistentry>
               </variablelist>These libraries are maintained by the R project
@@ -3443,6 +3466,34 @@ sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</progr
             along with more information. Use the version number appropriate
             for your system. If a version number is unsupported, you must use
             an earlier version.</para>
+          </listitem>
+        </orderedlist>
+
+        <?hard-pagebreak ?>
+
+        <orderedlist continuation="continues">
+          <listitem>
+            <para>Install the <emphasis role="bold">RInside</emphasis>
+            library.</para>
+
+            <para>You will also need RInside library in order for the
+            R-embedding to work properly. The version must match the </para>
+
+            <para><emphasis role="bold">For all distros:</emphasis></para>
+
+            <programlisting>wget http://cran.r-project.org/src/contrib/Archive/RInside_0.2.10.tar.gz
+</programlisting>
+
+            <para>To Install:</para>
+
+            <programlisting>sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</programlisting>
+
+            <para>These libraries are maintained by the R project and can be
+            found on the site <ulink
+            url="http://cran.r-project.org/src/contrib/">http://cran.r-project.org/src/contrib/</ulink>
+            and <ulink
+            url="http://cran.r-project.org/src/contrib/archive">http://cran.r-project.org/src/contrib/archive/</ulink>
+            along with more information. </para>
           </listitem>
 
           <listitem>

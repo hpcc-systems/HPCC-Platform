@@ -133,6 +133,14 @@ define([
             }
             this.graphControl.watchSplitter(this.borderContainer.getSplitter("right"));
             this.graphControl.watchSplitter(this.borderContainer.getSplitter("bottom"));
+
+            this.graphControl.onDoubleClick = function (globalID, keyState) {
+                if (keyState && context.main.KeyState_Shift) {
+                    context.graphControl._onSyncSelection();
+                } else {
+                    context.graphControl.centerOn(globalID);
+                }
+            };
         },
 
         initSamples: function () {

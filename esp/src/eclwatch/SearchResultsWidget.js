@@ -46,6 +46,7 @@ define([
 
         gridTitle: nlsHPCC.title_SearchResults,
         idProperty: "id",
+        _rowID: 0,
 
         doSearch: function (searchText) {
             lang.mixin(this.params, {
@@ -134,32 +135,32 @@ define([
                         }
                     });
                     break;
+                case "SuperFile":
+                    return new DelayLoadWidget({
+                        id: id,
+                        title: row.Summary,
+                        closable: true,
+                        delayWidget: "SFDetailsWidget",
+                        hpcc: {
+                            params: {
+                                Name: row._name
+                            }
+                        }
+                    });
+                    break;
                 case "LogicalFile":
-                    if (row.isSuperfile) {
-                        return new DelayLoadWidget({
-                            id: id,
-                            title: row.Summary,
-                            closable: true,
-                            delayWidget: "SFDetailsWidget",
-                            hpcc: {
-                                params: {
-                                    Name: row._name
-                                }
+                    return new DelayLoadWidget({
+                        id: id,
+                        title: row.Summary,
+                        closable: true,
+                        delayWidget: "LFDetailsWidget",
+                        hpcc: {
+                            params: {
+                                NodeGroup: row._nodeGroup,
+                                Name: row._name
                             }
-                        });
-                    } else {
-                        return new DelayLoadWidget({
-                            id: id,
-                            title: row.Summary,
-                            closable: true,
-                            delayWidget: "LFDetailsWidget",
-                            hpcc: {
-                                params: {
-                                    Name: row._name
-                                }
-                            }
-                        });
-                    }
+                        }
+                    });
                     break;
                 default:
                     break;
@@ -174,7 +175,7 @@ define([
                 var context = this;
                 arrayUtil.forEach(workunits, function (item, idx) {
                     context.store.add({
-                        id: "WsWorkunitsWUQuery" + idPrefix + idx,
+                        id: "WsWorkunitsWUQuery" + idPrefix + ++context._rowID,
                         Type: "ECL Workunit",
                         Reason: prefix,
                         Summary: item.Wuid,
@@ -194,7 +195,7 @@ define([
                 var context = this;
                 arrayUtil.forEach(workunits, function (item, idx) {
                     context.store.add({
-                        id: "FileSprayGetDFUWorkunits" + idPrefix + idx,
+                        id: "FileSprayGetDFUWorkunits" + idPrefix + ++context._rowID,
                         Type: "DFU Workunit",
                         Reason: prefix,
                         Summary: item.ID,
@@ -230,14 +231,26 @@ define([
                 var idPrefix = prefix.split(" ").join("_");
                 var context = this;
                 arrayUtil.forEach(items, function (item, idx) {
-                    context.store.add({
-                        id: "WsDfuDFUQuery" + idPrefix + idx,
-                        Type: "Logical File",
-                        Reason: prefix,
-                        Summary: item.Name,
-                        _type: "LogicalFile",
-                        _name: item.Name
-                    });
+                    if (item.isSuperfile) {
+                        context.store.add({
+                            id: "WsDfuDFUQuery" + idPrefix + ++context._rowID,
+                            Type: "Super File",
+                            Reason: prefix,
+                            Summary: item.Name,
+                            _type: "SuperFile",
+                            _name: item.Name
+                        });
+                    } else {
+                        context.store.add({
+                            id: "WsDfuDFUQuery" + idPrefix + ++context._rowID,
+                            Type: "Logical File",
+                            Reason: prefix,
+                            Summary: item.Name + " (" + item.NodeGroup + ")",
+                            _type: "LogicalFile",
+                            _nodeGroup: item.NodeGroup,
+                            _name: item.Name
+                        });
+                    }
                 });
                 return items.length;
             }

@@ -9144,12 +9144,21 @@ class CInitGroups
             else
                 matchOldEnv = false;
         }
-        if (force && !matchExisting)
+        if (!matchExisting)
         {
-            VStringBuffer msg("Forcing new group layout for %s [ matched active = %s, matched old environment = %s ]", gname.str(), matchExisting?"true":"false", matchOldEnv?"true":"false");
-            WARNLOG("%s", msg.str());
-            messages.append(msg).newline();
-            matchExisting = matchOldEnv = false;
+            if (force)
+            {
+                VStringBuffer msg("Forcing new group layout for %s [ matched active = %s, matched old environment = %s ]", gname.str(), matchExisting?"true":"false", matchOldEnv?"true":"false");
+                WARNLOG("%s", msg.str());
+                messages.append(msg).newline();
+                matchExisting = matchOldEnv = false;
+            }
+            else
+            {
+                VStringBuffer msg("Active cluster '%s' group layout does not match environment [matched old environment=%s]", gname.str(), matchOldEnv?"true":"false");
+                LOG(MCoperatorWarning, unknownJob, msg.str());                                                                        \
+                messages.append(msg).newline();
+            }
         }
         if (!existingClusterGroup || (!matchExisting && !matchOldEnv))
         {
