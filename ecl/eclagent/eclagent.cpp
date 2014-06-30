@@ -3053,7 +3053,7 @@ IGroup *EclAgent::getHThorGroup(StringBuffer &out)
     StringBuffer mygroupname("hthor__");
     agentTopology->getProp("@name",mygroupname);
     size32_t l = mygroupname.length();
-    unsigned ins = 0;
+    unsigned ins = 1;
     SocketEndpoint ep(0,queryMyNode()->endpoint());
     Owned<IGroup> mygrp = createIGroup(1,&ep);
     loop
