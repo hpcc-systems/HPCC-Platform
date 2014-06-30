@@ -124,12 +124,13 @@ define([
         },
 
         _onDeleteGroup: function (params) {
-            if (confirm(this.i18n.DeleteSelectedGroups)) {
-                var selections = this.groupsGrid.getSelected();
+            var selection = this.groupsGrid.getSelected();
+            var list = this.arrayToList(selection, "name");
+            if (confirm(this.i18n.DeleteSelectedGroups + "\n" + list)) {
                 var request = {
                     ActionType: "delete"
                 };
-                arrayUtil.forEach(selections, function (item, idx) {
+                arrayUtil.forEach(selection, function (item, idx) {
                     request["groupnames_i" + idx] = item.name;
                 }, this);
 
@@ -204,12 +205,13 @@ define([
         },
 
         _onDeleteUser: function (params) {
-            var selections = this.usersGrid.getSelected();
-            if (confirm(this.i18n.DeleteSelectedUsers)) {
+            var selection = this.usersGrid.getSelected();
+            var list = this.arrayToList(selection, "username");
+            if (confirm(this.i18n.DeleteSelectedUsers + "\n" + list)) {
                 request = {
                     ActionType: "delete"
                 };
-                arrayUtil.forEach(selections, function (item, idx) {
+                arrayUtil.forEach(selection, function (item, idx) {
                     request["usernames_i" + idx] = item.username;
                 }, this);
                 var context = this;
@@ -285,10 +287,11 @@ define([
         },
 
         _onDeletePermission: function (params) {
-            if (confirm(this.i18n.DeleteSelectedPermissions)) {
-                var selections = this.permissionsGrid.getSelected();
+            var selection = this.permissionsGrid.getSelected();
+            var list = this.arrayToList(selection, "DisplayName");
+            if (confirm(this.i18n.DeleteSelectedPermissions + "\n" + list)) {
                 var deleteRequests = {};
-                arrayUtil.forEach(selections, function (item, idx) {
+                arrayUtil.forEach(selection, function (item, idx) {
                     if (!deleteRequests[item.__hpcc_id]) {
                         deleteRequests[item.__hpcc_id] = {
                             action: "Delete",
