@@ -185,6 +185,8 @@ define([
                 account_name: this.groupname ? this.groupname : this.username,
                 account_type: this.groupname ? 1 : 0,
                 basedn: row.__hpcc_parent.basedn,
+                rtitle: row.__hpcc_parent.rtitle,
+                rtype: row.__hpcc_parent.rtype,
                 rname: row.name,
                 action: "update"
             };
