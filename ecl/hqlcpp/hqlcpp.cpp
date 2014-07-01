@@ -1731,6 +1731,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeMax,"optimizeMax",false),
         DebugOption(options.useResultsForChildSpills,"useResultsForChildSpills",false),
         DebugOption(options.alwaysUseGraphResults,"alwaysUseGraphResults",false),
+        DebugOption(options.reportAssertFilenameTail,"reportAssertFilenameTail",false),        
     };
 
     //get options values from workunit

@@ -8790,7 +8790,12 @@ void HqlCppTranslator::doBuildStmtAssert(BuildCtx & ctx, IHqlExpression * expr)
         location.extractLocationAttr(locationAttr);
 
     if (location.sourcePath)
-        args.append(*createConstant(location.sourcePath->str()));
+    {
+        const char * filename = location.sourcePath->str();
+        if (options.reportAssertFilenameTail)
+            filename = pathTail(filename);
+        args.append(*createConstant(filename));
+    }
     else
         args.append(*getNullStringPointer(true));
 

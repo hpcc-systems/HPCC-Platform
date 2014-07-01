@@ -1,4 +1,3 @@
-#line(1)
 /*##############################################################################
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
@@ -15,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 ############################################################################## */
+
+#option ('reportAssertFilenameTail', true);
 
 val1 := 1;
 val2 := 1;
