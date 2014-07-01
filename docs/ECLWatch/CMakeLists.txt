@@ -14,5 +14,7 @@
 #    limitations under the License.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} ECLWTechPrev.xml "ECLWatch" "ECLWa_mods")
+#DOCBOOK_TO_PDF( ${FO_XSL} ECLWTechPrev.xml "ECLWatch" "ECLWa_mods")
+
+DOCBOOK_TO_PDF( ${FO_XSL} TheECLWatchMan.xml "The_ECL_Watch_Manual" "ECLWa_mods")
 
