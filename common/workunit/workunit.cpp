@@ -2389,28 +2389,6 @@ public:
         return getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, NULL, NULL, total);
     }
 
-    static void checkUpdateQuerysetLibraries(IPropertyTree *querySet)
-    {
-        if (querySet->hasProp("@updatedLibraries")) //only need to do this once, then publish and copy will keep up to date
-            return;
-        Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
-        Owned<IPropertyTreeIterator> queries = querySet->getElements("Query");
-        ForEach(*queries)
-        {
-            IPropertyTree &query = queries->query();
-            if (query.hasProp("@libCount"))
-                continue;
-            const char *wuid = query.queryProp("@wuid");
-            if (!wuid || !*wuid)
-                continue;
-            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
-            if (!cw)
-                continue;
-            addLibrariesToQueryEntry(&query, cw);
-        }
-        querySet->setPropBool("@updatedLibraries", true);
-    }
-
     IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
                                                 WUQuerySortField *filters,   // NULL or list of fields to folteron (terminated by WUSFterm)
                                                 const void *filterbuf,  // (appended) string values for filters
@@ -2424,7 +2402,6 @@ public:
             StringAttr querySet;
             StringAttr xPath;
             StringAttr sortOrder;
-            bool checkLibraries;
 
             void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
             {
@@ -2455,8 +2432,6 @@ public:
                 if (querySet && *querySet)
                 {
                     Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
-                    if (checkLibraries)
-                        checkUpdateQuerysetLibraries(queryRegistry); //only actually happens once per queryset
                     VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
                     populateQueryTree(queryRegistry, querySet, root, path.str(), queryTree);
                 }
@@ -2470,8 +2445,6 @@ public:
                         if (id && *id)
                         {
                             Owned<IPropertyTree> queryRegistry = getQueryRegistry(id, false);
-                            if (checkLibraries)
-                                checkUpdateQuerysetLibraries(queryRegistry); //only actually happens once per queryset
                             VStringBuffer path("Query%s", xPath);
                             populateQueryTree(queryRegistry, id, &querySetTree, path.str(), queryTree);
                         }
@@ -2483,8 +2456,8 @@ public:
         public:
             IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder, bool _checkLibraries)
-                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder), checkLibraries(_checkLibraries)
+            CQuerySetQueriesPager(const char* _querySet, const char* _xPath, const char *_sortOrder)
+                : querySet(_querySet), xPath(_xPath), sortOrder(_sortOrder)
             {
             }
             virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
@@ -2505,7 +2478,6 @@ public:
         StringAttr querySet;
         StringBuffer xPath;
         StringBuffer so;
-        bool checkLibraries = false;
         if (filters)
         {
             const char *fv = (const char *)filterbuf;
@@ -2528,8 +2500,6 @@ public:
                         xPath.append('~');
                     xPath.append('"').append(fv).append("\"]");
                 }
-                if (subfmt==WUQSFLibrary)
-                    checkLibraries = true;
                 fv = fv + strlen(fv)+1;
             }
         }
@@ -2550,7 +2520,7 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL, checkLibraries);
+        Owned<IElementsPager> elementsPager = new CQuerySetQueriesPager(querySet.get(), xPath.str(), so.length()?so.str():NULL);
         Owned<IRemoteConnection> conn=getElementsPaged(elementsPager,startoffset,maxnum,NULL,"",cachehint,results,total);
         return new CConstQuerySetQueryIterator(results);
     }
@@ -9734,7 +9704,7 @@ extern WORKUNIT_API IPropertyTree * getQueryRegistryRoot()
             return NULL;
 }
 
-extern WORKUNIT_API void addLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWULibraryIterator *libraries)
+extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWULibraryIterator *libraries)
 {
     if (!queryTree || !libraries)
         return;
@@ -9753,10 +9723,10 @@ extern WORKUNIT_API void addLibrariesToQueryEntry(IPropertyTree *queryTree, ICon
     queryTree->setPropInt("@libCount", libCount);
 }
 
-extern WORKUNIT_API void addLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWorkUnit *cw)
+extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWorkUnit *cw)
 {
     Owned<IConstWULibraryIterator> libraries = &cw->getLibraries();
-    addLibrariesToQueryEntry(queryTree, libraries);
+    checkAddLibrariesToQueryEntry(queryTree, libraries);
 }
 
 extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool readonly)
@@ -9876,6 +9846,8 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
     }
 
     IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
+    Owned<IConstWULibraryIterator> libraries = &workunit->getLibraries();
+    checkAddLibrariesToQueryEntry(newEntry, libraries);
     newQueryId.append(newEntry->queryProp("@id"));
     workunit->setIsQueryService(true); //will check querysets before delete
     workunit->commit();

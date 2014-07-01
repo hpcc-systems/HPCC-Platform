@@ -754,8 +754,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     StringBuffer queryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
     addQueryToQuerySet(wu, target.str(), queryName.str(), activate, queryId, context.queryUserId());
-    Owned<IConstWULibraryIterator> libraries = &wu->getLibraries();
-    if (libraries->first() || req.getMemoryLimit() || !req.getTimeLimit_isNull() || !req.getWarnTimeLimit_isNull() || req.getPriority() || req.getComment())
+    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || !req.getWarnTimeLimit_isNull() || req.getPriority() || req.getComment())
     {
         Owned<IPropertyTree> queryTree = getQueryById(target.str(), queryId, false);
         updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
@@ -764,7 +763,6 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
         updateQueryPriority(queryTree, req.getPriority());
         if (req.getComment())
             queryTree->setProp("@comment", req.getComment());
-        addLibrariesToQueryEntry(queryTree, libraries);
     }
     wu->commit();
     wu.clear();
@@ -1878,7 +1876,6 @@ public:
                 IPropertyTree &child = children->query();
                 destQuery->addPropTree(child.queryName(), createPTreeFromIPT(&child));
             }
-            addLibrariesToQueryEntry(destQuery, workunit);
             if (cloneFilesEnabled && wufiles)
                 wufiles->addFilesFromQuery(workunit, pm, newQueryId);
         }
@@ -2066,7 +2063,6 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     addQueryToQuerySet(wu, target, queryName.str(), activate, targetQueryId, context.queryUserId());
 
     Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
-    addLibrariesToQueryEntry(queryTree, wu);
     if (queryTree)
     {
         IConstQuerySetQuery *srcInfo=NULL;
