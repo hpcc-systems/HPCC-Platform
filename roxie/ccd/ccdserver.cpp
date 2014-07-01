@@ -11387,10 +11387,10 @@ public:
 
         unsigned __int64 fileSize = 0;
         fileCrc = -1;
-        OwnedRoxieString dsName(helper.getFileName());
+        OwnedRoxieString dsName(helper.getDatasetName());
         if (dsName.get())
         {
-            Owned<const IResolvedFile> dsFileInfo = resolveLFN(dsName, false);
+            Owned<const IResolvedFile> dsFileInfo = resolveLFN(dsName, true);
             if (dsFileInfo)
             {
                 fileSize = dsFileInfo->getFileSize();

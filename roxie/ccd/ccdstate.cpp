@@ -491,7 +491,7 @@ protected:
             {
                 StringBuffer useName;
                 bool wasDFS = false;
-                if (strstr(fileName,"::"))
+                if (!resolveLocal || strstr(fileName,"::") != NULL)
                 {
                     makeSinglePhysicalPartName(fileName, useName, true, wasDFS);
                 }
@@ -669,7 +669,7 @@ public:
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         // filename by now may be a local filename, or a dali one
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
-        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, false, false, true);
+        Owned<ILocalOrDistributedFile> ldFile = createLocalOrDistributedFile(fileName, NULL, false, !resolveLocally(), true);
         if (!ldFile)
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);

@@ -292,7 +292,7 @@ protected:
             updatePersist(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC);
         }
         logctx.CTXLOG("Finished persists - add to read lock list");
-        persistReadLocks.append(*persistLock);
+        persistReadLocks.append(*persistLock.getClear());
     }
 
 private:
