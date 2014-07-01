@@ -190,7 +190,7 @@ define([
                                 case -2:
                                     break;
                                 default:
-                                    if (response.MyAccountResponse.passwordDaysRemaining <= 10) {
+                                    if (response.MyAccountResponse.passwordDaysRemaining <= response.MyAccountResponse.passwordExpirationWarningDays) {
                                         if (confirm(context.i18n.PasswordExpirePrefix + response.MyAccountResponse.passwordDaysRemaining + context.i18n.PasswordExpirePostfix)) {
                                             context._onUserID();
                                         }
