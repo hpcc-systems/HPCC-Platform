@@ -1292,7 +1292,7 @@ protected:
             return false;
     }
 
-    void checkSuspended() const
+    virtual void checkSuspended() const
     {
         if (isSuspended)
         {
