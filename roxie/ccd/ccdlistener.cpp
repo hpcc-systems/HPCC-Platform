@@ -1659,6 +1659,7 @@ readAnother:
                             client->setHttpMode(queryName, isRequestArray, httpHelper.queryContentFormat());
                         if (queryFactory)
                         {
+                            queryFactory->checkSuspended();
                             bool stripWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (ptr_ignoreWhiteSpace & defaultXmlReadFlags));
                             stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
                             PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
