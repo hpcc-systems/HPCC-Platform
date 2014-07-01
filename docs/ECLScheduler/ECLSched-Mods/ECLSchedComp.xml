@@ -133,11 +133,13 @@
     <sect1 id="ECLSched_Interface">
       <title>Interface in ECL Watch</title>
 
-      <para>To access the ECL Scheduler interface in ECL Watch, click on the
-      Scheduler link in the menu on the left hand side. The Scheduler
-      interface displays and you can see the scheduled workunits, if any. The
-      list of scheduled workunits has two significant columns, the <emphasis
-      role="bold">EventName </emphasis>and the <emphasis
+      <para>To access the ECL Scheduler interface in ECL Watch, click on
+      the<emphasis role="bold"> Event Scheduler </emphasis>link in the
+      navigation sub-menu. The Scheduler interface displays and you can see
+      the scheduled workunits, if any.</para>
+
+      <para>The list of scheduled workunits has two significant columns, the
+      <emphasis role="bold">EventName </emphasis>and the <emphasis
       role="bold">EventText</emphasis>.</para>
 
       <para><figure>
@@ -162,10 +164,12 @@
       <sect2>
         <title>Scheduler Workunit List</title>
 
-        <para>You can search scheduled workunits by cluster or event name. You
-        can also filter by clicking on event names in the list. For example,
-        clicking on the Thor hyperlink in the cluster column, displays only
-        workunits sent to that target cluster. <figure>
+        <para>You can search scheduled workunits by cluster or event name. To
+        filter by cluster or event name, click on the <emphasis
+        role="bold">Filter</emphasis> Action button. The Filter sub-menu
+        displays. Fill in values for the filter criteria, Eventname or
+        Cluster, then press the <emphasis role="bold">Apply</emphasis> button.
+        <figure>
             <title>Workunits in the Scheduler Interface</title>
 
             <mediaobject>
@@ -175,7 +179,7 @@
             </mediaobject>
           </figure></para>
 
-        <para>You can sort the workunits by clicking on a column
+        <para>You can sort the workunits by clicking on the column
         header.</para>
 
         <para>To view the workunit details, click on the workunit ID (WUID)
