@@ -79,7 +79,7 @@ bool ExecProcess(NamedPipe& pipe, CmdMessage& cmd)
         Token utoken;
         if(*cmd.username)
         { 
-            CHAR *username, *domain;
+            char *username, *domain;
             if(username=strchr(cmd.username,'\\'))
             {
                 *username++=0;

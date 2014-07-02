@@ -75,12 +75,12 @@ struct CmdMessage
         return buf;
     } 
 
-    CHAR  command[16];
+    char  command[16];
     DWORD processId;
     DWORD threadId;
-    CHAR  machine[MAX_COMPUTERNAME_LENGTH+1];
-    CHAR  username[UNLEN+1];
-    CHAR  password[PWLEN+1];
+    char  machine[MAX_COMPUTERNAME_LENGTH+1];
+    char  username[UNLEN+1];
+    char  password[PWLEN+1];
 
 };
 
