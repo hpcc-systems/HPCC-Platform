@@ -280,7 +280,41 @@ void unpackNumber(char * target, const char * source, unsigned tlen)
     }
 }
 
+//-----------------------------------------------------------------------
 
+class jlib_thrown_decl CorruptDllException : public CInterfaceOf<ICorruptDllException>
+{
+public:
+    CorruptDllException(int code, const char *_dllName, const char *_dlError)
+    : errcode(code)
+    {
+        VStringBuffer s("Error loading %s: %s", _dllName, _dlError);
+        msg.set(s.str());
+    };
+    int  errorCode() const { return errcode; }
+    StringBuffer &  errorMessage(StringBuffer &str) const
+    {
+        return str.append(msg.get());
+    }
+    MessageAudience errorAudience() const
+    {
+        return MSGAUD_operator;
+    }
+private:
+    int errcode;
+    StringAttr msg;
+};
+
+static bool isCorruptDll(const char *errorMessage)
+{
+    // yuk.
+    // Add other error strings for corrupt .so files as/when we encounter them
+    if (strstr(errorMessage, "file too short") ||
+        strstr(errorMessage, "ELF load command past end of file"))
+        return true;
+    return false;
+
+}
 //-----------------------------------------------------------------------
 HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
 {
@@ -348,7 +382,12 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
             StringBuffer dlErrorMsg(dlerror());
             DBGLOG("Error loading %s: %s", name, dlErrorMsg.str());
             if (raiseOnError)
-                throw MakeStringException(0, "Error loading %s: %s", name, dlErrorMsg.str());
+            {
+                if (isCorruptDll(dlErrorMsg.str()))
+                    throw new CorruptDllException(errno, name, dlErrorMsg.str());
+                else
+                    throw MakeStringException(0, "Error loading %s: %s", name, dlErrorMsg.str());
+            }
         }
     }
 
