@@ -3270,7 +3270,7 @@ bool PTIdMatchIterator::match()
 
 ////////////////////////////
 
-SingleIdIterator::SingleIdIterator(const PTree &_tree, unsigned pos, unsigned _many) : tree(_tree), many(_many), start(pos-1), whichNext(start), count(0), current(NULL)
+SingleIdIterator::SingleIdIterator(const PTree &_tree, unsigned pos, unsigned _many) : tree(_tree), many(_many), start(pos-1), whichNext(pos-1), count(0), current(NULL)
 {
     tree.Link();
 }

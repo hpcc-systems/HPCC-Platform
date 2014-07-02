@@ -2004,10 +2004,12 @@ public:
             compblklen = 0;
             if (trailer.recordSize==0) {
                 if (!compressor)
+                {
                     if (fast)
                         compressor.setown(createFastLZCompressor());
                     else
                         compressor.setown(createLZWCompressor(true));
+                }
                 compressor->open(compblkptr, trailer.blockSize);
             }
         }
