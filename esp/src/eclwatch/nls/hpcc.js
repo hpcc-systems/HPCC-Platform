@@ -50,6 +50,7 @@ define({root:
     ClusterPlaceholder: "r?x*",
     ClusterProcesses: "Cluster Processes",
     Code: "Code",
+    CodeGenerator: "Code Generator",
     Col: "Col",
     CollapseAll: "Collapse All",
     Command: "Command",
