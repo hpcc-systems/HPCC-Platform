@@ -69,8 +69,6 @@ const char *wsEclXsdTypes[] = {
 
 typedef MapStringTo<wsEclType> MapStringToWsEclType;
 
-int strptrcmp(char const ** l, char const ** r) { return strcmp(*l, *r); }
-
 class wsEclTypeTranslator
 {
 private:
@@ -489,7 +487,7 @@ void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPr
             }
             if (qnames.ordinality())
             {
-                qnames.sort(strptrcmp);
+                qnames.sortAscii();
                 ForEachItemIn(i,qnames)
                 {
                     StringBuffer navPath;
