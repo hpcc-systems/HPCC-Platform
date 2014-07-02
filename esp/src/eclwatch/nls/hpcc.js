@@ -146,6 +146,7 @@ define({root:
     FileParts: "File Parts",
     FilePath: "File Path",
     Files: "Files",
+    FileScopes: "File Scopes",
     FileSize: "File Size",
     FilesNoPackage: "Files without matching package definitions",
     FilesWithUnknownSize: "Files With Unknown Size",
