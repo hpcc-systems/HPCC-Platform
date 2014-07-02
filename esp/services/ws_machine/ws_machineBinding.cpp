@@ -25,11 +25,6 @@
 #include "ws_machineBinding.hpp"
 
 
-int SortFunction(const char** s1, const char** s2)
-{
-   return strcmp(*s1, *s2);
-}
-
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -56,7 +51,7 @@ CWsMachineSoapBindingEx::CWsMachineSoapBindingEx(IPropertyTree* cfg,
          {
             m_processTypes.append(it->query().queryName());
          }
-         m_processTypes.sort(SortFunction);
+         m_processTypes.sortAscii();
       }
    }
 }

@@ -1574,13 +1574,6 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     return true;
 }
 
-int StringArrayCompareFunc(const char **s1, const char **s2)
-{
-    if (!s1 || !*s1 || !s2 || !*s2)
-        return 0;
-    return strcmp(*s1, *s2);
-}
-
 int EspQuerySuperFileCompareFunc(IInterface **i1, IInterface **i2)
 {
     if (!i1 || !*i1 || !i2 || !*i2)
@@ -1627,7 +1620,7 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
             if (fileName && *fileName)
                 logicalFiles.append(fileName);
         }
-        logicalFiles.sort(StringArrayCompareFunc);
+        logicalFiles.sortAscii();
 
         if (respSuperFiles)
         {
@@ -1646,7 +1639,7 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
                     if (fileName && *fileName)
                         respSubFiles.append(fileName);
                 }
-                respSubFiles.sort(StringArrayCompareFunc);
+                respSubFiles.sortAscii();
 
                 respSuperFile->setSubFiles(respSubFiles);
                 respSuperFiles->append(*respSuperFile.getClear());

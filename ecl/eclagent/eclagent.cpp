@@ -2091,8 +2091,6 @@ void EclAgentWorkflowMachine::begin()
         prelockPersists();
 }
 
-int strptrcmp(char const ** l, char const ** r) { return strcmp(*l, *r); }
-
 void EclAgentWorkflowMachine::prelockPersists()
 {
     unsigned count = workflow->count();
@@ -2107,7 +2105,7 @@ void EclAgentWorkflowMachine::prelockPersists()
             names.append(name.str());
         }
     }
-    names.sort(strptrcmp);
+    names.sortAscii(true); // case insensitive for backward compatibility
     ForEachItemIn(idx, names)
     {
         char const * name = names.item(idx);
