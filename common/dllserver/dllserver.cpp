@@ -498,7 +498,7 @@ void DllServer::copyFileLocally(RemoteFilename & targetName, RemoteFilename & so
 
     OwnedIFile source = createIFile(sourceName);
     OwnedIFile target = createIFile(targetName);
-    copyFile(target, source);
+    source->copyTo(target, 0, NULL, true);
 }
 
 IIterator * DllServer::createDllIterator()
