@@ -286,5 +286,9 @@ extern jlib_decl bool safe_ecvt(size_t len, char * buffer, double value, int num
 extern jlib_decl bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * decimal, int * sign);
 extern jlib_decl StringBuffer &getTempFilePath(StringBuffer & target, const char * component, IPropertyTree * pTree);
 
+interface jlib_thrown_decl ICorruptDllException: extends IException
+{
+};
+
 #endif
 
