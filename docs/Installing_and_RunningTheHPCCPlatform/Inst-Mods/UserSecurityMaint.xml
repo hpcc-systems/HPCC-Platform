@@ -79,8 +79,8 @@
       </informaltable></para>
 
     <para>Access to the permission settings for each of these areas is
-    available using the <emphasis role="bold">Users/Permissions</emphasis>
-    area in ECL Watch.</para>
+    available using the <emphasis role="bold">Security</emphasis> area in ECL
+    Watch.</para>
 
     <sect3 id="My_Account_Info" role="brk">
       <title>Information about your account</title>
@@ -135,8 +135,8 @@
     </itemizedlist>
 
     <para>Security administration is controlled using the <emphasis
-    role="bold">Users/Permissions</emphasis> area of ECL Watch. There are
-    three areas where permissions may be set:</para>
+    role="bold"> Security</emphasis> area of ECL Watch. There are three areas
+    where permissions may be set:</para>
 
     <itemizedlist>
       <listitem>
@@ -218,34 +218,41 @@
       </itemizedlist>
     </sect3>
 
-    <sect3 id="Adding_Users">
+    <sect3 id="Adding_Users" role="brk">
       <title>Adding and editing users</title>
 
-      <para>In ECL Watch, go to the <emphasis
-      role="bold">Users/Permissions</emphasis> menu item and click <emphasis
-      role="bold">Users<emphasis>:</emphasis></emphasis></para>
+      <!--***Conditional changes for New ECLWatch 5-14::NEED TO RE-VAMP all steps as needed***-->
+
+      <para>To access the permissions page click on the<emphasis role="bold">
+      Operations</emphasis> icon, then click the <emphasis
+      role="bold">Security</emphasis> link from the navigation sub-menu. Click
+      on the <emphasis role="bold">Users</emphasis> tab to add or edit
+      users.</para>
 
       <graphic fileref="../../images/Permissions001.jpg" vendor="eclwatchSS" />
 
-      <para>All current users are identified in the list by their UserID and
+      <para>All current users are identified in the list by their Username and
       full name.</para>
 
       <sect4>
         <title>To add a new user to the list of authenticated users:</title>
+
+        <para>To add a new user you must have Administrator level access.
+        <graphic fileref="../../images/Perm007.jpg"
+        vendor="eclwatchSS" /></para>
 
         <orderedlist>
           <listitem>
             <para>Press the <emphasis role="bold">Add</emphasis>
             button.</para>
 
-            <para>The <emphasis role="bold">Add User</emphasis> window is
-            displayed.</para>
+            <para>The add user dialog is displays.</para>
           </listitem>
 
           <listitem>
-            <para>Enter a <emphasis role="bold">UserID</emphasis>.</para>
+            <para>Enter a <emphasis role="bold">Username</emphasis>.</para>
 
-            <para>This is the login name for using ECL Watch, ECL IDE, WSECL
+            <para>This is the login name for using ECL Watch, ECL IDE, WSECL,
             etc.</para>
           </listitem>
 
@@ -265,98 +272,179 @@
           </listitem>
 
           <listitem>
-            <para>Press <emphasis role="bold">Submit</emphasis>.</para>
+            <para>Press <emphasis role="bold">Add</emphasis>.</para>
 
-            <para>Confirmation of the request is shown.</para>
+            <para>Confirmation of the user request opens a new tab where you
+            can verify the user's information.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press <emphasis role="bold">Save</emphasis>.</para>
           </listitem>
         </orderedlist>
 
-        <para>Once added, the user is displayed in the list and you can modify
-        the user's details and set permissions as required.</para>
+        <para>Once added, the new user displays in the list and you can modify
+        details and set permissions as required.</para>
       </sect4>
 
       <sect4>
-        <title>To modifiy a user's personal details:</title>
+        <title>To modifiy a user's details:</title>
+
+        <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
 
         <orderedlist>
           <listitem>
-            <para>Click the <emphasis role="bold">Edit</emphasis> link.</para>
+            <para>Click on the <emphasis role="bold">Users<emphasis>
+            tab</emphasis></emphasis>.</para>
 
-            <para>The <emphasis role="bold">User Info Edit</emphasis> window
-            is displayed.</para>
+            <para>The users display in a list.</para>
           </listitem>
 
           <listitem>
-            <para>Change the <emphasis role="bold">First Name</emphasis> and
-            <emphasis role="bold">Last Name</emphasis> as required.</para>
+            <para>Select the user (or users) to modify. Check the box next to
+            the Username to select.</para>
+
+            <para>This will enable the Users action buttons.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Edit</emphasis> action
+            button. <graphic fileref="../../images/Perm008.jpg" /></para>
+
+            <para>You will see a tab open for each user selected. On that tab
+            there are three sub-tabs.</para>
+
+            <para>The user details are on the <emphasis
+            role="bold">Summary</emphasis> tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Modify the user's details as required (if more than one user
+            selected, repeat for each user).</para>
 
             <para><emphasis role="bold">Note</emphasis>: The <emphasis
-            role="bold">User Name</emphasis> cannot be changed.</para>
+            role="bold">Username</emphasis> cannot be changed.</para>
           </listitem>
 
           <listitem>
-            <para>Press <emphasis role="bold">Submit</emphasis>.</para>
+            <para>Press <emphasis role="bold">Save</emphasis>.</para>
 
-            <para>Confirmation of the request is shown.</para>
+            <para>Confirmation message displays.</para>
           </listitem>
         </orderedlist>
       </sect4>
 
       <sect4>
-        <title>To add the user to a group:</title>
+        <title>To add a user to a group:</title>
+
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
 
         <orderedlist>
           <listitem>
-            <para>Click on the <emphasis role="bold">Member of</emphasis>
-            link.</para>
+            <para>Click on the <emphasis role="bold">Users<emphasis>
+            tab</emphasis></emphasis>.</para>
 
-            <para>The list of groups the user is already associated with is
-            displayed.</para>
+            <para>The users display in a list.</para>
           </listitem>
 
           <listitem>
-            <para>To add the user to a group press <emphasis
-            role="bold">ADD</emphasis>.</para>
+            <para>Select the user (or users) to modify. Check the box next to
+            the Username.</para>
 
-            <para>The list of available groups is displayed.</para>
+            <para>This will enable the user action buttons.</para>
           </listitem>
 
           <listitem>
-            <para>Click the checkbox to the left of the group(s) you want to
-            add the user to and click <emphasis
-            role="bold">ADD</emphasis>.</para>
+            <para>Press the <emphasis role="bold">Edit</emphasis> action
+            button. <graphic fileref="../../images/Perm008.jpg" /></para>
+
+            <para>A new tab opens for each user selected. On that tab there
+            are three sub-tabs.</para>
           </listitem>
 
           <listitem>
-            <para>Click OK to confirm.</para>
+            <para>Click on the tab for the user to modify (if more than one
+            user selected, repeat for each user).</para>
 
-            <para>Confirmation of the request is shown.</para>
+            <para>On the user's tab there are three sub-tabs. <graphic
+            fileref="../../images/Perm009.jpg" /></para>
+
+            <para>Click on the <emphasis role="bold">Member Of</emphasis>
+            sub-tab to modify that user's groups.</para>
+          </listitem>
+
+          <listitem>
+            <para>On the <emphasis role="bold">Member Of</emphasis> tab for
+            that user, you will see a list of the available groups.</para>
+
+            <para>There is a check in the box next to each group that user
+            belongs to.</para>
+
+            <para>To add that user to a group, check the box next to the
+            desired group.</para>
+          </listitem>
+
+          <listitem>
+            <para>The changes are automatically saved. Close the tab.</para>
           </listitem>
         </orderedlist>
       </sect4>
 
       <sect4>
-        <title>To delete the user from a group:</title>
+        <title>To delete a user from a group:</title>
+
+        <para>To delete a user you must have Administrator level
+        access.</para>
+
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
 
         <para><orderedlist>
             <listitem>
-              <para>Click on the <emphasis role="bold">Member of</emphasis>
-              link.</para>
+              <para>Click on the <emphasis role="bold">Users<emphasis>
+              tab</emphasis></emphasis>.</para>
 
-              <para>The list of groups the user is already associated with is
-              displayed.</para>
+              <para>The users display in a list.</para>
             </listitem>
 
             <listitem>
-              <para>Click the checkbox to the left of the group(s) you want to
-              remove the user from and click <emphasis
-              role="bold">DELETE</emphasis>.</para>
+              <para>Select the user (or users) to modify. Check the box next
+              to the Username.</para>
+
+              <para>This will enable the user action buttons. Press the
+              <emphasis role="bold">Edit</emphasis> action button to modify
+              settings for that user.</para>
             </listitem>
 
             <listitem>
-              <para>Click OK to confirm.</para>
+              <para>Click on the tab for the user to modify (if multiple users
+              selected, repeat for each user).</para>
 
-              <para>Confirmation of the request is shown.</para>
+              <para>On the user's tab there are three sub-tabs. <graphic
+              fileref="../../images/Perm009.jpg" /></para>
+
+              <para>Click on the <emphasis role="bold">Member Of</emphasis>
+              sub-tab to modify that user's groups.</para>
+            </listitem>
+
+            <listitem>
+              <para>On the <emphasis role="bold">Member Of</emphasis> tab for
+              that user, there is a list of the available groups.</para>
+
+              <para>There is a check in the box next to each group that user
+              belongs to.</para>
+
+              <para>To remove that user from a group, uncheck the box next to
+              the desired group.</para>
+            </listitem>
+
+            <listitem>
+              <para>The changes are automatically saved. Close the tab.</para>
             </listitem>
           </orderedlist></para>
       </sect4>
@@ -364,38 +452,72 @@
       <sect4>
         <title>To change a user's password:</title>
 
-        <para><orderedlist>
-            <listitem>
-              <para>Click on the <emphasis role="bold">Password</emphasis>
-              link.</para>
+        <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
 
-              <para>The <emphasis role="bold">Reset Password</emphasis> window
-              is displayed.</para>
-            </listitem>
+        <orderedlist>
+          <listitem>
+            <para>Click on the <emphasis role="bold">Users<emphasis>
+            tab</emphasis></emphasis>.</para>
 
-            <listitem>
-              <para>Complete the <emphasis role="bold">New Password</emphasis>
-              and <emphasis role="bold">Retype New Password</emphasis> fields
-              as required.</para>
+            <para>The users display in a list.</para>
+          </listitem>
 
-              <para>Press <emphasis role="bold">Clear</emphasis> to empty
-              these fields and start again.</para>
-            </listitem>
+          <listitem>
+            <para>Select the user (or users) to modify. Check the box next to
+            the Username to select.</para>
 
-            <listitem>
-              <para>Click <emphasis role="bold">Submit</emphasis>.</para>
+            <para>This will enable the Users action buttons.</para>
+          </listitem>
 
-              <para>Confirmation of the request is shown.</para>
-            </listitem>
-          </orderedlist></para>
+          <listitem>
+            <para>Press the <emphasis role="bold">Edit</emphasis> action
+            button. <graphic fileref="../../images/Perm008.jpg" /></para>
+
+            <para>You will see a tab open for each user selected. On that tab
+            there are three sub-tabs.</para>
+
+            <para>The user details are on the <emphasis
+            role="bold">Summary</emphasis> tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Change the password in the <emphasis
+            role="bold">Password</emphasis> and <emphasis role="bold">Retype
+            New Password</emphasis> fields as required on the User details
+            summary tab (if multiple users selected, repeat for each
+            user).</para>
+
+            <para><emphasis role="bold">Note</emphasis>: The <emphasis
+            role="bold">Username</emphasis> cannot be changed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press <emphasis role="bold">Save</emphasis>.</para>
+
+            <para>A confirmation message displays.</para>
+          </listitem>
+        </orderedlist>
       </sect4>
 
       <sect4>
         <title>To delete a user from the list of authenticated users:</title>
 
+        <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
+
         <para><orderedlist>
             <listitem>
-              <para>Check the checkbox to the left of the user(s) you want to
+              <para>Click on the <emphasis role="bold">Users</emphasis>
+              tab.</para>
+
+              <para>The users display in a list.</para>
+            </listitem>
+
+            <listitem>
+              <para>Check the box to the left of the user(s) you want to
               remove.</para>
 
               <para><emphasis role="bold">Note:</emphasis> These users will no
@@ -425,50 +547,86 @@
       <sect4>
         <title>To set new permissions for an individual user:</title>
 
+        <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
+
         <orderedlist>
           <listitem>
-            <para>Click the <emphasis role="bold">Users</emphasis> menu item
-            in ECL Watch</para>
+            <para>Click on the <emphasis role="bold">Users<emphasis>
+            tab</emphasis></emphasis>.</para>
+
+            <para>The users display in a list.</para>
           </listitem>
 
           <listitem>
-            <para><?dbfo keep-together="always"?>Locate the user in the list
-            of authenticated users and click on the <emphasis
-            role="bold">Permissions</emphasis> link in the <emphasis
-            role="bold">Operations</emphasis> column.</para>
+            <para>Select the user (or users) to modify. Check the box next to
+            the Username to select.</para>
 
-            <para>The list of permissions currently set for this user are
-            displayed and the groups from which the user has inherited
-            permissions are also listed. <graphic
-            fileref="../../images/Permissions002.jpg"
-            vendor="eclwatchSS" /></para>
+            <para>This will enable the Users action buttons.</para>
           </listitem>
 
           <listitem>
-            <para>A drop list showing the 6 feature areas of the HPCC is
-            provided. Select the feature area you are interested in and press
-            <emphasis role="bold">Add</emphasis>.</para>
+            <para>Click on the tab for the username to modify (if multiple
+            users selected, repeat for each user).</para>
 
-            <para>The <emphasis role="bold">Add Permissions for Authenticated
-            Users</emphasis> page is displayed.</para>
+            <para>On the user's tab there are three sub-tabs. <graphic
+            fileref="../../images/Perm010.jpg" /></para>
+
+            <para>Click on the <emphasis role="bold">User
+            Permissions</emphasis> sub-tab to modify that user's
+            permissions.</para>
           </listitem>
 
           <listitem>
-            <para>There may be more than one resource setting available,
-            select the one you require from the <emphasis role="bold">Select
-            Resource</emphasis> drop list provided.</para>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the arrow next to the resource to display the
+            permissions for that resource. <graphic
+            fileref="../../images/Perm011.jpg" vendor="eclwatchSS" /></para>
+
+            <para>The list of permission groups currently set for this user
+            and the ones the user has inherited are also listed. Click the
+            arrow to allow setting the individual resource settings.</para>
+          </listitem>
+
+          <listitem>
+            <para>There may be more than one resource setting available in
+            each group, be sure to set the permissions for each setting as
+            required.</para>
           </listitem>
 
           <listitem>
             <para>Check the boxes that <emphasis role="bold">allow</emphasis>
             and <emphasis role="bold">deny</emphasis> access as required for
-            the user.</para>
+            the user. <graphic fileref="../../images/Perm012.jpg" /></para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="../../images/caution.png" /></entry>
+
+                      <entry><para><emphasis role="bold">NOTE:</emphasis> Use
+                      caution when setting any explicit <emphasis
+                      role="bold">deny</emphasis> permission setting. In
+                      general, the most restrictive permission is applied.
+                      </para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
           </listitem>
 
           <listitem>
-            <para>Click <emphasis role="bold">Add</emphasis>.</para>
-
-            <para>Confirmation of the request is shown.</para>
+            <para>The changes are automatically saved. Close the tab.</para>
           </listitem>
         </orderedlist>
       </sect4>
@@ -476,37 +634,73 @@
       <sect4>
         <title>To modify permissions for an individual user:</title>
 
-        <para><orderedlist>
-            <listitem>
-              <para>Click the <emphasis role="bold">Users</emphasis> menu item
-              in ECL Watch.</para>
-            </listitem>
+        <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
 
-            <listitem>
-              <para>Locate the user in the list of authenticated and click on
-              the <emphasis role="bold">Permissions</emphasis> link in the
-              <emphasis role="bold">Operations</emphasis> column.</para>
-            </listitem>
+        <orderedlist>
+          <listitem>
+            <para>Click on the <emphasis role="bold">Users<emphasis>
+            tab</emphasis></emphasis>.</para>
 
-            <listitem>
-              <para>Locate the feature you want to modify.</para>
-            </listitem>
+            <para>The users display in a list.</para>
+          </listitem>
 
-            <listitem>
-              <para>Check the box(es) that <emphasis
-              role="bold">allow</emphasis> and <emphasis
-              role="bold">deny</emphasis> access as required for the feature
-              and press <emphasis role="bold">Update</emphasis> or press
-              <emphasis role="bold">Delete</emphasis> if you want to remove
-              access to that feature.</para>
-            </listitem>
+          <listitem>
+            <para>Select the user (or users) to modify. Check the box next to
+            the Username to select.</para>
 
-            <listitem>
-              <para>Press OK to confirm.</para>
+            <para>This will enable the Users action buttons.</para>
+          </listitem>
 
-              <para>Confirmation of the request is shown.</para>
-            </listitem>
-          </orderedlist></para>
+          <listitem>
+            <para>Click on the tab for the user to modify (if multiple users
+            selected, repeat for each user).</para>
+
+            <para>On the user's tab there are three sub-tabs. Click on the
+            <emphasis role="bold">User Permissions</emphasis> sub-tab to
+            modify that user's permissions.</para>
+          </listitem>
+
+          <listitem>
+            <para>Locate the feature you want to modify. Click on the arrow
+            next to the resource to display the permission set for that
+            resource.</para>
+          </listitem>
+
+          <listitem>
+            <para>Check the boxes that <emphasis role="bold">allow</emphasis>
+            and <emphasis role="bold">deny</emphasis> access as required for
+            the user. <graphic fileref="../../images/Perm012.jpg" /></para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="../../images/caution.png" /></entry>
+
+                      <entry><para><emphasis role="bold">NOTE:</emphasis> Use
+                      caution when setting any explicit <emphasis
+                      role="bold">deny</emphasis> permission setting. In
+                      general, the most restrictive permission is applied.
+                      </para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>The changes are automatically saved. Close the tab.</para>
+          </listitem>
+        </orderedlist>
       </sect4>
     </sect3>
 
@@ -520,7 +714,7 @@
       you need to control access for all your users regardless of their
       tasks.</para>
 
-      <para>Use the <emphasis role="bold">Group</emphasis> menu item
+      <para>Use the <emphasis role="bold">Groups</emphasis> menu item
       to:<itemizedlist>
           <listitem>
             <para>Add a new group</para>
@@ -552,21 +746,33 @@
         precedence over the group settings, you can safely change the
         individual settings for a user without affecting the rest of the
         group(s) to which they belong. <graphic
-        fileref="../../images/Permissions003.jpg" vendor="eclwatchSS" />In ECL
-        Watch, go to the <emphasis role="bold">Users/Permissions</emphasis>
-        menu item and click <emphasis role="bold">Groups</emphasis>:</para>
+        fileref="../../images/Perm001a.jpg" vendor="eclwatchSS" />To modify
+        groups, click on the<emphasis role="bold"> Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu. Click on the <emphasis
+        role="bold">Groups</emphasis> tab.</para>
       </sect4>
 
       <sect4>
         <title>To add a new group:</title>
 
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
+
         <para><orderedlist>
             <listitem>
-              <para>Press the <emphasis role="bold">Add</emphasis>
-              button.</para>
+              <para>Click on the <emphasis role="bold">Groups</emphasis>
+              tab.</para>
+            </listitem>
 
-              <para>The <emphasis role="bold">Add Group</emphasis> window is
-              displayed.</para>
+            <listitem>
+              <para>Press the <emphasis role="bold">Add</emphasis> action
+              button button. <graphic fileref="../../images/Perm013.jpg"
+              vendor="eclwatchSS" /></para>
+
+              <para>This opens a dialog where you can enter the name for the
+              group.</para>
             </listitem>
 
             <listitem>
@@ -575,11 +781,13 @@
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">Submit</emphasis>.</para>
+              <para>Press <emphasis role="bold">Add</emphasis>.</para>
 
-              <para>Confirmation of the request is shown. <emphasis
-              role="bold">Permissions</emphasis> may now be set for this new
-              group.</para>
+              <para>This will now open a <emphasis
+              role="bold">Summary</emphasis> tab for this new group.</para>
+
+              <para>You can set the permissions and add members to this group
+              from the respective sub-tabs on that group tab.</para>
             </listitem>
           </orderedlist></para>
       </sect4>
@@ -587,14 +795,23 @@
       <sect4>
         <title>To delete a group:</title>
 
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
+
         <para><orderedlist>
             <listitem>
-              <para>Locate the group in the list and check the checkbox to the
-              left.</para>
+              <para>Click on the <emphasis role="bold">Groups</emphasis>
+              tab.</para>
             </listitem>
 
             <listitem>
-              <para>Press the <emphasis role="bold">Delete</emphasis>
+              <para>Locate the group in the list and check the checkbox next
+              to it.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Delete</emphasis> action
               button.</para>
             </listitem>
 
@@ -602,7 +819,7 @@
               <para>Press <emphasis role="bold">OK</emphasis> to
               confirm.</para>
 
-              <para>Confirmation of the request is shown.</para>
+              <para>The group no longer displays in the list.</para>
             </listitem>
           </orderedlist></para>
       </sect4>
@@ -610,32 +827,49 @@
       <sect4>
         <title>To add new members to a group:</title>
 
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
+
         <para><orderedlist>
             <listitem>
-              <para>Locate the group in the list and click on the <emphasis
-              role="bold">Members</emphasis> link in the <emphasis
-              role="bold">Operations</emphasis> column.</para>
-
-              <para>All current members of the group are listed.</para>
+              <para>Click on the <emphasis role="bold">Groups</emphasis>
+              tab.</para>
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">Add</emphasis>.</para>
-
-              <para>All authenticated users are listed.</para>
+              <para>Locate the group in the list and check the box next to
+              it.</para>
             </listitem>
 
             <listitem>
-              <para>Check the box(es) to the left for all users you want to
-              add to the group and press <emphasis
-              role="bold">Add</emphasis>.</para>
+              <para>Press <emphasis role="bold">Edit</emphasis> action
+              button.</para>
+
+              <para>This will open a new tab for the group.</para>
+
+              <para>The group tab will have three sub-tabs: <emphasis
+              role="bold">Summary</emphasis>, <emphasis
+              role="bold">Members</emphasis>, and <emphasis role="bold">Group
+              Permissions</emphasis>.</para>
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">OK</emphasis> to
-              confirm.</para>
+              <para>Select the <emphasis role="bold">Members</emphasis>
+              tab.</para>
 
-              <para>Confirmation of the request is shown.</para>
+              <para>The members tab displays a list of all users on the
+              system. The users that belong to the selected group have a check
+              in the box next to them.</para>
+            </listitem>
+
+            <listitem>
+              <para>Check the box(es) to the left for all the users you want
+              to add to the group.</para>
+            </listitem>
+
+            <listitem>
+              <para>The changes are automatically saved. Close the tab.</para>
             </listitem>
           </orderedlist></para>
       </sect4>
@@ -643,24 +877,49 @@
       <sect4>
         <title>To delete members from a group:</title>
 
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
+
         <para><orderedlist>
             <listitem>
-              <para>Locate the group in the list and click on the <emphasis
-              role="bold">Members</emphasis> link in the <emphasis
-              role="bold">Operations</emphasis> column.</para>
+              <para>Click on the <emphasis role="bold">Groups</emphasis>
+              tab.</para>
             </listitem>
 
             <listitem>
-              <para>Check the box(es) for all users you want to delete from
-              the group and press <emphasis
-              role="bold">Delete</emphasis>.</para>
+              <para>Locate the group in the list and check the box next to
+              it.</para>
             </listitem>
 
             <listitem>
-              <para>Press <emphasis role="bold">OK</emphasis> to
-              confirm.</para>
+              <para>Press <emphasis role="bold">Edit</emphasis> action
+              button.</para>
 
-              <para>Confirmation of the request is shown.</para>
+              <para>This will open a new tab for the group.</para>
+
+              <para>The group tab will have three sub-tabs: <emphasis
+              role="bold">Summary</emphasis>, <emphasis
+              role="bold">Members</emphasis>, and <emphasis role="bold">Group
+              Permissions</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Members</emphasis>
+              tab.</para>
+
+              <para>The members tab displays a list of all users on the
+              system. The users that belong to the selected group have a check
+              in the box next to them.</para>
+            </listitem>
+
+            <listitem>
+              <para>Uncheck the box(es) to the left for all users you want to
+              delete from the group.</para>
+            </listitem>
+
+            <listitem>
+              <para>The changes are automatically saved. Close the tab.</para>
             </listitem>
           </orderedlist></para>
       </sect4>
@@ -686,51 +945,95 @@
       role="bold">Deny</emphasis> to control access. Denies should be used
       only as an exception.</para>
 
-      <para></para>
-
       <sect4>
         <title>To set new permissions for a group:</title>
 
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu. <graphic fileref="../../images/Perm001a.jpg"
+        vendor="eclwatchSS" /></para>
+
         <orderedlist>
           <listitem>
-            <para>Click the <emphasis role="bold">Groups</emphasis> menu item
-            in ECL Watch.</para>
+            <para>Click the <emphasis role="bold">Groups</emphasis>
+            tab.</para>
           </listitem>
 
           <listitem>
-            <para><?dbfo keep-together="always"?>Locate the group in the list
-            and click on the <emphasis role="bold">Permissions</emphasis> link
-            in the <emphasis role="bold">Operations</emphasis> column.</para>
-
-            <para>The list of permissions currently set for this group are
-            displayed.<graphic fileref="../../images/Permissions004.jpg"
-            vendor="eclwatchSS" /></para>
+            <para>Locate the group in the list and check the box next to
+            it.</para>
           </listitem>
 
           <listitem>
-            <para>A drop list showing the 6 feature areas of the HPCC is
-            shown. Select the feature area you want and press <emphasis
-            role="bold">Add</emphasis>.</para>
+            <para>Press <emphasis role="bold">Edit</emphasis> action
+            button.</para>
 
-            <para>The <emphasis role="bold">Add Permissions for
-            </emphasis><emphasis role="bold">&lt;GroupName&gt;</emphasis> page
-            is displayed.</para>
+            <para>This will open a new tab for the group. <graphic
+            fileref="../../images/Perm010b.jpg" vendor="eclwatchSS" /></para>
+
+            <para>The group tab will have three sub-tabs: <emphasis
+            role="bold">Summary</emphasis>, <emphasis
+            role="bold">Members</emphasis>, and <emphasis role="bold">Group
+            Permissions</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the <emphasis role="bold">Group Permissions
+            </emphasis>tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the arrow to the left of the resource to display
+            the permissions for that resource. The permission groups currently
+            set for this group and the inherited ones display.</para>
+          </listitem>
+
+          <listitem>
+            <para>There may be more than one resource setting available in
+            each group, be sure to set the permissions for each setting as
+            required.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Check the boxes for <emphasis role="bold">allow</emphasis>
+            and <emphasis role="bold">deny</emphasis> as required for the
+            group. <graphic fileref="../../images/Perm012b.jpg" /></para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="../../images/caution.png" /></entry>
+
+                      <entry><para><emphasis role="bold">NOTE:</emphasis> Use
+                      caution when setting any explicit <emphasis
+                      role="bold">deny</emphasis> permission setting. In
+                      general, the most restrictive permission is applied.
+                      </para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
           </listitem>
 
           <listitem>
             <para>There may be more than one resource setting available,
-            select the <emphasis role="bold">Resource</emphasis> you require
-            from the drop list provided.</para>
+            select the resource(s) you require from the drop list.</para>
+
+            <para>Repeat for each applicable resource.</para>
           </listitem>
 
           <listitem>
-            <para>Check the boxes that <emphasis role="bold">allow</emphasis>
-            and <emphasis role="bold">deny</emphasis> access as required for
-            the group.</para>
-          </listitem>
-
-          <listitem>
-            <para>Click <emphasis role="bold">Add</emphasis>.</para>
+            <para>The changes are automatically saved. Close the tab.</para>
           </listitem>
         </orderedlist>
       </sect4>
@@ -738,35 +1041,58 @@
       <sect4>
         <title>To modify permissions for a group:</title>
 
+        <para>Click on the <emphasis role="bold">Operations</emphasis> icon,
+        then click the <emphasis role="bold">Security</emphasis> link from the
+        navigation sub-menu.</para>
+
         <para><orderedlist>
             <listitem>
-              <para>Click the <emphasis role="bold">Groups</emphasis> menu
-              item in ECL Watch.</para>
+              <para>Click the <emphasis role="bold">Groups</emphasis>
+              tab.</para>
             </listitem>
 
             <listitem>
-              <para>Locate the group in the list of authenticated and click on
-              the <emphasis role="bold">Permissions</emphasis> link in the
-              <emphasis role="bold">Operations</emphasis> column.</para>
+              <para>Locate the group in the list and check the box next to
+              it.</para>
             </listitem>
 
             <listitem>
-              <para>Locate the feature you want to modify.</para>
+              <?dbfo keep-together="always"?>
+
+              <para>Press <emphasis role="bold">Edit</emphasis> action
+              button.</para>
+
+              <para>This will open a new tab for the group. <graphic
+              fileref="../../images/Perm010b.jpg"
+              vendor="eclwatchSS" /></para>
+
+              <para>The group tab will have three sub-tabs: <emphasis
+              role="bold">Summary</emphasis>, <emphasis
+              role="bold">Members</emphasis>, and <emphasis role="bold">Group
+              Permissions</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Group Permissions
+              </emphasis>tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Locate the feature(s) you want to modify.</para>
+
+              <para>Click on the arrow to the left of the resource to display
+              the permissions for that resource.</para>
             </listitem>
 
             <listitem>
               <para>Check the box(es) that <emphasis
               role="bold">allow</emphasis> and <emphasis
-              role="bold">deny</emphasis> access as required for the feature
-              and press <emphasis role="bold">Update</emphasis> or press
-              <emphasis role="bold">Delete</emphasis> if you want to remove
-              access to that feature.</para>
+              role="bold">deny</emphasis> access as required for the
+              feature.</para>
             </listitem>
 
             <listitem>
-              <para>Press OK to confirm.</para>
-
-              <para>Confirmation of the request is shown.</para>
+              <para>The changes are automatically saved. Close the tab.</para>
             </listitem>
           </orderedlist></para>
       </sect4>
@@ -775,10 +1101,12 @@
     <sect3>
       <title>Setting and modifying feature permissions</title>
 
-      <para>Access to the feature permissions area in ECL Watch is via the
-      <emphasis role="bold">User/Permissions</emphasis> area using the
-      <emphasis role="bold">Permissions</emphasis> menu item. All six feature
-      areas are listed. <graphic fileref="../../images/Permissions005.jpg"
+      <para>Access to the feature permissions is available through ECL Watch.
+      To modify feature permissions you must have Administrator level access.
+      To access the feature permissions click on the <emphasis
+      role="bold">Operations</emphasis> icon, then click the <emphasis
+      role="bold">Security</emphasis> link from the navigation sub-menu.
+      <graphic fileref="../../images/Perm005.jpg"
       vendor="eclwatchSS" /></para>
 
       <para>Use the <emphasis role="bold">Permissions</emphasis> menu item
@@ -814,12 +1142,12 @@
 
       <para>Each feature contains a list of resources which are used to
       control access to an HPCC feature or folders containing files or
-      workunits. The main HPCC feature permission setting are controlled using
-      the <emphasis role="bold">ESP Features for SMC</emphasis> setting. When
-      new features are added to the HPCC System, the release notes inform you
-      that new permissions may be set. This is also true for <emphasis
+      workunits. The main HPCC feature permission settings are controlled
+      using the <emphasis role="bold">ESP Features for SMC</emphasis> setting.
+      When new features are added to the HPCC System, the release notes inform
+      you that new permissions may be set. This is also true for <emphasis
       role="bold">ESP Features for ECLDirectAccess</emphasis> and <emphasis
-      role="bold">Esp Features for WsEclAccess</emphasis>. Generally, all the
+      role="bold">Esp Features for WsEcl</emphasis>. Generally, all the
       permissions you require to control access to these features are already
       included.</para>
 
@@ -830,13 +1158,25 @@
     <sect3>
       <title>To add a scope:</title>
 
+      <para>To access the feature permissions click on the <emphasis
+      role="bold">Operations</emphasis> icon, then click the <emphasis
+      role="bold">Security</emphasis> link from the navigation
+      sub-menu.</para>
+
       <orderedlist>
         <listitem>
-          <para>Click the <emphasis role="bold">Permissions</emphasis> menu
-          item in ECL Watch, locate the feature you want and click <emphasis
-          role="bold">Edit</emphasis>.</para>
+          <para>Click the <emphasis role="bold">Permissions</emphasis>
+          tab.</para>
 
           <para>The resources for that feature are listed.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Click on the arrow to the left of the resource to display the
+          feature permissions for that resource. <graphic
+          fileref="../../images/Perm006.jpg" vendor="eclwatchSS" /></para>
         </listitem>
 
         <listitem>
@@ -844,153 +1184,111 @@
         </listitem>
 
         <listitem>
+          <para>Choose the Type of permission from the drop list. <graphic
+          fileref="../../images/Perm006-1.jpg" vendor="eclwatchSS" /></para>
+        </listitem>
+
+        <listitem>
           <para>Enter the exact name of the scope you want to add (for example
           a file or workunit scope) in the <emphasis
-          role="bold">Name</emphasis> field and also a short <emphasis
-          role="bold">Description<emphasis>.</emphasis></emphasis></para>
+          role="bold">Name</emphasis> field.</para>
+
+          <para>Enter a short description in the <emphasis
+          role="bold">Description<emphasis>
+          field.</emphasis></emphasis></para>
         </listitem>
 
         <listitem>
-          <para>Click <emphasis role="bold">Submit</emphasis>.</para>
+          <para>Click <emphasis role="bold">Add</emphasis>. <graphic
+          fileref="../../images/Perm006-2.jpg" vendor="eclwatchSS" /></para>
 
-          <para>Confirmation of your request is shown.</para>
+          <para>The new feature displays in the list. <graphic
+          fileref="../../images/Perm006-3.jpg" vendor="eclwatchSS" /></para>
         </listitem>
 
         <listitem>
-          <para>Go back to the features page using the link provided.</para>
+          <para>Go to the <emphasis role="bold">Groups</emphasis> tab.</para>
         </listitem>
 
         <listitem>
-          <para>Locate your new scope in the list and click <emphasis
-          role="bold">Permissions</emphasis>.</para>
+          <para>To locate your new scope, select a group by checking the box
+          next to the group name. Press the <emphasis
+          role="bold">Edit</emphasis> action button. You can select multiple
+          groups.</para>
 
-          <para>The <emphasis role="bold">Administrator</emphasis> and
-          <emphasis role="bold">Authenticated Users</emphasis> groups are
-          shown showing the default permission settings which you can update
-          as appropriate.</para>
+          <para>Select the Group Permissions tab in that group. (if multiple
+          groups selected, you must repeat for each group)</para>
         </listitem>
 
         <listitem>
-          <para>To add more users and groups and set permissions for this
-          scope, click <emphasis role="bold">Add</emphasis>.</para>
+          <para>Click on the arrow to the left of the resource to display the
+          feature permissions for that resource. <graphic
+          fileref="../../images/Perm015.jpg" vendor="eclwatchSS" /></para>
 
-          <para>The <emphasis role="bold">Add Permissions</emphasis> window is
-          displayed.</para>
+          <para>The new feature is in the list. Check the boxes as appropriate
+          to set the permissions for this group.</para>
         </listitem>
 
         <listitem>
-          <para>Select a <emphasis role="bold">User</emphasis> or <emphasis
-          role="bold">Group</emphasis> from the drop lists provided and check
-          the checkboxes for <emphasis role="bold">allow</emphasis> and
-          <emphasis role="bold">deny</emphasis> as appropriate.</para>
+          <para>To set permissions for this scope for another group, go to
+          that groups tab.</para>
         </listitem>
 
         <listitem>
-          <para>Click <emphasis role="bold">Add</emphasis>. Confirmation of
-          your request is shown.</para>
+          <para>To set permissions for this scope for a user, go to the Users
+          tab.</para>
 
-          <para><emphasis role="bold">Note:</emphasis>This description shows
-          how to add a file or workunit scope, However if you do need to add a
-          new resource any other feature area, the process is the same.</para>
+          <para>Select the user and press the Edit action button.</para>
+
+          <para>A new tab for that user opens. On that tab, click on the User
+          Permissions sub-tab. You will then see your new permission listed
+          under the appropriate Resource.</para>
+
+          <para>Set the permissions as appropriate for that user.</para>
+        </listitem>
+
+        <listitem>
+          <para>The changes are automatically saved. Close the tab(s).</para>
         </listitem>
       </orderedlist>
 
       <sect4>
         <title>To edit the permissions for a feature resource:</title>
 
+        <para>To access the feature permissions click on the <emphasis
+        role="bold">Operations</emphasis> icon, then click the <emphasis
+        role="bold">Security</emphasis> link from the navigation
+        sub-menu.</para>
+
         <orderedlist>
           <listitem>
-            <para>Click the <emphasis role="bold">Permissions</emphasis> menu
-            item in ECL Watch, locate the feature you want and click <emphasis
-            role="bold">Edit</emphasis>. The resources for that feature are
-            listed.</para>
+            <para>Locate the user or group you want, select and press the
+            <emphasis role="bold">Edit</emphasis> action button.</para>
           </listitem>
 
           <listitem>
-            <para>Locate the resource you want to update and click <emphasis
-            role="bold">Permissions</emphasis>. The permissions that are
-            currently set for this resource are listed, including individual
-            users and groups.</para>
+            <para>Click the <emphasis role="bold">User Permissions</emphasis>
+            tab in ECL Watch.</para>
           </listitem>
 
           <listitem>
-            <para>Locate the user or group you want. Click the checkboxes in
-            the <emphasis role="bold">allow</emphasis> and <emphasis
+            <para>Locate the resource you want to update.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click the checkboxes in the <emphasis
+            role="bold">allow</emphasis> and <emphasis
             role="bold">deny</emphasis> columns as appropriate.</para>
           </listitem>
 
           <listitem>
-            <para>Click Update.</para>
-          </listitem>
+            <para>The changes are automatically saved. Close the
+            tab(s).</para>
 
-          <listitem>
-            <para>Click OK to confirm. Confirmation of your request is
-            shown.</para>
-
-            <para><emphasis role="bold">Note:</emphasis>You must follow this
+            <para><emphasis role="bold">Note:</emphasis> You must follow this
             process for each user or group separately.</para>
           </listitem>
         </orderedlist>
-      </sect4>
-
-      <sect4>
-        <title>To delete a resource from a feature list:</title>
-
-        <para><orderedlist>
-            <listitem>
-              <para>Click the <emphasis role="bold">Permissions</emphasis>
-              menu item in ECL Watch, locate the feature you want and click
-              <emphasis role="bold">Edit</emphasis>. The resources for that
-              feature are listed.</para>
-            </listitem>
-
-            <listitem>
-              <para>Locate the resource you want to remove and check the
-              checkbox to the left.</para>
-            </listitem>
-
-            <listitem>
-              <para>Click <emphasis
-              role="bold">Delete<emphasis>.</emphasis></emphasis></para>
-            </listitem>
-
-            <listitem>
-              <para>Click OK to confirm. Confirmation of your request is
-              shown.<emphasis role="bold"></emphasis></para>
-            </listitem>
-          </orderedlist></para>
-      </sect4>
-
-      <sect4>
-        <title>To delete the resource permission settings for a user or
-        group:</title>
-
-        <para><orderedlist>
-            <listitem>
-              <para>Click the <emphasis role="bold">Permissions</emphasis>
-              menu item in ECL Watch, locate the feature you want and click
-              <emphasis role="bold">Edit</emphasis>.</para>
-
-              <para>The resources for that feature are listed.</para>
-            </listitem>
-
-            <listitem>
-              <para>Locate the resource you want to remove and click <emphasis
-              role="bold">Permissions</emphasis>.</para>
-
-              <para>The users and groups are displayed.</para>
-            </listitem>
-
-            <listitem>
-              <para>Locate the user or group in the list and click <emphasis
-              role="bold">Delete<emphasis>.</emphasis></emphasis></para>
-            </listitem>
-
-            <listitem>
-              <para>Click OK to confirm. Confirmation of your request is
-              shown.<emphasis role="bold"></emphasis></para>
-            </listitem>
-          </orderedlist></para>
       </sect4>
     </sect3>
   </sect2>
@@ -1003,7 +1301,8 @@
     features are listed as <emphasis role="bold">Resources</emphasis> when
     setting permissions using ECL Watch.</para>
 
-    <para>ECL Watch feature permission settings that are not listed are not relevant and should not be used.</para>
+    <para>ECL Watch feature permission settings that are not listed are not
+    relevant and should not be used.</para>
 
     <para>The following sections show the level of access required to be able
     to use ECL Watch features:</para>
