@@ -1,0 +1,1237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book xml:base="../">
+  <title>Using ECL Watch</title>
+
+  <bookinfo>
+    <title>Using ECL Watch</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introducing ECL Watch</title>
+
+    <sect1 role="nobrk">
+      <title>Introduction</title>
+
+      <para>ECL Watch is a service that runs on the Enterprise Services
+      Platform (ESP), a middleware component on the HPCC Platform.</para>
+
+      <para>ECL Watch provides an interface to the HPCC system and allows you
+      to view information and interrogate nodes to confirm all expected
+      processes are running. It is a plug-in that is useful for Systems
+      Administrators to check processes, examine topology, and view logs. It
+      is useful to ECL Programmers to monitor the status of jobs and files,
+      and other pertinent information. This provides a simple view into the
+      system and a means to perform Workunit and data files
+      maintenance.</para>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>ECL Watch Home</title>
+
+    <para>Click on the <emphasis role="bold">ECL Watch home</emphasis> link in
+    the navigation bar at the top of the ECL Watch page to find the <emphasis
+    role="bold">Activity</emphasis> and <emphasis
+    role="bold">Scheduler</emphasis> links. These links provide access to the
+    respective pages you need to be able to perform the related tasks.</para>
+
+    <para><figure>
+        <title>HPCC Platform link</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWA010.jpg" vendor="eclwatchSS" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <sect1 role="nobrk">
+      <title>Activity</title>
+
+      <para>The Activity page displays activity on all clusters in the
+      environment. The Activity page provides access to Cluster Job Queue
+      administration tasks such as: monitoring progress, setting priority,
+      moving a job up or down in the queue, pausing a job, aborting a job, and
+      pausing or resuming a queue.</para>
+
+      <!--***Note specific Activity task details have been REMOVED (to DocShare/WKSPCE/ECLWa400)***-->
+
+      <para>When ECL Watch starts it defaults to the Activity page. To access
+      the Activity page from any other page in ECL Watch click on the HPCC
+      Platform image at the top of any page, as indicated the preceding
+      image.</para>
+
+      <para>Activity related tasks can also be initiated from the workunit tab
+      for the specific job in question.</para>
+
+      <sect2 id="cluster_Info" role="brk">
+        <title>Cluster Information</title>
+
+        <para>You can access more information about your clusters from the
+        main Activity page. Select the target cluster from the main <emphasis
+        role="bold">Activity</emphasis> tab, by checking the box next to it.
+        <figure>
+            <title>Open Cluster</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA002.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>This enables the <emphasis role="bold">Open</emphasis> action
+        button. Press the Open action button to open a new tab for that
+        cluster. You can also double-click on the target cluster.</para>
+
+        <para>The cluster tab displays the groups on that cluster.
+        Double-click on a group, or check the box next to the cluster group,
+        and press the open button. <figure>
+            <title>Open Cluster Groups</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA003.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Open up the cluster group tab (for example, mythor), and select
+        the group from the Groups tab to see the activity information on that
+        cluster group. <figure>
+            <title>Cluster Activity tabs</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA004.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>On that cluster group tab, you can access the information about
+        that cluster. There are three tabs on that cluster group tab. The
+        <emphasis role="bold">Summary</emphasis> tab provides a snapshot of
+        that group. The <emphasis role="bold">Usage</emphasis> tab provides
+        access to a usage graph, and other information. The <emphasis
+        role="bold">Log File</emphasis> tab is where you can view that cluster
+        group's log. <figure>
+            <title>Cluster Log File</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA005.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </sect2>
+
+      <sect2>
+        <title>Global Search</title>
+
+        <para>On the navigation bar at the top of the ECL Watch page, about
+        half way across the page is the search box. <figure>
+            <title>Search box</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA008.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>You can search for workunits, users, files, or even ECL, using
+        the search box. The search box supports wild cards.</para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>ECL Event Scheduler</title>
+
+      <para>The Event Scheduler page provides an interface to the ECL
+      Scheduler. The ECL Scheduler interface allows you to see a list of
+      scheduled workunits. It can also trigger an event. An Event is a
+      case-insensitive string constant naming the event to trap.</para>
+
+      <para>ECL Scheduling provides a means of automating processes within ECL
+      code or to chain processes together to work in sequence. For example,
+      you can write ECL code that watches a landing zone for the arrival of a
+      file, and when it arrives, sprays it to Thor, processes it, builds an
+      index, and then adds it to a superfile.</para>
+
+      <para>ECL Scheduling is event-based. The ECL Scheduler monitors a
+      Schedule list containing registered Workunits and Events and executes
+      any Workunits associated with an Event when that Event is
+      triggered.</para>
+
+      <para>Your ECL Code can execute when an Event is triggered, or can
+      trigger an Event. If you submit code containing a <emphasis
+      role="bold">WHEN </emphasis>clause, the Event and Workunit registers in
+      the Schedule list. When that Event triggers, the Workunit compiles and
+      executes. When the Workunit completes, ECL Scheduler removes it from the
+      Schedule list.</para>
+
+      <para>For example, if you submit a Workunit using <emphasis
+      role="bold">WHEN(‘Event1’,’MyEvent’, COUNT(2)) </emphasis>in the
+      appropriate place, it will execute twice (the value of <emphasis
+      role="bold">COUNT</emphasis>) before the ECL Scheduler removes it from
+      the Schedule list and the Workunit is marked as completed.</para>
+
+      <para>For more details about both <emphasis id="WHEN"
+      role="bold">WHEN</emphasis> or <emphasis id="NOTIFY"
+      role="bold">NOTIFY</emphasis> or any ECL Language functions or keywords
+      please see the ECL Language reference. A copy of which can be found
+      online at <ulink
+      url="http://hpccsystems.com/download/docs/learning-ecl">http://hpccsystems.com/download/docs/learning-ecl</ulink>
+      on the HPCC Systems web site.</para>
+
+      <!--***NOTE: Be sure to UPDATE these images when they find a home in ECLWATCH***-->
+    </sect1>
+
+    <xi:include href="ECLScheduler/ECLSched-Mods/ECLSchedComp.xml"
+                xpointer="ECLSched_Interface"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+
+  <chapter>
+    <title>ECL Workunits</title>
+
+    <para>ECL Watch provides information about ECL jobs and workunits. Links
+    to pages that contain information about ECL workunits appear in the
+    navigation bar along top of the ECL Watch page. There you will find links
+    to ECL Workunits, simply labelled as Workunits, and you will also find the
+    link to the ECL Playground. Not only can you find information about
+    workunits there, but you can perform operations on workunits.</para>
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="ECLWorkunits"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLPlayground/ECLPlay-Mods/ECL_Playground.xml"
+                xpointer="ECL_Playground"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+  </chapter>
+
+  <chapter>
+    <title>Files</title>
+
+    <para>This chapter contains sections dealing with HPCC Platform Files,
+    found on the <emphasis role="bold">Files</emphasis> link in ECL
+    Watch.</para>
+
+    <para>In an HPCC platform, data files are partitioned across nodes. The
+    file parts, referenced using Logical Filenames, are stored in the
+    Distributed File Utility. This allows the collection of file parts to be
+    referenced as a single entity.</para>
+
+    <!--  Might this be chapter for Xref?***-->
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="ECLWatchLogicalFiles"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="DFUWorkunits"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="Landing_Zones"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <sect1 id="spray_and_despray">
+      <title>Spray/Despray</title>
+
+      <para>This section details how to Spray and Despray a Data file to your
+      Thor cluster using ECL Watch. The spray function is integrated into the
+      Landing Zone page as detailed in the <link linkend="Upload_Files">Upload
+      Files</link> section .</para>
+
+      <para>In order to spray a file to your Thor cluster you must first
+      upload the file to your landing zone. The file upload steps are detailed
+      in the preceding section.</para>
+
+      <para>With the file successfully uploaded to the landing zone you can
+      choose the file to spray from the Landing Zone page. Once selected the
+      Spray buttons become enabled.</para>
+
+      <para><figure>
+          <title>Landing Zone Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA440.jpg" vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <sect2>
+        <title>Spray Data to Thor</title>
+
+        <para>With the <emphasis role="bold">Spray:</emphasis> Action buttons
+        enabled, you press the appropriate button for the Spray you wish to
+        perform. Fill in the appropriate values when prompted to complete the
+        spray.</para>
+
+        <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                    xpointer="Spray_Fixed"
+                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+        <?hard-pagebreak ?>
+
+        <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                    xpointer="Spray_Delimited"
+                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+        <?hard-pagebreak ?>
+
+        <xi:include href="HPCCDataHandling/DH-Mods/DH-Mod1.xml"
+                    xpointer="Spray_XML"
+                    xmlns:xi="http://www.w3.org/2001/XInclude" />
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>XRef</title>
+
+      <para>Under the <emphasis role="bold">Files</emphasis> Icon on the
+      navigation sub-menu there is a link for XRef. This link will take you to
+      the XRef Clusters page. On the XRef clusters page you can run the XREF
+      utility.</para>
+
+      <para><figure>
+          <title>XRef Clusters page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA435.jpg" vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>The XREF utility provides the ability to find "orphaned" and "lost
+      and found" files. These "orphan" are files which are found on the nodes
+      but not registered in the Distributed File System.</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>Found File</term>
+
+          <listitem>
+            <para>A found file has partial file parts on disk that are not
+            referenced in the Dali server. All the file parts are accounted
+            for so they can be added back to the Dali server. They can also be
+            deleted from the cluster, if required.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Orphan File</term>
+
+          <listitem>
+            <para>An orphan file has partial file parts on disk. However, a
+            full set of parts is not available to construct a complete logical
+            file. These partial file parts, therefore, do not have a reference
+            in the Dali server.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>Lost File</term>
+
+          <listitem>
+            <para>A logical file that is missing at least one file part on
+            both the primary and replicated locations in storage. The logical
+            file is still referenced in the Dali server. Deleting the file
+            removes the reference from the Dali server and any remaining parts
+            on disk.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
+
+              <entry><para>On a large system, we suggest limiting the number
+              of users who can Generate XREF reports by setting DfuXrefAccess
+              access to FULL for only those users.</para><para>
+              </para></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+
+      <para>To generate a list:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Press the <emphasis role="bold">Generate</emphasis>
+          button.</para>
+
+          <informaltable colsep="1" frame="all" rowsep="1">
+            <?dbfo keep-together="always"?>
+
+            <tgroup cols="2">
+              <colspec colwidth="49.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry><inlinegraphic fileref="images/tip.jpg" /></entry>
+
+                  <entry><para>Sasha Server typically runs Xref at the times
+                  scheduled when deployed.</para><para> </para></entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable>
+        </listitem>
+      </itemizedlist>
+
+      <para>To view results:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Click on one of the hyperlinks (Found Files, Orphan Files,
+          Lost Files, Directories, or Errors/Warnings).</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2>
+        <title>Working with XREF results:</title>
+
+        <para>After XRef completes you will see a list of available reports.
+        Click on one of the links to see the results page of each type.</para>
+
+        <figure>
+          <title>XRef Errors</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA435b.jpg" vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>The Orphan and Lost Files pages list any Orphan or Lost files.
+        Orphan and Lost files are difficult to recover, unless you have copies
+        of missing parts needed to reconstruct the file (for example, if a
+        missing part is on a hard drive that was replaced.)</para>
+
+        <figure>
+          <title>XRef: Delete Lost Files</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA436.jpg" vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>Typically, these files are deleted. To Delete, check the boxes
+        next to files you want to delete, then press the Delete button.</para>
+
+        <para>Found files can and usually are reattached. <figure>
+            <title>XRef: Attach Found Files</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA437.jpg" vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Check the boxes next to files you want to reattach, then press
+        the Attach button.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Queries</title>
+
+    <para>The link for the Published Queries (icon) header provides more
+    information and details about queries on available targets.</para>
+
+    <!-- <para>Include ROXIE (RDDE). List of Clusters.</para>
+
+    <para>Queries &gt; Browse</para>
+
+    <para>Queries &gt; Browse &gt; Thor</para>
+
+    <para>Queries &gt; Browse &gt; Roxie</para>
+
+    <para>Queries &gt; Browse &gt; hThor</para>
+
+    <para>I. Dynamic</para>
+
+    <para>II. Clusters</para> -->
+
+    <para>Click on the Published Queries (icon) hyperlink to display the
+    published queries and package maps on that cluster.</para>
+
+    <figure>
+      <title>Query Link</title>
+
+      <mediaobject>
+        <imageobject>
+          <imagedata fileref="images/ECLWA00Q.jpg" vendor="eclwatchSS" />
+        </imageobject>
+      </mediaobject>
+    </figure>
+
+    <sect1 id="Queries_Page" role="nobrk">
+      <title>Queries Page</title>
+
+      <para>The Queries page lists published queries for each target cluster.
+      On this page you can see the published queries . You can also perform
+      some actions on the selected queries.</para>
+
+      <figure>
+        <title>Browse Query Sets</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWA432.jpg" vendor="eclwatchSS" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The Queries interface provides some information at a glance, there
+      are three columns on the left side of each listed query. These three
+      columns provide information about these queries.</para>
+
+      <!--Per Miguel: The Icons are very likely to be removed from the Main Queries page, 
+can probably just move the table here to the query detail page... 
+depending on where they wind up.-->
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="images/ECLWA-pause.jpg" /></entry>
+
+                <entry><para>Indicates a paused query</para><para>
+                </para></entry>
+              </row>
+
+              <row>
+                <entry><inlinegraphic
+                fileref="images/ECLWA-active.jpg" /></entry>
+
+                <entry><para>Indicates an activated query</para><para>
+                </para></entry>
+              </row>
+
+              <row>
+                <entry><inlinegraphic
+                fileref="images/ECLWA-suspend.jpg" /></entry>
+
+                <entry><para>Indicates a query suspended by the
+                system</para><para> </para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>The queries page also provides other information at a
+      glance:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>the query ID</para>
+          </listitem>
+
+          <listitem>
+            <para>the query name</para>
+          </listitem>
+
+          <listitem>
+            <para>the target</para>
+          </listitem>
+
+          <listitem>
+            <para>the workunit id (WUID)</para>
+          </listitem>
+
+          <listitem>
+            <para>the dll</para>
+          </listitem>
+
+          <listitem>
+            <para>Published by</para>
+          </listitem>
+        </itemizedlist>All the above available at a glance on the main queries
+      page, with further actions that can be performed from the action buttons
+      along the top of the tab. You can sort a column by clicking on the
+      column heading. Click once for ascending, click again to toggle to
+      descending. The direction of the arrow indicates the sort order.</para>
+
+      <!--VERIFY THAT THIS BEHAVIOR APPLIES HERE: YES, was not implemented but added when I brought this up.***-->
+
+      <para>To see the details page for a particular query, or to perform some
+      action on it you must select it. You can select a query or queries by
+      checking the check box. You can also open a particular query by double
+      clicking on it.</para>
+
+      <sect2 id="QueryDetails" role="brk">
+        <title>Query Details</title>
+
+        <para>To examine the Query Details page, you select and open the query
+        or queries. This opens a tab containing the query details. From the
+        query details page you can get more information about the specific
+        query. You can also perform some actions on that query. There are
+        several tabs with additional information about the selected
+        query.</para>
+
+        <sect3 id="QuerySummaryTab">
+          <title>Query Summary Tab</title>
+
+          <para>The default query tab opened when you select a query is the
+          Summary tab. The summary tab shows you some detail information about
+          the query.</para>
+
+          <para><figure>
+              <title>Query detail page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLW006.jpg" vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>There are a few actions that you can perform on the query
+          from this tab. Press the action buttons for the desired activity for
+          the selected query.</para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>Refresh</term>
+
+                <listitem>
+                  <para>Refreshes the information displayed for the selected
+                  query.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Save</term>
+
+                <listitem>
+                  <para>Saves the selected query (or queries).</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Delete</term>
+
+                <listitem>
+                  <para>Deletes the selected query (or queries).</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </sect3>
+
+        <sect3 id="ErrorsTab">
+          <title>Errors Tab</title>
+
+          <para>For each selected query there is an Errors tab. The Errors tab
+          displays any errors that may have been encountered during the
+          compiling and publishing of that query. If there aren't any errors
+          the errors tab will be blank. If there are errors, you can further
+          examine any specific error by checking the box and selecting it, and
+          then press the open action button. You could also just double click
+          on the selected error. <figure>
+              <title>Query Error</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA006E.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para></para>
+        </sect3>
+
+        <sect3 id="GraphsTab">
+          <title>Graphs Tab</title>
+
+          <para>The graphs tab provides access to graphical interpretations of
+          the query. This can be helpful in visualizing how the query ran. The
+          graphs tab displays a list of any graphs generated by the selected
+          query, along with some additional information like timing. To
+          display a specific graph, you must select it, and choose to open it,
+          or you can double click on listed graph.</para>
+
+          <figure>
+            <title>Graphs list</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA006G.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>Opening a graph will open a new tab showing the selected
+          graph(s).</para>
+
+          <para><figure>
+              <title>Graphs</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA006G1.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>When you open a graph the visible area splits into three
+          smaller sections each displaying some relevant component of the
+          query graph. Notice the myriad of graph controls, and tabs in the
+          border area of each tab. Manipulate these controls to view different
+          aspects of the graphs.</para>
+
+          <para>The Advanced action button on the main graph control area,
+          provides access to even more advanced graphing options.</para>
+        </sect3>
+
+        <sect3>
+          <title>Logical Files Tab</title>
+
+          <para>The Published queries details page provides a link to the
+          queries Logical Files tab. The Logical Files tab shows all logical
+          files that are used by the query. To view the logical file details
+          for any file listed, select one or more files by checking the
+          checkbox and press the Open action button. Tabs for each file
+          selected opens where you can view and make changes to the file(s)
+          without the need to go back to the logical files page.</para>
+
+          <figure>
+            <title>Queries:Logical Files Tab</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA006L.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>The above image shows the list of Logical files on the Logical
+          Files tab. To view more detail about a logical file listed here,
+          check the box next to the file, and then press the <emphasis
+          role="bold">Open</emphasis> action button. You can also just double
+          click on the logical file you want to view.</para>
+        </sect3>
+
+        <sect3 id="Test_Pages">
+          <title>Test Pages</title>
+
+          <para>The Test Pages tab provides a number of resources you can use
+          to test your query including SOAP/JSON/WSDL and the legacy WS-ECL
+          form, as well as other tabs showing useful information or sample
+          details about the query.</para>
+
+          <para><figure>
+              <title>Test Pages tab</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/ECLWA012.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Information available from the Test pages tab.</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">SOAP</emphasis> This tab provides an
+              interactive interface to submit the query (with input data) and
+              see the response in XML format.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">JSON</emphasis> This tab provides an
+              interactive interface to submit the query (with input data) and
+              see the response in JSON format.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">WSDL</emphasis> This tab provides a
+              WSDL definition describing the functionality offered by the
+              query (web service).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Request Schema </emphasis>This tab
+              provides a schema in XSD format describing a request for the
+              query (web service).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Response Schema</emphasis> This tab
+              provides a schema in XSD format describing a response from the
+              query (web service).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Sample Request </emphasis>This tab
+              provides a sample request for the query (web service) in XML
+              Format.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Sample Response</emphasis> This tab
+              provides a sample response from the query (web service) in XML
+              Format.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Parameter XML</emphasis> This tab
+              provides Parameterized XML representation of the query
+              interface.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Legacy Form</emphasis> This tab
+              provides a form that can be used to submit a query and get a
+              response. This is similar to the WsECL form.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Links</emphasis> Provides a list of
+              useful links such as: the Form, a sample REST URL, sample
+              request, sample response, parameter XML, SOAP POST, WSDL, XSD,
+              and the result schema.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="QueriesWorkUnits">
+          <title>The Workunits link</title>
+
+          <para>The Published queries details page provides a link to to the
+          workunits, page. This tab is a shortcut that takes you to the same
+          workunits tab you can get to through the ECL workunits menu.</para>
+
+          <figure>
+            <title>Queries Workunit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA006W.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>This is the same as the <emphasis role="bold">ECL
+          Workunits</emphasis> page from the navigation sub-menu Workunits
+          link. You can perform the same operations here. Notice that there
+          are some other familiar tabs here as well, for example the Graphs
+          tab, both from the Queries details page, and from the workunit tab
+          nested here.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Package_Maps">
+        <title>Package Maps</title>
+
+        <para>From the Queries icon link, you can access the package maps
+        page. Press the <emphasis role="bold">Package Maps</emphasis> button
+        on the navigation sub-menu bar, to access to the Package Maps on your
+        cluster. <figure>
+            <title>Package Maps</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWA470.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The package maps page, displays all the package maps loaded on
+        your cluster. You can Add, Activate, Deactivate, Delete, or Open a
+        package map. To examine a package map, select a package map from the
+        list.</para>
+
+        <para>You can select the <emphasis role="bold">Validate Package
+        Map</emphasis> tab to validate a package map.</para>
+
+        <para><figure>
+            <title>Validate Package Maps</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/ECLWaPkMgr.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Choose the <emphasis role="bold">Target</emphasis> and <emphasis
+        role="bold">Process</emphasis> from the drop lists on the Validate
+        Package Map tab.</para>
+
+        <para>Press the <emphasis role="bold">Validate</emphasis> button to
+        validate the package map. The result is shown on the <emphasis
+        role="bold">Validate Active Package Map</emphasis> tab. You can also
+        Validate the package content, on the V<emphasis role="bold">alidate
+        Package Content</emphasis> tab.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Operations</title>
+
+    <para>The Operations link provides access to several components useful for
+    the day-to-day operation of your system, and some system administration
+    access as well. <figure>
+        <title>Operations Menu</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWA460.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>There are links to Target Clusters, Cluster Processes, and System
+    Servers. These links open pages with more information about the specific
+    topology for the selected clusters. These pages are helpful in certifying
+    that your system is up and running properly.</para>
+
+    <para>There are also some system administration type links such as, Users,
+    Groups, Permissions, and Resources. These links allow you to perform some
+    system administration tasks through ECL watch.</para>
+
+    <sect1>
+      <title>Disk Usage</title>
+
+      <para>When you click on the Operations link, it opens the Disk Usage
+      page by default. The Disk Usage page provides information about the
+      available space on your system, and what is using that space. <figure>
+          <title>Disk Usage</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA462.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>You can search or filter the results, using the <emphasis
+      role="bold">Filter</emphasis> action button.</para>
+    </sect1>
+
+    <sect1>
+      <title>Operations: Target Clusters</title>
+
+      <para>The Target Clusters link from the navigation sub-menu bar, on the
+      Operations page, opens the link to the Target Clusters page. This page
+      provides machine information on the clusters you have set up on your
+      machine. <figure>
+          <title>Target Clusters</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/ECLWA461.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+    </sect1>
+
+    <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
+                xpointer="Preflight_system_servers"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
+                xpointer="Preflight_Data_Refinery"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <!--
+    /*commented whole sect out*/
+    <sect1 role="nobrk">
+      <title>Users</title>
+      /*PROBABLY NOT NEEDED - AND CAN BE DELETED*/
+      <para>There are User Administration features available through ECL
+      Watch. Common system administration tasks are accessible through the
+      Operations menu in ECL Watch. The links to Users, Groups, Permissions,
+      and Resources allow you to manage these components of your HPCC system
+      from the ECL Watch interface.</para>
+
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
+                  xpointer="Sec_Adm_w_ECLWatch"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1> 
+ -->
+  </chapter>
+
+  <chapter id="User_Permissions_Chapter">
+    <title>Users Permissions</title>
+
+    <sect1 role="nobrk">
+      <title>User Administration</title>
+
+      <para>There are User Administration features available through ECL
+      Watch.</para>
+
+      <xi:include href="Installing_and_RunningTheHPCCPlatform/Inst-Mods/UserSecurityMaint.xml"
+                  xpointer="Sec_Adm_w_ECLWatch"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+  </chapter>
+
+  <chapter id="Account_Info">
+    <title>Advanced Menu</title>
+
+    <para>There is a section at the top right on the navigation bar with some
+    useful information and features. This section shows you who you are logged
+    in as (if your system has authentication enabled). The Advanced menu is
+    located on the right hand side of the navigation bar. There are several
+    items that you can access from the advanced menu.</para>
+
+    <para><figure>
+        <title>Advanced menu</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/ECLWA007b.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para>There may be a number displayed on the menu link. A number displayed
+    next to it indicates how many errors and warnings have been generated
+    during your session. Click on the advanced menu to display a list of
+    features.</para>
+
+    <sect1>
+      <title>Access the Advanced menu</title>
+
+      <para>You access the advanced menu items from the advanced menu link at
+      the top right corner of ECL Watch.<!--Removed some content stashed in GitStash : ECLWA-1115.xml others culled stored in git-br H8872-NewestECLfor50 **--></para>
+
+      <para>The <emphasis role="bold">Set Banner</emphasis> link allows you to
+      set a custom banner message at the top of your browser window when you
+      open ECL Watch. You can use this feature to send messages to
+      users.</para>
+
+      <para>The <emphasis role="bold">Error/Warning(s)</emphasis> link
+      displays a tab showing you Errors, Warnings, and Information messages.
+      You can filter this page by checking the boxes at the bottom of the tab.
+      A copy facility is also provided.</para>
+
+      <para>The <emphasis role="bold">Open Legacy ECL Watch</emphasis> link
+      opens a tab to the previous version of ECL Watch. The legacy version of
+      ECL Watch is deprecated; this link is only available for a limited time
+      to help in the transition.</para>
+
+      <para>The <emphasis role="bold">Additional Resources</emphasis> link
+      opens a tab to the HPCC Systems download page, where you can browse and
+      download additional HPCC resources: documentation, white papers,
+      training videos, wiki pages, the red book and other HPCC related source
+      code.</para>
+
+      <para>The <emphasis role="bold">Release Notes</emphasis> link opens a
+      tab with the relevant release notes for the version of HPCC that you are
+      using. Read the release notes for more information specific to the
+      release you are working on.</para>
+
+      <para>The <emphasis role="bold">Configuration</emphasis> link opens for
+      viewing the xml version of the configuration file in use on your
+      system.</para>
+
+      <para>The <emphasis role="bold">About</emphasis> link opens a dialog to
+      display some information about the version of the HPCC platform and
+      graph controls installed on your server.</para>
+    </sect1>
+
+    <sect1 role="nobrk">
+      <title>User Details</title>
+
+      <para>The LOGGED IN AS link shows information about the current user on
+      a cluster configured for authentication.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Click on the <emphasis role="bold"><emphasis
+            role="bold">LOGGED IN AS:</emphasis></emphasis> link.</para>
+
+            <para>The User Details window opens. The default window opens on
+            the Summary tab.</para>
+
+            <para><figure>
+                <title>User Details window</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/ECLWA474.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>From The User Details page Summary tab, you can Confirm the
+            User Name that you are logged in as.</para>
+
+            <para>You can change your password.</para>
+
+            <para>Note that Administrator rights are needed to manage users
+            and permissions.</para>
+
+            <para>Ensure you are using an account with Administrator rights if
+            you intend to manage users or permissions.</para>
+          </listitem>
+
+          <listitem>
+            <para>Verify the password expiration date, or if password is set
+            to expire.</para>
+          </listitem>
+        </orderedlist></para>
+
+      <sect2 role="nobrk">
+        <title>Change Password</title>
+
+        <para>If authentication is enabled on your HPCC system, you can change
+        your password, right from the User Details window. <!--***? is this still valid : don't see where this is in new ECLWatch ***--><orderedlist>
+            <listitem>
+              <para>Click on the <emphasis role="bold"><emphasis
+              role="bold">LOGGED IN AS:</emphasis></emphasis> link.</para>
+
+              <para>The User Details window opens. The default window opens on
+              the Summary tab. There are fields on the Summary tab where you
+              can change your password.</para>
+            </listitem>
+
+            <listitem>
+              <para>Enter your desired new password.</para>
+
+              <para>Make sure it meets whatever criteria your system may have
+              for passwords.</para>
+            </listitem>
+
+            <listitem>
+              <para>Confirm your new password.</para>
+
+              <para>Make sure that it matches the password you entered in the
+              previous field.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the Save button. It is in the upper left portion of
+              the window.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2>
+        <title>Permission groups</title>
+
+        <para>The second tab on the User Details window labelled Member Of,
+        displays a list of groups. The groups your account belongs to, are
+        indicated with a checkmark.</para>
+
+        <para>You must be an administrator to modify any of group
+        settings.</para>
+      </sect2>
+
+      <sect2>
+        <title>User Permissions tab</title>
+
+        <para>The third tab on the User Details window labelled <emphasis
+        role="bold">User Permissions</emphasis>, displays a list of permission
+        settings. Note that Administrator rights are needed to manage users
+        and permissions. Ensure you are using an account with Administrator
+        rights if you intend to manage users or permissions.</para>
+
+        <para>This is where you can access the user permissions area. A more
+        detailed description of the user permissions settings is covered in
+        the <link linkend="User_Permissions_Chapter">User Permissions</link>
+        section.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="Resources">
+    <title>Resources</title>
+
+    <para>The resources link can be found under the Operations Icon link. The
+    resources link in ECL Watch provides a link to the HPCC Systems web
+    portal. Visit the HPCC Systems Web Portal at <ulink
+    url="http://hpccsystems.com/">http://hpccsystems.com/</ulink> for software
+    updates, plug-ins, support, documentation, and more. This is where you can
+    find resources useful for running and maintaining HPCC on the web
+    portal.</para>
+
+    <para>You can also get to the resources link on the HPCC Systems web
+    portal page, by clicking on the <emphasis role="bold">Additional
+    Resources</emphasis> link found on the sub-menu of at the top right hand
+    side of navigation bar.</para>
+
+    <para>ECL Watch provides a link to the HPCC portal's download page: <ulink
+    url="http://hpccsystems.com/download">http://hpccsystems.com/download</ulink>.
+    This is the page where you can download Installation packages, virtual
+    images, source code, documentation, and tutorials.</para>
+  </chapter>
+</book>
