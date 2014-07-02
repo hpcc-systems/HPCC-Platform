@@ -9201,6 +9201,19 @@ public:
 
     virtual void stop(bool aborting)
     {
+        if (!aborting && helper.getSequence() >= 0)
+        {
+            WorkunitUpdate wu = ctx->updateWorkUnit();
+            if (wu)
+            {
+                Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
+                if (result)
+                {
+                    result->setResultTotalRowCount(processed);
+                    result->setResultStatus(ResultStatusCalculated);
+                }
+            }
+        }
         CRoxieServerActivity::stop(aborting);
         pipe.clear();
     }
@@ -10780,7 +10793,6 @@ protected:
     bool encrypted;
     bool grouped;
     IHThorDiskWriteArg &helper;
-    StringBuffer lfn;   // logical filename
     CachedOutputMetaData diskmeta;
     Owned<IRoxieWriteHandler> writer;
 
@@ -10792,10 +10804,13 @@ protected:
     {
         assertex(writer);
         // MORE - a lot of this is common with hthor
-        if(lfn.length()) //this is required as long as temp files don't get a name which can be stored in the WU and automatically deleted by the WU
+        WorkunitUpdate wu = ctx->updateWorkUnit();
+        if (wu)
         {
-            WorkunitUpdate wu = ctx->updateWorkUnit();
-            if (wu)
+            OwnedRoxieString rawLogicalName = helper.getFileName();
+            StringBuffer lfn;   // logical filename
+            expandLogicalFilename(lfn, rawLogicalName, wu, false);
+            if (lfn.length())
             {
                 unsigned flags = helper.getFlags();
                 WUFileKind fileKind;
@@ -10854,7 +10869,7 @@ protected:
             else
                 clusters.append(".");
         }
-        writer.setown(ctx->createLFN(rawLogicalName, overwrite, extend, clusters)); // MORE - if there's a workunit, use if for scope.
+        writer.setown(ctx->createLFN(rawLogicalName, overwrite, extend, clusters));
         // MORE - need to check somewhere that single part if it's an existing file or an external one...
     }
 
@@ -11251,25 +11266,29 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
 
     void updateWorkUnitResult()
     {
-        if(filename.length()) //this is required as long as temp files don't get a name which can be stored in the WU and automatically deleted by the WU
+        // MORE - a lot of this is common with hthor
+        WorkunitUpdate wu = ctx->updateWorkUnit();
+        if (wu)
         {
-            WorkunitUpdate wu = ctx->updateWorkUnit();
-            if (wu)
+            OwnedRoxieString rawLogicalName = helper.getFileName();
+            StringBuffer lfn;   // logical filename
+            expandLogicalFilename(lfn, rawLogicalName, wu, false);
+            if (lfn.length())
             {
-                if (!(helper.getFlags() & TDXtemporary) && helper.getSequence() >= 0)
+                if (helper.getSequence() >= 0)
                 {
                     Owned<IWUResult> result = wu->updateResultBySequence(helper.getSequence());
                     if (result)
                     {
                         result->setResultTotalRowCount(reccount);
                         result->setResultStatus(ResultStatusCalculated);
-                        result->setResultLogicalName(filename.str());
+                        result->setResultLogicalName(lfn.str());
                     }
                 }
                 if(clusterHandler)
                     clusterHandler->finish(writer->queryFile());
+                CTXLOG("Created roxie index file %s", lfn.str());
             }
-            CTXLOG("Created roxie index file %s", filename.str());
         }
     }
 
