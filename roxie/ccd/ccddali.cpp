@@ -784,7 +784,21 @@ public:
             StringBuffer localName(queryDirectory);
             localName.append(name);
             if (checkFileExists(localName.str()))
-                return createDllEntry(localName.str(), false, NULL);
+            {
+                try
+                {
+                    return createDllEntry(localName.str(), false, NULL);
+                }
+                catch (ICorruptDllException *E)
+                {
+                    remove(localName.str());
+                    E->Release();
+                }
+                catch (...)
+                {
+                    throw;
+                }
+            }
         }
         CriticalBlock b(crit);
         Owned<IRoxieDaliHelper> daliHelper = connectToDali();
