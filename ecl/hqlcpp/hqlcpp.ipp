@@ -733,6 +733,7 @@ struct HqlCppOptions
     bool                optimizeMax;
     bool                useResultsForChildSpills;
     bool                alwaysUseGraphResults;
+    bool                reportAssertFilenameTail;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
