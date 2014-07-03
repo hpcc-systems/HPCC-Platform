@@ -32,7 +32,10 @@
 #include "windows.h"
 #endif
 #include "TpWrapper.hpp"
-#include "LogicFileWrapper.hpp"
+
+#include "dalienv.hpp"
+
+
 #include "dfuutil.hpp"
 #include "portlist.h"
 #include "sacmd.hpp"
@@ -459,7 +462,7 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
     }
 }
 
-bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* cluster,
+bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* groupName, const char* cluster,
                                     StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder)
 {
     if(!pLogicalPath || !*pLogicalPath)
@@ -472,11 +475,11 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* clust
     defaultReplicateFolder.clear();
     DFD_OS os = DFD_OSdefault;
 
-    if(cluster != NULL && *cluster != '\0')
+    if(groupName != NULL && *groupName != '\0')
     {
         StringBuffer basedir;
         GroupType groupType;
-        Owned<IGroup> group = queryNamedGroupStore().lookup(cluster, basedir, groupType);
+        Owned<IGroup> group = queryNamedGroupStore().lookup(groupName, basedir, groupType);
         if (group) {
             switch (queryOS(group->queryNode(0).endpoint())) {
             case MachineOsW2K:
@@ -603,10 +606,6 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
 
 StringBuffer& getNodeGroupFromLFN(StringBuffer& nodeGroup, const char* lfn, const char* username, const char* passwd)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        return nodeGroup;
-
     Owned<IUserDescriptor> udesc;
     if(username != NULL && *username != '\0')
     {
@@ -614,10 +613,10 @@ StringBuffer& getNodeGroupFromLFN(StringBuffer& nodeGroup, const char* lfn, cons
         udesc->set(username, passwd);
     }
 
-    StringBuffer clusterName;
-    LogicFileWrapper lfw;
-    lfw.FindClusterName(lfn, clusterName, udesc);
-    return getClusterThorGroupName(nodeGroup, clusterName.str());
+    Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(lfn, udesc);
+    if (!df)
+        throw MakeStringException(ECLWATCH_FILE_NOT_EXIST, "Failed to find file: %s", lfn);
+    return df->getClusterGroupName(0, nodeGroup);
 }
 
 StringBuffer& constructFileMask(const char* filename, StringBuffer& filemask)
@@ -1866,9 +1865,9 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
             gName.append(destNodeGroup);
 
         if (ipAddr.length() > 0)
-            ParseLogicalPath(destname, ipAddr.str(), destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+            ParseLogicalPath(destname, ipAddr.str(), NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
         else
-            ParseLogicalPath(destname, destNodeGroup, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+            ParseLogicalPath(destname, destNodeGroup, NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
@@ -2037,9 +2036,9 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         destname = lfn.get();
 
         if (ipAddr.length() > 0)
-            ParseLogicalPath(destname, ipAddr.str(), destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+            ParseLogicalPath(destname, ipAddr.str(), NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
         else
-            ParseLogicalPath(destname, destNodeGroup, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+            ParseLogicalPath(destname, destNodeGroup, NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
@@ -2365,7 +2364,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             dstname = lfn.get();
         }
 
-        ParseLogicalPath(dstname, destNodeGroup.str(), destFolder, destTitle, defaultFolder, defaultReplicateFolder);
+        ParseLogicalPath(dstname, destNodeGroup.str(), NULL, destFolder, destTitle, defaultFolder, defaultReplicateFolder);
 
         StringBuffer fileMask; 
         constructFileMask(destTitle.str(), fileMask);
