@@ -79,15 +79,19 @@ class ECLcmd(Shell):
         data = ""
         wuid = "N/A"
         state = ""
+        results=''
         try:
             #print "runCmd:", args
             results = self.__ECLcmd()(*args)
+            logging.debug("%3d. results:'%s'", eclfile.getTaskId(),  results)
             data = '\n'.join(line for line in
                              results.split('\n') if line) + "\n"
             ret = data.split('\n')
             result = ""
             cnt = 0
             for i in ret:
+                logging.debug("%3d. i:'%s'", eclfile.getTaskId(),  i )
+
                 if "wuid:" in i:
                     logging.debug("------ runCmd:" + repr(i) + "------")
                     wuid = i.split()[1]
@@ -102,13 +106,13 @@ class ECLcmd(Shell):
                              result.split('\n') if line) + "\n"
 
         except Error as err:
-            data = repr(err)
+            data = str(err)
             logging.error("------" + err + "------")
-            return err + "\n"
+            raise err
         finally:
             if wuid ==  'N/A':
                 res = queryWuid(eclfile.getJobname(), eclfile.getTaskId())
-                logging.debug("%3d. queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
+                logging.debug("%3d. in finally queryWuid() -> 'result':'%s', 'wuid':'%s', 'state':'%s'", eclfile.getTaskId(),  res['result'],  res['wuid'],  res['state'])
                 wuid = res['wuid']
                 if res['result'] != "OK":
                     eclfile.diff=eclfile.getBaseEcl()+'\n\t'+res['state']+'\n'

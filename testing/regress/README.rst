@@ -1,4 +1,4 @@
-Overview of Regression Suite usage (v:0.0.28)
+Overview of Regression Suite usage (v:0.0.29)
 ==============================================
 
 To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
