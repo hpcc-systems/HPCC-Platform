@@ -17,7 +17,7 @@
 
 
 #ifndef JMEMLEAK_H
-#define JMEMLEAH_H
+#define JMEMLEAK_H
 
 
 #if (defined WIN32) || (defined _WIN32) || (defined __WIN32__) || (defined WIN64) || (defined _WIN64) || (defined __WIN64__)

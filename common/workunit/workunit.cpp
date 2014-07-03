@@ -9667,7 +9667,8 @@ extern WORKUNIT_API void extractToken(const char *token, const char *wuid, IStri
             if(finger1)
             {
                 user.setLen(finger, (size32_t)(finger1-finger));
-                password.setLen(++finger1, (size32_t)(wu.str() + wu.length() - finger1));
+                finger1++;
+                password.setLen(finger1, (size32_t)(wu.str() + wu.length() - finger1));
                 return;
             }
         }

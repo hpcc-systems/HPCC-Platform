@@ -2916,7 +2916,9 @@ IPropertyTree* getNewRange(const IPropertyTree* pEnv, const char* prefix, const 
    end.getNetAddress(sizeof(e),&e);
    if( s > e)
    {
-     s^=e^=s^=e;
+     s^=e;
+     e^=s;
+     s^=e;
      const char* temp = startIP;
      startIP = endIP;
      endIP= temp;
@@ -3311,7 +3313,11 @@ void formIPList(const char* ip, StringArray& formattedIpList)
                      unsigned startAddr = atoi(commIPPart.item(3));
                      comip.clear().append(commIPPart.item(0)).append(".").append(commIPPart.item(1)).append(".").append(commIPPart.item(2)).append(".");
                      if( startAddr > endAddr)
-                        startAddr^=endAddr^=startAddr^=endAddr;
+                     {
+                       startAddr^=endAddr;
+                       endAddr^=startAddr;
+                       startAddr^=endAddr;
+                     }
                      
                      while(startAddr <= endAddr)
                      {

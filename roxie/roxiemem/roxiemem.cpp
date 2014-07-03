@@ -2241,7 +2241,7 @@ class BufferedRowCallbackManager
         : Thread("ReleaseBufferThread"), owner(_owner), abort(false)
         {
             args.critical = false;
-            args.result = NULL;
+            args.result = false;
         }
 
         virtual int run()

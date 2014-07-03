@@ -1728,7 +1728,7 @@ void doStackProbe()
 {
     byte local;
     const volatile byte * x = (const byte *)&local;
-    x[-4096];
+    byte forceload = x[-4096];
 }
 
 #ifdef _WIN32
