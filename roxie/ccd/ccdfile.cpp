@@ -1444,9 +1444,16 @@ public:
             IPartDescriptor &part = *fdesc.queryPart(i);
             IPropertyTree &partProps = part.queryProperties();
             offset_t size = partProps.getPropInt64("@size", (unsigned __int64) -1);
-            assertex(size != (unsigned __int64) -1);
             map[i].base = i ? map[i-1].top : 0;
-            map[i].top = map[i].base + size;
+            if (size==(unsigned __int64) -1)
+            {
+                if (i==numParts-1)
+                    map[i].top = (unsigned __int64) -1;
+                else
+                    throw MakeStringException(ROXIE_DATA_ERROR, "CFilePartMap: file sizes not known for file %s", fileName.get());
+            }
+            else
+                map[i].top = map[i].base + size;
         }
         if (totalSize == (offset_t)-1)
             totalSize = map[numParts-1].top;
