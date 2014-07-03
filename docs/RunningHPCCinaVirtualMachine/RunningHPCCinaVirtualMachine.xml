@@ -742,9 +742,8 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>From ECL Watch page, click on the <emphasis
-          role="bold">Resources </emphasis> link in the menu on the left
-          side.</para>
+          <para>From the ECL Watch Advanced menu, select on the <emphasis
+          role="bold">Additional Resources </emphasis>link.</para>
 
           <para><figure>
               <title>ECL Watch Resource Page</title>
@@ -756,18 +755,19 @@
               </mediaobject>
             </figure></para>
 
-          <para>Follow the link to the HPCC System's portal.</para>
+          <para>Follow the link to the HPCC System's portal download
+          page.</para>
         </listitem>
 
         <listitem>
-          <para>Click on the <emphasis role="bold">ECL IDE
-          </emphasis>link.</para>
+          <para>Click on the <emphasis role="bold">ECL IDE </emphasis>link.
+          (on the right hand side in the Download column, under the Free
+          Community Edition heading)</para>
         </listitem>
 
         <listitem>
-          <para>Download the <emphasis role="bold">ECL IDE for
-          Windows</emphasis> from the <emphasis>Community ECL IDE</emphasis>
-          download page.</para>
+          <para>Follow the instructions on the web page to install the ECL
+          IDE.</para>
         </listitem>
 
         <listitem>
@@ -968,10 +968,6 @@
           <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
 
           <para>You are now connected and ready to work with the HPCC!</para>
-
-          <para></para>
-
-          <para></para>
         </listitem>
       </orderedlist>
     </sect1>
@@ -1274,46 +1270,43 @@ OUTPUT(L);</programlisting></para>
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>From ECL Watch page, click on the <emphasis
-              role="bold">Upload/download File </emphasis> link in the menu on
-              the left side.</para>
+              <para>From ECL Watch click on the <emphasis
+              role="bold">Files</emphasis> icon, then click the <emphasis
+              role="bold">Landing Zones</emphasis> link from the navigation
+              sub-menu.</para>
+
+              <para>Press the <emphasis role="bold">Upload </emphasis>action
+              button.</para>
 
               <para><figure>
-                  <title>Upload/download</title>
+                  <title>Upload</title>
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/LZimg03-1.jpg" />
-                    </imageobject>
-                  </mediaobject>
-                </figure></para>
-
-              <para>Once you click on the Upload/download file link, it will
-              take you to the Dropzones and Files page, where you can choose
-              to <emphasis role="bold">Browse</emphasis> your machine for a
-              file to upload:</para>
-
-              <para><figure>
-                  <title>Dropzones and Files</title>
-
-                  <mediaobject>
-                    <imageobject>
-                      <imagedata fileref="images/LZimg04.jpg" />
+                      <imagedata fileref="images/LZimg03-1.jpg"
+                                 vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
             </listitem>
 
             <listitem>
-              <para>Press the <emphasis role="bold">Browse</emphasis> button
-              to browse the files on your local machine, select the file to
-              upload and then press the <emphasis role="bold">Open</emphasis>
-              button.</para>
+              <para>A dialog opens. <emphasis role="bold">Browse</emphasis>
+              your local machine select the file to upload and then press the
+              <emphasis role="bold">Open</emphasis> button. <figure>
+                  <title>File Uploader</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/LZimg04a.jpg"
+                                 vendor="eclwatchSS" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
 
               <para>The file you selected should appear in the <emphasis
-              role="bold">Select a file to upload:</emphasis> field. The data
-              file is named: <emphasis
-              role="bold">2of12.txt</emphasis>.</para>
+              role="bold">File Name</emphasis> field. The data file is named:
+              <emphasis role="bold">2of12.txt</emphasis>.</para>
             </listitem>
 
             <listitem>
@@ -1351,17 +1344,31 @@ OUTPUT(L);</programlisting></para>
             </listitem>
 
             <listitem>
+              <para>Click on the <emphasis role="bold">Files</emphasis> icon,
+              then click the <emphasis role="bold">Landing Zones</emphasis>
+              link from the navigation sub-menu. Select the appropriate
+              landing zone (if there are more than one landing zones). Click
+              the arrow to the left of your landing zone to expand it.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the file from your drop zone by checking the box
+              next to it.</para>
+            </listitem>
+
+            <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>CLICK on the Spray Delimited hyperlink under the DFU Files
-              menu on the left.</para>
+              <para>Check the box next to 2of12.txt, then press the <emphasis
+              role="bold">Delimited</emphasis> button.</para>
 
               <para><figure>
                   <title>Spray Delimited</title>
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/IMDB_01.jpg" />
+                      <imagedata fileref="images/GSSprayDict.jpg"
+                                 vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
@@ -1371,21 +1378,12 @@ OUTPUT(L);</programlisting></para>
             </listitem>
 
             <listitem>
-              <para>Select mydropzone in the Source <emphasis
-              role="bold">Machine/dropzone</emphasis> drop list.</para>
-
-              <para>The IP Address is automatically filled and the Local Path
-              is partially filled with the default folder on your landing
-              zone. Note: The VM and Community Edition typically only has one
-              landing zone defined.</para>
+              <para>Select mythor in the Target Group drop list.</para>
             </listitem>
 
             <listitem>
-              <para>Complete the Local Path to include the complete file name
-              or use the <emphasis role="bold">Choose File</emphasis> button
-              to select the file from a list of files in the folder. The file
-              is <emphasis role="bold">2of12.txt</emphasis>.<emphasis
-              role="bold"></emphasis></para>
+              <para>Complete the Name Prefix as<emphasis>
+              thor</emphasis>.</para>
             </listitem>
 
             <listitem>
@@ -1412,9 +1410,9 @@ OUTPUT(L);</programlisting></para>
             </listitem>
 
             <listitem>
-              <para>Fill in the Label using the Logical File name desired:
-              <emphasis role="bold">thor::word_list_csv</emphasis><emphasis
-              role="bold"> </emphasis></para>
+              <para>Fill in the Target Name using the rest of the Logical File
+              name desired: word_list_csv<emphasis role="bold">
+              </emphasis></para>
             </listitem>
 
             <listitem>
@@ -1424,16 +1422,6 @@ OUTPUT(L);</programlisting></para>
               and <emphasis role="bold">Replicate</emphasis><emphasis
               role="bold"> </emphasis>boxes are checked.</para>
 
-              <para><figure>
-                  <title>Spray the File</title>
-
-                  <mediaobject>
-                    <imageobject>
-                      <imagedata fileref="images/VM1000.jpg" />
-                    </imageobject>
-                  </mediaobject>
-                </figure></para>
-
               <para><emphasis role="bold">Note:</emphasis> The <emphasis
               role="bold">Replicate</emphasis> option is only available on
               systems where replication has been enabled.</para>
@@ -1442,38 +1430,11 @@ OUTPUT(L);</programlisting></para>
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Press the Submit<emphasis role="bold">
-              </emphasis>button</para>
+              <para>Press the <emphasis role="bold">Spray</emphasis><emphasis
+              role="bold"> </emphasis>button.</para>
 
-              <para><figure>
-                  <title>View Progress</title>
-
-                  <mediaobject>
-                    <imageobject>
-                      <imagedata fileref="images/VM1001.jpg" />
-                    </imageobject>
-                  </mediaobject>
-                </figure></para>
-            </listitem>
-
-            <listitem>
-              <para>Click the View Progress link</para>
-            </listitem>
-
-            <listitem>
-              <?dbfo keep-together="always"?>
-
-              <para>The Workunit progress page displays.</para>
-
-              <figure>
-                <title>Workunit Progress</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/VM1002.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure>
+              <para>A tab displays the DFU Workunit where you can see the
+              progress of the spray.</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -1569,7 +1530,7 @@ OUTPUT(ValidWords)
           Roxie<parameter></parameter></title>
 
           <para><orderedlist>
-                  <listitem>                                                
+              <listitem>
                 <?dbfo keep-together="always"?>
 
                 <para>RT-CLICK on the <emphasis role="bold">MyFIles</emphasis>
@@ -1761,8 +1722,9 @@ OUTPUT(ValidWords)
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>Press the <emphasis role="bold">Publish</emphasis> button
-              (you may need to scroll down the main window)</para>
+              <para>Press the <emphasis role="bold">Publish</emphasis> button,
+              complete the dialog, and press <emphasis
+              role="bold">Submit</emphasis>. </para>
 
               <para><figure>
                   <title>Publish Query</title>
@@ -1772,17 +1734,8 @@ OUTPUT(ValidWords)
                       <imagedata fileref="images/VM1008.jpg" />
                     </imageobject>
                   </mediaobject>
-                </figure>When it successfully publishes, you will see:</para>
-
-              <para><figure>
-                  <title>Workunit Published</title>
-
-                  <mediaobject>
-                    <imageobject>
-                      <imagedata fileref="images/DT173-18b.png" />
-                    </imageobject>
-                  </mediaobject>
-                </figure></para>
+                </figure>When it successfully publishes, a confirmation
+              message displays.</para>
             </listitem>
           </orderedlist>
         </sect3>
@@ -2298,15 +2251,14 @@ OUTPUT(ValidWords)
 
         <qandaentry>
           <question>
-            <para>The VM Fails to start on Mac OSx after upgrading to OSx
-            10.9 Mavericks. How can I correct this?</para>
+            <para>The VM Fails to start on Mac OSx after upgrading to OSx 10.9
+            Mavericks. How can I correct this?</para>
           </question>
 
           <answer>
             <para>To correct this issue run the following command:
             <programlisting>sudo launchctl load 
-            /Library/LaunchDaemons/org.virtualbox.startup.plist</programlisting>
-            </para>
+            /Library/LaunchDaemons/org.virtualbox.startup.plist</programlisting></para>
           </answer>
         </qandaentry>
 
