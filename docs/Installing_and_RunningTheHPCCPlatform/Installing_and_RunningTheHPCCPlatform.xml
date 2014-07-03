@@ -2005,7 +2005,7 @@ OUTPUT(L);</programlisting></para>
             <para>From ECL Watch click on the <emphasis
             role="bold">Files</emphasis> icon, then click the <emphasis
             role="bold">Landing Zones</emphasis> link from the navigation
-            sub-menu. </para>
+            sub-menu.</para>
 
             <para>Press the <emphasis role="bold">Upload </emphasis>action
             button.</para>
@@ -2078,7 +2078,7 @@ OUTPUT(L);</programlisting></para>
             then click the <emphasis role="bold">Landing Zones</emphasis> link
             from the navigation sub-menu. Select the appropriate landing zone
             (if there are more than one landing zones). Click the arrow to the
-            left of your landing zone to expand it. </para>
+            left of your landing zone to expand it.</para>
           </listitem>
 
           <listitem>
@@ -2090,7 +2090,7 @@ OUTPUT(L);</programlisting></para>
             <?dbfo keep-together="always"?>
 
             <para>Check the box next to 2of12.txt, then press the <emphasis
-            role="bold">Delimited</emphasis> button. </para>
+            role="bold">Delimited</emphasis> button.</para>
 
             <para><figure>
                 <title>Spray Delimited</title>
@@ -2161,10 +2161,10 @@ OUTPUT(L);</programlisting></para>
             <?dbfo keep-together="always"?>
 
             <para>Press the <emphasis role="bold">Spray</emphasis><emphasis
-            role="bold"> </emphasis>button. </para>
+            role="bold"> </emphasis>button.</para>
 
             <para>A tab displays the DFU Workunit where you can see the
-            progress of the spray. </para>
+            progress of the spray.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -2442,8 +2442,9 @@ OUTPUT(ValidWords)
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Publish</emphasis> button
-            (you may need to scroll down the main window)</para>
+            <para>Press the <emphasis role="bold">Publish</emphasis> button,
+            complete the dialog, and press <emphasis
+            role="bold">Submit</emphasis>.</para>
 
             <para><figure>
                 <title>Publish Query</title>
@@ -2453,17 +2454,8 @@ OUTPUT(ValidWords)
                     <imagedata fileref="images/VM1008.jpg" />
                   </imageobject>
                 </mediaobject>
-              </figure>When it successfully publishes, you will see:</para>
-
-            <para><figure>
-                <title>Workunit Published</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/DT173-18b.png" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+              </figure>When it successfully publishes, a confirmation message
+            displays.</para>
           </listitem>
         </orderedlist>
       </sect2>
