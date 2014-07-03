@@ -427,12 +427,15 @@ class Regression:
                                       username=self.config.username,
                                       password=self.config.password)
             except Error as e:
+                logging.debug("Exception raised:'%s'"  % ( str(e)),  extra={'taskId':cnt})
                 res = False
                 wuid = 'Not found'
                 query.setWuid(wuid)
                 query.diff = query.getBaseEcl()+"\n\t"+str(e)
                 report[0].addResult(query)
                 pass
+            except:
+                logging.error("Unexpected error:'%s'" %( sys.exc_info()[0]) ,  extra={'taskId':cnt})
 
             wuid = query.getWuid()
             logging.debug("CMD result: '%s', wuid:'%s'"  % ( res,  wuid),  extra={'taskId':cnt})

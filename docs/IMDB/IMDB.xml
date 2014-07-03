@@ -290,8 +290,8 @@ Blankline</programlisting></para>
             <?dbfo keep-together="always"?>
 
             <para>From ECL Watch page, click on the <emphasis
-            role="bold">Upload/download File </emphasis> link in the menu on
-            the left side.</para>
+            role="bold">Files </emphasis>icon, then on the <emphasis
+            role="bold">Landing Zones</emphasis> link. </para>
 
             <para><figure>
                 <title>Upload/download</title>
@@ -304,43 +304,51 @@ Blankline</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>Once you click on the Upload/download file link, it will
-            take you to the Dropzones and Files page, where you can choose to
-            <emphasis role="bold">Browse</emphasis> your machine for a file to
-            upload:</para>
+            <para>Once you click on the <emphasis
+            role="bold">Upload</emphasis> file link, a file dialog displays.
+            </para>
 
-            <para><figure>
-                <title>Dropzones and Files</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/LZimg04.jpg"
-                               vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+            <para></para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Browse</emphasis> button to
-            browse the files on your local machine, select the file to upload
-            and then press the <emphasis role="bold">Open</emphasis>
-            button.</para>
+            <para>Browse the files on your local machine, then use
+            multi-select to choose the files to upload and then press the
+            <emphasis role="bold">Open</emphasis> button.</para>
 
-            <para>The file you selected should appear in the <emphasis
-            role="bold">Select a file to upload:</emphasis> field. The data
-            files are named: <emphasis>actors.list</emphasis> and
+            <para>The files you selected should appear . The data files are
+            named: <emphasis>actors.list</emphasis> and
             <emphasis>actresses.list</emphasis> <emphasis role="bold">
             </emphasis></para>
+
+            <figure>
+              <title>Dropzones and Files</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/IMDB_upload.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>
           </listitem>
 
           <listitem>
-            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
-            complete the file upload.</para>
-          </listitem>
+            <para>Press the <emphasis role="bold">Start</emphasis> button to
+            upload the files.</para>
 
-          <listitem>
-            <para>Repeat the process for the other data file.</para>
+            <para>You can monitor priogress as it uploads.</para>
+
+            <figure>
+              <title>Upload Progress</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/IMDB_uploadProgress.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>
           </listitem>
         </orderedlist>
       </sect2>
@@ -373,10 +381,17 @@ Blankline</programlisting></para>
           </listitem>
 
           <listitem>
-            <?dbfo keep-together="always"?>
+            <para>Click on the <emphasis role="bold">Files</emphasis> icon,
+            then click the <emphasis role="bold">Landing Zones</emphasis> link
+            from the navigation. </para>
+          </listitem>
 
-            <para>CLICK on the Spray Delimited hyperlink under the DFU Files
-            menu on the left.</para>
+          <listitem>
+            <para>Select the two files (actors.list and actresses.list ) then
+            press the Delimited button. </para>
+
+            <para>The <emphasis role="bold">Spray Delimited</emphasis> dialog
+            displays.</para>
 
             <para><figure>
                 <title>Spray Delimited</title>
@@ -389,13 +404,12 @@ Blankline</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>The <emphasis role="bold">DFU Spray Delimited</emphasis>
-            page displays.</para>
+            <para></para>
           </listitem>
 
           <listitem>
-            <para>Select mydropzone in the Source <emphasis
-            role="bold">Machine/dropzone</emphasis> drop-list.</para>
+            <para>Select mythor in the <emphasis role="bold">Group</emphasis>
+            drop-list.</para>
 
             <para>The IP Address is automatically filled and the Local Path is
             partially filled with the default folder on your landing zone.
@@ -404,10 +418,8 @@ Blankline</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Complete the Local Path to include the complete file name or
-            use the <emphasis role="bold">Choose File</emphasis> button to
-            select the file from a list of files in the folder. The file is
-            <emphasis role="bold">actors.list</emphasis></para>
+            <para>Complete the Name prefix <emphasis
+            role="bold">~thor::in::IMDB</emphasis></para>
           </listitem>
 
           <listitem>
@@ -434,45 +446,34 @@ Blankline</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Fill in the Label using the Logical File name desired: :
-            <emphasis role="bold">~thor::in::IMDB::actors.list
-            </emphasis></para>
-          </listitem>
-
-          <listitem>
             <?dbfo keep-together="always"?>
 
             <para>Make sure the <emphasis role="bold">Overwrite</emphasis> and
             <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
             </emphasis>boxes are checked.</para>
 
-            <para><emphasis role="bold">Note:</emphasis> This option is only
-            available on systems where replication has been enabled.</para>
+            <para><emphasis role="bold">Note:</emphasis> The Replicate option
+            is only available on systems where replication has been
+            enabled.</para>
 
-            <para><figure>
-                <title>Spray the File</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/IMDB_02.jpg"
-                               vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+            <para></para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the Submit<emphasis role="bold">
-            </emphasis>button</para>
+            <para>Press the <emphasis role="bold">Spray</emphasis><emphasis
+            role="bold"> </emphasis>button.</para>
+
+            <para>A tab opens for each file. On these tabs, you can monitor
+            the progress of each DFU Spray.</para>
 
             <para><figure>
                 <title>View Progress</title>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_03.jpg"
+                    <imagedata fileref="images/IMDB_03a.jpg"
                                vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
@@ -480,82 +481,13 @@ Blankline</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Click the View Progress link</para>
+            <para>After both sprays are complete, we can query the logical
+            files on the HPCC to see the files we sprayed.</para>
           </listitem>
 
           <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>The Workunit progress page displays.</para>
-
-            <figure>
-              <title>Workunit Progress</title>
-
-              <mediaobject>
-                <imageobject>
-                  <imagedata fileref="images/IMDB_03-1.jpg"
-                             vendor="eclwatchSS" />
-                </imageobject>
-              </mediaobject>
-            </figure>
-          </listitem>
-
-          <listitem>
-            <para>Following the same steps you used to spray the actors file,
-            now spray the actresses file.</para>
-
-            <para><itemizedlist>
-                <listitem>
-                  <para>Click on the Spray Delimited link.</para>
-                </listitem>
-
-                <listitem>
-                  <para>Select mydropzone in the Source <emphasis
-                  role="bold">Machine/dropzone</emphasis> drop-list.</para>
-                </listitem>
-
-                <listitem>
-                  <para>Enter the file name for the
-                  <emphasis>actresses.list</emphasis> file, or use the
-                  <emphasis role="bold">Choose File</emphasis> button to
-                  select the the <emphasis>actresses.list </emphasis>file from
-                  a list of files in the folder.</para>
-                </listitem>
-
-                <listitem>
-                  <para>Fill in the Label using the Logical File name desired:
-                  : <emphasis
-                  role="bold">~thor::in::IMDB::actresses.list</emphasis></para>
-
-                  <para>Make sure the <emphasis
-                  role="bold">Overwrite</emphasis> and <emphasis
-                  role="bold">Replicate </emphasis>boxes are checked (if
-                  available).</para>
-                </listitem>
-
-                <listitem>
-                  <para>Press the Submit button</para>
-                </listitem>
-              </itemizedlist>After both sprays are complete, we can query the
-            logical files on the HPCC to see the files we sprayed.</para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Click on the <emphasis role="bold">Browse Logical
-            Files</emphasis> hyperlink in ECL Watch</para>
-
-            <para><figure>
-                <title>Browse Logical Files</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/IMDB_03-2.jpg"
-                               vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+            <para>Click on the <emphasis role="bold">Logical Files</emphasis>
+            link </para>
 
             <para>The files display in the Logical Files list:</para>
 

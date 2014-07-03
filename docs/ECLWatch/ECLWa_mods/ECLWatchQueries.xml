@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <title>Wrapper</title>
+
+  <bookinfo>
+    <title>Wrapper</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="../../images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter id="WrapperECLWatchQueries">
+    <title>Wrapper</title>
+
+    <para>wrapper</para>
+
+    <sect1 id="Queries_Page" role="nobrk">
+      <title>Queries Page in ECL Watch</title>
+
+      <para>The Queries page lists published queries for each target cluster.
+      On this page you can see the published queries . You can also perform
+      some actions on the selected queries.</para>
+
+      <figure>
+        <title>Browse Query Sets</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/ECLWA432.jpg" vendor="eclwatchSS" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The Queries interface provides some information at a glance, there
+      are three columns on the left side of each listed query. These three
+      columns provide information about these queries.</para>
+
+      <!--Per Miguel: The Icons are very likely to be removed from the Main Queries page, 
+can probably just move the table here to the query detail page... 
+depending on where they wind up.-->
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/ECLWA-pause.jpg" /></entry>
+
+                <entry><para>Indicates a paused query</para><para>
+                </para></entry>
+              </row>
+
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/ECLWA-active.jpg" /></entry>
+
+                <entry><para>Indicates an activated query</para><para>
+                </para></entry>
+              </row>
+
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/ECLWA-suspend.jpg" /></entry>
+
+                <entry><para>Indicates a query suspended by the
+                system</para><para> </para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <para>The queries page also provides other information at a
+      glance:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>the query ID</para>
+          </listitem>
+
+          <listitem>
+            <para>the query name</para>
+          </listitem>
+
+          <listitem>
+            <para>the target</para>
+          </listitem>
+
+          <listitem>
+            <para>the workunit id (WUID)</para>
+          </listitem>
+
+          <listitem>
+            <para>the dll</para>
+          </listitem>
+
+          <listitem>
+            <para>Published by</para>
+          </listitem>
+        </itemizedlist>All the above available at a glance on the main queries
+      page, with further actions that can be performed from the action buttons
+      along the top of the tab. You can sort a column by clicking on the
+      column heading. Click once for ascending, click again to toggle to
+      descending. The direction of the arrow indicates the sort order.</para>
+
+      <!--VERIFY THAT THIS BEHAVIOR APPLIES HERE: YES, was not implemented but added when I brought this up.***-->
+
+      <para>To see the details page for a particular query, or to perform some
+      action on it you must select it. You can select a query or queries by
+      checking the check box. You can also open a particular query by double
+      clicking on it.</para>
+
+      <sect2 id="QueryDetails" role="brk">
+        <title>Query Details</title>
+
+        <para>To examine the Query Details page, you select and open the query
+        or queries. This opens a tab containing the query details. From the
+        query details page you can get more information about the specific
+        query. You can also perform some actions on that query. There are
+        several tabs with additional information about the selected
+        query.</para>
+
+        <sect3 id="QuerySummaryTab">
+          <title>Query Summary Tab</title>
+
+          <para>The default query tab opened when you select a query is the
+          Summary tab. The summary tab shows you some detail information about
+          the query.</para>
+
+          <para><figure>
+              <title>Query detail page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLW006.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>There are a few actions that you can perform on the query
+          from this tab. Press the action buttons for the desired activity for
+          the selected query.</para>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>Refresh</term>
+
+                <listitem>
+                  <para>Refreshes the information displayed for the selected
+                  query.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Save</term>
+
+                <listitem>
+                  <para>Saves the selected query (or queries).</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>Delete</term>
+
+                <listitem>
+                  <para>Deletes the selected query (or queries).</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </sect3>
+
+        <sect3 id="ErrorsTab">
+          <title>Errors Tab</title>
+
+          <para>For each selected query there is an Errors tab. The Errors tab
+          displays any errors that may have been encountered during the
+          compiling and publishing of that query. If there aren't any errors
+          the errors tab will be blank. If there are errors, you can further
+          examine any specific error by checking the box and selecting it, and
+          then press the open action button. You could also just double click
+          on the selected error. <figure>
+              <title>Query Error</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA006E.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para></para>
+        </sect3>
+
+        <sect3 id="GraphsTab">
+          <title>Graphs Tab</title>
+
+          <para>The graphs tab provides access to graphical interpretations of
+          the query. This can be helpful in visualizing how the query ran. The
+          graphs tab displays a list of any graphs generated by the selected
+          query, along with some additional information like timing. To
+          display a specific graph, you must select it, and choose to open it,
+          or you can double click on listed graph.</para>
+
+          <figure>
+            <title>Graphs list</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA006G.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>Opening a graph will open a new tab showing the selected
+          graph(s).</para>
+
+          <para><figure>
+              <title>Graphs</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA006G1.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure>When you open a graph the visible area splits into three
+          smaller sections each displaying some relevant component of the
+          query graph. Notice the myriad of graph controls, and tabs in the
+          border area of each tab. Manipulate these controls to view different
+          aspects of the graphs.</para>
+
+          <para>The Advanced action button on the main graph control area,
+          provides access to even more advanced graphing options.</para>
+        </sect3>
+
+        <sect3>
+          <title>Logical Files Tab</title>
+
+          <para>The Published queries details page provides a link to the
+          queries Logical Files tab. The Logical Files tab shows all logical
+          files that are used by the query. To view the logical file details
+          for any file listed, select one or more files by checking the
+          checkbox and press the Open action button. Tabs for each file
+          selected opens where you can view and make changes to the file(s)
+          without the need to go back to the logical files page.</para>
+
+          <figure>
+            <title>Queries:Logical Files Tab</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA006L.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>The above image shows the list of Logical files on the Logical
+          Files tab. To view more detail about a logical file listed here,
+          check the box next to the file, and then press the <emphasis
+          role="bold">Open</emphasis> action button. You can also just double
+          click on the logical file you want to view. </para>
+
+          <para>Once open, you can select any of the tabs to see Summary,
+          Contents, ECL, DEF, XML, File Parts, Queries, or the Workunit.
+          </para>
+
+          <figure>
+            <title>Queries:Logical Files:Contents Tab</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA006j.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para></para>
+        </sect3>
+
+        <sect3 id="Test_Pages">
+          <title>Test Pages</title>
+
+          <para>The Test Pages tab provides a number of resources you can use
+          to test your query including SOAP/JSON/WSDL and the legacy WS-ECL
+          form, as well as other tabs showing useful information or sample
+          details about the query.</para>
+
+          <para><figure>
+              <title>Test Pages tab</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA012.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+
+          <para>Information available from the Test pages tab.</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><emphasis role="bold">SOAP</emphasis> This tab provides an
+              interactive interface to submit the query (with input data) and
+              see the response in XML format.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">JSON</emphasis> This tab provides an
+              interactive interface to submit the query (with input data) and
+              see the response in JSON format.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">WSDL</emphasis> This tab provides a
+              WSDL definition describing the functionality offered by the
+              query (web service).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Request Schema </emphasis>This tab
+              provides a schema in XSD format describing a request for the
+              query (web service).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Response Schema</emphasis> This tab
+              provides a schema in XSD format describing a response from the
+              query (web service).</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Sample Request </emphasis>This tab
+              provides a sample request for the query (web service) in XML
+              Format.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Sample Response</emphasis> This tab
+              provides a sample response from the query (web service) in XML
+              Format.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Parameter XML</emphasis> This tab
+              provides Parameterized XML representation of the query
+              interface.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Legacy Form</emphasis> This tab
+              provides a form that can be used to submit a query and get a
+              response. This is similar to the WsECL form.</para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">Links</emphasis> Provides a list of
+              useful links such as: the Form, a sample REST URL, sample
+              request, sample response, parameter XML, SOAP POST, WSDL, XSD,
+              and the result schema.</para>
+            </listitem>
+          </itemizedlist>
+        </sect3>
+
+        <sect3 id="QueriesWorkUnits">
+          <title>The Workunits link</title>
+
+          <para>The Published queries details page provides a link to to the
+          workunits, page. This tab is a shortcut that takes you to the same
+          workunits tab you can get to through the ECL workunits menu.</para>
+
+          <figure>
+            <title>Queries Workunit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA006W.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para>This is the same as the <emphasis role="bold">ECL
+          Workunits</emphasis> page from the navigation sub-menu Workunits
+          link. You can perform the same operations here. Notice that there
+          are some other familiar tabs here as well, for example the Graphs
+          tab, both from the Queries details page, and from the workunit tab
+          nested here.</para>
+        </sect3>
+      </sect2>
+
+      <sect2 id="Package_Maps">
+        <title>Package Maps</title>
+
+        <para>From the Queries icon link, you can access the package maps
+        page. Press the <emphasis role="bold">Package Maps</emphasis> button
+        on the navigation sub-menu bar, to access to the Package Maps on your
+        cluster. <figure>
+            <title>Package Maps</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA470.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The package maps page, displays all the package maps loaded on
+        your cluster. You can Add, Activate, Deactivate, Delete, or Open a
+        package map. To examine a package map, select a package map from the
+        list.</para>
+
+        <para>You can select the <emphasis role="bold">Validate Package
+        Map</emphasis> tab to validate a package map.</para>
+
+        <para><figure>
+            <title>Validate Package Maps</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWaPkMgr.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Choose the <emphasis role="bold">Target</emphasis> and <emphasis
+        role="bold">Process</emphasis> from the drop lists on the Validate
+        Package Map tab.</para>
+
+        <para>Press the <emphasis role="bold">Validate</emphasis> button to
+        validate the package map. The result is shown on the <emphasis
+        role="bold">Validate Active Package Map</emphasis> tab. You can also
+        Validate the package content, on the V<emphasis role="bold">alidate
+        Package Content</emphasis> tab.</para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>

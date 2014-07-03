@@ -187,9 +187,19 @@
       </sect2>
 
       <sect2 role="brk">
-        <title>Managing Events</title>
+        <title>Pushing Events</title>
+
+        <para>The Event Scheduler allow you to trigger or "push" an event to
+        help manage and test your scheduled jobs.</para>
 
         <para><orderedlist>
+            <listitem>
+              <para>Press the <emphasis role="bold">PushEvent</emphasis>
+              action button.</para>
+
+              <para>The Push Event dialog opens.</para>
+            </listitem>
+
             <listitem>
               <para>Enter the EventName:</para>
 
@@ -210,7 +220,7 @@
             </listitem>
 
             <listitem>
-              <para>Press the <emphasis role="bold">PushEvent</emphasis>
+              <para>Press the <emphasis role="bold">Apply</emphasis>
               button</para>
 
               <para>This is the equivalent of</para>

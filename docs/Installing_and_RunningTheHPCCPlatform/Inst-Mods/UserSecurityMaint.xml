@@ -86,15 +86,18 @@
       <title>Information about your account</title>
 
       <para>To find out more information about your account, in ECL Watch
-      click on the <emphasis role="bold">My Account</emphasis> link.</para>
+      click on the <emphasis role="bold">Logged In As:</emphasis> link at the
+      top of the ECL Watch page.</para>
 
       <para><graphic fileref="../../images/ECLWMyAccount.jpg"
       vendor="eclwatchSS" /> <orderedlist>
           <listitem>
-            <para>Click on the <emphasis role="bold">My Account</emphasis>
+            <para>Click on the <emphasis role="bold">Logged In As:</emphasis>
             link.</para>
 
-            <para>Information about your account is displayed.</para>
+            <para>A User Details tab with your account information is
+            displayed.<graphic fileref="../../images/ECLWUserDetails.jpg"
+            vendor="eclwatchSS" /></para>
           </listitem>
 
           <listitem>
@@ -112,8 +115,6 @@
             to expire.</para>
           </listitem>
         </orderedlist></para>
-
-      <para></para>
     </sect3>
   </sect2>
 
