@@ -105,6 +105,30 @@ define([
             }
         },
 
+        getRow: function (rtitle) {
+            for (var i = 0; i < this.permissionsStore.data.length; ++i) {
+                if (this.permissionsStore.data[i].rtitle === rtitle) {
+                    return this.permissionsStore.data[i];
+                }
+            }
+            return null;
+        },
+
+        _onCodeGenerator: function () {
+            var row = this.getRow("Module");
+            if (row) {
+                WsAccess.Resources({
+                    request: {
+                        basedn: row.basedn,
+                        rtype: "service",
+                        rtitle: "CodeGenerator Permission",
+                        prefix: "codegenerator.",
+                        action: "Code Generator"
+                    }
+                });
+            }
+        },
+
         //  Groups  ---
         _onRefreshGroups: function () {
             this.refreshGroupsGrid();
@@ -558,11 +582,11 @@ define([
             }));
 
             this.initPermissionsContextMenu();
-            var store = WsAccess.CreatePermissionsStore();
+            this.permissionsStore = WsAccess.CreatePermissionsStore();
             this.permissionsGrid = declare([ESPUtil.Grid(false, true)])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
-                store: store,
+                store: this.permissionsStore,
                 columns: {
                     check: selector({
                         width: 27,
