@@ -561,7 +561,7 @@
             </listitem>
 
             <listitem>
-              <para>64-bit Ubuntu 13.10 </para>
+              <para>64-bit Ubuntu 13.10</para>
             </listitem>
 
             <listitem>
@@ -939,9 +939,9 @@
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>From ECL Watch page, click on the <emphasis
-                role="bold">Resources </emphasis> link in the menu on the left
-                side.</para>
+                <para>From the ECL Watch Advanced menu, select on the
+                <emphasis role="bold">Additional Resources
+                </emphasis>link.</para>
 
                 <para><figure>
                     <title>ECL Watch Resource Page</title>
@@ -954,12 +954,14 @@
                     </mediaobject>
                   </figure></para>
 
-                <para>Follow the link to the HPCC System's portal.</para>
+                <para>Follow the link to the HPCC System's portal download
+                page.</para>
               </listitem>
 
               <listitem>
-                <para>Click on the <emphasis role="bold">ECL IDE and Client
-                Tools </emphasis>link.</para>
+                <para>Click on the <emphasis role="bold">ECL IDE
+                </emphasis>link. (on the right hand side in the Download
+                column, under the Free Community Edition heading)</para>
               </listitem>
 
               <listitem>
@@ -973,8 +975,6 @@
                 successfully, you can proceed.</para>
               </listitem>
             </orderedlist></para>
-
-          <para></para>
         </sect3>
 
         <sect3 role="brk">
@@ -2002,12 +2002,16 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>From ECL Watch page, click on the <emphasis
-            role="bold">Upload/download File </emphasis> link in the menu on
-            the left side.</para>
+            <para>From ECL Watch click on the <emphasis
+            role="bold">Files</emphasis> icon, then click the <emphasis
+            role="bold">Landing Zones</emphasis> link from the navigation
+            sub-menu.</para>
+
+            <para>Press the <emphasis role="bold">Upload </emphasis>action
+            button.</para>
 
             <para><figure>
-                <title>Upload/download</title>
+                <title>Upload</title>
 
                 <mediaobject>
                   <imageobject>
@@ -2016,15 +2020,13 @@ OUTPUT(L);</programlisting></para>
                   </imageobject>
                 </mediaobject>
               </figure></para>
+          </listitem>
 
-            <para>Once you click on the Upload/download file link, it will
-            take you to the <emphasis role="bold">Dropzones and
-            Files</emphasis> page, where you can choose to <emphasis
-            role="bold">Browse</emphasis> your machine for a file to
-            upload:</para>
-
-            <para><figure>
-                <title>Dropzones and Files</title>
+          <listitem>
+            <para>A dialog opens. <emphasis role="bold">Browse</emphasis> your
+            local machine select the file to upload and then press the
+            <emphasis role="bold">Open</emphasis> button. <figure>
+                <title>File Uploader</title>
 
                 <mediaobject>
                   <imageobject>
@@ -2033,21 +2035,14 @@ OUTPUT(L);</programlisting></para>
                   </imageobject>
                 </mediaobject>
               </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Browse</emphasis> button to
-            browse the files on your local machine, select the file to upload
-            and then press the <emphasis role="bold">Open</emphasis>
-            button.</para>
 
             <para>The file you selected should appear in the <emphasis
-            role="bold">Select a file to upload:</emphasis> field. The data
-            file is named: <emphasis role="bold">2of12.txt</emphasis>.</para>
+            role="bold">File Name</emphasis> field. The data file is named:
+            <emphasis role="bold">2of12.txt</emphasis>.</para>
           </listitem>
 
           <listitem>
-            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+            <para>Press the <emphasis role="bold">Start</emphasis> button to
             complete the file upload.</para>
           </listitem>
         </orderedlist>
@@ -2079,17 +2074,30 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
+            <para>Click on the <emphasis role="bold">Files</emphasis> icon,
+            then click the <emphasis role="bold">Landing Zones</emphasis> link
+            from the navigation sub-menu. Select the appropriate landing zone
+            (if there are more than one landing zones). Click the arrow to the
+            left of your landing zone to expand it.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the file from your drop zone by checking the box next
+            to it.</para>
+          </listitem>
+
+          <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Click on the Spray Delimited hyperlink under the DFU Files
-            menu on the left.</para>
+            <para>Check the box next to 2of12.txt, then press the <emphasis
+            role="bold">Delimited</emphasis> button.</para>
 
             <para><figure>
                 <title>Spray Delimited</title>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/IMDB_01.jpg"
+                    <imagedata fileref="images/GSSprayDict.jpg"
                                vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
@@ -2100,21 +2108,12 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Select mydropzone in the Source <emphasis
-            role="bold">Machine/dropzone</emphasis> drop list.</para>
-
-            <para>The IP Address is automatically filled and the Local Path is
-            partially filled with the default folder on your landing zone.
-            Note: The VM and Community Edition typically only has one landing
-            zone defined.</para>
+            <para>Select mythor in the Target Group drop list.</para>
           </listitem>
 
           <listitem>
-            <para>Complete the Local Path to include the complete file name or
-            use the <emphasis role="bold">Choose File</emphasis> button to
-            select the file from a list of files in the folder. The file is
-            <emphasis role="bold">2of12.txt</emphasis>.<emphasis
-            role="bold"></emphasis></para>
+            <para>Complete the Name Prefix as<emphasis>
+            thor</emphasis>.</para>
           </listitem>
 
           <listitem>
@@ -2141,8 +2140,9 @@ OUTPUT(L);</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Fill in the Label using the Logical File name desired:
-            thor::word_list_csv<emphasis role="bold"> </emphasis></para>
+            <para>Fill in the Target Name using the rest of the Logical File
+            name desired: word_list_csv<emphasis role="bold">
+            </emphasis></para>
           </listitem>
 
           <listitem>
@@ -2152,16 +2152,6 @@ OUTPUT(L);</programlisting></para>
             <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
             </emphasis>boxes are checked.</para>
 
-            <para><figure>
-                <title>Spray the File</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/VM1000.jpg" vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-
             <para><emphasis role="bold">Note:</emphasis> The <emphasis
             role="bold">Replicate</emphasis> option is only available on
             systems where replication has been enabled.</para>
@@ -2170,39 +2160,11 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Submit</emphasis><emphasis
-            role="bold"> </emphasis>button</para>
+            <para>Press the <emphasis role="bold">Spray</emphasis><emphasis
+            role="bold"> </emphasis>button.</para>
 
-            <para><figure>
-                <title>View Progress</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/VM1001.jpg" vendor="eclwatchSS" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Click the <emphasis role="bold">View Progress</emphasis>
-            link</para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>The Workunit progress page displays.</para>
-
-            <figure>
-              <title>Workunit Progress</title>
-
-              <mediaobject>
-                <imageobject>
-                  <imagedata fileref="images/VM1002.jpg" />
-                </imageobject>
-              </mediaobject>
-            </figure>
+            <para>A tab displays the DFU Workunit where you can see the
+            progress of the spray.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -2480,8 +2442,9 @@ OUTPUT(ValidWords)
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Press the <emphasis role="bold">Publish</emphasis> button
-            (you may need to scroll down the main window)</para>
+            <para>Press the <emphasis role="bold">Publish</emphasis> button,
+            complete the dialog, and press <emphasis
+            role="bold">Submit</emphasis>.</para>
 
             <para><figure>
                 <title>Publish Query</title>
@@ -2491,17 +2454,8 @@ OUTPUT(ValidWords)
                     <imagedata fileref="images/VM1008.jpg" />
                   </imageobject>
                 </mediaobject>
-              </figure>When it successfully publishes, you will see:</para>
-
-            <para><figure>
-                <title>Workunit Published</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/DT173-18b.png" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
+              </figure>When it successfully publishes, a confirmation message
+            displays.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -3457,7 +3411,7 @@ split_words('Once upon a time');
                   <listitem>
                     <para>The version of library files to install on your
                     system must be 0.2.10 for all distros except Ubuntu 14.04.
-                    For Ubuntu 14.04, use 0.2.11.x. </para>
+                    For Ubuntu 14.04, use 0.2.11.x.</para>
                   </listitem>
                 </varlistentry>
               </variablelist>These libraries are maintained by the R project
@@ -3477,7 +3431,7 @@ split_words('Once upon a time');
             library.</para>
 
             <para>You will also need RInside library in order for the
-            R-embedding to work properly. The version must match the </para>
+            R-embedding to work properly. The version must match the</para>
 
             <para><emphasis role="bold">For all distros:</emphasis></para>
 
@@ -3493,7 +3447,7 @@ split_words('Once upon a time');
             url="http://cran.r-project.org/src/contrib/">http://cran.r-project.org/src/contrib/</ulink>
             and <ulink
             url="http://cran.r-project.org/src/contrib/archive">http://cran.r-project.org/src/contrib/archive/</ulink>
-            along with more information. </para>
+            along with more information.</para>
           </listitem>
 
           <listitem>

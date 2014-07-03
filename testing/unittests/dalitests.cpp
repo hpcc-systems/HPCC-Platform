@@ -1152,7 +1152,7 @@ public:
         }
         unsigned getCRC()
         {
-            results.sort();
+            results.sortAscii();
             ForEachItemIn(r, results)
             {
                 const char *result = results.item(r);

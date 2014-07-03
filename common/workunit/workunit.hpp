@@ -662,7 +662,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual unsigned queryScheduledWfid() const = 0;
     virtual IStringVal & queryCluster(IStringVal & val) const = 0;
 };
-
+inline bool isPersist(const IConstWorkflowItem & item) { return item.queryMode() == WFModePersist; }
 
 interface IRuntimeWorkflowItem : extends IConstWorkflowItem
 {

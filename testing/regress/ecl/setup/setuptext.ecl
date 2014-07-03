@@ -452,7 +452,7 @@ boolean isNewDocumentFunction(string s) := false;
 
 convertTextFileToInversion(TS.sourceType sourceId, string filename, isNewDocumentFunction isNewDocument) := FUNCTION
 
-inFile := dataset(filename, { string line{maxlength(MaxDocumentLineLength)}, unsigned8 filepos{virtual(fileposition)} }, csv(SEPARATOR(''),quote([]),maxlength(MaxDocumentLineLength+8+4)));
+inFile := dataset(filename, { string line{maxlength(MaxDocumentLineLength)}, unsigned8 filepos{virtual(fileposition)} }, csv(SEPARATOR(''),quote([]),maxlength(MaxDocumentLineLength+8+4)), DYNAMIC);
 
     inputDocumentRecord createInputRecord(inFile l) := TRANSFORM
         self.source := sourceId;

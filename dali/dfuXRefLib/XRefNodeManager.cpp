@@ -316,8 +316,6 @@ void CXRefNode::deserializeDirectories(IPropertyTree& inTree)
 
 }
 
-static int strptrcmprev(char const ** l, char const ** r) { return -strcmp(*l, *r); }
-
 static bool deleteEmptyDir(IFile *dir)
 {
     // this is a bit odd - basically we already know no files but there may be empty sub-dirs
@@ -427,7 +425,7 @@ bool CXRefNode::removeEmptyDirectories(StringBuffer &errstr)
             }
         }
     }
-    dellist.sort(strptrcmprev);
+    dellist.sortAsciiReverse(false);
     ForEachItemIn(di,dellist) {
         const char *dirname = dellist.item(di);
         class casyncfor: public CAsyncFor

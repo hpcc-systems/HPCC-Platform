@@ -37,6 +37,7 @@ define([
     "hpcc/ws_access",
     "hpcc/ESPBase",
     "hpcc/ESPUtil",
+    "hpcc/ESPRequest",
     "hpcc/UserDetailsWidget",
     "hpcc/GroupDetailsWidget",
     "hpcc/FilterDropDownWidget",
@@ -62,7 +63,7 @@ define([
 ], function (declare, lang, i18n, nlsHPCC, arrayUtil, dom, domForm, on, all,
                 registry, Menu, MenuItem, MenuSeparator, Select,
                 tree, selector,
-                _TabContainerWidget, WsAccess, ESPBase, ESPUtil, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget,
+                _TabContainerWidget, WsAccess, ESPBase, ESPUtil, ESPRequest, UserDetailsWidget, GroupDetailsWidget, FilterDropDownWidget,
                 template) {
     return declare("UserQueryWidget", [_TabContainerWidget], {
         templateString: template,
@@ -101,6 +102,30 @@ define([
         _onDisableScopeScans: function () {
             if (confirm(this.i18n.DisableScopeScanConfirm)) {
                 WsAccess.DisableScopeScans();
+            }
+        },
+
+        getRow: function (rtitle) {
+            for (var i = 0; i < this.permissionsStore.data.length; ++i) {
+                if (this.permissionsStore.data[i].rtitle === rtitle) {
+                    return this.permissionsStore.data[i];
+                }
+            }
+            return null;
+        },
+
+        _onCodeGenerator: function () {
+            var row = this.getRow("Module");
+            if (row) {
+                WsAccess.Resources({
+                    request: {
+                        basedn: row.basedn,
+                        rtype: "service",
+                        rtitle: "CodeGenerator Permission",
+                        prefix: "codegenerator.",
+                        action: "Code Generator"
+                    }
+                });
             }
         },
 
@@ -557,11 +582,11 @@ define([
             }));
 
             this.initPermissionsContextMenu();
-            var store = WsAccess.CreatePermissionsStore();
+            this.permissionsStore = WsAccess.CreatePermissionsStore();
             this.permissionsGrid = declare([ESPUtil.Grid(false, true)])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
-                store: store,
+                store: this.permissionsStore,
                 columns: {
                     check: selector({
                         width: 27,
@@ -641,6 +666,11 @@ define([
                 if (currSel.id === this.groupsTab.id) {
                 } else if (currSel.id === this.usersTab.id) {
                 } else if (currSel.id === this.permissionsTab.id) {
+                } else if (currSel.id === this.id + "_FileScopes") {
+                    currSel.set("content", dojo.create("iframe", {
+                        src: dojoConfig.urlInfo.pathname + "?Widget=IFrameWidget&src=" + encodeURIComponent(ESPRequest.getBaseURL("ws_access") + "/Resources?rtype=file&rtitle=FileScope"),
+                        style: "border: 0; width: 100%; height: 100%"
+                    }));
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);

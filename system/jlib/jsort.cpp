@@ -600,7 +600,7 @@ static inline void swapind(VECTOR a, VECTOR b)  { void ** t = *a;  *a = *b; *b =
 static inline int cmpicindstable(VECTOR a, VECTOR b, const ICompare & compare)
 {
     int ret = compare.docompare(**a,**b);
-    if (ret==0) 
+    if (ret==0)
     {
         if (*a>*b)
             ret = 1;

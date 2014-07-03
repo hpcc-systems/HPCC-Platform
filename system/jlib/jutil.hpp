@@ -164,8 +164,11 @@ public:
     void appendList(const char *list, const char *delim);
     // Appends a list in a string delimited by 'delim' without duplicates
     void appendListUniq(const char *list, const char *delim);
-    void sort(bool nocase=false);
-    void sortReverse(bool nocase=false);
+    void sortAscii(bool nocase=false);
+    void sortAsciiReverse(bool nocase=false);
+    void sortCompare(int (*compare)(const char * * l, const char * * r));
+private:
+    using PARENT::sort; // prevent access to this function - to avoid ambiguity
 };
 class CIStringArray : public StringArray, public CInterface
 {

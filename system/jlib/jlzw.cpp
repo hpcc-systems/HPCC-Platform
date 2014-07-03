@@ -2003,7 +2003,8 @@ public:
             compblkptr = (byte *)compblk.allocate(trailer.blockSize+trailer.recordSize*2+16); // over estimate!
             compblklen = 0;
             if (trailer.recordSize==0) {
-                if (!compressor) {
+                if (!compressor)
+                {
                     if (fast)
                         compressor.setown(createFastLZCompressor());
                     else

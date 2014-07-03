@@ -31,7 +31,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para> </para>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -513,24 +513,82 @@
 
   <xi:include href="RDDERef/RDDE_Mods/Packages.xml" xpointer="element(/1)"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-  <xi:include href="RDDERef/RDDE_Mods/directAccessToRoxie.xml" xpointer="element(/1)"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
-  <chapter id="Deploying-Data-to-a-Cluster-using-DFU">
-    <title>Deploying Data to a Cluster using DFU</title>
 
-    <para>You can use the Distributed File Utility (DFU) in ECL Watch to copy
-    (or remote copy) data files to a Roxie cluster. This allows you to copy
-    large files to a cluster in advance of publishing a query. If data files
-    are copied in advance, a query which requires those files will use the
-    ones already in place. If you have large data sets, this allows you to
+  <xi:include href="RDDERef/RDDE_Mods/directAccessToRoxie.xml"
+              xpointer="element(/1)"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <chapter id="Deploying-Data-to-a-Cluster-using-DFU">
+    <title>Deploying Data to a Roxie Cluster using DFU</title>
+
+    <para>You can use the Distributed File Utility (DFU) in ECL Watch to
+    spray, copy, or remote copy data files to a Roxie cluster. This allows you
+    to copy large files to a cluster in advance of publishing a query. If data
+    files are copied in advance, a query which requires those files will use
+    the ones already in place. If you have large data sets, this allows you to
     prepare in advance of query deployment.</para>
 
     <para><emphasis role="bold">Note:</emphasis> To use this feature, the
     FTSlave utility must be installed to each node in the cluster. This is
     done automatically by the Configuration Manager Wizard.</para>
 
+    <sect1 id="LZ_Spray">
+      <title>Spray Files</title>
+
+      <para>You can spray files to your Roxie clusters from the Landing Zone
+      page. <orderedlist>
+          <listitem>
+            <para>In ECL Watch, select the file from your drop zone by
+            checking the box next to it.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select the appropriate drop menu option for the type of
+            spray you want.</para>
+
+            <para>For example, to spray a delimited file, select the <emphasis
+            role="bold">Delimited</emphasis> drop menu option.</para>
+
+            <para><figure>
+                <title>Landing Zone Spray</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/RM441.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in the values as appropriate for the spray.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Spray</emphasis> button to
+            spray the file.</para>
+          </listitem>
+        </orderedlist></para>
+
+      <sect2 id="multi-fileSpray">
+        <title>Spray multiple files</title>
+
+        <para>You can choose to spray multiple files with the multi-file spray
+        feature. This feature is useful for spraying a number of files of the
+        same type and the same scope using the same spray options.</para>
+
+        <para>Fixed (length) files can have different record lengths and XML
+        files can have different row tags which must be specified individually
+        for each file. To specify these differences select the files you want
+        to spray and the spray type. You will then see the files listed. Enter
+        the record length or row tag information for each file if using the
+        Fixed or XML spray types, then check all other applicable options and
+        Spray.</para>
+      </sect2>
+    </sect1>
+
     <sect1 id="Copy">
-      <title><!---->DFU Copy</title>
+      <title>DFU Copy</title>
 
       <para><orderedlist>
           <listitem>
@@ -540,26 +598,24 @@
           </listitem>
 
           <listitem>
-            <para>Click on <emphasis role="bold">Browse Logical Files
-            </emphasis>hyperlink below <emphasis role="bold">DFU
-            Files</emphasis> in the menu on the left.</para>
+            <para>Click on the <emphasis role="bold">Files</emphasis> icon,
+            then select <emphasis role="bold">Logical Files</emphasis>.</para>
           </listitem>
 
           <listitem>
-            <para>Locate the file to copy in the list of files, then click on
-            the icon, then select <emphasis role="bold">Copy</emphasis> from
-            the pop-up menu.</para>
+            <para>Locate the file to copy in the list of files, then mark the
+            checkbox on the left.</para>
 
             <para><graphic fileref="images/RDDE_DFUcopy.jpg"
             vendor="eclwatchSS" /></para>
           </listitem>
 
           <listitem>
-            <para>Fill in <emphasis role="bold">Destination</emphasis> and
-            <emphasis role="bold">Options</emphasis>information.</para>
+            <para>Press the Copy button, then fill in <emphasis
+            role="bold">Group, Target Name,</emphasis> and <emphasis
+            role="bold">Options</emphasis> information.</para>
 
-            <para><graphic fileref="images/RDDE_DFUcopy.2.jpg"
-            vendor="eclwatchSS" /></para>
+            <para></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -589,16 +645,11 @@
                     </row>
 
                     <row>
-                      <entry>Logical File</entry>
+                      <entry>Target Name</entry>
 
-                      <entry>The logical name for the copied file.</entry>
-                    </row>
-
-                    <row>
-                      <entry>File Mask</entry>
-
-                      <entry>Automatically updated based on logical file name
-                      entered.</entry>
+                      <entry>The name of the logical file to create on the
+                      target. This is automatically filled in based upon the
+                      original logical file, but you can change it.</entry>
                     </row>
 
                     <row>
@@ -614,14 +665,10 @@
                     </row>
 
                     <row>
-                      <entry>Replicate</entry>
+                      <entry>No Split</entry>
 
-                      <entry><para>Check this box to create backup copies of
-                      all file parts in the backup directory (by convention on
-                      the secondary drive of the node following in the
-                      cluster).</para><para><emphasis role="bold">This option
-                      is only available on systems where replication has been
-                      enabled.</emphasis></para></entry>
+                      <entry>Check this box to prevent splitting file parts to
+                      multiple target parts.</entry>
                     </row>
 
                     <row>
@@ -637,22 +684,24 @@
 
                       <entry>Check this box to compress the files.</entry>
                     </row>
+
+                    <row>
+                      <entry>Retain SuperFile Structure</entry>
+
+                      <entry>Check this box to retain the structure of a
+                      SuperFile.</entry>
+                    </row>
                   </tbody>
                 </tgroup>
               </informaltable></para>
           </listitem>
 
           <listitem>
-            <para>Press the <emphasis role="bold">Submit
+            <para>Press the <emphasis role="bold">Copy
             </emphasis>button.</para>
 
-            <para>The <emphasis role="bold">DFU
-            Workunit</emphasis>displays.</para>
-          </listitem>
-
-          <listitem>
-            <para>Click on the <emphasis role="bold">View Progress</emphasis>
-            hyperlink to see a progress indicator.</para>
+            <para>A new tab opens displaying information about the new
+            file.</para>
           </listitem>
         </orderedlist></para>
     </sect1>
@@ -671,18 +720,16 @@
           </listitem>
 
           <listitem>
-            <para>Click on the <emphasis role="bold">Remote Copy</emphasis>
-            hyperlink below <emphasis role="bold">DFU Files</emphasis> in the
-            menu on the left.</para>
-
-            <para>The <emphasis role="bold">Copy File</emphasis> page
-            displays.</para>
+            <para>Click on the <emphasis role="bold">Files</emphasis> icon,
+            then select <emphasis role="bold">Logical Files</emphasis>.</para>
           </listitem>
 
           <listitem>
-            <para>Fill in <emphasis role="bold">Source,
-            Destination,</emphasis> and <emphasis
-            role="bold">Options</emphasis>information.</para>
+            <para>Press the Remote Copy button, then fill in the
+            details.</para>
+
+            <para><graphic fileref="images/RDDE_DFUremotecopy.jpg"
+            vendor="eclwatchSS" /></para>
 
             <para><informaltable colsep="0" frame="none" rowsep="0">
                 <tgroup cols="2">
@@ -697,61 +744,57 @@
                     </row>
 
                     <row>
-                      <entry>Logical File</entry>
+                      <entry>Dali</entry>
 
-                      <entry>The logical file name in the remote
+                      <entry>The IP or hostname of the Dali for the
+                      environment from which you are copying.</entry>
+                    </row>
+
+                    <row>
+                      <entry>User ID</entry>
+
+                      <entry>The Username to use to authenticate on the Remote
                       environment</entry>
                     </row>
 
                     <row>
-                      <entry>Source Dali</entry>
+                      <entry>Password</entry>
 
-                      <entry>The Dali Server in the remote environment</entry>
-                    </row>
-
-                    <row>
-                      <entry>Source Username</entry>
-
-                      <entry>A valid user in the remote environment</entry>
-                    </row>
-
-                    <row>
-                      <entry>Source Password</entry>
-
-                      <entry>The password for the user in the remote
+                      <entry>The password to use to authenticate on the Remote
                       environment</entry>
+                    </row>
+
+                    <row>
+                      <entry>Logical Name</entry>
+
+                      <entry>The name of the logical file to copy.</entry>
                     </row>
 
                     <row>
                       <entry align="right"><emphasis
-                      role="bold">Destination:</emphasis></entry>
+                      role="bold">Target:</emphasis></entry>
                     </row>
 
                     <row>
                       <entry>Group</entry>
 
-                      <entry>Use the drop list to select the cluster to copy
-                      to.</entry>
+                      <entry>Use the drop list to select the Roxie cluster to
+                      copy to.</entry>
                     </row>
 
                     <row>
-                      <entry>Note:</entry>
+                      <entry align="right"><emphasis
+                      role="bold">Note</emphasis>:</entry>
 
                       <entry>You can only choose from clusters within the
                       current environment.</entry>
                     </row>
 
                     <row>
-                      <entry>Logical File</entry>
+                      <entry>Logical Name</entry>
 
-                      <entry>The logical name for the copied file.</entry>
-                    </row>
-
-                    <row>
-                      <entry>File Mask</entry>
-
-                      <entry>Automatically updated based on logical file name
-                      entered.</entry>
+                      <entry>The name of the logical file to create on the
+                      target.</entry>
                     </row>
 
                     <row>
@@ -767,14 +810,18 @@
                     </row>
 
                     <row>
-                      <entry>Replicate</entry>
+                      <entry>No Split</entry>
 
-                      <entry><para>Check this box to create backup copies of
-                      all file parts in the backup directory (by convention on
-                      the secondary drive of the node following in the
-                      cluster).</para><para><emphasis role="bold">This option
-                      is only available on systems where replication has been
-                      enabled.</emphasis></para></entry>
+                      <entry>Check this box to prevent splitting file parts to
+                      multiple target parts.</entry>
+                    </row>
+
+                    <row>
+                      <entry>Wrap</entry>
+
+                      <entry>Check this box to keep the number of parts the
+                      same and wrap if the target cluster is smaller that the
+                      original.</entry>
                     </row>
 
                     <row>
@@ -784,11 +831,10 @@
                     </row>
 
                     <row>
-                      <entry>Wrap</entry>
+                      <entry>Retain SuperFile Structure</entry>
 
-                      <entry>Check this box to keep the number of parts the
-                      same and wrap if the target cluster is smaller that the
-                      original.</entry>
+                      <entry>Check this box to retain the structure of a
+                      SuperFile.</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -799,15 +845,12 @@
             <para>Press the <emphasis role="bold">Submit
             </emphasis>button.</para>
 
-            <para>The <emphasis role="bold">DFU Workunit</emphasis>
-            displays.</para>
-          </listitem>
-
-          <listitem>
-            <para>Click on the <emphasis role="bold">View Progress</emphasis>
-            hyperlink to see a progress indicator.</para>
+            <para>A new tab opens displaying information about the new
+            file.</para>
           </listitem>
         </orderedlist></para>
+
+      <para></para>
     </sect1>
   </chapter>
 
@@ -874,632 +917,20 @@
   <chapter id="PreFlight_and_Roxie_Metrics">
     <title>PreFlight and Roxie Metrics</title>
 
-    <sect1 id="ECL-Watch-Preflight">
-      <title>ECL Watch / Preflight</title>
-
-      <para>ECL Watch's Topology section is used to perform Preflight
-      activities. These preflight utilities are used for daily health checks,
-      as well as trouble avoidance and troubleshooting. It provides a central
-      location to gather hardware and software information from a remote set
-      of machines and has many uses for day-to-day environment
-      preparation.</para>
-
-      <sect2 id="Regular_Uses">
-        <title>Regular Uses</title>
-
-        <para>Typical uses for Preflight in the preparation of the environment
-        before a data build</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Examine disk space utilization</para>
-
-            <itemizedlist>
-              <listitem>
-                <para>Critical for optimal operation of the Data Refinery
-                nodes.</para>
-              </listitem>
-
-              <listitem>
-                <para>Disk space utilization alarm threshold easily
-                adjusted.</para>
-              </listitem>
-            </itemizedlist>
-          </listitem>
-        </itemizedlist>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>View last boot up of all nodes in a cluster</para>
-
-            <itemizedlist>
-              <listitem>
-                <para>Confirms the boot-up state of a node without having to
-                login to the node.</para>
-              </listitem>
-            </itemizedlist>
-          </listitem>
-        </itemizedlist>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Confirm expected processes running on each node</para>
-
-            <itemizedlist>
-              <listitem>
-                <para>Make sure all HPCC processes are running on the
-                appropriate nodes</para>
-              </listitem>
-            </itemizedlist>
-          </listitem>
-        </itemizedlist>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Validate network availability of each node</para>
-          </listitem>
-        </itemizedlist>
-
-        <sect3>
-          <title>Using ECL Watch PreFlight in Troubleshooting</title>
-
-          <para>These are typical uses for Preflight in troubleshooting</para>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para>Validate Disk Space Utilization</para>
-            </listitem>
-
-            <listitem>
-              <para>Validate Memory Utilization</para>
-            </listitem>
-
-            <listitem>
-              <para>Validate monitoring agent process running on nodes
-              (heimdall.exe)</para>
-            </listitem>
-
-            <listitem>
-              <para>Validate processes running on the appropriate
-              machines</para>
-            </listitem>
-          </itemizedlist>
-
-          <para>On a routine basis, typically before processing begins, an
-          entire system health check should be performed.</para>
-
-          <para>There are three sections in the Topology area of ECL
-          Watch:</para>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para>Clusters, including all clusters of any of the following
-              types:</para>
-
-              <itemizedlist>
-                <listitem>
-                  <para>Thor (Data Refinery Cluster)</para>
-                </listitem>
-
-                <listitem>
-                  <para>Roxie (Rapid Data Delivery Engine Cluster)</para>
-                </listitem>
-              </itemizedlist>
-            </listitem>
-          </itemizedlist>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para>System Servers, including all system components in the
-              current environment:</para>
-
-              <itemizedlist>
-                <listitem>
-                  <para>Dali Server</para>
-                </listitem>
-
-                <listitem>
-                  <para>DFU Server(s)</para>
-                </listitem>
-
-                <listitem>
-                  <para>ECL CC Server(s)</para>
-                </listitem>
-
-                <listitem>
-                  <para>ECL Scheduler</para>
-                </listitem>
-
-                <listitem>
-                  <para>ECL Agent(s)</para>
-                </listitem>
-
-                <listitem>
-                  <para>ESP Server(s)</para>
-                </listitem>
-
-                <listitem>
-                  <para>Sasha Server</para>
-                </listitem>
-              </itemizedlist>
-            </listitem>
-          </itemizedlist>
-        </sect3>
-      </sect2>
-
-      <sect2 id="ECL_Watch_PreFlight_Tasks">
-        <title><emphasis>ECL Watch PreFlight Tasks</emphasis></title>
-
-        <para>Perform these tasks using ECL Watch when validating or
-        troubleshooting a component.</para>
-
-        <para></para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Open the ECLWatch web page. You can reach this page using
-            the following URL: http://nnn.nnn.nnn.nnn:8010, where
-            nnn.nnn.nnn.nnn is your node's IP address.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para></para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>In the left side menu, click on one of the hyperlinks under
-            <emphasis role="bold">Topology</emphasis>:</para>
-
-            <para><emphasis role="bold">System Servers </emphasis>or<emphasis
-            role="bold"> Clusters </emphasis></para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>For a cluster, click on its hyperlink.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><graphic fileref="images/RM-16.jpg"
-        vendor="eclwatchSS" /></para>
-
-        <para>A page displays showing all machines of the type selected in the
-        previous steps.</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>For a cluster, make sure the <emphasis role="bold">Select
-            All</emphasis> checkbox is checked (to select all servers).</para>
-
-            <para>For System Servers, the critical servers are pre-selected.
-            If you only want to PreFlight a specific machine, check only the
-            box next to its listing.</para>
-          </listitem>
-
-          <listitem>
-            <para>Check the boxes for <emphasis role="bold">Get Processor
-            Information</emphasis>, <emphasis role="bold">Get storage
-            information</emphasis>, and <emphasis role="bold">Get software
-            information</emphasis>. These should be checked
-            automatically.</para>
-          </listitem>
-
-          <listitem>
-            <para>Check the <emphasis role="bold">Show processes
-            using</emphasis> filter checkbox. Submitting a request using the
-            predefined filters verifies whether the appropriate HPCC processes
-            are running. For example, a machine defined as a Dali server would
-            be verified for all processes expected to run on a Dali
-            server.</para>
-          </listitem>
-
-          <listitem>
-            <para>Optionally, check the <emphasis role="bold">Auto Refresh
-            Every</emphasis> checkbox and provide the number of minutes. This
-            will automatically query the servers and refresh the page at the
-            provided interval.</para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Press the <emphasis role="bold">Submit</emphasis>
-            button.</para>
-
-            <para>The resulting page displays all the requested information,
-            as shown below:</para>
-
-            <para><graphic fileref="images/RM-17.jpg"
-            vendor="eclwatchSS" /></para>
-          </listitem>
-        </itemizedlist>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Any expected processes that are not running are highlighted
-            in orange in the <emphasis role="bold">Processes Down</emphasis>
-            column.</para>
-          </listitem>
-
-          <listitem>
-            <para>Hovering the mouse over any column, displays additional
-            information.</para>
-          </listitem>
-
-          <listitem>
-            <para>Any values below the specified thresholds (see above) are
-            displayed with an orange background.</para>
-          </listitem>
-
-          <listitem>
-            <para>For disk space utilization, all local drives are displayed.
-            Partitions to exclude (such as RAM Drives) are defined in the
-            ECLWatch service.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para><emphasis role="bold">Options</emphasis></para>
-
-        <para>The following option settings are available to customize the
-        execution and display.</para>
-
-        <para><emphasis role="bold">Machine Information</emphasis></para>
-
-        <para>Specifies that the query will return machine information for the
-        selected machines.</para>
-
-        <para><emphasis role="bold">Get Roxie Metrics</emphasis></para>
-
-        <para>This option is available only to Roxie cluster. It displays
-        diagnostic information about the cluster. See the <emphasis>Roxie
-        Metrics</emphasis><emphasis role="bold"></emphasis>section in this
-        manual.</para>
-
-        <para><emphasis role="bold">Get Processor
-        Information</emphasis></para>
-
-        <para>Specifies that the query will include results about the
-        processor usage on the selected machines. The threshold for a warning
-        is set in the <emphasis role="bold">Warn if CPU Usage is
-        over</emphasis> entry control.</para>
-
-        <para><emphasis role="bold">Get storage Information</emphasis></para>
-
-        <para>Specifies that the query will include results about memory and
-        disk space on the selected machines. The threshold for a warning about
-        memory is set in the <emphasis role="bold">Warn if available memory is
-        under</emphasis> entry control. The threshold for disk space warnings
-        is set in the <emphasis role="bold">Warn if available disk space is
-        under</emphasis> entry control.</para>
-
-        <para><emphasis role="bold">Get software Information</emphasis></para>
-
-        <para>Specifies that the query will include results about running
-        processes on the selected machines.</para>
-
-        <para><emphasis role="bold">Show Processes using
-        filter</emphasis></para>
-
-        <para>Checking this box specifies that a query using predefined
-        filters will verify whether the appropriate HPCC processes are
-        running. For example, a machine defined as a Dali server would be
-        verified for all processes expected to run on a Dali server. If not
-        checked, all running processes are displayed in a pop-up window when
-        the mouse pointer is over the column.</para>
-
-        <para><emphasis role="bold">Additional Processes to
-        filter</emphasis></para>
-
-        <para><emphasis role="bold"></emphasis>When using a filter, this entry
-        box allows you to add additional processes to consider. If the
-        specified process is not running, it will appear in the <emphasis
-        role="bold">Down Processes</emphasis> column.</para>
-
-        <para><emphasis role="bold">Auto Refresh Every ___
-        mins.</emphasis></para>
-
-        <para>Optionally, provide an interval in minutes to automatically
-        re-submit the query.</para>
-      </sect2>
-    </sect1>
-
-    <sect1 id="Roxie-Queries-and-Roxie-Files-in-ECL-Watch">
-      <title>Roxie Queries and Roxie Files in ECL Watch</title>
-
-      <para>ECL Watch allows you to search for deployed Roxie Queries and to
-      search for deployed Roxie Files.</para>
-
-      <sect2 id="To_Search_Roxie_Queries">
-        <title><emphasis>To Search Roxie Queries</emphasis></title>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Open the ECLWatch web page. You can reach this page using
-            the following URL: http://nnn.nnn.nnn.nnn:8010, where
-            nnn.nnn.nnn.nnn is your node's IP address.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>The ECL Watch home page will open.</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Click on the <emphasis role="bold">Search Roxie Queries
-            </emphasis>below <emphasis role="bold">Roxie
-            Queries</emphasis><graphic fileref="images/RM-18.jpg"
-            vendor="eclwatchSS" /></para>
-          </listitem>
-        </itemizedlist>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Select the <emphasis role="bold">Cluster </emphasis>from the
-            drop list.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>All Roxie clusters in this environment appear on the
-        list.</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Select the query type (Suspended, Non-Suspended, or both)
-            from the <emphasis role="bold">Suspended </emphasis>drop
-            list.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Search
-            </emphasis>button</para>
-          </listitem>
-        </itemizedlist>
-
-        <para></para>
-
-        <para></para>
-
-        <para>The list of queries displays.</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Rt-click to the <inlinegraphic fileref="images/RM-19.jpg" />
-            button on the left of any query, then select the action from the
-            popup menu.<graphic fileref="images/RM-20.jpg"
-            vendor="eclwatchSS" /></para>
-          </listitem>
-        </itemizedlist>
-
-        <para><emphasis role="bold">Details</emphasis> displays a page of
-        details about the query, including:</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>The Workunit ID</para>
-          </listitem>
-
-          <listitem>
-            <para>The Cluster</para>
-          </listitem>
-
-          <listitem>
-            <para>The name of the associated Shared Object (.so)</para>
-          </listitem>
-
-          <listitem>
-            <para>The Query's priority</para>
-          </listitem>
-
-          <listitem>
-            <para>The user that deployed it</para>
-          </listitem>
-
-          <listitem>
-            <para>Whether or not it is suspended.</para>
-          </listitem>
-
-          <listitem>
-            <para><emphasis role="bold">ShowSuperFiles</emphasis> lists all
-            superfiles used by the query</para>
-          </listitem>
-
-          <listitem>
-            <para><emphasis role="bold">ShowNonSuperFiles</emphasis> lists all
-            non-superfiles used by the query</para>
-          </listitem>
-
-          <listitem>
-            <para><emphasis role="bold">ShowGraph </emphasis>displays the
-            execution graph for the query.</para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para><emphasis role="bold">ShowGVCGraph </emphasis>displays the
-            execution query's graph (in GVC format).</para>
-
-            <graphic fileref="images/RM-20a.jpg" vendor="eclwatchSS" />
-          </listitem>
-        </itemizedlist>
-
-        <sect3>
-          <title>To Search Roxie Files:</title>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para>Open the ECL Watch home page in a browser. The URL is the
-              IP address of your ESP Server plus the port to which the
-              EclWatch Service is bound (usually 8010).</para>
-            </listitem>
-          </itemizedlist>
-
-          <para>The ECL Watch home page will open.</para>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para>Click on the <emphasis role="bold">Search Roxie Files
-              </emphasis>below <emphasis role="bold">Roxie Queries</emphasis>
-              in the menu on the left side.</para>
-            </listitem>
-          </itemizedlist>
-
-          <para></para>
-
-          <para></para>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para>Select the <emphasis role="bold">Cluster </emphasis>from
-              the drop list.</para>
-            </listitem>
-          </itemizedlist>
-
-          <para>All Roxie clusters in this environment appear on the
-          list.</para>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para>Select the file type (Non-Super Files or Super FIles) from
-              the <emphasis role="bold">File Type </emphasis>drop list.</para>
-            </listitem>
-
-            <listitem>
-              <para>Press the <emphasis role="bold">Search
-              </emphasis>button</para>
-            </listitem>
-          </itemizedlist>
-
-          <para></para>
-
-          <para></para>
-
-          <para>The list of files displays.</para>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para>Rt-click to the <inlinegraphic
-              fileref="images/RM-22.jpg" /> button on the left of any file,
-              then select the action from the popup menu.</para>
-            </listitem>
-          </itemizedlist>
-
-          <para></para>
-
-          <para></para>
-
-          <itemizedlist mark="bullet">
-            <listitem>
-              <para><emphasis role="bold">Details</emphasis> displays a page
-              of details about the file.</para>
-            </listitem>
-
-            <listitem>
-              <para><emphasis role="bold">ViewDataFilee</emphasis> allows you
-              to view the contents of a file. <emphasis
-              role="bold"></emphasis></para>
-            </listitem>
-
-            <listitem>
-              <para><emphasis role="bold">ShowQueries</emphasis> lists all
-              queries using this file</para>
-            </listitem>
-          </itemizedlist>
-
-          <para></para>
-
-          <para></para>
-        </sect3>
-      </sect2>
-
-      <sect2 id="Viewing_Roxie_Key_Files">
-        <title>Viewing Roxie Key Files</title>
-
-        <para></para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Open the ECL Watch home page in a browser. The URL is the IP
-            address of your ESP Server plus the port to which the EclWatch
-            Service is bound (usually 8010).</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>The ECL Watch home page will open.</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Click on the <emphasis role="bold">Search Roxie Files
-            </emphasis>below <emphasis role="bold">Roxie Queries</emphasis> in
-            the menu on the left side.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para></para>
-
-        <para></para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Select the <emphasis role="bold">Cluster </emphasis>from the
-            drop list.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>All Roxie clusters in this environment appear on the
-        list.</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Select the file type (Non-Super Files or Super FIles) from
-            the <emphasis role="bold">File Type </emphasis>drop list.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">Search
-            </emphasis>button.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>The list of files displays.</para>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Rt-click to the <inlinegraphic fileref="images/RM-25.jpg" />
-            button on the left of any key file, then select <emphasis
-            role="bold">ViewDataFile</emphasis> from the popup menu.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para></para>
-
-        <para>A form displays (containing fields in the Key File)</para>
-
-        <para></para>
-
-        <?hard-pagebreak ?>
-
-        <itemizedlist mark="bullet">
-          <listitem>
-            <para>Provide search criteria in the fields, then press the
-            <emphasis role="bold">First </emphasis>button.</para>
-          </listitem>
-        </itemizedlist>
-
-        <para>Searching using a value in a Keyed column performs an indexed
-        read. Values in Non-keyed columns provide post-fetch filtering (after
-        the indexed read).</para>
-
-        <para>The result displays in a similar manner as shown below:</para>
-
-        <para><graphic fileref="images/RM-28.jpg"
-        vendor="eclwatchSS" /></para>
-      </sect2>
-    </sect1>
+    <para>ECL Watch's Operations section provides the ability to perform
+    Preflight activities. These preflight utilities are used for daily health
+    checks, as well as trouble avoidance and troubleshooting. It provides a
+    central location to gather hardware and software information from a remote
+    set of machines and has many uses for day-to-day environment
+    preparation.</para>
+
+    <para>This section contains information for performing preflight checks on
+    a Roxie cluster. For details about other components, see the
+    <emphasis>HPCC System Administrator's Guide</emphasis>.</para>
+
+    <xi:include href="HPCCCertify/Cert-Mods/CertPreflight.xml"
+                xpointer="Preflight_Roxie"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <sect1 id="Roxie_Metrics">
       <title>Roxie Metrics<?dbfo-need height="5in"?></title>
@@ -1609,5 +1040,9 @@
           </tgroup>
         </informaltable></para>
     </sect1>
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchQueries.xml"
+                xpointer="Queries_Page"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 </book>

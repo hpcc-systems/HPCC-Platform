@@ -2648,7 +2648,7 @@ const char * GetCachedHostName()
 IpAddress & queryLocalIP()
 {
     CriticalBlock c(hostnamesect);
-    if (localhostip.isNull()) 
+    if (localhostip.isNull())
     {
         if (IP6preferred)
             localhostip.ipset("::1");   //IPv6 

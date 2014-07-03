@@ -2387,7 +2387,7 @@ class CDistributedFileIterator: public CDistributedFileIteratorBase<IDistributed
     bool set()
     {
         while (isValid()) {
-            cur.setown(parent->lookup(queryName(),udesc,false,NULL));
+            cur.setown(parent->lookup(queryName(),udesc));
             if (cur)
                 return true;
             index++;
