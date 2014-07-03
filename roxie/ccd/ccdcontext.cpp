@@ -3644,6 +3644,12 @@ public:
     }
     virtual char *getJobName()
     {
+        if (workUnit)
+        {
+            SCMStringBuffer jobName;
+            workUnit->getJobName(jobName);
+            return strdup(jobName.str());
+        }
         return strdup(factory->queryQueryName());
     }
     virtual char *getJobOwner() { throwUnexpected(); }
