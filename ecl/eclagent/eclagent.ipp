@@ -293,6 +293,7 @@ protected:
     virtual void reportContingencyFailure(char const * type, IException * e);
     virtual void checkForAbort(unsigned wfid, IException * handling);
     virtual void doExecutePersistItem(IRuntimeWorkflowItem & item);
+    virtual bool getPersistTime(time_t & when, IRuntimeWorkflowItem & item);
 
 private:
     void prelockPersists();
@@ -402,8 +403,8 @@ private:
     void deleteTempFiles();
 
     void processXmlParams(const IPropertyTree *params);
-    bool checkPersistUptoDate(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer & errText);
-    bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
+    bool checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer & errText);
+    bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
     bool changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat);
     bool expandLogicalName(StringBuffer & fullname, const char * logicalName);
     IRemoteConnection *getPersistReadLock(const char * logicalName);
