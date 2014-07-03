@@ -2203,6 +2203,20 @@ void EclAgentWorkflowMachine::checkForAbort(unsigned wfid, IException * handling
     }
 }
 
+bool EclAgentWorkflowMachine::getPersistTime(time_t & when, IRuntimeWorkflowItem & item)
+{
+    SCMStringBuffer name;
+    const char *logicalName = item.getPersistName(name).str();
+    StringBuffer whenName;
+    agent.expandLogicalName(whenName, logicalName);
+    whenName.append("$when");
+    if (!agent.isResult(whenName, ResultSequencePersist))
+        return false;
+
+    when = agent.getResultInt(whenName, ResultSequencePersist);
+    return true;
+}
+
 void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
 {
     if (agent.isStandAloneExe)
@@ -2252,7 +2266,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     {
         agent.checkPersistMatches(logicalName, thisPersist->eclCRC);
     }
-    else if(!agent.isPersistUptoDate(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC, thisPersist->isFile))
+    else if(!agent.isPersistUptoDate(persistLock, item, logicalName, thisPersist->eclCRC, thisPersist->allCRC, thisPersist->isFile))
     {
         // New persist model allows dependencies to be executed AFTER checking if the persist is up to date
         if (agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
@@ -2448,7 +2462,7 @@ unsigned __int64 EclAgent::getDatasetHash(const char * logicalName, unsigned __i
 
 //---------------------------------------------------------------------------
 
-bool EclAgent::checkPersistUptoDate(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer &errText)
+bool EclAgent::checkPersistUptoDate(IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer &errText)
 {
     StringBuffer lfn, crcName, eclName;
     expandLogicalName(lfn, logicalName);
@@ -2469,12 +2483,15 @@ bool EclAgent::checkPersistUptoDate(const char * logicalName, unsigned eclCRC, u
             errText.appendf("Rebuilding PERSIST('%s'): ECL has changed", logicalName);
         else if (savedCRC != allCRC)
             errText.appendf("Rebuilding PERSIST('%s'): Input files have changed", logicalName);
+        else if (workflow->isItemOlderThanInputPersists(item))
+            errText.appendf("Rebuilding PERSIST('%s'): Input persists are more recent", logicalName);
         else
             return true;
     }
 
     return false;
 }
+
 
 bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat)
 {
@@ -2559,7 +2576,7 @@ void EclAgent::setBlockedOnPersist(const char * logicalName)
     w->setStateEx(s.str());
 }
 
-bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, IRuntimeWorkflowItem & item, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
 {
     //Loop trying to get a write lock - if it fails, then release the read lock, otherwise
     //you can get a deadlock with several things waiting to read, and none being able to write.
@@ -2567,7 +2584,7 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
     loop
     {
         StringBuffer dummy;
-        if (checkPersistUptoDate(logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
+        if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
         {
             StringBuffer msg;
             msg.append("PERSIST('").append(logicalName).append("') is up to date");
@@ -2590,7 +2607,7 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
 
     //Check again whether up to date, someone else might have updated it!
     StringBuffer errText;
-    if (checkPersistUptoDate(logicalName, eclCRC, allCRC, isFile, errText) && !rebuildAllPersists)
+    if (checkPersistUptoDate(item, logicalName, eclCRC, allCRC, isFile, errText) && !rebuildAllPersists)
     {
         StringBuffer msg;
         msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");
@@ -2605,13 +2622,15 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
 
 void EclAgent::updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
 {
-    StringBuffer lfn, crcName, eclName;
+    StringBuffer lfn, crcName, eclName, whenName;
     expandLogicalName(lfn, logicalName);
     crcName.append(lfn).append("$crc");
     eclName.append(lfn).append("$eclcrc");
+    whenName.append(lfn).append("$when");
 
-    setResultInt(crcName,(unsigned)-2,allCRC);
-    setResultInt(eclName,(unsigned)-2,eclCRC);
+    setResultInt(crcName,ResultSequencePersist,allCRC);
+    setResultInt(eclName,ResultSequencePersist,eclCRC);
+    setResultInt(whenName,ResultSequencePersist,time(NULL));
 
     reportProgress("Convert persist write lock to read lock");
     changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
