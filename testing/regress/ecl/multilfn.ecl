@@ -20,6 +20,7 @@ import Std.File AS FileServices;
 import std.str;
 
 #option('slaveDaliClient', true);
+#option('allFilenamesDynamic', true);
 
 rec := RECORD, MAXLENGTH(256)
   STRING    album;
