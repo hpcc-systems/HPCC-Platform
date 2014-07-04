@@ -2201,7 +2201,7 @@ public:
         {
             dFile->detach();
         }
-        else
+        else if (!physicalName.isEmpty())
         {
             try
             {
@@ -2210,7 +2210,7 @@ public:
             }
             catch (IException *e)
             {
-                ERRLOG(-1, "Error removing file %s",lfn.get());
+                ERRLOG(-1, "Error removing file %s (%s)", lfn.get(), physicalName.get());
                 e->Release();
             }
         }
@@ -2221,8 +2221,10 @@ public:
         // This will make more sense if/when we start to lock earlier.
         if (dFile || isSuper)
             return true; // MORE - may need some thought - especially the isSuper case
+        else if (!physicalName.isEmpty())
+            return checkFileExists(physicalName.get());
         else
-            return checkFileExists(lfn.get());
+            return false;
     }
 };
 
