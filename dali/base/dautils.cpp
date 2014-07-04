@@ -895,6 +895,7 @@ StringBuffer &CDfsLogicalFileName::makeFullnameQuery(StringBuffer &query, DfsXml
 StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) const
 {
     const char *s=get(true);    // skip foreign
+    // Ensure only chars that are accepted by jptree in an xpath element are used
     bool first=true;
     loop
     {
@@ -919,7 +920,11 @@ StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) con
                     c = toupper(*s);
                     // fall through
                 default:
-                    lfnNodeName.append(c);
+                    if (isalnum(c))
+                        lfnNodeName.append(c);
+                    else
+                        lfnNodeName.append('_').append((unsigned) (unsigned char) c);
+                    break;
                 }
                 ++s;
             }
