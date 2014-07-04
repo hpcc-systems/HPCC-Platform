@@ -480,6 +480,7 @@ define([
                 this.previous = registry.byId(this.id + "Previous");
                 this.depth = registry.byId(this.id + "Depth");
                 this.distance = registry.byId(this.id + "Distance");
+                this.syncSelectionSplitter = registry.byId(this.id + "SyncSelectionSplitter");
                 this.syncSelection = registry.byId(this.id + "SyncSelection");
             },
 
@@ -543,8 +544,10 @@ define([
 
             showSyncSelection: function (show) {
                 if (show) {
+                    domStyle.set(this.syncSelectionSplitter.domNode, 'display', 'block');
                     domStyle.set(this.syncSelection.domNode, 'display', 'block');
                 } else {
+                    domStyle.set(this.syncSelectionSplitter.domNode, 'display', 'none');
                     domStyle.set(this.syncSelection.domNode, 'display', 'none');
                 }
                 this.resize();
