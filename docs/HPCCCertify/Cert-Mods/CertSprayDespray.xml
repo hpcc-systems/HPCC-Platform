@@ -65,8 +65,8 @@
         </listitem>
 
         <listitem>
-          <para>Click the <emphasis>Browse Logical Files </emphasis>link under
-          DFU Files.</para>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click on Logical Files.</para>
 
           <para><figure>
               <title>Browse Files</title>
@@ -80,118 +80,105 @@
         </listitem>
 
         <listitem>
-          <para>Click on the <inlinegraphic
-          fileref="../../images/RM-19.jpg" /> button next to the file listing
-          for <emphasis
-          role="bold">certification::full_test_distributed</emphasis>, then
-          select <emphasis role="bold">Despray.</emphasis></para>
+          <para>Check the box next to <emphasis
+          role="bold">certification::full_test_distributed_index</emphasis> ,
+          then press the <emphasis role="bold">Despray</emphasis> action
+          button. <graphic fileref="../../images/CSimg15.jpg" /></para>
+
+          <para>The <emphasis role="bold">Despray File</emphasis> dialog
+          opens.</para>
+        </listitem>
+
+        <listitem>
+          <para>Provide <emphasis role="bold">Destination</emphasis>
+          information.</para>
+
+          <para><informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="2">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec colwidth="333.00pt" />
+
+                <tbody>
+                  <row>
+                    <entry><emphasis role="bold"> Target</emphasis></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Drop Zone</emphasis></entry>
+
+                    <entry>Use the drop list to select the machine to despray
+                    to. The items in the list are landing zones defined in the
+                    system’s confguration. Your system may have only
+                    one.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">IP Address</emphasis></entry>
+
+                    <entry>This is prefilled based upon the selected
+                    machine.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Path</emphasis></entry>
+
+                    <entry>The complete file path of the destination.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Split
+                    Prefix</emphasis></entry>
+
+                    <entry>Prefix</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Logical
+                    Name</emphasis></entry>
+
+                    <entry>The Logical File to be sprayed (this is prefilled
+                    and cannot be altered)</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Target
+                    Name</emphasis></entry>
+
+                    <entry>The target filename. This is prefilled with the
+                    last portion of the Logical filename, but can be
+                    changed..</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+
+                    <entry>Check this box to overwrite a file with the same
+                    name if it exists.</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis role="bold">Use Single
+                    Connection</emphasis></entry>
+
+                    <entry>Check this box to use a single network connection
+                    to despray the file.</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Despray</emphasis>
+          button.</para>
+
+          <para>A DFU Workunit tab for each job opens. You can see the
+          progress of each despray operation on the tab. If a job fails,
+          information related to the cause of the failure also
+          displays.</para>
         </listitem>
       </orderedlist>
-
-      <para><graphic fileref="../../images/CSimg15.jpg" /></para>
-
-      <sect3 id="Desprays">
-        <title>Desprays</title>
-
-        <para>After you select Despray, the <emphasis role="bold">Despray
-        File</emphasis> page opens.</para>
-
-        <!--***Do we need an image of the Despray File Page?***-->
-
-        <itemizedlist>
-          <listitem>
-            <para>Check the <emphasis role="bold">Source</emphasis>
-            information that is already filled in, this is the name of the
-            file you selected.</para>
-          </listitem>
-
-          <listitem>
-            <para>Provide <emphasis role="bold">Destination</emphasis>
-            information.</para>
-
-            <para><informaltable colsep="0" frame="none" rowsep="0">
-                <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
-
-                  <colspec colwidth="333.00pt" />
-
-                  <tbody>
-                    <row>
-                      <entry><emphasis role="bold">Destination
-                      Machine/dropzone</emphasis></entry>
-
-                      <entry>Use the drop list to select the machine to
-                      despray to. The items in the list are landing zones
-                      defined in the system’s confguration. Your system may
-                      have only one.</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis role="bold">Destination IP
-                      Address</emphasis></entry>
-
-                      <entry>This is prefilled based upon the selected
-                      machine.</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis role="bold">Destination Local
-                      Path</emphasis></entry>
-
-                      <entry>Provide the complete file path of the destination
-                      including file name and extention.</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis role="bold">Destination<emphasis
-                      role="bold"> Network Path</emphasis></emphasis></entry>
-
-                      <entry>The complete network path of the destination
-                      including file name and extension. (read only)</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis
-                      role="bold">Overwrite</emphasis></entry>
-
-                      <entry>Check this box to overwrite a file with the same
-                      name if it exists.</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable></para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Press the <emphasis role="bold">Submit</emphasis>
-            button.</para>
-
-            <para>The <emphasis role="bold">DFU Workunit</emphasis>
-            displays.<graphic fileref="../../images/CS-1911.jpg"
-            vendor="eclwatchSS" /></para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Press the <emphasis role="bold">Refresh</emphasis> button
-            periodically until the status of your request indicates it is
-            <emphasis role="bold">Finished</emphasis> or click on the
-            <emphasis role="bold">View Progress</emphasis> hyperlink to see a
-            progress indicator.</para>
-
-            <para><graphic fileref="../../images/DHMan-5.jpg"
-            vendor="eclwatchSS" />The Progress window shows a green progress
-            bar indicating the percentage of completion, as well as other
-            information related to the operation.</para>
-
-            <para>If a job fails, information related to the cause of the
-            failure also displays.</para>
-          </listitem>
-        </itemizedlist>
-      </sect3>
 
       <sect3>
         <title id="LandingZone_Expected_Results">EXPECTED RESULTS:</title>
@@ -233,113 +220,137 @@
       Distrubuted File Utility maintains a list of logical files and their
       corresponding physical file locations.</para>
 
-      <orderedlist>
-        <listitem>
-          <para>Open ECL Watch in your browser using the following URL:</para>
+      <para><orderedlist>
+          <listitem>
+            <para>Click on the <emphasis role="bold">Files</emphasis> icon,
+            then click the Landing Zones button on the navigation bar.</para>
+          </listitem>
 
-          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
-          </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
-          Server’s IP Address and pppp is the port. The default port is
-          8010)</emphasis></para>
-        </listitem>
+          <listitem>
+            <para>Click on the arrow next to your dropzone to expand the
+            list.</para>
 
-        <listitem>
-          <para>Click on the <emphasis role="bold">Spray Fixed</emphasis>
-          hyperlink under the DFU Files menu on the left.</para>
+            <para>The files on your drop zone display.</para>
+          </listitem>
 
-          <para>The <emphasis role="bold">Spray Fixed</emphasis> page
-          displays.</para>
-        </listitem>
+          <listitem>
+            <para>Check the checkboxes for the file(s) you want to spray
+            (<emphasis>full_test_distributed</emphasis>) , then click on the
+            <emphasis role="bold">Fixed</emphasis> link.</para>
 
-        <listitem>
-          <para>Using the Source <emphasis
-          role="bold">Machine/dropzone</emphasis> drop list, select the
-          Landing Zone where the file was placed.</para>
+            <para>The <emphasis role="bold">Spray Fixed</emphasis> dialog
+            displays.</para>
 
-          <para>Your system may have only one Landing Zone.</para>
+            <para><graphic fileref="../../images/CSimg15a.jpg" /></para>
+          </listitem>
 
-          <para>The IP Address is automatically filled and the Local Path is
-          partially filled with the default folder on your landing
-          zone.</para>
-        </listitem>
+          <listitem>
+            <para>Fill in relevant details:</para>
 
-        <listitem>
-          <para>Complete the <emphasis role="bold">Local Path</emphasis> to
-          include the complete file name or use the <emphasis
-          role="bold">Choose File</emphasis> button to select the file from a
-          list of files in the folder. (The file to choose is
-          <emphasis>full_test_distributed</emphasis>)</para>
-        </listitem>
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec colwidth="122.40pt" />
 
-        <listitem>
-          <para>Fill in the <emphasis role="bold">Record Length</emphasis>
-          (47).</para>
-        </listitem>
+                  <colspec colwidth="333.00pt" />
 
-        <listitem>
-          <para>Fill in the <emphasis role="bold">Label</emphasis> using the
-          naming convention described earlier: <emphasis
-          role="bold">certification::</emphasis><emphasis
-          role="bold">full_test_distributed</emphasis>.</para>
-        </listitem>
+                  <tbody>
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Target</emphasis></entry>
+                    </row>
 
-        <listitem>
-          <?dbfo keep-together="always"?>
+                    <row>
+                      <entry><emphasis role="bold">Group</emphasis></entry>
 
-          <para>Make sure the <emphasis
-          role="bold">Replicate</emphasis><emphasis role="bold">
-          </emphasis>tab is checked.</para>
+                      <entry>Select the name of cluster to spray to. You can
+                      only select a cluster in your environment.</entry>
+                    </row>
 
-          <para><emphasis role="bold">Note:</emphasis> If replication is
-          disabled in your Thor settings, this checkbox does not
-          appear.</para>
+                    <row>
+                      <entry><emphasis role="bold">Name
+                      Prefix</emphasis></entry>
 
-          <para><figure>
-              <title>Dropzones and Files</title>
+                      <entry>The prefix for the logical file, in this case
+                      <emphasis role="bold">certification</emphasis></entry>
+                    </row>
 
-              <mediaobject>
-                <imageobject>
-                  <imagedata fileref="../../images/CS-1909.jpg"
-                             vendor="eclwatchSS" />
-                </imageobject>
-              </mediaobject>
-            </figure></para>
-        </listitem>
+                    <row>
+                      <entry><emphasis role="bold">Target
+                      Name</emphasis></entry>
 
-        <listitem>
-          <para>Press the <emphasis role="bold">Submit<emphasis role="bold">
-          </emphasis></emphasis>button.</para>
-        </listitem>
+                      <entry>The logical filename to create. This is
+                      pre-filled with the name of the source file on the
+                      landing zone, but can be changed.</entry>
+                    </row>
 
-        <listitem>
-          <?dbfo keep-together="always"?>
+                    <row>
+                      <entry><emphasis role="bold">Record
+                      Length</emphasis></entry>
 
-          <para>Click on the <emphasis role="bold">View Progress</emphasis>
-          hyperlink</para>
+                      <entry>The size of each record. In this case it is
+                      <emphasis role="bold">47</emphasis></entry>
+                    </row>
 
-          <para><figure>
-              <title>View Progress</title>
+                    <row>
+                      <entry align="right"><emphasis
+                      role="bold">Options:</emphasis></entry>
+                    </row>
 
-              <mediaobject>
-                <imageobject>
-                  <imagedata fileref="../../images/DTimg02.jpg"
-                             vendor="eclwatchSS" />
-                </imageobject>
-              </mediaobject>
-            </figure>The Workunit progress page displays.</para>
+                    <row>
+                      <entry><emphasis
+                      role="bold">Overwrite</emphasis></entry>
 
-          <para><figure>
-              <title>Spray Complete</title>
+                      <entry>Check this box to overwrite files of the same
+                      name.</entry>
+                    </row>
 
-              <mediaobject>
-                <imageobject>
-                  <imagedata fileref="../../images/DTimg03.jpg"
-                             vendor="eclwatchSS" />
-                </imageobject>
-              </mediaobject>
-            </figure></para>
-        </listitem>
-      </orderedlist>
+                    <row>
+                      <entry><emphasis
+                      role="bold">Replicate</emphasis></entry>
+
+                      <entry><para>Check this box to create backup copies of
+                      all file parts in the backup directory (by convention on
+                      the secondary drive of the node following in the
+                      cluster).</para><para><emphasis role="bold">This option
+                      is only available on systems where replication has been
+                      enabled.</emphasis></para></entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Compress</emphasis></entry>
+
+                      <entry>Check this box to compress the files.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">No Split</emphasis></entry>
+
+                      <entry>Check this box to prevent splitting file parts to
+                      multiple target parts.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Fail if no source
+                      file</emphasis></entry>
+
+                      <entry>Check this box to allow the spray to fail if no
+                      source file is found.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Spray
+            </emphasis>button.</para>
+
+            <para>A <emphasis role="bold">DFU Workunit</emphasis> tab displays
+            for each job. You can see the progress of each despray operation
+            on the tab. If a job fails, information related to the cause of
+            the failure also displays.</para>
+          </listitem>
+        </orderedlist></para>
     </sect2>
 
     <sect2 id="SPRAY_RESULTS" role="brk">
@@ -347,31 +358,28 @@
 
       <orderedlist>
         <listitem>
-          <para>To verify the spray, in ECL Watch, select the Browse Logical
-          Files link under DFU Files.</para>
+          <para>Click on the <emphasis role="bold">Files</emphasis> icon, then
+          click on Logical Files.</para>
 
           <para><figure>
-              <title>Browse Logical Files</title>
+              <title>Browse Files</title>
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="../../images/CS-1910.jpg" />
+                  <imagedata fileref="../../images/CSimg14.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
         </listitem>
 
         <listitem>
-          <para>Click on the <inlinegraphic
-          fileref="../../images/RM-19.jpg" /> button next to the file listing
-          for <emphasis
-          role="bold">certification::full_test_distributed</emphasis>, then
-          select <emphasis role="bold">Details</emphasis> to open the logical
-          file statistics.</para>
+          <para>Click on the sprayed file, select <emphasis
+          role="bold">Open</emphasis> to view the logical file
+          details..</para>
         </listitem>
 
         <listitem>
-          <para>View the details.</para>
+          <para>Select the Contents tab to view contents.</para>
         </listitem>
       </orderedlist>
     </sect2>

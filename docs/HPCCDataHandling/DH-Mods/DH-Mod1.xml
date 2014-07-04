@@ -239,9 +239,8 @@
         <listitem>
           <?dbfo keep-together="always"?>
 
-          <para>Click on the <emphasis role="bold">Browse Logical
-          Files</emphasis> hyperlink below <emphasis role="bold">DFU Files
-          </emphasis>in the menu on the left.</para>
+          <para>Click on the <emphasis role="bold"> Files</emphasis> icon,
+          then click on Logical Files.</para>
 
           <para>The Logical Files page displays showing all files with logical
           entries in the Dali Server’s Distributed File System.</para>
@@ -905,7 +904,7 @@
 
           <listitem>
             <para>Click on the <emphasis role="bold">Remote Copy
-            </emphasis>link </para>
+            </emphasis>link</para>
 
             <para>The <emphasis role="bold">Copy File </emphasis>page
             displays.</para>
