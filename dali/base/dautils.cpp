@@ -334,26 +334,24 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
 
 inline void normalizeScope(const char *name, const char *scope, unsigned len, StringBuffer &res, bool strict)
 {
-    bool scopeStarted=false;
-    bool scopeEnded=false;
-    const char *s2=scope;
+    while (len && isspace(scope[len-1]))
+    {
+        if (strict)
+            throw MakeStringException(-1, "Scope contains trailing spaces in file name '%s'", name);
+        len--;
+    }
+    while (len && isspace(scope[0]))
+    {
+        if (strict)
+            throw MakeStringException(-1, "Scope contains leading spaces in file name '%s'", name);
+        len--;
+        scope++;
+    }
+    if (!len)
+        throw MakeStringException(-1, "Scope is blank in file name '%s'", name);
     while (len--)
     {
-        if (isspace(*s2))
-        {
-            if (strict)
-               throw MakeStringException(-1, "Scope contains spaces in file name '%s'", name);
-            if (scopeStarted) // ignore leading spaces if !strict
-                scopeEnded = true;
-        }
-        else
-        {
-            if (scopeEnded)
-               throw MakeStringException(-1, "Scope contains spaces in file name '%s'", name);
-            scopeStarted = true;
-            res.append(*s2);
-        }
-        ++s2;
+        res.append(*scope++);
     }
 }
 
