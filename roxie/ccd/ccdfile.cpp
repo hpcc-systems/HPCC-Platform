@@ -1828,11 +1828,24 @@ public:
         {
             if (subFiles.length())
             {
-                assertex(subFiles.length()==1);
+                if (subFiles.length()!=1)
+                    throw MakeStringException(0, "Roxie does not support FETCH or KEYED JOIN to superkey with multiple parts");
                 fileMap.setown(createFilePartMap(lfn, *subFiles.item(0)));
             }
         }
         return fileMap.getLink();
+    }
+    virtual unsigned getNumParts() const
+    {
+        CriticalBlock b(lock);
+        unsigned numParts = 0;
+        ForEachItemIn(idx, subFiles)
+        {
+            unsigned thisNumParts = subFiles.item(idx)->numParts();
+            if (thisNumParts > numParts)
+                numParts = thisNumParts;
+        }
+        return numParts;
     }
     virtual void serializeFDesc(MemoryBuffer &mb, IFileDescriptor *fdesc, unsigned channel, bool isLocal) const
     {
@@ -1910,10 +1923,10 @@ public:
     {
         Owned<CFileIOArray> f = new CFileIOArray();
         f->addFile(NULL, 0);
-        if (subFiles.length())
+        ForEachItemIn(idx, subFiles)
         {
-            IFileDescriptor *fdesc = subFiles.item(0);
-            IFileDescriptor *remoteFDesc = remoteSubFiles.item(0);
+            IFileDescriptor *fdesc = subFiles.item(idx);
+            IFileDescriptor *remoteFDesc = remoteSubFiles.item(idx);
             if (fdesc)
             {
                 unsigned numParts = fdesc->numParts();
@@ -1926,7 +1939,7 @@ public:
                             IPartDescriptor *pdesc = fdesc->queryPart(i-1);
                             assertex(pdesc);
                             IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, i-1);
-                            Owned<ILazyFileIO> file = createPhysicalFile(subNames.item(0), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL, channel);
+                            Owned<ILazyFileIO> file = createPhysicalFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL, channel);
                             IPropertyTree &partProps = pdesc->queryProperties();
                             f->addFile(file.getClear(), partProps.getPropInt64("@offset"));
                         }
