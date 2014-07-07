@@ -391,6 +391,7 @@ define([
                             }
                         },
                         onGetTimers: function (timers) {
+                            context.graphTimers = context.wu.getGraphTimers(context.GraphName);
                         }
                     });
                 });
@@ -427,7 +428,7 @@ define([
         },
 
         loadGraphFromXGMML: function (xgmml) {
-            if (this.global.loadXGMML(xgmml, false, this.wu.getGraphTimers(this.params.GraphName))) {
+            if (this.global.loadXGMML(xgmml, false, this.graphTimers)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
                 var initialSelection = [];
                 this.setMainRootItems(initialSelection);
@@ -439,7 +440,7 @@ define([
         },
 
         mergeGraphFromXGMML: function (xgmml) {
-            if (this.global.loadXGMML(xgmml, true, this.wu.getGraphTimers(this.params.GraphName))) {
+            if (this.global.loadXGMML(xgmml, true, this.graphTimers)) {
                 this.global.setMessage("...");  //  Just in case it decides to render  ---
                 this.refreshMainXGMML();
                 this.loadSubgraphs();
