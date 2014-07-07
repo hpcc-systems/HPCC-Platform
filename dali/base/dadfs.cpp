@@ -3660,6 +3660,11 @@ public:
         return clusters.queryGroup(clusternum);
     }
 
+    StringBuffer &getClusterGroupName(unsigned clusternum, StringBuffer &name)
+    {
+        return clusters.item(clusternum).getGroupName(name, &queryNamedGroupStore());
+    }
+
     virtual unsigned numCopies(unsigned partno)
     {
         return clusters.numCopies(partno,numParts());
@@ -6175,6 +6180,13 @@ public:
         CriticalBlock block (sect);
         fillClustersCache();
         return clusterscache.queryGroup(clusternum);
+    }
+
+    StringBuffer &getClusterGroupName(unsigned clusternum, StringBuffer &name)
+    {
+        CriticalBlock block (sect);
+        fillClustersCache();
+        return clusterscache.item(clusternum).getGroupName(name, &queryNamedGroupStore());
     }
 
     void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec)
@@ -9156,7 +9168,7 @@ class CInitGroups
             else
             {
                 VStringBuffer msg("Active cluster '%s' group layout does not match environment [matched old environment=%s]", gname.str(), matchOldEnv?"true":"false");
-                LOG(MCoperatorWarning, unknownJob, msg.str());                                                                        \
+                LOG(MCoperatorWarning, unknownJob, "%s", msg.str());                                                                        \
                 messages.append(msg).newline();
             }
         }
