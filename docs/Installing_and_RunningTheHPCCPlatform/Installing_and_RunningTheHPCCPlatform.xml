@@ -1609,8 +1609,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <emphasis role="bold">/etc/HPCCSystems/</emphasis> on <emphasis
             role="bold">every</emphasis> node.</para>
 
-            <para>You may want to create a script to push out XML file to all
-            nodes. A sample script is provided with HPCC. The following
+            <para>You may want to create a script to push out the XML file to
+            all nodes. A sample script is provided with HPCC. The following
             command copies the XML files out to all nodes as required:</para>
 
             <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-push.sh &lt;sourcefile&gt; &lt;destinationfile&gt;
@@ -2600,7 +2600,7 @@ OUTPUT(ValidWords)
     <sect1 id="Example-Scripts" role="nobrk">
       <title>Example Scripts</title>
 
-      <para>For a multi-node configuration, the packages must be installed on
+      <para>For a multi-node configuration, you must install the packages on
       each node. You can install each one manually or use scripts to copy and
       install the packages. On a large system where you have many nodes
       copying and installing on every node is not practical, therefore we
@@ -2608,7 +2608,9 @@ OUTPUT(ValidWords)
       start in making your own.</para>
 
       <para>Scripts are installed to the<emphasis role="bold">
-      /opt/HPCCSystems/sbin</emphasis> directory.</para>
+      /opt/HPCCSystems/sbin</emphasis> directory. Scripts should be run as
+      sudo or as a user with appropriate privileges on all nodes. The scripts
+      have the ability to multi-thread.</para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -2635,8 +2637,8 @@ OUTPUT(ValidWords)
         <title>install-cluster.sh</title>
 
         <para><emphasis
-        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k]
-        &lt;package-name&gt; </emphasis></emphasis></para>
+        role="bold">install-cluster.sh</emphasis><emphasis><emphasis> [-k] [-n
+        &lt;value&gt;] &lt;package-name&gt; </emphasis></emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
@@ -2656,6 +2658,13 @@ OUTPUT(ValidWords)
 
                   <entry>When specified, the script generates and distributes
                   ssh keys to all hosts. Optional.</entry>
+                </row>
+
+                <row>
+                  <entry>-n, --concurrent</entry>
+
+                  <entry>When specified, denotes the number of concurrent
+                  executions. Default is 5. Optional.</entry>
                 </row>
               </tbody>
             </tgroup>
@@ -2692,6 +2701,11 @@ OUTPUT(ValidWords)
             the required ssh keys and deploys them as required to all nodes
             specified.</para>
           </listitem>
+
+          <listitem>
+            <para>optionally, if you specify the -n &lt;value&gt; option it
+            spawns that many concurrent executions. Default is 5.</para>
+          </listitem>
         </itemizedlist>
 
         <para><?hard-pagebreak ?><emphasis
@@ -2714,6 +2728,142 @@ OUTPUT(ValidWords)
 </programlisting></para>
 
         <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+
+        <para>This example installs the HPCC Platform packages and pushes out
+        the active environment.xml file to 8 concurrent nodes.:</para>
+
+        <para><programlisting>sudo /opt/HPCCSystems/sbin/install-cluster.sh -n 8 hpccsystems-platform-xxxx-<emphasis>n.n.nnnn</emphasis> 
+</programlisting></para>
+
+        <para>(where <emphasis>n.n.nnnn</emphasis> is the build number)</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>deploy-java-files.sh</title>
+
+        <para><emphasis
+        role="bold">deploy-java-files.sh</emphasis><emphasis><emphasis> [-c]
+        [-e] [-H &lt;value&gt;] [-n &lt;value&gt;] [-r] [-s &lt;value&gt;] [-t
+        &lt;value&gt;] [-u &lt;value&gt;] [-x] </emphasis></emphasis></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec colwidth="100.50pt" />
+
+              <colspec />
+
+              <tbody>
+                <row>
+                  <entry>-c</entry>
+
+                  <entry>When specified, this option adds the target directory
+                  or jar file path to classpath in environment.conf. </entry>
+                </row>
+
+                <row>
+                  <entry>-e</entry>
+
+                  <entry>When specified, this denotes the target is to be
+                  removed from the classpath. </entry>
+                </row>
+
+                <row>
+                  <entry>-H</entry>
+
+                  <entry>Host IP list. When specified, will target the IP
+                  addresses specified, one IP address per line. If this option
+                  is not used will run on the IP list generated from the
+                  environment.xml</entry>
+                </row>
+
+                <row>
+                  <entry>-n</entry>
+
+                  <entry>When specified, denotes the number of concurrent
+                  execution threads. Default is 5. You must have python
+                  installed, otherwise this option will be ignored and the
+                  action will run on each host sequentially.</entry>
+                </row>
+
+                <row>
+                  <entry>-r</entry>
+
+                  <entry>Reset classpath. When specified, will reset the
+                  classpath to &lt;install_directory&gt;/classes. If used in
+                  conjunction with the -t adds the new entries to the
+                  classpath after reset.</entry>
+                </row>
+
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>Source file or directory.</entry>
+                </row>
+
+                <row>
+                  <entry>-t</entry>
+
+                  <entry>Target directory. The default is
+                  &lt;install_directory&gt;/classes. If it is only for adding
+                  to classpath, the value can be the full path of the java jar
+                  file.</entry>
+                </row>
+
+                <row>
+                  <entry>-u</entry>
+
+                  <entry>The username to use for ssh access to remote system.
+                  Provide this option when the specified user does not use a
+                  password to run ssh/scp. Without specifying this option you
+                  will be prompted to supply a username and password. We
+                  strongly recommend not using &lt;hpcc user&gt; to avoid
+                  security issues. </entry>
+                </row>
+
+                <row>
+                  <entry>-x</entry>
+
+                  <entry>When specified, this option excludes execution on the
+                  current host.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+
+        <para>The <emphasis role="bold">deploy-java-files.sh</emphasis>
+        script, is used to deploy java files (source) to HPCC cluster hosts
+        and update the classpath variable in environment.conf.</para>
+
+        <para>This script runs a command on all IP addresses or host names in
+        the active environment.xml. The IP addresses are defined when editing
+        the environment in ConfigMgr.</para>
+
+        <para>This script writes to a log file:</para>
+
+        <para><emphasis
+        role="bold">/var/log/HPCCSystems/cluster/se_&lt;action&gt;_&lt;commnd&gt;_&lt;pid&gt;_yyyymmdd_HHMMSS.log</emphasis></para>
+
+        <para><emphasis role="bold">Examples:</emphasis></para>
+
+        <para>To deploy java files from /home/hpcc/development/java/ on local
+        system to /home/hpcc/java/ on all hosts in cluster and update
+        classpath with 10 concurrent executions:</para>
+
+        <para><programlisting>./deploy-java-files.sh -s /home/hpcc/development/java/* -t /home/hpcc/java/ -c -n 10
+</programlisting></para>
+
+        <para>To deploy java files from /home/hpcc/java/ on local system to
+        /home/hpcc/java on all hosts in cluster except local system:</para>
+
+        <para><programlisting>./deploy-java-files.sh -s /home/hpcc/java/* -t /home/hpcc/java -x
+</programlisting>To update classpath for a cluster:</para>
+
+        <para><programlisting>./deploy-java-files.sh -c -t /home/hpcc/develop/java:/home/hpcc/test/java/ 
+</programlisting></para>
+
+        <para>To To deploy java files to a list of hosts :</para>
+
+        <para><programlisting>./deploy-java-files.sh -H /home/hpcc/hosts.txt -s /home/hpcc/java/* -t /home/hpcc/java/ </programlisting></para>
       </sect2>
 
       <sect2 role="brk">
@@ -2742,59 +2892,56 @@ OUTPUT(ValidWords)
 
         <para><emphasis role="bold">hpcc-run.sh
         </emphasis><emphasis><emphasis>[-c component] [-a
-        {hpcc-init|dafilesrv}]
+        {hpcc-init|dafilesrv}] [-n &lt;value&gt;] [-s] [-S]
         {start|stop|restart|status|setup}</emphasis></emphasis></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec colwidth="80.50pt" />
+              <colspec colwidth="100.50pt" />
 
               <colspec />
 
               <tbody>
                 <row>
-                  <entry>-c</entry>
+                  <entry>-a</entry>
 
-                  <entry><itemizedlist>
-                      <listitem>
-                        <para>-c <emphasis>componentname</emphasis></para>
-
-                        <para>Specifies the component upon which to execute
-                        the command. If omitted, the default is <emphasis
-                        role="bold">all</emphasis> components on the
-                        machine.</para>
-
-                        <para>-c <emphasis>componenttype</emphasis></para>
-
-                        <para>Specifies the component type upon which to
-                        execute the command. If more than one of this type is
-                        configured, all will be acted upon. If omitted, the
-                        default is <emphasis role="bold">all</emphasis>
-                        components on the machine.</para>
-                      </listitem>
-                    </itemizedlist></entry>
+                  <entry>HPCC service name. Either hpcc-init (default) of
+                  dafilesrv.</entry>
                 </row>
 
                 <row>
-                  <entry>-a</entry>
+                  <entry>-c</entry>
 
-                  <entry><itemizedlist spacing="compact">
-                      <listitem>
-                        <para>hpcc-init:
-                        [start|stop|restart|status|setup]</para>
-                      </listitem>
+                  <entry>HPCC component. For example, mydali, myroxie, mythor,
+                  etc.</entry>
+                </row>
 
-                      <listitem>
-                        <para>dafilesrv [start|stop]</para>
-                      </listitem>
-                    </itemizedlist></entry>
+                <row>
+                  <entry>-n, --concurrent</entry>
+
+                  <entry>When specified, denotes the number of concurrent
+                  instances to run. The default is 5. Optional.</entry>
+                </row>
+
+                <row>
+                  <entry>-S</entry>
+
+                  <entry>When specified, the command runs sequentially, one
+                  host at a time. </entry>
+                </row>
+
+                <row>
+                  <entry>-s</entry>
+
+                  <entry>When specified, saves the result to a file named
+                  &lt;ip address&gt;.</entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable></para>
 
         <para>To use this script, the ssh keys need to be properly configured
-        on all nodes, and you must sudo as user hpcc:</para>
+        on all nodes, and you must sudo as user hpcc.</para>
 
         <para><emphasis role="bold">This script runs a command on all IP
         addresses in the active environment.xml. </emphasis></para>
@@ -2803,11 +2950,17 @@ OUTPUT(ValidWords)
         ConfigMgr. This script supports all the parameters of hpcc-init and
         dafilesrv.</para>
 
-        <para><emphasis role="bold">Example:</emphasis></para>
+        <para><emphasis role="bold">Examples:</emphasis></para>
 
         <para>This example starts all components on the nodes</para>
 
         <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
+</programlisting></para>
+
+        <para>This example starts all components on all the nodes, using 8
+        concurrent executions</para>
+
+        <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start -n 8
 </programlisting>This example starts all components of the esp type on the
         nodes</para>
 
@@ -3373,25 +3526,28 @@ split_words('Once upon a time');
           </listitem>
 
           <listitem>
-            <para>Install the <emphasis role="bold">Rcpp</emphasis>
-            library.</para>
+            <para>Install the <emphasis role="bold">Rcpp</emphasis> and the
+            <emphasis role="bold">RInside</emphasis> libraries.</para>
 
-            <para>You need the Rcpp library in order for the R-embedding to
-            work properly. The library installation packages are named with
-            the version number appended so you should search for Rcpp_ to
-            obtain the latest version for your system.</para>
+            <para>You will need both Rcpp and RInside libraries in order for
+            the R-embedding to work properly. The library installation
+            packages are named with the version number appended so you should
+            search for Rcpp_ and RInside_ to obtain the latest version for
+            your system.</para>
 
             <para><emphasis role="bold">For all distros except Ubuntu
             14.04:</emphasis></para>
 
             <programlisting>wget http://cran.r-project.org/src/contrib/<emphasis
                 role="bold">Rcpp_0.10.4.</emphasis>tar.gz
+wget http://cran.r-project.org/src/contrib/<emphasis role="bold">RInside</emphasis><emphasis
+                role="bold">_0.2.10.tar.gz</emphasis>
 </programlisting>
 
             <para>To Install:</para>
 
             <programlisting>sudo R CMD INSTALL <emphasis role="bold">Rcpp_0.10.4.</emphasis>tar.gz
-</programlisting>
+sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</programlisting>
 
             <para><emphasis role="bold">For Ubuntu 14.04:</emphasis></para>
 

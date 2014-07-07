@@ -2274,13 +2274,14 @@ public:
                                ". :: scope1 :: file",
                                ":: scope1 :: file",
                                "~ scope1 :: scope2 :: file  ",
+                               ". :: scope1 :: file nine",
+                               ". :: scope1 :: file ten  ",
                                ". :: scope1 :: file",
                                NULL                                             // terminator
                              };
         const char *invalidLfns[] = {
-                               ". :: scope1 :: file nine",
-                               ". :: scope1 :: file ten",
                                ". :: sc~ope1::file",
+                               ". ::  ::file",
                                "~~scope1::file",
                                "~sc~ope1::file2",
                                ".:: scope1::file*",
