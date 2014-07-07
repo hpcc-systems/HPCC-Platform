@@ -3029,7 +3029,19 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
 {
     try
     {
-        checkUser(context);
+        StringBuffer userID;
+        bool bGroupAccount = req.getIsGroup();
+        const char* username = req.getAccountName();
+        if(!username || !*username)
+        {//send back the permissions for the current user.
+            context.getUserID(userID);
+            if (!userID.length())
+                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Could not get user ID.");
+            username = userID.str();
+            bGroupAccount = false;
+        }
+        else
+            checkUser(context);
 
         double version = context.getClientVersion();
 
@@ -3038,12 +3050,6 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
         if(ldapsecmgr == NULL)
             throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
 
-        const char* username = req.getAccountName();
-        if(username == NULL || *username == '\0')
-        {
-            throw MakeStringException(ECLWATCH_INVALID_ACCOUNT_NAME, "Please specify an account name.");
-        }
-        bool bGroupAccount = req.getIsGroup();
         bool bIncludeGroup = req.getIncludeGroup();
 
         if(m_basedns.length() == 0)
@@ -3348,8 +3354,8 @@ bool Cws_accessEx::onAccountPermissions(IEspContext &context, IEspAccountPermiss
             }
         }
 
-        resp.setAccountName(req.getAccountName());
-        resp.setIsGroup(req.getIsGroup());
+        resp.setAccountName(username);
+        resp.setIsGroup(bGroupAccount);
     }
     catch(IException* e)
     {

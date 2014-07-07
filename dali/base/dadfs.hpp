@@ -353,7 +353,7 @@ interface IDistributedFile: extends IInterface
 
     virtual ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum)=0;
     virtual IGroup *queryClusterGroup(unsigned clusternum)=0;
-
+    virtual StringBuffer &getClusterGroupName(unsigned clusternum, StringBuffer &name)=0;
     virtual StringBuffer &getECL(StringBuffer &buf) = 0;
     virtual void setECL(const char *ecl) = 0;
 

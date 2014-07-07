@@ -4071,7 +4071,7 @@ private:
         }
     }
 
-    void ConvertCToW(unsigned short* pszDest, const CHAR* pszSrc)
+    void ConvertCToW(unsigned short* pszDest, const char * pszSrc)
     {
         unsigned i = 0;
         for(i = 0; i < strlen(pszSrc); i++)

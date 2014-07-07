@@ -1948,6 +1948,7 @@ mapEnums querySortFields[] =
    { WUQSFQuerySet, "../@id" },
    { WUQSFActivited, "@activated" },
    { WUQSFSuspendedByUser, "@suspended" },
+   { WUQSFLibrary, "Library"},
    { WUQSFterm, NULL }
 };
 
@@ -10146,7 +10147,30 @@ extern WORKUNIT_API IPropertyTree * getQueryRegistryRoot()
             return NULL;
 }
 
+extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWULibraryIterator *libraries)
+{
+    if (!queryTree || !libraries)
+        return;
+    if (queryTree->hasProp("@libCount")) //already added
+        return;
+    unsigned libCount=0;
+    ForEach(*libraries)
+    {
+        IConstWULibrary &library = libraries->query();
+        SCMStringBuffer libname;
+        if (!library.getName(libname).length())
+            continue;
+        queryTree->addProp("Library", libname.str());
+        libCount++;
+    }
+    queryTree->setPropInt("@libCount", libCount);
+}
 
+extern WORKUNIT_API void checkAddLibrariesToQueryEntry(IPropertyTree *queryTree, IConstWorkUnit *cw)
+{
+    Owned<IConstWULibraryIterator> libraries = &cw->getLibraries();
+    checkAddLibrariesToQueryEntry(queryTree, libraries);
+}
 
 extern WORKUNIT_API IPropertyTree * getQueryRegistry(const char * wsEclId, bool readonly)
 {
@@ -10265,6 +10289,8 @@ void addQueryToQuerySet(IWorkUnit *workunit, IPropertyTree *queryRegistry, const
     }
 
     IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit), userid, snapshot.str());
+    Owned<IConstWULibraryIterator> libraries = &workunit->getLibraries();
+    checkAddLibrariesToQueryEntry(newEntry, libraries);
     newQueryId.append(newEntry->queryProp("@id"));
     workunit->setIsQueryService(true); //will check querysets before delete
     workunit->commit();

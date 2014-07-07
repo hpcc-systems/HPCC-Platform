@@ -334,26 +334,24 @@ void CDfsLogicalFileName::expand(IUserDescriptor *user)
 
 inline void normalizeScope(const char *name, const char *scope, unsigned len, StringBuffer &res, bool strict)
 {
-    bool scopeStarted=false;
-    bool scopeEnded=false;
-    const char *s2=scope;
+    while (len && isspace(scope[len-1]))
+    {
+        if (strict)
+            throw MakeStringException(-1, "Scope contains trailing spaces in file name '%s'", name);
+        len--;
+    }
+    while (len && isspace(scope[0]))
+    {
+        if (strict)
+            throw MakeStringException(-1, "Scope contains leading spaces in file name '%s'", name);
+        len--;
+        scope++;
+    }
+    if (!len)
+        throw MakeStringException(-1, "Scope is blank in file name '%s'", name);
     while (len--)
     {
-        if (isspace(*s2))
-        {
-            if (strict)
-               throw MakeStringException(-1, "Scope contains spaces in file name '%s'", name);
-            if (scopeStarted) // ignore leading spaces if !strict
-                scopeEnded = true;
-        }
-        else
-        {
-            if (scopeEnded)
-               throw MakeStringException(-1, "Scope contains spaces in file name '%s'", name);
-            scopeStarted = true;
-            res.append(*s2);
-        }
-        ++s2;
+        res.append(*scope++);
     }
 }
 
@@ -897,6 +895,7 @@ StringBuffer &CDfsLogicalFileName::makeFullnameQuery(StringBuffer &query, DfsXml
 StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) const
 {
     const char *s=get(true);    // skip foreign
+    // Ensure only chars that are accepted by jptree in an xpath element are used
     bool first=true;
     loop
     {
@@ -921,7 +920,11 @@ StringBuffer &CDfsLogicalFileName::makeXPathLName(StringBuffer &lfnNodeName) con
                     c = toupper(*s);
                     // fall through
                 default:
-                    lfnNodeName.append(c);
+                    if (isalnum(c))
+                        lfnNodeName.append(c);
+                    else
+                        lfnNodeName.append('_').append((unsigned) (unsigned char) c);
+                    break;
                 }
                 ++s;
             }

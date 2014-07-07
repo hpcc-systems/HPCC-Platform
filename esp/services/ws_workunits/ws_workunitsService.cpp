@@ -48,6 +48,8 @@
 
 #define ESP_WORKUNIT_DIR "workunits/"
 
+#define SDS_LOCK_TIMEOUT (5*60*1000) // 5 mins
+
 class ExecuteExistingQueryInfo
 {
 public:
@@ -362,6 +364,41 @@ bool doAction(IEspContext& context, StringArray& wuids, int action, IProperties*
     return bAllSuccess;
 }
 
+static void checkUpdateQuerysetLibraries()
+{
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    if (!globalLock)
+        return;
+
+    IPropertyTree *root = globalLock->queryRoot();
+    if (!root)
+        return;
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IPropertyTreeIterator> querySets = root->getElements("QuerySet");
+    ForEach(*querySets)
+    {
+        IPropertyTree &querySet = querySets->query();
+        if (querySet.hasProp("@updatedLibraries")) //only need to do this once, then publish and copy will keep up to date
+            continue;
+        Owned<IPropertyTreeIterator> queries = querySet.getElements("Query");
+        ForEach(*queries)
+        {
+            IPropertyTree &query = queries->query();
+            if (query.hasProp("@libCount"))
+                continue;
+            const char *wuid = query.queryProp("@wuid");
+            if (!wuid || !*wuid)
+                continue;
+            Owned<IConstWorkUnit> cw = factory->openWorkUnit(wuid, false);
+            if (!cw)
+                continue;
+            checkAddLibrariesToQueryEntry(&query, cw);
+        }
+        querySet.setPropBool("@updatedLibraries", true);
+    }
+}
+
 MapStringTo<int> wuActionTable;
 
 void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *service)
@@ -375,6 +412,7 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
 
+    checkUpdateQuerysetLibraries();
     refreshValidClusters();
 
     daliServers.set(cfg->queryProp("Software/EspProcess/@daliServers"));

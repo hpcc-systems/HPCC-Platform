@@ -20346,11 +20346,7 @@ public:
                 varFileInfo.setown(resolveLFN(fileName, isOpt));
                 numParts = 0;
                 if (varFileInfo)
-                {
-                    Owned<IFilePartMap> map = varFileInfo->getFileMap();
-                    if (map)
-                        numParts = map->getNumParts();
-                }
+                    numParts = varFileInfo->getNumParts();
             }
             if (!numParts)
             {
@@ -20360,7 +20356,7 @@ public:
             {
                 remote->onStart(parentExtractSize, parentExtract);
                 remote->setLimits(rowLimit, (unsigned __int64) -1, stopAfter);
-                unsigned fileNo = 0;        // MORE - superfiles require us to do this per file part... maybe (needs thought)
+                unsigned fileNo = 0;
                 // Translation into a message per channel done elsewhere....
                 remote->getMem(0, fileNo, 0);
                 remote->flush();
@@ -21319,7 +21315,6 @@ public:
     bool sorted;
     bool maySkip;
     bool variableFileName;
-    Owned<IFilePartMap> map;
     Owned<IFileIOArray> files;
     Owned<IInMemoryIndexManager> manager;
     Owned<const IResolvedFile> datafile;
@@ -21342,9 +21337,7 @@ public:
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, true, _queryFactory.queryWorkUnit()));
-            if (datafile)
-                map.setown(datafile->getFileMap());
-            bool isSimple = (map && map->getNumParts()==1 && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false));
+            bool isSimple = (datafile && datafile->getNumParts()==1 && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false));
             if (isLocal || isSimple)
             {
                 if (datafile)
@@ -21369,7 +21362,7 @@ public:
 
     virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
     {
-        unsigned numParts = map ? map->getNumParts() : 0;
+        unsigned numParts = datafile ? datafile->getNumParts() : 0;
         switch (kind)
         {
         case TAKcsvread:
@@ -23491,7 +23484,6 @@ public:
     Owned<const IResolvedFile> datafile;
     Owned<IKeyArray> keySet;
     Owned<IFileIOArray> files;
-    Owned<IFilePartMap> map;
     TranslatorArray layoutTranslators;
 
     CRoxieServerDummyActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IPropertyTree &_graphNode, bool isLoadDataOnly)
@@ -23522,8 +23514,6 @@ public:
                     {
                         if (isLocal)
                             files.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
-                        else
-                            map.setown(datafile->getFileMap());
                     }
                 }
             }
