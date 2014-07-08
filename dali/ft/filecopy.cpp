@@ -2912,7 +2912,6 @@ void FileSprayer::updateTargetProperties()
             curProps.setPropInt(FAcrc, totalCRC.get());
         curProps.setPropInt64(FAsize, totalLength);
 
-        LOG(MCdebugInfoDetail, job, "totalCompressedSize %d", totalCompressedSize);
         if (totalCompressedSize != 0)
             curProps.setPropInt64(FAcompressedSize, totalCompressedSize);
 
