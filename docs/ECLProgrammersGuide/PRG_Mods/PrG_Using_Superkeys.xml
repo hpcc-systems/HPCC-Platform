@@ -19,10 +19,8 @@
   operation for a payload key is the half-keyed JOIN, that also becomes the
   primary SuperKey operational use.</para>
 
-  <para>Both SuperFiles and SuperKeys may be used in Thor operations. Roxie,
-  however, only supports SuperFiles containing a single sub-file, which makes
-  them useful for indirection but not for general purpose use. Therefore,
-  SuperKeys are most useful in Roxie operations.</para>
+  <para>Both SuperFiles and SuperKeys may be used in Thor or Roxie operations.
+  </para>
 
   <para>The following attribute definitions used by the code examples in this
   article are declared in the DeclareData MODULE structure attribute:</para>
