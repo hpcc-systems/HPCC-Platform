@@ -244,15 +244,15 @@ end() {
 # MAIN
 #
 ############################################
-if [ "${USER}" != "root" ]; then
+cluster_tools_init
+
+if [ "${USER}" != "root" ] && [ "${USER}" != "${user}" ]; then
    echo ""
-   echo "The script must run as root or sudo."
+   echo "The script must run as root, $user or sudo."
    echo ""
    exit 1
 fi
 
-
-set_environmentvars
 envfile=$configs/$environment
 configfile=${CONFIG_DIR}/${ENV_CONF_FILE}
 
