@@ -1545,6 +1545,7 @@ public:
 
     virtual bool IsShared() const { return CInterface::IsShared(); };
     PointerIArrayOf<IFileIO> files;
+    StringArray filenames;
     Int64Array bases;
     unsigned valid;
 
@@ -1567,12 +1568,23 @@ public:
         return LINK(file);
     }
 
-    void addFile(IFileIO *f, offset_t base)
+    virtual const char *queryLogicalFilename(unsigned partNo)
+    {
+        if (!filenames.isItem(partNo))
+        {
+            DBGLOG("queryLogicalFilename requested invalid part %d", partNo);
+            throw MakeStringException(ROXIE_FILE_ERROR, "queryLogicalFilename requested invalid part %d", partNo);
+        }
+        return filenames.item(partNo);
+    }
+
+    void addFile(IFileIO *f, offset_t base, const char *filename)
     {
         if (f)
             valid++;
         files.append(f);
         bases.append(base);
+        filenames.append(filename ? filename : "");  // Hack!
     }
 
     virtual unsigned length()
@@ -1618,7 +1630,6 @@ public:
             _getId();
         return ret.append(id);
     }
-
 };
 
 template <class X> class PerChannelCacheOf
@@ -1922,11 +1933,12 @@ public:
     IFileIOArray *createIFileIOArray(bool isOpt, unsigned channel) const
     {
         Owned<CFileIOArray> f = new CFileIOArray();
-        f->addFile(NULL, 0);
+        f->addFile(NULL, 0, NULL);
         ForEachItemIn(idx, subFiles)
         {
             IFileDescriptor *fdesc = subFiles.item(idx);
             IFileDescriptor *remoteFDesc = remoteSubFiles.item(idx);
+            const char *subname = subNames.item(idx);
             if (fdesc)
             {
                 unsigned numParts = fdesc->numParts();
@@ -1941,7 +1953,7 @@ public:
                             IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, i-1);
                             Owned<ILazyFileIO> file = createPhysicalFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL, channel);
                             IPropertyTree &partProps = pdesc->queryProperties();
-                            f->addFile(file.getClear(), partProps.getPropInt64("@offset"));
+                            f->addFile(file.getClear(), partProps.getPropInt64("@offset"), subname);
                         }
                         catch (IException *E)
                         {
@@ -1952,11 +1964,11 @@ public:
                             if (!isOpt)
                                 throw;
                             E->Release();
-                            f->addFile(NULL, 0);
+                            f->addFile(NULL, 0, NULL);
                         }
                     }
                     else
-                        f->addFile(NULL, 0);
+                        f->addFile(NULL, 0, NULL);
                 }
             }
         }

@@ -92,6 +92,7 @@ interface IFileIOArray : extends IInterface
     virtual bool isValid(unsigned partNo) = 0;
     virtual unsigned __int64 size() = 0;
     virtual StringBuffer &getId(StringBuffer &) const = 0;
+    virtual const char *queryLogicalFilename(unsigned partNo) = 0;
 };
 
 interface IRoxieQuerySetManagerSet : extends IInterface
