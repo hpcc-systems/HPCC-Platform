@@ -41,7 +41,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <releaseinfo>© 2013 HPCC Systems. All rights reserved. Except where
+    <releaseinfo>© 2014 HPCC Systems. All rights reserved. Except where
     otherwise noted, ECL Language Reference content licensed under Creative
     Commons public license.</releaseinfo>
 
@@ -599,7 +599,7 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-   <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-IFF.xml"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-IFF.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
