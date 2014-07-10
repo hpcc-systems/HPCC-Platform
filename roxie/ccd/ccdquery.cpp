@@ -264,6 +264,107 @@ protected:
 };
 
 //----------------------------------------------------------------------------------------------
+// Class CQueryOptions is used to store options affecting the execution of a query
+// These can be set globally, byt he query workunit, or by the query XML parameters
+//----------------------------------------------------------------------------------------------
+
+QueryOptions::QueryOptions()
+{
+    parallelJoinPreload = defaultParallelJoinPreload;;
+    fullKeyedJoinPreload = defaultFullKeyedJoinPreload;
+    keyedJoinPreload = defaultKeyedJoinPreload;
+    concatPreload = defaultConcatPreload;
+    fetchPreload = defaultFetchPreload;
+    prefetchProjectPreload = defaultPrefetchProjectPreload;
+
+    checkingHeap = defaultCheckingHeap;
+    traceActivityTimes = false;   // No global default for this?
+    timeActivities = defaultTimeActivities;
+}
+
+QueryOptions::QueryOptions(const QueryOptions &other)
+{
+    parallelJoinPreload = other.parallelJoinPreload;;
+    fullKeyedJoinPreload = other.fullKeyedJoinPreload;
+    keyedJoinPreload = other.keyedJoinPreload;
+    concatPreload = other.concatPreload;
+    fetchPreload = other.fetchPreload;
+    prefetchProjectPreload = other.prefetchProjectPreload;
+
+    checkingHeap = other.checkingHeap;
+    traceActivityTimes = other.traceActivityTimes;
+    timeActivities =other.timeActivities;
+}
+
+void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu)
+{
+    updateFromWorkUnit(parallelJoinPreload, wu, "parallelJoinPreload");
+    updateFromWorkUnit(fullKeyedJoinPreload, wu, "fullKeyedJoinPreload");
+    updateFromWorkUnit(keyedJoinPreload, wu, "keyedJoinPreload");
+    updateFromWorkUnit(concatPreload, wu, "concatPreload");
+    updateFromWorkUnit(fetchPreload, wu, "fetchPreload");
+    updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
+    updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
+    updateFromWorkUnit(traceActivityTimes, wu, "traceActivityTimes");
+    updateFromWorkUnit(timeActivities, wu, "timeActivities");
+}
+
+void QueryOptions::updateFromWorkUnit(int &value, IConstWorkUnit &wu, const char *name)
+{
+    value = wu.getDebugValueInt(name, value);
+}
+
+void QueryOptions::updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const char *name)
+{
+    value = wu.getDebugValueBool(name, value);
+}
+
+void QueryOptions::setFromContext(IPropertyTree *ctx)
+{
+    if (ctx)
+    {
+        updateFromContext(parallelJoinPreload, ctx, "@parallelJoinPreload", "_ParallelJoinPreload");
+        updateFromContext(fullKeyedJoinPreload, ctx, "@fullKeyedJoinPreload", "_FullKeyedJoinPreload");
+        updateFromContext(keyedJoinPreload, ctx, "@keyedJoinPreload", "_KeyedJoinPreload");
+        updateFromContext(concatPreload, ctx, "@concatPreload", "_ConcatPreload");
+        updateFromContext(fetchPreload, ctx, "@fetchPreload", "_FetchPreload");
+        updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
+        updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
+        updateFromContext(traceActivityTimes, ctx, "@timing", "_TraceActivityTimes");
+        updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
+    }
+}
+
+const char * QueryOptions::findProp(IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    if (name1 && ctx->hasProp(name1))
+        return name1;
+    else if (name2 && ctx->hasProp(name2))
+        return name2;
+    else
+        return NULL;
+}
+void QueryOptions::updateFromContext(int &value, IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    const char *name = findProp(ctx, name1, name2);
+    if (name)
+        value = ctx->getPropInt(name);
+}
+
+void QueryOptions::updateFromContext(bool &value, IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    const char *name = findProp(ctx, name1, name2);
+    if (name)
+        value = ctx->getPropBool(name);
+}
+
+void QueryOptions::setFromSlaveContextLogger(const SlaveContextLogger &logctx)
+{
+    checkingHeap = logctx.queryCheckingHeap();
+    traceActivityTimes = logctx.queryTraceActivityTimes();
+}
+
+//----------------------------------------------------------------------------------------------
 // Class CQueryFactory is the main implementation of IQueryFactory, combining a IQueryDll and a
 // package context into an object that can quickly create a the query context that executes a specific
 // instance of a Roxie query. 
@@ -282,6 +383,7 @@ protected:
     StringBuffer errorMessage;
     MapIdToActivityFactory allActivities;
 
+    QueryOptions options;
     bool dynamic;
     bool isSuspended;
     bool isLoadFailed;
@@ -995,6 +1097,7 @@ public:
                 priority = stateInfo->getPropInt("@priority", priority);
 
             memoryLimit = (memsize_t) wu->getDebugValueInt64("memoryLimit", defaultMemoryLimit);
+            options.setFromWorkUnit(*wu);
             timeLimit = (unsigned) wu->getDebugValueInt("timeLimit", defaultTimeLimit[priority]);
             warnTimeLimit = (unsigned) wu->getDebugValueInt("warnTimeLimit", 0);
             enableFieldTranslation = wu->getDebugValueBool("layoutTranslationEnabled", enableFieldTranslation);
@@ -1249,6 +1352,10 @@ public:
     virtual unsigned getTimeLimit() const
     {
         return timeLimit;
+    }
+    virtual const QueryOptions &queryOptions() const
+    {
+        return options;
     }
     virtual ILoadedDllEntry *queryDll() const 
     {

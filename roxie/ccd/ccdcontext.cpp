@@ -1032,16 +1032,7 @@ protected:
     unsigned timeLimit;
     unsigned totSlavesReplyLen;
 
-    unsigned ctxParallelJoinPreload;
-    unsigned ctxFullKeyedJoinPreload;
-    unsigned ctxKeyedJoinPreload;
-    unsigned ctxConcatPreload;
-    unsigned ctxFetchPreload;
-    unsigned ctxPrefetchProjectPreload;
-    bool traceActivityTimes;
-    bool checkingHeap;
-    bool timeActivities;
-
+    QueryOptions options;
     Owned<IConstWorkUnit> workUnit;
     Owned<IRoxieDaliHelper> daliHelperLink;
     Owned<IDistributedFileTransaction> superfileTransaction;
@@ -1107,8 +1098,8 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _traceActivityTimes, bool _debuggerActive, bool _checkingHeap, bool _timeActivities=defaultTimeActivities)
-        : factory(_factory), logctx(_logctx)
+    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _debuggerActive)
+        : factory(_factory), logctx(_logctx), options(factory->queryOptions())
     {
         if (_packet)
             header = &_packet->queryHeader();
@@ -1116,13 +1107,6 @@ public:
             header = NULL;
         timeLimit = _timeLimit;
         startTime = lastWuAbortCheck = msTick();
-        ctxParallelJoinPreload = 0;
-        ctxFullKeyedJoinPreload = 0;
-        ctxKeyedJoinPreload = 0;
-        ctxConcatPreload = 0;
-        ctxFetchPreload = 0;
-        ctxPrefetchProjectPreload = 0;
-        traceActivityTimes = _traceActivityTimes;
         persists = NULL;
         temporaries = NULL;
         deserializedResultStore = NULL;
@@ -1136,8 +1120,6 @@ public:
             debugContext.setown(slaveDebugContext);
             probeManager.setown(createDebugManager(debugContext, "slaveDebugger"));
         }
-        checkingHeap = _checkingHeap;
-        timeActivities = _timeActivities;
 
         aborted = false;
         exceptionLogged = false;
@@ -1256,7 +1238,7 @@ public:
 
     virtual void noteProcessed(const IRoxieContextLogger &activityContext, const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const
     {
-        if (traceActivityTimes)
+        if (options.traceActivityTimes)
         {
             StringBuffer text, prefix;
             text.appendf("%s outputIdx %d processed %d total %d us local %d us",
@@ -1279,19 +1261,9 @@ public:
         }
     }
 
-    virtual bool queryTraceActivityTimes() const
+    void setOptions(const SlaveContextLogger &ctx)
     {
-        return traceActivityTimes;
-    }
-
-    virtual bool queryCheckingHeap() const
-    {
-        return checkingHeap;
-    }
-
-    virtual bool queryTimeActivities() const
-    {
-        return timeActivities;
+        options.setFromSlaveContextLogger(ctx);
     }
 
     virtual void checkAbort()
@@ -1380,29 +1352,9 @@ public:
         return workUnit && workUnit->aborting();
     }
 
-    virtual unsigned parallelJoinPreload()
+    virtual const QueryOptions &queryOptions() const
     {
-        return ctxParallelJoinPreload;
-    }
-    virtual unsigned concatPreload()
-    {
-        return ctxConcatPreload;
-    }
-    virtual unsigned fetchPreload()
-    {
-        return ctxFetchPreload;
-    }
-    virtual unsigned fullKeyedJoinPreload()
-    {
-        return ctxFullKeyedJoinPreload;
-    }
-    virtual unsigned keyedJoinPreload()
-    {
-        return ctxKeyedJoinPreload;
-    }
-    virtual unsigned prefetchProjectPreload()
-    {
-        return ctxPrefetchProjectPreload;
+        return options;
     }
 
     const char *queryAuthToken()
@@ -1729,7 +1681,7 @@ public:
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
     virtual IEngineRowAllocator *createAllocator(IRowAllocatorMetaActIdCache * cache, IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
-        if (checkingHeap)
+        if (options.checkingHeap)
             return createCrcRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
         else
             return createRoxieRowAllocator(cache, *rowManager, meta, activityId, id, flags);
@@ -2416,7 +2368,9 @@ protected:
 
 IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *packet)
 {
-    return new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryTraceActivityTimes(), _logctx.queryDebuggerActive(), _logctx.queryCheckingHeap());
+    CSlaveContext *ret = new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryDebuggerActive());
+    ret->setOptions(_logctx);
+    return ret;
 }
 
 class CRoxieServerDebugContext : extends CBaseServerDebugContext
@@ -2637,15 +2591,6 @@ protected:
 
         lastSocketCheckTime = startTime;
         lastHeartBeat = startTime;
-        ctxParallelJoinPreload = defaultParallelJoinPreload;
-        ctxFullKeyedJoinPreload = defaultFullKeyedJoinPreload;
-        ctxKeyedJoinPreload = defaultKeyedJoinPreload;
-        ctxConcatPreload = defaultConcatPreload;
-        ctxFetchPreload = defaultFetchPreload;
-        ctxPrefetchProjectPreload = defaultPrefetchProjectPreload;
-
-        traceActivityTimes = false;
-        timeActivities = defaultTimeActivities;
     }
 
     void startWorkUnit()
@@ -2702,7 +2647,7 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CRoxieServerContext(const IQueryFactory *_factory, const ContextLogger &_logctx)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false), serverQueryFactory(_factory)
     {
         init();
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
@@ -2711,7 +2656,7 @@ public:
     }
 
     CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const ContextLogger &_logctx)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false), serverQueryFactory(_factory)
     {
         init();
         workUnit.set(_workUnit);
@@ -2726,10 +2671,11 @@ public:
     }
 
     CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false, false), serverQueryFactory(_factory), querySetName(_querySetName)
+        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false), serverQueryFactory(_factory), querySetName(_querySetName)
     {
         init();
         context.set(_context);
+        options.setFromContext(context);
         client = &_client;
         mlFmt = _mlFmt;
         isRaw = _isRaw;
@@ -2768,21 +2714,8 @@ public:
         authToken.append(httpHelper.queryAuthToken());
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
 
-        ctxParallelJoinPreload = context->getPropInt("_ParallelJoinPreload", defaultParallelJoinPreload);
-        ctxFullKeyedJoinPreload = context->getPropInt("_FullKeyedJoinPreload", defaultFullKeyedJoinPreload);
-        ctxKeyedJoinPreload = context->getPropInt("_KeyedJoinPreload", defaultKeyedJoinPreload);
-        ctxConcatPreload = context->getPropInt("_ConcatPreload", defaultConcatPreload);
-        ctxFetchPreload = context->getPropInt("_FetchPreload", defaultFetchPreload);
-        ctxPrefetchProjectPreload = context->getPropInt("_PrefetchProjectPreload", defaultPrefetchProjectPreload);
-
-        checkingHeap = context->getPropBool("_CheckingHeap", defaultCheckingHeap) || context->getPropBool("@checkingHeap", defaultCheckingHeap);
-
-        traceActivityTimes = context->getPropBool("_TraceActivityTimes", false) || context->getPropBool("@timing", false);
-
-        timeActivities = context->getPropBool("@timeActivities", defaultTimeActivities);
-
-        if (traceActivityTimes && !timeActivities)
-            timeActivities = true;
+        if (options.traceActivityTimes)
+            options.timeActivities = true;
     }
 
     virtual roxiemem::IRowManager &queryRowManager()

@@ -299,29 +299,9 @@ public:
     {
         return ctx->isBlind();
     }
-    virtual unsigned parallelJoinPreload() 
+    virtual const QueryOptions &queryOptions() const
     {
-        return ctx->parallelJoinPreload();
-    }
-    virtual unsigned concatPreload() 
-    {
-        return ctx->concatPreload();
-    }
-    virtual unsigned fetchPreload() 
-    {
-        return ctx->fetchPreload();
-    }
-    virtual unsigned fullKeyedJoinPreload() 
-    {
-        return ctx->fullKeyedJoinPreload();
-    }
-    virtual unsigned keyedJoinPreload() 
-    {
-        return ctx->keyedJoinPreload();
-    }
-    virtual unsigned prefetchProjectPreload() 
-    {
-        return ctx->prefetchProjectPreload();
+        return ctx->queryOptions();
     }
     virtual void addSlavesReplyLen(unsigned len) 
     {
@@ -358,18 +338,6 @@ public:
     virtual IDebuggableContext *queryDebugContext() const
     {
         return ctx->queryDebugContext();
-    }
-    virtual bool queryTraceActivityTimes() const
-    {
-        return ctx->queryTraceActivityTimes();
-    }
-    virtual bool queryCheckingHeap() const
-    {
-        return ctx->queryCheckingHeap();
-    }
-    virtual bool queryTimeActivities() const
-    {
-        return ctx->queryTimeActivities();
     }
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence)
     {
@@ -1138,7 +1106,7 @@ public:
         if (factory)
             factory->onCreateChildQueries(_ctx, &basehelper, childGraphs);
         if (ctx)
-            timeActivities = ctx->queryTimeActivities();
+            timeActivities = ctx->queryOptions().timeActivities;
     }
 
     virtual void serializeCreateStartContext(MemoryBuffer &out)
@@ -1288,7 +1256,7 @@ public:
                         CTXLOG("STATE: activity %d reset without stop", activityId);
                     stop(false);
                 }
-                if (ctx->queryTraceActivityTimes())
+                if (ctx->queryOptions().traceActivityTimes)
                 {
                     stats.dumpStats(*this);
                     StringBuffer prefix, text;
@@ -1803,7 +1771,7 @@ public:
         ctx = _ctx;
         disabled = (ctx->queryDebugContext() != NULL);
         if (ctx)
-            timeActivities = ctx->queryTimeActivities();
+            timeActivities = ctx->queryOptions().timeActivities;
     }
 
     virtual IRoxieServerActivity *queryActivity()
@@ -3471,13 +3439,14 @@ private:
                 logInfo.clear();
                 unsigned char loggingFlags = LOGGING_FLAGSPRESENT | LOGGING_TRACELEVELSET;
                 unsigned char ctxTraceLevel = activity.queryLogCtx().queryTraceLevel() + 1; // Avoid passing a 0
+                const QueryOptions &options = ctx->queryOptions();
                 if (activity.queryLogCtx().isIntercepted())
                     loggingFlags |= LOGGING_INTERCEPTED;
-                if (ctx->queryTraceActivityTimes())
+                if (options.traceActivityTimes)
                     loggingFlags |= LOGGING_TIMEACTIVITIES; 
                 if (activity.queryLogCtx().isBlind())
                     loggingFlags |= LOGGING_BLIND;
-                if (ctx->queryCheckingHeap())
+                if (options.checkingHeap)
                     loggingFlags |= LOGGING_CHECKINGHEAP;
                 if (ctx->queryWorkUnit())
                     loggingFlags |= LOGGING_WUID;
@@ -3746,7 +3715,7 @@ public:
         if (ctx->queryDebugContext() && ctx->queryDebugContext()->getExecuteSequentially())
             deferredStart = true;
         if (ctx)
-            timeActivities = ctx->queryTimeActivities();
+            timeActivities = ctx->queryOptions().timeActivities;
     }
 
     virtual unsigned queryId() const
@@ -12380,7 +12349,7 @@ public:
     void start(unsigned parentExtractSize, const byte *parentExtract, bool paused, IRoxieSlaveContext *ctx)
     {
         space.reinit(CONCAT_READAHEAD);
-        puller.start(parentExtractSize, parentExtract, paused, ctx->concatPreload(), false, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().concatPreload, false, ctx);
     }
 
     void stop(bool aborting)
@@ -13843,7 +13812,7 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         preload = helper.getLookahead();
         if (!preload)
-            preload = ctx->prefetchProjectPreload();
+            preload = ctx->queryOptions().prefetchProjectPreload;
         space.reinit(preload);
         ready.reinit();
         puller.start(parentExtractSize, parentExtract, paused, preload, !isThreaded, ctx);
@@ -23332,7 +23301,7 @@ public:
             if (varFileInfo)
                 map.setown(varFileInfo->getFileMap());
         }
-        puller.start(parentExtractSize, parentExtract, paused, ctx->fetchPreload(), false, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fetchPreload, false, ctx);
     }
 
     virtual void stop(bool aborting)
@@ -24023,7 +23992,7 @@ public:
                 keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); // MORE - isLocal?
             }
         }
-        puller.start(parentExtractSize, parentExtract, paused, ctx->fullKeyedJoinPreload(), false, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fullKeyedJoinPreload, false, ctx);
     }
 
     virtual void stop(bool aborting)
@@ -24687,7 +24656,7 @@ public:
             if (varFetchFileInfo)
                 map.setown(varFetchFileInfo->getFileMap());
         }
-        puller.start(parentExtractSize, parentExtract, paused, ctx->keyedJoinPreload(), false, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, false, ctx);
     }
 
     virtual void setInput(unsigned idx, IRoxieInput *in)
@@ -24825,7 +24794,7 @@ public:
                 keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
             }
         }
-        puller.start(parentExtractSize, parentExtract, paused, ctx->keyedJoinPreload(), isSimple, ctx);
+        puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, isSimple, ctx);
 
     }
 
@@ -26344,7 +26313,7 @@ public:
     virtual unsigned queryId() const { return activityId; };
     virtual const void *nextInGroup() 
     {
-        ActivityTimer t(totalCycles, ctx->queryTimeActivities(), ctx->queryDebugContext());
+        ActivityTimer t(totalCycles, ctx->queryOptions().timeActivities, ctx->queryDebugContext());
         ASSERT(state == STATEstarted);
         ASSERT(allRead || !eof);
         if (eof)
