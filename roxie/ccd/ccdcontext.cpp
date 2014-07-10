@@ -1023,13 +1023,11 @@ protected:
     Owned<IProbeManager> probeManager; // must be destroyed after childGraphs
     MapXToMyClass<unsigned, unsigned, IActivityGraph> childGraphs;
     Owned<IActivityGraph> graph;
-    unsigned priority;
     StringBuffer authToken;
     Owned<IPropertyTree> probeQuery;
     RoxiePacketHeader *header;
     unsigned lastWuAbortCheck;
     unsigned startTime;
-    unsigned timeLimit;
     unsigned totSlavesReplyLen;
 
     QueryOptions options;
@@ -1098,14 +1096,13 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _debuggerActive)
+    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _debuggerActive)
         : factory(_factory), logctx(_logctx), options(factory->queryOptions())
     {
         if (_packet)
             header = &_packet->queryHeader();
         else
             header = NULL;
-        timeLimit = _timeLimit;
         startTime = lastWuAbortCheck = msTick();
         persists = NULL;
         temporaries = NULL;
@@ -1123,7 +1120,6 @@ public:
 
         aborted = false;
         exceptionLogged = false;
-        priority = 0;
         totSlavesReplyLen = 0;
 
         allocatorMetaCache.setown(createRowAllocatorCache(this));
@@ -1287,9 +1283,9 @@ public:
 
         if (graph)
             graph->checkAbort();
-        if (timeLimit && (msTick() - startTime > timeLimit))
+        if (options.timeLimit && (msTick() - startTime > options.timeLimit))
         {
-            unsigned oldLimit = timeLimit;
+            unsigned oldLimit = options.timeLimit;
             //timeLimit = 0; // to prevent exceptions in cleanup - this means only one arm gets stopped!
             CriticalBlock b(abortLock);
             IException *E = MakeStringException(ROXIE_TIMEOUT, "Query %s exceeded time limit (%d ms) - terminated", factory->queryQueryName(), oldLimit);
@@ -1316,9 +1312,9 @@ public:
     virtual unsigned checkInterval() const
     {
         unsigned interval = MAX_ABORT_CHECK_INTERVAL;
-        if (timeLimit)
+        if (options.timeLimit)
         {
-            interval = timeLimit / 10;
+            interval = options.timeLimit / 10;
             if (interval < MIN_ABORT_CHECK_INTERVAL)
                 interval = MIN_ABORT_CHECK_INTERVAL;
             if (interval > MAX_ABORT_CHECK_INTERVAL)
@@ -2366,9 +2362,9 @@ protected:
     }
 };
 
-IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *packet)
+IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, memsize_t _memoryLimit, IRoxieQueryPacket *packet)
 {
-    CSlaveContext *ret = new CSlaveContext(_factory, _logctx, _timeLimit, _memoryLimit, packet, _logctx.queryDebuggerActive());
+    CSlaveContext *ret = new CSlaveContext(_factory, _logctx, _memoryLimit, packet, _logctx.queryDebuggerActive());
     ret->setOptions(_logctx);
     return ret;
 }
@@ -2520,7 +2516,6 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
     TextMarkupFormat mlFmt;
     bool isRaw;
     bool sendHeartBeats;
-    unsigned warnTimeLimit;
     unsigned lastSocketCheckTime;
     unsigned lastHeartBeat;
 
@@ -2580,14 +2575,7 @@ protected:
         isBlocked = false;
         isHttp = false;
         trim = false;
-        priority = 0;
         sendHeartBeats = false;
-        timeLimit = serverQueryFactory->getTimeLimit();
-        if (!timeLimit)
-            timeLimit = defaultTimeLimit[priority];
-        warnTimeLimit = serverQueryFactory->getWarnTimeLimit();
-        if (!warnTimeLimit)
-            warnTimeLimit = defaultWarnTimeLimit[priority];
 
         lastSocketCheckTime = startTime;
         lastHeartBeat = startTime;
@@ -2639,15 +2627,15 @@ protected:
             ownEP.getIpText(sb);
             wu->setDebugAgentListenerIP(sb); //tells debugger what IP to write commands to
         }
-        timeLimit = 0;
-        warnTimeLimit = 0;
+        options.timeLimit = 0;
+        options.warnTimeLimit = 0;
     }
 
 public:
     IMPLEMENT_IINTERFACE;
 
     CRoxieServerContext(const IQueryFactory *_factory, const ContextLogger &_logctx)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, 0, NULL, false), serverQueryFactory(_factory)
     {
         init();
         rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
@@ -2656,7 +2644,7 @@ public:
     }
 
     CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const ContextLogger &_logctx)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, 0, NULL, false), serverQueryFactory(_factory)
     {
         init();
         workUnit.set(_workUnit);
@@ -2670,8 +2658,8 @@ public:
         startWorkUnit();
     }
 
-    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
-        : CSlaveContext(_factory, _logctx, 0, 0, NULL, false), serverQueryFactory(_factory), querySetName(_querySetName)
+    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
+        : CSlaveContext(_factory, _logctx, 0, NULL, false), serverQueryFactory(_factory), querySetName(_querySetName)
     {
         init();
         context.set(_context);
@@ -2682,11 +2670,8 @@ public:
         isBlocked = _isBlocked;
         isHttp = httpHelper.isHttp();
         trim = _trim;
-        priority = _priority;
         xmlStoredDatasetReadFlags = _xmlReadFlags;
-        sendHeartBeats = enableHeartBeat && isRaw && isBlocked && priority==0;
-        timeLimit = context->getPropInt("_TimeLimit", timeLimit);
-        warnTimeLimit = context->getPropInt("_warnTimeLimit", warnTimeLimit);
+        sendHeartBeats = enableHeartBeat && isRaw && isBlocked && options.priority==0;
 
         const char *wuid = context->queryProp("@wuid");
         if (wuid)
@@ -2735,16 +2720,16 @@ public:
     {
         CSlaveContext::checkAbort();
         unsigned ticksNow = msTick();
-        if (warnTimeLimit)
+        if (options.warnTimeLimit)
         {
             unsigned elapsed = ticksNow - startTime;
-            if  (elapsed > warnTimeLimit)
+            if  (elapsed > options.warnTimeLimit)
             {
                 CriticalBlock b(abortLock);
-                if (elapsed > warnTimeLimit) // we don't want critsec on the first check (for efficiency) but check again inside the critsec
+                if (elapsed > options.warnTimeLimit) // we don't want critsec on the first check (for efficiency) but check again inside the critsec
                 {
                     logOperatorException(NULL, NULL, 0, "SLOW (%d ms): %s", elapsed, factory->queryQueryName());
-                    warnTimeLimit = elapsed + warnTimeLimit;
+                    options.warnTimeLimit = elapsed + options.warnTimeLimit;
                 }
             }
         }
@@ -3717,7 +3702,7 @@ public:
         return superfileTransaction.get();
     }
     virtual void flush(unsigned seqNo) { throwUnexpected(); }
-    virtual unsigned getPriority() const { return priority; }
+    virtual unsigned getPriority() const { return options.priority; }
     virtual IConstWorkUnit *queryWorkUnit() const { return workUnit; }
     virtual bool outputResultsToSocket() const { return client != NULL; }
 
@@ -3734,8 +3719,8 @@ private:
     StringAttr queryName;
 
 public:
-    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags, _querySetName)
+    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, true, _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }
@@ -3793,8 +3778,8 @@ private:
     StringAttr queryName;
 
 public:
-    CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
-        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags, _querySetName)
+    CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *_querySetName)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, true, _logctx, xmlReadFlags, _querySetName)
     {
         queryName.set(_context->queryName());
     }
@@ -3872,16 +3857,16 @@ public:
     }
 };
 
-IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const ContextLogger &_logctx, PTreeReaderOptions readFlags, const char *querySetName)
+IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions readFlags, const char *querySetName)
 {
     if (httpHelper.isHttp())
     {
         if (httpHelper.queryContentFormat()==MarkupFmt_JSON)
-            return new CJsonRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, readFlags, querySetName);
-        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, readFlags, querySetName);
+            return new CJsonRoxieServerContext(context, factory, client, httpHelper, _logctx, readFlags, querySetName);
+        return new CSoapRoxieServerContext(context, factory, client, httpHelper, _logctx, readFlags, querySetName);
     }
     else
-        return new CRoxieServerContext(context, factory, client, isXml ? MarkupFmt_XML : MarkupFmt_Unknown, isRaw, isBlocked, httpHelper, trim, priority, _logctx, readFlags, querySetName);
+        return new CRoxieServerContext(context, factory, client, isXml ? MarkupFmt_XML : MarkupFmt_Unknown, isRaw, isBlocked, httpHelper, trim, _logctx, readFlags, querySetName);
 }
 
 IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const ContextLogger &_logctx)

@@ -2164,7 +2164,7 @@ private:
                 Owned<IQueryFactory> f = getQuery(id, NULL, NULL, logctx);
                 if (f)
                 {
-                    unsigned warnLimit = f->getWarnTimeLimit();
+                    unsigned warnLimit = f->queryOptions().warnTimeLimit;
                     reply.appendf("<QueryTimeWarning val='%d'/>", warnLimit);
                 }
             }

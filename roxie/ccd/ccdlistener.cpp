@@ -1194,7 +1194,7 @@ public:
             }
             isBlind = isBlind || blindLogging;
             logctx.setBlind(isBlind);
-            priority = queryFactory->getPriority();
+            priority = queryFactory->queryOptions().priority;
             switch (priority)
             {
             case 0: loQueryStats.noteActive(); break;
@@ -1730,7 +1730,7 @@ readAnother:
                                 logctx.setTraceLevel(queryXml->getPropInt("@traceLevel", traceLevel));
                             }
 
-                            priority = queryFactory->getPriority();
+                            priority = queryFactory->queryOptions().priority;
                             switch (priority)
                             {
                             case 0: loQueryStats.noteActive(); break;

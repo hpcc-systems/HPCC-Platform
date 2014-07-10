@@ -270,7 +270,11 @@ protected:
 
 QueryOptions::QueryOptions()
 {
-    parallelJoinPreload = defaultParallelJoinPreload;;
+    priority = 0;
+    timeLimit = defaultTimeLimit[0];
+    warnTimeLimit = defaultWarnTimeLimit[0];
+
+    parallelJoinPreload = defaultParallelJoinPreload;
     fullKeyedJoinPreload = defaultFullKeyedJoinPreload;
     keyedJoinPreload = defaultKeyedJoinPreload;
     concatPreload = defaultConcatPreload;
@@ -278,12 +282,16 @@ QueryOptions::QueryOptions()
     prefetchProjectPreload = defaultPrefetchProjectPreload;
 
     checkingHeap = defaultCheckingHeap;
-    traceActivityTimes = false;   // No global default for this?
+    traceActivityTimes = false;   // No global default for this
     timeActivities = defaultTimeActivities;
 }
 
 QueryOptions::QueryOptions(const QueryOptions &other)
 {
+    priority = other.priority;
+    timeLimit = other.timeLimit;
+    warnTimeLimit = other.warnTimeLimit;
+
     parallelJoinPreload = other.parallelJoinPreload;;
     fullKeyedJoinPreload = other.fullKeyedJoinPreload;
     keyedJoinPreload = other.keyedJoinPreload;
@@ -296,8 +304,22 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     timeActivities =other.timeActivities;
 }
 
-void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu)
+void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
 {
+    // calculate priority before others since it affects the defaults of others
+    updateFromWorkUnit(priority, wu, "priority");
+    if (stateInfo)
+        updateFromContext(priority, stateInfo, "@priority");
+    timeLimit = defaultTimeLimit[priority];
+    warnTimeLimit = defaultWarnTimeLimit[priority];
+    updateFromWorkUnit(timeLimit, wu, "timeLimit");
+    updateFromWorkUnit(warnTimeLimit, wu, "warnTimeLimit");
+    if (stateInfo)
+    {
+        updateFromContext(timeLimit, stateInfo, "@timeLimit");
+        updateFromContext(warnTimeLimit, stateInfo, "@warnTimeLimit");
+    }
+
     updateFromWorkUnit(parallelJoinPreload, wu, "parallelJoinPreload");
     updateFromWorkUnit(fullKeyedJoinPreload, wu, "fullKeyedJoinPreload");
     updateFromWorkUnit(keyedJoinPreload, wu, "keyedJoinPreload");
@@ -314,15 +336,23 @@ void QueryOptions::updateFromWorkUnit(int &value, IConstWorkUnit &wu, const char
     value = wu.getDebugValueInt(name, value);
 }
 
+void QueryOptions::updateFromWorkUnit(unsigned &value, IConstWorkUnit &wu, const char *name)
+{
+    value = (unsigned) wu.getDebugValueInt(name, value);
+}
+
 void QueryOptions::updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const char *name)
 {
     value = wu.getDebugValueBool(name, value);
 }
 
-void QueryOptions::setFromContext(IPropertyTree *ctx)
+void QueryOptions::setFromContext(const IPropertyTree *ctx)
 {
     if (ctx)
     {
+        updateFromContext(priority, ctx, "@priority", "_Priority");
+        updateFromContext(timeLimit, ctx, "@timeLimit", "_TimeLimit");
+        updateFromContext(warnTimeLimit, ctx, "@warnTimeLimit", "_WarnTimeLimit");
         updateFromContext(parallelJoinPreload, ctx, "@parallelJoinPreload", "_ParallelJoinPreload");
         updateFromContext(fullKeyedJoinPreload, ctx, "@fullKeyedJoinPreload", "_FullKeyedJoinPreload");
         updateFromContext(keyedJoinPreload, ctx, "@keyedJoinPreload", "_KeyedJoinPreload");
@@ -335,7 +365,7 @@ void QueryOptions::setFromContext(IPropertyTree *ctx)
     }
 }
 
-const char * QueryOptions::findProp(IPropertyTree *ctx, const char *name1, const char *name2)
+const char * QueryOptions::findProp(const IPropertyTree *ctx, const char *name1, const char *name2)
 {
     if (name1 && ctx->hasProp(name1))
         return name1;
@@ -344,14 +374,22 @@ const char * QueryOptions::findProp(IPropertyTree *ctx, const char *name1, const
     else
         return NULL;
 }
-void QueryOptions::updateFromContext(int &value, IPropertyTree *ctx, const char *name1, const char *name2)
+
+void QueryOptions::updateFromContext(int &value, const IPropertyTree *ctx, const char *name1, const char *name2)
 {
     const char *name = findProp(ctx, name1, name2);
     if (name)
         value = ctx->getPropInt(name);
 }
 
-void QueryOptions::updateFromContext(bool &value, IPropertyTree *ctx, const char *name1, const char *name2)
+void QueryOptions::updateFromContext(unsigned &value, const IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    const char *name = findProp(ctx, name1, name2);
+    if (name)
+        value = (unsigned) ctx->getPropInt(name);
+}
+
+void QueryOptions::updateFromContext(bool &value, const IPropertyTree *ctx, const char *name1, const char *name2)
 {
     const char *name = findProp(ctx, name1, name2);
     if (name)
@@ -360,6 +398,7 @@ void QueryOptions::updateFromContext(bool &value, IPropertyTree *ctx, const char
 
 void QueryOptions::setFromSlaveContextLogger(const SlaveContextLogger &logctx)
 {
+    // MORE - priority/timelimit ?
     checkingHeap = logctx.queryCheckingHeap();
     traceActivityTimes = logctx.queryTraceActivityTimes();
 }
@@ -389,10 +428,7 @@ protected:
     bool isLoadFailed;
     bool enableFieldTranslation;
     ClusterType targetClusterType;
-    unsigned timeLimit;
-    unsigned warnTimeLimit;
     memsize_t memoryLimit;
-    unsigned priority;
     unsigned libraryInterfaceHash;
     hash64_t hashValue;
 
@@ -957,10 +993,7 @@ public:
         isSuspended = false;
         isLoadFailed = false;
         libraryInterfaceHash = 0;
-        priority = 0;
         memoryLimit = defaultMemoryLimit;
-        timeLimit = defaultTimeLimit[priority];
-        warnTimeLimit = 0;
         enableFieldTranslation = package.getEnableFieldTranslation();
     }
 
@@ -1091,15 +1124,8 @@ public:
         {
             libraryInterfaceHash = wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0);
 
-            // calculate priority before others since it affects the defaults of others
-            priority = wu->getDebugValueInt("@priority", 0);
-            if (stateInfo)
-                priority = stateInfo->getPropInt("@priority", priority);
-
+            options.setFromWorkUnit(*wu, stateInfo);
             memoryLimit = (memsize_t) wu->getDebugValueInt64("memoryLimit", defaultMemoryLimit);
-            options.setFromWorkUnit(*wu);
-            timeLimit = (unsigned) wu->getDebugValueInt("timeLimit", defaultTimeLimit[priority]);
-            warnTimeLimit = (unsigned) wu->getDebugValueInt("warnTimeLimit", 0);
             enableFieldTranslation = wu->getDebugValueBool("layoutTranslationEnabled", enableFieldTranslation);
             SCMStringBuffer bStr;
             targetClusterType = getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster);
@@ -1111,8 +1137,6 @@ public:
                 // info in querySets can override the defaults from workunit for some limits
                 isSuspended = stateInfo->getPropBool("@suspended", false);
                 memoryLimit = (memsize_t) stateInfo->getPropInt64("@memoryLimit", memoryLimit);
-                timeLimit = (unsigned) stateInfo->getPropInt("@timeLimit", timeLimit);
-                warnTimeLimit = (unsigned) stateInfo->getPropInt("@warnTimeLimit", warnTimeLimit);
             }
             if (targetClusterType == RoxieCluster)
             {
@@ -1349,10 +1373,6 @@ public:
     {
         return memoryLimit;
     }
-    virtual unsigned getTimeLimit() const
-    {
-        return timeLimit;
-    }
     virtual const QueryOptions &queryOptions() const
     {
         return options;
@@ -1392,14 +1412,6 @@ public:
         if (!result)
             result = getenv(name);
         return strdup(result ? result : defaultValue);
-    }
-    virtual unsigned getPriority() const
-    {
-        return priority;
-    }
-    virtual unsigned getWarnTimeLimit() const
-    {
-        return warnTimeLimit;
     }
     virtual int getDebugValueInt(const char * propname, int defVal) const
     {
@@ -1548,7 +1560,7 @@ public:
     virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName) const
     {
         checkSuspended();
-        return createRoxieServerContext(context, this, client, mlFmt==MarkupFmt_XML, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _xmlReadFlags, _querySetName);
+        return createRoxieServerContext(context, this, client, mlFmt==MarkupFmt_XML, isRaw, isBlocked, httpHelper, trim, _logctx, _xmlReadFlags, _querySetName);
     }
 
     virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const ContextLogger &_logctx) const
@@ -1815,7 +1827,7 @@ public:
 
     virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return ::createSlaveContext(this, logctx, timeLimit, memoryLimit, packet);
+        return ::createSlaveContext(this, logctx, memoryLimit, packet);
     }
 
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName)
