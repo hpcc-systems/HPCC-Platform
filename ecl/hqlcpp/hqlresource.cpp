@@ -5392,9 +5392,9 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
                 args.append(*LINK(recordCountAttr));
 
             OwnedHqlExpr ret;
-            if (ds->isDatarow())
+            if (expr->isDatarow())
                 ret.setown(createRow(readOp, args));
-            else if (ds->isDictionary())
+            else if (expr->isDictionary())
                 ret.setown(createDictionary(readOp, args));
             else
                 ret.setown(createDataset(readOp, args));
