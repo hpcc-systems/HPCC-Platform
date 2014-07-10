@@ -456,73 +456,64 @@ void CWsSMCEx::sortTargetClusters(IArrayOf<IEspTargetCluster>& clusters, const c
         clusters.sort(descending ? sortTargetClustersBySizeDescending : sortTargetClustersBySizeAscending);
 }
 
-void CWsSMCEx::setClusterQueueStatus(CWsSMCTargetCluster& targetCluster)
+void CWsSMCEx::getClusterQueueStatus(const CWsSMCTargetCluster& targetCluster, ClusterStatusType& queueStatusType, StringBuffer& queueStatusDetails)
 {
-    CWsSMCQueue& jobQueue = targetCluster.clusterQueue;
+    const CWsSMCQueue* jobQueue = &targetCluster.clusterQueue;
     if (targetCluster.clusterType != ThorLCRCluster)
-        jobQueue = targetCluster.agentQueue;
-    if (!jobQueue.queueName.length())
+        jobQueue = &targetCluster.agentQueue;
+    if (!jobQueue->queueName.length())
         return;
 
-    targetCluster.clusterStatusDetails.appendf("%s: ", jobQueue.queueName.str());
-
     bool queuePausedOrStopped = false;
-    unsigned countRunningJobs = jobQueue.countRunningJobs;
-    unsigned countQueuedJobs = jobQueue.countQueuedJobs;
-    if (targetCluster.clusterType == ThorLCRCluster)
+    //get queueStatusDetails
+    if (targetCluster.clusterStatusDetails.length())
+        queueStatusDetails.set(targetCluster.clusterStatusDetails.str());
+    if (jobQueue->queueState.length())
     {
-        countRunningJobs += targetCluster.agentQueue.countRunningJobs;
-        countQueuedJobs += targetCluster.agentQueue.countQueuedJobs;
-    }
+        const char* queueState = jobQueue->queueState.str();
+        queueStatusDetails.appendf("%s: queue %s; ", jobQueue->queueName.str(), queueState);
+        if (jobQueue->queueStateDetails.length())
+            queueStatusDetails.appendf(" %s;", jobQueue->queueStateDetails.str());
 
-    if (jobQueue.queueState.length())
-    {
-        const char* queueState = jobQueue.queueState.str();
-        const char* queueStateDetails = jobQueue.queueStateDetails.str();
-        if (queueStateDetails && *queueStateDetails)
-            targetCluster.clusterStatusDetails.appendf("queue %s; %s;", queueState, queueStateDetails);
-        else
-            targetCluster.clusterStatusDetails.appendf("queue %s; ", queueState);
         if (strieq(queueState,"stopped") || strieq(queueState,"paused"))
             queuePausedOrStopped = true;
     }
 
-    if (!jobQueue.foundQueueInStatusServer)
+    //get queueStatusType
+    if (!jobQueue->foundQueueInStatusServer)
     {
         if (queuePausedOrStopped)
-            jobQueue.statusType = QueuePausedOrStoppedNotFound;
+            queueStatusType = QueuePausedOrStoppedNotFound;
         else
-            jobQueue.statusType = QueueRunningNotFound;
+            queueStatusType = QueueRunningNotFound;
     }
+    else if (!queuePausedOrStopped)
+        queueStatusType = RunningNormal;
+    else if (jobQueue->countRunningJobs > 0)
+        queueStatusType = QueuePausedOrStoppedWithJobs;
     else
-    {
-        if (queuePausedOrStopped)
-        {
-            if (jobQueue.countRunningJobs > 0)
-                jobQueue.statusType = QueuePausedOrStoppedWithJobs;
-            else
-                jobQueue.statusType = QueuePausedOrStoppedWithNoJob;
-        }
-    }
+        queueStatusType = QueuePausedOrStoppedWithNoJob;
+
+    return;
 }
 
-void CWsSMCEx::setClusterStatus(IEspContext& context, CWsSMCTargetCluster& targetCluster, IEspTargetCluster* returnCluster)
+void CWsSMCEx::setClusterStatus(IEspContext& context, const CWsSMCTargetCluster& targetCluster, IEspTargetCluster* returnCluster)
 {
-    setClusterQueueStatus(targetCluster);
+    ClusterStatusType queueStatusType = RunningNormal;
+    StringBuffer queueStatusDetails;
+    getClusterQueueStatus(targetCluster, queueStatusType, queueStatusDetails);
 
-    int statusType = (targetCluster.clusterQueue.statusType > targetCluster.agentQueue.statusType) ? targetCluster.clusterQueue.statusType
-        : targetCluster.agentQueue.statusType;
-    returnCluster->setClusterStatus(statusType);
+    returnCluster->setClusterStatus(queueStatusType);
     //Set 'Warning' which may be displayed beside cluster name
-    if (statusType == QueueRunningNotFound)
+    if (queueStatusType == QueueRunningNotFound)
         returnCluster->setWarning("Cluster not attached");
-    else if (statusType == QueuePausedOrStoppedNotFound)
+    else if (queueStatusType == QueuePausedOrStoppedNotFound)
         returnCluster->setWarning("Queue paused or stopped - Cluster not attached");
-    else if (statusType != RunningNormal)
+    else if (queueStatusType != RunningNormal)
         returnCluster->setWarning("Queue paused or stopped");
     //Set 'StatusDetails' which may be displayed when a mouse is moved over cluster icon
-    if (targetCluster.clusterStatusDetails.length())
-        returnCluster->setStatusDetails(targetCluster.clusterStatusDetails.str());
+    if (queueStatusDetails.length())
+        returnCluster->setStatusDetails(queueStatusDetails.str());
 }
 
 void CWsSMCEx::getWUsNotOnTargetCluster(IEspContext &context, IPropertyTree* serverStatusRoot, IArrayOf<IEspServerJobQueue>& serverJobQueues,
@@ -1162,7 +1153,7 @@ void CWsSMCEx::setActivityResponse(IEspContext &context, ActivityInfo* activityI
     return;
 }
 
-void CWsSMCEx::setESPTargetClusters(IEspContext& context, CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetCluster>& respTargetClusters)
+void CWsSMCEx::setESPTargetClusters(IEspContext& context, const CIArrayOf<CWsSMCTargetCluster>& targetClusters, IArrayOf<IEspTargetCluster>& respTargetClusters)
 {
     ForEachItemIn(i, targetClusters)
     {
@@ -2133,7 +2124,7 @@ void CWsSMCEx::setServerQueueInfo(IEspContext &context, const char *serverType, 
     setActiveWUs(context, serverType, instance.str(), aws, statusServerInfo);
 }
 
-void CWsSMCEx::setESPTargetCluster(IEspContext &context, CWsSMCTargetCluster& targetCluster, IEspTargetCluster* espTargetCluster)
+void CWsSMCEx::setESPTargetCluster(IEspContext &context, const CWsSMCTargetCluster& targetCluster, IEspTargetCluster* espTargetCluster)
 {
     espTargetCluster->setClusterName(targetCluster.clusterName.get());
     espTargetCluster->setClusterSize(targetCluster.clusterSize);
