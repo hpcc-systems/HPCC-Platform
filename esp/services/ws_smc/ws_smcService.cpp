@@ -2124,7 +2124,7 @@ void CWsSMCEx::setServerQueueInfo(IEspContext &context, const char *serverType, 
     setActiveWUs(context, serverType, instance.str(), aws, statusServerInfo);
 }
 
-void CWsSMCEx::setESPTargetCluster(IEspContext &context, CWsSMCTargetCluster& targetCluster, IEspTargetCluster* espTargetCluster)
+void CWsSMCEx::setESPTargetCluster(IEspContext &context, const CWsSMCTargetCluster& targetCluster, IEspTargetCluster* espTargetCluster)
 {
     espTargetCluster->setClusterName(targetCluster.clusterName.get());
     espTargetCluster->setClusterSize(targetCluster.clusterSize);
