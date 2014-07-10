@@ -10140,11 +10140,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputIndex(BuildCtx & ctx, IH
     //virtual const char * getFileName() { return "x.d00"; }
     buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(expr));
 
-    //virtual const char * getDatasetName() { return "x.d00"; }
-    IHqlExpression * tableName = expr->queryAttribute(nameAtom);
-    if (tableName)
-        doBuildVarStringFunction(instance->startctx, "getDatasetName", tableName->queryChild(0));
-
     //virtual unsigned getFlags() = 0;
     IHqlExpression * updateAttr = expr->queryAttribute(updateAtom);
     IHqlExpression * compressAttr = expr->queryAttribute(compressedAtom);

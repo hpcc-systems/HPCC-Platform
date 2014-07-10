@@ -2815,6 +2815,7 @@ buildFlag
                         }
     | DATASET '(' dataSet ')'
                         {
+                            parser->reportWarning(CategoryDeprecated, ERR_DEPRECATED, $1.pos, "DATASET attribute on index is deprecated, and has no effect");
                             OwnedHqlExpr ds = $3.getExpr();
                             if (ds->getOperator() != no_table)
                                 parser->reportError(ERR_EXPECTED_DATASET, $3, "Expected parameter to be a DATASET definition");
