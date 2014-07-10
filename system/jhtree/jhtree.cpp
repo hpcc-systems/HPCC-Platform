@@ -3050,7 +3050,7 @@ class IKeyManagerTest : public CppUnit::TestFixture
         Owned<IFileIOStream> out = createIOStream(io);
         unsigned maxRecSize = (variable && blobby) ? 18 : 10;
         unsigned keyedSize = (shortForm || (variable && blobby)) ? 10 : (unsigned) -1;
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, 0, NODESIZE, keyedSize, 0);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, COL_PREFIX | HTREE_FULLSORT_KEY | HTREE_COMPRESSED_KEY |  (variable ? HTREE_VARSIZE : 0), maxRecSize, NODESIZE, keyedSize, 0);
 
         char keybuf[18];
         memset(keybuf, '0', 18);
