@@ -21403,7 +21403,7 @@ protected:
         if (varFileInfo)
         {
             translators.setown(new TranslatorArray) ;
-            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
         }
         variableInfoPending = false;
     }
@@ -22039,7 +22039,7 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
         OwnedRoxieString indexName(indexHelper.getFileName());
         varFileInfo.setown(resolveLFN(indexName, isOpt));
         translators.setown(new TranslatorArray) ;
-        keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+        keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
         initKeySet();
         variableInfoPending = false;
     }
@@ -22425,7 +22425,7 @@ public:
         MemoryBuffer m;
         m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
         activityMeta.setown(deserializeRecordMeta(m, true));
-        enableFieldTranslation = queryFactory.getEnableFieldTranslation();
+        enableFieldTranslation = queryFactory.queryOptions().enableFieldTranslation;
         translatorArray.setown(new TranslatorArray);
         variableFileName = allFilesDynamic || _queryFactory.isDynamic() || ((flags & (TIRvarfilename|TIRdynamicfilename)) != 0);
         if (!variableFileName)
@@ -23989,7 +23989,7 @@ public:
             if (varFileInfo)
             {
                 translators.setown(new TranslatorArray);
-                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); // MORE - isLocal?
+                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation)); // MORE - isLocal?
             }
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().fullKeyedJoinPreload, false, ctx);
@@ -24791,7 +24791,7 @@ public:
             if (varFileInfo)
             {
                 translators.setown(new TranslatorArray);
-                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().queryOptions().enableFieldTranslation));
             }
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->queryOptions().keyedJoinPreload, isSimple, ctx);
@@ -25003,7 +25003,7 @@ public:
         MemoryBuffer m;
         m.setBuffer(indexLayoutSize, indexLayoutMeta.getdata());
         activityMeta.setown(deserializeRecordMeta(m, true));
-        enableFieldTranslation = queryFactory.getEnableFieldTranslation();
+        enableFieldTranslation = queryFactory.queryOptions().enableFieldTranslation;
         translatorArray.setown(new TranslatorArray);
         joinFlags = helper->getJoinFlags();
         variableIndexFileName = allFilesDynamic || _queryFactory.isDynamic() || ((joinFlags & (JFvarindexfilename|JFdynamicindexfilename)) != 0);

@@ -300,8 +300,9 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     prefetchProjectPreload = other.prefetchProjectPreload;
 
     checkingHeap = other.checkingHeap;
-    traceActivityTimes = other.traceActivityTimes;
+    enableFieldTranslation = other.enableFieldTranslation;
     timeActivities =other.timeActivities;
+    traceActivityTimes = other.traceActivityTimes;
 }
 
 void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stateInfo)
@@ -326,9 +327,11 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(concatPreload, wu, "concatPreload");
     updateFromWorkUnit(fetchPreload, wu, "fetchPreload");
     updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
+
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
-    updateFromWorkUnit(traceActivityTimes, wu, "traceActivityTimes");
+    updateFromWorkUnit(enableFieldTranslation, wu, "layoutTranslationEnabled");  // Name is different for compatibility reasons
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
+    updateFromWorkUnit(traceActivityTimes, wu, "traceActivityTimes");
 }
 
 void QueryOptions::updateFromWorkUnit(int &value, IConstWorkUnit &wu, const char *name)
@@ -359,9 +362,11 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(concatPreload, ctx, "@concatPreload", "_ConcatPreload");
         updateFromContext(fetchPreload, ctx, "@fetchPreload", "_FetchPreload");
         updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
+
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
-        updateFromContext(traceActivityTimes, ctx, "@timing", "_TraceActivityTimes");
+        // Note: enableFieldTranslation is not permitted at context level (generally too late anyway)
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
+        updateFromContext(traceActivityTimes, ctx, "@timing", "_TraceActivityTimes");
     }
 }
 
@@ -426,7 +431,6 @@ protected:
     bool dynamic;
     bool isSuspended;
     bool isLoadFailed;
-    bool enableFieldTranslation;
     ClusterType targetClusterType;
     memsize_t memoryLimit;
     unsigned libraryInterfaceHash;
@@ -994,7 +998,7 @@ public:
         isLoadFailed = false;
         libraryInterfaceHash = 0;
         memoryLimit = defaultMemoryLimit;
-        enableFieldTranslation = package.getEnableFieldTranslation();
+        options.enableFieldTranslation = package.getEnableFieldTranslation();  // NOTE - can be overridden by wu settings
     }
 
     ~CQueryFactory()
@@ -1126,7 +1130,6 @@ public:
 
             options.setFromWorkUnit(*wu, stateInfo);
             memoryLimit = (memsize_t) wu->getDebugValueInt64("memoryLimit", defaultMemoryLimit);
-            enableFieldTranslation = wu->getDebugValueBool("layoutTranslationEnabled", enableFieldTranslation);
             SCMStringBuffer bStr;
             targetClusterType = getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster);
 
@@ -1422,10 +1425,6 @@ public:
     {
         assertex(dll && dll->queryWorkUnit());
         return dll->queryWorkUnit()->getDebugValueBool(propname, defVal);
-    }
-    bool getEnableFieldTranslation() const
-    {
-        return enableFieldTranslation;
     }
 
     virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const

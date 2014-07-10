@@ -106,8 +106,9 @@ public:
     int prefetchProjectPreload;
 
     bool checkingHeap;
-    bool traceActivityTimes;
+    bool enableFieldTranslation;
     bool timeActivities;
+    bool traceActivityTimes;
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);
@@ -140,7 +141,6 @@ interface IQueryFactory : extends IInterface
     virtual unsigned getQueryLibraryInterfaceHash() const = 0;
     virtual unsigned queryChannel() const = 0;
     virtual ILoadedDllEntry *queryDll() const = 0;
-    virtual bool getEnableFieldTranslation() const = 0;
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual ISharedOnceContext *querySharedOnceContext() const = 0;
     virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
