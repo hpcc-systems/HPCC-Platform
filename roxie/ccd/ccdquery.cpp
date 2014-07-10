@@ -284,7 +284,10 @@ QueryOptions::QueryOptions()
     prefetchProjectPreload = defaultPrefetchProjectPreload;
 
     checkingHeap = defaultCheckingHeap;
+    disableLocalOptimizations = false;  // No global default for this
     enableFieldTranslation = fieldTranslationEnabled;
+    skipFileFormatCrcCheck = false;
+    stripWhitespaceFromStoredDataset = ((ptr_ignoreWhiteSpace & defaultXmlReadFlags) != 0);
     traceActivityTimes = false;   // No global default for this
     timeActivities = defaultTimeActivities;
 }
@@ -305,7 +308,10 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     prefetchProjectPreload = other.prefetchProjectPreload;
 
     checkingHeap = other.checkingHeap;
+    disableLocalOptimizations = other.disableLocalOptimizations;
     enableFieldTranslation = other.enableFieldTranslation;
+    skipFileFormatCrcCheck = other.skipFileFormatCrcCheck;
+    stripWhitespaceFromStoredDataset = other.stripWhitespaceFromStoredDataset;
     timeActivities =other.timeActivities;
     traceActivityTimes = other.traceActivityTimes;
 }
@@ -336,7 +342,10 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(prefetchProjectPreload, wu, "prefetchProjectPreload");
 
     updateFromWorkUnit(checkingHeap, wu, "checkingHeap");
+    updateFromWorkUnit(disableLocalOptimizations, wu, "disableLocalOptimizations");
     updateFromWorkUnit(enableFieldTranslation, wu, "layoutTranslationEnabled");  // Name is different for compatibility reasons
+    updateFromWorkUnit(skipFileFormatCrcCheck, wu, "skipFileFormatCrcCheck");
+    updateFromWorkUnit(stripWhitespaceFromStoredDataset, wu, "stripWhitespaceFromStoredDataset");
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
     updateFromWorkUnit(traceActivityTimes, wu, "traceActivityTimes");
 }
@@ -377,7 +386,10 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(prefetchProjectPreload, ctx, "@prefetchProjectPreload", "_PrefetchProjectPreload");
 
         updateFromContext(checkingHeap, ctx, "@checkingHeap", "_CheckingHeap");
+        // Note: disableLocalOptimizations is not permitted at context level (too late)
         // Note: enableFieldTranslation is not permitted at context level (generally too late anyway)
+        updateFromContext(skipFileFormatCrcCheck, ctx, "_SkipFileFormatCrcCheck", "@skipFileFormatCrcCheck");
+        updateFromContext(stripWhitespaceFromStoredDataset, ctx, "_StripWhitespaceFromStoredDataset", "@stripWhitespaceFromStoredDataset");
         updateFromContext(timeActivities, ctx, "@timeActivities", "_TimeActivities");
         updateFromContext(traceActivityTimes, ctx, "@timing", "_TraceActivityTimes");
     }
@@ -1427,16 +1439,6 @@ public:
         if (!result)
             result = getenv(name);
         return strdup(result ? result : defaultValue);
-    }
-    virtual int getDebugValueInt(const char * propname, int defVal) const
-    {
-        assertex(dll && dll->queryWorkUnit());
-        return dll->queryWorkUnit()->getDebugValueInt(propname, defVal);
-    }
-    virtual bool getDebugValueBool(const char * propname, bool defVal) const
-    {
-        assertex(dll && dll->queryWorkUnit());
-        return dll->queryWorkUnit()->getDebugValueBool(propname, defVal);
     }
 
     virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const

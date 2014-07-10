@@ -109,7 +109,10 @@ public:
     int prefetchProjectPreload;
 
     bool checkingHeap;
+    bool disableLocalOptimizations;
     bool enableFieldTranslation;
+    bool skipFileFormatCrcCheck;
+    bool stripWhitespaceFromStoredDataset;
     bool timeActivities;
     bool traceActivityTimes;
 
@@ -156,8 +159,6 @@ interface IQueryFactory : extends IInterface
     virtual IPropertyTree *cloneQueryXGMML() const = 0;
     virtual CRoxieWorkflowMachine *createWorkflowMachine(IConstWorkUnit *wu, bool isOnce, const ContextLogger &logctx) const = 0;
     virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
-    virtual int getDebugValueInt(const char * propname, int defVal) const = 0;
-    virtual bool getDebugValueBool(const char * propname, bool defVal) const = 0;
 
     virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, TextMarkupFormat mlFmt, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &_logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName) const = 0;
     virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const ContextLogger &_logctx) const = 0;
