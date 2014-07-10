@@ -1025,17 +1025,6 @@ void CHThorIndexWriteActivity::execute()
 
     // Loop thru the results
     unsigned __int64 reccount = 0;
-    unsigned __int64 fileSize = 0;
-    OwnedRoxieString dsName(helper.getDatasetName());
-    if (dsName.get())
-    {
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(dsName,"IndexWrite::execute",false,false,true);
-        if (ldFile )
-        {
-            IDistributedFile * dFile = ldFile->queryDistributedFile();
-            fileSize = dFile ? dFile->queryAttributes().getPropInt64("@size", 0) : ldFile->getPartFileSize(0);//MORE: is local part correct?
-        }
-    }
     unsigned int fileCrc = -1;
     file.setown(createIFile(filename.get()));
     {
@@ -1065,7 +1054,7 @@ void CHThorIndexWriteActivity::execute()
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
         size32_t keyMaxSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, fileSize, nodeSize, helper.getKeyedSize(), 0);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, nodeSize, helper.getKeyedSize(), 0);
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;

@@ -29,7 +29,6 @@
 class IndexWriteActivityMaster : public CMasterActivity
 {
     rowcount_t recordsProcessed;
-    offset_t fileSize;
     Owned<IFileDescriptor> fileDesc;
     bool buildTlk, isLocal, singlePartKey;
     StringArray clusters;
@@ -155,26 +154,6 @@ public:
                 props.setProp("@modified", existingTlk->queryAttributes().queryProp("@modified"));
         }
         
-        StringBuffer datasetName;
-        fileSize = 0;
-        OwnedRoxieString dname(helper->getDatasetName());
-        if (dname)
-        {
-            if (dname[0] == '~')
-                datasetName.append(dname+1);
-            else
-            {               
-                datasetName.append(container.queryJob().queryScope());
-                if (datasetName.length())
-                    datasetName.append("::");
-                datasetName.append(dname);
-            }
-
-            Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(datasetName.str(), container.queryJob().queryUserDescriptor());
-            if (df)
-                fileSize = df->queryAttributes().getPropInt64("@size", 0);
-        }
-
         // Fill in some logical file properties here
         IPropertyTree &props = fileDesc->queryProperties();
 #if 0   // not sure correct record size to put in yet
@@ -211,7 +190,6 @@ public:
         else
             dst.append(false);
 
-        dst.append(fileSize);
         dst.append(singlePartKey);
         dst.append(refactor);
         if (!singlePartKey)

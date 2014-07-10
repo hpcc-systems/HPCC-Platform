@@ -11404,18 +11404,7 @@ public:
 
         OwnedMalloc<char> rowBuffer(maxDiskRecordSize, true);
 
-        unsigned __int64 fileSize = 0;
         fileCrc = -1;
-        OwnedRoxieString dsName(helper.getDatasetName());
-        if (dsName.get())
-        {
-            Owned<const IResolvedFile> dsFileInfo = resolveLFN(dsName, true);
-            if (dsFileInfo)
-            {
-                fileSize = dsFileInfo->getFileSize();
-            }
-        }
-
         {
             Owned<IFileIO> io;
             try
@@ -11443,7 +11432,7 @@ public:
             buildUserMetadata(metadata);
             buildLayoutMetadata(metadata);
             unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, fileSize, nodeSize, helper.getKeyedSize(), 0);
+            Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, maxDiskRecordSize, nodeSize, helper.getKeyedSize(), 0);
             class BcWrapper : implements IBlobCreator
             {
                 IKeyBuilder *builder;

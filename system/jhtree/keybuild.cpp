@@ -83,7 +83,6 @@ protected:
     CWriteNode *prevLeafNode;
     NodeInfoArray leafInfo;
     Linked<IFileIOStream> out;
-    offset_t fileSize;
     unsigned keyedSize;
     unsigned __int64 sequence;
     CRC32StartHT crcStartPosTable;
@@ -93,15 +92,13 @@ protected:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyBuilderBase(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t _fileSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence) : out(_out)
+    CKeyBuilderBase(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned _keyedSize, unsigned __int64 _startSequence) : out(_out)
     {
         doCrc = false;
         sequence = _startSequence;
         keyHdr.setown(new CKeyHdr());
         keyValueSize = rawSize;
         keyedSize = _keyedSize != (unsigned) -1 ? _keyedSize : rawSize;
-
-        fileSize = _fileSize;
 
         levels = 0;
         records = 0;
@@ -129,7 +126,7 @@ public:
         hdr->defrel = 8;
         hdr->hdrseq = 0;
         hdr->fposOffset = 0;
-        hdr->fileSize = fileSize;
+        hdr->fileSize = 0;
         hdr->nodeKeyLength = _keyedSize;
         hdr->version = KEYBUILD_VERSION;
         hdr->blobHead = 0;
@@ -344,8 +341,8 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t fileSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence) 
-        : CKeyBuilderBase(_out, flags, rawSize, fileSize, nodeSize, keyedSize, startSequence)
+    CKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyedSize, unsigned __int64 startSequence)
+        : CKeyBuilderBase(_out, flags, rawSize, nodeSize, keyedSize, startSequence)
     {
         doCrc = true;
         activeNode = NULL;
@@ -489,9 +486,9 @@ protected:
     }
 };
 
-extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, offset_t fileSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence)
+extern jhtree_decl IKeyBuilder *createKeyBuilder(IFileIOStream *_out, unsigned flags, unsigned rawSize, unsigned nodeSize, unsigned keyFieldSize, unsigned __int64 startSequence)
 {
-    return new CKeyBuilder(_out, flags, rawSize, fileSize, nodeSize, keyFieldSize, startSequence);
+    return new CKeyBuilder(_out, flags, rawSize, nodeSize, keyFieldSize, startSequence);
 }
 
 
