@@ -10,10 +10,10 @@
   <sect2 id="User_Security_Intro">
     <title>Introduction</title>
 
-    <para>HPCC systems maintain security in a number of ways. HPCC Systems can
-    be configured to manage users' security rights by pointing either at
-    Microsoft’s Active Directory on a Windows system, or OpenLDAP on Linux
-    systems.</para>
+    <para>HPCC systems maintains security in a number of ways. HPCC Systems
+    can be configured to manage users' security rights by pointing either at
+    Microsoft’s Active Directory on a Windows system, or an OpenLDAP based
+    software on Linux systems.</para>
 
     <para>Using the Permissions interface in ECL Watch, administrators can
     control access to features in ECL IDE, ECL Watch, ECL Plus, DFU Plus, and
@@ -150,7 +150,7 @@
       <listitem>
         <para><emphasis role="bold">Groups</emphasis>. Shows all the groups
         currently setup. Use this area to add or delete a group, view and edit
-        the member of a group, view and edit the permissions that have been
+        the members of a group, view and edit the permissions that have been
         set for a group.</para>
       </listitem>
 
@@ -178,8 +178,8 @@
 
               <entry><para><emphasis role="bold">NOTE:</emphasis> Use caution
               when setting any explicit <emphasis role="bold">deny</emphasis>
-              permission setting. In general, the most restrictive permission
-              is applied. </para></entry>
+              permission setting. The most restrictive permission is applied.
+              </para></entry>
             </row>
           </tbody>
         </tgroup>
@@ -247,7 +247,7 @@
             <para>Press the <emphasis role="bold">Add</emphasis>
             button.</para>
 
-            <para>The add user dialog is displays.</para>
+            <para>The add user dialog displays.</para>
           </listitem>
 
           <listitem>
@@ -289,7 +289,7 @@
       </sect4>
 
       <sect4>
-        <title>To modifiy a user's details:</title>
+        <title>To modify a user's details:</title>
 
         <para>Click on the<emphasis role="bold"> Operations</emphasis> icon,
         then click the <emphasis role="bold">Security</emphasis> link from the
@@ -541,9 +541,9 @@
       individual users. For example, users may have individual security needs
       that are not completely covered in any group or, there may be occasions
       when a user requires temporary access to an HPCC feature. Permissions
-      set in this area of ECL Watch only affect the user you choose and any
-      permissions you set here overwrite those set in any group to which the
-      user belongs.</para>
+      set in this area of ECL Watch only affect the user you choose. Most
+      individual permissions you set here overwrite ones set in any group to
+      which the user belongs, except in the case of an explicit deny. </para>
 
       <sect4>
         <title>To set new permissions for an individual user:</title>
@@ -617,9 +617,8 @@
 
                       <entry><para><emphasis role="bold">NOTE:</emphasis> Use
                       caution when setting any explicit <emphasis
-                      role="bold">deny</emphasis> permission setting. In
-                      general, the most restrictive permission is applied.
-                      </para></entry>
+                      role="bold">deny</emphasis> permission setting. The most
+                      restrictive permission is applied. </para></entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -689,8 +688,8 @@
 
                       <entry><para><emphasis role="bold">NOTE:</emphasis> Use
                       caution when setting any explicit <emphasis
-                      role="bold">deny</emphasis> permission setting. In
-                      general, the most restrictive permission is applied.
+                      role="bold">deny</emphasis> permission setting. The most
+                      restrictive permission is always applied.
                       </para></entry>
                     </row>
                   </tbody>
@@ -710,27 +709,27 @@
 
       <para>Setting up groups ensures that all users with the same permission
       needs have the same permission settings. You can give users the access
-      they require to the feature areas of HPCC they need. There is no limit
-      to the number of groups you can create. You can create as many groups as
-      you need to control access for all your users regardless of their
-      tasks.</para>
+      they require to the feature areas of HPCC that they need. There is no
+      limit to the number of groups you can create. You can create as many
+      groups as you need to control access for all your users regardless of
+      their tasks.</para>
 
       <para>Use the <emphasis role="bold">Groups</emphasis> menu item
       to:<itemizedlist>
           <listitem>
-            <para>Add a new group</para>
+            <para>Add a new group.</para>
           </listitem>
 
           <listitem>
-            <para>Delete a group</para>
+            <para>Delete a group.</para>
           </listitem>
 
           <listitem>
-            <para>Add members to a groups</para>
+            <para>Add members to a group.</para>
           </listitem>
 
           <listitem>
-            <para>Modify the permissions for a group</para>
+            <para>Modify the permissions for a group.</para>
           </listitem>
         </itemizedlist></para>
 
@@ -743,15 +742,11 @@
         appropriate for the members of that group. If you need to make a
         change for a single user (or small number of users), it is probably
         better to make that change for each individual user as illustrated in
-        the previous sections. Since individual permission settings take
-        precedence over the group settings, you can safely change the
-        individual settings for a user without affecting the rest of the
-        group(s) to which they belong. <graphic
-        fileref="../../images/Perm001a.jpg" vendor="eclwatchSS" />To modify
-        groups, click on the<emphasis role="bold"> Operations</emphasis> icon,
-        then click the <emphasis role="bold">Security</emphasis> link from the
-        navigation sub-menu. Click on the <emphasis
-        role="bold">Groups</emphasis> tab.</para>
+        the previous sections. <graphic fileref="../../images/Perm001a.jpg"
+        vendor="eclwatchSS" />To modify groups, click on the<emphasis
+        role="bold"> Operations</emphasis> icon, then click the <emphasis
+        role="bold">Security</emphasis> link from the navigation sub-menu.
+        Click on the <emphasis role="bold">Groups</emphasis> tab.</para>
       </sect4>
 
       <sect4>
@@ -931,20 +926,27 @@
 
       <para>By default, all users are members of the <emphasis
       role="bold">Authenticated Users </emphasis>group. The <emphasis
-      role="bold">Authenticated users</emphasis> group has access rights to
-      almost all controls.</para>
+      role="bold">Authenticated Users</emphasis> group has access rights to
+      almost all controls. To set up more restricted controls, you should
+      create specific groups with more restricted permissions. </para>
 
-      <para>If you intend to restrict permissions for some users, you must
-      remove <emphasis role="bold">Authenticated Users</emphasis> from the
-      sections you wish to limit. You can then create groups with only those
-      access rights you wish to grant. This approach allows the most
-      flexibility since a single User ID can have multiple group
-      memberships.</para>
+      <para>You can then create groups with only those access rights you wish
+      to grant. This approach allows the most flexibility since a single User
+      ID can have multiple group memberships. </para>
 
       <para>As a best practice, you should use <emphasis
       role="bold">Allow</emphasis> instead of <emphasis
       role="bold">Deny</emphasis> to control access. Denies should be used
-      only as an exception.</para>
+      only as an exception, when possible. If you wish to deny a user access
+      to some specific control, a good practice would be to create a group for
+      that, place the user(s) in that group, then you can deny access for that
+      group. </para>
+
+      <para>Remember the most restrictive control takes precedence. For
+      example, if a user is in a group that has deny permission to file
+      access, and the user is in another group where file access is allowed,
+      that user will still not have file access. That is an example of the
+      most restrictive setting taking effect. </para>
 
       <sect4>
         <title>To set new permissions for a group:</title>
@@ -1017,8 +1019,8 @@
 
                       <entry><para><emphasis role="bold">NOTE:</emphasis> Use
                       caution when setting any explicit <emphasis
-                      role="bold">deny</emphasis> permission setting. In
-                      general, the most restrictive permission is applied.
+                      role="bold">deny</emphasis> permission setting. The most
+                      restrictive permission is always applied.
                       </para></entry>
                     </row>
                   </tbody>
@@ -1847,7 +1849,8 @@
 
       <para>To be able to view the <emphasis
       role="bold">Users/Permissions</emphasis> area in ECL Watch, a user must
-      be setup in LDAP as an Administrator.</para>
+      be a member of the Administrators (or similarly named) group with the
+      appropriate permissions on the LDAP or Active Directory server. </para>
     </sect3>
   </sect2>
 
@@ -1856,12 +1859,12 @@
 
     <para>The HPCC’s LDAP <emphasis role="bold">Dali Server</emphasis>
     technology provides the ability to set secure access permissions to data
-    file folders (or file scopes). This is controlled by organizational units
-    (OUs) in LDAP.</para>
+    file folders (or file scopes). This is controlled by the use of
+    organizational units (OUs). </para>
 
     <para>An OU called <emphasis role="bold">Files</emphasis> is automatically
-    created when the Dali server starts. To secure data folders, create OUs
-    for each folder level and apply rights to each folder’s OU.</para>
+    created when the Dali server starts. To secure data folders, create a file
+    scope for that folder and apply rights to each scope.</para>
 
     <para><figure>
         <title>File Scopes Page</title>
@@ -1885,15 +1888,15 @@
     unauthorized users from any access to files in the <emphasis
     role="bold">secure</emphasis> folder.</para>
 
-    <para>The structure in LDAP corresponds to this logical structure in
-    DFU:</para>
+    <para>The structure described above corresponds to this logical
+    structure:</para>
 
     <para><emphasis role="bold">specialdata::secure </emphasis></para>
 
     <para>Which corresponds to this physical structure:</para>
 
     <para><emphasis
-    role="bold">var/lib/HPCCSystems/hpcc-data/thor/specialdata/secure
+    role="bold">/var/lib/HPCCSystems/hpcc-data/thor/specialdata/secure
     </emphasis></para>
 
     <para>All HPCC components and tools respect LDAP file access security. The
