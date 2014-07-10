@@ -178,8 +178,8 @@
 
               <entry><para><emphasis role="bold">NOTE:</emphasis> Use caution
               when setting any explicit <emphasis role="bold">deny</emphasis>
-              permission setting. The most restrictive permission is applied.
-              </para></entry>
+              permission setting. The most restrictive permission is always
+              applied. </para></entry>
             </row>
           </tbody>
         </tgroup>
@@ -543,7 +543,7 @@
       when a user requires temporary access to an HPCC feature. Permissions
       set in this area of ECL Watch only affect the user you choose. Most
       individual permissions you set here overwrite ones set in any group to
-      which the user belongs, except in the case of an explicit deny. </para>
+      which the user belongs, except in the case of an explicit deny.</para>
 
       <sect4>
         <title>To set new permissions for an individual user:</title>
@@ -618,7 +618,8 @@
                       <entry><para><emphasis role="bold">NOTE:</emphasis> Use
                       caution when setting any explicit <emphasis
                       role="bold">deny</emphasis> permission setting. The most
-                      restrictive permission is applied. </para></entry>
+                      restrictive permission is always applied.
+                      </para></entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -928,11 +929,11 @@
       role="bold">Authenticated Users </emphasis>group. The <emphasis
       role="bold">Authenticated Users</emphasis> group has access rights to
       almost all controls. To set up more restricted controls, you should
-      create specific groups with more restricted permissions. </para>
+      create specific groups with more restricted permissions.</para>
 
       <para>You can then create groups with only those access rights you wish
       to grant. This approach allows the most flexibility since a single User
-      ID can have multiple group memberships. </para>
+      ID can have multiple group memberships.</para>
 
       <para>As a best practice, you should use <emphasis
       role="bold">Allow</emphasis> instead of <emphasis
@@ -940,13 +941,13 @@
       only as an exception, when possible. If you wish to deny a user access
       to some specific control, a good practice would be to create a group for
       that, place the user(s) in that group, then you can deny access for that
-      group. </para>
+      group.</para>
 
       <para>Remember the most restrictive control takes precedence. For
       example, if a user is in a group that has deny permission to file
       access, and the user is in another group where file access is allowed,
       that user will still not have file access. That is an example of the
-      most restrictive setting taking effect. </para>
+      most restrictive setting taking effect.</para>
 
       <sect4>
         <title>To set new permissions for a group:</title>
@@ -1850,7 +1851,7 @@
       <para>To be able to view the <emphasis
       role="bold">Users/Permissions</emphasis> area in ECL Watch, a user must
       be a member of the Administrators (or similarly named) group with the
-      appropriate permissions on the LDAP or Active Directory server. </para>
+      appropriate permissions on the LDAP or Active Directory server.</para>
     </sect3>
   </sect2>
 
@@ -1860,7 +1861,7 @@
     <para>The HPCC’s LDAP <emphasis role="bold">Dali Server</emphasis>
     technology provides the ability to set secure access permissions to data
     file folders (or file scopes). This is controlled by the use of
-    organizational units (OUs). </para>
+    organizational units (OUs).</para>
 
     <para>An OU called <emphasis role="bold">Files</emphasis> is automatically
     created when the Dali server starts. To secure data folders, create a file
