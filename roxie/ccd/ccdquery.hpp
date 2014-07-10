@@ -94,9 +94,12 @@ public:
     void setFromContext(const IPropertyTree *ctx);
     void setFromSlaveContextLogger(const SlaveContextLogger &logctx);
 
+
     unsigned priority;
     unsigned timeLimit;
     unsigned warnTimeLimit;
+
+    memsize_t memoryLimit;
 
     int parallelJoinPreload;
     int fullKeyedJoinPreload;
@@ -112,9 +115,11 @@ public:
 
 private:
     static const char *findProp(const IPropertyTree *ctx, const char *name1, const char *name2);
+    static void updateFromWorkUnit(memsize_t &value, IConstWorkUnit &wu, const char *name);
     static void updateFromWorkUnit(int &value, IConstWorkUnit &wu, const char *name);
     static void updateFromWorkUnit(unsigned &value, IConstWorkUnit &wu, const char *name);
     static void updateFromWorkUnit(bool &value, IConstWorkUnit &wu, const char *name);
+    static void updateFromContext(memsize_t &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
     static void updateFromContext(int &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
     static void updateFromContext(unsigned &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
     static void updateFromContext(bool &val, const IPropertyTree *ctx, const char *name, const char *name2 = NULL);
@@ -134,7 +139,6 @@ interface IQueryFactory : extends IInterface
     virtual bool suspended() const = 0;
     virtual void getStats(StringBuffer &reply, const char *graphName) const = 0;
     virtual void resetQueryTimings() = 0;
-    virtual memsize_t getMemoryLimit() const = 0;
     virtual const QueryOptions &queryOptions() const = 0;
     virtual ActivityArray *lookupGraphActivities(const char *name) const = 0;
     virtual bool isQueryLibrary() const = 0;

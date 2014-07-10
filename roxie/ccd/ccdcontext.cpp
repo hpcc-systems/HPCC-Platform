@@ -1096,7 +1096,7 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, memsize_t _memoryLimit, IRoxieQueryPacket *_packet, bool _debuggerActive)
+    CSlaveContext(const IQueryFactory *_factory, const ContextLogger &_logctx, IRoxieQueryPacket *_packet, bool _debuggerActive)
         : factory(_factory), logctx(_logctx), options(factory->queryOptions())
     {
         if (_packet)
@@ -1123,7 +1123,7 @@ public:
         totSlavesReplyLen = 0;
 
         allocatorMetaCache.setown(createRowAllocatorCache(this));
-        rowManager.setown(roxiemem::createRowManager(_memoryLimit, this, logctx, allocatorMetaCache, false));
+        rowManager.setown(roxiemem::createRowManager(options.memoryLimit, this, logctx, allocatorMetaCache, false));
         //MORE: If checking heap required then should have
         //rowManager.setown(createCheckingHeap(rowManager)) or something similar.
     }
@@ -2362,9 +2362,9 @@ protected:
     }
 };
 
-IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, memsize_t _memoryLimit, IRoxieQueryPacket *packet)
+IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, IRoxieQueryPacket *packet)
 {
-    CSlaveContext *ret = new CSlaveContext(_factory, _logctx, _memoryLimit, packet, _logctx.queryDebuggerActive());
+    CSlaveContext *ret = new CSlaveContext(_factory, _logctx, packet, _logctx.queryDebuggerActive());
     ret->setOptions(_logctx);
     return ret;
 }
@@ -2635,20 +2635,20 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CRoxieServerContext(const IQueryFactory *_factory, const ContextLogger &_logctx)
-        : CSlaveContext(_factory, _logctx, 0, NULL, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, NULL, false), serverQueryFactory(_factory)
     {
         init();
-        rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
+        rowManager->setMemoryLimit(options.memoryLimit);
         workflow.setown(_factory->createWorkflowMachine(workUnit, true, logctx));
         context.setown(createPTree(ipt_caseInsensitive));
     }
 
     CRoxieServerContext(IConstWorkUnit *_workUnit, const IQueryFactory *_factory, const ContextLogger &_logctx)
-        : CSlaveContext(_factory, _logctx, 0, NULL, false), serverQueryFactory(_factory)
+        : CSlaveContext(_factory, _logctx, NULL, false), serverQueryFactory(_factory)
     {
         init();
         workUnit.set(_workUnit);
-        rowManager->setMemoryLimit(serverQueryFactory->getMemoryLimit());
+        rowManager->setMemoryLimit(options.memoryLimit);
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
         context.setown(createPTree(ipt_caseInsensitive));
 
@@ -2659,7 +2659,7 @@ public:
     }
 
     CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, const ContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags, const char *_querySetName)
-        : CSlaveContext(_factory, _logctx, 0, NULL, false), serverQueryFactory(_factory), querySetName(_querySetName)
+        : CSlaveContext(_factory, _logctx, NULL, false), serverQueryFactory(_factory), querySetName(_querySetName)
     {
         init();
         context.set(_context);
@@ -2695,7 +2695,7 @@ public:
 
         // MORE some of these might be appropriate in wu case too?
         rowManager->setActivityTracking(context->getPropBool("_TraceMemory", false));
-        rowManager->setMemoryLimit((memsize_t) context->getPropInt64("_MemoryLimit", _factory->getMemoryLimit()));
+        rowManager->setMemoryLimit(options.memoryLimit);
         authToken.append(httpHelper.queryAuthToken());
         workflow.setown(_factory->createWorkflowMachine(workUnit, false, logctx));
 

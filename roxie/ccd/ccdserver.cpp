@@ -26404,8 +26404,9 @@ protected:
     SlaveContextLogger logctx;
     Owned<const IQueryDll> queryDll;
     Owned<IRoxiePackage> package;
-    Owned<IRoxieSlaveContext> ctx;
+    Owned<IPropertyTree> stateInfo;
     Owned<IQueryFactory> queryFactory;
+    Owned<IRoxieSlaveContext> ctx;
 
     void testSetup()
     {
@@ -26420,9 +26421,10 @@ protected:
     void init()
     {
         package.setown(createRoxiePackage(NULL, NULL));
-        ctx.setown(createSlaveContext(NULL, logctx, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
-        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL, false, false));
+        stateInfo.setown(createPTreeFromXMLString("<test memoryLimit='50000000'/>"));
+        queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, stateInfo, false, false));
+        ctx.setown(createSlaveContext(queryFactory, logctx, NULL));
         timer->reset();
     }
 

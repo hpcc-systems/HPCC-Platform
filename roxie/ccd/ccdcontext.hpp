@@ -105,7 +105,7 @@ typedef IEclProcess* (* EclProcessFactory)();
 class CRoxieWorkflowMachine;
 
 extern IDeserializedResultStore *createDeserializedResultStore();
-extern IRoxieSlaveContext *createSlaveContext(const IQueryFactory *factory, const SlaveContextLogger &logctx, memsize_t memoryLimit, IRoxieQueryPacket *packet);
+extern IRoxieSlaveContext *createSlaveContext(const IQueryFactory *factory, const SlaveContextLogger &logctx, IRoxieQueryPacket *packet);
 extern IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const ContextLogger &logctx, PTreeReaderOptions xmlReadFlags, const char *querySetName);
 extern IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const ContextLogger &_logctx);
 extern IRoxieServerContext *createWorkUnitServerContext(IConstWorkUnit *wu, const IQueryFactory *factory, const ContextLogger &logctx);

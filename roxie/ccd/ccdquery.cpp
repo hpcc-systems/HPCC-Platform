@@ -274,6 +274,8 @@ QueryOptions::QueryOptions()
     timeLimit = defaultTimeLimit[0];
     warnTimeLimit = defaultWarnTimeLimit[0];
 
+    memoryLimit = defaultMemoryLimit;
+
     parallelJoinPreload = defaultParallelJoinPreload;
     fullKeyedJoinPreload = defaultFullKeyedJoinPreload;
     keyedJoinPreload = defaultKeyedJoinPreload;
@@ -282,6 +284,7 @@ QueryOptions::QueryOptions()
     prefetchProjectPreload = defaultPrefetchProjectPreload;
 
     checkingHeap = defaultCheckingHeap;
+    enableFieldTranslation = fieldTranslationEnabled;
     traceActivityTimes = false;   // No global default for this
     timeActivities = defaultTimeActivities;
 }
@@ -291,6 +294,8 @@ QueryOptions::QueryOptions(const QueryOptions &other)
     priority = other.priority;
     timeLimit = other.timeLimit;
     warnTimeLimit = other.warnTimeLimit;
+
+    memoryLimit = other.memoryLimit;
 
     parallelJoinPreload = other.parallelJoinPreload;;
     fullKeyedJoinPreload = other.fullKeyedJoinPreload;
@@ -315,10 +320,12 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     warnTimeLimit = defaultWarnTimeLimit[priority];
     updateFromWorkUnit(timeLimit, wu, "timeLimit");
     updateFromWorkUnit(warnTimeLimit, wu, "warnTimeLimit");
+    updateFromWorkUnit(memoryLimit, wu, "memoryLimit");
     if (stateInfo)
     {
         updateFromContext(timeLimit, stateInfo, "@timeLimit");
         updateFromContext(warnTimeLimit, stateInfo, "@warnTimeLimit");
+        updateFromContext(memoryLimit, stateInfo, "@memoryLimit");
     }
 
     updateFromWorkUnit(parallelJoinPreload, wu, "parallelJoinPreload");
@@ -332,6 +339,11 @@ void QueryOptions::setFromWorkUnit(IConstWorkUnit &wu, const IPropertyTree *stat
     updateFromWorkUnit(enableFieldTranslation, wu, "layoutTranslationEnabled");  // Name is different for compatibility reasons
     updateFromWorkUnit(timeActivities, wu, "timeActivities");
     updateFromWorkUnit(traceActivityTimes, wu, "traceActivityTimes");
+}
+
+void QueryOptions::updateFromWorkUnit(memsize_t &value, IConstWorkUnit &wu, const char *name)
+{
+    value = (memsize_t) wu.getDebugValueInt64(name, value);
 }
 
 void QueryOptions::updateFromWorkUnit(int &value, IConstWorkUnit &wu, const char *name)
@@ -356,6 +368,7 @@ void QueryOptions::setFromContext(const IPropertyTree *ctx)
         updateFromContext(priority, ctx, "@priority", "_Priority");
         updateFromContext(timeLimit, ctx, "@timeLimit", "_TimeLimit");
         updateFromContext(warnTimeLimit, ctx, "@warnTimeLimit", "_WarnTimeLimit");
+        updateFromContext(memoryLimit, ctx, "@memoryLimit", "_MemoryLimit");
         updateFromContext(parallelJoinPreload, ctx, "@parallelJoinPreload", "_ParallelJoinPreload");
         updateFromContext(fullKeyedJoinPreload, ctx, "@fullKeyedJoinPreload", "_FullKeyedJoinPreload");
         updateFromContext(keyedJoinPreload, ctx, "@keyedJoinPreload", "_KeyedJoinPreload");
@@ -378,6 +391,13 @@ const char * QueryOptions::findProp(const IPropertyTree *ctx, const char *name1,
         return name2;
     else
         return NULL;
+}
+
+void QueryOptions::updateFromContext(memsize_t &value, const IPropertyTree *ctx, const char *name1, const char *name2)
+{
+    const char *name = findProp(ctx, name1, name2);
+    if (name)
+        value = (memsize_t) ctx->getPropInt64(name);
 }
 
 void QueryOptions::updateFromContext(int &value, const IPropertyTree *ctx, const char *name1, const char *name2)
@@ -432,7 +452,6 @@ protected:
     bool isSuspended;
     bool isLoadFailed;
     ClusterType targetClusterType;
-    memsize_t memoryLimit;
     unsigned libraryInterfaceHash;
     hash64_t hashValue;
 
@@ -997,7 +1016,6 @@ public:
         isSuspended = false;
         isLoadFailed = false;
         libraryInterfaceHash = 0;
-        memoryLimit = defaultMemoryLimit;
         options.enableFieldTranslation = package.getEnableFieldTranslation();  // NOTE - can be overridden by wu settings
     }
 
@@ -1129,17 +1147,15 @@ public:
             libraryInterfaceHash = wu->getApplicationValueInt("LibraryModule", "interfaceHash", 0);
 
             options.setFromWorkUnit(*wu, stateInfo);
-            memoryLimit = (memsize_t) wu->getDebugValueInt64("memoryLimit", defaultMemoryLimit);
             SCMStringBuffer bStr;
             targetClusterType = getClusterType(wu->getDebugValue("targetClusterType", bStr).str(), RoxieCluster);
 
-            // MORE - does package override stateInfo, or vice versa?
+            // NOTE: stateinfo overrides package info
 
             if (stateInfo)
             {
                 // info in querySets can override the defaults from workunit for some limits
                 isSuspended = stateInfo->getPropBool("@suspended", false);
-                memoryLimit = (memsize_t) stateInfo->getPropInt64("@memoryLimit", memoryLimit);
             }
             if (targetClusterType == RoxieCluster)
             {
@@ -1371,10 +1387,6 @@ public:
     virtual bool suspended() const
     {
         return isSuspended;
-    }
-    virtual memsize_t getMemoryLimit() const
-    {
-        return memoryLimit;
     }
     virtual const QueryOptions &queryOptions() const
     {
@@ -1826,7 +1838,7 @@ public:
 
     virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const
     {
-        return ::createSlaveContext(this, logctx, memoryLimit, packet);
+        return ::createSlaveContext(this, logctx, packet);
     }
 
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName)
