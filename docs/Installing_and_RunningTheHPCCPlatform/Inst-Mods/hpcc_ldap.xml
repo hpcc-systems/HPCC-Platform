@@ -60,7 +60,7 @@
 
         <listitem>
           <para>Verify that they are stopped. You can use a single command,
-          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+          such as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
         </listitem>
 
         <listitem>
@@ -218,7 +218,7 @@
 
         <listitem>
           <para>Verify that they are stopped. You can use a single command,
-          such as : <programlisting>sudo /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+          such as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
         </listitem>
 
         <listitem>
@@ -560,19 +560,19 @@
       “hpccinternal::&lt;user&gt;” file scope is also created granting new
       users full access to that scope and restricting access to other users.
       This file scope is used to store temporary HPCC files such as spill
-      files and temp files.</para>
+      files and temp files. </para>
 
       <para>If you are enabling LDAP file scope security and already have user
       accounts, you should run the addScopes utility program to create the
-      hpccinternal::&lt;user&gt; scope for those existing users.</para>
+      hpccinternal::&lt;user&gt; scope for those existing users. </para>
 
       <para>Users which already have this scope defined are ignored and so it
-      can be used on both new and legacy ESP user accounts safely.</para>
+      can be used on both new and legacy ESP user accounts safely. </para>
 
       <para>The tool is located in the <emphasis
       role="bold">/opt/HPCCSystems/bin/</emphasis> folder and to run it you
       must pass the location of <emphasis role="bold">daliconf.xml</emphasis>,
-      for example:</para>
+      for example: </para>
 
       <para><programlisting>/opt/HPCCSystems/bin/addScopes /var/lib/HPCCSystems/mydali/daliconf.xml</programlisting></para>
     </sect3>
