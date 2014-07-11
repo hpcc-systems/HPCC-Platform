@@ -113,6 +113,8 @@ set_environmentvars
 envfile=$configs/$environment
 
 # Know HPCC user after set_environmentvars
+log_dir_owner=$(ls -ld $LOG_DIR | awk '{print $3}')
+[ "log_dir_owner" != "${user}" ] && chown ${user}:${user} $LOG_DIR
 chown ${user}:${user} $HPCC_INIT_LOG
 
 #Sourcing the hpcc environment
