@@ -4,7 +4,7 @@
 <sect1 id="Type_Sturcture_Special_Functions">
   <title>TYPE Structure Special Functions</title>
 
-  <sect2>
+  <sect2 id="LOAD_Type">
     <title>LOAD</title>
 
     <para><emphasis role="bold">EXPORT<indexterm>

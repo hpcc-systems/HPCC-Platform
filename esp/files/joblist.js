@@ -175,10 +175,25 @@ var usageArray=null;
 var busagAarray = null;
 var nbusageArray = null;
 var totalWorkunits=0;
+var showAllStat = true;
+var numberOfDays = 0;
 
 function displayProgress(status)
 {
     document.getElementById('progress').innerHTML=status;
+}
+
+function initStat()
+{
+    usageArray=new Array(numberOfDays);
+    busageArray=new Array(numberOfDays);
+    nbusageArray=new Array(numberOfDays);
+    for(var i=0;i<numberOfDays;i++)
+    {
+        usageArray[i] = 0;
+        busageArray[i] = 0;
+        nbusageArray[i] = 0;
+    }
 }
 
 function displayBegin(from,to,showall)
@@ -189,10 +204,10 @@ function displayBegin(from,to,showall)
     var first=ZCMJD(fromDate.getFullYear(),fromDate.getMonth() + 1,fromDate.getDate());
     var last=ZCMJD(toDate.getFullYear(),toDate.getMonth() + 1,toDate.getDate());
     var count=last-first+1;
+    numberOfDays = count;
+    showAllStat = showall;
+    initStat();
 
-    usageArray=new Array(count);
-    busageArray=new Array(count);
-    nbusageArray=new Array(count);
     totalWorkunits=0;
 
     var svg=document.getElementById('SVG');
@@ -233,17 +248,6 @@ function displayBegin(from,to,showall)
                 grey.setAttribute("stroke-width",1);
                 g.appendChild(grey);
             }
-
-            var text=svgdoc.createElementNS("http://www.w3.org/2000/svg", "text");
-            text.setAttribute("x",24.2);
-            text.setAttribute("y",i+2.5);
-            text.setAttribute("text-anchor","begin");
-            text.setAttribute("id","usage"+i);
-            if(showall)
-               text.appendChild(svgdoc.createTextNode('0% 0% 0%'));
-            else
-               text.appendChild(svgdoc.createTextNode('0%'));
-            g.appendChild(text);
         }
 
         var line=svgdoc.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -391,41 +395,49 @@ function displayJob(wuid,graph,started,finished,cluster,state,source,showall,bbt
         line.setAttribute("y2",y+2.5);
         g.appendChild(line);
 
-        usageArray[y]=(usageArray[y] || 0)+100*(xx2-xx1)/24;
+        usageArray[y]+=100*(xx2-xx1)/24;
         var bhours = ((betime < xx2)?betime:xx2) - ((bbtime > xx1)?bbtime:xx1);
         if(bhours < 0)
             bhours = 0;
         var nbhours = (xx2 - xx1 - bhours);
 
-        if(bbtime + (24 - betime) <= 0.001)
-            nbusageArray[y] = (nbusageArray[y] || 0) + 0;
-        else
-            nbusageArray[y] = (nbusageArray[y] || 0) + 100*nbhours/(bbtime + (24 - betime));
-
-        if(betime - bbtime <= 0.001)
-            busageArray[y] = (busageArray[y] || 0) + 0;
-        else
-            busageArray[y] = (busageArray[y] || 0) + 100*bhours/(betime - bbtime);
-
-        var u=svgdoc.getElementById('usage'+y);
-        var usagestr = '';
-        if(usageArray[y] < 10)
-            usagestr += ' ';
-        usagestr += Math.round(usageArray[y])+'%';
-        if(showall)
-        {
-            usagestr += ' ' + Math.round(busageArray[y])+'% ' + Math.round(nbusageArray[y])+'%';
-        }
-        u.replaceChild(svgdoc.createTextNode(usagestr), u.firstChild);
+        if(bbtime + (24 - betime) > 0.001)
+            nbusageArray[y] += 100*nbhours/(bbtime + (24 - betime));
+        if(betime - bbtime > 0.001)
+            busageArray[y] += 100*bhours/(betime - bbtime);
     }
 
     svgdoc.getElementById("top").appendChild(g);
 }
 
+function displayStat()
+{
+    var svg=document.getElementById('SVG');
+    var svgDoc=svg.getSVGDocument();
+    var topLines=svgDoc.getElementById('toplines');
+    for(var i=0;i<numberOfDays;i++)
+    {
+        var usageStr = '';
+        if(usageArray[i] < 10)
+            usageStr += ' ';
+        usageStr += Math.round(usageArray[i])+'%';
+        if(showAllStat)
+            usageStr += ' ' + Math.round(busageArray[i])+'% ' + Math.round(nbusageArray[i])+'%';
+
+        var text=svgDoc.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x",24.2);
+        text.setAttribute("y",i+2.5);
+        text.setAttribute("text-anchor","begin");
+        text.appendChild(svgDoc.createTextNode(usageStr));
+        topLines.appendChild(text);
+    }
+}
+
 function displayEnd(xls)
 {
+    displayStat();
     if (totalWorkunits > 0)
-        displayProgress('<table><tr><td>Total: '+(totalWorkunits)+' graphs (<a href=\"/WsWorkunits/WUClusterJobXLS?' + xls +'\">xls</a>...<a href=\"/WsWorkunits/WUClusterJobSummaryXLS?' + xls +'\">summary</a>)</td></tr></table>');
+        displayProgress('<table><tr><td>Total: '+(totalWorkunits)+' graphs (<a href=\"/WsWorkunits/WUClusterJobSummaryXLS?' + xls +'\">summary</a>...<a href=\"/WsWorkunits/WUClusterJobXLS?' + xls +'\">cluster_jobs.html</a>)</td></tr></table>');
     else
         displayProgress('<table><tr><td>Total: '+(totalWorkunits)+' graphs</td></tr></table>');
 }
@@ -445,7 +457,7 @@ function displayLegend()
     var svgdoc=svg.getSVGDocument();
     var g1=svgdoc.createElementNS("http://www.w3.org/2000/svg", "g");
     g1.setAttribute("transform","translate(20,20) scale(25,20)");
-    g1.setAttribute("id","top");
+    g1.setAttribute("id","LegendBaseT");
 
     var g=svgdoc.createElementNS("http://www.w3.org/2000/svg", "g");
     g.setAttribute("stroke-width","0.01");
@@ -453,7 +465,7 @@ function displayLegend()
     g.setAttribute("font-size","0.5");
     g.setAttribute("stroke-width","0.01");
     g.setAttribute("alignment-baseline","middle");
-    g.setAttribute("id","toplines");
+    g.setAttribute("id","LegendBase");
    
     for(var i=0;i<count;i++)
     {

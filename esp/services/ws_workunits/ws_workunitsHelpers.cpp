@@ -2516,8 +2516,6 @@ void WsWuJobQueueAuditInfo::getAuditLineInfo(const char* line, unsigned& longest
 
     if (checkNewThorQueueItem(tq, showAll, items))
         items.append(*tq.getClear());
-
-    DBGLOG("Queue log: [%s]", line);
 }
 
 bool WsWuJobQueueAuditInfo::checkSameStrings(const char* s1, const char* s2)
