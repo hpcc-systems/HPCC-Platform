@@ -1,0 +1,52 @@
+/*##############################################################################
+
+    HPCC SYSTEMS software Copyright (C) 2014 HPCC Systems.
+
+    Licensed under the Apache License, Version 2.0 (the License);
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an AS IS BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+############################################################################## */
+
+export MemCached := SERVICE
+  BOOLEAN MSetUnicode(CONST VARSTRING servers, CONST VARSTRING key, UNICODE value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetString(CONST VARSTRING servers, CONST VARSTRING key, STRING value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetBoolean(CONST VARSTRING servers, CONST VARSTRING key, BOOLEAN value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetUtf8(CONST VARSTRING servers, CONST VARSTRING key, UTF8 value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSetUtf8';
+  BOOLEAN MSetReal4(CONST VARSTRING servers, CONST VARSTRING key, REAL4 value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetReal8(CONST VARSTRING servers, CONST VARSTRING key, REAL8 value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetReal(CONST VARSTRING servers, CONST VARSTRING key, REAL value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetInteger4(CONST VARSTRING servers, CONST VARSTRING key, INTEGER4 value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetInteger8(CONST VARSTRING servers, CONST VARSTRING key, INTEGER8 value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetInteger(CONST VARSTRING servers, CONST VARSTRING key, INTEGER value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetUnsigned4(CONST VARSTRING servers, CONST VARSTRING key, UNSIGNED4 value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetUnsigned8(CONST VARSTRING servers, CONST VARSTRING key, UNSIGNED8 value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetUnsigned(CONST VARSTRING servers, CONST VARSTRING key, UNSIGNED value,CONST VARSTRING partitionKey = 'root',  UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSet';
+  BOOLEAN MSetData(CONST VARSTRING servers, CONST VARSTRING key, CONST DATA value, CONST VARSTRING partitionKey = 'root', UNSIGNED4 expire = 0) : cpp,action,context,entrypoint='MSetData';
+
+  INTEGER4 MGetInteger4(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetInt4';
+  INTEGER8 MGetInteger8(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetInt8';
+  INTEGER8 MGetInteger(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetInt8';
+  UNSIGNED4 MGetUnsigned4(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetUint4';
+  UNSIGNED8 MGetUnsigned8(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetUint8';
+  UNSIGNED8 MGetUnsigned(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetUint8';
+  STRING MGetString(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetStr';
+  UNICODE MGetUnicode(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetUChar';
+  UTF8 MGetUtf8(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetUtf8';
+  BOOLEAN MGetBoolean(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetBool';
+  REAL MGetReal(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetDouble';
+  REAL4 MGetReal4(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetFloat';
+  REAL8 MGetReal8(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetDouble';
+  DATA MGetData(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MGetData';
+ 
+  BOOLEAN MExist(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MExist';
+  CONST VARSTRING MKeyType(CONST VARSTRING servers, CONST VARSTRING key, CONST VARSTRING partitionKey = 'root') : cpp,action,context,entrypoint='MKeyType'; //NOTE: calls get
+  BOOLEAN MClear(CONST VARSTRING servers) : cpp,action,context,entrypoint='MClear';
+END;

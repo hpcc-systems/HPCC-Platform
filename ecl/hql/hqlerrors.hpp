@@ -75,6 +75,7 @@
 #define WRN_SILLY_EXISTS            1051
 #define WRN_INT_OR_RANGE_EXPECTED   1052 /* Integer or integer range (i.e. 2..3) expected when real detected */
 #define WRN_UNRESOLVED_SYMBOL       1053
+#define WRN_FROM_PLUGIN             1054 /* Warning belonging to an ECL plugin */
 //#define ECL_WARN_END          1100
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -428,6 +429,7 @@
 #define ERR_RESULT_IGNORED_SCOPE    2395
 #define ERR_INDEX_DEPEND_DATASET    2396
 #define ERR_DUBIOUS_NAME            2397
+#define ERR_FROM_PLUGIN             2398
 
 #define ERR_ASSERTION_FAILS         100000
 
