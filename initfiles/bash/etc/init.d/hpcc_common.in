@@ -969,3 +969,24 @@ run_cluster() {
    echo ""
 }
 
+##
+## Usage: cluster_tools_init 
+##    Initialization for cluster tools
+##
+cluster_tools_init() {
+
+   set_environmentvars
+
+   _cmd_prefix=
+   [ "$(id -u)" != "0" ] && _cmd_prefix=sudo
+
+   # Check and set log directory
+   CLUSTER_LOG_DIR=${LOG_DIR}/cluster
+   [ ! -d $LOG_DIR ]  && ${_cmd_prefix} /etc/init.d/hpcc-init status > /dev/null 2>&1
+
+   [ ! -d $CLUSTER_LOG_DIR ] && mkdir -p $CLUSTER_LOG_DIR
+   # workaround inconsistency of stat command
+   cluster_log_dir_owner=$(ls -ld $CLUSTER_LOG_DIR | awk '{print $3}')
+   [ "$cluster_log_dir_owner" != "${user}" ] && ${_cmd_prefix} chown ${user}:${user} $CLUSTER_LOG_DIR
+   
+}

@@ -296,10 +296,6 @@ public:
 
             IPropertyTree *folderQueryset = ensureNavFolder(data, "Queries", NULL, NULL, false, 3);
             ensureNavLink(*folderQueryset, "Browse", "/WsWorkunits/WUQuerySets", "Browse Published Queries");
-
-            IPropertyTree *folderTP = CEspBinding::ensureNavFolder(data, "Tech Preview", "Technical Preview");
-            IPropertyTree *eclWatchTP = CEspBinding::ensureNavLink(*folderTP, "ECL Watch", "/esp/files/stub.htm?Widget=HPCCPlatformWidget", "ECL Watch", NULL, NULL, 1);
-            eclWatchTP->setProp("@target", "_blank");
         }
     }
 

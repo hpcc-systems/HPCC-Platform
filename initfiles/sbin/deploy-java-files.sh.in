@@ -380,6 +380,8 @@ setUser() {
 # MAIN
 #
 ######################################################################
+cluster_tools_init
+
 source=
 target=
 update_classpath=0
@@ -459,7 +461,6 @@ fi
 
 [ -n "$source" ] && setUser
 
-set_environmentvars
 HPCC_CONFIG=${CONFIG_DIR}/${ENV_CONF_FILE}
 
 

@@ -2802,6 +2802,7 @@ void FileSprayer::updateTargetProperties()
         offset_t partLength = 0;
         CRC32Merger totalCRC;
         offset_t totalLength = 0;
+        offset_t totalCompressedSize = 0;
         ForEachItemIn(idx, partition)
         {
             PartitionPoint & cur = partition.item(idx);
@@ -2850,13 +2851,20 @@ void FileSprayer::updateTargetProperties()
                 else if (compressOutput || copyCompressed)
                     curProps.setPropInt(FAcrc, (int)COMPRESSEDFILECRC);
                 if (copyCompressed) // don't know if just compress
+                {
                     curProps.setPropInt64(FAcompressedSize, physPartLength);
+                    totalCompressedSize += physPartLength;
+                }
 
 
                 curProps.setPropInt64(FAsize, partLength);
 
                 if (compressOutput)
+                {
                     curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
+
+                    totalCompressedSize += curProgress.compressedPartSize;
+                }
 
                 TargetLocation & curTarget = targets.item(cur.whichOutput);
                 if (!curTarget.modifiedTime.isNull())
@@ -2903,6 +2911,10 @@ void FileSprayer::updateTargetProperties()
         if (calcCRC())
             curProps.setPropInt(FAcrc, totalCRC.get());
         curProps.setPropInt64(FAsize, totalLength);
+
+        if (totalCompressedSize != 0)
+            curProps.setPropInt64(FAcompressedSize, totalCompressedSize);
+
         unsigned rs = curProps.getPropInt(FArecordSize); // set by user
         bool gotrc = false;
         if (rs && (totalLength%rs == 0)) {

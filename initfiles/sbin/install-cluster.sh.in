@@ -122,6 +122,14 @@ removePayload(){
     rm /tmp/remote_install.tgz
 }
 
+
+######################################################################
+#
+# MAIN
+#
+######################################################################
+cluster_tools_init
+
 if [ "${USER}" != "root" ]; then
    echo ""
    echo "The script must run as root or sudo."
